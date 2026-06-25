@@ -143,7 +143,7 @@ function googleCalendarUrl() {
 }
 
 function periodKindTitle(kind: KdPeriodKind) {
-  if (kind === "current") return "Поточне КД";
+  if (kind === "current") return "Актуальне КД";
   if (kind === "previous") return "Минуле КД";
   return "Наступне КД";
 }
@@ -361,7 +361,6 @@ export default async function HomePage() {
   const openPolls = polls.filter((poll) => poll.status === "open");
   const publishedPolls = polls.filter((poll) => poll.channelId && poll.messageId);
   const spotlightPolls = [...openPolls, ...polls.filter((poll) => poll.status === "closed")].slice(0, 6);
-  const calendarFeedUrl = absoluteDashboardUrl("/api/calendar/raids.ics");
   return (
     <main className="container home-page">
       <section className="dashboard-shell content-shell home-shell" aria-label="Головна панель Mistblossom Vanguard">
@@ -369,9 +368,6 @@ export default async function HomePage() {
 
         <header className="home-landing-hero" aria-label="Головна Mistblossom Vanguard">
           <div className="home-landing-hero__content">
-            <span className="home-landing-hero__season">
-              <span aria-hidden="true">●</span> КД #{currentPeriod?.period || "—"}
-            </span>
             <img
               className="home-landing-hero__logo"
               src={guildBranding.iconUrl}
@@ -390,7 +386,6 @@ export default async function HomePage() {
             </p>
             <div className="home-landing-hero__actions">
               <a className="btn primary" href="/raids">Відкрити рейди</a>
-              <a className="btn subtle" href="/polls">Голосування</a>
               <a className="btn subtle" href="/guild">Склад гільдії</a>
             </div>
           </div>
@@ -400,15 +395,12 @@ export default async function HomePage() {
 
         <section className="home-calendar-toolbar panel" aria-label="Керування КД-календарем">
           <div>
-            <span className="home-kicker">Поточний рейдовий тиждень</span>
-            <h2>КД #{currentPeriod?.period || "—"}</h2>
-            <p>
-              Поточне КД: <HomeLocalTime value={currentPeriod?.startIso} fallback={currentPeriod?.fallbackStart || "—"} mode="compact" /> — <HomeLocalTime value={currentPeriod?.endIso} fallback={currentPeriod?.fallbackEnd || "—"} mode="compact" />.
-            </p>
+            <span className="home-kicker">Рейди</span>
+            <h2>Керування календарем</h2>
+            <p>Швидкі дії для створення рейду та переходу до повного списку.</p>
           </div>
           <div className="home-calendar-actions">
             <a className="btn primary" href="/raids/new">Створити рейд</a>
-            <a className="btn subtle" href="/polls/new">Нове голосування</a>
             <a className="btn subtle" href="/raids">Усі рейди</a>
           </div>
         </section>
@@ -418,9 +410,9 @@ export default async function HomePage() {
             <div className="home-kd-panel__head">
               <div>
                 <span className="home-kicker">Календар</span>
-                <h2>Рейди за тижнями</h2>
+                <h2>Рейдові тижні</h2>
               </div>
-              <p>Рейди автоматично групуються за поточним тижнем і часом старту.</p>
+              <p>Актуальне КД показане першим. Минуле й наступне — компактно поруч.</p>
             </div>
             <div className="home-kd-grid">
               {displayPeriods.map((period) => <KdPeriodCard key={period.key} period={period} now={now} />)}
@@ -431,11 +423,10 @@ export default async function HomePage() {
             <section className="panel home-import-card" aria-label="Імпорт календаря">
               <span className="home-kicker">Google Calendar</span>
               <h2>Імпорт рейдів</h2>
-              <p>Додай рейди у Google Calendar або завантаж файл календаря. Посилання сховане, щоб не перевантажувати сторінку.</p>
+              <p>Додай рейдовий календар у Google або збережи файл для іншого застосунку.</p>
               <div className="home-import-actions">
                 <a className="btn primary" href={googleCalendarUrl()} target="_blank" rel="noreferrer">Додати в Google</a>
-                <a className="btn subtle" href="/api/calendar/raids.ics" download="mistblossom-raids.ics">Завантажити .ics</a>
-                <a className="btn subtle" href={calendarFeedUrl} target="_blank" rel="noreferrer">Відкрити фід</a>
+                <a className="btn subtle" href="/api/calendar/raids.ics" download="mistblossom-raids.ics">.ics файл</a>
               </div>
             </section>
 
