@@ -1,6 +1,6 @@
 export default function AppFooter() {
   return (
-    <footer className="app-footer" aria-label="Юридична інформація Mistblossom Vanguard">
+    <footer className="app-footer app-footer--site-wide" aria-label="Юридична інформація Mistblossom Vanguard">
       <div className="app-footer__inner">
         <div className="app-footer__brand">
           <strong>Mistblossom Vanguard</strong>
