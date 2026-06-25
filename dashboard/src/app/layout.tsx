@@ -23,7 +23,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#07101a",
+  themeColor: "#07090f",
 };
 
 export const metadata: Metadata = {
@@ -101,7 +101,7 @@ export const metadata: Metadata = {
   },
   robots: privateRobots,
   other: {
-    "msapplication-TileColor": "#020817",
+    "msapplication-TileColor": "#07090f",
     "msapplication-config": "/browserconfig.xml",
   },
 };
@@ -145,6 +145,28 @@ export default function RootLayout({
         </Script>
         <ClientErrorReporter />
         <ClientAuthGuard />
+        <Script id="dashboard-scroll-chrome" strategy="afterInteractive">
+          {`
+            (() => {
+              const root = document.body;
+              if (!root) return;
+              const threshold = 8;
+              let ticking = false;
+              const update = () => {
+                root.classList.toggle("dashboard-scrolled", window.scrollY > threshold);
+                ticking = false;
+              };
+              const requestUpdate = () => {
+                if (ticking) return;
+                ticking = true;
+                window.requestAnimationFrame(update);
+              };
+              update();
+              window.addEventListener("scroll", requestUpdate, { passive: true });
+              window.addEventListener("resize", requestUpdate, { passive: true });
+            })();
+          `}
+        </Script>
         <DashboardFormEnhancer />
         <Suspense fallback={null}>
           <GlobalToasts />
