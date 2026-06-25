@@ -3104,3 +3104,249 @@ html.starfield-reduced-motion body::before {
     max-width: none !important;
   }
 }
+
+/* Compact roster filter system: one tight control area instead of oversized filter cards. */
+.dashboard-table-card--roster .dashboard-table-titlebar {
+  grid-template-columns: minmax(180px, 0.55fr) minmax(0, 1.45fr) !important;
+  align-items: start !important;
+  gap: 12px !important;
+}
+
+.dashboard-table-card--roster .dashboard-table-controls {
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.dashboard-table-card--roster .dashboard-table-search {
+  flex: 1 1 260px !important;
+  width: auto !important;
+  min-width: min(100%, 220px) !important;
+  max-width: 310px !important;
+}
+
+.dashboard-table-card--roster .dashboard-table-search input {
+  min-height: 36px !important;
+  border-radius: 12px !important;
+  padding-inline: 12px !important;
+  background: rgba(255, 255, 255, 0.045) !important;
+}
+
+.dashboard-table-card--roster .dashboard-table-filter {
+  min-height: 36px !important;
+  min-width: 42px !important;
+  padding: 0 12px !important;
+  border-radius: 12px !important;
+  font-size: 0.74rem !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+.dashboard-table-card--roster .dashboard-table-filter--muted {
+  padding-inline: 14px !important;
+}
+
+.dashboard-table-card--roster .dashboard-table-stats {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.dashboard-table-card--roster .dashboard-table-stats > div {
+  min-height: 58px !important;
+  gap: 4px !important;
+  padding: 10px 12px !important;
+  border-radius: 14px !important;
+}
+
+.dashboard-table-card--roster .dashboard-table-stats strong {
+  font-size: clamp(1.15rem, 1.55vw, 1.55rem) !important;
+}
+
+.dashboard-table-card--roster .dashboard-table-stats span {
+  font-size: 0.66rem !important;
+}
+
+.dashboard-table-card--roster .dashboard-table-advanced {
+  display: grid !important;
+  grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+  align-items: end !important;
+  gap: 8px !important;
+  padding: 10px 12px !important;
+  border-radius: 18px !important;
+  border-color: rgba(255, 255, 255, 0.085) !important;
+  background: rgba(255, 255, 255, 0.026) !important;
+  box-shadow: none !important;
+}
+
+.dashboard-table-card--roster .dashboard-table-advanced .guild-range-group {
+  grid-column: span 3 !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+  padding: 8px 10px !important;
+  border-radius: 14px !important;
+  background: rgba(255, 255, 255, 0.032) !important;
+}
+
+.dashboard-table-card--roster .dashboard-table-advanced > .guild-filter-field {
+  grid-column: span 2 !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+}
+
+.dashboard-table-card--roster .guild-range-head {
+  gap: 6px !important;
+}
+
+.dashboard-table-card--roster .guild-range-head span,
+.dashboard-table-card--roster .dashboard-table-advanced .guild-filter-field span {
+  font-size: 0.63rem !important;
+  line-height: 1.1 !important;
+  letter-spacing: 0.055em !important;
+}
+
+.dashboard-table-card--roster .guild-range-head strong {
+  max-width: 62% !important;
+  overflow: hidden !important;
+  color: var(--site-orange-light) !important;
+  font-size: 0.66rem !important;
+  line-height: 1.1 !important;
+  text-align: right !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.dashboard-table-card--roster .guild-range-inputs {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+}
+
+.dashboard-table-card--roster .guild-range-value {
+  gap: 3px !important;
+}
+
+.dashboard-table-card--roster .guild-range-value span {
+  font-size: 0.58rem !important;
+  line-height: 1 !important;
+}
+
+.dashboard-table-card--roster .guild-range-value input,
+.dashboard-table-card--roster .dashboard-table-advanced .guild-filter-field select {
+  min-height: 32px !important;
+  border-radius: 10px !important;
+  padding-inline: 10px !important;
+  font-size: 0.78rem !important;
+  background: rgba(255, 255, 255, 0.048) !important;
+}
+
+.dashboard-table-card--roster .guild-dual-range {
+  --guild-range-thumb-size: 16px !important;
+  height: 20px !important;
+}
+
+.dashboard-table-card--roster .guild-dual-range__line,
+.dashboard-table-card--roster .guild-dual-range__active,
+.dashboard-table-card--roster .guild-dual-range__input::-webkit-slider-runnable-track,
+.dashboard-table-card--roster .guild-dual-range__input::-moz-range-track {
+  height: 4px !important;
+}
+
+.dashboard-table-card--roster .guild-dual-range__input {
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.dashboard-table-card--roster .guild-dual-range__input::-webkit-slider-thumb {
+  border-width: 2px !important;
+  margin-top: calc((4px - var(--guild-range-thumb-size)) / 2) !important;
+}
+
+.dashboard-table-card--roster .dashboard-table-advanced__actions {
+  grid-column: span 2 !important;
+  align-self: stretch !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  align-items: end !important;
+  gap: 6px 8px !important;
+}
+
+.dashboard-table-card--roster .dashboard-table-advanced__actions .btn {
+  min-height: 32px !important;
+  min-width: 0 !important;
+  padding-inline: 12px !important;
+  border-radius: 10px !important;
+  font-size: 0.72rem !important;
+}
+
+.dashboard-table-card--roster .dashboard-table-advanced__actions small {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  align-self: center !important;
+  color: rgba(207, 204, 196, 0.62) !important;
+  font-size: 0.66rem !important;
+  line-height: 1.2 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 1180px) {
+  .dashboard-table-card--roster .dashboard-table-titlebar {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dashboard-table-card--roster .dashboard-table-controls {
+    justify-content: flex-start !important;
+  }
+
+  .dashboard-table-card--roster .dashboard-table-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .dashboard-table-card--roster .dashboard-table-advanced .guild-range-group {
+    grid-column: span 6 !important;
+  }
+
+  .dashboard-table-card--roster .dashboard-table-advanced > .guild-filter-field {
+    grid-column: span 3 !important;
+  }
+
+  .dashboard-table-card--roster .dashboard-table-advanced__actions {
+    grid-column: span 6 !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .dashboard-table-card--roster .dashboard-table-search,
+  .dashboard-table-card--roster .dashboard-table-filter {
+    flex: 1 1 auto !important;
+  }
+
+  .dashboard-table-card--roster .dashboard-table-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .dashboard-table-card--roster .dashboard-table-advanced {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dashboard-table-card--roster .dashboard-table-advanced .guild-range-group,
+  .dashboard-table-card--roster .dashboard-table-advanced > .guild-filter-field,
+  .dashboard-table-card--roster .dashboard-table-advanced__actions {
+    grid-column: auto !important;
+  }
+
+  .dashboard-table-card--roster .dashboard-table-advanced__actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dashboard-table-card--roster .dashboard-table-advanced__actions small {
+    white-space: normal !important;
+  }
+}
