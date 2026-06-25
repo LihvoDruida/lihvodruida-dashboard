@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 import DashboardIdentity from "@/components/DashboardIdentity";
-import HeroSidePanel from "@/components/HeroSidePanel";
 import HomeDashboardLiveSync from "@/components/HomeDashboardLiveSync";
 import { HomeLocalTime } from "@/components/HomeLocalTime";
 import HomeUpcomingRaidList, { type HomeUpcomingRaid } from "@/components/HomeUpcomingRaidList";
 import { getSessionUser, isAuthenticated } from "@/lib/auth";
+import { getGuildBranding } from "@/lib/branding";
 import { fetchRaiderIoRegionPeriods, type RaiderIoPeriodWindow, type RaiderIoRegionPeriods } from "@/lib/raiderIo";
 import { absoluteDashboardUrl, buildPageMetadata } from "@/lib/seo";
 import {
@@ -318,16 +318,21 @@ export default async function HomePage() {
     throw new Error("Login required");
   }
 
-  const [raids, polls, raiderIoPeriods] = await Promise.all([
+  const [raids, polls, raiderIoPeriods, guildBranding] = await Promise.all([
     listRaids(180).catch(() => []),
     listRaidPolls(120).catch(() => []),
     fetchRaiderIoRegionPeriods(KD_REGION).catch(() => null),
+    getGuildBranding(),
   ]);
 
   const visibleRaids = raids.filter((raid) => raid.status !== "draft");
   const now = dashboardNowMs();
   const periods = buildKdPeriods(raiderIoPeriods || buildFallbackEuPeriods(new Date(now)), visibleRaids);
   const currentPeriod = periods.find((period) => period.kind === "current") || periods[1];
+  const displayPeriods = [
+    ...(currentPeriod ? [currentPeriod] : []),
+    ...periods.filter((period) => period.key !== currentPeriod?.key),
+  ];
   const upcomingRaids = visibleRaids
     .filter((raid) => {
       const date = parseRaidDate(raid);
@@ -357,40 +362,38 @@ export default async function HomePage() {
   const publishedPolls = polls.filter((poll) => poll.channelId && poll.messageId);
   const spotlightPolls = [...openPolls, ...polls.filter((poll) => poll.status === "closed")].slice(0, 6);
   const calendarFeedUrl = absoluteDashboardUrl("/api/calendar/raids.ics");
-  const rioSourceLabel = raiderIoPeriods ? "Дані календаря оновлені" : "Працює резервний календар";
-
   return (
     <main className="container home-page">
       <section className="dashboard-shell content-shell home-shell" aria-label="Головна панель Mistblossom Vanguard">
         <DashboardIdentity user={user} activeSection="home" />
 
-        <header className="hero panel dashboard-hero home-hero">
-          <div className="hero-copy dashboard-hero__copy guild-hero__copy">
-            <div className="eyebrow">Mistblossom Vanguard • Рейди</div>
-            <div className="content-hero-status-row">
-              <span className="content-mode-pill content-mode-pill--library">КД #{currentPeriod?.period || "—"}</span>
-              <span className="content-hero-path">{rioSourceLabel} • час показується для твоєї країни</span>
-            </div>
-            <h1>Календар рейдів</h1>
-            <span className="hero-accent" aria-hidden="true" />
-            <p className="lead">Календар показує поточний рейдовий тиждень, найближчі рейди та голосування. Час автоматично підлаштовується під користувача.</p>
-            <div className="home-hero-actions">
+        <header className="home-landing-hero" aria-label="Головна Mistblossom Vanguard">
+          <div className="home-landing-hero__content">
+            <span className="home-landing-hero__season">
+              <span aria-hidden="true">●</span> КД #{currentPeriod?.period || "—"}
+            </span>
+            <img
+              className="home-landing-hero__logo"
+              src={guildBranding.iconUrl}
+              alt=""
+              width={104}
+              height={104}
+              loading="eager"
+              referrerPolicy="no-referrer"
+            />
+            <p className="home-landing-hero__guild">{guildBranding.name} • Discord</p>
+            <h1>Твій простір рейдів. Твій ОБРІЙ.</h1>
+            <p className="home-landing-hero__lead">
+              PvE-гільдія, орієнтована на прогрес, взаємоповагу та командну гру.
+              <br />
+              Ми граємо серйозно, але пам’ятаємо: це гра, а не друга робота.
+            </p>
+            <div className="home-landing-hero__actions">
               <a className="btn primary" href="/raids">Відкрити рейди</a>
               <a className="btn subtle" href="/polls">Голосування</a>
+              <a className="btn subtle" href="/guild">Склад гільдії</a>
             </div>
           </div>
-          <HeroSidePanel
-            ariaLabel="Огляд КД-календаря"
-            summary={[
-              { label: "ТИЖДЕНЬ", value: `#${currentPeriod?.period || "—"}`, note: `${currentPeriod?.raids.length || 0} рейд. у цьому тижні` },
-              { label: "ГОЛОСУВАННЯ", value: `${openPolls.length}`, note: "Оновлюються автоматично" },
-            ]}
-            stats={[
-              { label: "РЕГІОН", value: KD_REGION.toUpperCase() },
-              { label: "ЧАС", value: "Локальний" },
-              { label: "ДАНІ", value: raiderIoPeriods ? "Оновлено" : "Резерв" },
-            ]}
-          />
         </header>
 
         <HomeDashboardLiveSync initialRevision={homeRevision(visibleRaids, polls, periods)} />
@@ -420,7 +423,7 @@ export default async function HomePage() {
               <p>Рейди автоматично групуються за поточним тижнем і часом старту.</p>
             </div>
             <div className="home-kd-grid">
-              {periods.map((period) => <KdPeriodCard key={period.key} period={period} now={now} />)}
+              {displayPeriods.map((period) => <KdPeriodCard key={period.key} period={period} now={now} />)}
             </div>
           </section>
 

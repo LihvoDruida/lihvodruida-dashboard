@@ -3350,3 +3350,406 @@ html.starfield-reduced-motion body::before {
     white-space: normal !important;
   }
 }
+
+/* v15 home landing + KD hierarchy pass
+   Main page now lets the global starfield breathe: no heavy hero panel, current KD is the visual anchor. */
+body.has-starfield::after {
+  display: none !important;
+}
+
+.home-page {
+  position: relative !important;
+  isolation: isolate !important;
+}
+
+.home-shell {
+  gap: clamp(22px, 2.6vw, 40px) !important;
+}
+
+.home-landing-hero {
+  position: relative !important;
+  z-index: 1 !important;
+  display: grid !important;
+  place-items: center !important;
+  min-height: clamp(420px, 64svh, 680px) !important;
+  margin: 0 !important;
+  padding: clamp(48px, 7vw, 104px) 0 clamp(34px, 5vw, 76px) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.home-landing-hero::before,
+.home-landing-hero::after {
+  display: none !important;
+}
+
+.home-landing-hero__content {
+  width: min(100%, 860px) !important;
+  margin-inline: auto !important;
+  display: grid !important;
+  justify-items: center !important;
+  gap: 16px !important;
+  text-align: center !important;
+}
+
+.home-landing-hero__season {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-height: 32px !important;
+  padding: 0 14px !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.045) !important;
+  color: rgba(235, 228, 218, 0.82) !important;
+  font-size: clamp(0.74rem, 0.9vw, 0.84rem) !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: uppercase !important;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.20) !important;
+}
+
+.home-landing-hero__season span {
+  color: var(--site-orange-light, #ffb44a) !important;
+  font-size: 0.78em !important;
+}
+
+.home-landing-hero__logo {
+  width: clamp(78px, 8vw, 116px) !important;
+  height: clamp(78px, 8vw, 116px) !important;
+  object-fit: cover !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.20) !important;
+  background: rgba(255, 255, 255, 0.035) !important;
+  box-shadow:
+    0 0 0 7px rgba(255, 255, 255, 0.035),
+    0 0 44px rgba(245, 163, 22, 0.20) !important;
+}
+
+.home-landing-hero__guild {
+  margin: 0 !important;
+  color: var(--site-orange-light, #ffb44a) !important;
+  font-size: clamp(0.82rem, 1vw, 0.95rem) !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.08em !important;
+  line-height: 1.1 !important;
+  text-transform: uppercase !important;
+}
+
+.home-landing-hero h1 {
+  max-width: 14ch !important;
+  margin: 0 !important;
+  color: #fff6e6 !important;
+  font-size: clamp(3rem, 6vw, 6.35rem) !important;
+  font-weight: 1000 !important;
+  line-height: 0.92 !important;
+  letter-spacing: -0.075em !important;
+  text-wrap: balance !important;
+  text-shadow: 0 18px 60px rgba(0, 0, 0, 0.50) !important;
+}
+
+.home-landing-hero h1::first-letter {
+  color: inherit !important;
+}
+
+.home-landing-hero__lead {
+  max-width: 760px !important;
+  margin: 0 !important;
+  color: rgba(220, 229, 242, 0.78) !important;
+  font-size: clamp(1.02rem, 1.35vw, 1.32rem) !important;
+  font-weight: 650 !important;
+  line-height: 1.45 !important;
+  text-wrap: balance !important;
+}
+
+.home-landing-hero__actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  margin-top: 4px !important;
+}
+
+.home-landing-hero__actions .btn {
+  min-height: 50px !important;
+  padding-inline: 24px !important;
+  border-radius: 999px !important;
+  font-size: 0.96rem !important;
+}
+
+.home-calendar-toolbar.panel {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 18px !important;
+  padding: 18px 0 !important;
+  border: 0 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.09) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.home-calendar-toolbar h2 {
+  font-size: clamp(1.35rem, 2.2vw, 2.2rem) !important;
+  letter-spacing: -0.04em !important;
+}
+
+.home-calendar-toolbar p {
+  max-width: 760px !important;
+  margin: 5px 0 0 !important;
+}
+
+.home-calendar-actions {
+  flex-wrap: wrap !important;
+  justify-content: flex-end !important;
+}
+
+.home-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.34fr) !important;
+  align-items: start !important;
+}
+
+.home-kd-panel {
+  border-radius: 22px !important;
+  overflow: hidden !important;
+}
+
+.home-kd-panel__head {
+  align-items: end !important;
+  background:
+    linear-gradient(90deg, rgba(245, 163, 22, 0.08), rgba(255, 255, 255, 0.018) 48%, transparent) !important;
+}
+
+.home-kd-panel__head h2 {
+  font-size: clamp(1.35rem, 2vw, 2.05rem) !important;
+}
+
+.home-kd-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.5fr) minmax(260px, 0.64fr) !important;
+  grid-auto-rows: minmax(0, auto) !important;
+  gap: 0 !important;
+  padding: 0 !important;
+}
+
+.home-kd-card {
+  display: grid !important;
+  align-content: start !important;
+  gap: 12px !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 18px !important;
+  border: 0 !important;
+  border-left: 1px solid rgba(255, 255, 255, 0.075) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.075) !important;
+  border-radius: 0 !important;
+  background: rgba(255, 255, 255, 0.018) !important;
+  box-shadow: none !important;
+}
+
+.home-kd-card--current {
+  grid-row: span 2 !important;
+  min-height: clamp(320px, 36vw, 500px) !important;
+  padding: clamp(24px, 3vw, 38px) !important;
+  border-left: 0 !important;
+  background:
+    radial-gradient(circle at 84% 0%, rgba(245, 163, 22, 0.16), transparent 26rem),
+    linear-gradient(135deg, rgba(245, 163, 22, 0.075), rgba(255, 255, 255, 0.02)) !important;
+}
+
+.home-kd-card:not(.home-kd-card--current) {
+  min-height: 0 !important;
+  padding: 16px !important;
+  gap: 10px !important;
+  opacity: 0.82 !important;
+}
+
+.home-kd-card:not(.home-kd-card--current):hover {
+  opacity: 1 !important;
+}
+
+.home-kd-card__head {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+}
+
+.home-kd-card__eyebrow {
+  color: var(--site-orange-light, #ffb44a) !important;
+  font-size: 0.72rem !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.home-kd-card h3 {
+  margin: 5px 0 0 !important;
+  color: #fff4df !important;
+  font-size: clamp(1.08rem, 1.35vw, 1.35rem) !important;
+  line-height: 1 !important;
+  letter-spacing: -0.045em !important;
+}
+
+.home-kd-card--current h3 {
+  font-size: clamp(2.7rem, 5.2vw, 5.4rem) !important;
+  letter-spacing: -0.08em !important;
+}
+
+.home-kd-card__count {
+  min-height: 28px !important;
+  padding: 6px 9px !important;
+  border-radius: 999px !important;
+  font-size: 0.72rem !important;
+  white-space: nowrap !important;
+}
+
+.home-kd-card--current .home-kd-card__count {
+  min-height: 34px !important;
+  padding: 8px 12px !important;
+  font-size: 0.82rem !important;
+}
+
+.home-kd-card__range {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.home-kd-card__range > span {
+  min-height: 64px !important;
+  padding: 12px !important;
+  border-radius: 14px !important;
+}
+
+.home-kd-card:not(.home-kd-card--current) .home-kd-card__range > span {
+  min-height: 48px !important;
+  padding: 9px 10px !important;
+  border-radius: 12px !important;
+}
+
+.home-kd-card__range b {
+  display: block !important;
+  margin-bottom: 4px !important;
+  color: rgba(235, 228, 218, 0.56) !important;
+  font-size: 0.65rem !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.home-kd-card--current .home-kd-card__range b {
+  font-size: 0.72rem !important;
+}
+
+.home-kd-progress {
+  height: 8px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  overflow: hidden !important;
+}
+
+.home-kd-progress > span {
+  display: block !important;
+  height: 100% !important;
+  border-radius: inherit !important;
+  background: linear-gradient(90deg, var(--site-orange-main, #f5a316), var(--site-orange-light, #ffcb70)) !important;
+  box-shadow: 0 0 24px rgba(245, 163, 22, 0.36) !important;
+}
+
+.home-kd-card__events {
+  display: grid !important;
+  gap: 8px !important;
+}
+
+.home-kd-card:not(.home-kd-card--current) .home-kd-card__events {
+  gap: 6px !important;
+}
+
+.home-kd-card:not(.home-kd-card--current) .home-calendar-event {
+  min-height: 42px !important;
+  padding: 8px 10px !important;
+  border-radius: 11px !important;
+  font-size: 0.78rem !important;
+}
+
+.home-kd-card:not(.home-kd-card--current) .home-calendar-event__details {
+  font-size: 0.68rem !important;
+}
+
+.home-kd-card:not(.home-kd-card--current) .home-empty-text {
+  font-size: 0.82rem !important;
+  line-height: 1.35 !important;
+}
+
+.home-side-stack,
+.home-import-card,
+.home-upcoming-card {
+  min-width: 0 !important;
+}
+
+@media (max-width: 1120px) {
+  .home-calendar-toolbar.panel,
+  .home-layout {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .home-calendar-actions {
+    justify-content: flex-start !important;
+  }
+
+  .home-kd-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .home-kd-card--current {
+    grid-row: auto !important;
+  }
+
+  .home-kd-card,
+  .home-kd-card--current {
+    border-left: 0 !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .home-landing-hero {
+    min-height: clamp(460px, 72svh, 620px) !important;
+    padding-block: 42px 34px !important;
+  }
+
+  .home-landing-hero__content {
+    gap: 13px !important;
+  }
+
+  .home-landing-hero h1 {
+    font-size: clamp(2.55rem, 13vw, 4.2rem) !important;
+  }
+
+  .home-landing-hero__lead {
+    font-size: 0.98rem !important;
+  }
+
+  .home-landing-hero__actions,
+  .home-landing-hero__actions .btn,
+  .home-calendar-actions,
+  .home-calendar-actions .btn {
+    width: 100% !important;
+  }
+
+  .home-landing-hero__actions .btn,
+  .home-calendar-actions .btn {
+    justify-content: center !important;
+  }
+
+  .home-kd-card__range {
+    grid-template-columns: 1fr !important;
+  }
+}
