@@ -3198,3 +3198,584 @@ select:focus,
     justify-self: start !important;
   }
 }
+
+/* v65: Obriy-inspired dashboard refresh — flatter sections, starfield canvas, fewer nested card surfaces. */
+:root {
+  --ui-bg: #080b11;
+  --ui-bg-2: #0b111a;
+  --ui-surface: #111821;
+  --ui-surface-2: #151d28;
+  --ui-surface-3: #1a2430;
+  --ui-line: rgba(255, 255, 255, 0.11);
+  --ui-line-soft: rgba(255, 255, 255, 0.075);
+  --ui-line-strong: rgba(255, 173, 35, 0.34);
+  --ui-accent: #f5a316;
+  --ui-accent-strong: #ffc35a;
+  --ui-accent-soft: rgba(245, 163, 22, 0.14);
+  --ui-text: #f7f7fb;
+  --ui-text-soft: rgba(232, 237, 247, 0.78);
+  --ui-text-muted: rgba(175, 185, 202, 0.72);
+  --ui-text-on-accent: #1d1203;
+  --ui-radius-panel: 16px;
+  --ui-radius-control: 999px;
+  --ui-shadow: 0 18px 44px rgba(0, 0, 0, 0.26);
+  --dash-page-max: 1280px;
+  --dash-section-gap: clamp(18px, 2vw, 26px);
+  --dash-card-radius: var(--ui-radius-panel);
+
+  --theme-bg-canvas: var(--ui-bg);
+  --theme-bg-canvas-2: var(--ui-bg-2);
+  --theme-surface-1: var(--ui-surface);
+  --theme-surface-2: var(--ui-surface-2);
+  --theme-surface-3: var(--ui-surface-3);
+  --theme-border: var(--ui-line);
+  --theme-border-soft: var(--ui-line-soft);
+  --theme-border-strong: var(--ui-line-strong);
+  --theme-accent: var(--ui-accent);
+  --theme-accent-strong: var(--ui-accent-strong);
+  --theme-accent-soft: var(--ui-accent-soft);
+  --theme-text: var(--ui-text);
+  --theme-text-soft: var(--ui-text-soft);
+  --theme-text-muted: var(--ui-text-muted);
+  --theme-text-on-accent: var(--ui-text-on-accent);
+}
+
+body {
+  position: relative;
+  color: var(--ui-text) !important;
+  background:
+    radial-gradient(circle at 16% 0%, rgba(245, 163, 22, 0.07), transparent 28rem),
+    radial-gradient(circle at 86% 12%, rgba(89, 129, 255, 0.07), transparent 30rem),
+    linear-gradient(180deg, #090d13 0%, #070a10 46%, #06080d 100%) !important;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.42 !important;
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.62) 0 1px, transparent 1.35px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.32) 0 1px, transparent 1.35px),
+    radial-gradient(circle, rgba(245, 163, 22, 0.18) 0 1px, transparent 1.4px) !important;
+  background-position: 0 0, 32px 44px, 84px 12px !important;
+  background-size: 156px 156px, 218px 218px, 272px 272px !important;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.72) 44%, transparent 100%) !important;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.022), transparent 22rem),
+    radial-gradient(circle at 50% -6%, rgba(245, 163, 22, 0.11), transparent 30rem);
+  opacity: 0.86;
+}
+
+main.container,
+.app-footer,
+.legal-page,
+.app-state-page {
+  position: relative;
+  z-index: 1;
+}
+
+main.container {
+  padding-top: calc(0px + var(--safe-top)) !important;
+}
+
+.dashboard-shell,
+.content-shell,
+.discord-shell,
+.content-page-stack {
+  gap: var(--dash-section-gap) !important;
+}
+
+/* Header: closer to the reference — a real app bar, not a large card. */
+.dashboard-topbar {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 90 !important;
+  margin-inline: calc(var(--dash-page-gutter) * -1) !important;
+  padding: calc(11px + var(--safe-top)) var(--dash-page-gutter) 11px !important;
+  border-radius: 0 !important;
+  border-width: 0 0 1px !important;
+  border-color: var(--ui-line-soft) !important;
+  background: rgba(8, 11, 17, 0.86) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(18px) saturate(130%) !important;
+}
+
+.dashboard-topbar::after {
+  display: none !important;
+}
+
+.dashboard-brand,
+.dashboard-user {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.dashboard-brand strong {
+  color: var(--ui-text) !important;
+  font-size: 1.06rem !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.dashboard-brand span,
+.dashboard-user__profile-link span {
+  color: var(--ui-text-muted) !important;
+}
+
+.guild-mark,
+.discord-avatar,
+.discord-avatar-fallback {
+  border-radius: 999px !important;
+  border-color: var(--ui-line-soft) !important;
+  background: var(--ui-surface-2) !important;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.035) !important;
+}
+
+.dashboard-nav.dashboard-nav--desktop {
+  width: 100% !important;
+  justify-content: center !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.dashboard-nav.dashboard-nav--desktop > a,
+.dashboard-nav-more__trigger {
+  min-height: 38px !important;
+  padding: 0 13px !important;
+  border-color: transparent !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  color: var(--ui-text-soft) !important;
+  box-shadow: none !important;
+}
+
+.dashboard-nav.dashboard-nav--desktop > a:hover,
+.dashboard-nav.dashboard-nav--desktop > a.is-active,
+.dashboard-nav-more__trigger:hover,
+.dashboard-nav-more__trigger.is-active,
+.dashboard-nav-more.is-open .dashboard-nav-more__trigger {
+  color: var(--ui-accent-strong) !important;
+  border-color: rgba(245, 163, 22, 0.22) !important;
+  background: rgba(245, 163, 22, 0.08) !important;
+  transform: none !important;
+}
+
+.dashboard-nav.dashboard-nav--desktop > a::before,
+.dashboard-nav-more__trigger::before,
+.dashboard-nav.dashboard-nav--desktop > a::after,
+.dashboard-nav-more__trigger::after {
+  display: none !important;
+}
+
+.dashboard-user {
+  padding: 0 !important;
+}
+
+.dashboard-user__profile-link {
+  min-height: 42px !important;
+  padding: 4px 10px 4px 4px !important;
+  border: 1px solid var(--ui-line-soft) !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.035) !important;
+}
+
+.dashboard-user__logout button,
+.btn.primary {
+  color: var(--ui-text-on-accent) !important;
+  border-color: rgba(255, 195, 90, 0.46) !important;
+  background: var(--ui-accent) !important;
+  box-shadow: none !important;
+}
+
+/* Surfaces: one clear outer panel; inner elements become flat rows instead of card-in-card. */
+:where(.panel, .card, .action-panel, .rio-panel, .detail-box, .notice, .empty, .content-empty, .profile-card, .profile-account-header, .profile-account-sidebar, .dashboard-table-card, .dashboard-list-panel) {
+  border-color: var(--ui-line) !important;
+  border-radius: var(--ui-radius-panel) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.025)),
+    rgba(17, 24, 33, 0.88) !important;
+  box-shadow: var(--ui-shadow) !important;
+}
+
+:where(.panel .panel, .panel .card, .card .panel, .card .card, .panel .detail-box, .card .detail-box, .panel .notice, .card .notice) {
+  border-color: var(--ui-line-soft) !important;
+  background: rgba(255, 255, 255, 0.032) !important;
+  box-shadow: none !important;
+}
+
+:where(.panel .panel .panel, .panel .panel .card, .panel .card .panel, .card .card .card) {
+  border-color: rgba(255, 255, 255, 0.055) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Hero becomes a clean section block. The side stats are no longer separate mini-cards. */
+:where(.hero, .dashboard-hero, .content-dashboard-hero, .discord-dashboard-hero, .raid-dashboard-hero, .admin-hero, .access-groups-hero, .legal-hero, .rules-onboarding-hero, .profile-directory-hero, .guild-hero).panel {
+  margin-top: 26px !important;
+  padding: clamp(26px, 4vw, 46px) !important;
+  border-color: var(--ui-line-soft) !important;
+  border-radius: 22px !important;
+  background:
+    radial-gradient(circle at 84% 0%, rgba(245, 163, 22, 0.12), transparent 32%),
+    linear-gradient(180deg, rgba(18, 26, 38, 0.78), rgba(12, 17, 25, 0.72)) !important;
+  box-shadow: none !important;
+}
+
+.hero h1 {
+  color: var(--ui-text) !important;
+  font-size: clamp(2.35rem, 5vw, 4.4rem) !important;
+  line-height: 0.94 !important;
+  letter-spacing: -0.06em !important;
+}
+
+.hero .lead {
+  max-width: 68ch;
+  color: var(--ui-text-soft) !important;
+  font-size: clamp(0.98rem, 1.15vw, 1.1rem) !important;
+}
+
+.eyebrow,
+.home-kicker,
+.content-mode-pill,
+.content-hero-path {
+  color: var(--ui-accent-strong) !important;
+}
+
+.guild-hero-side,
+.hero-map-side {
+  align-content: stretch !important;
+  gap: 0 !important;
+  border: 1px solid var(--ui-line-soft) !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.026) !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+
+.guild-hero-summary,
+.hero-map-summary,
+.guild-hero-stats,
+.hero-map-stats {
+  gap: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.guild-hero-summary__block,
+.hero-map-summary__block,
+.guild-hero-stat-card,
+.hero-map-stat-card {
+  border-width: 0 0 1px !important;
+  border-color: var(--ui-line-soft) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.guild-hero-stat-card:last-child,
+.hero-map-stat-card:last-child,
+.guild-hero-summary__block:last-child,
+.hero-map-summary__block:last-child {
+  border-bottom: 0 !important;
+}
+
+/* Dashboard subnav: compact reference-like text tabs, not another card. */
+.dashboard-subnav,
+.admin-tabs.dashboard-subnav {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  padding: 0 0 12px !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--ui-line-soft) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.admin-tabs.dashboard-subnav a {
+  min-width: 0 !important;
+  min-height: 42px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 0 14px !important;
+  border: 1px solid transparent !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.admin-tabs.dashboard-subnav a strong {
+  font-size: 0.9rem !important;
+}
+
+.admin-tabs.dashboard-subnav a small {
+  display: none !important;
+}
+
+.admin-tabs.dashboard-subnav a:hover,
+.admin-tabs.dashboard-subnav a.is-active {
+  border-color: rgba(245, 163, 22, 0.24) !important;
+  background: rgba(245, 163, 22, 0.09) !important;
+  color: var(--ui-accent-strong) !important;
+}
+
+/* Dashboard overview: fieldsets are structural groups, not nested cards. */
+.admin-overview-grid,
+.admin-overview-grid--security {
+  gap: var(--dash-section-gap) !important;
+}
+
+.admin-policy-card__icon {
+  display: none !important;
+}
+
+.admin-policy-card__header {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  border-bottom: 1px solid var(--ui-line-soft) !important;
+  padding-bottom: 16px !important;
+}
+
+.admin-policy-form {
+  gap: 0 !important;
+}
+
+.admin-policy-fieldset {
+  margin: 0 !important;
+  padding: 18px 0 !important;
+  border-width: 0 0 1px !important;
+  border-color: var(--ui-line-soft) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.admin-policy-fieldset:last-of-type {
+  border-bottom: 0 !important;
+}
+
+.admin-policy-toggle,
+.auth-access-role-option,
+.admin-policy-input,
+.admin-policy-hint,
+.geo-country-chip-list {
+  border-color: var(--ui-line-soft) !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.026) !important;
+  box-shadow: none !important;
+}
+
+.auth-access-role-list {
+  gap: 8px !important;
+}
+
+.admin-policy-footer {
+  margin-top: 0 !important;
+  padding-top: 16px !important;
+  border-top: 1px solid var(--ui-line-soft) !important;
+}
+
+/* Home: the big data blocks are sections with internal columns/rows, not stacks of nested cards. */
+.home-calendar-toolbar.panel {
+  padding: 18px 0 !important;
+  border-width: 1px 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.home-layout {
+  grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.78fr) !important;
+  gap: var(--dash-section-gap) !important;
+}
+
+.home-kd-panel__head,
+.home-section-head {
+  border-bottom: 1px solid var(--ui-line-soft) !important;
+}
+
+.home-kd-grid {
+  gap: 0 !important;
+  padding: 0 !important;
+}
+
+.home-kd-card {
+  border-width: 0 0 0 1px !important;
+  border-color: var(--ui-line-soft) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 18px !important;
+}
+
+.home-kd-card:first-child {
+  border-left: 0 !important;
+}
+
+.home-kd-card--current {
+  background: rgba(245, 163, 22, 0.055) !important;
+}
+
+.home-kd-card__count,
+.home-kd-card__range > span,
+.home-calendar-event,
+.home-calendar-more,
+.home-upcoming-item,
+.home-poll-metrics > div,
+.home-poll-slots span {
+  border-color: var(--ui-line-soft) !important;
+  background: rgba(255, 255, 255, 0.028) !important;
+  box-shadow: none !important;
+}
+
+.home-polls-section.panel {
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.home-section-head {
+  margin: 0 !important;
+  padding: 18px !important;
+}
+
+.home-polls-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 0 !important;
+}
+
+.home-poll-card {
+  display: grid !important;
+  grid-template-columns: minmax(120px, 0.2fr) minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 16px !important;
+  padding: 16px 18px !important;
+  border-width: 0 0 1px !important;
+  border-color: var(--ui-line-soft) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.home-poll-card:last-child {
+  border-bottom: 0 !important;
+}
+
+.home-poll-card--open {
+  background: rgba(245, 163, 22, 0.045) !important;
+}
+
+.home-poll-card__body {
+  min-width: 0;
+}
+
+.home-poll-card footer {
+  justify-content: end !important;
+  min-width: 170px !important;
+}
+
+.home-import-card,
+.home-upcoming-card {
+  padding: 18px !important;
+}
+
+/* Lists across modules: flatter rows with cleaner rhythm. */
+.dashboard-list-row,
+.dashboard-table-row,
+.raid-list-item,
+.raid-poll-list-card,
+.content-row,
+.discord-rules-row,
+.admin-log-row,
+.profile-directory-card,
+.guild-member-card {
+  border-radius: 10px !important;
+  border-color: var(--ui-line-soft) !important;
+  background: rgba(255, 255, 255, 0.024) !important;
+  box-shadow: none !important;
+}
+
+.dashboard-list-row:hover,
+.dashboard-table-row--clickable:hover,
+.raid-list-item:hover,
+.raid-poll-list-card:hover,
+.content-row:hover,
+.profile-directory-card:hover,
+.guild-member-card--clickable:hover {
+  border-color: rgba(245, 163, 22, 0.28) !important;
+  background: rgba(245, 163, 22, 0.055) !important;
+  transform: none !important;
+}
+
+:where(.dashboard-table-stats > div, .dashboard-list-summary span, .integration-status-item, .guild-stat-card, .guild-hero-stat-card, .profile-character-card, .raid-party-card, .raid-poll-day-card, .raid-poll-recommendation-card, .raid-poll-table-card) {
+  border-color: var(--ui-line-soft) !important;
+  background: rgba(255, 255, 255, 0.026) !important;
+  box-shadow: none !important;
+}
+
+.app-footer {
+  border-top: 1px solid var(--ui-line-soft) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 1120px) {
+  .home-layout,
+  .home-poll-card {
+    grid-template-columns: 1fr !important;
+  }
+
+  .home-poll-card footer {
+    justify-content: start !important;
+    min-width: 0 !important;
+  }
+}
+
+@media (max-width: 820px) {
+  .dashboard-topbar {
+    margin-inline: calc(var(--dash-page-gutter) * -1) !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .dashboard-brand {
+    min-width: 0 !important;
+  }
+
+  .dashboard-user {
+    width: 100% !important;
+  }
+
+  :where(.hero, .dashboard-hero, .content-dashboard-hero, .discord-dashboard-hero, .raid-dashboard-hero, .admin-hero, .access-groups-hero, .legal-hero, .rules-onboarding-hero, .profile-directory-hero, .guild-hero).panel {
+    margin-top: 18px !important;
+    padding: 22px !important;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.05rem, 12vw, 3.2rem) !important;
+  }
+
+  .home-kd-card {
+    border-width: 1px 0 0 !important;
+  }
+
+  .home-kd-card:first-child {
+    border-top: 0 !important;
+  }
+}

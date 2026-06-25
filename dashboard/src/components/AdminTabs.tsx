@@ -21,33 +21,29 @@ export default function AdminTabs({
     {
       key: "overview" as const,
       href: "/dashboard",
-      icon: "⚙",
-      label: "Керування",
-      description: "загальний центр",
+      label: "Огляд",
+      description: "центр керування",
       visible: canOpenGroups || canOpenDiscord || canOpenLogs,
     },
     {
       key: "groups" as const,
       href: "/dashboard/groups",
-      icon: "🧩",
-      label: "Групи та права доступу",
-      description: "ролі й дозволи",
+      label: "Групи",
+      description: "ролі й доступи",
       visible: canOpenGroups,
     },
     {
       key: "discord" as const,
       href: "/dashboard/discord",
-      icon: "◆",
-      label: "Discord-учасники",
-      description: "ролі, ніки, шаблон",
+      label: "Discord",
+      description: "учасники й ніки",
       visible: canOpenDiscord,
     },
     {
       key: "logs" as const,
       href: "/dashboard/logs",
-      icon: "▦",
-      label: "Журнал дій",
-      description: "результати й помилки",
+      label: "Логи",
+      description: "результати дій",
       visible: canOpenLogs,
     },
   ].filter((tab) => tab.visible);
@@ -55,10 +51,9 @@ export default function AdminTabs({
   if (!tabs.length) return null;
 
   return (
-    <nav className="admin-tabs panel" aria-label="Розділи керування">
+    <nav className="admin-tabs dashboard-subnav" aria-label="Розділи керування">
       {tabs.map((tab) => (
         <a key={tab.key} href={tab.href} className={active === tab.key ? "is-active" : undefined} aria-current={active === tab.key ? "page" : undefined}>
-          <span aria-hidden="true">{tab.icon}</span>
           <strong>{tab.label}</strong>
           <small>{tab.description}</small>
         </a>
