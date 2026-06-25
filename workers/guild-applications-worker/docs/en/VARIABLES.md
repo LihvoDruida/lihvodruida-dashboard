@@ -8,7 +8,7 @@ This is the complete list of variables and bindings used by the Worker code or r
 - **Recommended** — production should normally set it.
 - **Optional** — has a fallback or is needed only for a specific feature.
 - **Alias** — an alternative name also read by the Worker.
-- **Dashboard shared** — the value must match or be coordinated with the admin dashboard.
+- **Dashboard shared** — the value must match or be coordinated with the dashboard panel.
 
 ## GitHub
 
@@ -27,8 +27,8 @@ This is the complete list of variables and bindings used by the Worker code or r
 | `ALLOWED_ORIGINS` | var | Recommended | Yes | Comma-separated origins allowed to call the Worker. Should include public site and dashboard. |
 | `SITE_BASE_URL` | var | Optional | No | Added to the origin allowlist. |
 | `PUBLIC_SITE_URL` | var | Optional | No | Added to the origin allowlist. |
-| `ADMIN_DASHBOARD_URL` | var | Recommended | Yes | Base dashboard URL. Used for links and default dashboard endpoints. |
-| `DASHBOARD_URL` | var | Alias | Yes | Alias for `ADMIN_DASHBOARD_URL`. |
+| `DASHBOARD_URL` | var | Recommended | Yes | Base dashboard URL. Used for links and default dashboard endpoints. |
+| `ADMIN_DASHBOARD_URL` | var | Legacy alias | Yes | Old alias. Kept for compatibility, but new environments should use `DASHBOARD_URL`. |
 
 ## Discord bot/interactions
 
@@ -54,7 +54,7 @@ This is the complete list of variables and bindings used by the Worker code or r
 | Name | Type | Required | Dashboard shared | Description |
 |---|---|---:|---:|---|
 | `INTERNAL_PROFILE_LOOKUP_TOKEN` | secret | Required for raid-rules signup and raid attendance proxy | Yes | Shared server-to-server token between Worker and dashboard. Dashboard endpoint must verify it. |
-| `DASHBOARD_PROFILE_LOOKUP_ENDPOINT` | var | Recommended | Yes | Full dashboard endpoint URL for Discord profile lookup. Default is built from `ADMIN_DASHBOARD_URL`: `/api/profile/discord-lookup`. |
+| `DASHBOARD_PROFILE_LOOKUP_ENDPOINT` | var | Recommended | Yes | Full dashboard endpoint URL for Discord profile lookup. Default is built from `DASHBOARD_URL`: `/api/profile/discord-lookup`. |
 | `ADMIN_PROFILE_LOOKUP_ENDPOINT` | var | Alias | Yes | Alias for `DASHBOARD_PROFILE_LOOKUP_ENDPOINT`. |
 | `DASHBOARD_RAID_ACTION_ENDPOINT` | var | Recommended for raid announcement buttons | Contract with dashboard | Endpoint for raid attendance action. Supports `{raidId}` placeholder. Default: `/api/raids/<raidId>/discord-action`. |
 | `RAID_RULES_URL` | var/secret | Recommended | Yes, if dashboard shows the same link | Discord message/page URL with raid rules. Used in help replies. |
@@ -63,7 +63,7 @@ This is the complete list of variables and bindings used by the Worker code or r
 
 ## Cloudflare Access service auth
 
-Only needed when `admin.lihvodruida.pp.ua` or the profile lookup endpoint is protected by Cloudflare Access.
+Only needed when `dashboard.lihvodruida.pp.ua` or the profile lookup endpoint is protected by Cloudflare Access.
 
 | Name | Type | Required | Dashboard shared | Description |
 |---|---|---:|---:|---|
@@ -87,9 +87,9 @@ Only needed when `admin.lihvodruida.pp.ua` or the profile lookup endpoint is pro
 GITHUB_OWNER=LihvoDruida
 GITHUB_REPO=lihvodruida.github.io
 GUILD_APPLICATIONS_LABEL=guild-application
-ALLOWED_ORIGINS=https://lihvodruida.pp.ua,https://www.lihvodruida.pp.ua,https://admin.lihvodruida.pp.ua
-ADMIN_DASHBOARD_URL=https://admin.lihvodruida.pp.ua
-DASHBOARD_PROFILE_LOOKUP_ENDPOINT=https://admin.lihvodruida.pp.ua/api/profile/discord-lookup
+ALLOWED_ORIGINS=https://lihvodruida.pp.ua,https://www.lihvodruida.pp.ua,https://dashboard.lihvodruida.pp.ua
+DASHBOARD_URL=https://dashboard.lihvodruida.pp.ua
+DASHBOARD_PROFILE_LOOKUP_ENDPOINT=https://dashboard.lihvodruida.pp.ua/api/profile/discord-lookup
 RAID_RULES_URL=https://discord.com/channels/<guild>/<channel>/<message>
 ALLOW_DEBUG_QUERY=0
 ```
@@ -120,6 +120,6 @@ id = "paste_kv_namespace_id_here"
 2. `INTERNAL_PROFILE_LOOKUP_TOKEN` must match in Worker and dashboard.
 3. `DISCORD_RULES_STATS_TOKEN` must match in Worker and dashboard.
 4. `ALLOWED_ORIGINS` must contain exact origins, without paths:
-   - correct: `https://admin.lihvodruida.pp.ua`;
-   - incorrect: `https://admin.lihvodruida.pp.ua/profile`.
+   - correct: `https://dashboard.lihvodruida.pp.ua`;
+   - incorrect: `https://dashboard.lihvodruida.pp.ua/profile`.
 5. If Cloudflare Access is enabled, `INTERNAL_PROFILE_LOOKUP_TOKEN` alone is not enough: also configure `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET`.

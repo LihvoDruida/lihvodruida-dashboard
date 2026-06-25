@@ -8,7 +8,7 @@
 - **Recommended** — production краще налаштувати.
 - **Optional** — має fallback або потрібне тільки для частини функціоналу.
 - **Alias** — альтернативна назва, яку Worker теж читає.
-- **Dashboard shared** — значення має збігатися або бути узгодженим із admin dashboard.
+- **Dashboard shared** — значення має збігатися або бути узгодженим із dashboard panel.
 
 ## GitHub
 
@@ -27,8 +27,8 @@
 | `ALLOWED_ORIGINS` | var | Recommended | Yes | Comma-separated origins, які можуть викликати Worker. Має включати public site і dashboard. |
 | `SITE_BASE_URL` | var | Optional | No | Додається до allowlist origins. |
 | `PUBLIC_SITE_URL` | var | Optional | No | Додається до allowlist origins. |
-| `ADMIN_DASHBOARD_URL` | var | Recommended | Yes | Базовий URL dashboard. Використовується для links і default dashboard endpoints. |
-| `DASHBOARD_URL` | var | Alias | Yes | Alias для `ADMIN_DASHBOARD_URL`. |
+| `DASHBOARD_URL` | var | Recommended | Yes | Базовий URL dashboard. Використовується для links і default dashboard endpoints. |
+| `ADMIN_DASHBOARD_URL` | var | Legacy alias | Yes | Старий alias. Підтримується для сумісності, але нові env мають використовувати `DASHBOARD_URL`. |
 
 ## Discord bot/interactions
 
@@ -54,7 +54,7 @@
 | Name | Type | Required | Dashboard shared | Опис |
 |---|---|---:|---:|---|
 | `INTERNAL_PROFILE_LOOKUP_TOKEN` | secret | Required for raid-rules signup and raid attendance proxy | Yes | Shared server-to-server token між Worker і dashboard. Dashboard endpoint має перевіряти цей token. |
-| `DASHBOARD_PROFILE_LOOKUP_ENDPOINT` | var | Recommended | Yes | Повний URL dashboard endpoint для Discord profile lookup. Default будується з `ADMIN_DASHBOARD_URL`: `/api/profile/discord-lookup`. |
+| `DASHBOARD_PROFILE_LOOKUP_ENDPOINT` | var | Recommended | Yes | Повний URL dashboard endpoint для Discord profile lookup. Default будується з `DASHBOARD_URL`: `/api/profile/discord-lookup`. |
 | `ADMIN_PROFILE_LOOKUP_ENDPOINT` | var | Alias | Yes | Alias для `DASHBOARD_PROFILE_LOOKUP_ENDPOINT`. |
 | `DASHBOARD_RAID_ACTION_ENDPOINT` | var | Recommended for raid announcement buttons | Contract with dashboard | Endpoint для raid attendance action. Підтримує placeholder `{raidId}`. Default: `/api/raids/<raidId>/discord-action`. |
 | `RAID_RULES_URL` | var/secret | Recommended | Yes, if dashboard also shows the same link | URL Discord message/page з правилами рейду. Використовується в help replies. |
@@ -63,7 +63,7 @@
 
 ## Cloudflare Access service auth
 
-Потрібно тільки якщо `admin.lihvodruida.pp.ua` або profile lookup endpoint захищений Cloudflare Access.
+Потрібно тільки якщо `dashboard.lihvodruida.pp.ua` або profile lookup endpoint захищена Cloudflare Access.
 
 | Name | Type | Required | Dashboard shared | Опис |
 |---|---|---:|---:|---|
@@ -87,9 +87,9 @@
 GITHUB_OWNER=LihvoDruida
 GITHUB_REPO=lihvodruida.github.io
 GUILD_APPLICATIONS_LABEL=guild-application
-ALLOWED_ORIGINS=https://lihvodruida.pp.ua,https://www.lihvodruida.pp.ua,https://admin.lihvodruida.pp.ua
-ADMIN_DASHBOARD_URL=https://admin.lihvodruida.pp.ua
-DASHBOARD_PROFILE_LOOKUP_ENDPOINT=https://admin.lihvodruida.pp.ua/api/profile/discord-lookup
+ALLOWED_ORIGINS=https://lihvodruida.pp.ua,https://www.lihvodruida.pp.ua,https://dashboard.lihvodruida.pp.ua
+DASHBOARD_URL=https://dashboard.lihvodruida.pp.ua
+DASHBOARD_PROFILE_LOOKUP_ENDPOINT=https://dashboard.lihvodruida.pp.ua/api/profile/discord-lookup
 RAID_RULES_URL=https://discord.com/channels/<guild>/<channel>/<message>
 ALLOW_DEBUG_QUERY=0
 ```
@@ -120,6 +120,6 @@ id = "paste_kv_namespace_id_here"
 2. `INTERNAL_PROFILE_LOOKUP_TOKEN` має збігатися в Worker і dashboard.
 3. `DISCORD_RULES_STATS_TOKEN` має збігатися в Worker і dashboard.
 4. `ALLOWED_ORIGINS` має містити точні origins, без path:
-   - правильно: `https://admin.lihvodruida.pp.ua`;
-   - неправильно: `https://admin.lihvodruida.pp.ua/profile`.
+   - правильно: `https://dashboard.lihvodruida.pp.ua`;
+   - неправильно: `https://dashboard.lihvodruida.pp.ua/profile`.
 5. Якщо Cloudflare Access увімкнений, одного `INTERNAL_PROFILE_LOOKUP_TOKEN` недостатньо: потрібні ще `CF_ACCESS_CLIENT_ID` і `CF_ACCESS_CLIENT_SECRET`.

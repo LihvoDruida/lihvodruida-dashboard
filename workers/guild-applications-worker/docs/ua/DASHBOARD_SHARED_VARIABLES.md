@@ -1,12 +1,12 @@
 # Dashboard shared variables checklist
 
-Цей файл — окремий список змінних і endpoint contracts, які мають бути узгоджені між Worker і admin dashboard.
+Цей файл — окремий список змінних і endpoint contracts, які мають бути узгоджені між Worker і dashboard panel.
 
 ## Обов’язково спільні
 
 | Worker variable | Dashboard side | Має збігатися? | Навіщо |
 |---|---|---:|---|
-| `ADMIN_DASHBOARD_URL` | `NEXTAUTH_URL` / dashboard public base URL | Yes | Worker будує login/profile/raid links і default dashboard API URLs. |
+| `DASHBOARD_URL` | `DASHBOARD_URL` / dashboard public base URL | Yes | Worker будує login/profile/raid links і default dashboard API URLs. |
 | `DISCORD_GUILD_ID` | dashboard Discord guild/server id | Yes | Stats, profile lookup, raid actions і Discord channels мають працювати з тим самим сервером. |
 | `INTERNAL_PROFILE_LOOKUP_TOKEN` | dashboard secret for `/api/profile/discord-lookup` and raid action endpoints | Yes | Server-to-server auth між Worker і dashboard. |
 | `DISCORD_RULES_STATS_TOKEN` | dashboard secret used for reading Worker stats and calling relay endpoints | Yes | Dashboard читає protected Worker endpoints. |
@@ -19,8 +19,8 @@
 
 | Worker config | Default URL | Method | Призначення |
 |---|---|---:|---|
-| `DASHBOARD_PROFILE_LOOKUP_ENDPOINT` | `${ADMIN_DASHBOARD_URL}/api/profile/discord-lookup` | `GET` | Перевірити Discord user, profile і selected main character. |
-| `DASHBOARD_RAID_ACTION_ENDPOINT` | `${ADMIN_DASHBOARD_URL}/api/raids/{raidId}/discord-action` | `POST` | Обробити raid buttons `going`, `late`, `skipped`. |
+| `DASHBOARD_PROFILE_LOOKUP_ENDPOINT` | `${DASHBOARD_URL}/api/profile/discord-lookup` | `GET` | Перевірити Discord user, profile і selected main character. |
+| `DASHBOARD_RAID_ACTION_ENDPOINT` | `${DASHBOARD_URL}/api/raids/{raidId}/discord-action` | `POST` | Обробити raid buttons `going`, `late`, `skipped`. |
 
 ### Dashboard profile lookup contract
 
@@ -118,7 +118,7 @@ Dashboard має знати Worker base URL і викликати ці endpoints
 ## Мінімальний спільний `.env` для dashboard
 
 ```env
-NEXTAUTH_URL=https://admin.lihvodruida.pp.ua
+DASHBOARD_URL=https://dashboard.lihvodruida.pp.ua
 DISCORD_GUILD_ID=<same-as-worker>
 INTERNAL_PROFILE_LOOKUP_TOKEN=<same-as-worker>
 DISCORD_RULES_STATS_TOKEN=<same-as-worker>

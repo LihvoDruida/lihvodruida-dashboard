@@ -1,6 +1,6 @@
 # Worker functionality overview
 
-This Worker is the server-side integration layer for Mistblossom Vanguard between the public site, GitHub, Discord, the admin dashboard, and Cloudflare KV.
+This Worker is the server-side integration layer for Mistblossom Vanguard between the public site, GitHub, Discord, the dashboard panel, and Cloudflare KV.
 
 ## 1. Guild applications
 
@@ -203,9 +203,9 @@ The Worker allows only origins from:
 - `ALLOWED_ORIGINS`;
 - `SITE_BASE_URL`;
 - `PUBLIC_SITE_URL`;
-- `ADMIN_DASHBOARD_URL`;
 - `DASHBOARD_URL`;
-- hardcoded fallbacks `https://lihvodruida.pp.ua` and `https://admin.lihvodruida.pp.ua`.
+- `DASHBOARD_URL`;
+- hardcoded fallbacks `https://lihvodruida.pp.ua` and `https://dashboard.lihvodruida.pp.ua`.
 
 Stats/message endpoints can additionally require a token:
 

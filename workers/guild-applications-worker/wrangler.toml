@@ -14,10 +14,10 @@ crons = ["*/10 * * * *"]
 GITHUB_OWNER = "LihvoDruida"
 GITHUB_REPO = "lihvodruida.github.io"
 GUILD_APPLICATIONS_LABEL = "guild-application"
-ALLOWED_ORIGINS = "https://lihvodruida.pp.ua,https://www.lihvodruida.pp.ua,https://admin.lihvodruida.pp.ua,http://127.0.0.1:4000,http://localhost:4000"
+ALLOWED_ORIGINS = "https://lihvodruida.pp.ua,https://www.lihvodruida.pp.ua,https://dashboard.lihvodruida.pp.ua,http://127.0.0.1:4000,http://localhost:4000"
 DISCORD_ALLOWED_ROLES = ""
-ADMIN_DASHBOARD_URL = "https://admin.lihvodruida.pp.ua"
-DASHBOARD_PROFILE_LOOKUP_ENDPOINT = "https://admin.lihvodruida.pp.ua/api/profile/discord-lookup"
+DASHBOARD_URL = "https://dashboard.lihvodruida.pp.ua"
+DASHBOARD_PROFILE_LOOKUP_ENDPOINT = "https://dashboard.lihvodruida.pp.ua/api/profile/discord-lookup"
 RAID_RULES_URL = "https://discord.com/channels/1449767281453301865/1498719949550784540/1498732894326227024"
 ALLOW_DEBUG_QUERY = "0"
 PUBLIC_API_CACHE_TTL_SECONDS = "120"
@@ -34,7 +34,7 @@ RAID_DISCORD_DELETE_AFTER_CLOSE_MINUTES = "60"
 FIREBASE_ECO_MODE = "1"
 WORKER_RAID_LIFECYCLE_MIN_INTERVAL_MS = "540000"
 WORKER_RAID_POLL_CLOSE_DUE_MIN_INTERVAL_MS = "540000"
-DASHBOARD_RAID_LIFECYCLE_ENDPOINT = "https://admin.lihvodruida.pp.ua/api/raids/lifecycle?limit=20"
+DASHBOARD_RAID_LIFECYCLE_ENDPOINT = "https://dashboard.lihvodruida.pp.ua/api/raids/lifecycle?limit=20"
 
 
 # Set these via `wrangler secret put ...` in production:
@@ -43,23 +43,23 @@ DASHBOARD_RAID_LIFECYCLE_ENDPOINT = "https://admin.lihvodruida.pp.ua/api/raids/l
 # DISCORD_GUILD_ID
 # GITHUB_TOKEN
 # INTERNAL_PROFILE_LOOKUP_TOKEN
-# CF_ACCESS_CLIENT_ID        # Cloudflare Access Service Auth, if admin dashboard is protected
-# CF_ACCESS_CLIENT_SECRET    # Cloudflare Access Service Auth, if admin dashboard is protected
+# CF_ACCESS_CLIENT_ID        # Cloudflare Access Service Auth, if dashboard panel is protected
+# CF_ACCESS_CLIENT_SECRET    # Cloudflare Access Service Auth, if dashboard panel is protected
 # DISCORD_RULES_STATS_TOKEN  # Optional shared token for dashboard stats/signups reads
 # RAID_LIFECYCLE_SECRET    # Same value as dashboard RAID_LIFECYCLE_SECRET/CRON_SECRET for scheduled raid lifecycle
 
 # Rules accept/decline counters and raid-rules signup list. Create once:
 # wrangler kv namespace create RULES_STATS
 # Then paste the returned id below.
-# Raid rules additionally use ADMIN_DASHBOARD_URL and INTERNAL_PROFILE_LOOKUP_TOKEN
-# to verify dashboard authorization and main character. If the admin dashboard
+# Raid rules additionally use DASHBOARD_URL and INTERNAL_PROFILE_LOOKUP_TOKEN
+# to verify dashboard authorization and main character. If the dashboard panel
 # is protected by Cloudflare Access, set CF_ACCESS_CLIENT_ID and
 # CF_ACCESS_CLIENT_SECRET as Worker secrets too.
 # [[kv_namespaces]]
 # binding = "RULES_STATS"
 # id = "paste_kv_namespace_id_here"
 # Optional for raid announcement buttons when the Discord Interaction Endpoint points to this Worker:
-# DASHBOARD_RAID_ACTION_ENDPOINT = "https://admin.lihvodruida.pp.ua/api/raids/{raidId}/discord-action"
+# DASHBOARD_RAID_ACTION_ENDPOINT = "https://dashboard.lihvodruida.pp.ua/api/raids/{raidId}/discord-action"
 
 # Public API edge cache. Create once:
 # wrangler kv namespace create PUBLIC_API_CACHE
@@ -80,4 +80,4 @@ DASHBOARD_RAID_LIFECYCLE_ENDPOINT = "https://admin.lihvodruida.pp.ua/api/raids/l
 # DASHBOARD_API_TIMEOUT_MS = "9000"
 # RAID_DISCORD_DELETE_AFTER_START_HOURS = "4"
 # RAID_DISCORD_DELETE_AFTER_CLOSE_MINUTES = "60"
-# DASHBOARD_RAID_LIFECYCLE_ENDPOINT = "https://admin.lihvodruida.pp.ua/api/raids/lifecycle?limit=20"
+# DASHBOARD_RAID_LIFECYCLE_ENDPOINT = "https://dashboard.lihvodruida.pp.ua/api/raids/lifecycle?limit=20"

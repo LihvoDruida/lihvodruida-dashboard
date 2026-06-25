@@ -309,7 +309,7 @@ const CHARACTER_STATUS_MESSAGES: Record<string, Omit<Toast, "id">> = {
     tone: "success",
     title: "Альти для ніку збережено",
     message:
-      "Discord nickname тепер братиме мейна і вибрані два альти за шаблоном з адмін-панелі.",
+      "Discord nickname тепер братиме мейна і вибрані два альти за шаблоном з dashboard-панелі.",
     ttl: 6200,
   },
   profile_nickname_characters_failed: {

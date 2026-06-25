@@ -7,7 +7,7 @@ This Worker is designed to sit between:
 - the public guild site that submits applications;
 - Firebase Firestore, used as the application database;
 - Discord, used for notifications, moderation buttons, rules buttons, role assignment and raid buttons;
-- the admin dashboard, used for profile checks, raid actions and statistics;
+- the dashboard panel, used for profile checks, raid actions and statistics;
 - Cloudflare KV, used for rules statistics and raid-rules signup records.
 
 ## Documentation
@@ -63,7 +63,7 @@ wrangler secret put INTERNAL_PROFILE_LOOKUP_TOKEN
 wrangler secret put DISCORD_RULES_STATS_TOKEN
 ```
 
-If the admin dashboard is protected by Cloudflare Access, also set:
+If the dashboard panel is protected by Cloudflare Access, also set:
 
 ```bash
 wrangler secret put CF_ACCESS_CLIENT_ID
@@ -82,11 +82,11 @@ At minimum, production needs:
 
 - `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `FIREBASE_APPLICATIONS_COLLECTION` for Firestore applications;
 - `APPLICATION_NUMBER_DATE_SALT` — stable numeric salt for date-coded application tracking numbers;
-- `ALLOWED_ORIGINS` with the public site and admin dashboard origins;
+- `ALLOWED_ORIGINS` with the public site and dashboard panel origins;
 - `DISCORD_BOT_TOKEN`, `DISCORD_PUBLIC_KEY`, `DISCORD_GUILD_ID` for Discord bot/interactions;
 - `DISCORD_CHANNEL_ID` / `GUILD_APPLICATIONS_DISCORD_CHANNEL_ID` if application notifications must be posted to Discord;
 - `RULES_STATS` KV binding if rules/raid-rules statistics must work;
-- `INTERNAL_PROFILE_LOOKUP_TOKEN` and `ADMIN_DASHBOARD_URL` for raid-rules and raid attendance profile checks;
+- `INTERNAL_PROFILE_LOOKUP_TOKEN` and `DASHBOARD_URL` for raid-rules and raid attendance profile checks;
 - `DISCORD_RULES_STATS_TOKEN` shared with the dashboard for protected stats/message endpoints.
 
 See the full variable matrix in [docs/en/VARIABLES.md](docs/en/VARIABLES.md).

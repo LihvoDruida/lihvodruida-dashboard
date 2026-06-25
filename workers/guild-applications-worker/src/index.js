@@ -653,10 +653,10 @@ function defaultAllowedOrigins(env) {
     env.ALLOWED_ORIGINS,
     env.SITE_BASE_URL,
     env.PUBLIC_SITE_URL,
-    env.ADMIN_DASHBOARD_URL,
     env.DASHBOARD_URL,
+    env.ADMIN_DASHBOARD_URL,
     "https://lihvodruida.pp.ua",
-    "https://admin.lihvodruida.pp.ua",
+    "https://dashboard.lihvodruida.pp.ua",
   ];
 
   const origins = new Set();
@@ -731,7 +731,7 @@ async function assertWorkerReadAccess(request, env, scope) {
 }
 
 function dashboardAuthUrl(env) {
-  const raw = String(env.ADMIN_DASHBOARD_URL || env.DASHBOARD_URL || "https://admin.lihvodruida.pp.ua/").trim() || "https://admin.lihvodruida.pp.ua/";
+  const raw = String(env.DASHBOARD_URL || env.ADMIN_DASHBOARD_URL || "https://dashboard.lihvodruida.pp.ua/").trim() || "https://dashboard.lihvodruida.pp.ua/";
   return raw.endsWith("/") ? raw : `${raw}/`;
 }
 
@@ -926,7 +926,7 @@ function dashboardProfileLookupEndpoint(env) {
   try {
     return new URL("/api/profile/discord-lookup", dashboardAuthUrl(env)).toString();
   } catch {
-    return "https://admin.lihvodruida.pp.ua/api/profile/discord-lookup";
+    return "https://dashboard.lihvodruida.pp.ua/api/profile/discord-lookup";
   }
 }
 
@@ -3810,7 +3810,7 @@ function dashboardRaidPollVoteEndpoint(env, pollId) {
   try {
     return new URL("/api/polls/" + encodeURIComponent(pollId) + "/vote", dashboardAuthUrl(env)).toString();
   } catch {
-    return "https://admin.lihvodruida.pp.ua/api/polls/" + encodeURIComponent(pollId) + "/vote";
+    return "https://dashboard.lihvodruida.pp.ua/api/polls/" + encodeURIComponent(pollId) + "/vote";
   }
 }
 
@@ -3921,7 +3921,7 @@ function dashboardRaidActionEndpoint(env, raidId) {
   try {
     return new URL("/api/raids/" + encodeURIComponent(raidId) + "/discord-action", dashboardAuthUrl(env)).toString();
   } catch {
-    return "https://admin.lihvodruida.pp.ua/api/raids/" + encodeURIComponent(raidId) + "/discord-action";
+    return "https://dashboard.lihvodruida.pp.ua/api/raids/" + encodeURIComponent(raidId) + "/discord-action";
   }
 }
 
@@ -4531,7 +4531,7 @@ function dashboardRaidLifecycleEndpoint(env) {
   try {
     return new URL("/api/raids/lifecycle?limit=20", dashboardAuthUrl(env)).toString();
   } catch {
-    return "https://admin.lihvodruida.pp.ua/api/raids/lifecycle?limit=20";
+    return "https://dashboard.lihvodruida.pp.ua/api/raids/lifecycle?limit=20";
   }
 }
 
@@ -4600,7 +4600,7 @@ function dashboardRaidPollCloseDueEndpoint(env) {
   try {
     return new URL("/api/polls/close-due", dashboardAuthUrl(env)).toString();
   } catch {
-    return "https://admin.lihvodruida.pp.ua/api/polls/close-due";
+    return "https://dashboard.lihvodruida.pp.ua/api/polls/close-due";
   }
 }
 

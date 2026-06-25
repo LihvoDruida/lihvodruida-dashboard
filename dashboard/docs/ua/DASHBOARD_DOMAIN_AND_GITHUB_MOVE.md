@@ -8,7 +8,7 @@
 https://dashboard.lihvodruida.pp.ua
 ```
 
-Стара адреса `admin.lihvodruida.pp.ua` більше не є канонічною. Код залишає legacy redirect для старих шляхів `/admin/*` і `/api/admin/*`, але нові посилання, env, Discord OAuth, Battle.net OAuth, cron і Worker мають використовувати `dashboard`.
+Попередній `admin`-піддомен більше не є канонічним. Код залишає legacy redirect для старих шляхів `/admin/*` і `/api/admin/*`, але нові посилання, env, Discord OAuth, Battle.net OAuth, cron і Worker мають використовувати `dashboard`.
 
 ## Що змінено в коді
 
@@ -33,7 +33,7 @@ dashboard.lihvodruida.pp.ua
 ```
 
 4. Для піддомену у DNS реєстратора треба CNAME. Vercel у Domains покаже точне значення, на яке має дивитися CNAME.
-5. Після підтвердження нового домену прибери або залиш як redirect старий `admin.lihvodruida.pp.ua`. Якщо залишаєш старий домен у Vercel, він буде вести на цей самий project, а код переведе старі `/admin/*` на `/dashboard/*`.
+5. Після підтвердження нового домену прибери або залиш попередній піддомен тільки як redirect. Якщо залишаєш старий домен у Vercel, він буде вести на цей самий project, а код переведе старі `/admin/*` на `/dashboard/*`.
 
 ## NIC.ua / DNS
 
@@ -61,8 +61,8 @@ DASHBOARD_ALLOWED_HOSTS=dashboard.lihvodruida.pp.ua
 Якщо в Vercel ще є старі змінні:
 
 ```env
-ADMIN_DASHBOARD_URL=https://admin.lihvodruida.pp.ua
-NEXT_PUBLIC_ADMIN_DASHBOARD_URL=https://admin.lihvodruida.pp.ua
+ADMIN_DASHBOARD_URL=https://dashboard.lihvodruida.pp.ua
+NEXT_PUBLIC_ADMIN_DASHBOARD_URL=https://dashboard.lihvodruida.pp.ua
 ```
 
 їх краще видалити або замінити на `https://dashboard.lihvodruida.pp.ua`. Код підтримує їх як fallback, але вони більше не мають бути основними.
@@ -70,10 +70,10 @@ NEXT_PUBLIC_ADMIN_DASHBOARD_URL=https://admin.lihvodruida.pp.ua
 Якщо тимчасово залишаєш обидва домени, дозволені hosts можна вказати так:
 
 ```env
-DASHBOARD_ALLOWED_HOSTS=dashboard.lihvodruida.pp.ua,admin.lihvodruida.pp.ua
+DASHBOARD_ALLOWED_HOSTS=dashboard.lihvodruida.pp.ua,<попередній-піддомен>
 ```
 
-Коли переконаєшся, що все працює через `dashboard`, прибери `admin.lihvodruida.pp.ua` з allowlist.
+Коли переконаєшся, що все працює через `dashboard`, прибери попередній піддомен з allowlist.
 
 ## Discord Developer Portal
 
@@ -107,7 +107,7 @@ https://dashboard.lihvodruida.pp.ua/api/auth/battlenet/callback
 dashboard.lihvodruida.pp.ua
 ```
 
-Старий `admin.lihvodruida.pp.ua` краще тримати окремо тільки як тимчасовий redirect або прибрати повністю після перевірки.
+Попередній піддомен краще тримати окремо тільки як тимчасовий redirect або прибрати повністю після перевірки.
 
 ## Worker / Discord buttons / rules buttons
 
@@ -118,7 +118,7 @@ DASHBOARD_URL=https://dashboard.lihvodruida.pp.ua
 NEXT_PUBLIC_DASHBOARD_URL=https://dashboard.lihvodruida.pp.ua
 ```
 
-Якщо у Worker є hardcoded URL `https://admin.lihvodruida.pp.ua`, заміни його на `https://dashboard.lihvodruida.pp.ua`.
+Якщо у Worker лишився hardcoded URL старої панелі, заміни його на `https://dashboard.lihvodruida.pp.ua`.
 
 ## Перенесення на новий GitHub без повного переїзду Vercel
 

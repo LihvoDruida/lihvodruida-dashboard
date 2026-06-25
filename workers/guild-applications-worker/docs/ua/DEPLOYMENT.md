@@ -11,7 +11,7 @@
 - GitHub token з доступом до repo Issues;
 - Discord Developer Application + Bot;
 - Discord server ID, bot token, application public key;
-- admin dashboard URL;
+- dashboard panel URL;
 - shared server-to-server tokens для dashboard інтеграції.
 
 Встановлення Wrangler:
@@ -108,10 +108,10 @@ id = "paste_kv_namespace_id_here"
 GITHUB_OWNER = "LihvoDruida"
 GITHUB_REPO = "lihvodruida.github.io"
 GUILD_APPLICATIONS_LABEL = "guild-application"
-ALLOWED_ORIGINS = "https://lihvodruida.pp.ua,https://www.lihvodruida.pp.ua,https://admin.lihvodruida.pp.ua"
+ALLOWED_ORIGINS = "https://lihvodruida.pp.ua,https://www.lihvodruida.pp.ua,https://dashboard.lihvodruida.pp.ua"
 DISCORD_ALLOWED_ROLES = ""
-ADMIN_DASHBOARD_URL = "https://admin.lihvodruida.pp.ua"
-DASHBOARD_PROFILE_LOOKUP_ENDPOINT = "https://admin.lihvodruida.pp.ua/api/profile/discord-lookup"
+DASHBOARD_URL = "https://dashboard.lihvodruida.pp.ua"
+DASHBOARD_PROFILE_LOOKUP_ENDPOINT = "https://dashboard.lihvodruida.pp.ua/api/profile/discord-lookup"
 RAID_RULES_URL = "https://discord.com/channels/<guild>/<channel>/<message>"
 ALLOW_DEBUG_QUERY = "0"
 ```
@@ -146,14 +146,14 @@ Dashboard має використовувати `DISCORD_RULES_STATS_TOKEN`, к�
 
 ## 7. Cloudflare Access для dashboard
 
-Якщо `admin.lihvodruida.pp.ua` захищений Cloudflare Access:
+Якщо `dashboard.lihvodruida.pp.ua` захищена Cloudflare Access:
 
 1. Створи Cloudflare Access Service Token.
 2. Додай policy, яка дозволяє цьому Service Token доступ до:
 
 ```text
-https://admin.lihvodruida.pp.ua/api/profile/discord-lookup
-https://admin.lihvodruida.pp.ua/api/raids/*/discord-action
+https://dashboard.lihvodruida.pp.ua/api/profile/discord-lookup
+https://dashboard.lihvodruida.pp.ua/api/raids/*/discord-action
 ```
 
 3. Додай secrets у Worker:

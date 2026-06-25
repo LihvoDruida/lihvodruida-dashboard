@@ -207,9 +207,9 @@ Worker дозволяє тільки origins із:
 - `ALLOWED_ORIGINS`;
 - `SITE_BASE_URL`;
 - `PUBLIC_SITE_URL`;
-- `ADMIN_DASHBOARD_URL`;
 - `DASHBOARD_URL`;
-- hardcoded fallback `https://lihvodruida.pp.ua` і `https://admin.lihvodruida.pp.ua`.
+- `DASHBOARD_URL`;
+- hardcoded fallback `https://lihvodruida.pp.ua` і `https://dashboard.lihvodruida.pp.ua`.
 
 Stats/message endpoints додатково можуть вимагати token:
 

@@ -325,7 +325,7 @@ function NicknameCharactersForm({
             Персонажі у Discord-ніку
           </span>
           <strong>{plan.value || "Спочатку вкажи імʼя"}</strong>
-          <small>Формат береться з адмін-панелі: {nicknameTemplate}</small>
+          <small>Формат береться з dashboard-панелі: {nicknameTemplate}</small>
         </div>
         <span className="profile-count-pill">
           {Math.min(2, selected.size)} / 2 альти
@@ -928,7 +928,7 @@ export default async function ProfileSettingsPage({
                   <h2>Шаблон ніку</h2>
                   <p className="profile-card-lead">
                     Мейн береться автоматично. Нижче вибираються тільки два
-                    альти, які підставляються в шаблон з адмін-панелі.
+                    альти, які підставляються в шаблон з dashboard-панелі.
                   </p>
                 </div>
                 <div className="profile-name-panel">

@@ -28,11 +28,12 @@ BATTLENET_LOCALE="en_GB"
 # -----------------------------------------------------------------------------
 # CORS / public URLs
 # -----------------------------------------------------------------------------
-ALLOWED_ORIGINS="https://lihvodruida.pp.ua,https://www.lihvodruida.pp.ua,https://admin.lihvodruida.pp.ua,http://127.0.0.1:4000,http://localhost:4000,http://localhost:3000"
+ALLOWED_ORIGINS="https://lihvodruida.pp.ua,https://www.lihvodruida.pp.ua,https://dashboard.lihvodruida.pp.ua,http://127.0.0.1:4000,http://localhost:4000,http://localhost:3000"
 SITE_BASE_URL="https://lihvodruida.pp.ua"
 PUBLIC_SITE_URL="https://lihvodruida.pp.ua"
-DASHBOARD_URL="https://admin.lihvodruida.pp.ua"
-ADMIN_DASHBOARD_URL="https://admin.lihvodruida.pp.ua"
+DASHBOARD_URL="https://dashboard.lihvodruida.pp.ua"
+# Legacy alias; keep only while old environments still read it.
+ADMIN_DASHBOARD_URL="https://dashboard.lihvodruida.pp.ua"
 
 # -----------------------------------------------------------------------------
 # Discord Application / Bot
@@ -71,18 +72,18 @@ ADMIN_PROFILE_LOOKUP_ENDPOINT=""
 INTERNAL_PROFILE_LOOKUP_TOKEN="replace_with_same_value_as_dashboard"
 
 # Raid announcement buttons proxy. Used when Discord Interaction Endpoint points to this Worker.
-# The {raidId} placeholder is replaced by Worker. If omitted, Worker builds this URL from ADMIN_DASHBOARD_URL.
-DASHBOARD_RAID_ACTION_ENDPOINT="https://admin.lihvodruida.pp.ua/api/raids/{raidId}/discord-action"
+# The {raidId} placeholder is replaced by Worker. If omitted, Worker builds this URL from DASHBOARD_URL.
+DASHBOARD_RAID_ACTION_ENDPOINT="https://dashboard.lihvodruida.pp.ua/api/raids/{raidId}/discord-action"
 
 # Raid-poll Discord vote proxy. The {pollId} placeholder is replaced by Worker.
 # Token is INTERNAL_PROFILE_LOOKUP_TOKEN / DISCORD_RULES_STATS_TOKEN / WORKER_STATS_TOKEN and must match dashboard.
-DASHBOARD_RAID_POLL_VOTE_ENDPOINT="https://admin.lihvodruida.pp.ua/api/polls/{pollId}/vote"
+DASHBOARD_RAID_POLL_VOTE_ENDPOINT="https://dashboard.lihvodruida.pp.ua/api/polls/{pollId}/vote"
 
 # Raid lifecycle cron proxy. Worker scheduled events call this dashboard endpoint.
 # RAID_LIFECYCLE_SECRET must match dashboard RAID_LIFECYCLE_SECRET/CRON_SECRET.
-DASHBOARD_RAID_LIFECYCLE_ENDPOINT="https://admin.lihvodruida.pp.ua/api/raids/lifecycle?limit=100"
+DASHBOARD_RAID_LIFECYCLE_ENDPOINT="https://dashboard.lihvodruida.pp.ua/api/raids/lifecycle?limit=100"
 # Optional: Worker scheduled events also close overdue raid-polls through this dashboard endpoint.
-DASHBOARD_RAID_POLL_CLOSE_DUE_ENDPOINT="https://admin.lihvodruida.pp.ua/api/polls/close-due"
+DASHBOARD_RAID_POLL_CLOSE_DUE_ENDPOINT="https://dashboard.lihvodruida.pp.ua/api/polls/close-due"
 RAID_LIFECYCLE_SECRET="replace_with_same_value_as_dashboard"
 RAID_DISCORD_DELETE_AFTER_START_HOURS="4"
 RAID_DISCORD_DELETE_AFTER_CLOSE_MINUTES="60"
@@ -95,9 +96,9 @@ DISCORD_RAID_RULES_URL=""
 NEXT_PUBLIC_RAID_RULES_URL=""
 
 # -----------------------------------------------------------------------------
-# Cloudflare Access Service Auth for protected admin dashboard
+# Cloudflare Access Service Auth for protected dashboard panel
 # -----------------------------------------------------------------------------
-# Required only when admin.lihvodruida.pp.ua is protected by Cloudflare Access.
+# Required only when dashboard.lihvodruida.pp.ua is protected by Cloudflare Access.
 # Create a Cloudflare Access Service Token and allow it in the Access policy.
 CF_ACCESS_CLIENT_ID=""
 CF_ACCESS_CLIENT_SECRET=""
@@ -149,7 +150,7 @@ APPLICATION_DISCORD_ASYNC="1"
 # -----------------------------------------------------------------------------
 # Geo access guard for guild application submissions
 # -----------------------------------------------------------------------------
-# Defaults block applications from RU and BY. Dashboard /admin writes the live
+# Defaults block applications from RU and BY. Dashboard `/dashboard` writes the live
 # policy to Firebase dashboardSettings/geoAccessPolicy; Worker caches it briefly.
 # Values are stored as ISO alpha-2; aliases RUS/643 and BLR/112 normalize to RU/BY.
 GEO_ACCESS_BLOCK_ENABLED="true"

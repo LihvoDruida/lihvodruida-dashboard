@@ -1,12 +1,12 @@
 # Dashboard shared variables checklist
 
-This file is a separate checklist of variables and endpoint contracts that must be coordinated between the Worker and the admin dashboard.
+This file is a separate checklist of variables and endpoint contracts that must be coordinated between the Worker and the dashboard panel.
 
 ## Required shared values
 
 | Worker variable | Dashboard side | Must match? | Why |
 |---|---|---:|---|
-| `ADMIN_DASHBOARD_URL` | `NEXTAUTH_URL` / dashboard public base URL | Yes | The Worker builds login/profile/raid links and default dashboard API URLs from it. |
+| `DASHBOARD_URL` | `DASHBOARD_URL` / dashboard public base URL | Yes | The Worker builds login/profile/raid links and default dashboard API URLs from it. |
 | `DISCORD_GUILD_ID` | dashboard Discord guild/server id | Yes | Stats, profile lookup, raid actions and Discord channels must target the same server. |
 | `INTERNAL_PROFILE_LOOKUP_TOKEN` | dashboard secret for `/api/profile/discord-lookup` and raid action endpoints | Yes | Server-to-server auth between Worker and dashboard. |
 | `DISCORD_RULES_STATS_TOKEN` | dashboard secret used for reading Worker stats and calling relay endpoints | Yes | Dashboard reads protected Worker endpoints. |
@@ -19,8 +19,8 @@ These endpoints must exist in the dashboard and accept server-to-server auth.
 
 | Worker config | Default URL | Method | Purpose |
 |---|---|---:|---|
-| `DASHBOARD_PROFILE_LOOKUP_ENDPOINT` | `${ADMIN_DASHBOARD_URL}/api/profile/discord-lookup` | `GET` | Verify Discord user, profile and selected main character. |
-| `DASHBOARD_RAID_ACTION_ENDPOINT` | `${ADMIN_DASHBOARD_URL}/api/raids/{raidId}/discord-action` | `POST` | Handle raid buttons `going`, `late`, `skipped`. |
+| `DASHBOARD_PROFILE_LOOKUP_ENDPOINT` | `${DASHBOARD_URL}/api/profile/discord-lookup` | `GET` | Verify Discord user, profile and selected main character. |
+| `DASHBOARD_RAID_ACTION_ENDPOINT` | `${DASHBOARD_URL}/api/raids/{raidId}/discord-action` | `POST` | Handle raid buttons `going`, `late`, `skipped`. |
 
 ### Dashboard profile lookup contract
 
@@ -118,7 +118,7 @@ Not all of these dashboard env names are read by the Worker directly. They are r
 ## Minimal shared dashboard `.env`
 
 ```env
-NEXTAUTH_URL=https://admin.lihvodruida.pp.ua
+DASHBOARD_URL=https://dashboard.lihvodruida.pp.ua
 DISCORD_GUILD_ID=<same-as-worker>
 INTERNAL_PROFILE_LOOKUP_TOKEN=<same-as-worker>
 DISCORD_RULES_STATS_TOKEN=<same-as-worker>

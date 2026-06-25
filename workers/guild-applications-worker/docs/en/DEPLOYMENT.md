@@ -11,7 +11,7 @@ You need:
 - GitHub token with access to repository Issues;
 - Discord Developer Application + Bot;
 - Discord server ID, bot token, application public key;
-- admin dashboard URL;
+- dashboard panel URL;
 - shared server-to-server tokens for dashboard integration.
 
 Install Wrangler:
@@ -108,10 +108,10 @@ Example production vars:
 GITHUB_OWNER = "LihvoDruida"
 GITHUB_REPO = "lihvodruida.github.io"
 GUILD_APPLICATIONS_LABEL = "guild-application"
-ALLOWED_ORIGINS = "https://lihvodruida.pp.ua,https://www.lihvodruida.pp.ua,https://admin.lihvodruida.pp.ua"
+ALLOWED_ORIGINS = "https://lihvodruida.pp.ua,https://www.lihvodruida.pp.ua,https://dashboard.lihvodruida.pp.ua"
 DISCORD_ALLOWED_ROLES = ""
-ADMIN_DASHBOARD_URL = "https://admin.lihvodruida.pp.ua"
-DASHBOARD_PROFILE_LOOKUP_ENDPOINT = "https://admin.lihvodruida.pp.ua/api/profile/discord-lookup"
+DASHBOARD_URL = "https://dashboard.lihvodruida.pp.ua"
+DASHBOARD_PROFILE_LOOKUP_ENDPOINT = "https://dashboard.lihvodruida.pp.ua/api/profile/discord-lookup"
 RAID_RULES_URL = "https://discord.com/channels/<guild>/<channel>/<message>"
 ALLOW_DEBUG_QUERY = "0"
 ```
@@ -146,14 +146,14 @@ The dashboard should use `DISCORD_RULES_STATS_TOKEN` when reading/calling:
 
 ## 7. Cloudflare Access for dashboard
 
-If `admin.lihvodruida.pp.ua` is protected by Cloudflare Access:
+If `dashboard.lihvodruida.pp.ua` is protected by Cloudflare Access:
 
 1. Create a Cloudflare Access Service Token.
 2. Add a policy that allows this Service Token to access:
 
 ```text
-https://admin.lihvodruida.pp.ua/api/profile/discord-lookup
-https://admin.lihvodruida.pp.ua/api/raids/*/discord-action
+https://dashboard.lihvodruida.pp.ua/api/profile/discord-lookup
+https://dashboard.lihvodruida.pp.ua/api/raids/*/discord-action
 ```
 
 3. Add secrets to the Worker:

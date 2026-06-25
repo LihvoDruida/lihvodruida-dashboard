@@ -1,13 +1,13 @@
 # Guild Applications Worker
 
-Cloudflare Worker для **Mistblossom Vanguard**: заявки до гільдії, збереження заявок у Firebase Firestore, Discord-кнопки модерації, кнопки правил, підпис на правила рейду, проксі для кнопок рейдових оголошень і статистика для адмін-панелі.
+Cloudflare Worker для **Mistblossom Vanguard**: заявки до гільдії, збереження заявок у Firebase Firestore, Discord-кнопки модерації, кнопки правил, підпис на правила рейду, проксі для кнопок рейдових оголошень і статистика для dashboard-панелі.
 
 Worker з’єднує між собою:
 
 - публічний сайт гільдії, який надсилає заявки;
 - Firebase Firestore, який використовується як база заявок;
 - Discord, який використовується для повідомлень, кнопок модерації, правил, ролей і рейдів;
-- admin dashboard, який перевіряє профілі, main-персонажа, рейдові дії та читає статистику;
+- dashboard panel, який перевіряє профілі, main-персонажа, рейдові дії та читає статистику;
 - Cloudflare KV, який зберігає статистику правил і підписантів правил рейду.
 
 ## Документація
@@ -63,7 +63,7 @@ wrangler secret put INTERNAL_PROFILE_LOOKUP_TOKEN
 wrangler secret put DISCORD_RULES_STATS_TOKEN
 ```
 
-Якщо admin dashboard захищений Cloudflare Access, додай також:
+Якщо dashboard panel захищена Cloudflare Access, додай також:
 
 ```bash
 wrangler secret put CF_ACCESS_CLIENT_ID
@@ -86,7 +86,7 @@ wrangler deploy
 - `DISCORD_BOT_TOKEN`, `DISCORD_PUBLIC_KEY`, `DISCORD_GUILD_ID` для Discord bot/interactions;
 - `DISCORD_CHANNEL_ID` / `GUILD_APPLICATIONS_DISCORD_CHANNEL_ID`, якщо заявки мають публікуватися в Discord;
 - `RULES_STATS` KV binding, якщо потрібна статистика правил і raid-rules;
-- `INTERNAL_PROFILE_LOOKUP_TOKEN` і `ADMIN_DASHBOARD_URL` для перевірки профілю/main-персонажа;
+- `INTERNAL_PROFILE_LOOKUP_TOKEN` і `DASHBOARD_URL` для перевірки профілю/main-персонажа;
 - `DISCORD_RULES_STATS_TOKEN`, спільний із dashboard, для захисту stats/message endpoints.
 
 Повна таблиця змінних: [docs/ua/VARIABLES.md](docs/ua/VARIABLES.md).
