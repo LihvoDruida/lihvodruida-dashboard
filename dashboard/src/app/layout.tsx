@@ -143,6 +143,7 @@ export default function RootLayout({
             })();
           `}
         </Script>
+        <Script src="/js/dashboard-starfield.js" strategy="afterInteractive" />
         <ClientErrorReporter />
         <ClientAuthGuard />
         <Script id="dashboard-scroll-chrome" strategy="afterInteractive">
