@@ -262,45 +262,48 @@ function KdPeriodCard({ period, now }: { period: KdCalendarPeriod; now: number }
   );
 }
 
+function pollRecommendationSummary(poll: RaidPollItem, relatedPolls: RaidPollItem[]) {
+  const recommendations = raidPollUniqueDayRecommendations(poll, relatedPolls, 2);
+  if (!recommendations.length) return "Недостатньо голосів";
+  return recommendations.map((slot, index) => `${index + 1}) ${raidPollSlotSummary(slot)}`).join(" / ");
+}
+
 function PollResultCard({ poll, relatedPolls }: { poll: RaidPollItem; relatedPolls: RaidPollItem[] }) {
   const counts = pollVoteCounts(poll);
-  const recommendations = raidPollUniqueDayRecommendations(poll, relatedPolls, 2);
   return (
-    <article className={`home-poll-card home-poll-card--${poll.status}`}>
-      <div className="home-poll-card__status">
-        <span>{poll.status === "open" ? "Відкрите" : "Закрите"}</span>
-        <strong>{raidPollStatusLabel(poll)}</strong>
+    <article className={`raid-poll-list-card dashboard-list-row home-poll-card home-poll-card--${poll.status}`}>
+      <div className="raid-poll-list-card__status" aria-label={`Статус: ${raidPollStatusLabel(poll)}`}>
+        {poll.status === "open" ? "Активний" : "Архів"}
       </div>
-      <div className="home-poll-card__body">
-        <header>
-          <span className={`home-difficulty home-difficulty--${poll.difficulty}`}>{raidPollDifficultyLabel(poll.difficulty)}</span>
-          <h3>{poll.title}</h3>
+
+      <div className="raid-poll-list-card__body home-poll-card__body">
+        <header className="raid-poll-list-card__header">
+          <div className="raid-poll-list-card__badges">
+            <span className={`raid-poll-difficulty-badge raid-poll-difficulty-badge--${poll.difficulty}`}>{raidPollDifficultyLabel(poll.difficulty)}</span>
+            <span className={`raid-status-pill ${poll.status === "open" ? "published" : "closed"}`}>{raidPollStatusLabel(poll)}</span>
+          </div>
+          <h3><a href={`/polls/${encodeURIComponent(poll.id)}`}>{poll.title}</a></h3>
           <p>{formatPollDays(poll.days)}</p>
         </header>
-        <dl className="home-poll-metrics">
+
+        <dl className="raid-poll-card-metrics home-poll-metrics">
           <div>
-            <dt>Старт</dt>
-            <dd><HomeLocalTime value={poll.createdAt} fallback={formatDateTime(poll.createdAt)} mode="compact" /></dd>
+            <dt>Голосів</dt>
+            <dd>{counts.total}</dd>
           </div>
           <div>
             <dt>{poll.status === "open" ? "Закриття" : "Завершено"}</dt>
             <dd><HomeLocalTime value={poll.status === "open" ? poll.closesAtMs : poll.closedAt || poll.closesAtMs} fallback={poll.status === "open" ? formatDateTime(poll.closesAtMs) : formatDateTime(poll.closedAt || poll.closesAtMs)} mode="compact" /></dd>
           </div>
           <div>
-            <dt>Голосів</dt>
-            <dd>{counts.total}</dd>
+            <dt>Рекомендації</dt>
+            <dd>{pollRecommendationSummary(poll, relatedPolls)}</dd>
           </div>
         </dl>
-        <div className="home-poll-slots">
-          {recommendations.length ? recommendations.map((slot, index) => (
-            <span key={`${poll.id}-${slot.day}-${slot.time}`}>
-              <b>{index + 1}</b>{raidPollSlotSummary(slot)}
-            </span>
-          )) : <em>Недостатньо голосів для розрахунку рекомендованих слотів.</em>}
-        </div>
       </div>
-      <footer>
-        <a className="btn subtle" href={`/polls/${encodeURIComponent(poll.id)}`}>Деталі</a>
+
+      <footer className="raid-poll-list-card__actions dashboard-list-actions">
+        <a className="btn subtle raid-poll-primary-action" href={`/polls/${encodeURIComponent(poll.id)}`}>Деталі</a>
         {poll.messageUrl ? <a className="btn subtle" href={poll.messageUrl} target="_blank" rel="noreferrer">Discord</a> : null}
       </footer>
     </article>
@@ -377,7 +380,7 @@ export default async function HomePage() {
               loading="eager"
               referrerPolicy="no-referrer"
             />
-            <p className="home-landing-hero__guild">{guildBranding.name} • Discord</p>
+            <p className="home-landing-hero__guild">{guildBranding.name}</p>
             <p className="home-landing-hero__lead">
               PvE-гільдія, орієнтована на прогрес, взаємоповагу та командну гру.
               <br />
@@ -392,17 +395,6 @@ export default async function HomePage() {
 
         <HomeDashboardLiveSync initialRevision={homeRevision(visibleRaids, polls, periods)} />
 
-        <section className="home-calendar-toolbar panel" aria-label="Керування КД-календарем">
-          <div>
-            <span className="home-kicker">Рейди</span>
-            <h2>Керування календарем</h2>
-            <p>Швидкі дії для створення рейду та переходу до повного списку.</p>
-          </div>
-          <div className="home-calendar-actions">
-            <a className="btn primary" href="/raids/new">Створити рейд</a>
-            <a className="btn subtle" href="/raids">Усі рейди</a>
-          </div>
-        </section>
 
         <section className="home-layout">
           <section className="panel home-calendar-panel home-kd-panel" aria-label="КД-календар рейдів">

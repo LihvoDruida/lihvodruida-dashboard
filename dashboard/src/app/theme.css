@@ -4099,3 +4099,344 @@ body.has-starfield::after {
       "details" !important;
   }
 }
+
+/* v18 home/poll cleanup pass
+   Keep home compact, remove the visual autosync/toolbar clutter, and make poll cards share one row-card system. */
+.home-shell {
+  gap: clamp(14px, 1.6vw, 24px) !important;
+}
+
+.home-live-sync,
+.home-calendar-toolbar.panel {
+  display: none !important;
+}
+
+.home-landing-hero {
+  min-height: clamp(230px, 34svh, 360px) !important;
+  padding: clamp(14px, 2.4vw, 30px) 0 clamp(18px, 2.6vw, 34px) !important;
+}
+
+.home-landing-hero__content {
+  width: min(100%, 660px) !important;
+  gap: 9px !important;
+}
+
+.home-landing-hero__logo {
+  width: clamp(58px, 5.2vw, 76px) !important;
+  height: clamp(58px, 5.2vw, 76px) !important;
+}
+
+.home-landing-hero__guild {
+  font-size: clamp(0.72rem, 0.78vw, 0.82rem) !important;
+  letter-spacing: 0.06em !important;
+}
+
+.home-landing-hero__lead {
+  max-width: 620px !important;
+  font-size: clamp(0.9rem, 0.96vw, 1.03rem) !important;
+  line-height: 1.42 !important;
+}
+
+.home-landing-hero__actions {
+  gap: 8px !important;
+  margin-top: 0 !important;
+}
+
+.home-landing-hero__actions .btn {
+  min-height: 38px !important;
+  padding-inline: 16px !important;
+  font-size: 0.84rem !important;
+}
+
+.home-polls-section.panel {
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.home-section-head {
+  display: flex !important;
+  align-items: end !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  padding: 18px 20px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: linear-gradient(90deg, rgba(255, 172, 70, 0.055), rgba(255, 255, 255, 0.012) 54%, transparent) !important;
+}
+
+.home-section-head h2 {
+  font-size: clamp(1.2rem, 1.65vw, 1.65rem) !important;
+}
+
+.home-section-head p {
+  max-width: 620px !important;
+  margin-top: 6px !important;
+  font-size: 0.9rem !important;
+}
+
+.home-polls-grid,
+.raid-poll-card-grid.dashboard-list,
+.raid-poll-card-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  border-radius: inherit !important;
+  overflow: hidden !important;
+}
+
+.raid-poll-list-card,
+.home-poll-card {
+  display: grid !important;
+  grid-template-columns: minmax(76px, 0.16fr) minmax(0, 1fr) minmax(170px, auto) !important;
+  align-items: center !important;
+  gap: 14px !important;
+  min-height: 0 !important;
+  padding: 14px 18px !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 0 !important;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.026), rgba(255, 255, 255, 0.012)) !important;
+  box-shadow: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+  overflow: hidden !important;
+}
+
+.raid-poll-list-card:hover,
+.home-poll-card:hover {
+  border-color: rgba(255, 183, 87, 0.18) !important;
+  background:
+    linear-gradient(90deg, rgba(255, 172, 70, 0.075), rgba(255, 255, 255, 0.02)) !important;
+  box-shadow: inset 3px 0 0 rgba(255, 172, 70, 0.72) !important;
+  transform: none !important;
+}
+
+.raid-poll-list-card:last-child,
+.home-poll-card:last-child {
+  border-bottom: 0 !important;
+}
+
+.raid-poll-list-card__status,
+.home-poll-card .raid-poll-list-card__status {
+  position: static !important;
+  justify-self: start !important;
+  width: auto !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 5px 9px !important;
+  border: 1px solid rgba(119, 255, 184, 0.26) !important;
+  border-radius: 999px !important;
+  background: rgba(34, 197, 94, 0.14) !important;
+  color: #b7f7cc !important;
+  font-size: 0.68rem !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  letter-spacing: 0.04em !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  text-transform: uppercase !important;
+}
+
+.raid-poll-list-card--closed .raid-poll-list-card__status,
+.home-poll-card--closed .raid-poll-list-card__status {
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  color: rgba(235, 228, 218, 0.72) !important;
+}
+
+.raid-poll-list-card__body,
+.home-poll-card__body {
+  display: grid !important;
+  grid-template-columns: minmax(180px, 0.62fr) minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 14px !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+}
+
+.raid-poll-list-card__header {
+  display: grid !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+}
+
+.raid-poll-list-card__badges {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+
+.raid-poll-difficulty-badge,
+.raid-poll-id-chip,
+.raid-poll-repeat-chip,
+.home-poll-card .raid-status-pill {
+  min-height: 22px !important;
+  padding: 4px 8px !important;
+  border-radius: 999px !important;
+  font-size: 0.66rem !important;
+  line-height: 1 !important;
+}
+
+.raid-poll-list-card h3,
+.home-poll-card h3 {
+  margin: 0 !important;
+  color: #fff3df !important;
+  font-size: clamp(0.96rem, 1.06vw, 1.1rem) !important;
+  line-height: 1.18 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.raid-poll-list-card h3 a,
+.home-poll-card h3 a {
+  color: inherit !important;
+  text-decoration: none !important;
+}
+
+.raid-poll-list-card p,
+.home-poll-card p {
+  display: block !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  color: rgba(235, 228, 218, 0.64) !important;
+  font-size: 0.78rem !important;
+  line-height: 1.3 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  -webkit-line-clamp: unset !important;
+  -webkit-box-orient: initial !important;
+}
+
+.raid-poll-day-chips {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 5px !important;
+  padding: 0 !important;
+}
+
+.raid-poll-day-chips span {
+  min-height: 22px !important;
+  padding: 4px 8px !important;
+  border-color: rgba(255, 183, 87, 0.16) !important;
+  background: rgba(255, 183, 87, 0.07) !important;
+  color: rgba(255, 229, 190, 0.82) !important;
+  font-size: 0.68rem !important;
+}
+
+.raid-poll-card-metrics,
+.home-poll-metrics {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+.raid-poll-card-metrics > div,
+.home-poll-metrics > div {
+  min-width: 0 !important;
+  min-height: 48px !important;
+  padding: 8px 10px !important;
+  border: 1px solid rgba(255, 255, 255, 0.075) !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.028) !important;
+}
+
+.raid-poll-card-metrics dt,
+.home-poll-metrics dt {
+  margin: 0 0 4px !important;
+  color: rgba(235, 228, 218, 0.5) !important;
+  font-size: 0.62rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+
+.raid-poll-card-metrics dd,
+.home-poll-metrics dd {
+  margin: 0 !important;
+  overflow: hidden !important;
+  color: rgba(255, 249, 238, 0.92) !important;
+  font-size: 0.78rem !important;
+  font-weight: 850 !important;
+  line-height: 1.25 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.raid-poll-list-card__actions {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+}
+
+.raid-poll-list-card__actions form,
+.raid-poll-list-card__actions .btn,
+.raid-poll-list-card__actions button {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+}
+
+.raid-poll-list-card__actions .btn,
+.raid-poll-list-card__actions button.btn {
+  min-height: 34px !important;
+  padding: 7px 11px !important;
+  border-radius: 999px !important;
+  font-size: 0.76rem !important;
+}
+
+.raid-poll-primary-action {
+  border-color: rgba(255, 183, 87, 0.22) !important;
+  background: rgba(255, 183, 87, 0.08) !important;
+  color: rgba(255, 238, 208, 0.92) !important;
+}
+
+@media (max-width: 1180px) {
+  .raid-poll-list-card,
+  .home-poll-card {
+    grid-template-columns: 1fr !important;
+    align-items: stretch !important;
+  }
+
+  .raid-poll-list-card__body,
+  .home-poll-card__body {
+    grid-template-columns: 1fr !important;
+  }
+
+  .raid-poll-list-card__actions {
+    justify-content: flex-start !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .home-landing-hero {
+    min-height: 0 !important;
+    padding-block: 18px 22px !important;
+  }
+
+  .home-section-head {
+    display: grid !important;
+    align-items: start !important;
+    padding: 16px !important;
+  }
+
+  .raid-poll-card-metrics,
+  .home-poll-metrics {
+    grid-template-columns: 1fr !important;
+  }
+
+  .raid-poll-list-card__actions,
+  .raid-poll-list-card__actions .btn,
+  .raid-poll-list-card__actions button,
+  .raid-poll-list-card__actions form {
+    width: 100% !important;
+  }
+}

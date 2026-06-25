@@ -152,9 +152,8 @@ export default function HomeDashboardLiveSync({ initialRevision }: HomeLiveSyncP
   }, [router]);
 
   return (
-    <div className={`home-live-sync home-live-sync--${state}`} role="status" aria-live="polite" data-revision={initialRevision.slice(0, 48)}>
-      <span aria-hidden="true" />
+    <span className="sr-only" role="status" aria-live="polite" data-revision={initialRevision.slice(0, 48)}>
       {liveLabel(state)}
-    </div>
+    </span>
   );
 }
