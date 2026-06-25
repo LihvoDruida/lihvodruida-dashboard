@@ -21,7 +21,7 @@ type HomeLiveSyncProps = {
 function liveLabel(state: "idle" | "syncing" | "updated") {
   if (state === "syncing") return "Оновлюємо";
   if (state === "updated") return "Оновлено";
-  return "Live sync";
+  return "Автооновлення";
 }
 
 function parseMutationPayload(value: string | null): DashboardDataMutationDetail | null {

@@ -357,7 +357,7 @@ export default async function HomePage() {
   const publishedPolls = polls.filter((poll) => poll.channelId && poll.messageId);
   const spotlightPolls = [...openPolls, ...polls.filter((poll) => poll.status === "closed")].slice(0, 6);
   const calendarFeedUrl = absoluteDashboardUrl("/api/calendar/raids.ics");
-  const rioSourceLabel = raiderIoPeriods ? "Raider.IO EU" : "Fallback EU";
+  const rioSourceLabel = raiderIoPeriods ? "Дані календаря оновлені" : "Працює резервний календар";
 
   return (
     <main className="container home-page">
@@ -366,14 +366,14 @@ export default async function HomePage() {
 
         <header className="hero panel dashboard-hero home-hero">
           <div className="hero-copy dashboard-hero__copy guild-hero__copy">
-            <div className="eyebrow">Mistblossom Vanguard • Рейдовий центр</div>
+            <div className="eyebrow">Mistblossom Vanguard • Рейди</div>
             <div className="content-hero-status-row">
               <span className="content-mode-pill content-mode-pill--library">КД #{currentPeriod?.period || "—"}</span>
-              <span className="content-hero-path">{rioSourceLabel} • локальний час користувача</span>
+              <span className="content-hero-path">{rioSourceLabel} • час показується для твоєї країни</span>
             </div>
-            <h1>КД-календар рейдів</h1>
+            <h1>Календар рейдів</h1>
             <span className="hero-accent" aria-hidden="true" />
-            <p className="lead">Тиждень рахується як КД за EU periods з Raider.IO: старт у середу, кінець наступної середи. Усі години на сторінці автоматично показуються в локальній часовій зоні того, хто відкрив dashboard.</p>
+            <p className="lead">Календар показує поточний рейдовий тиждень, найближчі рейди та голосування. Час автоматично підлаштовується під користувача.</p>
             <div className="home-hero-actions">
               <a className="btn primary" href="/raids">Відкрити рейди</a>
               <a className="btn subtle" href="/polls">Голосування</a>
@@ -382,13 +382,13 @@ export default async function HomePage() {
           <HeroSidePanel
             ariaLabel="Огляд КД-календаря"
             summary={[
-              { label: "ПОТОЧНЕ КД", value: `#${currentPeriod?.period || "—"}`, note: `${currentPeriod?.raids.length || 0} рейд. у поточному КД` },
-              { label: "ГОЛОСУВАННЯ", value: `${openPolls.length} live`, note: "Автооновлення без перезавантаження" },
+              { label: "ТИЖДЕНЬ", value: `#${currentPeriod?.period || "—"}`, note: `${currentPeriod?.raids.length || 0} рейд. у цьому тижні` },
+              { label: "ГОЛОСУВАННЯ", value: `${openPolls.length}`, note: "Оновлюються автоматично" },
             ]}
             stats={[
-              { label: "REGION", value: KD_REGION.toUpperCase() },
-              { label: "TIME", value: "LOCAL" },
-              { label: "SYNC", value: raiderIoPeriods ? "RIO" : "SAFE" },
+              { label: "РЕГІОН", value: KD_REGION.toUpperCase() },
+              { label: "ЧАС", value: "Локальний" },
+              { label: "ДАНІ", value: raiderIoPeriods ? "Оновлено" : "Резерв" },
             ]}
           />
         </header>
@@ -397,7 +397,7 @@ export default async function HomePage() {
 
         <section className="home-calendar-toolbar panel" aria-label="Керування КД-календарем">
           <div>
-            <span className="home-kicker">Raider.IO periods</span>
+            <span className="home-kicker">Поточний рейдовий тиждень</span>
             <h2>КД #{currentPeriod?.period || "—"}</h2>
             <p>
               Поточне КД: <HomeLocalTime value={currentPeriod?.startIso} fallback={currentPeriod?.fallbackStart || "—"} mode="compact" /> — <HomeLocalTime value={currentPeriod?.endIso} fallback={currentPeriod?.fallbackEnd || "—"} mode="compact" />.
@@ -414,10 +414,10 @@ export default async function HomePage() {
           <section className="panel home-calendar-panel home-kd-panel" aria-label="КД-календар рейдів">
             <div className="home-kd-panel__head">
               <div>
-                <span className="home-kicker">КД календар</span>
-                <h2>Рейди за тижнями Raider.IO</h2>
+                <span className="home-kicker">Календар</span>
+                <h2>Рейди за тижнями</h2>
               </div>
-              <p>Старт КД береться з Raider.IO, а рейди потрапляють у КД за реальним UTC-часом старту.</p>
+              <p>Рейди автоматично групуються за поточним тижнем і часом старту.</p>
             </div>
             <div className="home-kd-grid">
               {periods.map((period) => <KdPeriodCard key={period.key} period={period} now={now} />)}
@@ -428,7 +428,7 @@ export default async function HomePage() {
             <section className="panel home-import-card" aria-label="Імпорт календаря">
               <span className="home-kicker">Google Calendar</span>
               <h2>Імпорт рейдів</h2>
-              <p>Додай рейдовий фід у Google Calendar або відкрий `.ics` напряму. Сире посилання прибрано з екрана, щоб не забивати інтерфейс.</p>
+              <p>Додай рейди у Google Calendar або завантаж файл календаря. Посилання сховане, щоб не перевантажувати сторінку.</p>
               <div className="home-import-actions">
                 <a className="btn primary" href={googleCalendarUrl()} target="_blank" rel="noreferrer">Додати в Google</a>
                 <a className="btn subtle" href="/api/calendar/raids.ics" download="mistblossom-raids.ics">Завантажити .ics</a>

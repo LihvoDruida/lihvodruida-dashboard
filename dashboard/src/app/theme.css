@@ -1341,3 +1341,489 @@ main.container,
 .raid-list-archive-note {
   text-transform: uppercase !important;
 }
+
+/* v8 global spacing and readability pass
+   Одна система відступів, розмірів і зрозумілих блоків для всіх сторінок. */
+:root {
+  --layout-page-top: clamp(24px, 3vw, 44px);
+  --layout-page-bottom: clamp(36px, 5vw, 72px);
+  --layout-section-gap: clamp(18px, 1.7vw, 28px);
+  --layout-panel-pad: clamp(18px, 2.1vw, 30px);
+  --layout-panel-pad-lg: clamp(24px, 3vw, 42px);
+  --layout-row-gap: 12px;
+  --layout-control-gap: 10px;
+  --layout-radius: 20px;
+  --layout-radius-sm: 14px;
+  --type-body: clamp(0.94rem, 0.2vw + 0.88rem, 1rem);
+  --type-small: clamp(0.78rem, 0.12vw + 0.74rem, 0.86rem);
+  --type-label: clamp(0.72rem, 0.08vw + 0.68rem, 0.78rem);
+  --type-h1: clamp(2.25rem, 3.7vw, 4rem);
+  --type-h2: clamp(1.45rem, 1.45vw, 2.05rem);
+  --type-h3: clamp(1.08rem, 0.72vw, 1.35rem);
+}
+
+html {
+  font-size: 16px !important;
+}
+
+body {
+  font-size: var(--type-body) !important;
+  line-height: 1.55 !important;
+}
+
+main.container,
+.container {
+  padding-top: calc(var(--layout-page-top) + var(--safe-top)) !important;
+  padding-bottom: calc(var(--layout-page-bottom) + var(--safe-bottom)) !important;
+}
+
+:where(.dashboard-shell, .content-shell, .discord-shell, .content-page-stack, .home-shell, .raid-shell, .profile-shell, .profile-account-page, .admin-page, .access-groups-page, .guild-page, .profile-directory-shell) {
+  gap: var(--layout-section-gap) !important;
+}
+
+:where(.panel, .card, .action-panel, .rio-panel, .detail-box, .notice, .empty, .content-empty, .profile-card, .profile-account-header, .profile-account-sidebar, .dashboard-table-card, .dashboard-list-panel, .discord-management-card, .access-group-card, .access-groups-list, .home-kd-panel, .home-import-card, .home-upcoming-card, .home-polls-section, .raid-poll-list-section, .admin-overview-card) {
+  min-width: 0 !important;
+  border-radius: var(--layout-radius) !important;
+}
+
+:where(.panel, .card, .action-panel, .rio-panel, .detail-box, .notice, .empty, .content-empty, .profile-card, .profile-account-header, .profile-account-sidebar, .dashboard-table-card, .dashboard-list-panel, .discord-management-card, .access-group-card, .access-groups-list, .home-import-card, .home-upcoming-card, .home-polls-section, .raid-poll-list-section, .admin-overview-card) {
+  padding: var(--layout-panel-pad) !important;
+}
+
+:where(.panel .panel, .panel .card, .card .panel, .card .card, .panel .detail-box, .card .detail-box, .panel .notice, .card .notice) {
+  padding: clamp(14px, 1.5vw, 20px) !important;
+}
+
+:where(h1, h2, h3, h4, p) {
+  overflow-wrap: anywhere;
+}
+
+:where(h1, h2, h3) {
+  margin-top: 0 !important;
+  color: var(--ui-text) !important;
+  letter-spacing: -0.025em !important;
+  text-wrap: balance;
+}
+
+:where(h1, .hero h1) {
+  font-size: var(--type-h1) !important;
+  line-height: 1.03 !important;
+}
+
+:where(h2, .dashboard-table-titlebar h2, .dashboard-list-head h2, .content-section-head h2, .home-calendar-toolbar h2, .home-import-card h2, .home-upcoming-card h2, .home-section-head h2) {
+  font-size: var(--type-h2) !important;
+  line-height: 1.1 !important;
+}
+
+:where(h3, .dashboard-list-head h3, .raid-list-title-row strong, .guild-member-title h3) {
+  font-size: var(--type-h3) !important;
+  line-height: 1.18 !important;
+}
+
+:where(p, .lead, .hint, .notice, .empty, .content-empty, .detail-box, .rio-panel, .profile-card-lead, .admin-policy-card__title small, .admin-policy-toggle small, .admin-policy-input small, .admin-policy-hint small, .dashboard-list-head p, .dashboard-table-titlebar p) {
+  max-width: 72ch;
+  color: var(--ui-text-soft) !important;
+  font-size: var(--type-body) !important;
+  line-height: 1.58 !important;
+}
+
+:where(small, .meta, .dashboard-brand span, .dashboard-user span, .home-kicker, .eyebrow, .section-title, .content-field > span, .guild-filter-field span) {
+  font-size: var(--type-small) !important;
+  line-height: 1.35 !important;
+}
+
+:where(.eyebrow, .home-kicker, .section-title, .raid-poll-section-kicker, .hero-map-summary__label, .guild-hero-summary__label, .hero-map-stat-card span, .guild-hero-stat-card span) {
+  font-size: var(--type-label) !important;
+  letter-spacing: 0.07em !important;
+}
+
+:where(.hero, .dashboard-hero, .content-dashboard-hero, .discord-dashboard-hero, .raid-dashboard-hero, .admin-hero, .access-groups-hero, .legal-hero, .rules-onboarding-hero, .profile-directory-hero, .guild-hero).panel {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.16fr) minmax(320px, 0.72fr) !important;
+  align-items: center !important;
+  gap: clamp(20px, 3vw, 42px) !important;
+  min-height: unset !important;
+  padding: var(--layout-panel-pad-lg) !important;
+}
+
+:where(.hero-copy, .dashboard-hero__copy, .content-dashboard-hero__copy, .guild-hero__copy) {
+  gap: clamp(10px, 1.2vw, 16px) !important;
+}
+
+:where(.hero, .dashboard-hero, .content-dashboard-hero, .discord-dashboard-hero, .raid-dashboard-hero, .admin-hero, .access-groups-hero, .legal-hero, .rules-onboarding-hero, .profile-directory-hero, .guild-hero) h1 {
+  max-width: 15ch !important;
+  margin: 0 !important;
+}
+
+:where(.hero, .dashboard-hero, .content-dashboard-hero, .discord-dashboard-hero, .raid-dashboard-hero, .admin-hero, .access-groups-hero, .legal-hero, .rules-onboarding-hero, .profile-directory-hero, .guild-hero) .lead {
+  max-width: 62ch !important;
+  margin: 0 !important;
+}
+
+.content-hero-status-row,
+.home-hero-actions,
+.home-calendar-actions,
+.dashboard-table-controls,
+.dashboard-table-search-form,
+.dashboard-table-action-form,
+.dashboard-list-toolbar,
+.dashboard-list-actions,
+.raid-form-actions,
+.content-actions-row,
+.raid-poll-header-actions,
+.raid-poll-toolbar {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: var(--layout-control-gap) !important;
+  align-items: center !important;
+}
+
+.guild-hero-side,
+.hero-map-side,
+.hero-side-panel {
+  align-self: stretch !important;
+  min-height: 100% !important;
+}
+
+.guild-hero-summary,
+.hero-map-summary {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.guild-hero-summary__block,
+.hero-map-summary__block,
+.guild-hero-stat-card,
+.hero-map-stat-card,
+.hero-side-panel__item {
+  min-height: 92px !important;
+  padding: clamp(14px, 1.6vw, 20px) !important;
+}
+
+:where(.guild-hero-summary__block, .hero-map-summary__block) strong,
+:where(.guild-hero-stat-card, .hero-map-stat-card) strong {
+  font-size: clamp(1.12rem, 1.25vw, 1.55rem) !important;
+  line-height: 1.12 !important;
+}
+
+:where(.guild-hero-summary__block, .hero-map-summary__block) p {
+  font-size: var(--type-small) !important;
+  line-height: 1.42 !important;
+}
+
+.hero-map-stats,
+.guild-hero-stats,
+.hero-side-panel__grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)) !important;
+}
+
+.home-live-sync,
+.raid-live-sync,
+.raid-poll-live-sync {
+  width: fit-content !important;
+  min-height: 34px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 0 12px !important;
+  border: 1px solid var(--ui-line-soft) !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.035) !important;
+  color: var(--ui-text-soft) !important;
+  font-size: var(--type-small) !important;
+  font-weight: 850 !important;
+}
+
+.home-live-sync > span,
+.raid-live-sync > span,
+.raid-poll-live-sync > span {
+  width: 8px !important;
+  height: 8px !important;
+  flex: 0 0 auto !important;
+  border-radius: 999px !important;
+  background: var(--ui-success) !important;
+}
+
+.home-calendar-toolbar.panel {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: var(--layout-section-gap) !important;
+  padding: var(--layout-panel-pad) !important;
+  border-width: 1px !important;
+  border-radius: var(--layout-radius) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.018)), var(--ui-surface) !important;
+  box-shadow: var(--shadow-soft) !important;
+}
+
+.home-calendar-toolbar h2,
+.home-calendar-toolbar p {
+  margin-bottom: 0 !important;
+}
+
+.home-layout {
+  grid-template-columns: minmax(0, 1.75fr) minmax(320px, 0.82fr) !important;
+  align-items: start !important;
+  gap: var(--layout-section-gap) !important;
+}
+
+.home-side-stack,
+.content-editor-stack,
+.profile-account-main,
+.admin-overview-grid,
+.admin-overview-grid--security {
+  gap: var(--layout-section-gap) !important;
+}
+
+.home-kd-panel,
+.home-polls-section.panel {
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.home-kd-panel__head,
+.home-section-head,
+.dashboard-list-head,
+.dashboard-table-titlebar {
+  gap: var(--layout-control-gap) !important;
+  padding: var(--layout-panel-pad) !important;
+}
+
+.home-kd-panel__head p,
+.home-section-head p,
+.dashboard-list-head p,
+.dashboard-table-titlebar p {
+  margin-bottom: 0 !important;
+}
+
+.home-kd-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.home-kd-card {
+  padding: var(--layout-panel-pad) !important;
+}
+
+.dashboard-table-stats,
+.dashboard-list-summary,
+.raid-poll-summary-grid--smart,
+.home-poll-metrics,
+.raid-poll-card-metrics,
+.application-stats-grid,
+.profile-stats-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+  gap: var(--layout-row-gap) !important;
+}
+
+:where(.dashboard-list, .raid-manager-list, .raid-poll-card-grid, .profile-directory-grid, .content-table, .discord-rules-table, .admin-log-list, .home-polls-grid, .home-upcoming-events, .home-upcoming-list) {
+  gap: var(--layout-row-gap) !important;
+}
+
+:where(.dashboard-list-row, .dashboard-table-row, .raid-list-item, .raid-poll-list-card, .content-row, .discord-rules-row, .admin-log-row, .profile-directory-card, .guild-member-card, .home-poll-card, .home-upcoming-event, .home-upcoming-item) {
+  padding: clamp(14px, 1.45vw, 20px) !important;
+  border-radius: var(--layout-radius-sm) !important;
+}
+
+.raid-manager-list.dashboard-list,
+.raid-manager-list,
+.raid-poll-card-grid.dashboard-list,
+.raid-poll-card-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.raid-manager-list .raid-list-item,
+.raid-list-item {
+  grid-template-columns: minmax(0, 1fr) minmax(116px, 140px) !important;
+  gap: var(--layout-row-gap) !important;
+}
+
+.raid-list-actions,
+.raid-manager-list .raid-list-actions {
+  align-content: start !important;
+  max-width: none !important;
+}
+
+.admin-overview-grid--security {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.admin-policy-card {
+  overflow: hidden !important;
+}
+
+.admin-policy-card__header {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  gap: var(--layout-control-gap) !important;
+  align-items: start !important;
+  margin: calc(var(--layout-panel-pad) * -1) calc(var(--layout-panel-pad) * -1) 0 !important;
+  padding: var(--layout-panel-pad) !important;
+  border-bottom: 1px solid var(--ui-line-soft) !important;
+  background: rgba(255, 255, 255, 0.025) !important;
+}
+
+.admin-policy-form {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.9fr) !important;
+  gap: 0 !important;
+}
+
+.admin-policy-fieldset {
+  padding: var(--layout-panel-pad) !important;
+  border: 0 !important;
+  border-right: 1px solid var(--ui-line-soft) !important;
+}
+
+.admin-policy-fieldset:nth-last-of-type(1) {
+  border-right: 0 !important;
+}
+
+.admin-policy-fieldset--roles,
+.admin-policy-fieldset--compact,
+.admin-policy-fieldset--dense {
+  min-width: 0 !important;
+}
+
+.admin-policy-toggle,
+.admin-policy-input,
+.admin-policy-hint,
+.auth-access-role-option,
+.geo-country-chip-list {
+  padding: clamp(12px, 1.3vw, 16px) !important;
+}
+
+.admin-policy-footer {
+  grid-column: 1 / -1 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: var(--layout-control-gap) !important;
+  align-items: center !important;
+  padding: var(--layout-panel-pad) !important;
+  border-top: 1px solid var(--ui-line-soft) !important;
+}
+
+.admin-policy-footer small {
+  max-width: 86ch !important;
+}
+
+:where(.input, .select, .textarea, input:not([type="checkbox"]):not([type="radio"]), textarea, select, .dashboard-table-search input) {
+  width: 100%;
+  padding-inline: 12px !important;
+  font-size: var(--type-body) !important;
+  line-height: 1.35 !important;
+}
+
+:where(.btn, button.btn, .action-button, .dashboard-table-filter, .raid-action, .discord-role-toggle, .application-status-button) {
+  min-height: 40px !important;
+  padding-inline: 14px !important;
+  font-size: var(--type-small) !important;
+  line-height: 1.2 !important;
+}
+
+:where(.btn-sm, .dashboard-list-actions .btn, .dashboard-list-actions button) {
+  min-height: 36px !important;
+  font-size: var(--type-small) !important;
+}
+
+.app-footer {
+  margin-top: 0 !important;
+  padding: 0 !important;
+}
+
+.app-footer__inner {
+  width: min(calc(100% - (var(--site-gutter) * 2)), var(--site-max)) !important;
+  max-width: var(--site-max) !important;
+  min-height: 72px !important;
+  margin-inline: auto !important;
+  padding-block: 22px !important;
+}
+
+@media (max-width: 1180px) {
+  :where(.hero, .dashboard-hero, .content-dashboard-hero, .discord-dashboard-hero, .raid-dashboard-hero, .admin-hero, .access-groups-hero, .legal-hero, .rules-onboarding-hero, .profile-directory-hero, .guild-hero).panel,
+  .home-layout,
+  .admin-policy-form {
+    grid-template-columns: 1fr !important;
+  }
+
+  .admin-policy-fieldset {
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--ui-line-soft) !important;
+  }
+
+  .admin-policy-fieldset:nth-last-of-type(1) {
+    border-bottom: 0 !important;
+  }
+
+  .admin-policy-footer {
+    grid-template-columns: 1fr !important;
+  }
+
+  .home-calendar-toolbar.panel {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
+}
+
+@media (max-width: 900px) {
+  :root {
+    --layout-panel-pad: clamp(16px, 4vw, 22px);
+    --layout-panel-pad-lg: clamp(20px, 5vw, 28px);
+  }
+
+  .home-kd-grid,
+  .raid-manager-list.dashboard-list,
+  .raid-manager-list,
+  .raid-poll-card-grid.dashboard-list,
+  .raid-poll-card-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .home-kd-card {
+    border-left: 0 !important;
+    border-top: 1px solid var(--ui-line-soft) !important;
+  }
+
+  .home-kd-card:first-child {
+    border-top: 0 !important;
+  }
+
+  .raid-manager-list .raid-list-item,
+  .raid-list-item {
+    grid-template-columns: 1fr !important;
+  }
+
+  .admin-policy-card__header {
+    grid-template-columns: auto minmax(0, 1fr) !important;
+  }
+
+  .admin-policy-status {
+    grid-column: 1 / -1 !important;
+    justify-self: start !important;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --type-h1: clamp(2rem, 11vw, 3rem);
+  }
+
+  .guild-hero-summary,
+  .hero-map-summary,
+  .hero-map-stats,
+  .guild-hero-stats,
+  .hero-side-panel__grid,
+  .dashboard-table-stats,
+  .dashboard-list-summary,
+  .raid-poll-summary-grid--smart,
+  .home-poll-metrics,
+  .raid-poll-card-metrics,
+  .application-stats-grid,
+  .profile-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  :where(.btn, button.btn, .action-button, .dashboard-table-filter, .raid-action, .discord-role-toggle, .application-status-button) {
+    width: 100%;
+  }
+}

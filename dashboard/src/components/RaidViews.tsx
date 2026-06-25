@@ -1525,7 +1525,7 @@ export function RaidPageShell({
                 {user ? hierarchyTitle(user.role) : "Учасник"}
               </span>
               <span className="content-hero-path">
-                Запис у Discord • склад паті • автооновлення
+                Запис у Discord • склад паті • оновлення без перезавантаження
               </span>
             </div>
             <h1>{title}</h1>
@@ -1543,13 +1543,13 @@ export function RaidPageShell({
               {
                 label: "ДОСТУП",
                 value: user ? hierarchyTitle(user.role) : "Учасник",
-                note: user ? "Права з Discord/Firebase" : "Публічний перегляд",
+                note: user ? "Права з профілю" : "Публічний перегляд",
               },
             ]}
             stats={[
-              { label: "DISCORD", value: "SYNC" },
-              { label: "ПАТІ", value: "AUTO" },
-              { label: "LIVE", value: "ON" },
+              { label: "DISCORD", value: "Так" },
+              { label: "ПАТІ", value: "Авто" },
+              { label: "ОНОВЛЕННЯ", value: "Так" },
             ]}
           />
         </header>

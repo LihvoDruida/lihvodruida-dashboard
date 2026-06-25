@@ -56,10 +56,10 @@ export function RaidPollPageShell({ user, title, description, children }: { user
         {user ? <DashboardIdentity user={user} activeSection="raids" /> : null}
         <header className="hero panel dashboard-hero raid-dashboard-hero">
           <div className="hero-copy dashboard-hero__copy guild-hero__copy">
-            <div className="eyebrow">Mistblossom Vanguard • Рейд-пули</div>
+            <div className="eyebrow">Mistblossom Vanguard • Голосування</div>
             <div className="content-hero-status-row">
               <span className="content-mode-pill content-mode-pill--library">{user ? hierarchyTitle(user.role) : "Учасник"}</span>
-              <span className="content-hero-path">Discord голосування • Firebase sync • сайт-результати</span>
+              <span className="content-hero-path">Голосування в Discord • результати на сайті</span>
             </div>
             <h1>{title}</h1>
             <span className="hero-accent" aria-hidden="true" />
@@ -68,13 +68,13 @@ export function RaidPollPageShell({ user, title, description, children }: { user
           <HeroSidePanel
             ariaLabel="Огляд рейд-пулів"
             summary={[
-              { label: "ДЖЕРЕЛО", value: "Сайт", note: "Створення тільки через dashboard" },
-              { label: "DISCORD", value: "Vote UI", note: "Бот лише публікує та приймає голоси" },
+              { label: "ДЖЕРЕЛО", value: "Сайт", note: "Створення тільки через сайт" },
+              { label: "DISCORD", value: "Голосування", note: "Бот публікує та приймає голоси" },
             ]}
             stats={[
               { label: "ДНІ", value: "7" },
               { label: "ЧАС", value: "19–21" },
-              { label: "LIVE", value: "SYNC" },
+              { label: "ДАНІ", value: "Авто" },
             ]}
           />
         </header>

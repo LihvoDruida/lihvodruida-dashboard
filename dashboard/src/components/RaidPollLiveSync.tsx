@@ -143,7 +143,7 @@ export default function RaidPollLiveSync({ pollId, initialRevision }: { pollId: 
           ? "Повтор синхронізації"
           : state === "skipped"
             ? "Очікує"
-            : "Live sync";
+            : "Автооновлення";
   return (
     <div className={`raid-poll-live-sync raid-poll-live-sync--${state}`} role="status" aria-live="polite">
       <span aria-hidden="true" />

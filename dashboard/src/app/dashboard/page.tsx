@@ -103,7 +103,7 @@ export default async function AdminOverviewPage() {
                 value: user.groupName || user.role,
                 note: user.isServerOwner
                   ? "Власник сервера"
-                  : "Права з поточної сесії",
+                  : "Поточні права",
               },
               {
                 label: "ШАБЛОН",
@@ -112,14 +112,14 @@ export default async function AdminOverviewPage() {
               },
             ]}
             stats={[
-              { label: "ГРУПИ", value: canManageGroups(user) ? "ON" : "—" },
+              { label: "ГРУПИ", value: canManageGroups(user) ? "Так" : "—" },
               {
                 label: "DISCORD",
-                value: canManageDiscordMembers(user) ? "ON" : "—",
+                value: canManageDiscordMembers(user) ? "Так" : "—",
               },
-              { label: "ЛОГИ", value: canViewAdminLogs(user) ? "ON" : "—" },
-              { label: "ГЕО", value: geoPolicy.enabled ? "ON" : "OFF" },
-              { label: "ВХІД", value: authPolicy.enabled ? "ON" : "OFF" },
+              { label: "ЛОГИ", value: canViewAdminLogs(user) ? "Так" : "—" },
+              { label: "ГЕО", value: geoPolicy.enabled ? "Так" : "Ні" },
+              { label: "ВХІД", value: authPolicy.enabled ? "Так" : "Ні" },
             ]}
           />
         </header>
@@ -192,8 +192,7 @@ export default async function AdminOverviewPage() {
                   <span>
                     <strong>Обмежити вхід Discord-роллю</strong>
                     <small>
-                      Перевіряється під час OAuth callback і live-перевірки
-                      сесії.
+                      Перевіряється під час входу та повторної перевірки сесії.
                     </small>
                   </span>
                 </label>
@@ -207,8 +206,7 @@ export default async function AdminOverviewPage() {
                   <span>
                     <strong>Блокувати, якщо роль не вибрана</strong>
                     <small>
-                      <code>AUTH_ACCESS_REQUIRE_CONFIGURED_ROLE=true</code>.
-                      Якщо роль не вибрана — вхід блокується.
+                      Якщо потрібну роль не вибрано, новий вхід буде заблоковано.
                     </small>
                   </span>
                 </label>
@@ -220,7 +218,7 @@ export default async function AdminOverviewPage() {
                     disabled={!canEditAuthPolicy}
                   />
                   <span>
-                    <strong>Дозволити власнику сервера обхід ролі</strong>
+                    <strong>Дозволити вхід власнику сервера без ролі</strong>
                     <small>
                       Корисно, якщо Discord не дозволяє видати власнику звичайну
                       роль.
@@ -235,22 +233,19 @@ export default async function AdminOverviewPage() {
                     disabled={!canEditAuthPolicy}
                   />
                   <span>
-                    <strong>Дозволити резервний token-вхід</strong>
+                    <strong>Дозволити аварійний вхід</strong>
                     <small>
-                      <code>AUTH_ACCESS_ALLOW_EMERGENCY_TOKEN_LOGIN=false</code>
-                      . Вмикати тільки як аварійний доступ: token-вхід не має
-                      Discord membership/role перевірки.
+                      Вмикай лише для відновлення доступу. Такий вхід не перевіряє роль у Discord.
                     </small>
                   </span>
                 </label>
               </fieldset>
 
               <fieldset className="admin-policy-fieldset admin-policy-fieldset--roles">
-                <legend>Роль, потрібна для авторизації / реєстрації</legend>
+                <legend>Роль для входу та реєстрації</legend>
                 {authRolesError ? (
                   <small className="error-note">
-                    Не вдалося завантажити ролі Discord. Можна вставити role ID
-                    вручну нижче.
+                    Не вдалося завантажити ролі Discord. Можна вставити ID ролі вручну нижче.
                   </small>
                 ) : null}
                 {discordRoles.length ? (
@@ -275,10 +270,9 @@ export default async function AdminOverviewPage() {
                   </small>
                 )}
                 <label className="admin-policy-input">
-                  <span>Role ID вручну</span>
+                  <span>ID ролі вручну</span>
                   <small>
-                    Сюди потрапляють тільки ролі, яких немає у списку вище.
-                    Інакше зняті чекбокси знову додавалися б через це поле.
+                    Додавай сюди тільки ролі, яких немає у списку вище.
                   </small>
                   <input
                     name="requiredRoleIdsText"
@@ -299,13 +293,11 @@ export default async function AdminOverviewPage() {
                   {authPolicy.requireConfiguredRole
                     ? "блокувати"
                     : "дозволяти за старими правилами"}
-                  ; резервний token-вхід:{" "}
+                  ; аварійний вхід:{" "}
                   {authPolicy.allowEmergencyTokenLogin
                     ? "дозволено"
                     : "заборонено"}
-                  . Безпечний дефолт:{" "}
-                  <code>AUTH_ACCESS_REQUIRE_CONFIGURED_ROLE=true</code>,{" "}
-                  <code>AUTH_ACCESS_ALLOW_EMERGENCY_TOKEN_LOGIN=false</code>.
+                  . Рекомендовано: обмеження роллю увімкнене, аварійний вхід вимкнений.
                 </small>
                 <button
                   className="btn primary"
@@ -326,8 +318,7 @@ export default async function AdminOverviewPage() {
               <div className="admin-policy-card__title">
                 <strong>Геообмеження доступу</strong>
                 <small>
-                  Блокує подання заявок і старт авторизації за edge-сигналом
-                  Cloudflare/Vercel без зовнішніх IP-баз.
+                  Блокує заявки та вхід для вибраних країн за даними запиту.
                 </small>
               </div>
               <div
@@ -361,7 +352,7 @@ export default async function AdminOverviewPage() {
                   />
                   <span>
                     <strong>Увімкнути геообмеження</strong>
-                    <small>Глобальний перемикач для цієї політики.</small>
+                    <small>Головний перемикач цього правила.</small>
                   </span>
                 </label>
                 <label className="admin-policy-toggle">
@@ -374,7 +365,7 @@ export default async function AdminOverviewPage() {
                   <span>
                     <strong>Забороняти подання заявок</strong>
                     <small>
-                      Перевірка виконується у Worker перед створенням заявки.
+                      Заявка не створиться, якщо країна заблокована.
                     </small>
                   </span>
                 </label>
@@ -388,7 +379,7 @@ export default async function AdminOverviewPage() {
                   <span>
                     <strong>Забороняти авторизацію</strong>
                     <small>
-                      Старт OAuth і callback блокуються до створення сесії.
+                      Вхід не почнеться, якщо країна заблокована.
                     </small>
                   </span>
                 </label>
@@ -402,8 +393,7 @@ export default async function AdminOverviewPage() {
                   <span>
                     <strong>Блокувати невідому країну</strong>
                     <small>
-                      Обережно: може зачепити VPN, privacy relay або погано
-                      проксовані запити.
+                      Обережно: може зачепити VPN або запити без визначеної країни.
                     </small>
                   </span>
                 </label>
@@ -412,12 +402,9 @@ export default async function AdminOverviewPage() {
               <fieldset className="admin-policy-fieldset admin-policy-fieldset--compact">
                 <legend>Країни</legend>
                 <label className="admin-policy-input">
-                  <span>ISO-коди країн</span>
+                  <span>Країни для блокування</span>
                   <small>
-                    Зберігаються як ISO 3166 Alpha-2. Можна вводити{" "}
-                    <code>RU</code>, <code>BY</code>, а також aliases{" "}
-                    <code>RUS/643</code>, <code>BLR/112</code> — вони
-                    автоматично стануть <code>RU/BY</code>.
+                    Введи коди країн через кому. Наприклад: <code>RU</code>, <code>BY</code>. Розширені варіанти теж нормалізуються автоматично.
                   </small>
                   <input
                     name="blockedCountries"
@@ -463,18 +450,14 @@ export default async function AdminOverviewPage() {
                       : "дозволяється"}
                   </small>
                   <small>
-                    Сигнали: <code>CF-IPCountry</code>,{" "}
-                    <code>request.cf.country</code>,{" "}
-                    <code>X-Vercel-IP-Country</code>.
+                    Джерело країни визначається автоматично під час запиту.
                   </small>
                 </div>
               </fieldset>
 
               <footer className="admin-policy-footer">
                 <small>
-                  Dashboard і Worker читають одну політику з Firebase.
-                  Cloudflare/Vercel передають країну як Alpha-2; Alpha-3 і
-                  цифрові ISO-коди лише нормалізуються перед збереженням.
+                  Dashboard і Worker використовують одні й ті самі правила, тому зміни застосовуються для сайту та заявок.
                 </small>
                 <button
                   className="btn primary"
