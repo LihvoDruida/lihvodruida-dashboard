@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { DiscordMarkdown } from "@/components/DiscordMarkdown";
+import { cleanRaidImageUrl, defaultRaidThumbnailPath } from "@/lib/raidThumbnailAssets";
 import type {
   RaidCharacterRole,
   RaidComposition,
@@ -108,31 +109,10 @@ function cleanPositiveNumber(
   return Math.min(max, Math.floor(numberValue));
 }
 
-function cleanUrl(value?: string | null) {
-  const text = String(value || "").trim();
-  if (!text) return null;
-  if (text.startsWith("/")) return text;
-  try {
-    const url = new URL(text);
-    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
-    return url.toString();
-  } catch {
-    return null;
-  }
-}
-
-function defaultRaidThumbnailPath(difficulty: RaidDifficulty) {
-  return `/assets/raid-thumbnails/${difficulty}.png`;
-}
-
 function resolvePreviewThumbnailUrl(
   raid: Pick<RaidItem, "difficulty" | "thumbnailUrl" | "imageUrl">,
 ) {
-  return (
-    cleanUrl(raid.thumbnailUrl) ||
-    cleanUrl(raid.imageUrl) ||
-    defaultRaidThumbnailPath(raid.difficulty)
-  );
+  return cleanRaidImageUrl(raid.thumbnailUrl) || defaultRaidThumbnailPath(raid.difficulty);
 }
 
 function raidTitle(raid: Pick<RaidItem, "title" | "difficulty">) {

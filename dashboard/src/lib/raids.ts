@@ -1,4 +1,9 @@
 import { FieldValue } from "firebase-admin/firestore";
+import {
+  cleanRaidImageUrl,
+  defaultRaidThumbnailPath,
+  normalizeRaidThumbnailDifficulty,
+} from "@/lib/raidThumbnailAssets";
 import { logDashboardEvent } from "@/lib/security";
 import { mapConcurrentSettled } from "@/lib/concurrency";
 import {
@@ -214,12 +219,6 @@ const RAID_ACTION_PREFIX = "mbv1:raid";
 const MAX_RAID_PLAYERS = 80;
 const DEFAULT_RAID_REGISTRATION_LOCK_MINUTES = 60;
 const MAX_RAID_REGISTRATION_LOCK_MINUTES = 7 * 24 * 60;
-const RAID_THUMBNAIL_ASSET_PATHS: Record<RaidDifficulty, string> = {
-  normal: "/assets/raid-thumbnails/normal.png",
-  heroic: "/assets/raid-thumbnails/heroic.png",
-  mythic: "/assets/raid-thumbnails/mythic.png",
-};
-
 const DIFFICULTY_LABELS: Record<RaidDifficulty, string> = {
   normal: "Нормал",
   heroic: "Героїк",
@@ -344,38 +343,36 @@ function raidActionHelpText(reason: "login" | "main") {
 Правила рейду: ${rules}`;
 }
 
-export function defaultRaidThumbnailPath(difficulty: RaidDifficulty) {
-  return (
-    RAID_THUMBNAIL_ASSET_PATHS[difficulty] || RAID_THUMBNAIL_ASSET_PATHS.heroic
-  );
-}
-
 export function resolveRaidThumbnailUrl(
   input: {
     difficulty?: RaidDifficulty | string | null;
     thumbnailUrl?: string | null;
     imageUrl?: string | null;
   },
-  options?: { absolute?: boolean },
+  options?: { absolute?: boolean; allowImageFallback?: boolean },
 ) {
-  const explicitThumb = cleanUrl(input.thumbnailUrl);
-  if (explicitThumb) return explicitThumb;
-  const explicitImage = cleanUrl(input.imageUrl);
-  if (explicitImage) return explicitImage;
-  const difficulty = cleanDifficulty(input.difficulty);
-  const assetPath = defaultRaidThumbnailPath(difficulty);
-  return options?.absolute === false
-    ? assetPath
-    : absoluteDashboardAssetUrl(assetPath);
+  const explicitThumb = cleanRaidImageUrl(input.thumbnailUrl);
+  if (explicitThumb) {
+    return options?.absolute && explicitThumb.startsWith("/")
+      ? absoluteDashboardAssetUrl(explicitThumb)
+      : explicitThumb;
+  }
+
+  if (options?.allowImageFallback) {
+    const explicitImage = cleanRaidImageUrl(input.imageUrl);
+    if (explicitImage) {
+      return options?.absolute && explicitImage.startsWith("/")
+        ? absoluteDashboardAssetUrl(explicitImage)
+        : explicitImage;
+    }
+  }
+
+  const assetPath = defaultRaidThumbnailPath(input.difficulty);
+  return options?.absolute ? absoluteDashboardAssetUrl(assetPath) : assetPath;
 }
 
 function cleanDifficulty(value: unknown): RaidDifficulty {
-  const key = cleanString(value, 20).toLowerCase();
-  return key === "mythic" || key === "міфік"
-    ? "mythic"
-    : key === "normal" || key === "нормал"
-      ? "normal"
-      : "heroic";
+  return normalizeRaidThumbnailDifficulty(cleanString(value, 20));
 }
 
 function cleanConsumables(value: unknown): RaidConsumables {
@@ -1077,7 +1074,7 @@ function normalizeRaid(id: string, data: Record<string, unknown>): RaidItem {
   );
 
   const difficulty = cleanDifficulty(data.difficulty);
-  const imageUrl = cleanUrl(data.imageUrl);
+  const imageUrl = cleanRaidImageUrl(data.imageUrl);
 
   return {
     id,
@@ -2697,8 +2694,8 @@ export function formRaidPayload(
       };
 
   const difficulty = cleanDifficulty(form.get("difficulty"));
-  const imageUrl = cleanUrl(form.get("imageUrl"));
-  const thumbnailUrl = cleanUrl(form.get("thumbnailUrl"));
+  const imageUrl = cleanRaidImageUrl(form.get("imageUrl"));
+  const thumbnailUrl = cleanRaidImageUrl(form.get("thumbnailUrl"));
   const registrationLockEnabled = cleanBoolean(
     form.get("registrationLockEnabled"),
   );

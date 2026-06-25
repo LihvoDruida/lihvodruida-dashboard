@@ -1416,9 +1416,9 @@ export function RaidForm({
               name="thumbnailUrl"
               placeholder="https://..."
               defaultValue={
-                raid?.thumbnailUrl ||
                 resolveRaidThumbnailUrl({
                   difficulty: raid?.difficulty || "heroic",
+                  thumbnailUrl: raid?.thumbnailUrl || null,
                 })
               }
             />
