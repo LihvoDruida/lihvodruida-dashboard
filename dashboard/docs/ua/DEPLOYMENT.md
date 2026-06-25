@@ -176,7 +176,7 @@ Cloudflare Access можна використовувати як додатко�
 Якщо весь production traffic точно йде через Cloudflare, можна увімкнути:
 
 ```env
-SECURITY_REQUIRE_CLOUDFLARE=true
+SECURITY_REQUIRE_CLOUDFLARE=strict
 ```
 
 Для Vercel Preview це не вмикати.

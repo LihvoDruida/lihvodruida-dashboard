@@ -176,7 +176,7 @@ Recommended setup:
 If all production traffic definitely goes through Cloudflare, you can enable:
 
 ```env
-SECURITY_REQUIRE_CLOUDFLARE=true
+SECURITY_REQUIRE_CLOUDFLARE=strict
 ```
 
 Do not enable it for Vercel Preview.

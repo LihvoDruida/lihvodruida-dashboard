@@ -43,7 +43,7 @@ Put values into Worker only when Worker actually owns the corresponding responsi
 | `NEXT_PUBLIC_ADMIN_DASHBOARD_URL` | alias | Public alias for raid route redirects. |
 | `NEXTAUTH_URL` | alias | Legacy fallback for dashboard URL. |
 | `DASHBOARD_ALLOWED_HOSTS` | required | Comma-separated allowed hostnames. |
-| `SECURITY_REQUIRE_CLOUDFLARE` | optional | true requires Cloudflare headers in production. |
+| `SECURITY_REQUIRE_CLOUDFLARE` | optional | `false/off` disables the check; `true/warn` logs missing Cloudflare headers only; `strict` blocks requests without Cloudflare headers in production. |
 | `SECURITY_STRICT_ORIGIN_CHECKS` | optional | Extra origin checks; enable carefully. |
 | `SECURITY_HSTS_HEADER` | optional | Custom HSTS value. |
 | `DASHBOARD_DEBUG_LOGS` | optional | Verbose dashboard logs. |

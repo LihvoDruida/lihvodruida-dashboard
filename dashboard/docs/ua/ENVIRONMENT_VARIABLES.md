@@ -43,7 +43,7 @@
 | `NEXT_PUBLIC_ADMIN_DASHBOARD_URL` | alias | Public alias для redirect у рейдових routes. |
 | `NEXTAUTH_URL` | alias | Legacy fallback для URL dashboard. |
 | `DASHBOARD_ALLOWED_HOSTS` | required | Дозволені hostnames через кому. |
-| `SECURITY_REQUIRE_CLOUDFLARE` | optional | true — вимагати Cloudflare headers у production. |
+| `SECURITY_REQUIRE_CLOUDFLARE` | optional | `false/off` — вимкнено; `true/warn` — лише логувати відсутність Cloudflare headers; `strict` — блокувати запити без Cloudflare headers у production. |
 | `SECURITY_STRICT_ORIGIN_CHECKS` | optional | Додаткові origin checks, вмикати обережно. |
 | `SECURITY_HSTS_HEADER` | optional | Кастомне значення HSTS. |
 | `DASHBOARD_DEBUG_LOGS` | optional | Детальні dashboard logs. |

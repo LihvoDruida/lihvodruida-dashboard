@@ -118,12 +118,22 @@ function contentSecurityPolicy(nonce: string) {
     .join("; ");
 }
 
-function shouldRequireCloudflareProxy(host: string) {
-  if (isDevelopment || isLocalHost(host)) return false;
-  return (
-    String(process.env.SECURITY_REQUIRE_CLOUDFLARE || "").toLowerCase() ===
-    "true"
-  );
+type CloudflareProxyMode = "off" | "warn" | "strict";
+
+function getCloudflareProxyMode(host: string): CloudflareProxyMode {
+  if (isDevelopment || isLocalHost(host)) return "off";
+
+  const raw = String(process.env.SECURITY_REQUIRE_CLOUDFLARE || "")
+    .trim()
+    .toLowerCase();
+
+  // Backward compatibility: older deployments used SECURITY_REQUIRE_CLOUDFLARE=true
+  // as a hard gate. In practice Vercel/Cloudflare/domain transitions can temporarily
+  // strip CF headers from legitimate custom-domain requests and lock admins out.
+  // Use SECURITY_REQUIRE_CLOUDFLARE=strict only after the DNS/proxy chain is verified.
+  if (["strict", "enforce", "block"].includes(raw)) return "strict";
+  if (["1", "true", "yes", "on", "warn", "log"].includes(raw)) return "warn";
+  return "off";
 }
 
 function hasCloudflareSignal(request: NextRequest) {
@@ -158,9 +168,16 @@ export function proxy(request: NextRequest) {
     });
   }
 
-  if (shouldRequireCloudflareProxy(host) && !hasCloudflareSignal(request)) {
-    logDashboardEvent("warn", "proxy.cloudflare_required", request);
-    return forbiddenResponse("Запит має проходити через Cloudflare.");
+  const cloudflareProxyMode = getCloudflareProxyMode(host);
+  if (cloudflareProxyMode !== "off" && !hasCloudflareSignal(request)) {
+    logDashboardEvent("warn", "proxy.cloudflare_signal_missing", request, {
+      mode: cloudflareProxyMode,
+      action: cloudflareProxyMode === "strict" ? "blocked" : "allowed",
+    });
+
+    if (cloudflareProxyMode === "strict") {
+      return forbiddenResponse("Запит має проходити через Cloudflare.");
+    }
   }
 
   const isDiscordInteractionEndpoint =
