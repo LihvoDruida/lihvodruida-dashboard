@@ -2932,3 +2932,175 @@ html.starfield-reduced-motion body::before {
     padding-inline: max(14px, env(safe-area-inset-left), env(safe-area-inset-right)) !important;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Unified list tables: rows belong to one list, not separate cards.
+   The visual model follows a compact admin table: one surface, row dividers,
+   muted cells, gold accents and no card-per-item gaps.
+   -------------------------------------------------------------------------- */
+:root {
+  --dash-table-list-bg: rgba(12, 17, 24, 0.76);
+  --dash-table-list-head-bg: rgba(214, 155, 49, 0.09);
+  --dash-table-list-row-bg: rgba(255, 255, 255, 0.018);
+  --dash-table-list-row-hover: rgba(214, 155, 49, 0.075);
+  --dash-table-list-line: rgba(255, 255, 255, 0.085);
+  --dash-table-list-line-strong: rgba(214, 155, 49, 0.20);
+  --dash-table-list-radius: 14px;
+}
+
+:where(.dashboard-table-scroll, .content-table.dashboard-list, .discord-rules-table.dashboard-list, .admin-log-list.dashboard-list, .raid-manager-list.dashboard-list, .raid-poll-card-grid.dashboard-list, .home-upcoming-events, .home-upcoming-list, .profile-character-list.dashboard-list) {
+  width: 100% !important;
+  gap: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid var(--dash-table-list-line) !important;
+  border-radius: var(--dash-table-list-radius) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,0.032), rgba(255,255,255,0.014)) !important;
+  box-shadow: none !important;
+}
+
+.dashboard-table-scroll {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
+:where(.dashboard-table.dashboard-list, .raid-manager-list.dashboard-list, .raid-poll-card-grid.dashboard-list, .content-table.dashboard-list, .discord-rules-table.dashboard-list, .admin-log-list.dashboard-list, .home-upcoming-events, .home-upcoming-list, .profile-character-list.dashboard-list) {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: stretch !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+:where(.dashboard-table-head) {
+  min-height: 36px !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--dash-table-list-line) !important;
+  border-radius: 0 !important;
+  background: var(--dash-table-list-head-bg) !important;
+}
+
+:where(.dashboard-table-head span) {
+  padding-block: 10px !important;
+  color: rgba(238, 205, 143, 0.78) !important;
+  font-size: 0.70rem !important;
+  letter-spacing: 0.055em !important;
+}
+
+:where(.dashboard-table-row, .dashboard-list-row, .raid-list-item, .raid-poll-list-card, .content-row, .discord-rules-row, .admin-log-row, .home-upcoming-event, .home-upcoming-item, .profile-character-card) {
+  margin: 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--dash-table-list-line) !important;
+  border-radius: 0 !important;
+  background: var(--dash-table-list-row-bg) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+:where(.dashboard-table-row:last-child, .dashboard-list-row:last-child, .raid-list-item:last-child, .raid-poll-list-card:last-child, .content-row:last-child, .discord-rules-row:last-child, .admin-log-row:last-child, .home-upcoming-event:last-child, .home-upcoming-item:last-child, .profile-character-card:last-child) {
+  border-bottom: 0 !important;
+}
+
+:where(.dashboard-table-row:hover, .dashboard-table-row:focus-visible, .dashboard-table-row:focus-within, .dashboard-list-row:hover, .dashboard-list-row:focus-within, .raid-list-item:hover, .raid-list-item:focus-within, .raid-poll-list-card:hover, .raid-poll-list-card:focus-within, .content-row:hover, .content-row:focus-within, .discord-rules-row:hover, .discord-rules-row:focus-within, .admin-log-row:hover, .admin-log-row:focus-within, .home-upcoming-event:hover, .home-upcoming-item:hover, .profile-character-card:hover) {
+  border-color: var(--dash-table-list-line-strong) !important;
+  background: var(--dash-table-list-row-hover) !important;
+  box-shadow: inset 3px 0 0 rgba(214, 155, 49, 0.42) !important;
+  transform: none !important;
+  outline: none !important;
+}
+
+:where(.dashboard-table-row) {
+  min-height: 50px !important;
+  padding: 0 !important;
+}
+
+:where(.dashboard-table-row > div) {
+  padding: 10px 12px !important;
+  border-right-color: rgba(255, 255, 255, 0.055) !important;
+}
+
+:where(.dashboard-table-row strong) {
+  color: rgba(248, 240, 226, 0.95) !important;
+  font-size: 0.84rem !important;
+}
+
+:where(.dashboard-table-row small, .dashboard-table-muted) {
+  color: rgba(207, 204, 196, 0.66) !important;
+  font-size: 0.70rem !important;
+}
+
+:where(.dashboard-table-row a, .dashboard-table-link, .dashboard-table-pill) {
+  min-height: 24px !important;
+  padding-inline: 9px !important;
+  border-radius: 999px !important;
+}
+
+:where(.raid-manager-list.dashboard-list, .raid-manager-list, .raid-poll-card-grid.dashboard-list, .raid-poll-card-grid) {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0 !important;
+}
+
+:where(.raid-manager-list .raid-list-item, .raid-list-item) {
+  grid-template-columns: minmax(0, 1fr) minmax(132px, 168px) !important;
+  gap: 14px !important;
+  padding: 14px 16px !important;
+  align-items: center !important;
+}
+
+:where(.raid-list-main-link) {
+  grid-template-columns: 56px minmax(0, 1fr) !important;
+  align-items: center !important;
+}
+
+:where(.raid-list-main-link > img, .raid-list-fallback) {
+  width: 56px !important;
+  height: 56px !important;
+  min-width: 56px !important;
+  border-radius: 12px !important;
+}
+
+:where(.raid-list-title-row, .raid-list-facts) {
+  gap: 7px !important;
+}
+
+:where(.raid-list-actions, .raid-manager-list .raid-list-actions) {
+  max-width: 168px !important;
+  gap: 7px !important;
+}
+
+:where(.raid-poll-list-card) {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  padding: 14px 16px !important;
+  align-items: center !important;
+}
+
+:where(.content-row, .discord-rules-row, .admin-log-row, .home-upcoming-event, .home-upcoming-item, .profile-character-card) {
+  padding: 12px 14px !important;
+}
+
+:where(.content-row) {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+}
+
+:where(.content-row-main) {
+  min-width: 0 !important;
+}
+
+:where(.dashboard-list-panel, .dashboard-table-card) {
+  overflow: hidden !important;
+}
+
+:where(.dashboard-list-panel > .dashboard-list, .dashboard-list-panel > .raid-manager-list, .dashboard-list-panel > .raid-poll-card-grid, .dashboard-list-panel > .content-table, .dashboard-list-panel > .discord-rules-table) {
+  margin-top: 0 !important;
+}
+
+@media (max-width: 760px) {
+  :where(.raid-manager-list .raid-list-item, .raid-list-item, .raid-poll-list-card, .content-row, .discord-rules-row, .admin-log-row, .home-upcoming-event, .home-upcoming-item, .profile-character-card) {
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: stretch !important;
+  }
+
+  :where(.raid-list-actions, .raid-manager-list .raid-list-actions) {
+    max-width: none !important;
+  }
+}
