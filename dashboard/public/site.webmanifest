@@ -1,0 +1,40 @@
+{
+  "name": "Панель Mistblossom Vanguard",
+  "short_name": "Mistblossom",
+  "description": "Особиста панель гільдії Mistblossom Vanguard для заявок, профілів, рейдів і Discord-повідомлень.",
+  "lang": "uk-UA",
+  "dir": "ltr",
+  "start_url": "/login",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "browser"],
+  "background_color": "#020817",
+  "theme_color": "#020817",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/maskable-icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/maskable-icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

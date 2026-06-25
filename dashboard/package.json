@@ -1,0 +1,40 @@
+{
+  "name": "mistblossom-applications-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "prebuild": "node scripts/remove-legacy-middleware.cjs",
+    "build": "node scripts/next-build.cjs",
+    "start": "next start",
+    "typecheck": "node scripts/typecheck.cjs",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "verify": "npm run typecheck && npm run lint && npm run inspect:ci",
+    "inspect:ci": "node scripts/inspect-ci.cjs",
+    "build:ci": "npm run typecheck && npm run inspect:ci && npm run build"
+  },
+  "dependencies": {
+    "firebase-admin": "13.10.0",
+    "next": "16.2.6",
+    "node-domexception": "file:vendor/node-domexception",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "yaml": "2.9.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "3.3.5",
+    "@eslint/js": "9.39.4",
+    "@types/node": "25.9.1",
+    "@types/react": "19.2.15",
+    "@types/react-dom": "19.2.3",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.2.6",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "typescript": "6.0.3"
+  },
+  "overrides": {
+    "node-domexception": "file:vendor/node-domexception",
+    "uuid": "11.1.0"
+  }
+}

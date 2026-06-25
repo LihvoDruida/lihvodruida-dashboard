@@ -1,0 +1,3200 @@
+@import "./design-tokens.css";
+
+/* Mistblossom Dashboard Theme Layer
+   Тут застосовуються токени з design-tokens.css до глобальних компонентів.
+   Нові сторінки мають підключатися до цих semantic tokens, а не створювати
+   власні локальні палітри. */
+
+body {
+  background:
+    radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--theme-info) 13%, transparent), transparent 30rem),
+    radial-gradient(circle at 86% 0%, color-mix(in srgb, var(--theme-accent) 12%, transparent), transparent 26rem),
+    linear-gradient(180deg, var(--theme-bg-canvas-start) 0%, var(--theme-bg-canvas) 42%, var(--theme-bg-canvas-2) 100%) !important;
+}
+
+body::before {
+  opacity: 0.28 !important;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--theme-white) 1.8%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--theme-white) 1.6%, transparent) 1px, transparent 1px),
+    radial-gradient(circle at center, color-mix(in srgb, var(--theme-accent) 6%, transparent) 0 1px, transparent 1px) !important;
+  background-size: 58px 58px, 58px 58px, 180px 180px !important;
+}
+
+:where(.panel, .card, .action-panel, .rio-panel, .detail-box, .notice, .empty, .content-empty) {
+  border-color: var(--theme-border) !important;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--theme-white) 5.5%, transparent), color-mix(in srgb, var(--theme-white) 2%, transparent)),
+    linear-gradient(135deg, var(--theme-surface-2), var(--theme-surface-1)) !important;
+  box-shadow:
+    var(--theme-shadow-card),
+    inset 0 1px 0 color-mix(in srgb, var(--theme-white) 6%, transparent) !important;
+}
+
+.dashboard-topbar {
+  border-color: var(--theme-border) !important;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--theme-white) 6%, transparent), color-mix(in srgb, var(--theme-white) 2%, transparent)),
+    color-mix(in srgb, var(--theme-bg-deep-solid) 92%, transparent) !important;
+}
+
+:where(.btn.primary, .action-button--primary, .dashboard-user__logout button) {
+  color: var(--theme-text-on-accent) !important;
+  border-color: var(--theme-border-strong) !important;
+  background: linear-gradient(135deg, var(--theme-accent-strong), var(--theme-accent) 54%, var(--theme-accent-deep) 100%) !important;
+  box-shadow:
+    0 14px 32px color-mix(in srgb, var(--theme-accent) 18%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--theme-white) 42%, transparent) !important;
+}
+
+:where(.btn.subtle, .btn.ghost, .action-button):not(.primary):not(.danger) {
+  color: var(--theme-text) !important;
+  border-color: var(--theme-border) !important;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--theme-white) 4.5%, transparent), color-mix(in srgb, var(--theme-white) 2%, transparent)),
+    color-mix(in srgb, var(--theme-surface-base-solid) 72%, transparent) !important;
+}
+
+:where(.btn.subtle, .btn.ghost, .action-button):not(.primary):not(.danger):hover {
+  border-color: var(--theme-border-strong) !important;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--theme-accent) 12%, transparent), color-mix(in srgb, var(--theme-white) 2.5%, transparent)),
+    color-mix(in srgb, var(--theme-surface-raised-solid) 88%, transparent) !important;
+}
+
+:where(.btn.danger, button.btn.danger) {
+  color: var(--theme-text-danger) !important;
+  border-color: color-mix(in srgb, var(--theme-danger) 38%, transparent) !important;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--theme-danger) 18%, transparent), color-mix(in srgb, var(--theme-danger-deep) 56%, transparent)) !important;
+}
+
+/* Hero and global side cards */
+:where(.hero-map-summary, .guild-hero-summary),
+:where(.hero-map-stat-card, .guild-hero-stat-card) {
+  border-color: var(--theme-border-soft) !important;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--theme-white) 5%, transparent), color-mix(in srgb, var(--theme-white) 2%, transparent)),
+    color-mix(in srgb, var(--theme-surface-base-solid) 72%, transparent) !important;
+}
+
+:where(.hero-map-summary__label, .guild-hero-summary__label, .hero-map-stat-card span, .guild-hero-stat-card span) {
+  color: var(--theme-accent-strong) !important;
+}
+
+:where(.hero-map-summary__block, .guild-hero-summary__block) p,
+:where(.hero, .dashboard-hero, .content-dashboard-hero, .discord-dashboard-hero, .raid-dashboard-hero, .admin-hero, .legal-hero, .rules-onboarding-hero, .profile-directory-hero, .guild-hero) .lead {
+  color: var(--theme-text-soft) !important;
+}
+
+/* Raid-polls: unify colors with the global dashboard palette */
+.raid-poll-page .raid-dashboard-hero {
+  min-height: 0;
+  border-color: var(--theme-border) !important;
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--theme-info) 10%, transparent), transparent 30%),
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--theme-accent) 10%, transparent), transparent 32%),
+    linear-gradient(135deg, color-mix(in srgb, var(--theme-bg-canvas) 94%, transparent), color-mix(in srgb, var(--theme-bg-canvas-2) 96%, transparent)) !important;
+}
+
+.raid-poll-page .dashboard-hero__copy .content-hero-path {
+  color: var(--theme-text-muted) !important;
+}
+
+.raid-poll-command-strip {
+  grid-template-columns: auto minmax(0, 1fr) minmax(220px, auto);
+  align-items: center;
+  border-color: var(--theme-border) !important;
+  background:
+    radial-gradient(circle at 0 0, color-mix(in srgb, var(--theme-accent) 10%, transparent), transparent 30%),
+    linear-gradient(135deg, color-mix(in srgb, var(--theme-surface-raised-solid) 94%, transparent), color-mix(in srgb, var(--theme-bg-canvas) 96%, transparent)) !important;
+}
+
+.raid-poll-sync-node {
+  border-color: var(--theme-border-strong) !important;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--theme-accent) 18%, transparent), color-mix(in srgb, var(--theme-accent) 8%, transparent)) !important;
+  color: var(--theme-accent-strong) !important;
+  box-shadow: inset 0 0 20px color-mix(in srgb, var(--theme-accent) 8%, transparent), 0 12px 24px color-mix(in srgb, var(--theme-black) 20%, transparent) !important;
+}
+
+.raid-poll-command-strip strong {
+  color: var(--theme-text-heading) !important;
+}
+
+.raid-poll-command-strip p {
+  color: var(--theme-text-soft) !important;
+}
+
+.raid-poll-command-log {
+  border-color: var(--theme-border-soft) !important;
+  background: color-mix(in srgb, var(--theme-bg-deep-solid) 86%, transparent) !important;
+  color: var(--theme-accent-strong) !important;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--theme-white) 4%, transparent);
+}
+
+.raid-poll-recalculate-button {
+  min-width: 210px;
+  color: var(--theme-accent-strong) !important;
+}
+
+.raid-poll-list-section {
+  border-color: var(--theme-border) !important;
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--theme-accent) 6%, transparent), transparent 28%),
+    linear-gradient(180deg, color-mix(in srgb, var(--theme-surface-base-solid) 94%, transparent), color-mix(in srgb, var(--theme-bg-canvas) 96%, transparent)) !important;
+}
+
+.raid-poll-list-section--archive {
+  border-color: var(--theme-border-soft) !important;
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--theme-info) 8%, transparent), transparent 28%),
+    linear-gradient(180deg, color-mix(in srgb, var(--theme-surface-raised-solid) 92%, transparent), color-mix(in srgb, var(--theme-bg-deep-solid) 95%, transparent)) !important;
+}
+
+.raid-poll-section-kicker {
+  border-color: var(--theme-border) !important;
+  background: var(--theme-accent-soft) !important;
+  color: var(--theme-accent-strong) !important;
+}
+
+.raid-poll-list-section--archive .raid-poll-section-kicker {
+  border-color: var(--theme-border-soft) !important;
+  background: color-mix(in srgb, var(--theme-info) 8%, transparent) !important;
+  color: var(--theme-text-info) !important;
+}
+
+.raid-poll-list-summary span {
+  border-color: var(--theme-border-soft) !important;
+  background: color-mix(in srgb, var(--theme-white) 3%, transparent) !important;
+  color: var(--theme-text-soft) !important;
+}
+
+.raid-poll-create-button {
+  background: linear-gradient(135deg, var(--theme-accent-strong), var(--theme-accent) 56%, var(--theme-accent-deep) 100%) !important;
+  color: var(--theme-text-on-accent) !important;
+  border-color: var(--theme-border-strong) !important;
+  box-shadow: 0 18px 34px color-mix(in srgb, var(--theme-accent) 18%, transparent) !important;
+}
+
+.raid-poll-card-grid {
+  gap: 20px !important;
+}
+
+.raid-poll-list-card {
+  min-height: 0;
+  border-color: var(--theme-border) !important;
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--theme-accent) 8%, transparent), transparent 34%),
+    radial-gradient(circle at 0% 100%, color-mix(in srgb, var(--theme-info) 6%, transparent), transparent 38%),
+    linear-gradient(180deg, color-mix(in srgb, var(--theme-surface-base-solid) 98%, transparent), color-mix(in srgb, var(--theme-bg-deep-solid) 98%, transparent)) !important;
+  box-shadow: var(--theme-shadow-card) !important;
+}
+
+.raid-poll-list-card:hover {
+  border-color: var(--theme-border-strong) !important;
+  box-shadow: var(--theme-shadow-panel) !important;
+}
+
+.raid-poll-list-card--closed {
+  border-color: var(--theme-border-soft) !important;
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--theme-info) 8%, transparent), transparent 28%),
+    linear-gradient(180deg, color-mix(in srgb, var(--theme-surface-raised-solid) 96%, transparent), color-mix(in srgb, var(--theme-bg-deep-solid) 98%, transparent)) !important;
+}
+
+.raid-poll-list-card__status {
+  min-width: 108px;
+  background: linear-gradient(135deg, var(--theme-accent-strong), var(--theme-accent)) !important;
+  color: var(--theme-text-on-accent-strong) !important;
+}
+
+.raid-poll-list-card--closed .raid-poll-list-card__status {
+  background: color-mix(in srgb, var(--theme-surface-muted-solid) 92%, transparent) !important;
+  color: var(--theme-text-archive) !important;
+}
+
+.raid-poll-id-chip {
+  border-color: var(--theme-border-soft) !important;
+  background: color-mix(in srgb, var(--theme-white) 3%, transparent) !important;
+  color: var(--theme-text-success-muted) !important;
+}
+
+.raid-poll-list-card h3 {
+  color: var(--theme-text-card-title) !important;
+}
+
+.raid-poll-list-card h3 a:hover {
+  color: var(--theme-accent-strong) !important;
+}
+
+.raid-poll-list-card p,
+.raid-poll-list-card--closed p {
+  color: var(--theme-text-soft) !important;
+}
+
+.raid-poll-day-chips span {
+  border-color: var(--theme-border-soft) !important;
+  background: color-mix(in srgb, var(--theme-white) 3%, transparent) !important;
+  color: var(--theme-text) !important;
+}
+
+.raid-poll-list-card__body {
+  gap: 16px;
+}
+
+.raid-poll-card-metrics {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  border-top-color: var(--theme-border-soft) !important;
+}
+
+.raid-poll-card-metrics > div {
+  border-color: var(--theme-border-soft) !important;
+  border-radius: 16px !important;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--theme-white) 3.5%, transparent), color-mix(in srgb, var(--theme-white) 2%, transparent)),
+    color-mix(in srgb, var(--theme-bg-deep-solid) 82%, transparent) !important;
+}
+
+.raid-poll-card-metrics > div:nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+.raid-poll-card-metrics dt {
+  color: var(--theme-text-muted) !important;
+}
+
+.raid-poll-card-metrics dd {
+  color: var(--theme-text-card-value) !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  line-height: 1.48 !important;
+}
+
+.raid-poll-list-card__actions {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+}
+
+.raid-poll-list-card__actions .btn,
+.raid-poll-list-card__actions button.btn,
+.raid-poll-list-card__actions form {
+  width: 100%;
+}
+
+.raid-poll-primary-action {
+  border-color: var(--theme-border) !important;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--theme-accent) 16%, transparent), color-mix(in srgb, var(--theme-accent) 5%, transparent)),
+    color-mix(in srgb, var(--theme-surface-base-solid) 72%, transparent) !important;
+  color: var(--theme-accent-strong) !important;
+}
+
+.raid-poll-empty {
+  border-color: var(--theme-border-soft) !important;
+  background: color-mix(in srgb, var(--theme-surface-base-solid) 60%, transparent) !important;
+  color: var(--theme-text-soft) !important;
+}
+
+.raid-poll-live-sync {
+  width: fit-content;
+  max-width: 100%;
+  padding: 8px 12px !important;
+  border: 1px solid var(--theme-border-soft) !important;
+  border-radius: 999px !important;
+  background: color-mix(in srgb, var(--theme-white) 3.5%, transparent) !important;
+  color: var(--theme-text-soft) !important;
+}
+
+.raid-poll-live-sync > span {
+  background: var(--theme-info) !important;
+}
+
+.raid-poll-live-sync--updated > span {
+  background: var(--theme-success) !important;
+}
+
+.raid-poll-live-sync--error > span {
+  background: var(--theme-danger) !important;
+}
+
+.raid-poll-results--smart {
+  border-color: var(--theme-border) !important;
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--theme-accent) 8%, transparent), transparent 28%),
+    linear-gradient(180deg, color-mix(in srgb, var(--theme-surface-raised-solid) 96%, transparent), color-mix(in srgb, var(--theme-bg-canvas) 98%, transparent)) !important;
+}
+
+.raid-poll-detail-head {
+  gap: 14px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.raid-poll-summary-grid--smart {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) !important;
+  gap: 12px !important;
+}
+
+.raid-poll-summary-grid--smart > div {
+  border-color: var(--theme-border-soft) !important;
+  border-radius: 16px !important;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--theme-white) 3.5%, transparent), color-mix(in srgb, var(--theme-white) 2%, transparent)),
+    color-mix(in srgb, var(--theme-bg-deep-solid) 74%, transparent) !important;
+}
+
+.raid-poll-summary-grid--smart strong {
+  color: var(--theme-text-heading) !important;
+  white-space: normal !important;
+  text-wrap: balance;
+}
+
+.raid-poll-summary-grid--smart span {
+  color: var(--theme-text-muted) !important;
+}
+
+.raid-poll-recommendation-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  gap: 16px;
+  padding: 20px !important;
+  border: 1px solid var(--theme-border) !important;
+  border-radius: 24px !important;
+  background:
+    radial-gradient(circle at 0 0, color-mix(in srgb, var(--theme-accent) 10%, transparent), transparent 24%),
+    linear-gradient(180deg, color-mix(in srgb, var(--theme-surface-raised-solid) 96%, transparent), color-mix(in srgb, var(--theme-bg-canvas) 98%, transparent)) !important;
+}
+
+.raid-poll-recommendation-card h3,
+.raid-poll-card-headline h3,
+.raid-poll-voters h3 {
+  color: var(--theme-text-heading) !important;
+}
+
+.raid-poll-recommendation-card p,
+.raid-poll-card-headline p,
+.raid-poll-discord-sync-card p,
+.raid-poll-voter small {
+  color: var(--theme-text-soft) !important;
+}
+
+.raid-poll-best-slot {
+  min-height: 100%;
+  border-color: var(--theme-border-soft) !important;
+  border-radius: 18px !important;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--theme-white) 3.5%, transparent), color-mix(in srgb, var(--theme-white) 1.8%, transparent)),
+    color-mix(in srgb, var(--theme-bg-deep-solid) 84%, transparent) !important;
+}
+
+.raid-poll-best-slot strong {
+  color: var(--theme-accent-strong) !important;
+  line-height: 1.4 !important;
+}
+
+.raid-poll-best-slot span {
+  color: var(--theme-text-soft) !important;
+}
+
+.raid-poll-slot-list {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.raid-poll-slot-list span,
+.raid-poll-slot-list em {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--theme-border-soft) !important;
+  border-radius: 14px !important;
+  background: color-mix(in srgb, var(--theme-white) 3%, transparent) !important;
+  color: var(--theme-text) !important;
+  line-height: 1.48 !important;
+}
+
+.raid-poll-slot-list span.is-best {
+  border-color: var(--theme-border-strong) !important;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--theme-accent) 16%, transparent), color-mix(in srgb, var(--theme-white) 3%, transparent)),
+    color-mix(in srgb, var(--theme-white) 3%, transparent) !important;
+}
+
+.raid-poll-smart-layout {
+  grid-template-columns: minmax(0, 1.65fr) minmax(280px, 0.85fr) !important;
+  gap: 16px !important;
+}
+
+.raid-poll-table-card--wide,
+.raid-poll-discord-sync-card {
+  border-color: var(--theme-border-soft) !important;
+  border-radius: 22px !important;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--theme-white) 3%, transparent), color-mix(in srgb, var(--theme-white) 1.5%, transparent)),
+    color-mix(in srgb, var(--theme-bg-canvas) 82%, transparent) !important;
+}
+
+.raid-poll-day-matrix {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.raid-poll-day-card {
+  border: 1px solid var(--theme-border-soft) !important;
+  border-radius: 18px !important;
+  padding: 14px !important;
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--theme-info) 6%, transparent), transparent 30%),
+    linear-gradient(180deg, color-mix(in srgb, var(--theme-surface-base-solid) 84%, transparent), color-mix(in srgb, var(--theme-bg-deep-solid) 92%, transparent)) !important;
+}
+
+.raid-poll-day-card header > span {
+  display: grid !important;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--theme-border) !important;
+  border-radius: 11px !important;
+  background: var(--theme-accent-soft) !important;
+  color: var(--theme-accent-strong) !important;
+}
+
+.raid-poll-day-card strong,
+.raid-poll-day-card b,
+.raid-poll-day-voters b,
+.raid-poll-vote-schedule strong,
+.raid-poll-sync-metrics strong {
+  color: var(--theme-text-heading-soft) !important;
+}
+
+.raid-poll-day-card small,
+.raid-poll-day-card em,
+.raid-poll-day-absent,
+.raid-poll-character-badge small {
+  color: var(--theme-text-soft) !important;
+}
+
+.raid-poll-day-stats,
+.raid-poll-time-row,
+.raid-poll-day-voters,
+.raid-poll-vote-schedule,
+.raid-poll-sync-metrics {
+  gap: 8px !important;
+}
+
+.raid-poll-day-stats span,
+.raid-poll-time-row span,
+.raid-poll-vote-schedule span,
+.raid-poll-sync-metrics span,
+.raid-poll-day-voters span {
+  border-color: var(--theme-border-soft) !important;
+  background: color-mix(in srgb, var(--theme-white) 3%, transparent) !important;
+  color: var(--theme-text) !important;
+}
+
+.raid-poll-time-row span.has-votes,
+.raid-poll-vote-schedule span.is-ready {
+  border-color: color-mix(in srgb, var(--theme-success) 28%, transparent) !important;
+  background: color-mix(in srgb, var(--theme-success) 12%, transparent) !important;
+  color: var(--theme-text-success) !important;
+}
+
+.raid-poll-vote-schedule span.is-absent {
+  border-color: color-mix(in srgb, var(--theme-danger) 26%, transparent) !important;
+  background: color-mix(in srgb, var(--theme-danger) 10%, transparent) !important;
+  color: var(--theme-text-danger-soft) !important;
+}
+
+.raid-poll-day-voters span {
+  border-radius: 12px !important;
+  padding: 7px 9px !important;
+}
+
+.raid-poll-day-absent {
+  border-top-color: color-mix(in srgb, var(--theme-danger) 16%, transparent) !important;
+}
+
+.raid-poll-discord-sync-card {
+  align-content: start;
+}
+
+.raid-poll-sync-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)) !important;
+}
+
+.raid-poll-sync-metrics span {
+  min-height: 72px;
+  align-content: center;
+  border-radius: 16px !important;
+}
+
+.raid-poll-voters--cards {
+  display: grid;
+  gap: 12px;
+}
+
+.raid-poll-voter--smart {
+  gap: 12px !important;
+  padding: 16px !important;
+  border: 1px solid var(--theme-border-soft) !important;
+  border-radius: 18px !important;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--theme-white) 3%, transparent), color-mix(in srgb, var(--theme-white) 1.5%, transparent)),
+    color-mix(in srgb, var(--theme-bg-canvas) 78%, transparent) !important;
+}
+
+.raid-poll-character-badge {
+  padding: 12px 14px !important;
+  border-radius: 14px !important;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--theme-white) 4%, transparent), transparent) !important;
+}
+
+.raid-poll-character-badge strong {
+  color: var(--raid-poll-class-color, var(--theme-text-heading-soft)) !important;
+}
+
+.raid-form-actions {
+  gap: 10px !important;
+}
+
+@media (max-width: 1120px) {
+  .raid-poll-recommendation-card,
+  .raid-poll-smart-layout,
+  .raid-poll-command-strip {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 820px) {
+  .raid-poll-card-metrics {
+    grid-template-columns: 1fr !important;
+  }
+
+  .raid-poll-card-metrics > div:nth-child(3) {
+    grid-column: auto;
+  }
+
+  .raid-poll-list-card__actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .raid-poll-recalculate-button {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+
+/* Homepage raid calendar + live poll dashboard */
+.home-page {
+  --home-calendar-cell-min: 132px;
+}
+
+.home-shell {
+  gap: var(--dash-section-gap) !important;
+}
+
+.home-hero {
+  min-height: 0;
+  border-color: var(--color-border) !important;
+  background:
+    radial-gradient(circle at 0 0, color-mix(in srgb, var(--color-info) 12%, transparent), transparent 32%),
+    radial-gradient(circle at 100% 0, color-mix(in srgb, var(--color-accent) 14%, transparent), transparent 34%),
+    linear-gradient(135deg, color-mix(in srgb, var(--theme-bg-canvas) 94%, transparent), color-mix(in srgb, var(--theme-bg-canvas-2) 96%, transparent)) !important;
+}
+
+.home-hero-actions,
+.home-calendar-actions,
+.home-import-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.home-hero-actions {
+  margin-top: 20px;
+}
+
+.home-live-sync {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-surface-raised) 74%, transparent);
+  color: var(--color-text-soft);
+  font-size: var(--ui-font-md);
+  font-weight: 850;
+}
+
+.home-live-sync > span {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-info);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--color-info) 55%, transparent);
+}
+
+.home-live-sync--syncing > span {
+  background: var(--color-warning);
+}
+
+.home-live-sync--updated > span {
+  background: var(--color-success);
+}
+
+.home-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-accent-strong);
+  font-size: var(--ui-font-xs);
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.home-kicker::before {
+  content: "✦";
+  color: var(--color-success);
+}
+
+.home-calendar-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding: 18px !important;
+}
+
+.home-calendar-toolbar h2,
+.home-import-card h2,
+.home-upcoming-card h2,
+.home-section-head h2 {
+  margin: 6px 0 0;
+  color: var(--color-text);
+  font-size: clamp(1.35rem, 3vw, 2.05rem);
+  line-height: 1.08;
+}
+
+.home-calendar-toolbar p,
+.home-import-card p,
+.home-section-head p,
+.home-empty-text {
+  margin: 8px 0 0;
+  color: var(--color-text-soft);
+  line-height: 1.55;
+}
+
+.home-calendar-nav {
+  width: 44px;
+  min-width: 44px;
+  padding-inline: 0 !important;
+  font-size: 1.55rem !important;
+}
+
+.home-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(300px, 0.75fr);
+  gap: var(--dash-section-gap);
+  align-items: start;
+}
+
+.home-calendar-panel {
+  overflow: hidden;
+  padding: 0 !important;
+}
+
+.home-calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-bottom: 1px solid var(--color-border-subtle);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-accent) 12%, transparent), transparent),
+    color-mix(in srgb, var(--color-surface-raised) 88%, transparent);
+}
+
+.home-calendar-weekdays span {
+  min-height: 38px;
+  display: grid;
+  place-items: center;
+  color: var(--color-accent-strong);
+  font-size: var(--ui-font-sm);
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.home-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.home-calendar-day {
+  min-height: var(--home-calendar-cell-min);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
+  padding: 10px;
+  border-right: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border-subtle);
+  background:
+    radial-gradient(circle at 100% 0, color-mix(in srgb, var(--color-accent) 5%, transparent), transparent 42%),
+    color-mix(in srgb, var(--color-surface) 82%, transparent);
+}
+
+.home-calendar-day:nth-child(7n) {
+  border-right: 0;
+}
+
+.home-calendar-day.is-muted {
+  opacity: 0.48;
+  background: color-mix(in srgb, var(--color-surface) 52%, transparent);
+}
+
+.home-calendar-day.is-today {
+  background:
+    radial-gradient(circle at 50% 0, color-mix(in srgb, var(--color-accent) 16%, transparent), transparent 54%),
+    color-mix(in srgb, var(--color-surface-raised) 88%, transparent);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+.home-calendar-day header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
+.home-calendar-day time {
+  min-width: 28px;
+  min-height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--color-text);
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-calendar-day.is-today time {
+  color: var(--color-text-on-accent);
+  background: var(--color-accent-strong);
+}
+
+.home-calendar-day header span {
+  color: var(--color-accent-strong);
+  font-size: var(--ui-font-xs);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.home-calendar-events {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.home-calendar-event,
+.home-calendar-more,
+.home-upcoming-item {
+  min-width: 0;
+  border: 1px solid var(--color-border-subtle);
+  border-left-width: 3px;
+  border-radius: 11px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--color-accent) 12%, transparent), transparent),
+    color-mix(in srgb, var(--color-surface-raised) 78%, transparent);
+  padding: 8px 9px;
+}
+
+.home-calendar-event {
+  display: grid;
+  gap: 2px;
+  color: var(--color-text);
+}
+
+.home-calendar-event strong,
+.home-calendar-event span,
+.home-upcoming-item strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-calendar-event strong {
+  color: var(--color-accent-strong);
+  font-size: var(--ui-font-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.home-calendar-event span {
+  color: var(--color-text);
+  font-size: var(--ui-font-sm);
+  font-weight: 900;
+}
+
+.home-calendar-event em,
+.home-upcoming-item em,
+.home-upcoming-item span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: var(--ui-font-xs);
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-calendar-event--normal,
+.home-upcoming-item--normal {
+  border-left-color: var(--color-info);
+}
+
+.home-calendar-event--heroic,
+.home-upcoming-item--heroic {
+  border-left-color: var(--color-accent-strong);
+}
+
+.home-calendar-event--mythic,
+.home-upcoming-item--mythic {
+  border-left-color: var(--color-danger);
+}
+
+.home-calendar-event--closed {
+  opacity: 0.72;
+}
+
+.home-calendar-more {
+  color: var(--color-accent-strong);
+  font-size: var(--ui-font-xs);
+  font-weight: 900;
+  text-align: center;
+}
+
+.home-side-stack {
+  display: grid;
+  gap: var(--dash-section-gap);
+}
+
+.home-import-card,
+.home-upcoming-card {
+  padding: 18px !important;
+}
+
+.home-import-actions {
+  margin-top: 14px;
+}
+
+.home-import-card code {
+  display: block;
+  max-width: 100%;
+  margin-top: 12px;
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--theme-bg-deep-solid) 72%, transparent);
+  padding: 10px 12px;
+  color: var(--color-text-muted);
+  font-size: var(--ui-font-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-upcoming-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.home-upcoming-item {
+  display: grid;
+  gap: 4px;
+}
+
+.home-upcoming-item span {
+  color: var(--color-accent-strong);
+  font-weight: 900;
+}
+
+.home-polls-section {
+  padding: 20px !important;
+}
+
+.home-section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.home-section-head > div {
+  min-width: 0;
+}
+
+.home-polls-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.home-poll-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 100% 0, color-mix(in srgb, var(--color-accent) 8%, transparent), transparent 34%),
+    color-mix(in srgb, var(--color-surface) 82%, transparent);
+  padding: 16px;
+}
+
+.home-poll-card--open {
+  border-color: var(--color-border);
+}
+
+.home-poll-card__status {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
+.home-poll-card__status span,
+.home-difficulty {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-surface-raised) 78%, transparent);
+  padding: 5px 9px;
+  color: var(--color-text-soft);
+  font-size: var(--ui-font-xs);
+  font-weight: 950;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.home-poll-card__status strong {
+  color: var(--color-accent-strong);
+  font-size: var(--ui-font-sm);
+}
+
+.home-poll-card__body header {
+  display: grid;
+  gap: 8px;
+}
+
+.home-poll-card h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 1.15rem;
+  line-height: 1.18;
+}
+
+.home-poll-card p {
+  margin: 0;
+  color: var(--color-text-soft);
+}
+
+.home-difficulty--normal {
+  border-color: var(--difficulty-normal-border);
+  background: var(--difficulty-normal-bg);
+  color: var(--difficulty-normal-text);
+}
+
+.home-difficulty--heroic {
+  border-color: var(--difficulty-heroic-border);
+  background: var(--difficulty-heroic-bg);
+  color: var(--difficulty-heroic-text);
+}
+
+.home-difficulty--mythic {
+  border-color: var(--difficulty-mythic-border);
+  background: var(--difficulty-mythic-bg);
+  color: var(--difficulty-mythic-text);
+}
+
+.home-poll-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0 0;
+}
+
+.home-poll-metrics div {
+  min-width: 0;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--theme-bg-deep-solid) 62%, transparent);
+  padding: 9px;
+}
+
+.home-poll-metrics dt {
+  margin: 0 0 3px;
+  color: var(--color-text-muted);
+  font-size: var(--ui-font-xs);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.home-poll-metrics dd {
+  margin: 0;
+  overflow: hidden;
+  color: var(--color-text);
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-poll-slots {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.home-poll-slots span,
+.home-poll-slots em {
+  min-width: 0;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--color-accent) 7%, transparent);
+  padding: 9px 10px;
+  color: var(--color-text-soft);
+  font-size: var(--ui-font-sm);
+  line-height: 1.45;
+}
+
+.home-poll-slots b {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-right: 7px;
+  border-radius: 999px;
+  background: var(--color-accent-strong);
+  color: var(--color-text-on-accent);
+  font-size: var(--ui-font-xs);
+}
+
+.home-poll-card footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 1120px) {
+  .home-layout,
+  .home-polls-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .home-calendar-toolbar,
+  .home-section-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .home-calendar-panel {
+    overflow-x: auto;
+  }
+
+  .home-calendar-weekdays,
+  .home-calendar-grid {
+    min-width: 760px;
+  }
+
+  .home-calendar-day {
+    min-height: 118px;
+  }
+
+  .home-calendar-actions,
+  .home-section-head .btn {
+    width: 100%;
+  }
+
+  .home-calendar-actions .btn:not(.home-calendar-nav),
+  .home-section-head .btn {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 620px) {
+  .home-page {
+    --home-calendar-cell-min: 104px;
+  }
+
+  .home-hero-actions,
+  .home-import-actions,
+  .home-poll-card footer {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .home-calendar-toolbar,
+  .home-import-card,
+  .home-upcoming-card,
+  .home-polls-section,
+  .home-poll-card {
+    padding: 14px !important;
+  }
+
+  .home-poll-metrics {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* Home v2: Daily Events inspired upcoming raids + compact readable dashboard data */
+.home-page {
+  --home-calendar-cell-min: 124px;
+}
+
+.home-calendar-toolbar h2,
+.home-import-card h2,
+.home-upcoming-card h2,
+.home-section-head h2 {
+  font-size: clamp(1.22rem, 2.35vw, 1.72rem);
+  letter-spacing: -0.015em;
+}
+
+.home-calendar-toolbar p,
+.home-import-card p,
+.home-section-head p,
+.home-empty-text {
+  font-size: var(--ui-font-base);
+}
+
+.home-layout {
+  grid-template-columns: minmax(0, 1.52fr) minmax(320px, 0.82fr);
+}
+
+.home-calendar-day {
+  min-height: var(--home-calendar-cell-min);
+  padding: 9px;
+}
+
+.home-calendar-event,
+.home-calendar-more {
+  border-radius: 10px;
+  padding: 7px 8px;
+}
+
+.home-calendar-event strong {
+  font-size: var(--ui-font-xs);
+}
+
+.home-calendar-event span {
+  font-size: var(--ui-font-sm);
+}
+
+.home-calendar-event em {
+  font-size: var(--ui-font-xs);
+}
+
+.home-side-stack {
+  gap: 14px;
+}
+
+.home-import-card {
+  padding: 16px !important;
+}
+
+.home-upcoming-card {
+  overflow: hidden;
+  padding: 0 !important;
+  border-color: var(--color-border) !important;
+  background:
+    radial-gradient(circle at 10% 0, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent 32%),
+    linear-gradient(180deg, color-mix(in srgb, var(--theme-surface-raised-solid) 94%, transparent), color-mix(in srgb, var(--theme-bg-deep-solid) 96%, transparent)) !important;
+}
+
+.home-upcoming-card > .home-kicker,
+.home-upcoming-card > h2 {
+  margin-inline: 16px;
+}
+
+.home-upcoming-card > .home-kicker {
+  margin-top: 16px;
+}
+
+.home-upcoming-card > h2 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 8px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: 1.18rem;
+}
+
+.home-upcoming-card > h2::before {
+  content: "▣";
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent-strong);
+  font-size: var(--ui-font-sm);
+}
+
+.home-upcoming-events {
+  display: grid;
+  gap: 9px;
+  padding: 0 12px 12px;
+}
+
+.home-upcoming-event {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  min-height: 72px;
+  border: 1px solid color-mix(in srgb, var(--color-border-subtle) 74%, transparent);
+  border-radius: 14px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--color-accent) 6%, transparent), transparent 48%),
+    color-mix(in srgb, var(--theme-bg-deep-solid) 78%, transparent);
+  padding: 10px 10px;
+  color: var(--color-text);
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease,
+    background-color 140ms ease;
+}
+
+.home-upcoming-event:hover {
+  transform: translateY(-1px);
+  border-color: var(--color-border);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent 50%),
+    color-mix(in srgb, var(--theme-surface-raised-solid) 84%, transparent);
+}
+
+
+
+
+
+.home-upcoming-event__main {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.home-upcoming-event__main strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 0.92rem;
+  font-weight: 950;
+  line-height: 1.14;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-upcoming-event__main small {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: var(--ui-font-sm);
+  font-weight: 800;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-upcoming-event--ongoing .home-upcoming-event__main small {
+  color: var(--color-success);
+}
+
+.home-upcoming-event--past {
+  opacity: 0.72;
+}
+
+.home-upcoming-event__main em {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: var(--ui-font-xs);
+  font-style: normal;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-upcoming-event__meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 94px;
+}
+
+.home-upcoming-event__meta time,
+.home-upcoming-event__meta span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  border-radius: 7px;
+  padding: 5px 8px;
+  font-size: var(--ui-font-xs);
+  font-weight: 950;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.home-upcoming-event__meta time {
+  color: var(--color-info);
+  background: var(--color-info-soft);
+}
+
+.home-upcoming-event__meta span {
+  color: var(--color-accent-strong);
+  background: var(--color-accent-soft);
+}
+
+.home-upcoming-event--ongoing .home-upcoming-event__meta time {
+  color: var(--color-success);
+  background: var(--color-success-soft);
+}
+
+.home-upcoming-timezone {
+  margin: 4px 4px 2px;
+  color: var(--color-text-muted);
+  font-size: var(--ui-font-xs);
+  line-height: 1.45;
+}
+
+.home-upcoming-timezone strong {
+  color: var(--color-text-soft);
+}
+
+.home-polls-section {
+  padding: 18px !important;
+}
+
+.home-polls-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.home-poll-card {
+  padding: 14px;
+}
+
+.home-poll-card h3 {
+  font-size: 1.05rem;
+}
+
+.home-poll-metrics {
+  gap: 9px;
+}
+
+.home-poll-metrics dd {
+  font-size: var(--ui-font-sm);
+}
+
+.home-poll-slots span,
+.home-poll-slots em {
+  font-size: var(--ui-font-sm);
+}
+
+.home-local-time-zone {
+  color: var(--color-text-muted);
+  font-size: var(--ui-font-xs);
+  font-weight: 750;
+}
+
+@media (max-width: 1120px) {
+  .home-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .home-side-stack {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .home-upcoming-card {
+    min-height: 100%;
+  }
+}
+
+@media (max-width: 860px) {
+  .home-side-stack {
+    grid-template-columns: 1fr;
+  }
+
+  .home-calendar-weekdays,
+  .home-calendar-grid {
+    min-width: 720px;
+  }
+}
+
+@media (max-width: 620px) {
+  .home-page {
+    --home-calendar-cell-min: 98px;
+  }
+
+  .home-upcoming-event {
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 10px;
+    min-height: 76px;
+  }
+
+  .home-upcoming-event__meta {
+    grid-column: 2;
+    justify-content: flex-start;
+    min-width: 0;
+  }
+
+  .home-upcoming-card > .home-kicker,
+  .home-upcoming-card > h2 {
+    margin-inline: 14px;
+  }
+
+  .home-upcoming-events {
+    padding-inline: 10px;
+  }
+}
+
+
+/* Home calendar v3: wider calendar grid, stronger calendar text, visible difficulty, stacked local time/date chips. */
+.home-page {
+  --home-calendar-cell-min: clamp(148px, 11vw, 176px);
+}
+
+.home-layout {
+  grid-template-columns: 1fr !important;
+}
+
+.home-calendar-panel {
+  width: 100%;
+}
+
+.home-side-stack {
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  align-items: start;
+}
+
+.home-calendar-weekdays span {
+  min-height: 42px;
+  color: var(--color-accent-strong);
+  font-size: var(--ui-font-md);
+  text-shadow: 0 1px 0 color-mix(in srgb, var(--theme-black) 35%, transparent);
+}
+
+.home-calendar-grid {
+  background: color-mix(in srgb, var(--theme-bg-deep-solid) 72%, transparent);
+}
+
+.home-calendar-day {
+  min-height: var(--home-calendar-cell-min);
+  gap: 11px;
+  padding: 13px;
+  background:
+    radial-gradient(circle at 100% 0, color-mix(in srgb, var(--color-accent) 4%, transparent), transparent 45%),
+    color-mix(in srgb, var(--color-surface) 88%, transparent);
+}
+
+.home-calendar-day.is-muted {
+  opacity: 0.58;
+}
+
+.home-calendar-day.is-today {
+  background:
+    radial-gradient(circle at 50% 0, color-mix(in srgb, var(--color-accent) 18%, transparent), transparent 54%),
+    color-mix(in srgb, var(--color-surface-raised) 92%, transparent);
+}
+
+.home-calendar-day time {
+  color: var(--color-text-card-value);
+  font-size: 0.98rem;
+}
+
+.home-calendar-day.is-muted time {
+  color: var(--color-text-muted);
+}
+
+.home-calendar-day header span {
+  border-radius: 999px;
+  background: var(--color-accent-soft);
+  padding: 5px 9px;
+  color: var(--color-accent-strong);
+  font-size: var(--ui-font-xs);
+}
+
+.home-calendar-day.is-today time {
+  color: var(--color-text-on-accent);
+  background: var(--color-accent-strong);
+}
+
+.home-calendar-events {
+  gap: 9px;
+}
+
+.home-calendar-event {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px 9px;
+  align-items: center;
+  min-height: 70px;
+  border-left-width: 4px;
+  border-radius: 13px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent 58%),
+    color-mix(in srgb, var(--theme-bg-deep-solid) 82%, transparent);
+  padding: 10px;
+}
+
+.home-calendar-event:hover {
+  border-color: var(--color-border);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--color-accent) 14%, transparent), transparent 60%),
+    color-mix(in srgb, var(--theme-surface-raised-solid) 88%, transparent);
+}
+
+.home-calendar-event__time {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  min-height: 28px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  background: var(--color-info-soft);
+  color: var(--color-info);
+  font-size: var(--ui-font-xs);
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-calendar-event__title {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-heading-soft);
+  font-size: 0.88rem;
+  font-weight: 950;
+  line-height: 1.16;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-calendar-event__details {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.home-calendar-event__details b,
+.home-calendar-event__details em {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: var(--ui-font-xs);
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.home-calendar-event__details b {
+  color: var(--color-accent-strong);
+  background: var(--color-accent-soft);
+}
+
+.home-calendar-event__details em {
+  color: var(--color-text-soft);
+  background: color-mix(in srgb, var(--color-surface-raised) 64%, transparent);
+}
+
+.home-calendar-event--normal .home-calendar-event__details b {
+  border-color: var(--difficulty-normal-border);
+  background: var(--difficulty-normal-bg);
+  color: var(--difficulty-normal-text);
+}
+
+.home-calendar-event--heroic .home-calendar-event__details b {
+  border-color: var(--difficulty-heroic-border);
+  background: var(--difficulty-heroic-bg);
+  color: var(--difficulty-heroic-text);
+}
+
+.home-calendar-event--mythic .home-calendar-event__details b {
+  border-color: var(--difficulty-mythic-border);
+  background: var(--difficulty-mythic-bg);
+  color: var(--difficulty-mythic-text);
+}
+
+.home-upcoming-event {
+  grid-template-columns: 42px minmax(0, 1fr) minmax(84px, auto);
+}
+
+.home-upcoming-event__main strong {
+  color: var(--color-text-heading);
+}
+
+.home-upcoming-event__main em b {
+  color: var(--color-accent-strong);
+  font-weight: 950;
+}
+
+.home-upcoming-event__meta {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 7px;
+  min-width: 92px;
+}
+
+.home-upcoming-event__meta time,
+.home-upcoming-event__meta span {
+  width: 100%;
+  justify-content: center;
+  min-height: 28px;
+}
+
+.home-upcoming-event__meta time {
+  order: 1;
+}
+
+.home-upcoming-event__meta span {
+  order: 2;
+}
+
+@media (max-width: 1120px) {
+  .home-side-stack {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .home-page {
+    --home-calendar-cell-min: 136px;
+  }
+
+  .home-calendar-weekdays,
+  .home-calendar-grid {
+    min-width: 860px;
+  }
+
+  .home-calendar-day {
+    padding: 11px;
+  }
+}
+
+@media (max-width: 620px) {
+  .home-page {
+    --home-calendar-cell-min: 124px;
+  }
+
+  .home-calendar-weekdays,
+  .home-calendar-grid {
+    min-width: 820px;
+  }
+
+  .home-calendar-event {
+    min-height: 64px;
+    padding: 9px;
+  }
+
+  .home-calendar-event__title {
+    font-size: var(--ui-font-sm);
+  }
+
+  .home-upcoming-event {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+
+  .home-upcoming-event__meta {
+    grid-column: 2;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 0;
+  }
+
+  .home-upcoming-event__meta time,
+  .home-upcoming-event__meta span {
+    width: auto;
+    justify-content: flex-start;
+  }
+}
+
+/* Home KD calendar — Raider.IO period based layout */
+.home-kd-panel {
+  padding: 0 !important;
+  border-color: var(--color-border) !important;
+  background:
+    radial-gradient(circle at 8% 0, color-mix(in srgb, var(--color-accent) 12%, transparent), transparent 34%),
+    linear-gradient(180deg, color-mix(in srgb, var(--theme-surface-raised-solid) 92%, transparent), color-mix(in srgb, var(--theme-bg-deep-solid) 96%, transparent)) !important;
+}
+
+.home-kd-panel__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: end;
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.home-kd-panel__head h2 {
+  margin: 7px 0 0;
+  color: var(--color-text);
+  font-size: clamp(1.22rem, 2.35vw, 1.72rem);
+  line-height: 1.08;
+}
+
+.home-kd-panel__head p {
+  max-width: 520px;
+  margin: 0;
+  color: var(--color-text-soft);
+  font-size: var(--ui-font-base);
+  line-height: 1.45;
+}
+
+.home-kd-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  padding: 14px;
+}
+
+.home-kd-card {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  gap: 12px;
+  border: 1px solid color-mix(in srgb, var(--color-border-subtle) 78%, transparent);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 100% 0, color-mix(in srgb, var(--color-accent) 8%, transparent), transparent 42%),
+    color-mix(in srgb, var(--theme-bg-deep-solid) 76%, transparent);
+  padding: 14px;
+}
+
+.home-kd-card--current {
+  border-color: color-mix(in srgb, var(--color-accent-strong) 50%, var(--color-border));
+  background:
+    radial-gradient(circle at 100% 0, color-mix(in srgb, var(--color-accent) 18%, transparent), transparent 48%),
+    linear-gradient(180deg, color-mix(in srgb, var(--theme-surface-raised-solid) 88%, transparent), color-mix(in srgb, var(--theme-bg-deep-solid) 90%, transparent));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent-strong) 16%, transparent);
+}
+
+.home-kd-card__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
+.home-kd-card__eyebrow,
+.home-kd-card__count {
+  color: var(--color-text-muted);
+  font-size: var(--ui-font-xs);
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.home-kd-card--current .home-kd-card__eyebrow {
+  color: var(--color-accent-strong);
+}
+
+.home-kd-card__head h3 {
+  margin: 5px 0 0;
+  color: var(--color-text);
+  font-size: 1.24rem;
+  line-height: 1.1;
+}
+
+.home-kd-card__count {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: color-mix(in srgb, var(--color-surface-raised) 70%, transparent);
+  white-space: nowrap;
+}
+
+.home-kd-card__range {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.home-kd-card__range > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--color-surface) 62%, transparent);
+  padding: 9px 10px;
+}
+
+.home-kd-card__range b {
+  color: var(--color-text-muted);
+  font-size: var(--ui-font-xs);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.home-kd-card__range time {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-soft);
+  font-size: var(--ui-font-sm);
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-kd-progress {
+  height: 7px;
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-surface) 72%, transparent);
+}
+
+.home-kd-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--color-accent), var(--color-accent-strong));
+}
+
+.home-kd-card__events {
+  gap: 8px;
+}
+
+.home-kd-card__events .home-empty-text {
+  margin: 0;
+  border: 1px dashed var(--color-border-subtle);
+  border-radius: 14px;
+  padding: 14px;
+  text-align: center;
+}
+
+.home-calendar-event__time time {
+  color: var(--color-info);
+  font-size: var(--ui-font-xs);
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-calendar-event__title {
+  line-height: 1.18;
+}
+
+.home-calendar-event__details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+
+.home-calendar-event__details b,
+.home-calendar-event__details em {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  border-radius: 999px;
+  padding: 3px 6px;
+  font-size: var(--ui-font-xs);
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.home-calendar-event__details b {
+  color: var(--color-accent-strong);
+  background: var(--color-accent-soft);
+}
+
+.home-calendar-event__details em {
+  color: var(--color-text-muted);
+  background: color-mix(in srgb, var(--color-surface) 68%, transparent);
+}
+
+.home-import-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 1320px) {
+  .home-kd-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .home-kd-panel__head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .home-kd-panel__head p {
+    max-width: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .home-kd-grid,
+  .home-kd-panel__head {
+    padding: 12px;
+  }
+
+  .home-kd-card {
+    border-radius: 15px;
+    padding: 12px;
+  }
+
+  .home-kd-card__range {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* Dashboard UI v6 — iconless compact system.
+   One accent palette, strict grids, flat list rows and contrast-safe chips. */
+
+:root {
+  --ui-bg: #080d14;
+  --ui-surface: #101720;
+  --ui-surface-2: #151d27;
+  --ui-surface-3: #1b2430;
+  --ui-line: rgba(214, 174, 96, 0.22);
+  --ui-line-soft: rgba(214, 174, 96, 0.12);
+  --ui-accent: #d6a64a;
+  --ui-accent-strong: #f2c86d;
+  --ui-accent-soft: rgba(214, 166, 74, 0.14);
+  --ui-text: #f4ead8;
+  --ui-text-soft: #c9bca6;
+  --ui-text-muted: #8f8474;
+  --ui-text-on-accent: #15110b;
+  --ui-danger: #d85d5d;
+  --ui-danger-soft: rgba(216, 93, 93, 0.16);
+  --ui-ok: #9fd0ad;
+  --ui-ok-soft: rgba(159, 208, 173, 0.13);
+  --ui-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+  --ui-radius-panel: 18px;
+  --ui-radius-control: 10px;
+  --ui-row-height: 54px;
+
+  --theme-bg-canvas: var(--ui-bg);
+  --theme-bg-canvas-2: #060910;
+  --theme-surface-1: var(--ui-surface);
+  --theme-surface-2: var(--ui-surface-2);
+  --theme-surface-3: var(--ui-surface-3);
+  --theme-border: var(--ui-line);
+  --theme-border-soft: var(--ui-line-soft);
+  --theme-border-strong: rgba(242, 200, 109, 0.42);
+  --theme-accent: var(--ui-accent);
+  --theme-accent-strong: var(--ui-accent-strong);
+  --theme-accent-soft: var(--ui-accent-soft);
+  --theme-text: var(--ui-text);
+  --theme-text-soft: var(--ui-text-soft);
+  --theme-text-muted: var(--ui-text-muted);
+  --theme-text-on-accent: var(--ui-text-on-accent);
+}
+
+body {
+  color: var(--ui-text) !important;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(214, 166, 74, 0.08), transparent 28rem),
+    linear-gradient(180deg, #090f17 0%, #070b11 48%, #05080d 100%) !important;
+}
+
+body::before {
+  opacity: 0.16 !important;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.016) 1px, transparent 1px) !important;
+  background-size: 64px 64px, 64px 64px !important;
+}
+
+:where(.panel, .card, .action-panel, .rio-panel, .detail-box, .notice, .empty, .content-empty, .profile-card, .profile-account-header, .profile-account-sidebar, .dashboard-table-card, .dashboard-list-panel) {
+  border: 1px solid var(--ui-line) !important;
+  border-radius: var(--ui-radius-panel) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012)), var(--ui-surface) !important;
+  box-shadow: var(--ui-shadow) !important;
+}
+
+:where(.panel, .card, .dashboard-table-card, .dashboard-list-panel)::before,
+:where(.panel, .card, .dashboard-table-card, .dashboard-list-panel)::after {
+  pointer-events: none;
+}
+
+.dashboard-topbar {
+  position: sticky;
+  top: max(10px, var(--safe-top));
+  z-index: 40;
+  display: grid;
+  grid-template-columns: minmax(220px, auto) minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid var(--ui-line) !important;
+  border-radius: var(--ui-radius-panel) !important;
+  background: rgba(12, 18, 26, 0.92) !important;
+  box-shadow: var(--ui-shadow) !important;
+  backdrop-filter: blur(18px);
+}
+
+.dashboard-brand {
+  gap: 10px;
+}
+
+.guild-mark,
+.discord-avatar,
+.discord-avatar-fallback {
+  border-radius: 8px !important;
+  border-color: var(--ui-line) !important;
+  background: var(--ui-surface-2) !important;
+}
+
+.dashboard-brand strong,
+.dashboard-user__profile-link strong,
+.hero h1,
+.hero h2,
+.dashboard-table-titlebar h1,
+.dashboard-table-titlebar h2,
+.dashboard-list-head h2,
+.dashboard-list-head h3 {
+  color: var(--ui-text) !important;
+  letter-spacing: -0.025em;
+}
+
+.dashboard-brand span,
+.dashboard-user__profile-link span,
+.eyebrow,
+.content-hero-path,
+.lead,
+.dashboard-table-stats span,
+.dashboard-table-head span,
+.dashboard-list-head p,
+.dashboard-table-row small,
+.dashboard-table-muted,
+.app-footer__brand span,
+.app-footer__links a {
+  color: var(--ui-text-muted) !important;
+}
+
+.dashboard-nav,
+.dashboard-nav--desktop {
+  min-width: 0;
+  gap: 8px;
+}
+
+.dashboard-nav a,
+.dashboard-nav-more__trigger,
+.dashboard-mobile-nav a,
+.dashboard-user__profile-link,
+.btn,
+.action-button,
+.dashboard-table-filter,
+.dashboard-list-actions .btn,
+.dashboard-list-actions button,
+.app-footer__links a {
+  border-radius: var(--ui-radius-control) !important;
+  border: 1px solid var(--ui-line-soft) !important;
+  color: var(--ui-text-soft) !important;
+  background: rgba(255, 255, 255, 0.025) !important;
+  box-shadow: none !important;
+}
+
+.dashboard-nav a,
+.dashboard-nav-more__trigger,
+.dashboard-mobile-nav a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 13px;
+  font-weight: 900;
+}
+
+.dashboard-nav a:hover,
+.dashboard-nav a:focus-visible,
+.dashboard-nav a.is-active,
+.dashboard-nav-more__trigger:hover,
+.dashboard-nav-more__trigger:focus-visible,
+.dashboard-nav-more__trigger.is-active,
+.dashboard-mobile-nav a:hover,
+.dashboard-mobile-nav a:focus-visible,
+.dashboard-mobile-nav a.is-active,
+.dashboard-user__profile-link:hover,
+.dashboard-user__profile-link.is-active {
+  color: var(--ui-text) !important;
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent-soft) !important;
+  transform: none !important;
+}
+
+.dashboard-nav-more__menu {
+  border: 1px solid var(--ui-line) !important;
+  border-radius: 12px !important;
+  background: var(--ui-surface-2) !important;
+  box-shadow: var(--ui-shadow) !important;
+}
+
+.dashboard-nav-more__menu-list a {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.hero.panel {
+  display: grid;
+  gap: 18px;
+  overflow: hidden;
+}
+
+.hero .eyebrow,
+.dashboard-table-titlebar .eyebrow {
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  font-weight: 950;
+}
+
+.hero-accent,
+.hero .eyebrow::before,
+.dashboard-table-titlebar .eyebrow::before {
+  display: none !important;
+}
+
+/* Lists/tables: flat rows, stable columns, no rounded list rows. */
+.dashboard-list,
+.raid-manager-list,
+.raid-poll-card-grid,
+.profile-directory-grid,
+.content-table,
+.discord-rules-table,
+.admin-log-list {
+  gap: 12px !important;
+}
+
+.dashboard-list-row,
+.dashboard-table-row,
+.raid-list-item,
+.raid-poll-list-card,
+.content-row,
+.discord-rules-row,
+.admin-log-row,
+.profile-directory-card,
+.guild-member-card {
+  border-radius: 0 !important;
+  border: 1px solid var(--ui-line-soft) !important;
+  background: rgba(255, 255, 255, 0.018) !important;
+  box-shadow: none !important;
+}
+
+.dashboard-list-row:hover,
+.dashboard-list-row:focus-within,
+.dashboard-table-row--clickable:hover,
+.dashboard-table-row--clickable:focus-visible,
+.raid-list-item:hover,
+.raid-poll-list-card:hover {
+  border-color: var(--ui-line) !important;
+  background: rgba(214, 166, 74, 0.055) !important;
+  transform: none !important;
+}
+
+.dashboard-table-scroll {
+  border: 1px solid var(--ui-line-soft) !important;
+  border-radius: 0 !important;
+  background: rgba(0, 0, 0, 0.16) !important;
+}
+
+.dashboard-table-head,
+.dashboard-table-row {
+  border-radius: 0 !important;
+}
+
+.dashboard-table-head {
+  background: rgba(214, 166, 74, 0.08) !important;
+}
+
+.dashboard-table-row {
+  min-height: var(--ui-row-height);
+}
+
+.dashboard-table-stats,
+.dashboard-list-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
+  gap: 10px;
+}
+
+.dashboard-table-stats > div,
+.dashboard-list-summary span {
+  border-radius: 0 !important;
+  border: 1px solid var(--ui-line-soft) !important;
+  background: rgba(255, 255, 255, 0.02) !important;
+  color: var(--ui-text) !important;
+}
+
+/* Contrast-safe chip system. Explicit text colors instead of relying on the background. */
+:where(.dashboard-table-pill, .raid-state, .raid-status-pill, .raid-poll-list-card__status, .raid-poll-difficulty-badge, .raid-poll-id-chip, .raid-poll-repeat-chip, .raid-poll-day-chips span, .discord-role-chip, .discord-rules-type-chip, .content-mode-pill, .profile-role-chip, .profile-main-badge, .profile-character-kind, .profile-raid-role-pill, .profile-gender-pill, .profile-name-status-pill, .profile-candidate-expiry, .guild-score-badges span, .geo-country-chip) {
+  --chip-bg: rgba(255, 255, 255, 0.06);
+  --chip-text: var(--ui-text);
+  --chip-border: var(--ui-line-soft);
+  min-height: 24px;
+  border: 1px solid var(--chip-border) !important;
+  border-radius: 999px !important;
+  background: var(--chip-bg) !important;
+  color: var(--chip-text) !important;
+  font-weight: 900;
+  text-shadow: none !important;
+}
+
+:where(.dashboard-table-pill--tank, .raid-state--published, .raid-poll-list-card__status, .raid-poll-difficulty-badge--normal, .content-mode-pill--library) {
+  --chip-bg: var(--ui-accent);
+  --chip-text: var(--ui-text-on-accent);
+  --chip-border: rgba(242, 200, 109, 0.62);
+}
+
+:where(.dashboard-table-pill--healer, .dashboard-table-pill--ok, .raid-state--open, .raid-status-pill.open, .geo-country-chip) {
+  --chip-bg: var(--ui-ok-soft);
+  --chip-text: #e8f7ed;
+  --chip-border: rgba(159, 208, 173, 0.34);
+}
+
+:where(.dashboard-table-pill--dps, .raid-poll-difficulty-badge--heroic, .raid-poll-day-chips span, .raid-poll-repeat-chip) {
+  --chip-bg: rgba(214, 166, 74, 0.12);
+  --chip-text: #f6ddb0;
+  --chip-border: rgba(214, 166, 74, 0.3);
+}
+
+:where(.dashboard-table-pill--unknown, .dashboard-table-pill--muted, .raid-state--draft, .raid-state--closed, .raid-poll-list-card--closed .raid-poll-list-card__status, .raid-poll-id-chip, .geo-country-chip--muted) {
+  --chip-bg: rgba(255, 255, 255, 0.05);
+  --chip-text: #d0c6b5;
+  --chip-border: rgba(255, 255, 255, 0.13);
+}
+
+:where(.btn.primary, .action-button--primary, .raid-poll-create-button) {
+  color: var(--ui-text-on-accent) !important;
+  border-color: rgba(242, 200, 109, 0.55) !important;
+  background: var(--ui-accent) !important;
+}
+
+:where(.btn.danger, button.btn.danger, .dashboard-table-filter--danger) {
+  color: #fff1f1 !important;
+  border-color: rgba(216, 93, 93, 0.42) !important;
+  background: var(--ui-danger-soft) !important;
+}
+
+.btn:hover,
+.action-button:hover,
+.dashboard-table-filter:hover,
+.dashboard-list-actions .btn:hover,
+.dashboard-list-actions button:hover {
+  border-color: var(--ui-accent) !important;
+  color: var(--ui-text) !important;
+  transform: none !important;
+}
+
+.btn.is-disabled,
+[aria-disabled="true"] {
+  opacity: .54;
+  pointer-events: none;
+}
+
+input:not([type="checkbox"]):not([type="radio"]),
+textarea,
+select,
+.dashboard-table-search input {
+  min-height: 42px;
+  border-radius: var(--ui-radius-control) !important;
+  border: 1px solid var(--ui-line-soft) !important;
+  color: var(--ui-text) !important;
+  background: rgba(255, 255, 255, 0.025) !important;
+  box-shadow: none !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus,
+textarea:focus,
+select:focus,
+.dashboard-table-search input:focus {
+  outline: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: 0 0 0 3px rgba(214, 166, 74, 0.14) !important;
+}
+
+/* Raid directory: exactly two columns on desktop, compact card with key data first. */
+.raid-manager-list.dashboard-list,
+.raid-manager-list,
+.raid-poll-card-grid.dashboard-list,
+.raid-poll-card-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.raid-manager-list .raid-list-item,
+.raid-list-item {
+  min-height: 0 !important;
+  padding: 0 !important;
+}
+
+.raid-manager-list .raid-list-main-link,
+.raid-list-main-link {
+  display: grid !important;
+  grid-template-columns: 76px minmax(0, 1fr) !important;
+  gap: 12px !important;
+  align-items: stretch !important;
+  min-height: 112px !important;
+  padding: 12px !important;
+}
+
+.raid-manager-list .raid-list-main-link > img,
+.raid-manager-list .raid-list-fallback,
+.raid-list-main-link > img,
+.raid-list-fallback {
+  width: 76px !important;
+  height: 88px !important;
+  border-radius: 0 !important;
+  object-fit: cover;
+  border: 1px solid var(--ui-line-soft) !important;
+}
+
+.raid-list-copy {
+  min-width: 0;
+  display: grid !important;
+  gap: 8px !important;
+}
+
+.raid-list-title-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 10px !important;
+  align-items: start !important;
+}
+
+.raid-list-title-row strong {
+  color: var(--ui-text) !important;
+  font-size: 1rem !important;
+  line-height: 1.2 !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.raid-list-facts {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 6px 10px !important;
+}
+
+.raid-list-facts small {
+  min-width: 0;
+  color: var(--ui-text-soft) !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.raid-list-progress {
+  height: 6px !important;
+  border-radius: 0 !important;
+  border: 1px solid var(--ui-line-soft) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.raid-list-progress span {
+  border-radius: 0 !important;
+  background: var(--ui-accent) !important;
+}
+
+.raid-manager-list .raid-list-actions,
+.raid-list-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  padding: 0 12px 12px !important;
+}
+
+.raid-manager-list .raid-list-actions .btn,
+.raid-manager-list .raid-list-actions button,
+.raid-manager-list .raid-list-actions form,
+.raid-list-actions .btn,
+.raid-list-actions button,
+.raid-list-actions form {
+  flex: 1 1 116px !important;
+  min-width: 0 !important;
+}
+
+/* Polls: two-column directory, cleaner card hierarchy, fewer visual blocks. */
+.raid-poll-list-card {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 12px !important;
+  padding: 14px !important;
+}
+
+.raid-poll-list-card__status {
+  width: fit-content !important;
+  min-width: 0 !important;
+  padding: 4px 10px !important;
+}
+
+.raid-poll-list-card__body,
+.raid-poll-list-card__header {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+.raid-poll-list-card__badges {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+
+.raid-poll-list-card h3 {
+  margin: 0 !important;
+  color: var(--ui-text) !important;
+  font-size: 1.06rem !important;
+  line-height: 1.22 !important;
+}
+
+.raid-poll-list-card p {
+  margin: 0 !important;
+  color: var(--ui-text-soft) !important;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.raid-poll-day-chips {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+
+.raid-poll-card-metrics {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  padding-top: 10px !important;
+  border-top: 1px solid var(--ui-line-soft) !important;
+}
+
+.raid-poll-card-metrics > div {
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.raid-poll-card-metrics > div:nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+.raid-poll-card-metrics dt {
+  color: var(--ui-text-muted) !important;
+  font-size: .72rem !important;
+}
+
+.raid-poll-card-metrics dd {
+  color: var(--ui-text) !important;
+  line-height: 1.35 !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+.raid-poll-list-card__actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  padding: 0 !important;
+}
+
+.raid-poll-list-card__actions .btn,
+.raid-poll-list-card__actions button,
+.raid-poll-list-card__actions form {
+  flex: 1 1 140px !important;
+  width: auto !important;
+}
+
+.raid-poll-results,
+.raid-poll-recommendation-card,
+.raid-poll-table-card,
+.raid-poll-voter {
+  border-radius: var(--ui-radius-panel) !important;
+  border-color: var(--ui-line) !important;
+  background: var(--ui-surface) !important;
+}
+
+.raid-poll-character-badge {
+  border-color: color-mix(in srgb, var(--raid-poll-class-color, var(--ui-accent)) 34%, transparent) !important;
+  background: color-mix(in srgb, var(--raid-poll-class-color, var(--ui-accent)) 16%, #101720) !important;
+  color: #f7efe2 !important;
+}
+
+.raid-poll-character-badge strong,
+.raid-poll-character-badge small {
+  color: currentColor !important;
+}
+
+/* Minimal footer: no decorative border/background. */
+.app-footer {
+  margin: 18px auto 0 !important;
+  padding: 14px 0 calc(18px + var(--safe-bottom)) !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app-footer__inner {
+  width: min(100% - 32px, 1280px);
+  margin-inline: auto;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.app-footer__brand,
+.app-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.app-footer__brand strong {
+  color: var(--ui-text-soft) !important;
+  font-size: .86rem;
+}
+
+.app-footer__brand span,
+.app-footer__links a {
+  color: var(--ui-text-muted) !important;
+  font-size: .82rem;
+}
+
+.app-footer__links a {
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.app-footer__links a:hover,
+.app-footer__links a:focus-visible {
+  color: var(--ui-accent-strong) !important;
+}
+
+@media (max-width: 1180px) {
+  .raid-manager-list.dashboard-list,
+  .raid-manager-list,
+  .raid-poll-card-grid.dashboard-list,
+  .raid-poll-card-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .dashboard-topbar {
+    position: relative;
+    top: 0;
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-user,
+  .dashboard-user__profile-link {
+    width: 100%;
+  }
+
+  .app-footer__inner,
+  .app-footer__brand,
+  .app-footer__links {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 680px) {
+  .raid-manager-list .raid-list-main-link,
+  .raid-list-main-link {
+    grid-template-columns: 1fr !important;
+  }
+
+  .raid-manager-list .raid-list-main-link > img,
+  .raid-manager-list .raid-list-fallback,
+  .raid-list-main-link > img,
+  .raid-list-fallback {
+    width: 100% !important;
+    height: 128px !important;
+  }
+
+  .raid-list-facts,
+  .raid-poll-card-metrics {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dashboard-table-stats,
+  .dashboard-list-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+
+/* Overflow fix layer: raid cards and overflow nav must never hide core labels. */
+.dashboard-nav-more__menu {
+  width: min(380px, calc(100vw - 32px)) !important;
+  max-width: calc(100vw - 32px) !important;
+  overflow: visible !important;
+}
+
+.dashboard-nav-more__menu-list {
+  gap: 8px !important;
+}
+
+.dashboard-nav-more__menu-list a,
+.dashboard-nav-more__menu a {
+  min-height: 50px !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 10px 12px !important;
+}
+
+.dashboard-nav-more__menu a strong {
+  min-width: 0 !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  line-height: 1.25 !important;
+}
+
+.dashboard-nav-more__menu a small {
+  flex: 0 0 auto !important;
+  white-space: nowrap !important;
+}
+
+.raid-page .raid-manager-list,
+.raid-page .raid-manager-list--archive,
+.raid-manager-list.dashboard-list,
+.raid-manager-list {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(min(100%, 420px), 1fr)) !important;
+  gap: 14px !important;
+  align-items: stretch !important;
+}
+
+.raid-page .raid-manager-list .raid-list-item,
+.raid-manager-list .raid-list-item,
+.raid-list-item {
+  display: grid !important;
+  grid-template-rows: minmax(0, 1fr) auto !important;
+  min-width: 0 !important;
+  overflow: visible !important;
+}
+
+.raid-page .raid-manager-list .raid-list-main-link,
+.raid-manager-list .raid-list-main-link,
+.raid-list-main-link {
+  grid-template-columns: 68px minmax(0, 1fr) !important;
+  min-height: 0 !important;
+  align-items: start !important;
+  gap: 12px !important;
+  padding: 12px !important;
+  overflow: visible !important;
+}
+
+.raid-page .raid-manager-list .raid-list-main-link > img,
+.raid-page .raid-manager-list .raid-list-fallback,
+.raid-manager-list .raid-list-main-link > img,
+.raid-manager-list .raid-list-fallback,
+.raid-list-main-link > img,
+.raid-list-fallback {
+  width: 68px !important;
+  height: 68px !important;
+  align-self: start !important;
+}
+
+.raid-list-copy,
+.raid-list-title-row,
+.raid-list-facts {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.raid-list-title-row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 6px 10px !important;
+}
+
+.raid-list-title-row strong,
+.raid-manager-list .raid-list-title-row strong,
+.raid-page .raid-manager-list .raid-list-title-row strong {
+  flex: 1 1 220px !important;
+  min-width: 0 !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  line-height: 1.24 !important;
+}
+
+.raid-list-title-row .raid-state,
+.raid-manager-list .raid-list-title-row .raid-state,
+.raid-page .raid-manager-list .raid-list-title-row .raid-state {
+  flex: 0 0 auto !important;
+  max-width: 100% !important;
+}
+
+.raid-list-facts,
+.raid-manager-list .raid-list-facts,
+.raid-page .raid-manager-list .raid-list-facts {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+
+.raid-list-facts small,
+.raid-manager-list .raid-list-facts small,
+.raid-page .raid-manager-list .raid-list-facts small {
+  display: inline-flex !important;
+  align-items: center !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  min-height: 26px !important;
+  padding: 4px 8px !important;
+  border: 1px solid var(--ui-line-soft) !important;
+  border-radius: 999px !important;
+  color: var(--ui-text-soft) !important;
+  background: rgba(255, 255, 255, 0.035) !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  line-height: 1.2 !important;
+}
+
+.raid-list-progress,
+.raid-manager-list .raid-list-progress,
+.raid-page .raid-manager-list .raid-list-progress {
+  width: 100% !important;
+  margin-top: 2px !important;
+}
+
+.raid-list-actions,
+.raid-manager-list .raid-list-actions,
+.raid-page .raid-manager-list .raid-list-actions {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  align-items: stretch !important;
+  padding: 0 12px 12px !important;
+}
+
+.raid-list-actions .btn,
+.raid-list-actions button,
+.raid-list-actions form,
+.raid-manager-list .raid-list-actions .btn,
+.raid-manager-list .raid-list-actions button,
+.raid-manager-list .raid-list-actions form,
+.raid-page .raid-manager-list .raid-list-actions .btn,
+.raid-page .raid-manager-list .raid-list-actions button,
+.raid-page .raid-manager-list .raid-list-actions form {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.raid-list-actions .btn,
+.raid-list-actions button,
+.raid-manager-list .raid-list-actions .btn,
+.raid-manager-list .raid-list-actions button,
+.raid-page .raid-manager-list .raid-list-actions .btn,
+.raid-page .raid-manager-list .raid-list-actions button {
+  min-height: 38px !important;
+  padding: 8px 10px !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  line-height: 1.15 !important;
+}
+
+.raid-list-archive-note {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 38px !important;
+  padding: 8px 10px !important;
+  border: 1px solid var(--ui-line-soft) !important;
+  color: var(--ui-text-muted) !important;
+  background: rgba(255, 255, 255, 0.035) !important;
+  text-align: center !important;
+}
+
+.raid-poll-card-grid.dashboard-list,
+.raid-poll-card-grid {
+  grid-template-columns: repeat(2, minmax(min(100%, 420px), 1fr)) !important;
+}
+
+.raid-poll-list-card h3,
+.raid-poll-list-card h3 a,
+.raid-poll-list-card p,
+.raid-poll-card-metrics dd,
+.raid-poll-day-chips span {
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+.raid-poll-list-card p {
+  display: block !important;
+  -webkit-line-clamp: unset !important;
+  -webkit-box-orient: initial !important;
+}
+
+@media (max-width: 1100px) {
+  .raid-page .raid-manager-list,
+  .raid-page .raid-manager-list--archive,
+  .raid-manager-list.dashboard-list,
+  .raid-manager-list,
+  .raid-poll-card-grid.dashboard-list,
+  .raid-poll-card-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .raid-page .raid-manager-list .raid-list-main-link,
+  .raid-manager-list .raid-list-main-link,
+  .raid-list-main-link {
+    grid-template-columns: 56px minmax(0, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .raid-page .raid-manager-list .raid-list-main-link > img,
+  .raid-page .raid-manager-list .raid-list-fallback,
+  .raid-manager-list .raid-list-main-link > img,
+  .raid-manager-list .raid-list-fallback,
+  .raid-list-main-link > img,
+  .raid-list-fallback {
+    width: 56px !important;
+    height: 56px !important;
+  }
+
+  .raid-list-actions,
+  .raid-manager-list .raid-list-actions,
+  .raid-page .raid-manager-list .raid-list-actions {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Raid card action layout fix: no overflowing button text, compact primary data, clear action structure. */
+.raid-manager-list .raid-list-item,
+.raid-list-item {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) clamp(108px, 9vw, 124px) !important;
+  gap: 10px !important;
+  align-items: stretch !important;
+  padding: 14px !important;
+  overflow: hidden !important;
+}
+
+.raid-manager-list .raid-list-main-link,
+.raid-list-main-link {
+  display: grid !important;
+  grid-template-columns: 76px minmax(0, 1fr) !important;
+  gap: 12px !important;
+  align-items: start !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+}
+
+.raid-manager-list .raid-list-main-link > img,
+.raid-list-main-link > img,
+.raid-manager-list .raid-list-fallback,
+.raid-list-fallback {
+  width: 76px !important;
+  height: 76px !important;
+  min-width: 76px !important;
+  border-radius: 14px !important;
+  object-fit: cover !important;
+}
+
+.raid-list-copy {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 8px !important;
+  align-content: start !important;
+}
+
+.raid-list-title-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 10px !important;
+  align-items: start !important;
+  min-width: 0 !important;
+}
+
+.raid-list-title-row strong {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  line-height: 1.25 !important;
+}
+
+.raid-list-title-row .raid-state {
+  max-width: 100% !important;
+  align-self: start !important;
+  justify-self: end !important;
+  white-space: nowrap !important;
+}
+
+.raid-list-facts {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+}
+
+.raid-list-facts small {
+  display: inline-flex !important;
+  align-items: center !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  min-height: 26px !important;
+  padding: 4px 8px !important;
+  border: 1px solid var(--ui-line-soft) !important;
+  border-radius: 999px !important;
+  color: var(--ui-text-soft) !important;
+  background: rgba(255, 255, 255, 0.035) !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  line-height: 1.15 !important;
+}
+
+.raid-list-progress {
+  max-width: min(100%, 320px) !important;
+  margin-top: 2px !important;
+}
+
+.raid-list-actions,
+.raid-manager-list .raid-list-actions,
+.raid-page .raid-manager-list .raid-list-actions {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-auto-rows: minmax(38px, auto) !important;
+  gap: 8px !important;
+  align-content: start !important;
+  align-self: start !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 124px !important;
+  padding: 0 !important;
+}
+
+.raid-list-action-open,
+.raid-list-action-state,
+.raid-list-action-state-form,
+.raid-list-archive-note,
+.raid-list-actions .raid-list-action-open,
+.raid-list-actions .raid-list-action-state,
+.raid-list-actions .raid-list-action-state-form,
+.raid-manager-list .raid-list-actions .raid-list-action-open,
+.raid-manager-list .raid-list-actions .raid-list-action-state,
+.raid-manager-list .raid-list-actions .raid-list-action-state-form {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.raid-list-action-tools {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.raid-list-action-tools form {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.raid-list-actions .btn,
+.raid-list-actions button,
+.raid-manager-list .raid-list-actions .btn,
+.raid-manager-list .raid-list-actions button,
+.raid-page .raid-manager-list .raid-list-actions .btn,
+.raid-page .raid-manager-list .raid-list-actions button,
+.raid-list-archive-note {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  min-height: 38px !important;
+  padding: 8px 10px !important;
+  overflow: hidden !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  text-align: center !important;
+  line-height: 1.1 !important;
+}
+
+.raid-list-icon-action,
+.raid-list-actions .raid-list-icon-action,
+.raid-manager-list .raid-list-actions .raid-list-icon-action {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 !important;
+  border-radius: 14px !important;
+  font-size: 1.05rem !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+}
+
+.raid-list-icon-action span {
+  display: block !important;
+  pointer-events: none !important;
+  line-height: 1 !important;
+}
+
+.raid-list-icon-action--edit,
+.raid-list-actions .raid-list-icon-action--edit {
+  color: #ead4a4 !important;
+  border-color: rgba(204, 157, 70, 0.34) !important;
+  background: rgba(187, 137, 44, 0.12) !important;
+}
+
+.raid-list-icon-action--delete,
+.raid-list-actions .raid-list-icon-action--delete {
+  color: #f0b1aa !important;
+  border-color: rgba(188, 72, 64, 0.34) !important;
+  background: rgba(160, 48, 43, 0.14) !important;
+}
+
+.raid-list-icon-action--edit:hover,
+.raid-list-icon-action--edit:focus-visible {
+  color: #ffe4a8 !important;
+  border-color: rgba(214, 166, 74, 0.48) !important;
+  background: rgba(187, 137, 44, 0.18) !important;
+}
+
+.raid-list-icon-action--delete:hover,
+.raid-list-icon-action--delete:focus-visible {
+  color: #ffd3ce !important;
+  border-color: rgba(200, 82, 74, 0.52) !important;
+  background: rgba(160, 48, 43, 0.22) !important;
+}
+
+.raid-list-archive-note {
+  border-radius: 14px !important;
+  border: 1px solid rgba(156, 168, 184, 0.2) !important;
+  color: #b9c0ca !important;
+  background: rgba(92, 106, 126, 0.12) !important;
+  font-weight: 950 !important;
+  letter-spacing: .03em !important;
+  text-transform: uppercase !important;
+}
+
+.raid-list-archive-note--draft {
+  color: #d4c4a5 !important;
+  border-color: rgba(214, 166, 74, 0.24) !important;
+  background: rgba(214, 166, 74, 0.09) !important;
+}
+
+@media (max-width: 1180px) {
+  .raid-manager-list .raid-list-item,
+  .raid-list-item {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .raid-list-actions,
+  .raid-manager-list .raid-list-actions,
+  .raid-page .raid-manager-list .raid-list-actions {
+    max-width: none !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  }
+
+  .raid-list-action-open,
+  .raid-list-action-tools,
+  .raid-list-action-state-form,
+  .raid-list-action-state,
+  .raid-list-archive-note {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .raid-manager-list .raid-list-main-link,
+  .raid-list-main-link {
+    grid-template-columns: 58px minmax(0, 1fr) !important;
+  }
+
+  .raid-manager-list .raid-list-main-link > img,
+  .raid-list-main-link > img,
+  .raid-manager-list .raid-list-fallback,
+  .raid-list-fallback {
+    width: 58px !important;
+    height: 58px !important;
+    min-width: 58px !important;
+  }
+
+  .raid-list-title-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .raid-list-title-row .raid-state {
+    justify-self: start !important;
+  }
+}

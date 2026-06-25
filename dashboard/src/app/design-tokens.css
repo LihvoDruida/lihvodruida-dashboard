@@ -1,0 +1,151 @@
+/* Mistblossom Dashboard Design Tokens
+   Єдина точка керування кольорами, тінями й сумісними alias-змінними.
+   Правило: нові стилі не мають використовувати прямі hex/rgba для кольорів,
+   тільки токени з цього файлу або semantic aliases нижче. */
+
+:root {
+  color-scheme: dark;
+
+--theme-bg-canvas: #07101a;
+  --theme-bg-canvas-2: #0a1420;
+  --theme-bg-elevated: #0c1827;
+  --theme-surface-1: rgba(9, 17, 28, 0.9);
+  --theme-surface-2: rgba(12, 22, 35, 0.94);
+  --theme-surface-3: rgba(15, 27, 42, 0.98);
+  --theme-surface-soft: rgba(255, 255, 255, 0.035);
+  --theme-border-soft: rgba(175, 188, 208, 0.12);
+  --theme-border: rgba(214, 168, 79, 0.24);
+  --theme-border-strong: rgba(255, 217, 139, 0.36);
+  --theme-accent: #d6a84f;
+  --theme-accent-strong: #f7d38d;
+  --theme-accent-soft: rgba(214, 168, 79, 0.14);
+  --theme-accent-ghost: rgba(214, 168, 79, 0.08);
+  --theme-success: #74d3a7;
+  --theme-success-soft: rgba(116, 211, 167, 0.12);
+  --theme-info: #7eb6ff;
+  --theme-info-soft: rgba(126, 182, 255, 0.14);
+  --theme-danger: #ff8c8c;
+  --theme-danger-soft: rgba(255, 140, 140, 0.12);
+  --theme-text: #f7f1e5;
+  --theme-text-soft: rgba(241, 233, 220, 0.78);
+  --theme-text-muted: rgba(183, 174, 158, 0.72);
+  --theme-shadow-card: 0 18px 44px rgba(0, 0, 0, 0.28);
+  --theme-shadow-panel: 0 26px 62px rgba(0, 0, 0, 0.34);
+
+  /* Mandatory aliases for the rest of the site. */
+  --mist-surface: var(--theme-surface-1);
+  --mist-surface-raised: var(--theme-surface-2);
+  --mist-border: var(--theme-border);
+  --mist-border-strong: var(--theme-border-strong);
+  --mist-focus: rgba(116, 211, 167, 0.7);
+  --mist-text-soft: var(--theme-text-soft);
+  --mist-shadow-soft: var(--theme-shadow-card);
+  --mist-shadow-panel: var(--theme-shadow-panel);
+
+  --bg: var(--theme-bg-canvas);
+  --bg-deep: #040a12;
+  --panel: var(--theme-surface-1);
+  --panel-strong: var(--theme-surface-2);
+  --panel-soft: var(--theme-surface-soft);
+  --line: var(--theme-border);
+  --line-soft: var(--theme-border-soft);
+  --gold: var(--theme-accent);
+  --gold-bright: var(--theme-accent-strong);
+  --gold-soft: var(--theme-accent-soft);
+  --emerald: var(--theme-success);
+  --emerald-soft: var(--theme-success-soft);
+  --blue: var(--theme-info);
+  --danger: var(--theme-danger);
+  --red: var(--theme-danger);
+  --red-soft: var(--theme-danger-soft);
+  --text: var(--theme-text);
+  --muted: var(--theme-text-soft);
+  --faint: var(--theme-text-muted);
+
+
+  /* Theme application primitives */
+  --theme-white: #ffffff;
+  --theme-black: #000000;
+  --theme-bg-canvas-start: #050c15;
+  --theme-bg-deep-solid: #060c14;
+  --theme-surface-base-solid: #09111c;
+  --theme-surface-raised-solid: #0c1623;
+  --theme-surface-muted-solid: #1f2e43;
+  --theme-accent-deep: #8d6226;
+  --theme-danger-deep: #741624;
+
+  /* Warm text scale */
+  --theme-text-heading: #fff8eb;
+  --theme-text-heading-soft: #fff7e9;
+  --theme-text-card-title: #fdf6ea;
+  --theme-text-card-value: #fff9ef;
+  --theme-text-on-accent: #241709;
+  --theme-text-on-accent-strong: #25180a;
+  --theme-text-danger: #fff0f0;
+  --theme-text-danger-soft: #ffe6e6;
+  --theme-text-success: #defcef;
+  --theme-text-success-muted: #8edcc0;
+  --theme-text-info: #dbe8ff;
+  --theme-text-archive: #dce7f6;
+
+  /* Surface roles */
+  --color-canvas: var(--theme-bg-canvas);
+  --color-canvas-muted: var(--theme-bg-canvas-2);
+  --color-surface: var(--theme-surface-1);
+  --color-surface-raised: var(--theme-surface-2);
+  --color-surface-strong: var(--theme-surface-3);
+  --color-surface-soft: var(--theme-surface-soft);
+
+  /* Border roles */
+  --color-border-subtle: var(--theme-border-soft);
+  --color-border: var(--theme-border);
+  --color-border-strong: var(--theme-border-strong);
+
+  /* Text roles */
+  --color-text: var(--theme-text);
+  --color-text-soft: var(--theme-text-soft);
+  --color-text-muted: var(--theme-text-muted);
+  --color-text-inverse: #241709;
+
+  /* Accent roles */
+  --color-accent: var(--theme-accent);
+  --color-accent-strong: var(--theme-accent-strong);
+  --color-accent-soft: var(--theme-accent-soft);
+  --color-accent-ghost: var(--theme-accent-ghost);
+
+  /* State roles */
+  --color-success: var(--theme-success);
+  --color-success-soft: var(--theme-success-soft);
+  --color-info: var(--theme-info);
+  --color-info-soft: var(--theme-info-soft);
+  --color-danger: var(--theme-danger);
+  --color-danger-soft: var(--theme-danger-soft);
+  --color-warning: var(--theme-accent-strong);
+  --color-warning-soft: var(--theme-accent-soft);
+
+  /* Difficulty and status tokens */
+  --difficulty-normal-border: rgba(126, 182, 255, 0.32);
+  --difficulty-normal-bg: rgba(126, 182, 255, 0.14);
+  --difficulty-normal-text: #dbeafe;
+  --difficulty-heroic-border: rgba(247, 211, 141, 0.36);
+  --difficulty-heroic-bg: rgba(214, 168, 79, 0.16);
+  --difficulty-heroic-text: #fde9ad;
+  --difficulty-mythic-border: rgba(255, 140, 140, 0.34);
+  --difficulty-mythic-bg: rgba(255, 140, 140, 0.12);
+  --difficulty-mythic-text: #ffd7d7;
+
+  /* Interaction tokens */
+  --control-bg: rgba(9, 17, 28, 0.72);
+  --control-bg-hover: rgba(12, 22, 35, 0.88);
+  --control-border: var(--theme-border);
+  --control-border-hover: var(--theme-border-strong);
+  --control-focus: rgba(116, 211, 167, 0.7);
+
+  /* Shadows */
+  --shadow-card: var(--theme-shadow-card);
+  --shadow-panel: var(--theme-shadow-panel);
+
+  /* Backward-compatible aliases used by older dashboard CSS */
+  --violet: var(--theme-info);
+  --violet-soft: var(--theme-info-soft);
+}
