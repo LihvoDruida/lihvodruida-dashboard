@@ -378,7 +378,6 @@ export default async function HomePage() {
               referrerPolicy="no-referrer"
             />
             <p className="home-landing-hero__guild">{guildBranding.name} • Discord</p>
-            <h1>Твій простір рейдів. Твій ОБРІЙ.</h1>
             <p className="home-landing-hero__lead">
               PvE-гільдія, орієнтована на прогрес, взаємоповагу та командну гру.
               <br />
