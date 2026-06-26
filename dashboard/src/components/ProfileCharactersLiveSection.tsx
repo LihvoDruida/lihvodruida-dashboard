@@ -88,7 +88,7 @@ function CharacterArtwork({ character }: { character: ProfileCharacter }) {
   return <span className="profile-character-artwork__fallback" aria-hidden="true">{character.name.charAt(0)}</span>;
 }
 
-type CharacterIconKind = "guild" | "other" | "ilvl" | "level" | "rio" | "updated" | "external" | "trash" | "crown";
+type CharacterIconKind = "guild" | "other" | "ilvl" | "level" | "rio" | "updated" | "external" | "trash" | "crown" | "mainStar";
 
 function CharacterInlineIcon({ kind }: { kind: CharacterIconKind }) {
   return <span className={`profile-character-icon profile-character-icon--${kind}`} aria-hidden="true" />;
@@ -125,8 +125,12 @@ function CharacterCard({ character, profileId, canManage, showMainBadge, returnT
     <article className={`profile-character-card${showMainBadge && character.isMain ? " is-main" : ""} ${guildBadge.className}`} aria-label={`${showMainBadge && character.isMain ? "Основний персонаж" : "Персонаж"}: ${character.name}`} data-character-profile-id={profileId}>
       <div className="profile-character-artwork">
         <CharacterArtwork character={character} />
-        <div className="profile-character-badges profile-character-badges--art" aria-label="Статуси персонажа">
-          {showMainBadge && character.isMain ? <span className="profile-character-badge profile-character-badge--main">Мейн</span> : null}
+        {showMainBadge && character.isMain ? (
+          <span className="profile-character-main-corner" aria-label="Мейн">
+            <CharacterInlineIcon kind="mainStar" />
+          </span>
+        ) : null}
+        <div className="profile-character-badges profile-character-badges--art" aria-label="Статус гільдії персонажа">
           <span className={`profile-character-badge profile-character-badge--${guildBadge.className}`}>
             <CharacterInlineIcon kind={guildBadge.icon} />
             <span>{guildBadge.label}</span>

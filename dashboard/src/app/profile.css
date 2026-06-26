@@ -1107,7 +1107,7 @@
   position: relative;
   display: grid;
   place-items: end center;
-  min-height: 286px;
+  min-height: 270px;
   overflow: hidden;
   border-bottom: 1px solid rgba(202, 139, 52, 0.14);
   background:
@@ -1138,11 +1138,11 @@
 .profile-character-artwork img {
   position: relative;
   z-index: 1;
-  width: 112%;
-  height: 318px;
+  width: 124%;
+  height: 312px;
   object-fit: contain;
   object-position: center bottom;
-  transform: scale(1.04) translateY(8px);
+  transform: scale(1.12) translateY(11px);
   transform-origin: bottom center;
   filter: saturate(1.05) contrast(1.05) drop-shadow(0 8px 20px rgba(0, 0, 0, 0.46));
 }
@@ -1172,6 +1172,45 @@
   align-items: flex-end;
   gap: 6px;
   pointer-events: none;
+}
+
+.profile-character-main-corner {
+  position: absolute;
+  z-index: 4;
+  top: 12px;
+  left: 12px;
+  display: grid;
+  place-items: start;
+  width: 40px;
+  height: 40px;
+  padding: 8px 0 0 8px;
+  color: rgba(39, 26, 13, 0.96);
+  background:
+    linear-gradient(135deg, rgba(214, 160, 83, 0.98) 0%, rgba(177, 115, 45, 0.92) 52%, rgba(94, 59, 26, 0) 53%);
+  border-top-left-radius: 12px;
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 226, 159, 0.42),
+    0 0 18px rgba(214, 150, 62, 0.24);
+  pointer-events: none;
+}
+
+.profile-character-main-corner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-top: 1px solid rgba(255, 222, 150, 0.42);
+  border-left: 1px solid rgba(255, 222, 150, 0.32);
+  border-top-left-radius: inherit;
+  background: linear-gradient(135deg, rgba(255, 240, 184, 0.20), rgba(255, 240, 184, 0) 46%);
+  pointer-events: none;
+}
+
+.profile-character-main-corner .profile-character-icon {
+  position: relative;
+  z-index: 1;
+  width: 13px;
+  height: 13px;
+  filter: drop-shadow(0 1px 1px rgba(255, 220, 150, 0.18));
 }
 
 .profile-character-badge {
@@ -1286,6 +1325,7 @@
 .profile-character-icon--external { --profile-character-icon-mask: url("/assets/icons/character-card/external-link.svg"); }
 .profile-character-icon--trash { --profile-character-icon-mask: url("/assets/icons/character-card/trash.svg"); }
 .profile-character-icon--crown { --profile-character-icon-mask: url("/assets/icons/character-card/crown.svg"); }
+.profile-character-icon--mainStar { --profile-character-icon-mask: url("/assets/icons/character-card/main-star.svg"); }
 
 .profile-character-kind .profile-character-icon,
 .profile-character-badge .profile-character-icon,
@@ -2033,11 +2073,13 @@
   }
 
   .profile-character-artwork {
-    min-height: 276px;
+    min-height: 258px;
   }
 
   .profile-character-artwork img {
-    height: 306px;
+    width: 126%;
+    height: 300px;
+    transform: scale(1.1) translateY(10px);
   }
 
   .profile-character-body {
