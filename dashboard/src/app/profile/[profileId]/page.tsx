@@ -444,7 +444,7 @@ export default async function ProfilePage({
     return a.name.localeCompare(b.name, "uk");
   });
   return (
-    <main className="container">
+    <main className="container profile-page-container">
       <section
         className="dashboard-shell content-shell profile-shell profile-account-page"
         aria-label="Профіль Mistblossom Vanguard"
