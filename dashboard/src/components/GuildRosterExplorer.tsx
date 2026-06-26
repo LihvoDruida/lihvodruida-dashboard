@@ -965,19 +965,19 @@ export default function GuildRosterExplorer({
                     onClick={(event) => openProfileCard(event, ownerProfileHref)}
                     onKeyDown={(event) => openProfileCardWithKeyboard(event, ownerProfileHref)}
                   >
-                    <div className="dashboard-table-primary" role="cell">
+                    <div className="dashboard-table-primary" role="cell" data-label="Персонаж">
                       <strong style={{ color: classColor(member.className) }}>{member.name}</strong>
                       <small>{member.realmName || member.realmSlug}</small>
                     </div>
-                    <div role="cell">
+                    <div role="cell" data-label="Клас / спек">
                       <strong>{member.className || "—"}</strong>
                       <small>{member.specName || "—"}</small>
                     </div>
-                    <div role="cell"><span className={`dashboard-table-pill dashboard-table-pill--${member.role}`}>{roleShort(member.role)}</span></div>
-                    <div role="cell">{member.itemLevel || "—"}</div>
-                    <div role="cell" className="dashboard-table-score"><strong>{formatNumber(score, 1)}</strong><small>{SEGMENT_LABELS[segment]}</small></div>
-                    <div role="cell">{member.rank === null || member.rank === undefined ? "—" : `#${member.rank}`}</div>
-                    <div role="cell">
+                    <div role="cell" data-label="Роль"><span className={`dashboard-table-pill dashboard-table-pill--${member.role}`}>{roleShort(member.role)}</span></div>
+                    <div role="cell" data-label="ILVL">{member.itemLevel || "—"}</div>
+                    <div role="cell" className="dashboard-table-score" data-label="M+"><strong>{formatNumber(score, 1)}</strong><small>{SEGMENT_LABELS[segment]}</small></div>
+                    <div role="cell" data-label="ГІ ранг">{member.rank === null || member.rank === undefined ? "—" : `#${member.rank}`}</div>
+                    <div role="cell" data-label="Профіль">
                       {ownerProfileHref ? (
                         <a href={ownerProfileHref} onClick={(event) => event.stopPropagation()}>
                           Профіль
@@ -986,7 +986,7 @@ export default function GuildRosterExplorer({
                         <span className="dashboard-table-muted">—</span>
                       )}
                     </div>
-                    <div role="cell">
+                    <div role="cell" data-label="Raider.IO">
                       {member.profileUrl ? (
                         <a href={member.profileUrl} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>
                           RIO
