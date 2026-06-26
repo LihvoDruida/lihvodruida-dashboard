@@ -2338,7 +2338,10 @@
   isolation: isolate;
 }
 
-.profile-account-page > .dashboard-topbar,
+.profile-account-page > .dashboard-topbar {
+  display: grid;
+}
+
 .profile-account-page > .dashboard-mobile-nav-shell {
   display: none;
 }
