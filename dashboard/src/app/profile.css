@@ -3418,3 +3418,455 @@
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Profile settings compact dashboard v17.
+   Scoped to the settings page so navbar, profile sidebar, footer and other profile pages stay unchanged. */
+.profile-settings-page {
+  --settings-section-gap: 24px;
+  --settings-section-gap-mobile: 16px;
+  --settings-card-padding: 20px;
+  --settings-inner-padding: 14px;
+  --settings-section-padding-x: 24px;
+  --settings-section-padding-y: 20px;
+  --profile-gap: var(--settings-section-gap);
+}
+
+.profile-settings-page .profile-account-main,
+.profile-settings-page .profile-grid--settings {
+  gap: var(--settings-section-gap) !important;
+}
+
+.profile-settings-page .profile-account-header {
+  min-height: 0 !important;
+  align-items: center;
+  padding: 28px 32px !important;
+  border-radius: 22px;
+}
+
+.profile-settings-page .profile-account-header h1 {
+  margin: 3px 0 8px;
+  font-size: clamp(2.15rem, 3vw, 3rem) !important;
+  line-height: 1.02;
+}
+
+.profile-settings-page .profile-account-header p {
+  max-width: 58ch;
+  font-size: 0.9rem;
+  line-height: 1.42;
+}
+
+.profile-settings-page .profile-account-header__badge {
+  min-height: 28px;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  box-shadow: none;
+}
+
+.profile-settings-page .profile-account-overview {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 12px;
+}
+
+.profile-settings-page .profile-account-overview-card {
+  grid-template-columns: 34px minmax(0, 1fr);
+  min-height: 0;
+  gap: 10px;
+  padding: 13px 14px;
+  border-radius: 16px;
+}
+
+.profile-settings-page .profile-account-overview-card__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  font-size: 0.88rem;
+}
+
+.profile-settings-page .profile-account-overview-card small {
+  font-size: 0.64rem;
+  letter-spacing: 0.075em;
+}
+
+.profile-settings-page .profile-account-overview-card strong {
+  margin-top: 3px;
+  font-size: clamp(0.92rem, 1.05vw, 1.04rem);
+  line-height: 1.12;
+}
+
+.profile-settings-page .profile-setup-progress-panel {
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 0 0, rgba(236, 202, 126, 0.08), transparent 38%),
+    rgba(255, 255, 255, 0.03);
+}
+
+.profile-settings-page .profile-setup-progress-panel__head {
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.profile-settings-page .profile-setup-progress-panel__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+}
+
+.profile-settings-page .profile-setup-progress-panel__head strong {
+  font-size: 1rem;
+}
+
+.profile-settings-page .profile-setup-progress-panel__head small {
+  margin-top: 2px;
+  font-size: 0.78rem;
+  line-height: 1.28;
+}
+
+.profile-settings-page .profile-setup-progress-panel__bar {
+  height: 5px;
+}
+
+.profile-settings-page .profile-setup-progress-panel__steps {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.profile-settings-page .profile-setup-progress-step {
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 13px;
+}
+
+.profile-settings-page .profile-setup-progress-step > span {
+  width: 22px;
+  height: 22px;
+  font-size: 0.76rem;
+}
+
+.profile-settings-page .profile-setup-progress-step strong {
+  font-size: 0.82rem;
+}
+
+.profile-settings-page .profile-setup-progress-step small {
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+
+.profile-settings-page .profile-rules-return-callout,
+.profile-settings-page .profile-setup-callout {
+  padding: 12px 14px;
+  border-radius: 18px;
+}
+
+.profile-settings-page .profile-rules-return-callout span:first-child,
+.profile-settings-page .profile-setup-callout__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 12px;
+}
+
+.profile-settings-page .profile-rules-return-callout small,
+.profile-settings-page .profile-setup-callout small {
+  font-size: 0.78rem;
+  line-height: 1.28;
+}
+
+.profile-settings-page .profile-card--clean-profile {
+  border-radius: 20px;
+}
+
+.profile-settings-page .profile-card-head {
+  gap: 5px;
+  padding: var(--settings-section-padding-y) var(--settings-section-padding-x) 16px;
+}
+
+.profile-settings-page .profile-card-head h2 {
+  font-size: clamp(1.34rem, 1.6vw, 1.62rem);
+  line-height: 1.04;
+}
+
+.profile-settings-page .profile-card-head .profile-card-lead {
+  max-width: 62ch;
+  margin-top: 1px;
+  font-size: 0.82rem;
+  line-height: 1.36;
+}
+
+.profile-settings-page .profile-card--clean-profile > .profile-name-panel,
+.profile-settings-page .profile-card--clean-profile > .profile-gender-box,
+.profile-settings-page .profile-card--clean-profile > .profile-discord-standard,
+.profile-settings-page .profile-card--clean-profile > .profile-raid-role-box {
+  padding: 18px var(--settings-section-padding-x) 22px;
+}
+
+.profile-settings-page .profile-card--clean-profile > .profile-gender-box,
+.profile-settings-page .profile-card--clean-profile > .profile-discord-standard,
+.profile-settings-page .profile-card--clean-profile > .profile-raid-role-box {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.profile-settings-page .profile-name-panel,
+.profile-settings-page .profile-name-section,
+.profile-settings-page .profile-display-mode-section,
+.profile-settings-page .profile-discord-standard,
+.profile-settings-page .profile-raid-role-box,
+.profile-settings-page .profile-gender-box {
+  gap: 10px;
+}
+
+.profile-settings-page .profile-name-section,
+.profile-settings-page .profile-display-mode-section,
+.profile-settings-page .profile-name-panel > .profile-discord-standard {
+  padding: var(--settings-inner-padding);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.028);
+}
+
+.profile-settings-page .profile-name-section__head,
+.profile-settings-page .profile-discord-standard__head,
+.profile-settings-page .profile-raid-role-box__head,
+.profile-settings-page .profile-gender-box__head {
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-settings-page .profile-raid-role-box__icon,
+.profile-settings-page .profile-gender-box__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+}
+
+.profile-settings-page .profile-name-section__head small,
+.profile-settings-page .profile-discord-standard__identity small,
+.profile-settings-page .profile-raid-role-box__head small,
+.profile-settings-page .profile-gender-box__head small,
+.profile-settings-page .profile-display-mode-option small,
+.profile-settings-page .profile-raid-role-option small,
+.profile-settings-page .profile-gender-option small,
+.profile-settings-page .profile-nickname-character-option small {
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+
+.profile-settings-page .profile-name-display-row,
+.profile-settings-page .profile-nickname-preview,
+.profile-settings-page .profile-server-nickname {
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 14px;
+}
+
+.profile-settings-page .profile-name-display-row strong,
+.profile-settings-page .profile-name-display-row__value strong,
+.profile-settings-page .profile-nickname-preview strong,
+.profile-settings-page .profile-server-nickname__body strong,
+.profile-settings-page .profile-discord-standard__identity strong,
+.profile-settings-page .profile-gender-box__head strong {
+  font-size: 0.98rem;
+  line-height: 1.12;
+}
+
+.profile-settings-page .profile-name-edit-form {
+  gap: 7px;
+}
+
+.profile-settings-page .profile-name-edit-form--always input,
+.profile-settings-page .profile-icon-action,
+.profile-settings-page .profile-nick-sync-button {
+  min-height: 38px;
+  border-radius: 12px;
+}
+
+.profile-settings-page .profile-name-edit-form--always input {
+  padding-inline: 12px;
+  font-size: 0.9rem;
+}
+
+.profile-settings-page .profile-icon-action,
+.profile-settings-page .profile-nick-sync-button {
+  min-width: 38px;
+  padding-inline: 11px;
+  gap: 7px;
+}
+
+.profile-settings-page .profile-nick-sync-button--copy {
+  min-width: 0;
+}
+
+.profile-settings-page .profile-field-hint,
+.profile-settings-page .profile-nickname-hint,
+.profile-settings-page .profile-raid-role-box__note {
+  font-size: 0.76rem;
+  line-height: 1.28;
+}
+
+.profile-settings-page .profile-display-mode-form,
+.profile-settings-page .profile-raid-role-form,
+.profile-settings-page .profile-gender-form,
+.profile-settings-page .profile-nickname-character-list {
+  gap: 8px;
+}
+
+.profile-settings-page .profile-raid-role-form,
+.profile-settings-page .profile-gender-form {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.profile-settings-page .profile-display-mode-option,
+.profile-settings-page .profile-raid-role-option,
+.profile-settings-page .profile-gender-option,
+.profile-settings-page .profile-nickname-character-option {
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 8px;
+  min-height: 52px;
+  padding: 9px 10px;
+  border-radius: 14px;
+}
+
+.profile-settings-page .profile-display-mode-option.is-selected,
+.profile-settings-page .profile-raid-role-option.is-selected,
+.profile-settings-page .profile-gender-option.is-selected,
+.profile-settings-page .profile-nickname-character-option.is-selected {
+  box-shadow: none;
+}
+
+.profile-settings-page .profile-display-mode-option__radio,
+.profile-settings-page .profile-display-mode-option input,
+.profile-settings-page .profile-raid-role-option input,
+.profile-settings-page .profile-gender-option input,
+.profile-settings-page .profile-nickname-character-option input {
+  width: 14px;
+  height: 14px;
+}
+
+.profile-settings-page .profile-display-mode-option strong,
+.profile-settings-page .profile-raid-role-option strong,
+.profile-settings-page .profile-gender-option strong,
+.profile-settings-page .profile-nickname-character-option strong {
+  font-size: 0.84rem;
+  line-height: 1.14;
+}
+
+.profile-settings-page .profile-display-mode-option small,
+.profile-settings-page .profile-raid-role-option small,
+.profile-settings-page .profile-gender-option small,
+.profile-settings-page .profile-nickname-character-option small {
+  margin-top: 2px;
+}
+
+.profile-settings-page .profile-gender-option em {
+  margin-top: 4px;
+  font-size: 0.7rem;
+  line-height: 1.16;
+}
+
+.profile-settings-page .profile-gender-form .btn,
+.profile-settings-page .profile-raid-role-form .btn,
+.profile-settings-page .profile-nickname-character-form .btn {
+  min-height: 34px;
+  margin-top: 2px;
+  border-radius: 12px;
+  justify-self: start;
+}
+
+.profile-settings-page .profile-nickname-preview {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.profile-settings-page .profile-nickname-character-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.profile-settings-page .profile-nickname-character-option {
+  min-height: 48px;
+}
+
+.profile-settings-page .profile-raid-role-box__note {
+  padding: 8px 10px;
+  border-radius: 13px;
+}
+
+.profile-settings-page .profile-count-pill,
+.profile-settings-page .profile-raid-role-pill,
+.profile-settings-page .profile-gender-pill,
+.profile-settings-page .profile-name-status-pill {
+  min-height: 22px;
+  padding: 3px 8px;
+  font-size: 0.68rem;
+}
+
+@media (max-width: 1240px) {
+  .profile-settings-page .profile-account-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .profile-settings-page .profile-setup-progress-panel__steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .profile-settings-page .profile-raid-role-form,
+  .profile-settings-page .profile-gender-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .profile-settings-page {
+    --settings-section-gap: var(--settings-section-gap-mobile);
+    --settings-section-padding-x: 16px;
+    --settings-section-padding-y: 18px;
+    --settings-inner-padding: 12px;
+  }
+
+  .profile-settings-page .profile-account-main,
+  .profile-settings-page .profile-grid--settings {
+    gap: var(--settings-section-gap-mobile) !important;
+  }
+
+  .profile-settings-page .profile-account-header {
+    padding: 18px !important;
+  }
+
+  .profile-settings-page .profile-account-header h1 {
+    font-size: clamp(1.82rem, 9vw, 2.28rem) !important;
+  }
+
+  .profile-settings-page .profile-account-header p {
+    font-size: 0.84rem;
+  }
+
+  .profile-settings-page .profile-account-overview,
+  .profile-settings-page .profile-setup-progress-panel__steps,
+  .profile-settings-page .profile-display-mode-form,
+  .profile-settings-page .profile-raid-role-form,
+  .profile-settings-page .profile-gender-form,
+  .profile-settings-page .profile-nickname-character-list {
+    grid-template-columns: 1fr !important;
+  }
+
+  .profile-settings-page .profile-setup-progress-panel__head,
+  .profile-settings-page .profile-rules-return-callout,
+  .profile-settings-page .profile-setup-callout,
+  .profile-settings-page .profile-name-section__head,
+  .profile-settings-page .profile-discord-standard__head,
+  .profile-settings-page .profile-raid-role-box__head,
+  .profile-settings-page .profile-gender-box__head {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-settings-page .profile-card--clean-profile > .profile-name-panel,
+  .profile-settings-page .profile-card--clean-profile > .profile-gender-box,
+  .profile-settings-page .profile-card--clean-profile > .profile-discord-standard,
+  .profile-settings-page .profile-card--clean-profile > .profile-raid-role-box {
+    padding: 14px 16px 18px;
+  }
+
+  .profile-settings-page .profile-name-edit-form {
+    grid-template-columns: 1fr auto;
+  }
+}

@@ -81,11 +81,11 @@ const RAID_ROLE_OPTIONS: {
   {
     value: "auto",
     label: "Авто зі спеки",
-    hint: "Ручний вибір не потрібен, якщо спек визначено правильно",
+    hint: "Авто, якщо спек визначено правильно",
   },
-  { value: "tank", label: "Танк", hint: "Примусово записувати мейна як танка" },
-  { value: "healer", label: "Хіл", hint: "Примусово записувати мейна як хіла" },
-  { value: "dps", label: "ДД", hint: "Примусово записувати мейна як ДД" },
+  { value: "tank", label: "Танк", hint: "Записувати мейна танком" },
+  { value: "healer", label: "Хіл", hint: "Записувати мейна хілом" },
+  { value: "dps", label: "ДД", hint: "Записувати мейна як ДД" },
 ];
 
 type SelectableProfileGender = Exclude<ProfileGrammaticalGender, "unspecified">;
@@ -99,25 +99,25 @@ const PROFILE_GENDER_OPTIONS: {
   {
     value: "male",
     label: "Чоловіча форма",
-    hint: "Для повідомлень, статусів і рейдових підписів у чоловічій формі.",
+    hint: "Чоловіча форма в статусах і повідомленнях.",
     example: "Підписаний",
   },
   {
     value: "female",
     label: "Жіноча форма",
-    hint: "Для повідомлень, статусів і рейдових підписів у жіночій формі.",
+    hint: "Жіноча форма в статусах і повідомленнях.",
     example: "Підписана",
   },
   {
     value: "neutral",
     label: "Нейтральне звертання",
-    hint: "Без привʼязки до чоловічої або жіночої форми в текстах інтерфейсу.",
+    hint: "Нейтральна форма без привʼязки.",
     example: "Підписали",
   },
   {
     value: "nonbinary",
     label: "Небінарна особа",
-    hint: "Для нейтральних форм у персональних повідомленнях сайту та Discord.",
+    hint: "Нейтральні персональні повідомлення.",
     example: "Підписали",
   },
 ];
@@ -143,8 +143,7 @@ function ProfileGenderPreferenceForm({
         <span>
           <strong>Стать / звертання</strong>
           <small>
-            Це системне поле для правильних форм у профілі, рейдах, правилах і
-            Discord-повідомленнях.
+            Правильні форми у профілі, рейдах і Discord.
           </small>
         </span>
         <span
@@ -234,9 +233,9 @@ function RaidRolePreferenceForm({
         {manualRole
           ? wowRoleLabel(manualRole)
           : `${wowRoleLabel(autoRole)} зі спеки мейна`}
-        . Авто — нормальний завершений стан для реєстрації; ручний вибір
-        потрібен лише якщо спек або роль визначились неправильно. Для іншого
-        персонажа на рейді система бере роль уже з його спеки.
+        . Авто — нормальний стан; ручний вибір потрібен лише якщо спек
+        визначився неправильно. Для іншого персонажа роль береться з його
+        спеки.
       </p>
 
       {mainCharacter ? (
@@ -336,7 +335,7 @@ function NicknameCharactersForm({
         <span>Порядок у шаблоні</span>
         <strong>{previewCharacters}</strong>
         <small>
-          Першим завжди іде мейн. Нижче можна вибрати до двох альтів.
+          Першим завжди іде мейн, нижче — до двох альтів.
         </small>
       </div>
 
@@ -381,8 +380,7 @@ function NicknameCharactersForm({
             })}
           </div>
           <p className="profile-nickname-hint">
-            Сервер перевіряє ліміт: буде збережено максимум 2 альти, мейн сюди
-            не потрапляє.
+            Ліміт перевіряється на сервері: максимум 2 альти, без мейна.
           </p>
           <button className="btn btn-primary btn-sm" type="submit">
             Зберегти альтів для ніку
@@ -626,7 +624,7 @@ export default async function ProfileSettingsPage({
   return (
     <main className="container profile-page-container">
       <section
-        className="dashboard-shell content-shell profile-shell profile-account-page"
+        className="dashboard-shell content-shell profile-shell profile-account-page profile-settings-page"
         aria-label="Налаштування профілю Mistblossom Vanguard"
       >
         <DashboardIdentity user={session} activeSection="profile" />
@@ -715,9 +713,9 @@ export default async function ProfileSettingsPage({
                 </span>
                 <h1>{settingsPageTitle}</h1>
                 <p>
-                  Всі базові дані вводяться тут: імʼя, формат відображення,
-                  звертання, Discord nickname, альти для шаблону та роль для
-                  рейдів. Некоректні або неповні поля підсвічуються нижче.
+                  Коротко налаштуй імʼя, звертання, Discord-нік, альтів для
+                  шаблону та роль для рейдів. Помилки й незаповнені поля видно
+                  у статусі нижче.
                 </p>
               </div>
               <span className="profile-account-header__badge">
@@ -777,22 +775,6 @@ export default async function ProfileSettingsPage({
                 <span>
                   <small>Роль у рейді</small>
                   <strong>{wowRoleLabel(selectedRaidRole)}</strong>
-                </span>
-              </div>
-              <div className="profile-account-overview-card profile-account-overview-card--success">
-                <span
-                  className="profile-account-overview-card__icon"
-                  aria-hidden="true"
-                >
-                  ✦
-                </span>
-                <span>
-                  <small>Оновлено</small>
-                  <strong>
-                    {formatCompactDate(
-                      profile.updatedAt || profile.lastLoginAt,
-                    ) || "—"}
-                  </strong>
                 </span>
               </div>
             </section>
@@ -906,17 +888,14 @@ export default async function ProfileSettingsPage({
                   <span className="eyebrow">Система</span>
                   <h2>Стать / звертання</h2>
                   <p className="profile-card-lead">
-                    Цей блок не декоративний: від нього залежать персональні
-                    тексти, статуси записів на рейди та перевірка завершення
+                    Впливає на персональні тексти, рейди й статус завершення
                     профілю.
                   </p>
                 </div>
-                <div className="profile-name-panel">
-                  <ProfileGenderPreferenceForm
-                    value={profile.grammaticalGender}
-                    returnTo={settingsRulesReturnPath}
-                  />
-                </div>
+                <ProfileGenderPreferenceForm
+                  value={profile.grammaticalGender}
+                  returnTo={settingsRulesReturnPath}
+                />
               </article>
 
               <article
@@ -927,17 +906,15 @@ export default async function ProfileSettingsPage({
                   <span className="eyebrow">Discord</span>
                   <h2>Шаблон ніку</h2>
                   <p className="profile-card-lead">
-                    Мейн береться автоматично. Нижче вибираються тільки два
-                    альти, які підставляються в шаблон з dashboard-панелі.
+                    Мейн додається автоматично, нижче вибираються тільки два
+                    альти для шаблону Discord-ніка.
                   </p>
                 </div>
-                <div className="profile-name-panel">
-                  <NicknameCharactersForm
-                    profile={profile}
-                    nicknameTemplate={nicknamePolicy.template}
-                    returnTo={settingsRulesReturnPath}
-                  />
-                </div>
+                <NicknameCharactersForm
+                  profile={profile}
+                  nicknameTemplate={nicknamePolicy.template}
+                  returnTo={settingsRulesReturnPath}
+                />
               </article>
 
               <article
@@ -948,14 +925,12 @@ export default async function ProfileSettingsPage({
                   <span className="eyebrow">Рейди</span>
                   <h2>Роль у рейді</h2>
                 </div>
-                <div className="profile-name-panel">
-                  <RaidRolePreferenceForm
-                    mainCharacter={mainCharacter}
-                    manualRole={manualRaidRole}
-                    selectedRole={selectedRaidRole}
-                    returnTo={settingsRulesReturnPath}
-                  />
-                </div>
+                <RaidRolePreferenceForm
+                  mainCharacter={mainCharacter}
+                  manualRole={manualRaidRole}
+                  selectedRole={selectedRaidRole}
+                  returnTo={settingsRulesReturnPath}
+                />
               </article>
             </section>
           </div>

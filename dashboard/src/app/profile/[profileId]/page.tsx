@@ -494,16 +494,6 @@ export default async function ProfilePage({
               >
                 <ProfileUiIcon kind="home" /> Профіль
               </a>
-              {isOwnProfile ? (
-                <a
-                  href={
-                    settingsRulesReturnPath ||
-                    `/profile/${encodeURIComponent(profile.profileId)}/settings`
-                  }
-                >
-                  <ProfileUiIcon kind="gear" /> Налаштування
-                </a>
-              ) : null}
               <a href="#profile-characters">
                 <ProfileUiIcon kind="swords" /> Персонажі
               </a>
