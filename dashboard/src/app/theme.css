@@ -6306,3 +6306,443 @@ body:has(.profile-account-page) .profile-account-sidebar {
     margin-bottom: calc(var(--dashboard-mobile-nav-reserve) + 8px) !important;
   }
 }
+
+/* v13 global layout normalization: one chrome, one spacing system, no page-level spacing conflicts. */
+:root {
+  --site-max: 1620px;
+  --site-gutter: clamp(22px, 3vw, 52px);
+  --chrome-gutter: var(--site-gutter);
+  --dashboard-fixed-topbar-height: calc(68px + var(--safe-top));
+  --dashboard-content-top-gap: clamp(18px, 1.85vw, 24px);
+  --dashboard-content-bottom-gap: clamp(28px, 2.4vw, 40px);
+  --section-gap: 17px;
+  --layout-section-gap: 17px;
+  --layout-panel-pad: clamp(16px, 1.55vw, 24px);
+  --layout-panel-pad-lg: clamp(24px, 2.2vw, 36px);
+  --panel-radius: 16px;
+  --layout-radius: 16px;
+  --row-radius: 12px;
+  --control-radius: 10px;
+  --control-height: 40px;
+}
+
+/* Top navigation is identical everywhere, including profile pages. */
+.dashboard-topbar,
+body:has(.profile-account-page) .dashboard-topbar,
+body:has(.profile-account-page) .profile-account-page > .dashboard-topbar {
+  position: fixed !important;
+  inset: 0 0 auto 0 !important;
+  z-index: 110 !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: var(--dashboard-fixed-topbar-height) !important;
+  height: var(--dashboard-fixed-topbar-height) !important;
+  margin: 0 !important;
+  padding: calc(10px + var(--safe-top)) var(--chrome-gutter) 10px !important;
+  display: grid !important;
+  grid-template-columns: minmax(220px, 0.78fr) minmax(0, 1.45fr) minmax(260px, auto) !important;
+  align-items: center !important;
+  gap: clamp(14px, 1.7vw, 26px) !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10) !important;
+  border-radius: 0 !important;
+  background: rgba(8, 10, 15, 0.88) !important;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.38) !important;
+  backdrop-filter: blur(16px) saturate(1.08) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.08) !important;
+}
+
+.dashboard-scrolled .dashboard-topbar,
+.dashboard-scrolled body:has(.profile-account-page) .dashboard-topbar {
+  background: rgba(8, 10, 15, 0.64) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.07) !important;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.26) !important;
+}
+
+.dashboard-topbar::before,
+.dashboard-topbar::after {
+  display: none !important;
+}
+
+.dashboard-brand,
+.dashboard-nav.dashboard-nav--desktop,
+.dashboard-user {
+  min-width: 0 !important;
+}
+
+.dashboard-brand,
+.dashboard-user,
+.dashboard-user__profile-link {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.dashboard-brand,
+.dashboard-user__profile-link {
+  min-height: 46px !important;
+}
+
+.dashboard-nav.dashboard-nav--desktop {
+  width: 100% !important;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  mask-image: none !important;
+  -webkit-mask-image: none !important;
+}
+
+.dashboard-nav.dashboard-nav--desktop > a,
+.dashboard-nav-more__trigger,
+.dashboard-nav-more > summary {
+  min-height: 38px !important;
+  padding: 0 13px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1px solid transparent !important;
+  border-radius: 10px !important;
+  background: transparent !important;
+  color: rgba(241, 232, 214, 0.74) !important;
+  font-size: 0.82rem !important;
+  font-weight: 880 !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap !important;
+}
+
+.dashboard-nav.dashboard-nav--desktop > a:hover,
+.dashboard-nav.dashboard-nav--desktop > a:focus-visible,
+.dashboard-nav.dashboard-nav--desktop > a.is-active,
+.dashboard-nav-more:hover .dashboard-nav-more__trigger,
+.dashboard-nav-more:focus-within .dashboard-nav-more__trigger,
+.dashboard-nav-more[open] > .dashboard-nav-more__trigger,
+.dashboard-nav-more > summary:hover,
+.dashboard-nav-more[open] > summary,
+.dashboard-nav-more > summary.is-active {
+  color: #fff8ec !important;
+  border-color: rgba(255, 217, 139, 0.22) !important;
+  background: linear-gradient(135deg, rgba(214, 168, 79, 0.18), rgba(89, 214, 141, 0.08)) !important;
+}
+
+.dashboard-user {
+  justify-self: end !important;
+  width: auto !important;
+  max-width: min(420px, 100%) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+}
+
+.dashboard-user__profile-link {
+  max-width: min(310px, 42vw) !important;
+  padding: 4px 10px 4px 4px !important;
+  border: 1px solid rgba(205, 136, 49, 0.36) !important;
+  border-radius: 999px !important;
+  background: rgba(205, 136, 49, 0.06) !important;
+}
+
+.dashboard-user__profile-link.is-active {
+  border-color: rgba(218, 148, 58, 0.58) !important;
+  box-shadow: 0 0 0 1px rgba(218, 148, 58, 0.10), 0 10px 26px rgba(0, 0, 0, 0.22) !important;
+}
+
+.dashboard-brand strong,
+.dashboard-user strong,
+.dashboard-brand span,
+.dashboard-user span,
+.dashboard-user__profile-link strong,
+.dashboard-user__profile-link span {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.dashboard-brand strong,
+.dashboard-user strong {
+  color: var(--profile-reference-text, #f8efe2) !important;
+  font-size: 0.94rem !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.015em !important;
+}
+
+.dashboard-brand span,
+.dashboard-user span {
+  color: var(--profile-reference-muted-soft, rgba(235, 226, 213, 0.5)) !important;
+  font-size: 0.72rem !important;
+  line-height: 1.15 !important;
+}
+
+.guild-mark,
+.discord-avatar,
+.discord-avatar-fallback {
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  border-radius: 999px !important;
+}
+
+/* Page containers: every page receives the same topbar offset and content width. */
+body > main.container,
+body > section.container,
+main.container,
+.container:is(main, section),
+.legal-page,
+.app-state-page {
+  box-sizing: border-box !important;
+  width: min(calc(100% - (var(--site-gutter) * 2)), var(--site-max)) !important;
+  max-width: var(--site-max) !important;
+  margin-inline: auto !important;
+  padding-inline: 0 !important;
+  padding-top: calc(var(--dashboard-fixed-topbar-height) + var(--dashboard-content-top-gap)) !important;
+  padding-bottom: calc(var(--dashboard-content-bottom-gap) + var(--safe-bottom)) !important;
+}
+
+/* Keep nested utility containers from inheriting page-level offsets. */
+main.container .container,
+section.container .container,
+.panel .container,
+.card .container,
+.profile-account-page .container,
+.rules-onboarding-page .container {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-inline: 0 !important;
+  padding: 0 !important;
+}
+
+/* Shells should not add another artificial top gap under the fixed topbar. */
+.dashboard-shell,
+.content-shell,
+.discord-shell,
+.home-shell,
+.raid-shell,
+.profile-shell,
+.admin-page,
+.access-groups-page,
+.guild-page,
+.profile-directory-shell,
+body:has(.profile-account-page) .profile-account-page,
+body:has(.profile-account-page) .profile-shell,
+body:has(.profile-account-page) .dashboard-shell,
+body:has(.profile-account-page) .content-shell {
+  width: 100% !important;
+  max-width: 100% !important;
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+  gap: var(--layout-section-gap) !important;
+}
+
+.profile-page-container,
+body:has(.profile-account-page) .profile-page-container {
+  width: min(calc(100% - (var(--site-gutter) * 2)), var(--site-max)) !important;
+  max-width: var(--site-max) !important;
+  padding-top: calc(var(--dashboard-fixed-topbar-height) + var(--dashboard-content-top-gap)) !important;
+  padding-bottom: calc(var(--dashboard-content-bottom-gap) + var(--safe-bottom)) !important;
+}
+
+.profile-account-layout {
+  gap: clamp(24px, 2vw, 32px) !important;
+  align-items: start !important;
+}
+
+body:has(.profile-account-page) .profile-account-sidebar,
+.profile-account-sidebar {
+  position: sticky !important;
+  top: calc(var(--dashboard-fixed-topbar-height) + var(--dashboard-content-top-gap)) !important;
+  height: min(760px, calc(100svh - var(--dashboard-fixed-topbar-height) - var(--dashboard-content-top-gap) - 18px)) !important;
+  min-height: min(680px, calc(100svh - var(--dashboard-fixed-topbar-height) - var(--dashboard-content-top-gap) - 18px)) !important;
+  max-height: calc(100svh - var(--dashboard-fixed-topbar-height) - var(--dashboard-content-top-gap) - 18px) !important;
+}
+
+/* Content rhythm standardization after the global width change. */
+:where(.panel, .card, .action-panel, .rio-panel, .detail-box, .notice, .empty, .content-empty, .dashboard-table-card, .dashboard-list-panel) {
+  min-width: 0 !important;
+  border-color: var(--profile-reference-line-soft, rgba(205, 136, 49, 0.18)) !important;
+  border-radius: var(--panel-radius) !important;
+  background:
+    radial-gradient(circle at 0 0, rgba(224, 161, 83, 0.055), transparent 46%),
+    linear-gradient(180deg, rgba(31, 29, 26, 0.58), rgba(14, 15, 15, 0.82)) !important;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.045) !important;
+}
+
+:where(.dashboard-shell, .content-shell, .discord-shell, .home-shell, .raid-shell, .profile-shell, .admin-page, .access-groups-page, .guild-page, .profile-directory-shell) > * + * {
+  margin-top: 0 !important;
+}
+
+:where(.grid, .dashboard-list, .raid-manager-list, .raid-poll-card-grid, .profile-directory-grid, .content-table, .discord-rules-table, .admin-log-list, .home-polls-grid, .home-upcoming-events, .home-upcoming-list, .profile-character-list, .guild-roster-grid, .applications-page .grid) {
+  gap: var(--layout-section-gap) !important;
+}
+
+:where(.hero, .dashboard-hero, .content-dashboard-hero, .discord-dashboard-hero, .raid-dashboard-hero, .admin-hero, .access-groups-hero, .legal-hero, .rules-onboarding-hero, .profile-directory-hero, .guild-hero).panel {
+  min-height: clamp(210px, 13.8vw, 232px) !important;
+  padding: clamp(26px, 2vw, 36px) !important;
+}
+
+:where(.hero, .dashboard-hero, .content-dashboard-hero, .discord-dashboard-hero, .raid-dashboard-hero, .admin-hero, .access-groups-hero, .legal-hero, .rules-onboarding-hero, .profile-directory-hero, .guild-hero) h1 {
+  font-size: clamp(2.85rem, 3.75vw, 4.08rem) !important;
+  line-height: 0.94 !important;
+}
+
+/* Responsive: desktop topbar disappears, bottom navigation becomes the only mobile menu. */
+@media (max-width: 1180px) {
+  .dashboard-topbar,
+  body:has(.profile-account-page) .dashboard-topbar,
+  body:has(.profile-account-page) .profile-account-page > .dashboard-topbar {
+    grid-template-columns: minmax(190px, 0.8fr) minmax(0, 1fr) minmax(220px, auto) !important;
+  }
+
+  .dashboard-nav.dashboard-nav--desktop > a,
+  .dashboard-nav-more__trigger,
+  .dashboard-nav-more > summary {
+    padding-inline: 10px !important;
+    font-size: 0.78rem !important;
+  }
+}
+
+@media (max-width: 900px) {
+  :root {
+    --site-gutter: 14px;
+    --dashboard-content-top-gap: 12px;
+    --dashboard-content-bottom-gap: 20px;
+    --layout-section-gap: 14px;
+    --layout-panel-pad: 14px;
+    --dashboard-mobile-nav-edge: clamp(10px, 3vw, 15px);
+    --dashboard-mobile-nav-pad: 7px;
+    --dashboard-mobile-nav-gap: 8px;
+    --dashboard-mobile-nav-item-width: 86px;
+    --dashboard-mobile-nav-height: 72px;
+    --dashboard-mobile-nav-bottom-offset: calc(8px + var(--safe-bottom));
+    --dashboard-mobile-nav-reserve: calc(
+      var(--dash-mobile-nav-actual-height, var(--dashboard-mobile-nav-height)) +
+        var(--dash-mobile-nav-actual-bottom, var(--dashboard-mobile-nav-bottom-offset)) +
+        16px
+    );
+  }
+
+  body {
+    padding-bottom: var(--dashboard-mobile-nav-reserve) !important;
+  }
+
+  .dashboard-topbar,
+  body:has(.dashboard-mobile-nav-shell) .dashboard-topbar,
+  body:has(.profile-account-page) .dashboard-topbar,
+  body:has(.profile-account-page) .profile-account-page > .dashboard-topbar {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  body > main.container,
+  body > section.container,
+  main.container,
+  .profile-page-container,
+  body:has(.profile-account-page) .profile-page-container {
+    width: min(calc(100% - (var(--site-gutter) * 2)), 760px) !important;
+    max-width: 760px !important;
+    padding-top: calc(12px + var(--safe-top)) !important;
+    padding-bottom: calc(var(--dashboard-mobile-nav-reserve) + 14px) !important;
+  }
+
+  .dashboard-mobile-nav-shell,
+  body:has(.dashboard-mobile-nav-shell) .dashboard-mobile-nav-shell,
+  body:has(.profile-account-page) .dashboard-mobile-nav-shell,
+  body:has(.profile-account-page) .profile-account-page > .dashboard-mobile-nav-shell {
+    position: fixed !important;
+    left: max(var(--dashboard-mobile-nav-edge), env(safe-area-inset-left, 0px)) !important;
+    right: max(var(--dashboard-mobile-nav-edge), env(safe-area-inset-right, 0px)) !important;
+    bottom: var(--dashboard-mobile-nav-bottom-offset) !important;
+    z-index: 120 !important;
+    display: block !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    height: var(--dashboard-mobile-nav-height) !important;
+    padding: var(--dashboard-mobile-nav-pad) !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(205, 136, 49, 0.22) !important;
+    border-radius: 18px !important;
+    background: rgba(6, 10, 17, 0.92) !important;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(18px) saturate(1.1) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(1.1) !important;
+  }
+
+  .dashboard-mobile-nav {
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    gap: var(--dashboard-mobile-nav-gap) !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: none !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  .dashboard-mobile-nav::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .dashboard-mobile-nav a {
+    flex: 0 0 var(--dashboard-mobile-nav-item-width) !important;
+    width: var(--dashboard-mobile-nav-item-width) !important;
+    height: 100% !important;
+    display: grid !important;
+    place-items: center !important;
+    align-content: center !important;
+    padding: 6px !important;
+    border-radius: 12px !important;
+    color: rgba(241, 232, 214, 0.74) !important;
+    text-align: center !important;
+  }
+
+  .dashboard-mobile-nav a strong {
+    max-width: 100% !important;
+    overflow: hidden !important;
+    font-size: 0.72rem !important;
+    line-height: 1.08 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .dashboard-mobile-nav a:hover,
+  .dashboard-mobile-nav a.is-active {
+    color: #fff8ec !important;
+    background: linear-gradient(135deg, rgba(214, 168, 79, 0.2), rgba(89, 214, 141, 0.09)) !important;
+  }
+
+  .profile-account-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .profile-account-sidebar {
+    position: relative !important;
+    top: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+
+  :where(.hero, .dashboard-hero, .content-dashboard-hero, .discord-dashboard-hero, .raid-dashboard-hero, .admin-hero, .access-groups-hero, .legal-hero, .rules-onboarding-hero, .profile-directory-hero, .guild-hero).panel {
+    min-height: 0 !important;
+    padding: 20px !important;
+  }
+
+  :where(.hero, .dashboard-hero, .content-dashboard-hero, .discord-dashboard-hero, .raid-dashboard-hero, .admin-hero, .access-groups-hero, .legal-hero, .rules-onboarding-hero, .profile-directory-hero, .guild-hero) h1 {
+    max-width: 18ch !important;
+    font-size: clamp(2.2rem, 12vw, 3rem) !important;
+  }
+}

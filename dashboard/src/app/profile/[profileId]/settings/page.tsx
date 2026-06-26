@@ -624,7 +624,7 @@ export default async function ProfileSettingsPage({
   const savedCharacterCount = profile.characters.length;
 
   return (
-    <main className="container">
+    <main className="container profile-page-container">
       <section
         className="dashboard-shell content-shell profile-shell profile-account-page"
         aria-label="Налаштування профілю Mistblossom Vanguard"
