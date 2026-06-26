@@ -6214,3 +6214,95 @@ body > section.container:not(.profile-page-container) {
     padding-bottom: calc(20px + var(--safe-bottom)) !important;
   }
 }
+
+/* v12 chrome rhythm: remove desktop top gap, keep spacing below topbar, restore bottom-only mobile nav. */
+:root {
+  --dashboard-topbar-bottom-gap: clamp(18px, 1.9vw, 24px);
+}
+
+body:has(.profile-account-page) .profile-page-container {
+  padding-top: var(--safe-top) !important;
+}
+
+body:has(.profile-account-page) .profile-account-page,
+body:has(.profile-account-page) .profile-shell,
+body:has(.profile-account-page) .dashboard-shell,
+body:has(.profile-account-page) .content-shell {
+  padding-top: 0 !important;
+}
+
+body:has(.profile-account-page) .profile-account-page {
+  gap: var(--dashboard-topbar-bottom-gap) !important;
+}
+
+body:has(.profile-account-page) .profile-account-page > .dashboard-topbar {
+  position: sticky !important;
+  top: var(--safe-top) !important;
+  z-index: 96 !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+body:has(.profile-account-page) .profile-account-layout {
+  margin-top: 0 !important;
+}
+
+body:has(.profile-account-page) .profile-account-sidebar {
+  top: calc(var(--topbar-height, 76px) + var(--dashboard-topbar-bottom-gap) + var(--safe-top)) !important;
+  max-height: calc(100svh - var(--topbar-height, 76px) - var(--dashboard-topbar-bottom-gap) - var(--safe-top) - 16px) !important;
+  height: min(780px, calc(100svh - var(--topbar-height, 76px) - var(--dashboard-topbar-bottom-gap) - var(--safe-top) - 16px)) !important;
+  min-height: min(700px, calc(100svh - var(--topbar-height, 76px) - var(--dashboard-topbar-bottom-gap) - var(--safe-top) - 16px)) !important;
+}
+
+@media (min-width: 901px) {
+  body:has(.profile-account-page) .dashboard-mobile-nav-shell {
+    display: none !important;
+    pointer-events: none !important;
+  }
+}
+
+@media (max-width: 900px) {
+  body:has(.dashboard-mobile-nav-shell) {
+    padding-bottom: var(--dashboard-mobile-nav-reserve) !important;
+  }
+
+  body:has(.dashboard-mobile-nav-shell) .dashboard-topbar,
+  body:has(.profile-account-page) .profile-account-page > .dashboard-topbar,
+  body:has(.profile-account-page) .dashboard-topbar {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  body:has(.dashboard-mobile-nav-shell) .dashboard-mobile-nav-shell,
+  body:has(.profile-account-page) .dashboard-mobile-nav-shell,
+  body:has(.profile-account-page) .profile-account-page > .dashboard-mobile-nav-shell {
+    display: block !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+
+  body:has(.dashboard-mobile-nav-shell) main.container,
+  body:has(.dashboard-mobile-nav-shell) .container,
+  body:has(.profile-account-page) .profile-page-container {
+    padding-top: calc(12px + var(--safe-top)) !important;
+    padding-bottom: calc(var(--dashboard-mobile-nav-reserve) + 14px) !important;
+  }
+
+  body:has(.profile-account-page) .profile-account-page {
+    gap: 14px !important;
+  }
+
+  body:has(.profile-account-page) .profile-account-sidebar {
+    position: relative !important;
+    top: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+
+  body:has(.dashboard-mobile-nav-shell) .app-footer {
+    margin-bottom: calc(var(--dashboard-mobile-nav-reserve) + 8px) !important;
+  }
+}
