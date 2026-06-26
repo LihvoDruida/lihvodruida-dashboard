@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import DashboardIdentity from "@/components/DashboardIdentity";
 import LogoutButton from "@/components/LogoutButton";
 import ProfileCandidateBulkActions from "@/components/ProfileCandidateBulkActions";
@@ -13,6 +14,7 @@ import {
   raidDisplayCapacity,
   raidAutoCompositionLabel,
   raidTitle,
+  raidDifficultyLabel,
   type ProfileRaidSignup,
 } from "@/lib/raids";
 import { buildPageMetadata } from "@/lib/seo";
@@ -134,10 +136,45 @@ function raidSignupStatusLabel(
   return "Невідомо";
 }
 
+function raidSignupStatusClass(status: string) {
+  if (status === "going") return "success";
+  if (status === "tentative") return "warning";
+  if (status === "late") return "info";
+  if (status === "skipped") return "muted";
+  return "muted";
+}
+
+function raidRoleClass(role: string) {
+  if (role === "tank") return "tank";
+  if (role === "healer") return "healer";
+  if (role === "dps") return "dps";
+  return "unknown";
+}
+
+function ProfileRaidMetaItem({
+  label,
+  value,
+  detail,
+  className = "",
+}: {
+  label: string;
+  value: ReactNode;
+  detail?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <span className={`profile-raid-meta-item ${className}`.trim()}>
+      <small>{label}</small>
+      <strong>{value}</strong>
+      {detail ? <em>{detail}</em> : null}
+    </span>
+  );
+}
+
 function ProfileRaidSignupCard({ item }: { item: ProfileRaidSignup }) {
-  const characterLabel = item.signup.characterName
-    ? `${item.signup.characterName}${item.signup.realmName ? ` • ${item.signup.realmName}` : ""}`
-    : item.signup.discordName || "Без персонажа";
+  const characterName = item.signup.characterName || item.signup.discordName || "Без персонажа";
+  const realmLabel = item.signup.realmName || item.signup.realmSlug || "";
+  const characterLabel = realmLabel ? `${characterName} • ${realmLabel}` : characterName;
   const specLabel = [item.signup.activeSpecName, item.signup.className]
     .filter(Boolean)
     .join(" • ");
@@ -145,6 +182,15 @@ function ProfileRaidSignupCard({ item }: { item: ProfileRaidSignup }) {
     (signup) => signup.status === "going" || signup.status === "tentative" || signup.status === "late",
   ).length;
   const composition = `${activeRoster} / ${raidDisplayCapacity(item.raid)} • ${raidAutoCompositionLabel(item.raid)}`;
+  const statusLabel = raidSignupStatusLabel(
+    item.signup.status,
+    item.signup.grammaticalGender,
+  );
+  const roleLabel = wowRoleLabel(item.signup.role);
+  const dateLabel =
+    [item.raid.date, item.raid.time].filter(Boolean).join(", ") ||
+    "Дата уточнюється";
+  const difficultyLabel = raidDifficultyLabel(item.raid.difficulty);
 
   return (
     <article
@@ -154,45 +200,61 @@ function ProfileRaidSignupCard({ item }: { item: ProfileRaidSignup }) {
         className="profile-raid-card__main"
         href={`/raids/${encodeURIComponent(item.raid.id)}`}
       >
-        <span className="profile-raid-card__icon" aria-hidden="true">
+        <span className={`profile-raid-card__icon profile-raid-card__icon--${raidRoleClass(item.signup.role)}`} aria-hidden="true">
           ⚔
         </span>
-        <span>
+        <span className="profile-raid-card__title">
           <strong>{raidTitle(item.raid)}</strong>
-          <small>
-            {[item.raid.date, item.raid.time].filter(Boolean).join(", ") ||
-              "Дата уточнюється"}
-          </small>
+          <small>{dateLabel}</small>
+          <em>{difficultyLabel}</em>
         </span>
       </a>
-      <div className="profile-raid-card__meta">
-        {item.signup.signupNumber ? (
-          <span>
-            <strong>#{item.signup.signupNumber}</strong>
-            <small>Порядок запису</small>
+
+      <div className="profile-raid-card__body">
+        <div className="profile-raid-card__headline">
+          <span
+            className={`profile-raid-status-chip profile-raid-status-chip--${raidSignupStatusClass(item.signup.status)}`}
+          >
+            {statusLabel}
           </span>
-        ) : null}
-        <span>
-          <strong>
-            {raidSignupStatusLabel(
-              item.signup.status,
-              item.signup.grammaticalGender,
-            )}
-          </strong>
-          <small>Статус</small>
-        </span>
-        <span>
-          <strong>{characterLabel}</strong>
-          <small>Персонаж</small>
-        </span>
-        <span>
-          <strong>{wowRoleLabel(item.signup.role)}</strong>
-          <small>{specLabel || "Роль"}</small>
-        </span>
-        <span>
-          <strong>{composition}</strong>
-          <small>Склад</small>
-        </span>
+          <span
+            className={`profile-raid-role-chip profile-raid-role-chip--${raidRoleClass(item.signup.role)}`}
+          >
+            {roleLabel}
+          </span>
+        </div>
+
+        <div className="profile-raid-card__meta">
+          <ProfileRaidMetaItem
+            label="Порядок"
+            value={item.signup.signupNumber ? `#${item.signup.signupNumber}` : "—"}
+            className="profile-raid-meta-item--order"
+          />
+          <ProfileRaidMetaItem
+            label="Персонаж"
+            value={characterLabel}
+            detail={specLabel || "Клас / спек не вказано"}
+            className="profile-raid-meta-item--character"
+          />
+          <ProfileRaidMetaItem
+            label="Роль"
+            value={roleLabel}
+            detail={specLabel || "Роль запису"}
+          />
+          <ProfileRaidMetaItem
+            label="Склад"
+            value={composition}
+          />
+        </div>
+
+        <div className="profile-raid-card__actions">
+          <a
+            className="profile-raid-card__action"
+            href={`/raids/${encodeURIComponent(item.raid.id)}`}
+          >
+            Відкрити рейд
+          </a>
+        </div>
       </div>
     </article>
   );
@@ -207,16 +269,16 @@ function ProfileRaidSignups({ items }: { items: ProfileRaidSignup[] }) {
   return (
     <article
       id="profile-raids"
-      className="panel profile-card profile-card--raids"
+      className="panel profile-card profile-card--raids profile-card--raids-modern"
     >
-      <div className="profile-card-head profile-card-head--inline">
+      <div className="profile-card-head profile-card-head--inline profile-card-head--raids">
         <div>
           <span className="eyebrow">Рейди</span>
           <h2>Мої записи</h2>
         </div>
-        <span className="profile-count-pill">{active.length}</span>
+        <span className="profile-count-pill profile-count-pill--raid-count">{active.length}</span>
       </div>
-      <p className="profile-card-lead">
+      <p className="profile-card-lead profile-card-lead--raids">
         Тут видно активні записи на рейди. Для кожного нового запису персонажа
         потрібно вибрати вручну.
       </p>
@@ -244,12 +306,19 @@ function ProfileRaidSignups({ items }: { items: ProfileRaidSignup[] }) {
           ) : null}
         </div>
       ) : (
-        <div className="profile-empty-characters profile-empty-characters--compact">
-          <strong>Записів на рейди ще немає</strong>
-          <span>
-            Коли учасник натисне “Підписатися” або “Затримаюсь”, запис зʼявиться
-            тут.
+        <div className="profile-raid-empty-state">
+          <span className="profile-raid-empty-state__icon" aria-hidden="true">
+            ⚔
           </span>
+          <div>
+            <strong>У тебе ще немає активних записів на рейди</strong>
+            <span>
+              Коли ти запишеш персонажа на рейд, запис зʼявиться тут.
+            </span>
+          </div>
+          <a className="profile-raid-empty-state__action" href="/raids">
+            Перейти до рейдів
+          </a>
         </div>
       )}
     </article>

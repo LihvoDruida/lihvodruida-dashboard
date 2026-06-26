@@ -8157,3 +8157,1103 @@ body:has(.profile-account-page) .profile-account-sidebar,
 .raid-page--modern .raid-list-action-tools form > button {
   width: 100% !important;
 }
+
+/* v18 guild roster + profiles reference alignment
+   Compact two-column heroes, tighter summary grids, lighter tables,
+   and shared roster/profile rhythm without touching navbar/footer/auth logic. */
+.guild-page--modern,
+.profile-directory-page--modern {
+  --ref-page-gap: 24px;
+  --ref-card-pad: 24px;
+  --ref-card-pad-mobile: 16px;
+  --ref-inner-pad: 16px;
+  --ref-border: rgba(255, 255, 255, 0.08);
+  --ref-border-strong: rgba(245, 163, 22, 0.22);
+  --ref-muted: rgba(214, 221, 233, 0.68);
+  --ref-row-hover: rgba(245, 163, 22, 0.05);
+  --ref-row-alt: rgba(255, 255, 255, 0.015);
+  --ref-input-h: 38px;
+  --ref-button-h: 36px;
+}
+
+.guild-page--modern .app-page-stack,
+.profile-directory-page--modern .app-page-stack {
+  gap: var(--ref-page-gap) !important;
+}
+
+.guild-page--modern .app-page-hero.hero.panel,
+.profile-directory-page--modern .app-page-hero.hero.panel {
+  grid-template-columns: minmax(0, 1.12fr) minmax(360px, 0.88fr) !important;
+  align-items: stretch !important;
+  gap: 18px !important;
+  padding: 22px 24px !important;
+  border-radius: 22px !important;
+}
+
+.guild-page--modern .app-page-hero .eyebrow,
+.profile-directory-page--modern .app-page-hero .eyebrow {
+  color: #f5bc61 !important;
+}
+
+.guild-page--modern .app-page-hero h1,
+.profile-directory-page--modern .app-page-hero h1 {
+  max-width: 12ch !important;
+  font-size: clamp(2.45rem, 4.5vw, 3.55rem) !important;
+}
+
+.guild-page--modern .app-page-hero .lead,
+.profile-directory-page--modern .app-page-hero .lead {
+  max-width: 56ch !important;
+  font-size: 0.98rem !important;
+  line-height: 1.48 !important;
+}
+
+.guild-page--modern .guild-hero-side,
+.profile-directory-page--modern .profile-directory-hero-side {
+  display: grid !important;
+  gap: 12px !important;
+  align-content: start !important;
+  padding: 14px 16px !important;
+  border: 1px solid var(--ref-border) !important;
+  border-radius: 20px !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02)) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025) !important;
+}
+
+.guild-summary-card,
+.profile-summary-card {
+  display: grid !important;
+  gap: 14px !important;
+}
+
+.guild-summary-card__head {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 16px !important;
+  align-items: center !important;
+}
+
+.guild-summary-card__brand {
+  min-width: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+}
+
+.guild-summary-card__icon {
+  width: 56px !important;
+  height: 56px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(245, 163, 22, 0.22) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  object-fit: cover !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22) !important;
+}
+
+.guild-summary-card__brand-copy,
+.guild-summary-card__count {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 4px !important;
+}
+
+.guild-summary-card__brand-copy strong,
+.guild-summary-card__count strong {
+  color: var(--ui-text) !important;
+  font-size: clamp(1.1rem, 1.4vw, 1.8rem) !important;
+  line-height: 1.14 !important;
+}
+
+.guild-summary-card__brand-copy p,
+.guild-summary-card__count p {
+  margin: 0 !important;
+  color: var(--ref-muted) !important;
+  font-size: 0.82rem !important;
+  line-height: 1.35 !important;
+}
+
+.guild-summary-card__count {
+  justify-items: end !important;
+  text-align: right !important;
+}
+
+.guild-page--modern .guild-hero-stats,
+.profile-directory-page--modern .guild-hero-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.guild-page--modern .guild-hero-stat-card,
+.profile-directory-page--modern .guild-hero-stat-card {
+  min-height: 72px !important;
+  display: grid !important;
+  align-content: center !important;
+  gap: 4px !important;
+  padding: 12px 14px !important;
+  border: 1px solid var(--ref-border) !important;
+  border-radius: 14px !important;
+  background: rgba(255, 255, 255, 0.028) !important;
+}
+
+.guild-page--modern .guild-hero-stat-card span,
+.profile-directory-page--modern .guild-hero-stat-card span {
+  color: var(--ui-text-muted) !important;
+  font-size: 0.67rem !important;
+  letter-spacing: 0.08em !important;
+}
+
+.guild-page--modern .guild-hero-stat-card strong,
+.profile-directory-page--modern .guild-hero-stat-card strong {
+  color: var(--ui-text) !important;
+  font-size: clamp(1.3rem, 1.6vw, 1.9rem) !important;
+  line-height: 1.08 !important;
+}
+
+.guild-page--modern .guild-hero-actions,
+.profile-directory-page--modern .guild-hero-actions {
+  justify-content: flex-end !important;
+}
+
+.guild-page--modern .guild-refresh-action,
+.profile-directory-page--modern .guild-refresh-action {
+  width: 100% !important;
+  display: grid !important;
+  gap: 8px !important;
+}
+
+.guild-page--modern .guild-refresh-action > button,
+.profile-directory-page--modern .guild-refresh-action > button {
+  min-height: var(--ref-button-h) !important;
+  justify-self: end !important;
+  padding: 0 14px !important;
+  border: 1px solid var(--ref-border-strong) !important;
+  border-radius: 12px !important;
+  background: rgba(245, 163, 22, 0.08) !important;
+  color: #f8d7a0 !important;
+  font-size: 0.8rem !important;
+  font-weight: 900 !important;
+}
+
+.guild-page--modern .guild-refresh-action__status,
+.profile-directory-page--modern .guild-refresh-action__status {
+  color: var(--ref-muted) !important;
+  font-size: 0.76rem !important;
+  line-height: 1.35 !important;
+}
+
+.guild-page--modern .dashboard-table-card--roster,
+.profile-directory-page--modern .dashboard-table-card--profiles {
+  padding: 0 !important;
+  border-radius: 22px !important;
+  overflow: hidden !important;
+}
+
+.guild-page--modern .dashboard-table-titlebar,
+.profile-directory-page--modern .dashboard-table-titlebar {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 16px !important;
+  align-items: start !important;
+  padding: 18px 24px 14px !important;
+  border-bottom: 1px solid var(--ref-border) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015)) !important;
+}
+
+.guild-page--modern .dashboard-table-titlebar h2,
+.profile-directory-page--modern .dashboard-table-titlebar h2 {
+  margin: 0 !important;
+}
+
+.guild-page--modern .dashboard-table-controls,
+.profile-directory-page--modern .dashboard-table-controls,
+.profile-directory-page--modern .dashboard-table-search-form {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  align-items: center !important;
+}
+
+.guild-page--modern .dashboard-table-search,
+.profile-directory-page--modern .dashboard-table-search {
+  flex: 0 1 300px !important;
+  min-width: 220px !important;
+  max-width: 320px !important;
+}
+
+.guild-page--modern .dashboard-table-search input,
+.profile-directory-page--modern .dashboard-table-search input {
+  min-height: var(--ref-input-h) !important;
+  padding-inline: 14px !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+.guild-page--modern .dashboard-table-filter,
+.profile-directory-page--modern .dashboard-table-filter,
+.profile-directory-page--modern .dashboard-table-action-form button,
+.guild-page--modern .dashboard-table-footer .btn,
+.profile-directory-page--modern .dashboard-table-footer .btn {
+  min-height: var(--ref-button-h) !important;
+  padding: 0 13px !important;
+  border-radius: 12px !important;
+  font-size: 0.76rem !important;
+  line-height: 1 !important;
+}
+
+.guild-page--modern .dashboard-table-filter.is-active,
+.profile-directory-page--modern .dashboard-table-filter.is-active {
+  border-color: rgba(245, 163, 22, 0.36) !important;
+  background: rgba(245, 163, 22, 0.11) !important;
+  color: #f8dfb8 !important;
+}
+
+.guild-page--modern .dashboard-table-filter--muted,
+.profile-directory-page--modern .dashboard-table-filter--muted {
+  background: rgba(255, 255, 255, 0.025) !important;
+  color: var(--ui-text-soft) !important;
+}
+
+.profile-directory-page--modern .dashboard-table-action-form button {
+  width: auto !important;
+}
+
+.guild-page--modern .dashboard-table-stats,
+.profile-directory-page--modern .dashboard-table-stats {
+  padding: 14px 24px 0 !important;
+  display: grid !important;
+  gap: 10px !important;
+}
+
+.guild-page--modern .dashboard-table-card--roster .dashboard-table-stats {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+}
+
+.profile-directory-page--modern .dashboard-table-card--profiles .dashboard-table-stats {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+}
+
+.guild-page--modern .dashboard-table-stats > div,
+.profile-directory-page--modern .dashboard-table-stats > div {
+  min-height: 64px !important;
+  display: grid !important;
+  align-content: center !important;
+  gap: 4px !important;
+  padding: 12px 14px !important;
+  border: 1px solid var(--ref-border) !important;
+  border-radius: 14px !important;
+  background: rgba(255, 255, 255, 0.024) !important;
+}
+
+.guild-page--modern .dashboard-table-stats > div span,
+.profile-directory-page--modern .dashboard-table-stats > div span {
+  color: var(--ui-text-muted) !important;
+  font-size: 0.67rem !important;
+  line-height: 1.18 !important;
+  letter-spacing: 0.07em !important;
+  text-transform: uppercase !important;
+}
+
+.guild-page--modern .dashboard-table-stats > div strong,
+.profile-directory-page--modern .dashboard-table-stats > div strong {
+  color: var(--ui-text) !important;
+  font-size: clamp(1.15rem, 1.45vw, 1.5rem) !important;
+  line-height: 1.1 !important;
+}
+
+.guild-page--modern .dashboard-table-advanced {
+  margin: 14px 24px 0 !important;
+  padding: 14px 16px !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px 16px !important;
+  border: 1px solid var(--ref-border) !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.022) !important;
+  box-shadow: none !important;
+}
+
+.guild-page--modern .dashboard-table-advanced .guild-range-group,
+.guild-page--modern .dashboard-table-advanced > .guild-filter-field {
+  grid-column: auto !important;
+}
+
+.guild-page--modern .guild-range-group {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 10px !important;
+  padding: 12px 14px !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 14px !important;
+  background: rgba(255, 255, 255, 0.028) !important;
+}
+
+.guild-page--modern .guild-range-head {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.guild-page--modern .guild-range-head strong {
+  color: #f8d7a0 !important;
+  font-size: 0.76rem !important;
+  white-space: nowrap !important;
+}
+
+.guild-page--modern .guild-range-inputs {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.guild-page--modern .guild-range-value,
+.guild-page--modern .guild-filter-field {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 6px !important;
+}
+
+.guild-page--modern .guild-range-value span,
+.guild-page--modern .guild-filter-field span {
+  color: var(--ui-text-muted) !important;
+}
+
+.guild-page--modern .guild-range-value input,
+.guild-page--modern .guild-filter-field select {
+  min-height: var(--ref-input-h) !important;
+  padding-inline: 12px !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+.guild-page--modern .guild-dual-range {
+  height: 18px !important;
+}
+
+.guild-page--modern .guild-dual-range__line,
+.guild-page--modern .guild-dual-range__active,
+.guild-page--modern .guild-dual-range__input::-webkit-slider-runnable-track,
+.guild-page--modern .guild-dual-range__input::-moz-range-track {
+  height: 4px !important;
+}
+
+.guild-page--modern .guild-dual-range__input {
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.guild-page--modern .dashboard-table-advanced__actions {
+  grid-column: 2 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  min-height: var(--ref-input-h) !important;
+}
+
+.guild-page--modern .dashboard-table-advanced__actions .btn {
+  min-height: var(--ref-button-h) !important;
+  padding-inline: 14px !important;
+  border-radius: 12px !important;
+}
+
+.guild-page--modern .dashboard-table-advanced__actions small {
+  color: var(--ref-muted) !important;
+  font-size: 0.76rem !important;
+  line-height: 1.32 !important;
+}
+
+.guild-page--modern .dashboard-table-scroll,
+.profile-directory-page--modern .dashboard-table-scroll {
+  margin: 16px 24px 0 !important;
+  border: 1px solid var(--ref-border) !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.012) !important;
+}
+
+.guild-page--modern .dashboard-table-head,
+.profile-directory-page--modern .dashboard-table-head {
+  min-height: 42px !important;
+  background: rgba(245, 163, 22, 0.045) !important;
+}
+
+.guild-page--modern .dashboard-table-head span,
+.profile-directory-page--modern .dashboard-table-head span {
+  color: #f1c980 !important;
+  font-size: 0.71rem !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.guild-page--modern .dashboard-table-row,
+.profile-directory-page--modern .dashboard-table-row {
+  min-height: 56px !important;
+  background: transparent !important;
+}
+
+.guild-page--modern .dashboard-table-row:nth-child(2n + 1),
+.profile-directory-page--modern .dashboard-table-row:nth-child(2n + 1) {
+  background: var(--ref-row-alt) !important;
+}
+
+.guild-page--modern .dashboard-table-row:hover,
+.guild-page--modern .dashboard-table-row:focus-visible,
+.profile-directory-page--modern .dashboard-table-row:hover,
+.profile-directory-page--modern .dashboard-table-row:focus-visible {
+  background: var(--ref-row-hover) !important;
+  box-shadow: inset 2px 0 0 rgba(245, 163, 22, 0.36) !important;
+}
+
+.guild-page--modern .dashboard-table-row > div,
+.profile-directory-page--modern .dashboard-table-row > div {
+  padding: 12px 12px !important;
+}
+
+.guild-page--modern .dashboard-table-primary strong,
+.profile-directory-page--modern .dashboard-table-primary strong {
+  font-size: 0.88rem !important;
+}
+
+.guild-page--modern .dashboard-table-primary small,
+.profile-directory-page--modern .dashboard-table-primary small {
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+}
+
+.guild-page--modern .dashboard-table-score strong,
+.profile-directory-page--modern .dashboard-table-score strong {
+  font-size: 0.9rem !important;
+}
+
+.guild-page--modern :where(.dashboard-table-row a),
+.guild-page--modern .dashboard-table-link,
+.profile-directory-page--modern :where(.dashboard-table-row a),
+.profile-directory-page--modern .dashboard-table-link {
+  min-height: 30px !important;
+  width: fit-content !important;
+  padding: 0 12px !important;
+  border: 1px solid rgba(245, 163, 22, 0.24) !important;
+  border-radius: 10px !important;
+  background: rgba(255, 255, 255, 0.022) !important;
+  color: #f5d7aa !important;
+  font-size: 0.74rem !important;
+  font-weight: 800 !important;
+  text-decoration: none !important;
+}
+
+.guild-page--modern .dashboard-table-pill,
+.profile-directory-page--modern .dashboard-table-pill {
+  min-height: 24px !important;
+  padding: 0 10px !important;
+}
+
+.guild-page--modern .dashboard-table-footer,
+.profile-directory-page--modern .dashboard-table-footer {
+  padding: 14px 24px 18px !important;
+  border-top: 0 !important;
+}
+
+.guild-page--modern .dashboard-table-footer small,
+.profile-directory-page--modern .dashboard-table-footer small {
+  color: var(--ref-muted) !important;
+  font-size: 0.8rem !important;
+}
+
+.guild-page--modern .dashboard-table-pagination,
+.profile-directory-page--modern .dashboard-table-pagination {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+
+.guild-page--modern .dashboard-table-empty,
+.profile-directory-page--modern .dashboard-table-empty {
+  padding: 22px !important;
+}
+
+@media (max-width: 1280px) {
+  .guild-page--modern .dashboard-table-card--roster .dashboard-table-stats,
+  .profile-directory-page--modern .dashboard-table-card--profiles .dashboard-table-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 1080px) {
+  .guild-page--modern .dashboard-table-titlebar,
+  .profile-directory-page--modern .dashboard-table-titlebar {
+    grid-template-columns: 1fr !important;
+  }
+
+  .guild-page--modern .dashboard-table-controls,
+  .profile-directory-page--modern .dashboard-table-controls,
+  .profile-directory-page--modern .dashboard-table-search-form {
+    justify-content: flex-start !important;
+  }
+
+  .guild-page--modern .dashboard-table-advanced__actions {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+@media (max-width: 980px) {
+  .guild-page--modern .app-page-hero.hero.panel,
+  .profile-directory-page--modern .app-page-hero.hero.panel {
+    grid-template-columns: 1fr !important;
+  }
+
+  .guild-page--modern .dashboard-table-advanced {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .guild-page--modern .app-page-hero.hero.panel,
+  .profile-directory-page--modern .app-page-hero.hero.panel,
+  .guild-page--modern .dashboard-table-titlebar,
+  .profile-directory-page--modern .dashboard-table-titlebar,
+  .guild-page--modern .dashboard-table-stats,
+  .profile-directory-page--modern .dashboard-table-stats,
+  .guild-page--modern .dashboard-table-footer,
+  .profile-directory-page--modern .dashboard-table-footer {
+    padding-left: var(--ref-card-pad-mobile) !important;
+    padding-right: var(--ref-card-pad-mobile) !important;
+  }
+
+  .guild-page--modern .app-page-hero.hero.panel,
+  .profile-directory-page--modern .app-page-hero.hero.panel {
+    padding-top: 18px !important;
+    padding-bottom: 18px !important;
+  }
+
+  .guild-summary-card__head {
+    grid-template-columns: 1fr !important;
+  }
+
+  .guild-summary-card__count {
+    justify-items: start !important;
+    text-align: left !important;
+  }
+
+  .guild-page--modern .guild-hero-stats,
+  .profile-directory-page--modern .guild-hero-stats,
+  .guild-page--modern .dashboard-table-card--roster .dashboard-table-stats,
+  .profile-directory-page--modern .dashboard-table-card--profiles .dashboard-table-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .guild-page--modern .dashboard-table-search,
+  .profile-directory-page--modern .dashboard-table-search,
+  .guild-page--modern .dashboard-table-filter,
+  .profile-directory-page--modern .dashboard-table-filter,
+  .profile-directory-page--modern .dashboard-table-action-form,
+  .profile-directory-page--modern .dashboard-table-action-form button,
+  .guild-page--modern .dashboard-table-footer .btn,
+  .profile-directory-page--modern .dashboard-table-footer .btn {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .guild-page--modern .dashboard-table-advanced {
+    margin-left: var(--ref-card-pad-mobile) !important;
+    margin-right: var(--ref-card-pad-mobile) !important;
+  }
+
+  .guild-page--modern .dashboard-table-scroll,
+  .profile-directory-page--modern .dashboard-table-scroll {
+    margin-left: var(--ref-card-pad-mobile) !important;
+    margin-right: var(--ref-card-pad-mobile) !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .guild-page--modern .guild-hero-stats,
+  .profile-directory-page--modern .guild-hero-stats,
+  .guild-page--modern .dashboard-table-card--roster .dashboard-table-stats,
+  .profile-directory-page--modern .dashboard-table-card--profiles .dashboard-table-stats {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+/* v19 profile raid signups — compact "Мої записи" dashboard cards. */
+.profile-card--raids-modern {
+  --profile-raid-line: rgba(214, 157, 77, 0.22);
+  --profile-raid-line-soft: rgba(255, 255, 255, 0.075);
+  --profile-raid-bg: rgba(255, 255, 255, 0.028);
+  --profile-raid-bg-strong: rgba(255, 255, 255, 0.044);
+  --profile-raid-muted: rgba(238, 229, 214, 0.62);
+  padding: clamp(22px, 1.9vw, 28px) !important;
+}
+
+.profile-card--raids-modern .profile-card-head--raids {
+  display: flex !important;
+  align-items: start !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  margin: 0 !important;
+}
+
+.profile-card--raids-modern .profile-card-head--raids h2 {
+  margin: 4px 0 0 !important;
+  font-size: clamp(1.45rem, 1.8vw, 2rem) !important;
+  line-height: 1.1 !important;
+}
+
+.profile-card--raids-modern .profile-count-pill--raid-count {
+  min-width: 32px !important;
+  min-height: 32px !important;
+  padding: 0 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 999px !important;
+  border-color: rgba(224, 161, 83, 0.34) !important;
+  background: rgba(224, 161, 83, 0.11) !important;
+  color: #f6d6a2 !important;
+  font-size: 0.9rem !important;
+  font-weight: 950 !important;
+}
+
+.profile-card--raids-modern .profile-card-lead--raids {
+  max-width: 68ch !important;
+  margin: 8px 0 0 !important;
+  color: var(--profile-raid-muted) !important;
+  font-size: 0.9rem !important;
+  line-height: 1.45 !important;
+}
+
+.profile-card--raids-modern .profile-raid-list {
+  display: grid !important;
+  gap: 12px !important;
+  margin-top: 16px !important;
+}
+
+.profile-card--raids-modern .profile-raid-card {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: minmax(260px, 0.72fr) minmax(0, 1fr) !important;
+  gap: 16px !important;
+  align-items: stretch !important;
+  padding: clamp(16px, 1.35vw, 20px) !important;
+  border: 1px solid var(--profile-raid-line) !important;
+  border-radius: 18px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.018)),
+    rgba(7, 8, 9, 0.68) !important;
+  box-shadow:
+    0 16px 34px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 234, 190, 0.035) !important;
+}
+
+.profile-card--raids-modern .profile-raid-card:hover,
+.profile-card--raids-modern .profile-raid-card:focus-within {
+  border-color: rgba(224, 161, 83, 0.38) !important;
+  background:
+    linear-gradient(180deg, rgba(224, 161, 83, 0.055), rgba(255, 255, 255, 0.018)),
+    rgba(7, 8, 9, 0.7) !important;
+}
+
+.profile-card--raids-modern .profile-raid-card--going {
+  border-color: rgba(116, 220, 134, 0.27) !important;
+}
+
+.profile-card--raids-modern .profile-raid-card--tentative,
+.profile-card--raids-modern .profile-raid-card--late {
+  border-color: rgba(224, 161, 83, 0.34) !important;
+}
+
+.profile-card--raids-modern .profile-raid-card--skipped {
+  opacity: 0.76 !important;
+  border-color: rgba(255, 255, 255, 0.11) !important;
+}
+
+.profile-card--raids-modern .profile-raid-card__main {
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: 42px minmax(0, 1fr) !important;
+  gap: 12px !important;
+  align-items: start !important;
+  align-content: start !important;
+  color: inherit !important;
+  text-decoration: none !important;
+}
+
+.profile-card--raids-modern .profile-raid-card__icon {
+  width: 42px !important;
+  height: 42px !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(224, 161, 83, 0.27) !important;
+  background: rgba(224, 161, 83, 0.095) !important;
+  color: #f5c982 !important;
+  font-size: 1rem !important;
+  line-height: 1 !important;
+}
+
+.profile-card--raids-modern .profile-raid-card__icon--healer {
+  border-color: rgba(116, 220, 134, 0.28) !important;
+  background: rgba(116, 220, 134, 0.105) !important;
+  color: #bff4c8 !important;
+}
+
+.profile-card--raids-modern .profile-raid-card__icon--tank {
+  border-color: rgba(125, 167, 255, 0.28) !important;
+  background: rgba(125, 167, 255, 0.105) !important;
+  color: #c9d8ff !important;
+}
+
+.profile-card--raids-modern .profile-raid-card__title {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 4px !important;
+}
+
+.profile-card--raids-modern .profile-raid-card__title strong {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  color: var(--profile-text, #f8efe2) !important;
+  font-size: clamp(0.98rem, 1.1vw, 1.12rem) !important;
+  font-weight: 950 !important;
+  line-height: 1.22 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.profile-card--raids-modern .profile-raid-card__title small {
+  color: var(--profile-raid-muted) !important;
+  font-size: 0.82rem !important;
+  line-height: 1.32 !important;
+}
+
+.profile-card--raids-modern .profile-raid-card__title em {
+  width: fit-content !important;
+  min-height: 24px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 0 9px !important;
+  border: 1px solid rgba(224, 161, 83, 0.24) !important;
+  border-radius: 999px !important;
+  background: rgba(224, 161, 83, 0.075) !important;
+  color: #f2c47b !important;
+  font-size: 0.68rem !important;
+  font-style: normal !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.055em !important;
+  text-transform: uppercase !important;
+}
+
+.profile-card--raids-modern .profile-raid-card__body {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 10px !important;
+}
+
+.profile-card--raids-modern .profile-raid-card__headline {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+}
+
+.profile-raid-status-chip,
+.profile-raid-role-chip {
+  min-height: 26px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  padding: 0 10px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  color: rgba(238, 229, 214, 0.84) !important;
+  font-size: 0.74rem !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+.profile-raid-status-chip--success {
+  border-color: rgba(116, 220, 134, 0.34) !important;
+  background: rgba(116, 220, 134, 0.13) !important;
+  color: #d9f8de !important;
+}
+
+.profile-raid-status-chip--warning {
+  border-color: rgba(224, 161, 83, 0.35) !important;
+  background: rgba(224, 161, 83, 0.13) !important;
+  color: #f8dda9 !important;
+}
+
+.profile-raid-status-chip--info {
+  border-color: rgba(125, 167, 255, 0.3) !important;
+  background: rgba(125, 167, 255, 0.11) !important;
+  color: #d8e4ff !important;
+}
+
+.profile-raid-status-chip--muted {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  background: rgba(255, 255, 255, 0.045) !important;
+  color: rgba(224, 229, 239, 0.7) !important;
+}
+
+.profile-raid-role-chip--healer {
+  border-color: rgba(116, 220, 134, 0.3) !important;
+  background: rgba(116, 220, 134, 0.105) !important;
+  color: #d8f7df !important;
+}
+
+.profile-raid-role-chip--tank {
+  border-color: rgba(125, 167, 255, 0.3) !important;
+  background: rgba(125, 167, 255, 0.105) !important;
+  color: #d7e4ff !important;
+}
+
+.profile-raid-role-chip--dps,
+.profile-raid-role-chip--unknown {
+  border-color: rgba(255, 255, 255, 0.13) !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  color: rgba(238, 229, 214, 0.78) !important;
+}
+
+.profile-card--raids-modern .profile-raid-card__meta {
+  display: grid !important;
+  grid-template-columns: 0.58fr minmax(190px, 1.35fr) 0.78fr minmax(150px, 1fr) !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+.profile-card--raids-modern .profile-raid-meta-item {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 3px !important;
+  align-content: center !important;
+  padding: 10px 12px !important;
+  border: 1px solid var(--profile-raid-line-soft) !important;
+  border-radius: 13px !important;
+  background: rgba(255, 255, 255, 0.026) !important;
+}
+
+.profile-card--raids-modern .profile-raid-meta-item small {
+  order: 0 !important;
+  color: rgba(238, 229, 214, 0.48) !important;
+  font-size: 0.66rem !important;
+  font-weight: 950 !important;
+  line-height: 1.1 !important;
+  letter-spacing: 0.075em !important;
+  text-transform: uppercase !important;
+}
+
+.profile-card--raids-modern .profile-raid-meta-item strong {
+  order: 1 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  color: var(--profile-text, #f8efe2) !important;
+  font-size: 0.87rem !important;
+  font-weight: 900 !important;
+  line-height: 1.18 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.profile-card--raids-modern .profile-raid-meta-item em {
+  order: 2 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  color: var(--profile-raid-muted) !important;
+  font-size: 0.72rem !important;
+  font-style: normal !important;
+  line-height: 1.2 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.profile-card--raids-modern .profile-raid-meta-item--order strong {
+  color: #f4c984 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.profile-card--raids-modern .profile-raid-card__actions {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.profile-card--raids-modern .profile-raid-card__action {
+  min-height: 30px !important;
+  width: fit-content !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 12px !important;
+  border: 1px solid rgba(224, 161, 83, 0.24) !important;
+  border-radius: 10px !important;
+  background: rgba(224, 161, 83, 0.065) !important;
+  color: #f4d4a3 !important;
+  font-size: 0.74rem !important;
+  font-weight: 900 !important;
+  text-decoration: none !important;
+}
+
+.profile-card--raids-modern .profile-raid-card__action:hover,
+.profile-card--raids-modern .profile-raid-card__action:focus-visible {
+  border-color: rgba(224, 161, 83, 0.42) !important;
+  background: rgba(224, 161, 83, 0.115) !important;
+  outline: none !important;
+}
+
+.profile-card--raids-modern .profile-raid-skipped {
+  margin-top: 2px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.profile-card--raids-modern .profile-raid-skipped summary {
+  min-height: 34px !important;
+  width: fit-content !important;
+  cursor: pointer !important;
+  color: #f0c887 !important;
+  font-size: 0.82rem !important;
+  font-weight: 900 !important;
+}
+
+.profile-card--raids-modern .profile-raid-list--nested {
+  margin-top: 10px !important;
+}
+
+.profile-card--raids-modern .profile-raid-empty-state {
+  display: grid !important;
+  grid-template-columns: 42px minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin-top: 16px !important;
+  padding: 16px !important;
+  border: 1px solid var(--profile-raid-line) !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.026) !important;
+}
+
+.profile-card--raids-modern .profile-raid-empty-state__icon {
+  width: 42px !important;
+  height: 42px !important;
+  display: grid !important;
+  place-items: center !important;
+  border: 1px solid rgba(224, 161, 83, 0.24) !important;
+  border-radius: 14px !important;
+  background: rgba(224, 161, 83, 0.08) !important;
+  color: #f0c887 !important;
+}
+
+.profile-card--raids-modern .profile-raid-empty-state strong {
+  display: block !important;
+  color: var(--profile-text, #f8efe2) !important;
+  font-size: 0.96rem !important;
+  line-height: 1.25 !important;
+}
+
+.profile-card--raids-modern .profile-raid-empty-state span:not(.profile-raid-empty-state__icon) {
+  display: block !important;
+  margin-top: 3px !important;
+  color: var(--profile-raid-muted) !important;
+  font-size: 0.82rem !important;
+  line-height: 1.35 !important;
+}
+
+.profile-card--raids-modern .profile-raid-empty-state__action {
+  min-height: 34px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 12px !important;
+  border: 1px solid rgba(224, 161, 83, 0.26) !important;
+  border-radius: 10px !important;
+  background: rgba(224, 161, 83, 0.08) !important;
+  color: #f4d4a3 !important;
+  font-size: 0.78rem !important;
+  font-weight: 900 !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 1180px) {
+  .profile-card--raids-modern .profile-raid-card {
+    grid-template-columns: 1fr !important;
+  }
+
+  .profile-card--raids-modern .profile-raid-card__meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .profile-card--raids-modern .profile-raid-card__actions {
+    justify-content: flex-start !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .profile-card--raids-modern {
+    padding: 16px !important;
+  }
+
+  .profile-card--raids-modern .profile-card-head--raids {
+    align-items: center !important;
+  }
+
+  .profile-card--raids-modern .profile-raid-list {
+    gap: 10px !important;
+    margin-top: 14px !important;
+  }
+
+  .profile-card--raids-modern .profile-raid-card {
+    padding: 14px !important;
+    border-radius: 16px !important;
+  }
+
+  .profile-card--raids-modern .profile-raid-card__main {
+    grid-template-columns: 38px minmax(0, 1fr) !important;
+  }
+
+  .profile-card--raids-modern .profile-raid-card__icon {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 13px !important;
+  }
+
+  .profile-card--raids-modern .profile-raid-card__title strong {
+    white-space: normal !important;
+  }
+
+  .profile-card--raids-modern .profile-raid-card__meta {
+    grid-template-columns: 1fr !important;
+  }
+
+  .profile-card--raids-modern .profile-raid-card__headline,
+  .profile-card--raids-modern .profile-raid-card__actions {
+    justify-content: stretch !important;
+  }
+
+  .profile-card--raids-modern .profile-raid-status-chip,
+  .profile-card--raids-modern .profile-raid-role-chip,
+  .profile-card--raids-modern .profile-raid-card__action {
+    width: 100% !important;
+  }
+
+  .profile-card--raids-modern .profile-raid-meta-item strong,
+  .profile-card--raids-modern .profile-raid-meta-item em {
+    white-space: normal !important;
+  }
+
+  .profile-card--raids-modern .profile-raid-empty-state {
+    grid-template-columns: 1fr !important;
+    justify-items: start !important;
+  }
+
+  .profile-card--raids-modern .profile-raid-empty-state__action {
+    width: 100% !important;
+  }
+}

@@ -75,32 +75,40 @@ export default function GuildRosterLiveHeroStats({
 
   return (
     <>
-      <div className="guild-hero-summary">
-        <section className="guild-hero-summary__block">
-          <span className="guild-hero-summary__label">ГІЛЬДІЯ</span>
-          <strong>{liveStats.guildName}</strong>
-          <p>{liveStats.guildRealm}</p>
-        </section>
+      <div className="guild-summary-card" aria-label="Підсумок складу гільдії">
+        <div className="guild-summary-card__head">
+          <div className="guild-summary-card__brand">
+            <img
+              className="guild-summary-card__icon"
+              src="/mistblossom-icon.png"
+              alt="Емблема Mistblossom Vanguard"
+              loading="lazy"
+            />
+            <div className="guild-summary-card__brand-copy">
+              <strong>{liveStats.guildName}</strong>
+              <p>{liveStats.guildRealm}</p>
+            </div>
+          </div>
 
-        <section className="guild-hero-summary__block">
-          <span className="guild-hero-summary__label">СКЛАД</span>
-          <strong>{liveStats.memberCount.toLocaleString("uk-UA")} персонажів</strong>
-          <p>Оновлено: {formatDate(liveStats.updatedAt)}</p>
-        </section>
-      </div>
+          <div className="guild-summary-card__count">
+            <strong>{liveStats.memberCount.toLocaleString("uk-UA")} персонажів</strong>
+            <p>Оновлено: {formatDate(liveStats.updatedAt)}</p>
+          </div>
+        </div>
 
-      <div className="guild-hero-stats" aria-label="Коротка статистика складу">
-        <div className="guild-hero-stat-card">
-          <span>СЕР. RIO</span>
-          <strong>{round(liveStats.averageRioAll)}</strong>
-        </div>
-        <div className="guild-hero-stat-card">
-          <span>СЕР. ILVL</span>
-          <strong>{round(liveStats.averageItemLevel)}</strong>
-        </div>
-        <div className="guild-hero-stat-card">
-          <span>МАКС. RIO</span>
-          <strong>{round(liveStats.maxRioAll)}</strong>
+        <div className="guild-hero-stats guild-summary-card__stats" aria-label="Коротка статистика складу">
+          <div className="guild-hero-stat-card">
+            <span>СЕР. RIO</span>
+            <strong>{round(liveStats.averageRioAll)}</strong>
+          </div>
+          <div className="guild-hero-stat-card">
+            <span>СЕР. ILVL</span>
+            <strong>{round(liveStats.averageItemLevel)}</strong>
+          </div>
+          <div className="guild-hero-stat-card">
+            <span>МАКС. RIO</span>
+            <strong>{round(liveStats.maxRioAll)}</strong>
+          </div>
         </div>
       </div>
 
