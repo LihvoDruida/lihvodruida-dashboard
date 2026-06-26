@@ -1,4 +1,5 @@
 import DashboardIdentity from "@/components/DashboardIdentity";
+import LogoutButton from "@/components/LogoutButton";
 import ProfileCandidateBulkActions from "@/components/ProfileCandidateBulkActions";
 import ProfileCandidateExpiryTimer from "@/components/ProfileCandidateExpiryTimer";
 import ProfileCharactersLiveSection from "@/components/ProfileCharactersLiveSection";
@@ -15,6 +16,7 @@ import {
   type ProfileRaidSignup,
 } from "@/lib/raids";
 import { buildPageMetadata } from "@/lib/seo";
+import { formatStableUkCompactDate } from "@/lib/stableUiText";
 import { getDashboardApiSettings } from "@/lib/dashboardApiSettings";
 import { wowRoleLabel } from "@/lib/wowRoles";
 import { getSession, type DashboardSession } from "@/lib/auth";
@@ -50,6 +52,26 @@ export const metadata = buildPageMetadata({
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+
+type ProfileUiIconKind =
+  | "home"
+  | "gear"
+  | "swords"
+  | "shield"
+  | "user"
+  | "group"
+  | "link"
+  | "check"
+  | "sync"
+  | "plus"
+  | "calendar"
+  | "crown"
+  | "leaf";
+
+function ProfileUiIcon({ kind }: { kind: ProfileUiIconKind }) {
+  return <span className={`profile-ui-icon profile-ui-icon--${kind}`} aria-hidden="true" />;
+}
 
 function battleNetActionCopy(
   profile: DashboardProfile,
@@ -398,6 +420,13 @@ export default async function ProfilePage({
     profile,
     hasFreshBattleNetSession,
   );
+  const battleNetRefreshHref = `/api/auth/battlenet/start?region=${primaryBattleNetRegion}${profileRulesReturnPath ? `&next=${encodeURIComponent(profileRulesReturnPath)}` : ""}`;
+  const battleNetLastSyncAt =
+    profile.battlenet?.lastProfileViewRefreshAt ||
+    profile.battlenet?.lastCharacterRefreshAt ||
+    profile.battlenet?.lastSyncAt ||
+    null;
+  const battleNetLastSyncLabel = formatStableUkCompactDate(battleNetLastSyncAt);
   const bulkFormId = "profile-candidate-bulk-add";
   const publicNamePreview = getProfilePublicName(
     profile,
@@ -463,7 +492,7 @@ export default async function ProfilePage({
                 href={`/profile/${encodeURIComponent(profile.profileId)}`}
                 aria-current="page"
               >
-                <span aria-hidden="true">✦</span> Профіль
+                <ProfileUiIcon kind="home" /> Профіль
               </a>
               {isOwnProfile ? (
                 <a
@@ -472,18 +501,21 @@ export default async function ProfilePage({
                     `/profile/${encodeURIComponent(profile.profileId)}/settings`
                   }
                 >
-                  <span aria-hidden="true">⚙</span> Налаштування
+                  <ProfileUiIcon kind="gear" /> Налаштування
                 </a>
               ) : null}
               <a href="#profile-characters">
-                <span aria-hidden="true">⚔</span> Персонажі
+                <ProfileUiIcon kind="swords" /> Персонажі
               </a>
               {canViewPrivateProfileBlocks ? (
                 <a href="#profile-raids">
-                  <span aria-hidden="true">◆</span> Рейди
+                  <ProfileUiIcon kind="shield" /> Рейди
                 </a>
               ) : null}
             </nav>
+            <div className="profile-account-sidebar__footer">
+              <LogoutButton />
+            </div>
           </aside>
 
           <div className="profile-account-main">
@@ -499,17 +531,19 @@ export default async function ProfilePage({
               </div>
               <div className="profile-account-header__actions">
                 <span className="profile-account-header__badge">
-                  {guildStatus}
+                  <ProfileUiIcon kind="crown" />
+                  <span>{guildStatus}</span>
                 </span>
                 {isOwnProfile ? (
                   <a
-                    className="btn btn-ghost btn-sm"
+                    className="btn btn-ghost btn-sm profile-header-settings"
                     href={
                       settingsRulesReturnPath ||
                       `/profile/${encodeURIComponent(profile.profileId)}/settings`
                     }
                   >
-                    Налаштування профілю
+                    <ProfileUiIcon kind="gear" />
+                    <span>Налаштування профілю</span>
                   </a>
                 ) : null}
               </div>
@@ -524,7 +558,7 @@ export default async function ProfilePage({
                   className="profile-account-overview-card__icon"
                   aria-hidden="true"
                 >
-                  #
+                  <ProfileUiIcon kind="user" />
                 </span>
                 <span>
                   <small>Імʼя профілю</small>
@@ -536,7 +570,7 @@ export default async function ProfilePage({
                   className="profile-account-overview-card__icon"
                   aria-hidden="true"
                 >
-                  ⚔
+                  <ProfileUiIcon kind="swords" />
                 </span>
                 <span>
                   <small>Мейн / роль у рейді</small>
@@ -551,7 +585,7 @@ export default async function ProfilePage({
                   className="profile-account-overview-card__icon"
                   aria-hidden="true"
                 >
-                  ☘
+                  <ProfileUiIcon kind="group" />
                 </span>
                 <span>
                   <small>Персонажі</small>
@@ -566,7 +600,7 @@ export default async function ProfilePage({
                   className="profile-account-overview-card__icon"
                   aria-hidden="true"
                 >
-                  ⌁
+                  <ProfileUiIcon kind="link" />
                 </span>
                 <span>
                   <small>Battle.net</small>
@@ -620,25 +654,31 @@ export default async function ProfilePage({
                 id="profile-characters"
                 className="panel profile-card profile-card--characters"
               >
-                <div className="profile-card-head profile-card-head--inline">
-                  <div>
-                    <span className="eyebrow">Battle.net</span>
-                    <h2>Персонажі Battle.net</h2>
+                <div className="profile-card-head profile-card-head--inline profile-card-head--bnet">
+                  <div className="profile-card-title-with-icon">
+                    <span className="profile-card-title-icon" aria-hidden="true">
+                      <ProfileUiIcon kind="user" />
+                    </span>
+                    <span>
+                      <span className="eyebrow">Battle.net</span>
+                      <h2>Персонажі Battle.net</h2>
+                    </span>
                   </div>
                   {canManageCharacters ? (
                     <div
-                      className="profile-bnet-region-actions"
+                      className={`profile-bnet-status${profile.battlenet?.linked ? " is-connected" : " is-disconnected"}`}
                       aria-label="Підключити або оновити Battle.net"
                     >
-                      <a
-                        className="profile-bnet-cta"
-                        href={`/api/auth/battlenet/start?region=${primaryBattleNetRegion}${profileRulesReturnPath ? `&next=${encodeURIComponent(profileRulesReturnPath)}` : ""}`}
-                      >
-                        <span className="profile-bnet-cta__eyebrow">
-                          {battleNetAction.eyebrow}
-                        </span>
-                        <strong>{battleNetAction.title}</strong>
-                        <small>{battleNetAction.hint}</small>
+                      <span className="profile-bnet-status__icon" aria-hidden="true">
+                        <ProfileUiIcon kind={profile.battlenet?.linked ? "check" : "link"} />
+                      </span>
+                      <span className="profile-bnet-status__copy">
+                        <strong>{profile.battlenet?.linked ? "Battle.net підключено" : battleNetAction.eyebrow}</strong>
+                        <small>{profile.battlenet?.linked ? `Остання синхронізація: ${battleNetLastSyncLabel}` : battleNetAction.hint}</small>
+                      </span>
+                      <a className="profile-bnet-status__action" href={battleNetRefreshHref}>
+                        <ProfileUiIcon kind={profile.battlenet?.linked ? "sync" : "link"} />
+                        <span>{battleNetAction.title}</span>
                       </a>
                     </div>
                   ) : null}
@@ -667,6 +707,19 @@ export default async function ProfilePage({
                   }
                   refreshMinMs={apiSettings.profileViewRefreshMinSeconds * 1000}
                 />
+
+                {canManageCharacters ? (
+                  <div className="profile-character-add-footer">
+                    <span>
+                      <ProfileUiIcon kind="plus" />
+                      <span>Персонажів можна додати: {availableCandidates.length}</span>
+                    </span>
+                    <a className="profile-character-add-button" href={battleNetRefreshHref}>
+                      <ProfileUiIcon kind="plus" />
+                      <span>Додати персонажа</span>
+                    </a>
+                  </div>
+                ) : null}
 
                 {canManageCharacters && hasAvailableBattleNetCandidates ? (
                   <div
