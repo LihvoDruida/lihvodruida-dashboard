@@ -1240,7 +1240,7 @@
   margin: 0;
   color: #f5efe4;
   font-family: var(--font-display, var(--font-mist-display, Georgia, serif));
-  font-size: clamp(1.32rem, 1.35vw, 1.56rem);
+  font-size: clamp(1.48rem, 1.58vw, 1.76rem);
   line-height: 1.02;
   letter-spacing: -0.025em;
   text-shadow: 0 1px 18px rgba(0, 0, 0, 0.36);
@@ -1353,7 +1353,7 @@
 .profile-character-stat {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
   min-width: 0;
   padding: 10px 12px;
 }
@@ -1362,10 +1362,10 @@
   display: inline-grid;
   place-items: center;
   flex: 0 0 auto;
-  width: 21px;
-  height: 21px;
+  width: 28px;
+  height: 28px;
   color: #e1a046;
-  font-size: 1.28rem;
+  font-size: 1.64rem;
   filter: drop-shadow(0 0 8px rgba(225, 160, 70, 0.20));
 }
 
@@ -1377,16 +1377,16 @@
 
 .profile-character-stat__copy small {
   color: rgba(229, 214, 189, 0.74);
-  font-size: 0.66rem;
+  font-size: 0.59rem;
   font-weight: 860;
   text-transform: uppercase;
-  letter-spacing: 0.095em;
+  letter-spacing: 0.082em;
 }
 
 .profile-character-stat__copy strong {
   min-width: 0;
   color: #fbf3e7;
-  font-size: 1.12rem;
+  font-size: 0.98rem;
   font-weight: 920;
   line-height: 1.02;
   overflow: hidden;
