@@ -1,4 +1,5 @@
 import DashboardIdentity from "@/components/DashboardIdentity";
+import HeroSidePanel from "@/components/HeroSidePanel";
 import { getSession } from "@/lib/auth";
 import {
   canManageDiscordMembers,
@@ -164,12 +165,49 @@ export default async function ProfilesPage({
   );
 
   return (
-    <main className="container">
+    <main className="container app-page profile-directory-page profile-directory-page--modern">
       <section
-        className="dashboard-shell content-shell profile-directory-shell"
+        className="dashboard-shell content-shell profile-directory-shell app-page-stack"
         aria-label="Профілі учасників Mistblossom Vanguard"
       >
         <DashboardIdentity user={user} activeSection="profiles" />
+
+        <header className="hero panel dashboard-hero profile-directory-hero-modern app-page-hero">
+          <div className="hero-copy dashboard-hero__copy profile-directory-hero-modern__copy">
+            <div className="eyebrow">Mistblossom Vanguard • Профілі</div>
+            <div className="content-hero-status-row">
+              <span className="content-mode-pill content-mode-pill--library">
+                {user.groupName || guildStatusLabel(user.role)}
+              </span>
+              <span className="content-hero-path">Discord • Battle.net • персонажі</span>
+            </div>
+            <h1>Профілі учасників</h1>
+            <p className="lead">
+              Єдиний список профілів із мейнами, персонажами, Battle.net-статусом
+              і ручними діями без окремих локальних відступів.
+            </p>
+          </div>
+          <HeroSidePanel
+            ariaLabel="Огляд профілів"
+            summary={[
+              {
+                label: "ДОСТУП",
+                value: user.groupName || guildStatusLabel(user.role),
+                note: "Права поточного користувача",
+              },
+              {
+                label: "СТОРІНКА",
+                value: `${page} / ${pageCount}`,
+                note: `${PROFILE_PAGE_SIZE} профілів на сторінку`,
+              },
+            ]}
+            stats={[
+              { label: "ПРОФІЛІ", value: formatNumber(allProfiles.length) },
+              { label: "ПЕРСОНАЖІ", value: formatNumber(characterCount) },
+              { label: "BATTLE.NET", value: formatNumber(linkedBattleNetCount) },
+            ]}
+          />
+        </header>
 
         <section
           className="dashboard-table-card dashboard-list-panel dashboard-table-card--profiles panel"
@@ -178,7 +216,7 @@ export default async function ProfilesPage({
           <div className="dashboard-table-titlebar dashboard-list-head">
             <div>
               <span className="eyebrow">Користувачі</span>
-              <h1>Профілі учасників</h1>
+              <h2>Список профілів</h2>
             </div>
             <div className="dashboard-table-controls" aria-label="Пошук і ручні дії з профілями">
               <form className="dashboard-table-search-form" action="/profiles" method="get">

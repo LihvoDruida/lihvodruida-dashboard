@@ -110,13 +110,13 @@ export default async function GuildRosterPage() {
   }
 
   return (
-    <main className="container guild-page">
+    <main className="container app-page guild-page guild-page--modern">
       <section
-        className="dashboard-shell content-shell"
+        className="dashboard-shell content-shell guild-shell app-page-stack"
         aria-label="Панель Mistblossom Vanguard"
       >
         <DashboardIdentity user={user} activeSection="guild" />
-        <header className="hero panel guild-hero">
+        <header className="hero panel guild-hero app-page-hero">
           <div className="hero-copy dashboard-hero__copy guild-hero__copy">
             <div className="eyebrow">Mistblossom Vanguard • Склад гільдії</div>
             <h1>Склад гільдії</h1>

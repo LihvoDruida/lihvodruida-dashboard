@@ -1511,13 +1511,13 @@ export function RaidPageShell({
   children: ReactNode;
 }) {
   return (
-    <main className="container raid-page">
+    <main className="container app-page raid-page raid-page--modern">
       <section
-        className="dashboard-shell content-shell raid-shell"
+        className="dashboard-shell content-shell raid-shell app-page-stack"
         aria-label="Панель рейдів Mistblossom Vanguard"
       >
         {user ? <DashboardIdentity user={user} activeSection="raids" /> : null}
-        <header className="hero panel dashboard-hero raid-dashboard-hero">
+        <header className="hero panel dashboard-hero raid-dashboard-hero app-page-hero">
           <div className="hero-copy dashboard-hero__copy guild-hero__copy">
             <div className="eyebrow">Mistblossom Vanguard • Рейди</div>
             <div className="content-hero-status-row">
