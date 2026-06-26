@@ -98,23 +98,23 @@ function ProfileRow({ profile }: { profile: DashboardProfile }) {
       role="row"
       aria-label={`Відкрити профіль: ${displayName}`}
     >
-      <div className="dashboard-table-primary" role="cell">
+      <div className="dashboard-table-primary" role="cell" data-label="Профіль">
         <strong>{displayName}</strong>
         <small>{profile.login || profile.providerUserId}</small>
       </div>
-      <div role="cell">
+      <div role="cell" data-label="Статус">
         <strong>{guildStatus}</strong>
         <small>{profile.role}</small>
       </div>
-      <div role="cell">
+      <div role="cell" data-label="Основа">
         <strong>{main.title}</strong>
         <small>{main.subtitle}</small>
       </div>
-      <div role="cell" className="dashboard-table-score">
+      <div role="cell" className="dashboard-table-score" data-label="Персонажі">
         <strong>{formatNumber(profile.characters.length)}</strong>
         <small>персонажів</small>
       </div>
-      <div role="cell">
+      <div role="cell" data-label="Battle.net">
         <span
           className={`dashboard-table-pill ${profile.battlenet?.linked ? "dashboard-table-pill--ok" : "dashboard-table-pill--muted"}`}
         >
@@ -122,8 +122,8 @@ function ProfileRow({ profile }: { profile: DashboardProfile }) {
         </span>
         <small>{battleNetStatus(profile)}</small>
       </div>
-      <div role="cell">{formatDate(activityDate)}</div>
-      <div role="cell">
+      <div role="cell" data-label="Активність">{formatDate(activityDate)}</div>
+      <div role="cell" data-label="Дія">
         <span className="dashboard-table-link">Відкрити</span>
       </div>
     </a>

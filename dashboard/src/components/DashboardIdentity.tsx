@@ -65,7 +65,7 @@ export default async function DashboardIdentity({
           ? { href: "/content", section: "content" as const, label: "Новини", desktopLabel: "Новини / гайди" }
           : null,
         canUseAdmin
-          ? { href: "/dashboard", section: "admin" as const, label: "Керування", desktopLabel: "Керування" }
+          ? { href: "/dashboard", section: "admin" as const, label: "Адмін", desktopLabel: "Керування" }
           : null,
       ].filter((item): item is NonNullable<typeof item> => Boolean(item))
     : [];

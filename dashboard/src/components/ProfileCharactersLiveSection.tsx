@@ -72,14 +72,6 @@ function characterVisualUrl(character?: Pick<ProfileCharacter, "renderUrl" | "av
   return character.renderUrl || pickImageUrl(character.avatarUrl, character.mediaUrl);
 }
 
-function characterAuxMeta(character: Pick<ProfileCharacter, "level" | "raceName" | "faction">) {
-  return [
-    typeof character.level === "number" ? `Lvl ${character.level}` : null,
-    character.raceName || null,
-    character.faction || null,
-  ].filter(Boolean) as string[];
-}
-
 function visibleCharacters(characters: ProfileCharacter[]) {
   return [...characters].sort((a, b) => {
     if (a.isMain !== b.isMain) return a.isMain ? -1 : 1;
@@ -96,76 +88,113 @@ function CharacterArtwork({ character }: { character: ProfileCharacter }) {
   return <span className="profile-character-artwork__fallback" aria-hidden="true">{character.name.charAt(0)}</span>;
 }
 
+type CharacterIconKind = "guild" | "other" | "ilvl" | "level" | "rio" | "updated" | "external" | "trash" | "crown";
+
+function CharacterInlineIcon({ kind }: { kind: CharacterIconKind }) {
+  return <span className={`profile-character-icon profile-character-icon--${kind}`} aria-hidden="true" />;
+}
+
+function CharacterStat({ icon, label, value }: { icon: "ilvl" | "level" | "rio" | "updated"; label: string; value: string | number }) {
+  return (
+    <div className="profile-character-stat">
+      <span className={`profile-character-stat__icon profile-character-stat__icon--${icon}`}>
+        <CharacterInlineIcon kind={icon} />
+      </span>
+      <span className="profile-character-stat__copy">
+        <small>{label}</small>
+        <strong>{value}</strong>
+      </span>
+    </div>
+  );
+}
+
 function CharacterCard({ character, profileId, canManage, showMainBadge, returnTo = "" }: { character: ProfileCharacter; profileId: string; canManage: boolean; showMainBadge: boolean; returnTo?: string }) {
   const classLabel = character.className || "Клас невідомий";
   const specLabel = character.activeSpecName ? `${character.activeSpecName} • ${classLabel}` : classLabel;
   const roleLabel = wowRoleLabel(character.activeSpecRole);
-  const itemLevel = typeof character.itemLevel === "number" ? character.itemLevel : null;
-  const rioScore = typeof character.raiderIo?.currentScore === "number" ? Math.round(character.raiderIo.currentScore) : null;
+  const itemLevel = typeof character.itemLevel === "number" ? character.itemLevel : "—";
+  const rioScore = typeof character.raiderIo?.currentScore === "number" ? Math.round(character.raiderIo.currentScore) : "—";
   const rioUrl = character.raiderIo?.profileUrl || null;
   const realmLabel = character.realmName || character.realmSlug || "Реалм —";
-  const extraMeta = characterAuxMeta(character);
   const guildBadge = character.verifiedGuild
-    ? { label: "Гільдійний", icon: "🌿", className: "is-guild" }
-    : { label: "Інший", icon: "🤝", className: "is-other" };
+    ? { label: "Гільдійний", icon: "guild" as const, className: "is-guild" as const }
+    : { label: "Не гільдійний", icon: "other" as const, className: "is-other" as const };
+  const updatedLabel = formatStableUkCompactDate(character.lastSeenAt);
 
   return (
-    <article className={`profile-character-card${showMainBadge && character.isMain ? " is-main" : ""} ${guildBadge.className}`} aria-label={`${showMainBadge && character.isMain ? "Основний персонаж" : "Персонаж"}: ${character.name}`}>
+    <article className={`profile-character-card${showMainBadge && character.isMain ? " is-main" : ""} ${guildBadge.className}`} aria-label={`${showMainBadge && character.isMain ? "Основний персонаж" : "Персонаж"}: ${character.name}`} data-character-profile-id={profileId}>
       <div className="profile-character-artwork">
         <CharacterArtwork character={character} />
-        {showMainBadge && character.isMain ? <span className="profile-main-badge profile-main-badge--art">Мейн</span> : null}
+        <div className="profile-character-badges profile-character-badges--art" aria-label="Статуси персонажа">
+          {showMainBadge && character.isMain ? <span className="profile-character-badge profile-character-badge--main">Мейн</span> : null}
+          <span className={`profile-character-badge profile-character-badge--${guildBadge.className}`}>
+            <CharacterInlineIcon kind={guildBadge.icon} />
+            <span>{guildBadge.label}</span>
+          </span>
+        </div>
       </div>
       <div className="profile-character-body">
         <div className="profile-character-title-row profile-character-title-row--stacked">
-          <div>
+          <div className="profile-character-title-copy">
             <h3>{character.name}</h3>
             <p>{realmLabel}</p>
           </div>
-          <span className={`profile-character-kind profile-character-kind--${guildBadge.className}`}>{guildBadge.icon} {guildBadge.label}</span>
         </div>
 
-        <div className="profile-character-meta">
+        <div className="profile-character-meta" aria-label="Характеристики персонажа">
           <span>{specLabel}</span>
           <span>{roleLabel}</span>
           <span>{realmLabel}</span>
-          {extraMeta.map((value) => <span key={value}>{value}</span>)}
         </div>
 
-        <div className="profile-character-showcase">
-          <div className="profile-character-showcase__stat">
-            <small>ilvl</small>
-            <strong>{itemLevel ?? "—"}</strong>
+        <div className="profile-character-stats-grid" aria-label="Ключові показники персонажа">
+          <div className="profile-character-stats-row">
+            <CharacterStat icon="ilvl" label="ILVL" value={itemLevel} />
+            <span className="profile-character-stats-divider" aria-hidden="true" />
+            <CharacterStat icon="level" label="Рівень" value={typeof character.level === "number" ? character.level : "—"} />
           </div>
-          <div className="profile-character-showcase__stat profile-character-showcase__stat--secondary">
-            <small>Рівень</small>
-            <strong>{typeof character.level === "number" ? character.level : "—"}</strong>
-          </div>
-          <div className="profile-character-showcase__stat profile-character-showcase__stat--secondary">
-            <small>RIO</small>
-            <strong>{rioScore ?? "—"}</strong>
-          </div>
-          <div className="profile-character-showcase__stat profile-character-showcase__stat--secondary">
-            <small>Оновлено</small>
-            <strong>{formatStableUkCompactDate(character.lastSeenAt)}</strong>
+          <div className="profile-character-stats-row">
+            <CharacterStat icon="rio" label="RIO" value={rioScore} />
+            <span className="profile-character-stats-divider" aria-hidden="true" />
+            <CharacterStat icon="updated" label="Оновлено" value={updatedLabel} />
           </div>
         </div>
 
         <div className="profile-character-actions">
-          {rioUrl ? <a className="btn btn-ghost btn-sm" href={rioUrl} target="_blank" rel="noreferrer">Raider.IO</a> : null}
           {canManage && !character.isMain ? (
-            <form action="/api/profile/characters/main" method="post">
+            <form className="profile-character-actions__full" action="/api/profile/characters/main" method="post">
               <input type="hidden" name="characterKey" value={character.key} />
               {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
-              <button className="btn btn-ghost btn-sm" type="submit">Зробити мейном</button>
+              <button className="profile-character-btn profile-character-btn--accent" type="submit">
+                <span className="profile-character-btn__icon"><CharacterInlineIcon kind="crown" /></span>
+                <span>Зробити мейном</span>
+              </button>
             </form>
           ) : null}
-          {canManage ? (
-            <form action="/api/profile/characters/remove" method="post">
-              <input type="hidden" name="characterKey" value={character.key} />
-              {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
-              <button className="btn btn-danger btn-sm" type="submit">Видалити</button>
-            </form>
-          ) : null}
+
+          <div className={`profile-character-actions__row${canManage ? "" : " is-single"}`}>
+            {rioUrl ? (
+              <a className="profile-character-btn profile-character-btn--ghost" href={rioUrl} target="_blank" rel="noreferrer">
+                <span>Raider.IO</span>
+                <span className="profile-character-btn__icon"><CharacterInlineIcon kind="external" /></span>
+              </a>
+            ) : (
+              <span className="profile-character-btn profile-character-btn--ghost is-disabled" aria-disabled="true">
+                <span>Raider.IO</span>
+                <span className="profile-character-btn__icon"><CharacterInlineIcon kind="external" /></span>
+              </span>
+            )}
+            {canManage ? (
+              <form action="/api/profile/characters/remove" method="post">
+                <input type="hidden" name="characterKey" value={character.key} />
+                {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+                <button className="profile-character-btn profile-character-btn--danger" type="submit">
+                  <span className="profile-character-btn__icon"><CharacterInlineIcon kind="trash" /></span>
+                  <span>Видалити</span>
+                </button>
+              </form>
+            ) : null}
+          </div>
         </div>
       </div>
     </article>
