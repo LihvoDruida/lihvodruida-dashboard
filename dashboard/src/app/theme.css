@@ -4440,3 +4440,439 @@ body.has-starfield::after {
     width: 100% !important;
   }
 }
+
+/* Final mobile layout guard: phone uses only the mobile navigation rail, never the desktop overflow menu. */
+@media (max-width: 900px) {
+  :root {
+    --mobile-chrome-gutter: clamp(12px, 4vw, 18px);
+    --dashboard-mobile-nav-edge: clamp(8px, 2.8vw, 14px);
+    --dashboard-mobile-nav-gap: 8px;
+    --dashboard-mobile-nav-pad: 7px;
+    --dashboard-mobile-nav-item-width: clamp(76px, 22vw, 98px);
+    --dashboard-mobile-nav-height: clamp(62px, 15vw, 72px);
+    --dashboard-mobile-nav-bottom-offset: calc(8px + var(--safe-bottom));
+    --dashboard-mobile-nav-reserve: calc(
+      var(--dash-mobile-nav-actual-height, var(--dashboard-mobile-nav-height)) +
+        var(--dash-mobile-nav-actual-bottom, var(--dashboard-mobile-nav-bottom-offset)) +
+        18px
+    );
+  }
+
+  html,
+  body {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  body:has(.dashboard-mobile-nav-shell) {
+    padding-bottom: var(--dashboard-mobile-nav-reserve) !important;
+  }
+
+  body:has(.dashboard-mobile-nav-shell) main.container,
+  body:has(.dashboard-mobile-nav-shell) .container {
+    padding-bottom: calc(var(--dashboard-mobile-nav-reserve) + 14px) !important;
+  }
+
+  body:has(.dashboard-mobile-nav-shell) .app-footer {
+    margin-bottom: calc(var(--dashboard-mobile-nav-reserve) + 8px) !important;
+  }
+
+  main.container,
+  .legal-page,
+  .app-state-page,
+  .app-footer {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-inline: var(--mobile-chrome-gutter) !important;
+  }
+
+  .dashboard-topbar {
+    position: relative !important;
+    inset: auto !important;
+    width: auto !important;
+    min-height: 0 !important;
+    margin: 0 calc(50% - 50vw) 12px !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+    padding: calc(10px + var(--safe-top)) var(--mobile-chrome-gutter) 12px !important;
+    border: 0 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.10) !important;
+    border-radius: 0 !important;
+    background: rgba(7, 10, 16, 0.9) !important;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.30) !important;
+    backdrop-filter: blur(16px) saturate(1.08) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(1.08) !important;
+    overflow: hidden !important;
+  }
+
+  .dashboard-nav.dashboard-nav--desktop,
+  .dashboard-nav-more,
+  .dashboard-nav-more__menu,
+  .dashboard-nav-measure {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  .dashboard-brand {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .dashboard-brand > div,
+  .dashboard-user__profile-link > div:last-child {
+    min-width: 0 !important;
+  }
+
+  .dashboard-brand strong,
+  .dashboard-brand span,
+  .dashboard-user strong,
+  .dashboard-user span {
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .dashboard-user {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 6px !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 16px !important;
+    background: rgba(255, 255, 255, 0.035) !important;
+    box-shadow: none !important;
+  }
+
+  .dashboard-user__profile-link {
+    min-width: 0 !important;
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    gap: 10px !important;
+    padding: 4px 6px 4px 4px !important;
+  }
+
+  .dashboard-user__logout {
+    min-width: max-content !important;
+  }
+
+  .dashboard-user__logout button,
+  .dashboard-user__logout .btn,
+  .dashboard-user__logout a {
+    width: auto !important;
+    min-width: 44px !important;
+    min-height: 40px !important;
+    padding-inline: 12px !important;
+    white-space: nowrap !important;
+  }
+
+  .dashboard-mobile-nav-shell {
+    position: fixed !important;
+    left: max(var(--dashboard-mobile-nav-edge), env(safe-area-inset-left, 0px)) !important;
+    right: max(var(--dashboard-mobile-nav-edge), env(safe-area-inset-right, 0px)) !important;
+    bottom: var(--dashboard-mobile-nav-bottom-offset) !important;
+    z-index: 120 !important;
+    display: block !important;
+    height: var(--dashboard-mobile-nav-height) !important;
+    max-width: 680px !important;
+    margin-inline: auto !important;
+    padding: var(--dashboard-mobile-nav-pad) !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(255, 255, 255, 0.13) !important;
+    border-radius: 20px !important;
+    background: rgba(6, 10, 17, 0.94) !important;
+    box-shadow:
+      0 18px 42px rgba(0, 0, 0, 0.46),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(18px) saturate(1.12) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(1.12) !important;
+  }
+
+  .dashboard-mobile-nav-shell::before,
+  .dashboard-mobile-nav-shell::after {
+    content: "";
+    position: absolute;
+    top: var(--dashboard-mobile-nav-pad);
+    bottom: var(--dashboard-mobile-nav-pad);
+    z-index: 2;
+    width: 26px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 160ms ease;
+  }
+
+  .dashboard-mobile-nav-shell::before {
+    left: var(--dashboard-mobile-nav-pad);
+    background: linear-gradient(90deg, rgba(6, 10, 17, 0.96), transparent);
+  }
+
+  .dashboard-mobile-nav-shell::after {
+    right: var(--dashboard-mobile-nav-pad);
+    background: linear-gradient(270deg, rgba(6, 10, 17, 0.96), transparent);
+  }
+
+  .dashboard-mobile-nav-shell.can-scroll-left::before,
+  .dashboard-mobile-nav-shell.can-scroll-right::after {
+    opacity: 1;
+  }
+
+  .dashboard-mobile-nav {
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    gap: var(--dashboard-mobile-nav-gap) !important;
+    align-items: stretch !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: none !important;
+    scroll-snap-type: x proximity !important;
+    overscroll-behavior-x: contain !important;
+    -webkit-overflow-scrolling: touch !important;
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  .dashboard-mobile-nav::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .dashboard-mobile-nav a {
+    flex: 0 0 var(--dashboard-mobile-nav-item-width) !important;
+    width: var(--dashboard-mobile-nav-item-width) !important;
+    min-width: var(--dashboard-mobile-nav-item-width) !important;
+    height: 100% !important;
+    min-height: 48px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 6px 8px !important;
+    scroll-snap-align: start !important;
+    border: 1px solid transparent !important;
+    border-radius: 14px !important;
+    color: rgba(241, 232, 214, 0.74) !important;
+    background: rgba(255, 255, 255, 0.026) !important;
+    text-align: center !important;
+    text-decoration: none !important;
+    box-shadow: none !important;
+  }
+
+  .dashboard-mobile-nav a strong {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    color: inherit !important;
+    font-size: clamp(0.68rem, 2.7vw, 0.78rem) !important;
+    font-weight: 900 !important;
+    line-height: 1.1 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    letter-spacing: -0.012em !important;
+  }
+
+  .dashboard-mobile-nav a:hover,
+  .dashboard-mobile-nav a:focus-visible,
+  .dashboard-mobile-nav a.is-active {
+    color: rgba(255, 247, 234, 0.98) !important;
+    border-color: rgba(255, 217, 139, 0.22) !important;
+    background: linear-gradient(135deg, rgba(214, 168, 79, 0.22), rgba(89, 214, 141, 0.10)) !important;
+    transform: none !important;
+  }
+
+  .dashboard-shell,
+  .content-shell,
+  .discord-shell,
+  .home-shell,
+  .raid-shell,
+  .profile-shell,
+  .admin-page,
+  .access-groups-page,
+  .guild-page,
+  .profile-directory-shell {
+    gap: 12px !important;
+    padding-top: 0 !important;
+  }
+
+  :where(.panel, .card, .action-panel, .rio-panel, .detail-box, .notice, .empty, .content-empty) {
+    border-radius: 14px !important;
+  }
+
+  :where(.hero, .dashboard-hero, .content-dashboard-hero, .discord-dashboard-hero, .raid-dashboard-hero, .admin-hero, .access-groups-hero, .legal-hero, .rules-onboarding-hero, .profile-directory-hero, .guild-hero).panel,
+  :where(.hero, .dashboard-hero, .content-dashboard-hero, .discord-dashboard-hero, .raid-dashboard-hero, .admin-hero, .access-groups-hero, .legal-hero, .rules-onboarding-hero, .profile-directory-hero, .guild-hero) {
+    grid-template-columns: minmax(0, 1fr) !important;
+    min-height: 0 !important;
+    padding: 16px !important;
+  }
+
+  :where(.hero, .dashboard-hero, .content-dashboard-hero, .discord-dashboard-hero, .raid-dashboard-hero, .admin-hero, .access-groups-hero, .legal-hero, .rules-onboarding-hero, .profile-directory-hero, .guild-hero) h1 {
+    max-width: 100% !important;
+    font-size: clamp(1.8rem, 8vw, 2.35rem) !important;
+    line-height: 1.06 !important;
+  }
+
+  :where(.lead, .notice, .empty, .content-empty, .hint, .detail-box, .guild-page p, .profile-account-page p) {
+    font-size: 0.92rem !important;
+    line-height: 1.48 !important;
+  }
+
+  :where(.stats, .metric-grid, .details-grid, .discord-rules-metric-grid, .dashboard-list-summary, .raid-list-summary, .raid-preview-meta, .raid-poll-card-metrics, .home-poll-metrics, .raid-poll-summary-grid, .guild-hero-stats, .hero-map-stats, .hero-side-panel__grid, .integration-status-grid) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  :where(.meta, .raid-list-facts, .profile-character-meta, .home-calendar-event__details, .home-upcoming-event__meta, .content-row-meta, .profile-raid-card__meta) {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 6px !important;
+    min-width: 0 !important;
+  }
+
+  :where(.meta span, .meta a, .raid-list-facts span, .home-calendar-event__details span, .home-upcoming-event__meta span, .content-row-meta span, .profile-character-meta span, .profile-raid-card__meta span) {
+    flex: 1 1 128px !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+    text-overflow: clip !important;
+  }
+
+  :where(.dashboard-list-head, .raid-list-page-head, .content-section-head, .dashboard-table-titlebar, .raid-poll-list-head, .raid-poll-detail-head, .raid-poll-toolbar, .content-form-section-head) {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: start !important;
+    gap: 10px !important;
+  }
+
+  :where(.dashboard-table-controls, .raid-list-head-actions, .dashboard-list-actions, .content-row-actions, .raid-poll-header-actions, .raid-poll-list-card__actions) {
+    width: 100% !important;
+    max-width: none !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    justify-content: stretch !important;
+    gap: 8px !important;
+  }
+
+  :where(.dashboard-table-controls > *, .raid-list-head-actions > *, .dashboard-list-actions > *, .content-row-actions > *, .raid-poll-header-actions > *, .raid-poll-list-card__actions > *) {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  :where(.btn, .action-button, .dashboard-table-filter, .guild-filter-toggle, .guild-filter-reset) {
+    max-width: 100% !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  :where(input, select, textarea, .input, .select, .textarea, .status-select) {
+    max-width: 100% !important;
+    font-size: 16px !important;
+  }
+
+  .dashboard-table-scroll {
+    overflow-x: visible !important;
+  }
+
+  .dashboard-table-head {
+    display: none !important;
+  }
+
+  .dashboard-table-row {
+    min-width: 0 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    padding: 10px 0 !important;
+  }
+
+  .dashboard-table-row > div {
+    width: 100% !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 6px 10px !important;
+    padding: 6px 12px !important;
+    border-right: 0 !important;
+  }
+
+  .dashboard-table-primary {
+    justify-content: flex-start !important;
+  }
+
+  :where(.dashboard-table-score, .dashboard-table-row > div:not(.dashboard-table-primary)) {
+    color: rgba(235, 228, 218, 0.76) !important;
+  }
+
+  :where(.raid-manager-list .raid-list-item, .raid-list-item, .raid-poll-list-card, .content-row, .discord-rules-row, .admin-log-row, .home-upcoming-event, .home-upcoming-item, .profile-character-card, .guild-member-card) {
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 12px !important;
+  }
+
+  .raid-list-main-link {
+    grid-template-columns: 52px minmax(0, 1fr) !important;
+  }
+
+  .raid-list-actions,
+  .raid-manager-list .raid-list-actions {
+    max-width: none !important;
+  }
+}
+
+@media (max-width: 420px) {
+  :root {
+    --mobile-chrome-gutter: 12px;
+    --dashboard-mobile-nav-edge: 7px;
+    --dashboard-mobile-nav-gap: 6px;
+    --dashboard-mobile-nav-pad: 6px;
+    --dashboard-mobile-nav-item-width: 76px;
+    --dashboard-mobile-nav-height: 62px;
+  }
+
+  .dashboard-user {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+
+  .dashboard-user__logout button,
+  .dashboard-user__logout .btn,
+  .dashboard-user__logout a {
+    min-width: 40px !important;
+    padding-inline: 10px !important;
+    font-size: 0.78rem !important;
+  }
+
+  .dashboard-mobile-nav a strong {
+    font-size: 0.66rem !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .dashboard-table-row > div[data-label]::before {
+    content: attr(data-label);
+    flex: 0 0 92px;
+    max-width: 42%;
+    color: rgba(238, 205, 143, 0.72);
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.055em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .dashboard-table-primary[data-label]::before {
+    display: none;
+  }
+
+  .dashboard-table-row > div[data-label] > :not(:first-child),
+  .dashboard-table-row > div[data-label] > :first-child {
+    min-width: 0;
+  }
+}
