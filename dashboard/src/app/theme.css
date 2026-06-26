@@ -4876,3 +4876,62 @@ body.has-starfield::after {
     min-width: 0;
   }
 }
+
+/* Character card reference lock: keep the profile cards close to the visual reference despite global list/card simplifiers. */
+.profile-card--characters .profile-character-list {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)) !important;
+  gap: 14px !important;
+  align-items: flex-start !important;
+}
+
+.profile-card--characters .profile-character-card {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  border: 1px solid rgba(202, 139, 52, 0.56) !important;
+  border-radius: 14px !important;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(49, 187, 159, 0.10), transparent 36%),
+    linear-gradient(180deg, rgba(3, 6, 10, 0.99) 0%, rgba(16, 13, 10, 0.98) 100%) !important;
+  box-shadow:
+    0 0 0 1px rgba(202, 139, 52, 0.10),
+    0 0 26px rgba(202, 139, 52, 0.13),
+    inset 0 1px 0 rgba(255, 219, 150, 0.07),
+    0 18px 36px rgba(0, 0, 0, 0.30) !important;
+}
+
+.profile-card--characters .profile-character-card.is-main {
+  border: 1px solid rgba(225, 157, 55, 0.78) !important;
+  border-radius: 14px !important;
+  box-shadow:
+    0 0 0 1px rgba(225, 157, 55, 0.18),
+    0 0 34px rgba(225, 157, 55, 0.18),
+    inset 0 1px 0 rgba(255, 226, 168, 0.10),
+    0 20px 42px rgba(0, 0, 0, 0.34) !important;
+}
+
+.profile-card--characters .profile-character-card:hover,
+.profile-card--characters .profile-character-card:focus-within {
+  border: 1px solid rgba(232, 170, 76, 0.72) !important;
+  border-radius: 14px !important;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(49, 187, 159, 0.12), transparent 36%),
+    linear-gradient(180deg, rgba(4, 7, 12, 0.99) 0%, rgba(18, 14, 10, 0.99) 100%) !important;
+  box-shadow:
+    0 0 0 1px rgba(232, 170, 76, 0.16),
+    0 0 34px rgba(232, 170, 76, 0.16),
+    inset 0 1px 0 rgba(255, 226, 168, 0.10),
+    0 20px 44px rgba(0, 0, 0, 0.36) !important;
+}
+
+.profile-card--characters .profile-character-btn:hover,
+.profile-card--characters .profile-character-btn:focus-visible {
+  transform: translateY(-1px) !important;
+}
+
+@media (max-width: 760px) {
+  .profile-card--characters .profile-character-list {
+    grid-template-columns: 1fr !important;
+  }
+}
