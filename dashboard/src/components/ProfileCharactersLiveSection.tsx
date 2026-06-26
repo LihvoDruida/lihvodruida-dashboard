@@ -88,10 +88,68 @@ function CharacterArtwork({ character }: { character: ProfileCharacter }) {
   return <span className="profile-character-artwork__fallback" aria-hidden="true">{character.name.charAt(0)}</span>;
 }
 
-type CharacterIconKind = "guild" | "other" | "ilvl" | "level" | "rio" | "updated" | "external" | "trash" | "crown";
-
-function CharacterInlineIcon({ kind }: { kind: CharacterIconKind }) {
-  return <span className={`profile-character-icon profile-character-icon--${kind}`} aria-hidden="true" />;
+function CharacterInlineIcon({ kind }: { kind: "guild" | "other" | "ilvl" | "level" | "rio" | "updated" | "external" | "trash" | "crown" }) {
+  if (kind === "guild") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M18.9 4.3c-5 .1-8.4 2.5-10 7.2-1.1 3.1-.7 6 .1 8.2.1.4-.3.8-.7.6-2.2-1.1-4.8-4.5-5-8.8-.2-5.5 3.5-9.3 9.4-9.5 2.4-.1 4.4.4 6 1.4.5.3.3.9-.2.9-.2 0-.4 0-.6 0Zm-3.6 2.9c1.8 4.4 1 8.6-2.5 12.2-.3.3 0 .8.4.8 5.4-.2 8.9-4.2 8.8-9.1-.1-2.7-1.3-5-3.4-6.6-.4-.3-.9.1-.7.6.3.7.6 1.4.8 2.1.1.3-.1.6-.4.7-.6.1-1.6.2-2.4-.7-.2-.2-.4-.2-.6 0Z" fill="currentColor"/>
+      </svg>
+    );
+  }
+  if (kind === "other") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M9.1 12a3.9 3.9 0 1 0 0-7.8 3.9 3.9 0 0 0 0 7.8Zm5.8-.9a3.1 3.1 0 1 0 0-6.2 3.1 3.1 0 0 0 0 6.2ZM2.8 18.6c0-2.8 3.4-4.9 6.8-4.9s6.8 2.1 6.8 4.9c0 .7-.5 1.2-1.2 1.2H4c-.7 0-1.2-.5-1.2-1.2Zm12 .4c.4-1.6 2.4-2.8 4.5-2.8 1.1 0 2.2.3 3 .9.6.4.8 1.3.4 2-.2.5-.7.8-1.3.8h-6.6c-.1-.3-.1-.6 0-.9Z" fill="currentColor"/>
+      </svg>
+    );
+  }
+  if (kind === "ilvl") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M12 2.5 19.5 6v6.1c0 4.6-3.1 8.8-7.5 9.9-4.4-1.1-7.5-5.3-7.5-9.9V6L12 2.5Zm0 4-4 1.8v3.8c0 2.9 1.8 5.5 4 6.5 2.2-1 4-3.6 4-6.5V8.3L12 6.5Zm-.9 2.1h1.8v3h3v1.8h-3v3h-1.8v-3h-3v-1.8h3v-3Z" fill="currentColor"/>
+      </svg>
+    );
+  }
+  if (kind === "level") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M12 2.2 20.2 6v6c0 5.2-3.5 9.1-8.2 10.8C7.3 21.1 3.8 17.2 3.8 12V6L12 2.2Zm0 4.1L7.7 8.2V12c0 3.2 1.9 5.9 4.3 7 2.4-1.1 4.3-3.8 4.3-7V8.2L12 6.3Zm0 2.1a2.8 2.8 0 1 1 0 5.7 2.8 2.8 0 0 1 0-5.7Zm0 7.2c1.5 0 2.8.8 3.4 2.1.2.3-.1.7-.5.7H9.1c-.4 0-.7-.4-.5-.7.6-1.3 1.9-2.1 3.4-2.1Z" fill="currentColor"/>
+      </svg>
+    );
+  }
+  if (kind === "rio") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M4.8 18.8a1 1 0 0 1-1-1V6.2a1 1 0 1 1 2 0v10.6h11.4a1 1 0 1 1 0 2H4.8Zm3.7-2.8a1 1 0 0 1-.7-1.7l2.8-2.8 2.1 2.1 4.2-4.2h-1.7a1 1 0 1 1 0-2h4.1c.6 0 1 .4 1 1v4.1a1 1 0 1 1-2 0V10l-4.9 4.9-2.1-2.1-2.1 2.1a1 1 0 0 1-.7.3Z" fill="currentColor"/>
+      </svg>
+    );
+  }
+  if (kind === "updated") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M12 3.2a8.8 8.8 0 1 1 0 17.6 8.8 8.8 0 0 1 0-17.6Zm0 2a6.8 6.8 0 1 0 0 13.6 6.8 6.8 0 0 0 0-13.6Zm1 2.6v3.8l2.9 1.7a1 1 0 1 1-1 1.7l-3.4-2a1 1 0 0 1-.5-.9V7.8a1 1 0 1 1 2 0Z" fill="currentColor"/>
+      </svg>
+    );
+  }
+  if (kind === "external") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M14.2 4.5a1 1 0 1 0 0 2h2.9l-6.8 6.8a1 1 0 1 0 1.4 1.4l6.8-6.8v2.9a1 1 0 1 0 2 0V5.5c0-.6-.4-1-1-1h-5.3Zm-7.7 2.3c-1.1 0-2 .9-2 2v8.7c0 1.1.9 2 2 2h8.7c1.1 0 2-.9 2-2v-3a1 1 0 1 0-2 0v3H6.5V8.8h3a1 1 0 1 0 0-2h-3Z" fill="currentColor"/>
+      </svg>
+    );
+  }
+  if (kind === "trash") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M9.1 4.5c.2-1.2 1.2-2.1 2.4-2.1h1c1.2 0 2.2.9 2.4 2.1h3.2a1 1 0 1 1 0 2h-1l-.8 12c-.1 1.7-1.5 3.1-3.2 3.1h-2.1c-1.7 0-3.1-1.4-3.2-3.1l-.8-12h-1a1 1 0 1 1 0-2h3.1Zm2 .1h1.8c-.1-.2-.3-.3-.5-.3h-.8c-.2 0-.4.1-.5.3Zm-.1 4.1a1 1 0 0 1 1 1v7a1 1 0 1 1-2 0v-7a1 1 0 0 1 1-1Zm4 0a1 1 0 0 1 1 1v7a1 1 0 1 1-2 0v-7a1 1 0 0 1 1-1Z" fill="currentColor"/>
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M12 2.5 9.6 7.4l-5.4.8 3.9 3.8-.9 5.3 4.8-2.5 4.8 2.5-.9-5.3 3.9-3.8-5.4-.8L12 2.5Z" fill="currentColor"/>
+    </svg>
+  );
 }
 
 function CharacterStat({ icon, label, value }: { icon: "ilvl" | "level" | "rio" | "updated"; label: string; value: string | number }) {
@@ -117,21 +175,15 @@ function CharacterCard({ character, profileId, canManage, showMainBadge, returnT
   const rioUrl = character.raiderIo?.profileUrl || null;
   const realmLabel = character.realmName || character.realmSlug || "Реалм —";
   const guildBadge = character.verifiedGuild
-    ? { label: "Гільдійний", icon: "guild" as const, className: "is-guild" as const }
-    : { label: "Не гільдійний", icon: "other" as const, className: "is-other" as const };
+    ? { label: "Гільдійний", icon: "guild", className: "is-guild" as const }
+    : { label: "Інший", icon: "other", className: "is-other" as const };
   const updatedLabel = formatStableUkCompactDate(character.lastSeenAt);
 
   return (
     <article className={`profile-character-card${showMainBadge && character.isMain ? " is-main" : ""} ${guildBadge.className}`} aria-label={`${showMainBadge && character.isMain ? "Основний персонаж" : "Персонаж"}: ${character.name}`} data-character-profile-id={profileId}>
       <div className="profile-character-artwork">
         <CharacterArtwork character={character} />
-        <div className="profile-character-badges profile-character-badges--art" aria-label="Статуси персонажа">
-          {showMainBadge && character.isMain ? <span className="profile-character-badge profile-character-badge--main">Мейн</span> : null}
-          <span className={`profile-character-badge profile-character-badge--${guildBadge.className}`}>
-            <CharacterInlineIcon kind={guildBadge.icon} />
-            <span>{guildBadge.label}</span>
-          </span>
-        </div>
+        {showMainBadge && character.isMain ? <span className="profile-main-badge profile-main-badge--art">Мейн</span> : null}
       </div>
       <div className="profile-character-body">
         <div className="profile-character-title-row profile-character-title-row--stacked">
@@ -139,6 +191,10 @@ function CharacterCard({ character, profileId, canManage, showMainBadge, returnT
             <h3>{character.name}</h3>
             <p>{realmLabel}</p>
           </div>
+          <span className={`profile-character-kind profile-character-kind--${guildBadge.className}`}>
+            <CharacterInlineIcon kind={guildBadge.icon} />
+            <span>{guildBadge.label}</span>
+          </span>
         </div>
 
         <div className="profile-character-meta" aria-label="Характеристики персонажа">
