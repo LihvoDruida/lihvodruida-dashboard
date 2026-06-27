@@ -251,58 +251,32 @@ function RangeFilter({
   const endPercent = 100 - ((high - absoluteMin) / span) * 100;
 
   return (
-    <div className="guild-range-group">
+    <div className="guild-range-group guild-range-group--inline">
       <div className="guild-range-head">
         <span>{label}</span>
-        <strong>
-          {formatNumber(low)} — {formatNumber(high)}
-        </strong>
       </div>
 
-      <div className="guild-range-inputs">
-        <label className="guild-range-value" htmlFor={`${idBase}-min`}>
-          <span>від</span>
-          <input
-            id={`${idBase}-min`}
-            name={`${nameBase}_min`}
-            type="number"
-            inputMode="numeric"
-            min={absoluteMin}
-            max={safeAbsoluteMax}
-            value={safeMin}
-            onChange={(event) =>
-              onMinChange(
-                clampValue(
-                  parseNumberInput(event, safeMin),
-                  absoluteMin,
-                  safeAbsoluteMax,
-                ),
-              )
-            }
-          />
-        </label>
-        <label className="guild-range-value" htmlFor={`${idBase}-max`}>
-          <span>до</span>
-          <input
-            id={`${idBase}-max`}
-            name={`${nameBase}_max`}
-            type="number"
-            inputMode="numeric"
-            min={absoluteMin}
-            max={safeAbsoluteMax}
-            value={safeMax}
-            onChange={(event) =>
-              onMaxChange(
-                clampValue(
-                  parseNumberInput(event, safeMax),
-                  absoluteMin,
-                  safeAbsoluteMax,
-                ),
-              )
-            }
-          />
-        </label>
-      </div>
+      <label className="guild-range-value" htmlFor={`${idBase}-min`}>
+        <span>від</span>
+        <input
+          id={`${idBase}-min`}
+          name={`${nameBase}_min`}
+          type="number"
+          inputMode="numeric"
+          min={absoluteMin}
+          max={safeAbsoluteMax}
+          value={safeMin}
+          onChange={(event) =>
+            onMinChange(
+              clampValue(
+                parseNumberInput(event, safeMin),
+                absoluteMin,
+                safeAbsoluteMax,
+              ),
+            )
+          }
+        />
+      </label>
 
       <div
         className="guild-dual-range"
@@ -352,6 +326,28 @@ function RangeFilter({
           }
         />
       </div>
+
+      <label className="guild-range-value" htmlFor={`${idBase}-max`}>
+        <span>до</span>
+        <input
+          id={`${idBase}-max`}
+          name={`${nameBase}_max`}
+          type="number"
+          inputMode="numeric"
+          min={absoluteMin}
+          max={safeAbsoluteMax}
+          value={safeMax}
+          onChange={(event) =>
+            onMaxChange(
+              clampValue(
+                parseNumberInput(event, safeMax),
+                absoluteMin,
+                safeAbsoluteMax,
+              ),
+            )
+          }
+        />
+      </label>
     </div>
   );
 }
@@ -801,7 +797,7 @@ export default function GuildRosterExplorer({
                 name="guild_roster_search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Пошук персонажа"
+                placeholder="Пошук персонажа..."
                 autoComplete="off"
               />
             </label>
@@ -949,7 +945,7 @@ export default function GuildRosterExplorer({
               <span role="columnheader">Raider.IO</span>
             </div>
             {pagedMembers.length ? (
-              pagedMembers.map((member, index) => {
+              pagedMembers.map((member) => {
                 const score = member.scores[segment] || 0;
                 const ownerProfileHref = member.ownerProfileId
                   ? `/profile/${encodeURIComponent(member.ownerProfileId)}`
@@ -969,9 +965,18 @@ export default function GuildRosterExplorer({
                       <strong style={{ color: classColor(member.className) }}>{member.name}</strong>
                       <small>{member.realmName || member.realmSlug}</small>
                     </div>
-                    <div role="cell" data-label="Клас / спек">
-                      <strong>{member.className || "—"}</strong>
-                      <small>{member.specName || "—"}</small>
+                    <div className="guild-class-cell" role="cell" data-label="Клас / спек">
+                      <span
+                        className="guild-class-mark"
+                        style={{ "--guild-class-color": classColor(member.className) } as CSSProperties}
+                        aria-hidden="true"
+                      >
+                        {(member.className || "?").trim().charAt(0).toUpperCase() || "?"}
+                      </span>
+                      <span className="guild-class-copy">
+                        <strong>{member.className || "—"}</strong>
+                        <small>{member.specName || "—"}</small>
+                      </span>
                     </div>
                     <div role="cell" data-label="Роль"><span className={`dashboard-table-pill dashboard-table-pill--${member.role}`}>{roleShort(member.role)}</span></div>
                     <div role="cell" data-label="ILVL">{member.itemLevel || "—"}</div>
