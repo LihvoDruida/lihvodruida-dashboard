@@ -4887,7 +4887,7 @@ export class DiscordRecruitmentGateway {
   }
 
   async status() {
-    const persisted = await this.state.storage.get(["seq", "sessionId", "resumeGatewayUrl", "lastEventAt", "lastError", "lastRelayAt", "lastRelayStatus", "lastRelaySummary", "lastRelayedMessageId", "lastRelayedChannelId"]);
+    const persisted = await this.state.storage.get(["seq", "sessionId", "resumeGatewayUrl", "lastEventAt", "lastError", "lastRelayAt", "lastRelayStatus", "lastRelaySummary", "lastRelayedMessageId", "lastRelayedChannelId", "lastDispatchType", "lastDispatchAt", "lastMessageCreateAt", "lastMessageDropAt", "lastMessageDropReason", "lastMessageDropSummary", "lastMessageContentLength", "lastMessageGuildId", "lastMessageChannelId", "lastMessageId", "messageCreateCount", "relayAttemptCount"]);
     return {
       ok: true,
       enabled: this.enabled(),
@@ -4906,6 +4906,18 @@ export class DiscordRecruitmentGateway {
       lastRelaySummary: persisted.get("lastRelaySummary") || null,
       lastRelayedMessageId: persisted.get("lastRelayedMessageId") || null,
       lastRelayedChannelId: persisted.get("lastRelayedChannelId") || null,
+      lastDispatchType: persisted.get("lastDispatchType") || null,
+      lastDispatchAt: persisted.get("lastDispatchAt") || null,
+      lastMessageCreateAt: persisted.get("lastMessageCreateAt") || null,
+      lastMessageDropAt: persisted.get("lastMessageDropAt") || null,
+      lastMessageDropReason: persisted.get("lastMessageDropReason") || null,
+      lastMessageDropSummary: persisted.get("lastMessageDropSummary") || null,
+      lastMessageContentLength: persisted.get("lastMessageContentLength") ?? null,
+      lastMessageGuildId: persisted.get("lastMessageGuildId") || null,
+      lastMessageChannelId: persisted.get("lastMessageChannelId") || null,
+      lastMessageId: persisted.get("lastMessageId") || null,
+      messageCreateCount: persisted.get("messageCreateCount") || 0,
+      relayAttemptCount: persisted.get("relayAttemptCount") || 0,
     };
   }
 
@@ -4941,6 +4953,10 @@ export class DiscordRecruitmentGateway {
     this.clearTimers();
     this.startedAt = Date.now();
     this.lastError = "";
+    await this.state.storage.put({
+      lastError: "",
+      startedAt: new Date(this.startedAt).toISOString(),
+    });
     try {
       const ws = new WebSocket(this.gatewayUrl());
       this.ws = ws;
@@ -5093,7 +5109,11 @@ export class DiscordRecruitmentGateway {
 
   async onDispatch(type, data) {
     this.lastEventAt = Date.now();
-    await this.state.storage.put("lastEventAt", new Date(this.lastEventAt).toISOString());
+    await this.state.storage.put({
+      lastEventAt: new Date(this.lastEventAt).toISOString(),
+      lastDispatchType: String(type || "UNKNOWN"),
+      lastDispatchAt: new Date(this.lastEventAt).toISOString(),
+    });
     if (type === "READY") {
       this.sessionId = String(data?.session_id || "");
       this.resumeGatewayUrl = String(data?.resume_gateway_url || "");
@@ -5109,14 +5129,64 @@ export class DiscordRecruitmentGateway {
     await this.handleMessageCreate(data);
   }
 
+  async recordMessageDrop(reason, message) {
+    const summary = {
+      id: String(message?.id || "").slice(0, 32),
+      channelId: String(message?.channel_id || "").slice(0, 32),
+      guildId: String(message?.guild_id || "").slice(0, 32),
+      type: message?.type ?? null,
+      authorBot: Boolean(message?.author?.bot),
+      webhook: Boolean(message?.webhook_id),
+      contentLength: typeof message?.content === "string" ? message.content.length : null,
+    };
+    await this.state.storage.put({
+      lastMessageDropAt: new Date().toISOString(),
+      lastMessageDropReason: reason,
+      lastMessageDropSummary: JSON.stringify(summary),
+      lastMessageId: summary.id || null,
+      lastMessageChannelId: summary.channelId || null,
+      lastMessageGuildId: summary.guildId || null,
+      lastMessageContentLength: summary.contentLength,
+    });
+    if (String(this.env.DEBUG_LOGS || "").trim() === "1") {
+      logWorkerEvent("info", "recruitment_gateway.message_dropped", { reason, ...summary });
+    }
+  }
+
   async handleMessageCreate(message) {
+    await this.state.storage.put({
+      lastMessageCreateAt: new Date().toISOString(),
+      messageCreateCount: ((await this.state.storage.get("messageCreateCount")) || 0) + 1,
+      lastMessageContentLength: typeof message?.content === "string" ? message.content.length : null,
+      lastMessageGuildId: String(message?.guild_id || "").slice(0, 32) || null,
+      lastMessageChannelId: String(message?.channel_id || "").slice(0, 32) || null,
+      lastMessageId: String(message?.id || "").slice(0, 32) || null,
+    });
+
     const guildId = String(message?.guild_id || "").trim();
-    if (guildId && guildId !== String(this.env.DISCORD_GUILD_ID || "").trim()) return;
-    if (message?.author?.bot || message?.webhook_id) return;
-    if (Number(message?.type || 0) !== 0) return;
+    const expectedGuildId = String(this.env.DISCORD_GUILD_ID || "").trim();
+    if (guildId && expectedGuildId && guildId !== expectedGuildId) {
+      await this.recordMessageDrop("guild_mismatch", message);
+      return;
+    }
+    if (message?.author?.bot) {
+      await this.recordMessageDrop("author_bot", message);
+      return;
+    }
+    if (message?.webhook_id) {
+      await this.recordMessageDrop("webhook_message", message);
+      return;
+    }
+    if (Number(message?.type || 0) !== 0) {
+      await this.recordMessageDrop("unsupported_message_type", message);
+      return;
+    }
     const id = String(message?.id || "").trim();
     const channelId = String(message?.channel_id || "").trim();
-    if (!/^\d{16,25}$/.test(id) || !/^\d{16,25}$/.test(channelId)) return;
+    if (!/^\d{16,25}$/.test(id) || !/^\d{16,25}$/.test(channelId)) {
+      await this.recordMessageDrop("invalid_message_or_channel_id", message);
+      return;
+    }
 
     // Do not hard-dedupe here. The dashboard stores final reply claims in Firebase,
     // so failed/skipped relays can still be retried from the panel without duplicates.
@@ -5129,6 +5199,12 @@ export class DiscordRecruitmentGateway {
     };
 
     try {
+      await this.state.storage.put({
+        relayAttemptCount: ((await this.state.storage.get("relayAttemptCount")) || 0) + 1,
+        lastRelayAttemptAt: new Date().toISOString(),
+        lastRelayAttemptMessageId: id,
+        lastRelayAttemptChannelId: channelId,
+      });
       const { response, raw } = await fetchDashboardText(this.env, endpoint, token, {
         method: "POST",
         headers: {

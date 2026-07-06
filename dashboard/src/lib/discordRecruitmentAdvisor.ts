@@ -67,11 +67,38 @@ type ClassUtility = {
   priority: number;
 };
 
+type WowExpansionMention = {
+  key: string;
+  label: string;
+  order: number;
+  matchedText: string;
+};
+
+type RecruitmentScenario =
+  | "returning-player"
+  | "new-player"
+  | "class-choice"
+  | "guild-need"
+  | "role-choice"
+  | "general-advice";
+
+type MessageProfile = {
+  expansions: WowExpansionMention[];
+  lastExpansion: WowExpansionMention | null;
+  scenarios: RecruitmentScenario[];
+  roleInterest: GuildRosterRole[];
+  asksHowToStart: boolean;
+  asksGuildNeed: boolean;
+  asksClassChoice: boolean;
+  confidence: "low" | "medium" | "high";
+};
+
 type RecruitmentIntent = {
   matched: boolean;
   score: number;
   reasons: string[];
   mentionedClasses: string[];
+  profile: MessageProfile;
 };
 
 type ClassRecommendation = ClassUtility & {
@@ -257,6 +284,34 @@ const CLASS_ALIASES: Record<string, string[]> = {
   Rogue: ["rogue", "рога", "розбійник", "ассасин", "аутло"],
 };
 
+const WOW_EXPANSIONS: Array<{
+  key: string;
+  label: string;
+  order: number;
+  aliases: string[];
+}> = [
+  { key: "vanilla", label: "Classic/Vanilla", order: 1, aliases: ["ваніла", "ванилла", "ванільний", "classic", "класік", "классик", "classic era", "era"] },
+  { key: "tbc", label: "The Burning Crusade", order: 2, aliases: ["tbc", "бк", "тбк", "burning crusade", "the burning crusade", "бернінг крусейд", "аутленд"] },
+  { key: "wrath", label: "Wrath of the Lich King", order: 3, aliases: ["wotlk", "wrath", "wrath of the lich king", "лич", "ліч", "лич кинг", "ліч кінг", "лк", "вотлк", "вотлік", "король лич", "король ліч"] },
+  { key: "cata", label: "Cataclysm", order: 4, aliases: ["cataclysm", "cata", "ката", "катаклізм", "катаклизм", "катакла"] },
+  { key: "mop", label: "Mists of Pandaria", order: 5, aliases: ["mop", "панда", "пандарія", "пандария", "місти", "мисти", "mists", "mists of pandaria"] },
+  { key: "wod", label: "Warlords of Draenor", order: 6, aliases: ["wod", "вод", "дренор", "warlords", "warlords of draenor", "варлордс"] },
+  { key: "legion", label: "Legion", order: 7, aliases: ["legion", "легіон", "легион", "легіона", "легионе"] },
+  { key: "bfa", label: "Battle for Azeroth", order: 8, aliases: ["bfa", "бфа", "battle for azeroth", "батл фо азерот", "батл фор азерот", "битва за азерот", "азерот"] },
+  { key: "shadowlands", label: "Shadowlands", order: 9, aliases: ["shadowlands", "шадовлендс", "шадоулендс", "шл", "sl", "темні землі", "темные земли"] },
+  { key: "dragonflight", label: "Dragonflight", order: 10, aliases: ["dragonflight", "dragon flight", "драгонфлай", "драгонфлайт", "драконфлай", "дракони", "дф", "df"] },
+  { key: "war-within", label: "The War Within", order: 11, aliases: ["the war within", "war within", "tww", "вар візін", "варвизин", "варвізін", "вар візин", "вар візін", "внутрішня війна", "внутренняя война"] },
+  { key: "midnight", label: "Midnight", order: 12, aliases: ["midnight", "міднайт", "миднайт", "північ", "полночь"] },
+  { key: "last-titan", label: "The Last Titan", order: 13, aliases: ["last titan", "the last titan", "останній титан", "последний титан"] },
+];
+
+const ROLE_ALIASES: Record<GuildRosterRole, string[]> = {
+  tank: ["tank", "танк", "танчити", "танчить", "прот", "бдк", "guardian", "vengeance"],
+  healer: ["heal", "healer", "хіл", "хил", "хілер", "хилер", "лікувати", "лікар", "рестор", "хпал", "рдру", "ршам", "дц"],
+  dps: ["dps", "дпс", "дд", "damage", "демаг", "урон"],
+  unknown: [],
+};
+
 declare global {
   // eslint-disable-next-line no-var
   var __mistblossomRecruitmentAdviceRuntimeClaims: Set<string> | undefined;
@@ -403,13 +458,100 @@ function normalizeClassName(value: unknown) {
   return cleanText(value, 80) || "Unknown";
 }
 
+function textForMatching(value: unknown) {
+  return ` ${cleanText(value, 4000)
+    .toLowerCase()
+    .replace(/[’`']/g, "")
+    .replace(/ё/g, "е")
+    .replace(/ґ/g, "г")
+    .replace(/[^a-zа-яіїє0-9+]+/giu, " ")
+    .replace(/\s+/g, " ")
+    .trim()} `;
+}
+
+function containsAlias(text: string, alias: string) {
+  const normalizedAlias = textForMatching(alias).trim();
+  if (!normalizedAlias) return false;
+  return text.includes(` ${normalizedAlias} `);
+}
+
+function detectWowExpansions(content: unknown): WowExpansionMention[] {
+  const text = textForMatching(content);
+  const found: WowExpansionMention[] = [];
+  for (const expansion of WOW_EXPANSIONS) {
+    const matched = expansion.aliases.find((alias) => containsAlias(text, alias));
+    if (matched) {
+      found.push({
+        key: expansion.key,
+        label: expansion.label,
+        order: expansion.order,
+        matchedText: matched,
+      });
+    }
+  }
+  return found.sort((left, right) => left.order - right.order);
+}
+
+function detectRoleInterest(content: unknown): GuildRosterRole[] {
+  const text = textForMatching(content);
+  const roles: GuildRosterRole[] = [];
+  for (const [role, aliases] of Object.entries(ROLE_ALIASES) as Array<[GuildRosterRole, string[]]>) {
+    if (role === "unknown") continue;
+    if (aliases.some((alias) => containsAlias(text, alias))) roles.push(role);
+  }
+  return Array.from(new Set(roles));
+}
+
+function hasAny(text: string, patterns: RegExp[]) {
+  return patterns.some((pattern) => pattern.test(text));
+}
+
+function buildMessageProfile(content: unknown, score: number): MessageProfile {
+  const raw = cleanText(content, 4000).toLowerCase();
+  const expansions = detectWowExpansions(content);
+  const lastExpansion = expansions.length ? expansions[expansions.length - 1] || null : null;
+  const asksHowToStart = hasAny(raw, [
+    /як\s+(почати|розпочати|стартувати|повернутись)/i,
+    /з чого\s+(почати|стартувати)/i,
+    /how\s+to\s+(start|return)/i,
+  ]);
+  const asksGuildNeed = hasAny(raw, [
+    /(гільд(ії|ія|ію).{0,80}(потріб|не вистач|браку|дефіцит))/i,
+    /(потріб(ен|на|ні)|не вистачає|бракує|дефіцит).{0,80}(клас|спек|роль|баф|utility|гільд)/i,
+  ]);
+  const asksClassChoice = hasAny(raw, [
+    /(за який клас|який клас|кого качати|ким грати|обрати клас|клас краще|кого краще)/i,
+    /(порад(а|ьте|ьте будь ласка).{0,80}(клас|спек|ким))/i,
+  ]);
+  const returning = hasAny(raw, [
+    /(останн(ій|ього) раз|давно|не грав|повертаюсь|повернутись|знову грати|returning|comeback)/i,
+  ]) || Boolean(expansions.length);
+  const newPlayer = hasAny(raw, [/(новачок|новий гравець|тільки починаю|перший раз|new player)/i]);
+  const roleInterest = detectRoleInterest(content);
+  const scenarios: RecruitmentScenario[] = [];
+  if (returning) scenarios.push("returning-player");
+  if (newPlayer) scenarios.push("new-player");
+  if (asksClassChoice) scenarios.push("class-choice");
+  if (asksGuildNeed) scenarios.push("guild-need");
+  if (roleInterest.length) scenarios.push("role-choice");
+  if (!scenarios.length) scenarios.push("general-advice");
+  return {
+    expansions,
+    lastExpansion,
+    scenarios: Array.from(new Set(scenarios)),
+    roleInterest,
+    asksHowToStart,
+    asksGuildNeed,
+    asksClassChoice,
+    confidence: score >= 10 ? "high" : score >= 6 ? "medium" : "low",
+  };
+}
+
 function detectMentionedClasses(content: string) {
-  const normalized = ` ${content.toLowerCase().replace(/[\n,.;:!?()[\]{}]/g, " ")} `;
+  const normalized = textForMatching(content);
   const classes: string[] = [];
   for (const [className, aliases] of Object.entries(CLASS_ALIASES)) {
-    if (
-      aliases.some((alias) => normalized.includes(` ${alias.toLowerCase()} `))
-    ) {
+    if (aliases.some((alias) => containsAlias(normalized, alias))) {
       classes.push(className);
     }
   }
@@ -417,41 +559,58 @@ function detectMentionedClasses(content: string) {
 }
 
 function detectRecruitmentIntent(content: unknown): RecruitmentIntent {
-  const text = cleanText(content, 4000).toLowerCase();
-  if (!text)
-    return { matched: false, score: 0, reasons: [], mentionedClasses: [] };
+  const original = cleanText(content, 4000);
+  const text = original.toLowerCase();
+  if (!text) {
+    const emptyProfile = buildMessageProfile("", 0);
+    return {
+      matched: false,
+      score: 0,
+      reasons: [],
+      mentionedClasses: [],
+      profile: emptyProfile,
+    };
+  }
 
+  const expansions = detectWowExpansions(original);
   const checks: Array<[RegExp, number, string]> = [
     [
-      /(останн(ій|ього) раз|давно|не грав|повертаюсь|повернутись|знову грати|returning|comeback)/i,
+      /(останн(ій|ього) раз|давно|не грав|не грав\/ла|повертаюсь|повернутись|знову грати|вертаюсь|returning|comeback)/i,
       3,
       "повернення до WoW",
     ],
     [
-      /(battle for azeroth|bfa|батл фо азерот|бфа|легіон|shadowlands|dragonflight|war within|midnight)/i,
-      2,
-      "згадана стара/попередня експансія",
-    ],
-    [
-      /(за який клас|який клас|кого качати|ким грати|обрати клас|клас краще|порад(а|ьте)|що краще)/i,
+      /(за який клас|який клас|кого качати|ким грати|обрати клас|клас краще|кого краще|порад(а|ьте)|що краще)/i,
       4,
       "питання про вибір класу",
     ],
     [
-      /(гільд(ії|ія|ію)|рейд|m\+|містік|rio|raider|ключі|склад)/i,
+      /(гільд(ії|ія|ію)|рейд|m\+|містік|міфік|mythic|rio|raider|ключі|склад|ростер|roster)/i,
       2,
       "контекст гільдії/рейдів/RIO",
     ],
     [
-      /(не вистачає|потріб(ен|на|ні)|дефіцит|бракує|корисн(ий|а|і)|utility|баф|buff)/i,
+      /(не вистачає|потріб(ен|на|ні)|дефіцит|бракує|корисн(ий|а|і)|utility|утиліті|утилита|баф|buff|корисний клас)/i,
       3,
       "питання про потреби складу",
     ],
-    [/(лок|варлок|warlock|хант|hunter|мислив)/i, 1, "згадані попередні класи"],
+    [
+      /(як\s+(почати|розпочати|стартувати)|з чого\s+(почати|стартувати)|саме як розпочати)/i,
+      2,
+      "питання як стартувати",
+    ],
+    [
+      /(новачок|новий гравець|тільки починаю|перший раз)/i,
+      2,
+      "новий гравець",
+    ],
+    [/(лок|варлок|warlock|хант|hunter|мислив|маг|прист|друїд|шаман|пал|дк|рога|монк|евокер|дх)/i, 1, "згадані класи"],
   ];
 
   const reasons: string[] = [];
-  let score = 0;
+  let score = expansions.length ? 2 : 0;
+  if (expansions.length) reasons.push(`згадана версія WoW: ${expansions.map((item) => item.label).join(", ")}`);
+
   for (const [regex, points, reason] of checks) {
     if (regex.test(text)) {
       score += points;
@@ -459,20 +618,21 @@ function detectRecruitmentIntent(content: unknown): RecruitmentIntent {
     }
   }
 
-  const mentionedClasses = detectMentionedClasses(text);
+  const mentionedClasses = detectMentionedClasses(original);
+  const profile = buildMessageProfile(original, score);
+  const strongClassAsk = profile.asksClassChoice || profile.asksGuildNeed;
+  const context =
+    profile.scenarios.includes("returning-player") ||
+    profile.scenarios.includes("new-player") ||
+    profile.asksHowToStart ||
+    reasons.some((reason) => reason.includes("гільдії") || reason.includes("RIO"));
+
   return {
-    matched:
-      score >= 6 &&
-      reasons.some((reason) => reason.includes("клас")) &&
-      reasons.some(
-        (reason) =>
-          reason.includes("повер") ||
-          reason.includes("потреб") ||
-          reason.includes("гільдії"),
-      ),
+    matched: score >= 5 && (strongClassAsk || profile.asksHowToStart) && context,
     score,
     reasons,
     mentionedClasses,
+    profile,
   };
 }
 
@@ -663,6 +823,61 @@ function buildRoleLine(roleCounts: Record<GuildRosterRole, number>) {
   return `tank ${roleCounts.tank}, healer ${roleCounts.healer}, DPS ${roleCounts.dps}`;
 }
 
+function expansionDistanceText(expansion: WowExpansionMention | null) {
+  if (!expansion) return "";
+  if (expansion.order <= 8) {
+    return `останній досвід був ще в **${expansion.label}**, тому краще закласти час на нові таланти, UI, Mythic+ логіку й актуальні системи прогресу`;
+  }
+  if (expansion.order <= 10) {
+    return `досвід з **${expansion.label}** ще корисний, але частина класів і систем уже відчутно змінилась`;
+  }
+  return `досвід з **${expansion.label}** майже актуальний, тож головний фокус — вибір ролі й стабільний мейн`;
+}
+
+function roleInterestText(roles: GuildRosterRole[]) {
+  const labels: Record<GuildRosterRole, string> = {
+    tank: "tank",
+    healer: "healer",
+    dps: "DPS",
+    unknown: "будь-яка роль",
+  };
+  const clean = roles.filter((role) => role !== "unknown");
+  if (!clean.length) return "DPS/healer/tank ще не уточнено";
+  return clean.map((role) => labels[role]).join(" / ");
+}
+
+function pickScenarioIntro(profile: MessageProfile, authorId: string) {
+  const hello = `${mentionUser(authorId)}, привіт!`;
+  const distance = expansionDistanceText(profile.lastExpansion);
+  if (profile.scenarios.includes("returning-player")) {
+    return `${hello} Раді бачити повернення у WoW. ${distance ? `Якщо ${distance}, ` : ""}я б не радив одразу гнатися за “топ-метою”: краще вибрати клас, який реально зайде, і одночасно закриє корисну потребу гільдії.`;
+  }
+  if (profile.scenarios.includes("new-player")) {
+    return `${hello} Для старту важливіше не “найсильніший клас тижня”, а простий вхід, зрозуміла роль і користь для складу. Мету можна наздогнати, а невдалий мейн часто вбиває мотивацію.`;
+  }
+  if (profile.asksGuildNeed) {
+    return `${hello} Дивлюсь не просто на tier-list, а на те, яких бафів, ролей і корисної utility зараз реально не вистачає у складі.`;
+  }
+  return `${hello} По вибору класу найкраще рішення — перетин трьох речей: що тобі комфортно, що корисно складу, і що ти готовий стабільно грати кілька тижнів без стрибків між альтами.`;
+}
+
+function buildStartPlan(profile: MessageProfile) {
+  const parts = [
+    "обери 1 мейн і не розпилюйся на альтів перші тижні",
+    "привʼяжи персонажа Battle.net у профілі/на сайті, щоб склад бачив ilvl/RIO",
+  ];
+  if (profile.lastExpansion && profile.lastExpansion.order <= 9) {
+    parts.splice(1, 0, "переглянь таланти, rotation і базові defensives, бо після старих адонів клас міг сильно змінитися");
+  }
+  if (profile.roleInterest.length) {
+    parts.push(`одразу напиши, що готовий грати: ${roleInterestText(profile.roleInterest)}`);
+  } else {
+    parts.push("одразу уточни, чи готовий пробувати healer/tank, бо ці ролі частіше закривають дефіцит");
+  }
+  parts.push("після цього заходь у M+/рейди з реалістичною ціллю: спершу стабільність і механіки, потім пуш");
+  return parts;
+}
+
 function buildRecruitmentAdviceMessage(params: {
   originalMessage: DiscordMessage;
   intent: RecruitmentIntent;
@@ -672,32 +887,43 @@ function buildRecruitmentAdviceMessage(params: {
 }) {
   const authorId = snowflake(params.originalMessage.author?.id);
   const mentioned = params.intent.mentionedClasses;
+  const profile = params.intent.profile;
   const recommendations = params.analysis.recommendations.slice(0, 3);
   const top = recommendations[0];
-  const familiar = mentioned.filter((className) =>
-    ["Warlock", "Hunter"].includes(className),
-  );
+  const familiar = mentioned;
 
   const lines = [
-    `${mentionUser(authorId)}, привіт! Раді бачити повернення у WoW. Якщо останній активний досвід був ще в BfA, я б не радив одразу гнатися за “топ-метою”: краще вибрати клас, який реально зайде, і паралельно закрити корисну потребу гільдії.`,
+    pickScenarioIntro(profile, authorId),
     "",
-    `**Що показує склад ${params.guildName}:** проаналізовано ${numberFormat(params.analysis.highRosterSize)} високорівневих персонажів з Raider.IO${params.analysis.rioThreshold ? ` (орієнтир RIO ≈ ${numberFormat(params.analysis.rioThreshold)}` : ""}${params.analysis.rioThreshold ? ")" : ""}. Ролі: ${buildRoleLine(params.analysis.roleCounts)}.`,
+    `**Що показує склад ${params.guildName}:** проаналізовано ${numberFormat(params.analysis.highRosterSize)} активних/високорівневих персонажів з Raider.IO${params.analysis.rioThreshold ? ` (орієнтир RIO ≈ ${numberFormat(params.analysis.rioThreshold)}` : ""}${params.analysis.rioThreshold ? ")" : ""}. Ролі: ${buildRoleLine(params.analysis.roleCounts)}.`,
     params.analysis.missingClasses.length
-      ? `**Найпомітніші прогалини по корисних бафах/утиліті:** ${params.analysis.missingClasses.slice(0, 5).join(", ")}.`
+      ? `**Найпомітніші прогалини по бафах/utility:** ${params.analysis.missingClasses.slice(0, 5).join(", ")}.`
       : params.analysis.rareClasses.length
         ? `**Найрідші корисні класи серед активних:** ${params.analysis.rareClasses.join(", ")}.`
         : "**Склад виглядає рівномірно**, тому можна обирати не за дефіцитом, а за комфортом і стабільністю гри.",
     "",
-    top
-      ? `**Найрозумніший вибір під гільдію зараз:** **${top.className}** — ${top.reason}; дає: ${top.utility}. Рекомендований старт: ${top.preferredSpecs}.`
-      : "**Найрозумніший вибір:** будь-який клас, який ти готовий стабільно грати, бо даних складу поки замало для чесного дефіциту.",
   ];
+
+  if (top) {
+    const roleFit = profile.roleInterest.length
+      ? top.roleOptions.some((role) => profile.roleInterest.includes(role))
+        ? "це ще й збігається з роллю, яку ти згадав"
+        : "по ролі може не збігатися з тим, що ти згадав, тому нижче є альтернативи"
+      : "роль можна уточнити після вибору класу";
+    lines.push(
+      `**Найрозумніший вибір під гільдію зараз:** **${top.className}** — ${top.reason}; дає: ${top.utility}. Стартовий варіант: ${top.preferredSpecs}. ${roleFit}.`,
+    );
+  } else {
+    lines.push(
+      "**Найрозумніший вибір:** будь-який клас, який ти готовий стабільно грати, бо даних складу поки замало для чесного дефіциту.",
+    );
+  }
 
   if (recommendations.length > 1) {
     lines.push(
       `**Альтернативи:** ${recommendations
         .slice(1)
-        .map((item) => `**${item.className}** (${item.utility})`)
+        .map((item) => `**${item.className}** — ${item.utility}`)
         .join("; ")}.`,
     );
   }
@@ -720,15 +946,25 @@ function buildRecruitmentAdviceMessage(params: {
     });
     lines.push(
       "",
-      `З того, чим ти вже грав: ${familiarText.join(". ")}. Тобто **Warlock/Hunter не є поганим вибором**, але якщо хочеш максимально допомогти складу — дивись першу рекомендацію вище.`,
+      `З того, що ти згадав: ${familiarText.join(". ")}. Тобто старий комфорт теж враховано; просто не варто брати Hunter/Warlock автоматично, якщо хочеш закрити конкретну прогалину складу.`,
     );
   }
 
+  if (profile.expansions.length) {
+    lines.push(
+      "",
+      `**Розпізнаний досвід по версіях:** ${profile.expansions.map((item) => item.label).join(", ")}. Це допомагає не давати однакову пораду гравцю з BfA/Ліча і гравцю з Dragonflight/TWW.`,
+    );
+  }
+
+  const startPlan = buildStartPlan(profile);
   lines.push(
     "",
-    "**Як краще стартувати:** обери 1 мейн на перші тижні, прокачай його без розпилення на альтів, зайди в профіль гільдії/сайт, привʼяжи персонажа Battle.net і після цього вже дивись по рейдах/M+. Якщо хочеш швидко потрапити в активності — пиши, яку роль готовий грати: DPS, healer чи tank.",
+    `**Як стартувати:** ${startPlan.map((item, index) => `${index + 1}) ${item}`).join("; ")}.`,
     "",
-    "Це не жорсткий наказ по класу. Для гільдії найцінніше — стабільний гравець, який не міняє мейна кожні 3 дні й реально закриває механіки.",
+    profile.asksGuildNeed
+      ? "Якщо ціль саме допомогти гільдії — найцінніше не просто “рідкісний клас”, а стабільний гравець із нормальним attendance, підготовкою і механіками."
+      : "Це не наказ по класу: краще взяти трохи менш “метовий”, але стабільний мейн, ніж постійно міняти персонажа.",
     "",
     AUTO_FOOTER,
   );

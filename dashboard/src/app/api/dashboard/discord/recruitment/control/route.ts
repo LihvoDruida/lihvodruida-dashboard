@@ -10,7 +10,10 @@ import {
   callRecruitmentGatewayControl,
   type RecruitmentGatewayAction,
 } from "@/lib/discordRecruitmentGatewayControl";
-import { scanDiscordRecruitmentAdvice } from "@/lib/discordRecruitmentAdvisor";
+import {
+  previewRecruitmentAdviceForText,
+  scanDiscordRecruitmentAdvice,
+} from "@/lib/discordRecruitmentAdvisor";
 import { getRecruitmentAdvisorSettings } from "@/lib/discordRecruitmentAdvisorSettings";
 
 export const revalidate = 0;
@@ -43,6 +46,42 @@ export async function POST(request: NextRequest) {
     const form = await request.formData();
     const action = cleanAction(form.get("action"));
     const settings = await getRecruitmentAdvisorSettings({ bypassCache: true });
+
+    if (action === "preview-text") {
+      const content = String(form.get("content") || "").trim();
+      if (!content) {
+        return adminDiscordResponse(request, {
+          ok: false,
+          tone: "warning",
+          title: "Немає тексту",
+          message: "Встав Discord-повідомлення для тесту аналізу.",
+          status: 400,
+        });
+      }
+      const preview = previewRecruitmentAdviceForText(content, "0");
+      const response = await preview.build();
+
+      await auditDiscordAdmin(
+        "discord.recruitment_advice.preview_text",
+        guard.session,
+        {
+          status: preview.intent.matched ? "success" : "warning",
+          summary: `matched=${preview.intent.matched}, score=${preview.intent.score}, reasons=${preview.intent.reasons.join(", ")}`,
+          intent: preview.intent,
+        },
+      );
+
+      return adminDiscordResponse(request, {
+        ok: true,
+        tone: preview.intent.matched ? "success" : "warning",
+        title: preview.intent.matched
+          ? "Повідомлення буде розпізнано"
+          : "Повідомлення не пройшло фільтр",
+        message: `score=${preview.intent.score}; причини: ${preview.intent.reasons.join(", ") || "—"}. Відповідь: ${response.slice(0, 420)}...`,
+        ttl: 18000,
+        data: { intent: preview.intent, response },
+      });
+    }
 
     if (action === "scan" || action === "dry-run-scan") {
       const dryRun = action === "dry-run-scan";

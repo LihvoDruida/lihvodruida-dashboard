@@ -25,6 +25,18 @@ export type RecruitmentGatewayStatus = {
   lastRelaySummary?: string | null;
   lastRelayedMessageId?: string | null;
   lastRelayedChannelId?: string | null;
+  lastDispatchType?: string | null;
+  lastDispatchAt?: string | null;
+  lastMessageCreateAt?: string | null;
+  lastMessageDropAt?: string | null;
+  lastMessageDropReason?: string | null;
+  lastMessageDropSummary?: string | null;
+  lastMessageContentLength?: number | null;
+  lastMessageGuildId?: string | null;
+  lastMessageChannelId?: string | null;
+  lastMessageId?: string | null;
+  messageCreateCount?: number;
+  relayAttemptCount?: number;
 };
 
 function cleanBaseUrl(value: string) {

@@ -200,10 +200,28 @@ export default async function DiscordRecruitmentPage() {
               ok={Boolean(gateway.startedAt)}
             />
             <StatusTile
+              label="Останній dispatch"
+              value={gateway.lastDispatchType || "—"}
+              note={dateText(gateway.lastDispatchAt)}
+              ok={Boolean(gateway.lastDispatchType)}
+            />
+            <StatusTile
+              label="MESSAGE_CREATE"
+              value={dateText(gateway.lastMessageCreateAt)}
+              note={`events=${gateway.messageCreateCount || 0}, content=${gateway.lastMessageContentLength ?? "—"}`}
+              ok={Boolean(gateway.lastMessageCreateAt)}
+            />
+            <StatusTile
               label="Останній relay"
               value={dateText(gateway.lastRelayAt)}
-              note={gateway.lastRelaySummary || undefined}
+              note={gateway.lastRelaySummary || `attempts=${gateway.relayAttemptCount || 0}`}
               ok={Boolean(gateway.lastRelayAt)}
+            />
+            <StatusTile
+              label="Drop reason"
+              value={gateway.lastMessageDropReason || "—"}
+              note={gateway.lastMessageDropSummary || undefined}
+              ok={!gateway.lastMessageDropReason}
             />
             <StatusTile
               label="Помилка"
@@ -405,6 +423,43 @@ export default async function DiscordRecruitmentPage() {
                   />
                 </div>
               </div>
+            </section>
+
+            <section className="panel discord-management-card discord-management-card--action">
+              <div className="profile-card-head profile-card-head--inline">
+                <div>
+                  <span className="eyebrow">Тест алгоритму</span>
+                  <h2>Перевірити будь-яке повідомлення</h2>
+                </div>
+                <span className="status-pill good">preview</span>
+              </div>
+              <form
+                className="discord-management-card__body"
+                action="/api/dashboard/discord/recruitment/control"
+                method="post"
+                data-dashboard-action-form="true"
+                data-dashboard-live-submit="true"
+              >
+                <input type="hidden" name="action" value="preview-text" />
+                <p className="profile-card-lead">
+                  Встав текст із Discord. Панель покаже score, причини
+                  спрацювання, розпізнані версії гри й приклад адаптивної
+                  відповіді без відправки в Discord.
+                </p>
+                <label className="field-label">
+                  Текст повідомлення
+                  <textarea
+                    className="input"
+                    name="content"
+                    rows={7}
+                    placeholder="Наприклад: Останній раз грав у Ліча/Драгонфлай/БФА, ким краще почати і хто потрібен гільдії?"
+                    required
+                  />
+                </label>
+                <button className="btn subtle" type="submit">
+                  Проаналізувати текст
+                </button>
+              </form>
             </section>
 
             <section className="panel discord-management-card discord-management-card--action">
