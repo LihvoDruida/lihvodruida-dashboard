@@ -18,7 +18,7 @@ type DiscordAuthor = {
   bot?: boolean;
 };
 
-type DiscordMessage = {
+export type DiscordMessage = {
   id: string;
   channel_id?: string;
   content?: string;
@@ -92,6 +92,22 @@ type RecruitmentAdviceResult = {
     intentReasons: string[];
     response: string;
   }>;
+};
+
+export type RecruitmentAdviceMessageResult = {
+  ok: boolean;
+  enabled: boolean;
+  dryRun: boolean;
+  matched: boolean;
+  replied: boolean;
+  skipped: boolean;
+  channelId: string;
+  messageId: string;
+  authorId: string;
+  intentReasons: string[];
+  response?: string;
+  replyMessageId?: string | null;
+  error?: string;
 };
 
 const CLASS_UTILITIES: ClassUtility[] = [
@@ -587,6 +603,120 @@ function shouldIgnoreMessage(message: DiscordMessage) {
   return false;
 }
 
+
+export async function handleDiscordRecruitmentAdviceMessage(message: DiscordMessage, options: {
+  dryRun?: boolean;
+  force?: boolean;
+  channelId?: string;
+} = {}): Promise<RecruitmentAdviceMessageResult> {
+  const enabled = envFlag("DISCORD_RECRUITMENT_ADVICE_ENABLED", false) || Boolean(options.force);
+  const dryRun = Boolean(options.dryRun || envFlag("DISCORD_RECRUITMENT_ADVICE_DRY_RUN", false));
+  const channelId = snowflake(message.channel_id) || snowflake(options.channelId);
+  const messageId = snowflake(message.id);
+  const authorId = snowflake(message.author?.id);
+  const base: RecruitmentAdviceMessageResult = {
+    ok: true,
+    enabled,
+    dryRun,
+    matched: false,
+    replied: false,
+    skipped: false,
+    channelId,
+    messageId,
+    authorId,
+    intentReasons: [],
+  };
+
+  if (!enabled) {
+    return {
+      ...base,
+      ok: false,
+      skipped: true,
+      error: "DISCORD_RECRUITMENT_ADVICE_ENABLED is not enabled",
+    };
+  }
+
+  if (!channelId) {
+    return {
+      ...base,
+      ok: false,
+      skipped: true,
+      error: "Discord message channel_id is missing",
+    };
+  }
+
+  if (shouldIgnoreMessage(message)) {
+    return { ...base, skipped: true };
+  }
+
+  const intent = detectRecruitmentIntent(message.content);
+  if (!intent.matched) {
+    return { ...base, skipped: true, intentReasons: intent.reasons };
+  }
+
+  if (!dryRun) {
+    const claimed = await tryClaimMessage({ ...message, channel_id: channelId }, channelId);
+    if (!claimed) {
+      return { ...base, matched: true, skipped: true, intentReasons: intent.reasons };
+    }
+  }
+
+  try {
+    const roster = await loadRosterAnalysis(intent.mentionedClasses);
+    const response = buildRecruitmentAdviceMessage({
+      originalMessage: { ...message, channel_id: channelId },
+      intent,
+      analysis: roster.analysis,
+      guildName: roster.guildName,
+      rosterUpdatedAt: roster.rosterUpdatedAt,
+    });
+
+    if (dryRun) {
+      return {
+        ...base,
+        matched: true,
+        intentReasons: intent.reasons,
+        response,
+      };
+    }
+
+    const reply = await replyToDiscordMessage(channelId, { ...message, channel_id: channelId }, response);
+    await markClaimResult(message.id, {
+      status: "replied",
+      repliedAtIso: new Date().toISOString(),
+      replyMessageId: snowflake(reply?.id) || null,
+      intentReasons: intent.reasons,
+      mentionedClasses: intent.mentionedClasses,
+      source: "gateway-message-create",
+    });
+
+    return {
+      ...base,
+      matched: true,
+      replied: true,
+      intentReasons: intent.reasons,
+      response,
+      replyMessageId: snowflake(reply?.id) || null,
+    };
+  } catch (error) {
+    const errorText = error instanceof Error ? error.message : String(error || "unknown");
+    if (!dryRun) {
+      await markClaimResult(message.id, {
+        status: "failed",
+        error: errorText.slice(0, 500),
+        source: "gateway-message-create",
+      });
+    }
+    return {
+      ...base,
+      ok: false,
+      matched: true,
+      intentReasons: intent.reasons,
+      error: errorText,
+    };
+  }
+}
+
 export async function scanDiscordRecruitmentAdvice(options: {
   dryRun?: boolean;
   force?: boolean;
@@ -658,61 +788,25 @@ export async function scanDiscordRecruitmentAdvice(options: {
         continue;
       }
 
-      const intent = detectRecruitmentIntent(message.content);
-      if (!intent.matched) {
-        result.skipped += 1;
-        continue;
-      }
+      const handled = await handleDiscordRecruitmentAdviceMessage(
+        { ...message, channel_id: snowflake(message.channel_id) || channelId },
+        { dryRun, force: options.force, channelId },
+      );
 
-      result.matched += 1;
-
-      if (!dryRun) {
-        const claimed = await tryClaimMessage(message, channelId);
-        if (!claimed) {
-          result.skipped += 1;
-          continue;
-        }
-      }
-
-      try {
-        const roster = await loadRosterAnalysis(intent.mentionedClasses);
-        const response = buildRecruitmentAdviceMessage({
-          originalMessage: message,
-          intent,
-          analysis: roster.analysis,
-          guildName: roster.guildName,
-          rosterUpdatedAt: roster.rosterUpdatedAt,
-        });
-
+      if (handled.matched) result.matched += 1;
+      if (handled.skipped) result.skipped += 1;
+      if (handled.replied) result.replied += 1;
+      if (handled.response) {
         result.samples.push({
-          channelId,
-          messageId: message.id,
-          authorId: snowflake(message.author?.id),
-          intentReasons: intent.reasons,
-          response,
+          channelId: handled.channelId || channelId,
+          messageId: handled.messageId || message.id,
+          authorId: handled.authorId,
+          intentReasons: handled.intentReasons,
+          response: handled.response,
         });
-
-        if (!dryRun) {
-          const replyChannelId = snowflake(message.channel_id) || channelId;
-          const reply = await replyToDiscordMessage(replyChannelId, message, response);
-          await markClaimResult(message.id, {
-            status: "replied",
-            repliedAtIso: new Date().toISOString(),
-            replyMessageId: snowflake(reply?.id) || null,
-            intentReasons: intent.reasons,
-            mentionedClasses: intent.mentionedClasses,
-          });
-          result.replied += 1;
-        }
-      } catch (error) {
-        const messageText = error instanceof Error ? error.message : String(error || "unknown");
-        result.errors.push(`message ${message.id}: ${messageText}`);
-        if (!dryRun) {
-          await markClaimResult(message.id, {
-            status: "failed",
-            error: messageText.slice(0, 500),
-          });
-        }
+      }
+      if (!handled.ok && handled.error) {
+        result.errors.push(`message ${message.id}: ${handled.error}`);
       }
     }
   }
