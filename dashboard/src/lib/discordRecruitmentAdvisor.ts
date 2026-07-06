@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { FieldValue } from "firebase-admin/firestore";
 import {
   discordApi,
@@ -37,11 +38,14 @@ type DiscordAuthor = {
 export type DiscordMessage = {
   id: string;
   channel_id?: string;
+  guild_id?: string;
   content?: string;
   timestamp?: string;
   author?: DiscordAuthor;
   webhook_id?: string;
   type?: number;
+  source?: string;
+  receivedAt?: string;
 };
 
 type DiscordChannelCandidate = Pick<
@@ -83,13 +87,19 @@ type RecruitmentScenario =
   | "general-advice";
 
 type MessageProfile = {
+  isReturningPlayer: boolean;
+  isNewPlayer: boolean;
+  asksClassChoice: boolean;
+  asksGuildNeed: boolean;
+  asksHowToStart: boolean;
+  mentionedClasses: string[];
+  mentionedRoles: GuildRosterRole[];
+  detectedExpansions: WowExpansionMention[];
+  lastPlayedExpansion: WowExpansionMention | null;
   expansions: WowExpansionMention[];
   lastExpansion: WowExpansionMention | null;
   scenarios: RecruitmentScenario[];
   roleInterest: GuildRosterRole[];
-  asksHowToStart: boolean;
-  asksGuildNeed: boolean;
-  asksClassChoice: boolean;
   confidence: "low" | "medium" | "high";
 };
 
@@ -145,13 +155,21 @@ export type RecruitmentAdviceMessageResult = {
   enabled: boolean;
   dryRun: boolean;
   matched: boolean;
+  score: number;
   replied: boolean;
   skipped: boolean;
   channelId: string;
+  guildId: string;
   messageId: string;
   authorId: string;
   intentReasons: string[];
+  decisionReasons: string[];
+  mentionedClasses: string[];
+  mentionedRoles: GuildRosterRole[];
+  expansionsDetected: WowExpansionMention[];
+  lastExpansion: WowExpansionMention | null;
   response?: string;
+  responsePreview?: string;
   replyMessageId?: string | null;
   error?: string;
   skipReason?: string;
@@ -263,11 +281,11 @@ const CLASS_UTILITIES: ClassUtility[] = [
 
 const CLASS_ALIASES: Record<string, string[]> = {
   Warlock: ["warlock", "лок", "варлок", "чк", "lock"],
-  Hunter: ["hunter", "хант", "мислив", "hunt", "bm", "мм"],
-  Mage: ["mage", "маг", "аркан", "фаєр", "фрост"],
-  Priest: ["priest", "прист", "жрець", "шп", "shadow priest"],
-  Warrior: ["warrior", "вар", "воїн"],
-  Druid: ["druid", "дру", "друїд", "сова", "рестор", "ферал", "ведмідь"],
+  Hunter: ["hunter", "хант", "хантер", "мислив", "мисливець", "hunt", "bm", "мм"],
+  Mage: ["mage", "маг", "аркан", "фаєр", "фаер", "фрост", "fire", "frost", "arcane"],
+  Priest: ["priest", "прист", "жрець", "жрец", "шп", "shadow priest"],
+  Warrior: ["warrior", "вар", "воїн", "воин"],
+  Druid: ["druid", "дру", "друїд", "друид", "сова", "рдру", "рестор", "ферал", "ведмідь", "ведмедь"],
   Monk: ["monk", "монк", "монах", "вв", "міствівер", "brewmaster"],
   "Demon Hunter": [
     "demon hunter",
@@ -280,7 +298,7 @@ const CLASS_ALIASES: Record<string, string[]> = {
   Paladin: ["paladin", "пал", "паладин", "ретрик", "хпал"],
   Shaman: ["shaman", "шаман", "енх", "елем", "ршам"],
   Evoker: ["evoker", "евокер", "драктир", "ауг", "augmentation"],
-  "Death Knight": ["death knight", "dk", "дк", "лицар смерті"],
+  "Death Knight": ["death knight", "dk", "дк", "лицар смерті", "рыцарь смерти", "бдк"],
   Rogue: ["rogue", "рога", "розбійник", "ассасин", "аутло"],
 };
 
@@ -297,7 +315,7 @@ const WOW_EXPANSIONS: Array<{
   { key: "mop", label: "Mists of Pandaria", order: 5, aliases: ["mop", "панда", "пандарія", "пандария", "місти", "мисти", "mists", "mists of pandaria"] },
   { key: "wod", label: "Warlords of Draenor", order: 6, aliases: ["wod", "вод", "дренор", "warlords", "warlords of draenor", "варлордс"] },
   { key: "legion", label: "Legion", order: 7, aliases: ["legion", "легіон", "легион", "легіона", "легионе"] },
-  { key: "bfa", label: "Battle for Azeroth", order: 8, aliases: ["bfa", "бфа", "battle for azeroth", "батл фо азерот", "батл фор азерот", "битва за азерот", "азерот"] },
+  { key: "bfa", label: "Battle for Azeroth", order: 8, aliases: ["bfa", "бфа", "battle for azeroth", "батл фо азерот", "батл фор азерот", "битва за азерот", "battle for azeroth"] },
   { key: "shadowlands", label: "Shadowlands", order: 9, aliases: ["shadowlands", "шадовлендс", "шадоулендс", "шл", "sl", "темні землі", "темные земли"] },
   { key: "dragonflight", label: "Dragonflight", order: 10, aliases: ["dragonflight", "dragon flight", "драгонфлай", "драгонфлайт", "драконфлай", "дракони", "дф", "df"] },
   { key: "war-within", label: "The War Within", order: 11, aliases: ["the war within", "war within", "tww", "вар візін", "варвизин", "варвізін", "вар візин", "вар візін", "внутрішня війна", "внутренняя война"] },
@@ -329,6 +347,16 @@ function cleanText(value: unknown, maxLength = 2000) {
     .join("");
 }
 
+
+function contentHash(value: unknown) {
+  return createHash("sha256")
+    .update(cleanText(value, 4000), "utf8")
+    .digest("hex");
+}
+
+function shortPreview(value: unknown, maxLength = 500) {
+  return cleanText(value, maxLength);
+}
 function envFlag(name: string, fallback = false) {
   const raw = process.env[name];
   if (raw === undefined || raw === null || raw === "") return fallback;
@@ -475,9 +503,10 @@ function containsAlias(text: string, alias: string) {
   return text.includes(` ${normalizedAlias} `);
 }
 
-function detectWowExpansions(content: unknown): WowExpansionMention[] {
+export function detectWowExpansionMentions(content: unknown): WowExpansionMention[] {
   const text = textForMatching(content);
   const found: WowExpansionMention[] = [];
+
   for (const expansion of WOW_EXPANSIONS) {
     const matched = expansion.aliases.find((alias) => containsAlias(text, alias));
     if (matched) {
@@ -489,8 +518,14 @@ function detectWowExpansions(content: unknown): WowExpansionMention[] {
       });
     }
   }
-  return found.sort((left, right) => left.order - right.order);
+
+  // Intentional guard: "азерот" alone is not BfA, only battle/bfa context is.
+  return found
+    .filter((item, index, array) => array.findIndex((other) => other.key === item.key) === index)
+    .sort((left, right) => left.order - right.order);
 }
+
+const detectWowExpansions = detectWowExpansionMentions;
 
 function detectRoleInterest(content: unknown): GuildRosterRole[] {
   const text = textForMatching(content);
@@ -509,25 +544,34 @@ function hasAny(text: string, patterns: RegExp[]) {
 function buildMessageProfile(content: unknown, score: number): MessageProfile {
   const raw = cleanText(content, 4000).toLowerCase();
   const expansions = detectWowExpansions(content);
-  const lastExpansion = expansions.length ? expansions[expansions.length - 1] || null : null;
+  const lastExpansion = expansions.length
+    ? expansions[expansions.length - 1] || null
+    : null;
+  const mentionedClasses = detectMentionedClasses(cleanText(content, 4000));
+  const roleInterest = detectRoleInterest(content);
   const asksHowToStart = hasAny(raw, [
-    /як\s+(почати|розпочати|стартувати|повернутись)/i,
+    /як\s+(почати|розпочати|стартувати|повернутись|повертатись)/i,
     /з чого\s+(почати|стартувати)/i,
+    /що\s+робити/i,
     /how\s+to\s+(start|return)/i,
   ]);
   const asksGuildNeed = hasAny(raw, [
-    /(гільд(ії|ія|ію).{0,80}(потріб|не вистач|браку|дефіцит))/i,
-    /(потріб(ен|на|ні)|не вистачає|бракує|дефіцит).{0,80}(клас|спек|роль|баф|utility|гільд)/i,
+    /(гільд(ії|ія|ію).{0,90}(потріб|не вистач|браку|дефіцит))/i,
+    /(потріб(ен|на|ні)|не вистачає|бракує|дефіцит).{0,90}(клас|спек|роль|баф|гільд)/i,
+    /(кого|що).{0,50}(треба|потрібно).{0,50}(гільд|рейд|склад)/i,
+    /готов(ий|а).{0,80}(кого|клас|роль).{0,80}(не вистачає|потрібн)/i,
   ]);
   const asksClassChoice = hasAny(raw, [
-    /(за який клас|який клас|кого качати|ким грати|обрати клас|клас краще|кого краще)/i,
-    /(порад(а|ьте|ьте будь ласка).{0,80}(клас|спек|ким))/i,
+    /(за який клас|який клас|кого качати|ким грати|ким краще|стартанути|обрати клас|клас краще|кого краще)/i,
+    /(порад(а|ьте|ьте будь ласка).{0,90}(клас|спек|ким))/i,
   ]);
-  const returning = hasAny(raw, [
-    /(останн(ій|ього) раз|давно|не грав|повертаюсь|повернутись|знову грати|returning|comeback)/i,
-  ]) || Boolean(expansions.length);
-  const newPlayer = hasAny(raw, [/(новачок|новий гравець|тільки починаю|перший раз|new player)/i]);
-  const roleInterest = detectRoleInterest(content);
+  const returning =
+    hasAny(raw, [
+      /(останн(ій|ього) раз|давно|не грав|повертаюсь|повернутись|вертаюсь|знову грати|returning|comeback)/i,
+    ]) || Boolean(expansions.length);
+  const newPlayer = hasAny(raw, [
+    /(новачок|новий гравець|новий у вов|тільки починаю|перший раз|new player)/i,
+  ]);
   const scenarios: RecruitmentScenario[] = [];
   if (returning) scenarios.push("returning-player");
   if (newPlayer) scenarios.push("new-player");
@@ -536,13 +580,19 @@ function buildMessageProfile(content: unknown, score: number): MessageProfile {
   if (roleInterest.length) scenarios.push("role-choice");
   if (!scenarios.length) scenarios.push("general-advice");
   return {
+    isReturningPlayer: returning,
+    isNewPlayer: newPlayer,
+    asksClassChoice,
+    asksGuildNeed,
+    asksHowToStart,
+    mentionedClasses,
+    mentionedRoles: roleInterest,
+    detectedExpansions: expansions,
+    lastPlayedExpansion: lastExpansion,
     expansions,
     lastExpansion,
     scenarios: Array.from(new Set(scenarios)),
     roleInterest,
-    asksHowToStart,
-    asksGuildNeed,
-    asksClassChoice,
     confidence: score >= 10 ? "high" : score >= 6 ? "medium" : "low",
   };
 }
@@ -575,41 +625,51 @@ function detectRecruitmentIntent(content: unknown): RecruitmentIntent {
   const expansions = detectWowExpansions(original);
   const checks: Array<[RegExp, number, string]> = [
     [
-      /(останн(ій|ього) раз|давно|не грав|не грав\/ла|повертаюсь|повернутись|знову грати|вертаюсь|returning|comeback)/i,
+      /(останн(ій|ього) раз|давно|не грав|не грав\/ла|повертаюсь|повернутись|вертаюсь|знову грати|returning|comeback)/i,
       3,
       "повернення до WoW",
     ],
     [
-      /(за який клас|який клас|кого качати|ким грати|обрати клас|клас краще|кого краще|порад(а|ьте)|що краще)/i,
+      /(за який клас|який клас|кого качати|ким грати|ким краще|стартанути|обрати клас|клас краще|кого краще|порад(а|ьте)|що краще)/i,
       4,
       "питання про вибір класу",
     ],
     [
-      /(гільд(ії|ія|ію)|рейд|m\+|містік|міфік|mythic|rio|raider|ключі|склад|ростер|roster)/i,
+      /(гільд(ії|ія|ію)|рейд|m\+|містік|міфік|mythic|ключі|склад|ростер|roster)/i,
       2,
-      "контекст гільдії/рейдів/RIO",
+      "контекст гільдії/рейдів",
     ],
     [
-      /(не вистачає|потріб(ен|на|ні)|дефіцит|бракує|корисн(ий|а|і)|utility|утиліті|утилита|баф|buff|корисний клас)/i,
+      /(не вистачає|потріб(ен|на|ні)|дефіцит|бракує|корисн(ий|а|і)|утиліті|утилита|баф|buff|корисний клас)/i,
       3,
       "питання про потреби складу",
     ],
     [
-      /(як\s+(почати|розпочати|стартувати)|з чого\s+(почати|стартувати)|саме як розпочати)/i,
+      /(як\s+(почати|розпочати|стартувати)|з чого\s+(почати|стартувати)|саме як розпочати|що\s+робити)/i,
       2,
       "питання як стартувати",
     ],
     [
-      /(новачок|новий гравець|тільки починаю|перший раз)/i,
+      /(новачок|новий гравець|новий у вов|тільки починаю|перший раз)/i,
       2,
       "новий гравець",
     ],
-    [/(лок|варлок|warlock|хант|hunter|мислив|маг|прист|друїд|шаман|пал|дк|рога|монк|евокер|дх)/i, 1, "згадані класи"],
+    [
+      /(лок|варлок|warlock|хант|хантер|hunter|мислив|маг|прист|друїд|друид|шаман|пал|дк|рога|монк|евокер|дх)/i,
+      1,
+      "згадані класи",
+    ],
   ];
 
   const reasons: string[] = [];
   let score = expansions.length ? 2 : 0;
-  if (expansions.length) reasons.push(`згадана версія WoW: ${expansions.map((item) => item.label).join(", ")}`);
+  if (expansions.length) {
+    reasons.push(
+      `згадана версія WoW: ${expansions
+        .map((item) => `${item.label} (${item.matchedText})`)
+        .join(", ")}`,
+    );
+  }
 
   for (const [regex, points, reason] of checks) {
     if (regex.test(text)) {
@@ -622,15 +682,16 @@ function detectRecruitmentIntent(content: unknown): RecruitmentIntent {
   const profile = buildMessageProfile(original, score);
   const strongClassAsk = profile.asksClassChoice || profile.asksGuildNeed;
   const context =
-    profile.scenarios.includes("returning-player") ||
-    profile.scenarios.includes("new-player") ||
+    profile.isReturningPlayer ||
+    profile.isNewPlayer ||
     profile.asksHowToStart ||
-    reasons.some((reason) => reason.includes("гільдії") || reason.includes("RIO"));
+    strongClassAsk ||
+    profile.roleInterest.length > 0;
 
   return {
-    matched: score >= 5 && (strongClassAsk || profile.asksHowToStart) && context,
+    matched: score >= 5 && (strongClassAsk || profile.asksHowToStart || profile.isNewPlayer) && context,
     score,
-    reasons,
+    reasons: Array.from(new Set(reasons)),
     mentionedClasses,
     profile,
   };
@@ -813,68 +874,92 @@ function analyzeRosterForAdvice(
   };
 }
 
+const CLASS_LABELS_UA: Record<string, string> = {
+  Priest: "Прист",
+  Mage: "Маг",
+  Warrior: "Воїн",
+  Druid: "Друїд",
+  Monk: "Монк",
+  "Demon Hunter": "Демон-хантер",
+  Paladin: "Паладин",
+  Warlock: "Лок",
+  Shaman: "Шаман",
+  Evoker: "Евокер",
+  Hunter: "Хант",
+  "Death Knight": "ДК",
+  Rogue: "Рога",
+};
+
+function classLabel(className: string) {
+  return CLASS_LABELS_UA[className] || className;
+}
+
 function mentionUser(authorId: string) {
   return authorId ? `<@${authorId}>` : "Привіт";
 }
 
-function buildRoleLine(roleCounts: Record<GuildRosterRole, number>) {
-  const known = roleCounts.tank + roleCounts.healer + roleCounts.dps;
-  if (!known) return "ролі в складі ще не визначені достатньо точно";
-  return `tank ${roleCounts.tank}, healer ${roleCounts.healer}, DPS ${roleCounts.dps}`;
+function roleInterestText(roles: GuildRosterRole[]) {
+  const labels: Record<GuildRosterRole, string> = {
+    tank: "танком",
+    healer: "хілом",
+    dps: "DPS",
+    unknown: "будь-якою роллю",
+  };
+  const clean = roles.filter((role) => role !== "unknown");
+  if (!clean.length) return "DPS, хіл чи танк";
+  return clean.map((role) => labels[role]).join(" / ");
 }
 
 function expansionDistanceText(expansion: WowExpansionMention | null) {
   if (!expansion) return "";
   if (expansion.order <= 8) {
-    return `останній досвід був ще в **${expansion.label}**, тому краще закласти час на нові таланти, UI, Mythic+ логіку й актуальні системи прогресу`;
+    return `Якщо останній раз грав у **${expansion.label}**, краще не намагатися за вечір згадати все одразу: класи, таланти й темп гри вже сильно інші.`;
   }
   if (expansion.order <= 10) {
-    return `досвід з **${expansion.label}** ще корисний, але частина класів і систем уже відчутно змінилась`;
+    return `Досвід із **${expansion.label}** ще допоможе, але перед вибором мейна все одно варто спокійно перевірити таланти й роль.`;
   }
-  return `досвід з **${expansion.label}** майже актуальний, тож головний фокус — вибір ролі й стабільний мейн`;
-}
-
-function roleInterestText(roles: GuildRosterRole[]) {
-  const labels: Record<GuildRosterRole, string> = {
-    tank: "tank",
-    healer: "healer",
-    dps: "DPS",
-    unknown: "будь-яка роль",
-  };
-  const clean = roles.filter((role) => role !== "unknown");
-  if (!clean.length) return "DPS/healer/tank ще не уточнено";
-  return clean.map((role) => labels[role]).join(" / ");
+  return `Після **${expansion.label}** буде легше втягнутися, тож головне — вибрати роль і стабільного мейна.`;
 }
 
 function pickScenarioIntro(profile: MessageProfile, authorId: string) {
   const hello = `${mentionUser(authorId)}, привіт!`;
   const distance = expansionDistanceText(profile.lastExpansion);
-  if (profile.scenarios.includes("returning-player")) {
-    return `${hello} Раді бачити повернення у WoW. ${distance ? `Якщо ${distance}, ` : ""}я б не радив одразу гнатися за “топ-метою”: краще вибрати клас, який реально зайде, і одночасно закриє корисну потребу гільдії.`;
+  if (profile.isReturningPlayer) {
+    return `${hello} Раді бачити повернення у WoW. ${distance || "Після перерви я б не радив одразу гнатися за найгучнішим класом тижня."} Найкращий вибір — той, на якому буде комфортно знову втягнутися, але при цьому він дасть користь гільдії.`;
   }
-  if (profile.scenarios.includes("new-player")) {
-    return `${hello} Для старту важливіше не “найсильніший клас тижня”, а простий вхід, зрозуміла роль і користь для складу. Мету можна наздогнати, а невдалий мейн часто вбиває мотивацію.`;
+  if (profile.isNewPlayer) {
+    return `${hello} Для нового гравця важливіше взяти зрозумілий клас і роль, а не сліпо бігти за метою. Сильний персонаж не допоможе, якщо його неприємно грати кожен день.`;
   }
   if (profile.asksGuildNeed) {
-    return `${hello} Дивлюсь не просто на tier-list, а на те, яких бафів, ролей і корисної utility зараз реально не вистачає у складі.`;
+    return `${hello} Якщо дивитися саме з боку потреб гільдії, я б обирав не просто “рідкісний” клас, а той, який тобі буде реально зручно грати стабільно.`;
   }
-  return `${hello} По вибору класу найкраще рішення — перетин трьох речей: що тобі комфортно, що корисно складу, і що ти готовий стабільно грати кілька тижнів без стрибків між альтами.`;
+  return `${hello} По вибору класу нормальна логіка проста: комфорт гри, користь для групи й готовність не кидати мейна через кілька днів.`;
+}
+
+function recommendationReason(item: ClassRecommendation) {
+  if (item.activeCount === 0) {
+    return "такий клас у нас зараз особливо корисний, бо він закриває важливу групову користь";
+  }
+  if (item.activeCount === 1) {
+    return "таких персонажів серед активних небагато, тому ще один стабільний гравець був би корисним";
+  }
+  return "клас уже є у складі, але все одно дає сильну користь групі";
 }
 
 function buildStartPlan(profile: MessageProfile) {
   const parts = [
-    "обери 1 мейн і не розпилюйся на альтів перші тижні",
-    "привʼяжи персонажа Battle.net у профілі/на сайті, щоб склад бачив ilvl/RIO",
+    "обери одного мейна й не розпилюйся на альтів перші тижні",
+    "спокійно переглянь таланти, основні кнопки, сейви й простий opener",
   ];
   if (profile.lastExpansion && profile.lastExpansion.order <= 9) {
-    parts.splice(1, 0, "переглянь таланти, rotation і базові defensives, бо після старих адонів клас міг сильно змінитися");
+    parts.push("не соромся питати по базових змінах, бо після старих доповнень частина звичок уже не працює");
   }
   if (profile.roleInterest.length) {
-    parts.push(`одразу напиши, що готовий грати: ${roleInterestText(profile.roleInterest)}`);
+    parts.push(`одразу напиши, що хочеш грати ${roleInterestText(profile.roleInterest)}, тоді пораду можна звузити`);
   } else {
-    parts.push("одразу уточни, чи готовий пробувати healer/tank, бо ці ролі частіше закривають дефіцит");
+    parts.push("уточни, чи хочеш DPS, хіла або танка, бо від цього вибір сильно змінюється");
   }
-  parts.push("після цього заходь у M+/рейди з реалістичною ціллю: спершу стабільність і механіки, потім пуш");
+  parts.push("після прокачки підтягни екіпіровку й уже тоді дивись, куди комфортніше йти: рейди, ключі або спокійний прогрес");
   return parts;
 }
 
@@ -888,83 +973,76 @@ function buildRecruitmentAdviceMessage(params: {
   const authorId = snowflake(params.originalMessage.author?.id);
   const mentioned = params.intent.mentionedClasses;
   const profile = params.intent.profile;
-  const recommendations = params.analysis.recommendations.slice(0, 3);
-  const top = recommendations[0];
-  const familiar = mentioned;
+  const recommendations = params.analysis.recommendations.slice(0, 4);
+  const familiarRecommendations = recommendations.filter((item) =>
+    mentioned.includes(item.className),
+  );
+  const guildRecommendations = recommendations.filter(
+    (item) => !mentioned.includes(item.className),
+  );
 
-  const lines = [
-    pickScenarioIntro(profile, authorId),
-    "",
-    `**Що показує склад ${params.guildName}:** проаналізовано ${numberFormat(params.analysis.highRosterSize)} активних/високорівневих персонажів з Raider.IO${params.analysis.rioThreshold ? ` (орієнтир RIO ≈ ${numberFormat(params.analysis.rioThreshold)}` : ""}${params.analysis.rioThreshold ? ")" : ""}. Ролі: ${buildRoleLine(params.analysis.roleCounts)}.`,
-    params.analysis.missingClasses.length
-      ? `**Найпомітніші прогалини по бафах/utility:** ${params.analysis.missingClasses.slice(0, 5).join(", ")}.`
-      : params.analysis.rareClasses.length
-        ? `**Найрідші корисні класи серед активних:** ${params.analysis.rareClasses.join(", ")}.`
-        : "**Склад виглядає рівномірно**, тому можна обирати не за дефіцитом, а за комфортом і стабільністю гри.",
-    "",
-  ];
+  const lines = [pickScenarioIntro(profile, authorId), ""];
 
-  if (top) {
-    const roleFit = profile.roleInterest.length
-      ? top.roleOptions.some((role) => profile.roleInterest.includes(role))
-        ? "це ще й збігається з роллю, яку ти згадав"
-        : "по ролі може не збігатися з тим, що ти згадав, тому нижче є альтернативи"
-      : "роль можна уточнити після вибору класу";
+  if (mentioned.length) {
+    const familiar = mentioned.map(classLabel).join(" і ");
+    const familiarLine = familiarRecommendations.length
+      ? familiarRecommendations
+          .map(
+            (item) =>
+              `**${classLabel(item.className)}** — нормальний варіант: ${item.utility.toLowerCase()}. ${recommendationReason(item)}.`,
+          )
+          .join(" ")
+      : `Якщо раніше тобі заходили **${familiar}**, це вже сильний аргумент: знайомий стиль гри зазвичай краще за випадковий “топ” із чужого списку.`;
+    lines.push(familiarLine, "");
+  }
+
+  const mainChoices = (guildRecommendations.length
+    ? guildRecommendations
+    : recommendations
+  ).slice(0, mentioned.length ? 3 : 4);
+
+  if (mainChoices.length) {
     lines.push(
-      `**Найрозумніший вибір під гільдію зараз:** **${top.className}** — ${top.reason}; дає: ${top.utility}. Стартовий варіант: ${top.preferredSpecs}. ${roleFit}.`,
+      `Якщо орієнтуватися на користь для **${params.guildName}**, я б подивився в бік:`,
+      ...mainChoices.map(
+        (item) =>
+          `• **${classLabel(item.className)}** — ${item.utility.toLowerCase()}; ${item.preferredSpecs}.`,
+      ),
     );
   } else {
     lines.push(
-      "**Найрозумніший вибір:** будь-який клас, який ти готовий стабільно грати, бо даних складу поки замало для чесного дефіциту.",
+      "Якщо чесно, зараз краще обрати клас, який тобі подобається, а не намагатися вгадати ідеальний дефіцит. Стабільний гравець майже завжди цінніший за випадковий рідкісний клас.",
     );
   }
 
-  if (recommendations.length > 1) {
-    lines.push(
-      `**Альтернативи:** ${recommendations
-        .slice(1)
-        .map((item) => `**${item.className}** — ${item.utility}`)
-        .join("; ")}.`,
-    );
-  }
-
-  if (familiar.length) {
-    const familiarText = familiar.map((className) => {
-      const item = CLASS_UTILITIES.find(
-        (utility) => utility.className === className,
-      );
-      const rec = params.analysis.recommendations.find(
-        (recommendation) => recommendation.className === className,
-      );
-      const scarcity =
-        rec?.activeCount === 0
-          ? "у нас це ще й дефіцитний клас"
-          : rec?.activeCount === 1
-            ? "у нас його мало серед активних з RIO"
-            : "клас уже є, але він усе одно корисний";
-      return `**${className}** — ${scarcity}; ${item?.utility || "корисна raid/M+ utility"}`;
-    });
+  const easyChoices = [
+    mentioned.includes("Hunter") ? "Хант" : null,
+    mentioned.includes("Warlock") ? "Лок" : null,
+  ].filter(Boolean);
+  if (easyChoices.length) {
     lines.push(
       "",
-      `З того, що ти згадав: ${familiarText.join(". ")}. Тобто старий комфорт теж враховано; просто не варто брати Hunter/Warlock автоматично, якщо хочеш закрити конкретну прогалину складу.`,
+      `Для максимально спокійного повернення ${easyChoices.join(" або ")} — нормальний вибір. Хант простіший для старту, Лок дуже корисний у рейдах через камені, портал і стабільний ranged DPS.`,
     );
   }
 
-  if (profile.expansions.length) {
+  if (profile.roleInterest.length) {
     lines.push(
       "",
-      `**Розпізнаний досвід по версіях:** ${profile.expansions.map((item) => item.label).join(", ")}. Це допомагає не давати однакову пораду гравцю з BfA/Ліча і гравцю з Dragonflight/TWW.`,
+      `Ти згадав роль **${roleInterestText(profile.roleInterest)}** — це важливо. Під цю роль краще підбирати клас точніше, бо поради для DPS, хіла й танка різні.`,
     );
   }
 
   const startPlan = buildStartPlan(profile);
   lines.push(
     "",
-    `**Як стартувати:** ${startPlan.map((item, index) => `${index + 1}) ${item}`).join("; ")}.`,
+    `Найкращий старт: ${startPlan
+      .map((item, index) => `${index + 1}) ${item}`)
+      .join("; ")}.`,
     "",
     profile.asksGuildNeed
-      ? "Якщо ціль саме допомогти гільдії — найцінніше не просто “рідкісний клас”, а стабільний гравець із нормальним attendance, підготовкою і механіками."
-      : "Це не наказ по класу: краще взяти трохи менш “метовий”, але стабільний мейн, ніж постійно міняти персонажа.",
+      ? "Якщо хочеш закрити саме потребу гільдії — напиши, яка роль тобі цікава, і тоді можна буде порадити вже без гадання."
+      : "Напиши, яка роль тобі цікава — DPS, хіл чи танк — і підкажемо точніше.",
     "",
     AUTO_FOOTER,
   );
@@ -1077,11 +1155,15 @@ async function tryClaimMessage(
       const basePatch = {
         messageId,
         channelId,
+        guildId: snowflake(message.guild_id) || null,
         authorId: snowflake(message.author?.id) || null,
+        contentHash: contentHash(message.content),
         status: "processing",
+        source: message.source || "gateway-message-create",
         updatedAtIso: new Date().toISOString(),
         updatedAt: FieldValue.serverTimestamp(),
         sourceTimestamp: cleanText(message.timestamp, 80) || null,
+        receivedAt: cleanText(message.receivedAt, 80) || null,
       };
 
       if (!snapshot.exists) {
@@ -1104,10 +1186,17 @@ async function tryClaimMessage(
           existingStatus: status,
         };
       }
-      if (!options.force) {
+      if (!options.force && status === "processing") {
         return {
           claimed: false,
-          reason: status ? `existing_${status}` : "existing_claim",
+          reason: "existing_processing",
+          existingStatus: status,
+        };
+      }
+      if (!options.force && status && !["failed", "skipped", "no_content", "dashboard_error", "discord_send_error"].includes(status)) {
+        return {
+          claimed: false,
+          reason: `existing_${status}`,
           existingStatus: status,
         };
       }
@@ -1117,13 +1206,17 @@ async function tryClaimMessage(
         {
           ...basePatch,
           previousStatus: status,
-          retryCount: FieldValue.increment(1),
-          forcedAtIso: new Date().toISOString(),
-          forcedAt: FieldValue.serverTimestamp(),
+          retryCount: FieldValue.increment(status ? 1 : 0),
+          forcedAtIso: options.force ? new Date().toISOString() : null,
+          forcedAt: options.force ? FieldValue.serverTimestamp() : null,
         },
         { merge: true },
       );
-      return { claimed: true, reason: "forced_retry", existingStatus: status };
+      return {
+        claimed: true,
+        reason: options.force ? "forced_retry" : "retryable_status",
+        existingStatus: status,
+      };
     });
   } catch (error) {
     if (isAlreadyExistsError(error))
@@ -1196,15 +1289,51 @@ async function replyToDiscordMessage(
   });
 }
 
-function shouldIgnoreMessage(message: DiscordMessage) {
-  if (!snowflake(message.id)) return true;
-  if (message.author?.bot || message.webhook_id) return true;
-  if (typeof message.content !== "string" || !cleanText(message.content, 4000))
-    return true;
-  // 0 = default, 19/20/21 can also contain user-visible content, but for this helper
-  // we only answer normal channel messages to avoid replying to system/crosspost noise.
-  if (message.type !== undefined && Number(message.type) !== 0) return true;
-  return false;
+type IgnoreMessageDecision = { ignored: boolean; reason?: string };
+
+function shouldIgnoreMessage(message: DiscordMessage): IgnoreMessageDecision {
+  if (!snowflake(message.id)) return { ignored: true, reason: "missing_message_id" };
+  if (message.author?.bot) return { ignored: true, reason: "author_bot" };
+  if (message.webhook_id) return { ignored: true, reason: "webhook_message" };
+  if (message.type !== undefined && Number(message.type) !== 0) {
+    return { ignored: true, reason: `unsupported_message_type_${Number(message.type)}` };
+  }
+  if (typeof message.content !== "string" || !cleanText(message.content, 4000)) {
+    return { ignored: true, reason: "empty_content_message_content_intent_or_permission" };
+  }
+  return { ignored: false };
+}
+
+function baseDecisionFields(intent?: RecruitmentIntent) {
+  const profile = intent?.profile;
+  return {
+    score: intent?.score || 0,
+    intentReasons: intent?.reasons || [],
+    decisionReasons: intent?.reasons || [],
+    mentionedClasses: intent?.mentionedClasses || [],
+    mentionedRoles: profile?.roleInterest || [],
+    expansionsDetected: profile?.expansions || [],
+    lastExpansion: profile?.lastExpansion || null,
+  };
+}
+
+async function recordMessageDecision(
+  message: DiscordMessage,
+  patch: Record<string, unknown>,
+) {
+  const messageId = snowflake(message.id);
+  if (!messageId) return;
+  await markClaimResult(messageId, {
+    messageId,
+    channelId: snowflake(message.channel_id) || null,
+    guildId: snowflake(message.guild_id) || null,
+    authorId: snowflake(message.author?.id) || null,
+    contentHash: contentHash(message.content),
+    sourceTimestamp: cleanText(message.timestamp, 80) || null,
+    receivedAt: cleanText(message.receivedAt, 80) || null,
+    source: message.source || "gateway-message-create",
+    ...patch,
+  });
 }
 
 export async function handleDiscordRecruitmentAdviceMessage(
@@ -1222,6 +1351,7 @@ export async function handleDiscordRecruitmentAdviceMessage(
   const dryRun = Boolean(options.dryRun || settings.dryRun);
   const channelId =
     snowflake(message.channel_id) || snowflake(options.channelId);
+  const guildId = snowflake(message.guild_id);
   const messageId = snowflake(message.id);
   const authorId = snowflake(message.author?.id);
   const base: RecruitmentAdviceMessageResult = {
@@ -1229,22 +1359,37 @@ export async function handleDiscordRecruitmentAdviceMessage(
     enabled,
     dryRun,
     matched: false,
+    score: 0,
     replied: false,
     skipped: false,
     channelId,
+    guildId,
     messageId,
     authorId,
     intentReasons: [],
+    decisionReasons: [],
+    mentionedClasses: [],
+    mentionedRoles: [],
+    expansionsDetected: [],
+    lastExpansion: null,
   };
 
   if (!enabled) {
-    return {
+    const result = {
       ...base,
-      ok: false,
       skipped: true,
-      error: "DISCORD_RECRUITMENT_ADVICE_ENABLED is not enabled",
-      skipReason: "disabled",
+      skipReason: "disabled_by_settings",
     };
+    if (!dryRun) {
+      await recordMessageDecision({ ...message, channel_id: channelId }, {
+        status: "skipped",
+        matched: false,
+        score: 0,
+        skipReason: result.skipReason,
+        decisionReasons: ["система вимкнена в налаштуваннях"],
+      });
+    }
+    return result;
   }
 
   if (!channelId) {
@@ -1257,33 +1402,63 @@ export async function handleDiscordRecruitmentAdviceMessage(
     };
   }
 
-  if (shouldIgnoreMessage(message)) {
-    return { ...base, skipped: true, skipReason: "ignored_message" };
+  const ignore = shouldIgnoreMessage(message);
+  if (ignore.ignored) {
+    const result = {
+      ...base,
+      skipped: true,
+      skipReason: ignore.reason || "ignored_message",
+    };
+    if (!dryRun && messageId) {
+      await recordMessageDecision({ ...message, channel_id: channelId }, {
+        status: result.skipReason === "empty_content_message_content_intent_or_permission" ? "no_content" : "skipped",
+        matched: false,
+        score: 0,
+        skipReason: result.skipReason,
+        decisionReasons: [result.skipReason],
+      });
+    }
+    return result;
   }
 
   const intent = detectRecruitmentIntent(message.content);
+  const decision = baseDecisionFields(intent);
   if (!intent.matched) {
-    return {
+    const result = {
       ...base,
+      ...decision,
       skipped: true,
-      intentReasons: intent.reasons,
       skipReason: "intent_not_matched",
     };
+    if (!dryRun) {
+      await recordMessageDecision({ ...message, channel_id: channelId }, {
+        status: "skipped",
+        matched: false,
+        score: intent.score,
+        skipReason: result.skipReason,
+        decisionReasons: intent.reasons,
+        mentionedClasses: intent.mentionedClasses,
+        mentionedRoles: intent.profile.roleInterest,
+        expansionsDetected: intent.profile.expansions,
+        lastExpansion: intent.profile.lastExpansion,
+      });
+    }
+    return result;
   }
 
   if (!dryRun) {
     const claim = await tryClaimMessage(
-      { ...message, channel_id: channelId },
+      { ...message, channel_id: channelId, guild_id: guildId },
       channelId,
       { force: options.force },
     );
     if (!claim.claimed) {
       return {
         ...base,
+        ...decision,
         matched: true,
         skipped: true,
-        intentReasons: intent.reasons,
-        skipReason: claim.reason,
+        skipReason: claim.reason === "already_replied" ? "already_replied" : claim.reason,
       };
     }
   }
@@ -1291,7 +1466,7 @@ export async function handleDiscordRecruitmentAdviceMessage(
   try {
     const roster = await loadRosterAnalysis(intent.mentionedClasses, settings);
     const response = buildRecruitmentAdviceMessage({
-      originalMessage: { ...message, channel_id: channelId },
+      originalMessage: { ...message, channel_id: channelId, guild_id: guildId },
       intent,
       analysis: roster.analysis,
       guildName: roster.guildName,
@@ -1301,49 +1476,71 @@ export async function handleDiscordRecruitmentAdviceMessage(
     if (dryRun) {
       return {
         ...base,
+        ...decision,
         matched: true,
-        intentReasons: intent.reasons,
         response,
+        responsePreview: shortPreview(response, 600),
       };
     }
 
     const reply = await replyToDiscordMessage(
       channelId,
-      { ...message, channel_id: channelId },
+      { ...message, channel_id: channelId, guild_id: guildId },
       response,
     );
-    await markClaimResult(message.id, {
-      status: "replied",
-      repliedAtIso: new Date().toISOString(),
-      replyMessageId: snowflake(reply?.id) || null,
-      intentReasons: intent.reasons,
-      mentionedClasses: intent.mentionedClasses,
-      source: "gateway-message-create",
-    });
+    const replyMessageId = snowflake(reply?.id) || null;
+    await recordMessageDecision(
+      { ...message, channel_id: channelId, guild_id: guildId },
+      {
+        status: "replied",
+        matched: true,
+        score: intent.score,
+        skipReason: null,
+        decisionReasons: intent.reasons,
+        mentionedClasses: intent.mentionedClasses,
+        mentionedRoles: intent.profile.roleInterest,
+        expansionsDetected: intent.profile.expansions,
+        lastExpansion: intent.profile.lastExpansion,
+        responsePreview: shortPreview(response, 600),
+        repliedAtIso: new Date().toISOString(),
+        replyMessageId,
+      },
+    );
 
     return {
       ...base,
+      ...decision,
       matched: true,
       replied: true,
-      intentReasons: intent.reasons,
       response,
-      replyMessageId: snowflake(reply?.id) || null,
+      responsePreview: shortPreview(response, 600),
+      replyMessageId,
     };
   } catch (error) {
     const errorText =
       error instanceof Error ? error.message : String(error || "unknown");
     if (!dryRun) {
-      await markClaimResult(message.id, {
-        status: "failed",
-        error: errorText.slice(0, 500),
-        source: "gateway-message-create",
-      });
+      await recordMessageDecision(
+        { ...message, channel_id: channelId, guild_id: guildId },
+        {
+          status: /Discord API/i.test(errorText) ? "discord_send_error" : "failed",
+          matched: true,
+          score: intent.score,
+          skipReason: null,
+          decisionReasons: intent.reasons,
+          mentionedClasses: intent.mentionedClasses,
+          mentionedRoles: intent.profile.roleInterest,
+          expansionsDetected: intent.profile.expansions,
+          lastExpansion: intent.profile.lastExpansion,
+          error: errorText.slice(0, 500),
+        },
+      );
     }
     return {
       ...base,
+      ...decision,
       ok: false,
       matched: true,
-      intentReasons: intent.reasons,
       error: errorText,
     };
   }
@@ -1444,7 +1641,7 @@ export async function scanDiscordRecruitmentAdvice(
         result.skipped += 1;
         continue;
       }
-      if (shouldIgnoreMessage(message)) {
+      if (shouldIgnoreMessage(message).ignored) {
         result.skipped += 1;
         continue;
       }
@@ -1478,6 +1675,76 @@ export async function scanDiscordRecruitmentAdvice(
     result.samples.length > 0 ||
     result.errors.length === 0;
   return result;
+}
+
+export type RecruitmentAdviceEntry = {
+  messageId: string;
+  channelId: string | null;
+  guildId: string | null;
+  authorId: string | null;
+  status: string;
+  matched: boolean;
+  score: number;
+  skipReason: string | null;
+  decisionReasons: string[];
+  responsePreview: string | null;
+  replyMessageId: string | null;
+  error: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+function timestampToIso(value: unknown) {
+  if (!value) return null;
+  if (typeof value === "string") return value;
+  const maybeTimestamp = value as { toDate?: () => Date } | null;
+  if (maybeTimestamp && typeof maybeTimestamp.toDate === "function") {
+    return maybeTimestamp.toDate().toISOString();
+  }
+  return null;
+}
+
+function stringList(value: unknown, limit = 8) {
+  if (!Array.isArray(value)) return [] as string[];
+  return value
+    .map((item) => String(item || "").trim())
+    .filter(Boolean)
+    .slice(0, limit);
+}
+
+export async function listRecentRecruitmentAdviceEntries(
+  limit = 20,
+): Promise<RecruitmentAdviceEntry[]> {
+  if (!hasFirebaseProfileConfig()) return [];
+  const safeLimit = Math.max(1, Math.min(50, Math.floor(Number(limit) || 20)));
+  const snapshot = await getFirebaseAdminDb()
+    .collection(REPLIES_COLLECTION)
+    .orderBy("updatedAt", "desc")
+    .limit(safeLimit)
+    .get()
+    .catch(() => null);
+  if (!snapshot) return [];
+  return snapshot.docs.map((doc) => {
+    const data = doc.data() || {};
+    return {
+      messageId: String(data.messageId || doc.id || ""),
+      channelId: typeof data.channelId === "string" ? data.channelId : null,
+      guildId: typeof data.guildId === "string" ? data.guildId : null,
+      authorId: typeof data.authorId === "string" ? data.authorId : null,
+      status: typeof data.status === "string" ? data.status : "unknown",
+      matched: Boolean(data.matched),
+      score: Number.isFinite(Number(data.score)) ? Number(data.score) : 0,
+      skipReason: typeof data.skipReason === "string" ? data.skipReason : null,
+      decisionReasons: stringList(data.decisionReasons),
+      responsePreview:
+        typeof data.responsePreview === "string" ? data.responsePreview : null,
+      replyMessageId:
+        typeof data.replyMessageId === "string" ? data.replyMessageId : null,
+      error: typeof data.error === "string" ? data.error : null,
+      createdAt: timestampToIso(data.createdAt) || timestampToIso(data.createdAtIso),
+      updatedAt: timestampToIso(data.updatedAt) || timestampToIso(data.updatedAtIso),
+    };
+  });
 }
 
 export function previewRecruitmentAdviceForText(

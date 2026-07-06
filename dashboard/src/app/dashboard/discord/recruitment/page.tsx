@@ -6,6 +6,7 @@ import HeroSidePanel from "@/components/HeroSidePanel";
 import { getSession } from "@/lib/auth";
 import { safeRecruitmentGatewayStatus } from "@/lib/discordRecruitmentGatewayControl";
 import { getRecruitmentAdvisorSettings } from "@/lib/discordRecruitmentAdvisorSettings";
+import { listRecentRecruitmentAdviceEntries } from "@/lib/discordRecruitmentAdvisor";
 import { canManageDiscordMembers } from "@/lib/permissions";
 import { buildPageMetadata } from "@/lib/seo";
 
@@ -20,8 +21,29 @@ export const metadata = buildPageMetadata({
   keywords: ["Discord", "рекрутинг", "автовідповіді", "Raider.IO"],
 });
 
-function yesNo(value: unknown) {
-  return value ? "Так" : "Ні";
+function onOffHuman(value: unknown, on: string, off: string) {
+  return value ? on : off;
+}
+
+function statusHuman(status: string) {
+  const map: Record<string, string> = {
+    processing: "Обробляється",
+    replied: "Відповіли",
+    skipped: "Пропущено",
+    failed: "Помилка",
+    no_content: "Без тексту",
+    discord_send_error: "Discord не прийняв",
+  };
+  return map[status] || status || "—";
+}
+
+function gatewayHint(gateway: Awaited<ReturnType<typeof safeRecruitmentGatewayStatus>>) {
+  if (!gateway.connected) return "Gateway не підключений → натисни “Перепідключити”.";
+  if (gateway.lastDispatchType && !gateway.lastMessageCreateAt) return "Dispatch є, але MESSAGE_CREATE не приходить → перевір Message Content Intent, guild id і права каналу.";
+  if (gateway.lastMessageContentLength === 0) return "MESSAGE_CREATE без тексту → найчастіше вимкнений Message Content Intent або немає права читати канал.";
+  if (gateway.lastRelayError) return "Relay помиляється → перевір dashboard URL і секрет Worker/dashboard.";
+  if (gateway.lastMessageDropReason) return `Останній drop: ${gateway.lastMessageDropReason}.`;
+  return "Якщо нове повідомлення не дає відповіді — перевір Preview і останні обробки нижче.";
 }
 
 function dateText(value: unknown) {
@@ -105,9 +127,10 @@ export default async function DiscordRecruitmentPage() {
     throw new Error("Access denied");
   }
 
-  const [settings, gateway] = await Promise.all([
+  const [settings, gateway, recentEntries] = await Promise.all([
     getRecruitmentAdvisorSettings({ bypassCache: true }),
     safeRecruitmentGatewayStatus(),
+    listRecentRecruitmentAdviceEntries(18),
   ]);
 
   return (
@@ -133,12 +156,12 @@ export default async function DiscordRecruitmentPage() {
             summary={[
               {
                 label: "СИСТЕМА",
-                value: settings.enabled ? "ON" : "OFF",
+                value: settings.enabled ? "Увімкнено" : "Вимкнено",
                 note: settings.dryRun ? "Dry-run активний" : "Бойовий режим",
               },
               {
                 label: "GATEWAY",
-                value: gateway.connected ? "ONLINE" : "OFFLINE",
+                value: gateway.connected ? "Підключений" : "Відключений",
                 note:
                   gateway.lastError ||
                   gateway.error ||
@@ -176,12 +199,12 @@ export default async function DiscordRecruitmentPage() {
           <div className="discord-management-status">
             <StatusTile
               label="Увімкнено"
-              value={yesNo(gateway.enabled)}
+              value={onOffHuman(gateway.enabled, "Gateway дозволений", "Gateway вимкнений")}
               ok={Boolean(gateway.enabled)}
             />
             <StatusTile
               label="Підключено"
-              value={yesNo(gateway.connected)}
+              value={onOffHuman(gateway.connected, "Gateway підключений", "Gateway не підключений")}
               ok={Boolean(gateway.connected)}
             />
             <StatusTile
@@ -201,34 +224,41 @@ export default async function DiscordRecruitmentPage() {
             />
             <StatusTile
               label="Останній dispatch"
-              value={gateway.lastDispatchType || "—"}
+              value={gateway.lastDispatchType || "Dispatch ще не було"}
               note={dateText(gateway.lastDispatchAt)}
               ok={Boolean(gateway.lastDispatchType)}
             />
             <StatusTile
               label="MESSAGE_CREATE"
               value={dateText(gateway.lastMessageCreateAt)}
-              note={`events=${gateway.messageCreateCount || 0}, content=${gateway.lastMessageContentLength ?? "—"}`}
+              note={`подій=${gateway.messageCreateCount || 0}, довжина тексту=${gateway.lastMessageContentLength ?? "—"}`}
               ok={Boolean(gateway.lastMessageCreateAt)}
             />
             <StatusTile
               label="Останній relay"
               value={dateText(gateway.lastRelayAt)}
-              note={gateway.lastRelaySummary || `attempts=${gateway.relayAttemptCount || 0}`}
+              note={gateway.lastRelaySummary || `спроб=${gateway.relayAttemptCount || 0}`}
               ok={Boolean(gateway.lastRelayAt)}
             />
             <StatusTile
-              label="Drop reason"
-              value={gateway.lastMessageDropReason || "—"}
+              label="Остання причина пропуску"
+              value={gateway.lastMessageDropReason || "Пропусків не було"}
               note={gateway.lastMessageDropSummary || undefined}
               ok={!gateway.lastMessageDropReason}
             />
             <StatusTile
-              label="Помилка"
-              value={gateway.lastError || gateway.error || "—"}
+              label="Остання помилка"
+              value={gateway.lastError || gateway.error || "Помилок не видно"}
               ok={!gateway.lastError && !gateway.error}
             />
           </div>
+          <div className="discord-recruitment-hint">
+            <strong>Що робити зараз:</strong> {gatewayHint(gateway)}
+          </div>
+          <details className="discord-management-details">
+            <summary>Деталі Gateway</summary>
+            <pre className="discord-debug-pre">{JSON.stringify(gateway, null, 2)}</pre>
+          </details>
           <div className="form-actions form-actions--split">
             <ControlButton action="start" label="Запустити" />
             <ControlButton
@@ -421,6 +451,12 @@ export default async function DiscordRecruitmentPage() {
                     label="Перевірити і відповісти"
                     confirm="Запустити ручну перевірку старих Discord-повідомлень і відповісти на релевантні, якщо ще не було відповіді?"
                   />
+                  <ControlButton
+                    action="retry-failed-skipped"
+                    label="Повторити failed/skipped"
+                    tone="subtle"
+                    confirm="Повторити обробку повідомлень, які раніше були failed/skipped/no_content/dashboard_error/discord_send_error?"
+                  />
                 </div>
               </div>
             </section>
@@ -466,7 +502,7 @@ export default async function DiscordRecruitmentPage() {
               <div className="profile-card-head profile-card-head--inline">
                 <div>
                   <span className="eyebrow">Cloudflare</span>
-                  <h2>Worker backfill</h2>
+                  <h2>Worker manual-scan</h2>
                 </div>
                 <span className="status-pill good">ручний</span>
               </div>
@@ -476,11 +512,57 @@ export default async function DiscordRecruitmentPage() {
                   перевірити пропущене після reconnect/deploy — запускай його
                   вручну з панелі.
                 </p>
-                <ControlButton
-                  action="backfill"
-                  label="Запустити Worker backfill"
-                  tone="subtle"
-                />
+                <div className="form-actions form-actions--split">
+                  <ControlButton
+                    action="test-relay"
+                    label="Тест Worker → dashboard"
+                    tone="subtle"
+                  />
+                  <ControlButton
+                    action="manual-scan"
+                    label="Запустити Worker manual-scan"
+                    tone="subtle"
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section className="panel discord-management-card discord-management-card--action">
+              <div className="profile-card-head profile-card-head--inline">
+                <div>
+                  <span className="eyebrow">Live pipeline</span>
+                  <h2>Останні обробки</h2>
+                </div>
+                <span className="status-pill good">Firebase</span>
+              </div>
+              <div className="discord-management-card__body">
+                {recentEntries.length ? (
+                  <div className="discord-recruitment-events">
+                    {recentEntries.map((entry) => (
+                      <article key={entry.messageId} className="discord-recruitment-event">
+                        <div>
+                          <strong>{statusHuman(entry.status)}</strong>
+                          <small>{dateText(entry.updatedAt || entry.createdAt)}</small>
+                        </div>
+                        <p>{entry.responsePreview || entry.error || entry.skipReason || entry.decisionReasons.join(", ") || "Без деталей"}</p>
+                        <dl>
+                          <div><dt>Автор</dt><dd>{entry.authorId || "—"}</dd></div>
+                          <div><dt>Канал</dt><dd>{entry.channelId || "—"}</dd></div>
+                          <div><dt>Score</dt><dd>{entry.score}</dd></div>
+                          <div><dt>Reply</dt><dd>{entry.replyMessageId || "—"}</dd></div>
+                        </dl>
+                        {entry.status !== "replied" ? (
+                          <form action="/api/dashboard/discord/recruitment/control" method="post" data-dashboard-action-form="true" data-dashboard-live-submit="true">
+                            <input type="hidden" name="action" value="retry-failed-skipped" />
+                            <button className="btn subtle" type="submit">Retry failed/skipped</button>
+                          </form>
+                        ) : null}
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="profile-card-lead">Ще немає записів обробки або Firebase недоступний.</p>
+                )}
               </div>
             </section>
           </div>

@@ -26,6 +26,7 @@ function normalizeGatewayMessage(payload: any): DiscordMessage | null {
   return {
     id,
     channel_id: channelId,
+    guild_id: cleanSnowflake(raw?.guild_id),
     content: typeof raw?.content === "string" ? raw.content : "",
     timestamp: typeof raw?.timestamp === "string" ? raw.timestamp : new Date().toISOString(),
     author: raw?.author && typeof raw.author === "object"
@@ -38,6 +39,8 @@ function normalizeGatewayMessage(payload: any): DiscordMessage | null {
       : undefined,
     webhook_id: raw?.webhook_id ? cleanSnowflake(raw.webhook_id) : undefined,
     type: Number.isFinite(Number(raw?.type)) ? Number(raw.type) : 0,
+    source: typeof raw?.source === "string" ? raw.source : typeof payload?.source === "string" ? payload.source : "dashboard-message-endpoint",
+    receivedAt: typeof raw?.receivedAt === "string" ? raw.receivedAt : typeof payload?.receivedAt === "string" ? payload.receivedAt : new Date().toISOString(),
   };
 }
 
@@ -78,6 +81,9 @@ export async function POST(request: NextRequest) {
       channelId: result.channelId,
       messageId: result.messageId,
       authorId: result.authorId,
+      skipReason: result.skipReason || null,
+      score: result.score,
+      replyMessageId: result.replyMessageId || null,
       error: result.error || null,
     });
 

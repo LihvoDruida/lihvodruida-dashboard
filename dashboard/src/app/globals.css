@@ -22047,3 +22047,113 @@ main.container {
     margin-left: 0 !important;
   }
 }
+
+.discord-management-status__item strong,
+.discord-management-status__item small,
+.discord-management-status__item em,
+.discord-info-chip strong,
+.discord-info-chip small,
+.discord-settings-summary strong,
+.discord-settings-summary small,
+.discord-officer-sync-summary strong,
+.discord-officer-sync-summary small {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.discord-recruitment-hint {
+  display: block;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 190, 88, 0.2);
+  border-radius: 14px;
+  color: rgba(244, 234, 215, 0.82);
+  background: rgba(255, 190, 88, 0.055);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.discord-recruitment-hint strong {
+  color: #ffe08c;
+}
+
+.discord-debug-pre {
+  max-width: 100%;
+  max-height: 340px;
+  margin: 0 12px 12px;
+  padding: 12px;
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  color: rgba(244, 234, 215, 0.78);
+  background: rgba(0, 0, 0, 0.24);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.discord-recruitment-events {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.discord-recruitment-event {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgba(188, 141, 72, 0.16);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.discord-recruitment-event > div:first-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.discord-recruitment-event strong {
+  color: #f4e8d4;
+}
+
+.discord-recruitment-event small,
+.discord-recruitment-event dt {
+  color: rgba(232, 220, 202, 0.58);
+}
+
+.discord-recruitment-event p {
+  margin: 0;
+  color: rgba(244, 234, 215, 0.78);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.discord-recruitment-event dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.discord-recruitment-event dl > div {
+  min-width: 0;
+  padding: 8px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.discord-recruitment-event dt,
+.discord-recruitment-event dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.discord-recruitment-event dd {
+  color: rgba(244, 234, 215, 0.82);
+  font-weight: 700;
+}

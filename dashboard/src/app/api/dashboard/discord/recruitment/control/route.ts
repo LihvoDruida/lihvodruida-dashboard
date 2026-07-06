@@ -27,7 +27,7 @@ function cleanAction(value: unknown) {
 }
 
 function isGatewayAction(action: string): action is RecruitmentGatewayAction {
-  return ["status", "start", "reconnect", "stop", "backfill"].includes(action);
+  return ["status", "start", "reconnect", "stop", "test-relay", "manual-scan"].includes(action);
 }
 
 function resultSummary(data: any) {
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (action === "scan" || action === "dry-run-scan") {
+    if (action === "scan" || action === "dry-run-scan" || action === "retry-failed-skipped") {
       const dryRun = action === "dry-run-scan";
       const result = await scanDiscordRecruitmentAdvice({
         dryRun,
@@ -149,9 +149,11 @@ export async function POST(request: NextRequest) {
       tone:
         result.ok && !result.error && !result.lastError ? "success" : "warning",
       title:
-        action === "backfill"
-          ? "Worker backfill виконано"
-          : "Команду Gateway виконано",
+        action === "manual-scan"
+          ? "Worker manual-scan виконано"
+          : action === "test-relay"
+            ? "Worker test-relay виконано"
+            : "Команду Gateway виконано",
       message: resultSummary(result),
       ttl: 12000,
       data: { result, refresh: true },

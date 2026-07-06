@@ -3,7 +3,7 @@ import "server-only";
 import { noStoreHeaders } from "@/lib/security";
 
 export type RecruitmentGatewayAction =
-  "status" | "start" | "reconnect" | "stop" | "backfill";
+  "status" | "start" | "reconnect" | "stop" | "test-relay" | "manual-scan";
 
 export type RecruitmentGatewayStatus = {
   ok: boolean;
@@ -35,8 +35,14 @@ export type RecruitmentGatewayStatus = {
   lastMessageGuildId?: string | null;
   lastMessageChannelId?: string | null;
   lastMessageId?: string | null;
+  dispatchCount?: number;
   messageCreateCount?: number;
   relayAttemptCount?: number;
+  lastMessageAuthorId?: string | null;
+  lastRelayAttemptAt?: string | null;
+  lastRelayError?: string | null;
+  lastDashboardResponseRawShort?: string | null;
+  hint?: string | null;
 };
 
 function cleanBaseUrl(value: string) {
