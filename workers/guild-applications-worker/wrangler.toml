@@ -29,12 +29,23 @@ PUBLIC_API_CACHE_ALLOW_SHARED_TOKEN = "0"
 PUBLIC_API_CACHE_VERSION = "v1"
 DISCORD_API_TIMEOUT_MS = "14000"
 DASHBOARD_API_TIMEOUT_MS = "9000"
+DISCORD_RECRUITMENT_GATEWAY_ENABLED = "1"
+DASHBOARD_RECRUITMENT_ADVICE_MESSAGE_ENDPOINT = "https://dashboard.lihvodruida.pp.ua/api/discord/recruitment-advice/message"
 RAID_DISCORD_DELETE_AFTER_START_HOURS = "4"
 RAID_DISCORD_DELETE_AFTER_CLOSE_MINUTES = "60"
 FIREBASE_ECO_MODE = "1"
 WORKER_RAID_LIFECYCLE_MIN_INTERVAL_MS = "540000"
 WORKER_RAID_POLL_CLOSE_DUE_MIN_INTERVAL_MS = "540000"
 DASHBOARD_RAID_LIFECYCLE_ENDPOINT = "https://dashboard.lihvodruida.pp.ua/api/raids/lifecycle?limit=20"
+
+
+[[durable_objects.bindings]]
+name = "DISCORD_RECRUITMENT_GATEWAY"
+class_name = "DiscordRecruitmentGateway"
+
+[[migrations]]
+tag = "v1-discord-recruitment-gateway"
+new_sqlite_classes = ["DiscordRecruitmentGateway"]
 
 
 # Set these via `wrangler secret put ...` in production:
@@ -47,6 +58,7 @@ DASHBOARD_RAID_LIFECYCLE_ENDPOINT = "https://dashboard.lihvodruida.pp.ua/api/rai
 # CF_ACCESS_CLIENT_SECRET    # Cloudflare Access Service Auth, if dashboard panel is protected
 # DISCORD_RULES_STATS_TOKEN  # Optional shared token for dashboard stats/signups reads
 # RAID_LIFECYCLE_SECRET    # Same value as dashboard RAID_LIFECYCLE_SECRET/CRON_SECRET for scheduled raid lifecycle
+# DISCORD_RECRUITMENT_ADVICE_SECRET # Same value as dashboard DISCORD_RECRUITMENT_ADVICE_SECRET
 
 # Rules accept/decline counters and raid-rules signup list. Create once:
 # wrangler kv namespace create RULES_STATS

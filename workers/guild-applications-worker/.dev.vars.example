@@ -54,6 +54,16 @@ GUILD_ID=""
 DISCORD_GUILD_NAME="Mistblossom Vanguard"
 DISCORD_PUBLIC_KEY=""
 
+# Recruitment advisor Gateway listener. Cloudflare Worker/Durable Object listens to Discord MESSAGE_CREATE
+# and relays candidate messages to the dashboard analyzer.
+DISCORD_RECRUITMENT_GATEWAY_ENABLED="1"
+DISCORD_RECRUITMENT_ADVICE_ENABLED="true"
+DISCORD_RECRUITMENT_ADVICE_SECRET="replace_with_same_value_as_dashboard"
+DASHBOARD_RECRUITMENT_ADVICE_MESSAGE_ENDPOINT="https://dashboard.lihvodruida.pp.ua/api/discord/recruitment-advice/message"
+# Optional override. Default is GUILDS + GUILD_MESSAGES + MESSAGE_CONTENT = 33281.
+DISCORD_RECRUITMENT_GATEWAY_INTENTS="33281"
+
+
 # Optional, comma-separated Discord role IDs allowed to accept/decline applications.
 # Leave empty to avoid Worker-side moderator role restriction.
 DISCORD_ALLOWED_ROLES=""

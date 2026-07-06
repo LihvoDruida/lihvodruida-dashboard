@@ -13,7 +13,7 @@ let discordRouteCooldowns = new Map();
 let workerCronGuards = new Map();
 
 
-const PATHS = new Set(["/", "/api/guild-applications", "/api/discord-interactions", "/api/discord-rules-stats", "/api/discord-raid-rules-stats", "/api/discord-raid-rules-signups", "/api/discord-raid-message", "/api/discord-guild-channels", "/api/public-cache", "/api/raids/lifecycle", "/api/polls/close-due"]);
+const PATHS = new Set(["/", "/api/guild-applications", "/api/discord-interactions", "/api/discord-rules-stats", "/api/discord-raid-rules-stats", "/api/discord-raid-rules-signups", "/api/discord-raid-message", "/api/discord-guild-channels", "/api/discord-recruitment-gateway", "/api/public-cache", "/api/raids/lifecycle", "/api/polls/close-due"]);
 const DEFAULT_LABEL = "guild-application";
 const DEFAULT_REVIEW_LABEL = "status:review";
 
@@ -4664,6 +4664,431 @@ async function runRaidPollCloseDueCron(env, reason = "scheduled") {
   );
 }
 
+
+function recruitmentGatewayEnabled(env) {
+  return ["1", "true", "yes", "on"].includes(String(
+    env.DISCORD_RECRUITMENT_GATEWAY_ENABLED ||
+    env.DISCORD_RECRUITMENT_ADVICE_ENABLED ||
+    "0"
+  ).trim().toLowerCase());
+}
+
+function recruitmentGatewaySecret(env) {
+  return String(
+    env.DISCORD_RECRUITMENT_ADVICE_SECRET ||
+    env.DISCORD_RECRUITMENT_GATEWAY_SECRET ||
+    env.RAID_LIFECYCLE_SECRET ||
+    env.CRON_SECRET ||
+    env.INTERNAL_PROFILE_LOOKUP_TOKEN ||
+    env.WORKER_STATS_TOKEN ||
+    ""
+  ).trim();
+}
+
+function recruitmentGatewayDashboardEndpoint(env) {
+  const explicit = String(env.DASHBOARD_RECRUITMENT_ADVICE_MESSAGE_ENDPOINT || "").trim();
+  if (explicit) return explicit;
+  return dashboardUrl(env, "/api/discord/recruitment-advice/message");
+}
+
+function recruitmentGatewayObject(env) {
+  const binding = env.DISCORD_RECRUITMENT_GATEWAY;
+  if (!binding || typeof binding.idFromName !== "function" || typeof binding.get !== "function") return null;
+  return binding.get(binding.idFromName("mistblossom-discord-recruitment-gateway"));
+}
+
+async function callRecruitmentGateway(env, action = "status", extra = {}) {
+  const stub = recruitmentGatewayObject(env);
+  if (!stub) return { ok: false, error: "missing DISCORD_RECRUITMENT_GATEWAY Durable Object binding" };
+  const url = new URL("https://guild-worker.internal/discord-recruitment-gateway");
+  url.searchParams.set("action", action);
+  const response = await stub.fetch(url.toString(), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(extra || {}),
+  });
+  const text = await response.text().catch(() => "");
+  try {
+    return text ? JSON.parse(text) : { ok: response.ok };
+  } catch {
+    return { ok: response.ok, status: response.status, raw: text.slice(0, 400) };
+  }
+}
+
+async function handleRecruitmentGatewayControl(request, env) {
+  const url = new URL(request.url);
+  const action = (url.searchParams.get("action") || (request.method === "GET" ? "status" : "start")).trim().toLowerCase();
+  const origin = allowedOrigin(request, env) || "null";
+  const token = statsAuthToken(env) || recruitmentGatewaySecret(env);
+  if (token && !(await verifyBearerOrStatsToken(request, token))) {
+    return json({ ok: false, error: "Доступ заборонено." }, 401, origin);
+  }
+  const allowed = new Set(["status", "start", "reconnect", "stop"]);
+  if (!allowed.has(action)) return json({ ok: false, error: "Unknown gateway action." }, 400, origin);
+  const result = await callRecruitmentGateway(env, action, { manual: true, requestedAt: new Date().toISOString() });
+  return json(result, result?.ok ? 200 : 500, origin);
+}
+
+async function ensureRecruitmentGatewayCron(env) {
+  if (!recruitmentGatewayEnabled(env)) return { ok: true, skipped: true, reason: "disabled" };
+  if (!env.DISCORD_BOT_TOKEN || !env.DISCORD_GUILD_ID) {
+    logWorkerEvent("warn", "recruitment_gateway.missing_discord_env", {
+      botToken: Boolean(env.DISCORD_BOT_TOKEN),
+      guildId: Boolean(env.DISCORD_GUILD_ID),
+    });
+    return { ok: false, error: "missing discord env" };
+  }
+  if (!recruitmentGatewaySecret(env)) {
+    logWorkerEvent("warn", "recruitment_gateway.missing_secret", {});
+    return { ok: false, error: "missing recruitment gateway secret" };
+  }
+  const result = await callRecruitmentGateway(env, "start", { reason: "cloudflare-cron", requestedAt: new Date().toISOString() });
+  logWorkerEvent(result?.ok ? "info" : "warn", "recruitment_gateway.ensure", result || {});
+  return result;
+}
+
+export class DiscordRecruitmentGateway {
+  constructor(state, env) {
+    this.state = state;
+    this.env = env;
+    this.ws = null;
+    this.heartbeatTimer = null;
+    this.reconnectTimer = null;
+    this.seq = null;
+    this.sessionId = "";
+    this.resumeGatewayUrl = "";
+    this.startedAt = 0;
+    this.lastHeartbeatAckAt = 0;
+    this.lastHeartbeatSentAt = 0;
+    this.lastEventAt = 0;
+    this.lastError = "";
+    this.identifying = false;
+  }
+
+  async fetch(request) {
+    const url = new URL(request.url);
+    const action = (url.searchParams.get("action") || "status").toLowerCase();
+    if (action === "start") return this.json(await this.start("manual-or-cron"));
+    if (action === "reconnect") return this.json(await this.reconnect("manual-reconnect"));
+    if (action === "stop") return this.json(await this.stop("manual-stop"));
+    return this.json(await this.status());
+  }
+
+  json(data, status = 200) {
+    return new Response(JSON.stringify(data), {
+      status,
+      headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },
+    });
+  }
+
+  enabled() {
+    return recruitmentGatewayEnabled(this.env);
+  }
+
+  intents() {
+    const explicit = Number(this.env.DISCORD_RECRUITMENT_GATEWAY_INTENTS || 0);
+    if (Number.isFinite(explicit) && explicit > 0) return Math.floor(explicit);
+    // GUILDS (1) + GUILD_MESSAGES (512) + MESSAGE_CONTENT (32768)
+    return 1 | 512 | 32768;
+  }
+
+  async status() {
+    const persisted = await this.state.storage.get(["seq", "sessionId", "resumeGatewayUrl", "lastEventAt", "lastError"]);
+    return {
+      ok: true,
+      enabled: this.enabled(),
+      connected: Boolean(this.ws && this.ws.readyState === 1),
+      readyState: this.ws ? this.ws.readyState : null,
+      startedAt: this.startedAt ? new Date(this.startedAt).toISOString() : null,
+      lastEventAt: this.lastEventAt ? new Date(this.lastEventAt).toISOString() : (persisted.get("lastEventAt") || null),
+      lastHeartbeatSentAt: this.lastHeartbeatSentAt ? new Date(this.lastHeartbeatSentAt).toISOString() : null,
+      lastHeartbeatAckAt: this.lastHeartbeatAckAt ? new Date(this.lastHeartbeatAckAt).toISOString() : null,
+      seq: this.seq ?? persisted.get("seq") ?? null,
+      sessionId: Boolean(this.sessionId || persisted.get("sessionId")),
+      resumeGatewayUrl: Boolean(this.resumeGatewayUrl || persisted.get("resumeGatewayUrl")),
+      lastError: this.lastError || persisted.get("lastError") || "",
+    };
+  }
+
+  async start(reason = "start") {
+    if (!this.enabled()) return { ok: true, skipped: true, reason: "disabled" };
+    if (!this.env.DISCORD_BOT_TOKEN || !this.env.DISCORD_GUILD_ID) {
+      return { ok: false, error: "DISCORD_BOT_TOKEN and DISCORD_GUILD_ID are required" };
+    }
+    if (!recruitmentGatewaySecret(this.env)) return { ok: false, error: "DISCORD_RECRUITMENT_ADVICE_SECRET is required" };
+    if (this.ws && (this.ws.readyState === 0 || this.ws.readyState === 1)) {
+      return { ok: true, connected: true, reused: true, reason };
+    }
+    await this.restoreSession();
+    return this.connect(reason);
+  }
+
+  async restoreSession() {
+    const stored = await this.state.storage.get(["seq", "sessionId", "resumeGatewayUrl"]);
+    if (this.seq === null && stored.get("seq") !== undefined) this.seq = stored.get("seq");
+    if (!this.sessionId && stored.get("sessionId")) this.sessionId = String(stored.get("sessionId") || "");
+    if (!this.resumeGatewayUrl && stored.get("resumeGatewayUrl")) this.resumeGatewayUrl = String(stored.get("resumeGatewayUrl") || "");
+  }
+
+  gatewayUrl() {
+    const base = this.resumeGatewayUrl || "wss://gateway.discord.gg/";
+    const url = new URL(base);
+    url.searchParams.set("v", "10");
+    url.searchParams.set("encoding", "json");
+    return url.toString();
+  }
+
+  async connect(reason = "connect") {
+    this.clearTimers();
+    this.startedAt = Date.now();
+    this.lastError = "";
+    try {
+      const ws = new WebSocket(this.gatewayUrl());
+      this.ws = ws;
+      ws.addEventListener("open", () => {
+        logWorkerEvent("info", "recruitment_gateway.ws_open", { reason });
+      });
+      ws.addEventListener("message", (event) => {
+        this.onGatewayMessage(event).catch((error) => this.recordError("message", error));
+      });
+      ws.addEventListener("close", (event) => {
+        this.recordClose(event, reason).catch(() => {});
+      });
+      ws.addEventListener("error", (event) => {
+        this.recordError("websocket", event?.message || "gateway websocket error").catch(() => {});
+      });
+      return { ok: true, connected: true, reason };
+    } catch (error) {
+      await this.recordError("connect", error);
+      this.scheduleReconnect("connect-failed");
+      return { ok: false, error: error?.message || "connect failed" };
+    }
+  }
+
+  async reconnect(reason = "reconnect") {
+    await this.closeSocket(4000, reason);
+    return this.connect(reason);
+  }
+
+  async stop(reason = "stop") {
+    this.clearTimers();
+    await this.closeSocket(1000, reason);
+    return { ok: true, stopped: true, reason };
+  }
+
+  async closeSocket(code = 1000, reason = "close") {
+    const ws = this.ws;
+    this.ws = null;
+    if (ws && (ws.readyState === 0 || ws.readyState === 1)) {
+      try { ws.close(code, String(reason).slice(0, 120)); } catch {}
+    }
+  }
+
+  clearTimers() {
+    if (this.heartbeatTimer) clearTimeout(this.heartbeatTimer);
+    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+    this.heartbeatTimer = null;
+    this.reconnectTimer = null;
+  }
+
+  async onGatewayMessage(event) {
+    const raw = typeof event.data === "string" ? event.data : await new Response(event.data).text();
+    let packet = null;
+    try { packet = JSON.parse(raw); } catch { return; }
+    if (typeof packet.s === "number") {
+      this.seq = packet.s;
+      await this.state.storage.put("seq", packet.s);
+    }
+    switch (packet.op) {
+      case 0:
+        await this.onDispatch(packet.t, packet.d);
+        break;
+      case 1:
+        this.sendHeartbeat();
+        break;
+      case 7:
+        this.scheduleReconnect("gateway-reconnect");
+        break;
+      case 9:
+        await this.onInvalidSession(packet.d);
+        break;
+      case 10:
+        await this.onHello(packet.d);
+        break;
+      case 11:
+        this.lastHeartbeatAckAt = Date.now();
+        break;
+      default:
+        break;
+    }
+  }
+
+  async onHello(data) {
+    const interval = Math.max(5_000, Math.min(Number(data?.heartbeat_interval || 41_250), 120_000));
+    this.scheduleHeartbeat(interval);
+    if (this.sessionId && this.seq !== null) this.sendResume();
+    else this.sendIdentify();
+  }
+
+  scheduleHeartbeat(interval) {
+    if (this.heartbeatTimer) clearTimeout(this.heartbeatTimer);
+    const jitter = Math.floor(Math.random() * Math.min(1000, Math.floor(interval / 10)));
+    this.heartbeatTimer = setTimeout(() => {
+      this.sendHeartbeat();
+      this.scheduleHeartbeat(interval);
+    }, interval + jitter);
+  }
+
+  send(payload) {
+    if (!this.ws || this.ws.readyState !== 1) return false;
+    this.ws.send(JSON.stringify(payload));
+    return true;
+  }
+
+  sendHeartbeat() {
+    this.lastHeartbeatSentAt = Date.now();
+    this.send({ op: 1, d: this.seq });
+  }
+
+  sendIdentify() {
+    if (this.identifying) return;
+    this.identifying = true;
+    this.send({
+      op: 2,
+      d: {
+        token: this.env.DISCORD_BOT_TOKEN,
+        intents: this.intents(),
+        properties: {
+          os: "cloudflare-workers",
+          browser: "mistblossom-dashboard-worker",
+          device: "mistblossom-dashboard-worker",
+        },
+      },
+    });
+    setTimeout(() => { this.identifying = false; }, 5000);
+  }
+
+  sendResume() {
+    this.send({
+      op: 6,
+      d: {
+        token: this.env.DISCORD_BOT_TOKEN,
+        session_id: this.sessionId,
+        seq: this.seq,
+      },
+    });
+  }
+
+  async onInvalidSession(resumable) {
+    if (!resumable) {
+      this.sessionId = "";
+      this.resumeGatewayUrl = "";
+      this.seq = null;
+      await this.state.storage.delete(["sessionId", "resumeGatewayUrl", "seq"]);
+    }
+    setTimeout(() => {
+      if (resumable && this.sessionId && this.seq !== null) this.sendResume();
+      else this.sendIdentify();
+    }, 1500 + Math.floor(Math.random() * 2500));
+  }
+
+  async onDispatch(type, data) {
+    this.lastEventAt = Date.now();
+    await this.state.storage.put("lastEventAt", new Date(this.lastEventAt).toISOString());
+    if (type === "READY") {
+      this.sessionId = String(data?.session_id || "");
+      this.resumeGatewayUrl = String(data?.resume_gateway_url || "");
+      await this.state.storage.put({ sessionId: this.sessionId, resumeGatewayUrl: this.resumeGatewayUrl });
+      logWorkerEvent("info", "recruitment_gateway.ready", { session: Boolean(this.sessionId) });
+      return;
+    }
+    if (type === "RESUMED") {
+      logWorkerEvent("info", "recruitment_gateway.resumed", {});
+      return;
+    }
+    if (type !== "MESSAGE_CREATE") return;
+    await this.handleMessageCreate(data);
+  }
+
+  async handleMessageCreate(message) {
+    const guildId = String(message?.guild_id || "").trim();
+    if (guildId && guildId !== String(this.env.DISCORD_GUILD_ID || "").trim()) return;
+    if (message?.author?.bot || message?.webhook_id) return;
+    if (Number(message?.type || 0) !== 0) return;
+    const id = String(message?.id || "").trim();
+    const channelId = String(message?.channel_id || "").trim();
+    if (!/^\d{16,25}$/.test(id) || !/^\d{16,25}$/.test(channelId)) return;
+
+    const dedupeKey = `message:${id}`;
+    if (await this.state.storage.get(dedupeKey)) return;
+    await this.state.storage.put(dedupeKey, Date.now(), { expirationTtl: 3 * 24 * 60 * 60 });
+
+    const endpoint = recruitmentGatewayDashboardEndpoint(this.env);
+    const token = recruitmentGatewaySecret(this.env);
+    const payload = {
+      source: "cloudflare-discord-gateway",
+      receivedAt: new Date().toISOString(),
+      message,
+    };
+
+    try {
+      const { response, raw } = await fetchDashboardText(this.env, endpoint, token, {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          authorization: `Bearer ${token}`,
+          "x-worker-stats-token": token,
+          "content-type": "application/json; charset=utf-8",
+        },
+        body: JSON.stringify(payload),
+      }, { timeoutMs: 14000, retries: 1 });
+
+      if (!response.ok) {
+        await this.recordError("dashboard-relay", `status ${response.status}: ${raw.slice(0, 220)}`);
+        return;
+      }
+      if (String(this.env.DEBUG_LOGS || "").trim() === "1") {
+        let parsed = null;
+        try { parsed = raw ? JSON.parse(raw) : null; } catch {}
+        logWorkerEvent("info", "recruitment_gateway.message_relayed", {
+          messageId: id,
+          channelId,
+          matched: Boolean(parsed?.matched),
+          replied: Boolean(parsed?.replied),
+          skipped: Boolean(parsed?.skipped),
+        });
+      }
+    } catch (error) {
+      await this.recordError("dashboard-relay", error);
+    }
+  }
+
+  async recordClose(event, reason) {
+    const code = event?.code || 0;
+    const text = `closed ${code} ${event?.reason || ""}`.trim();
+    this.lastError = text;
+    await this.state.storage.put("lastError", text);
+    logWorkerEvent("warn", "recruitment_gateway.ws_close", { code, reason: event?.reason || reason || "" });
+    if (this.enabled() && code !== 1000) this.scheduleReconnect(`close-${code}`);
+  }
+
+  async recordError(scope, error) {
+    const message = typeof error === "string" ? error : (error?.message || String(error || "unknown"));
+    this.lastError = `${scope}: ${message}`.slice(0, 500);
+    await this.state.storage.put("lastError", this.lastError);
+    logWorkerEvent("warn", "recruitment_gateway.error", { scope, message: this.lastError });
+  }
+
+  scheduleReconnect(reason = "reconnect") {
+    if (this.reconnectTimer) return;
+    const delay = 2000 + Math.floor(Math.random() * 4000);
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.reconnect(reason).catch((error) => this.recordError("scheduled-reconnect", error));
+    }, delay);
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const startedAt = nowMs();
@@ -4719,6 +5144,12 @@ export default {
 
       if (url.pathname === "/api/discord-guild-channels" && request.method === "GET") {
         response = await withPublicApiHttpCache(request, env, ctx, { namespace: "discord-channels", ttlEnv: "PUBLIC_API_DISCORD_CHANNELS_CACHE_SECONDS", ttlSeconds: 900, tags: ["discord"] }, () => handleDiscordGuildChannels(request, env));
+        return withTelemetryHeaders(response, requestId, startedAt);
+      }
+
+
+      if (url.pathname === "/api/discord-recruitment-gateway" && (request.method === "GET" || request.method === "POST")) {
+        response = await handleRecruitmentGatewayControl(request, env);
         return withTelemetryHeaders(response, requestId, startedAt);
       }
 
@@ -4819,6 +5250,7 @@ export default {
     ctx.waitUntil((async () => {
       await runRaidLifecycleCron(env, "cloudflare-cron");
       await runRaidPollCloseDueCron(env, "cloudflare-cron");
+      await ensureRecruitmentGatewayCron(env);
     })());
   },
 };

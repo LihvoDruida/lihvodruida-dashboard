@@ -13,8 +13,7 @@
     "lint:fix": "eslint . --fix",
     "verify": "npm run typecheck && npm run lint && npm run inspect:ci",
     "inspect:ci": "node scripts/inspect-ci.cjs",
-    "build:ci": "npm run typecheck && npm run inspect:ci && npm run build",
-    "discord:recruitment-bot": "node scripts/discord-recruitment-gateway-bot.mjs"
+    "build:ci": "npm run typecheck && npm run inspect:ci && npm run build"
   },
   "dependencies": {
     "firebase-admin": "13.10.0",

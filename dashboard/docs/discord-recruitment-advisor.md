@@ -1,135 +1,107 @@
 # Discord Recruitment Advisor
 
-Автоматична система відповіді на повідомлення поверненців/новачків, які питають, за який клас почати грати і що потрібно гільдії.
+Система автоматично відповідає на Discord-повідомлення поверненців/новачків, які питають, за який клас почати грати і що потрібно гільдії.
 
-## Поточна схема
-
-Vercel cron більше не використовується для цієї системи. На Hobby плані Vercel дозволяє cron не частіше одного разу на день, тому миттєва реакція робиться через окремий Discord Gateway бот.
+## Поточна архітектура
 
 ```text
 Discord MESSAGE_CREATE
-  -> scripts/discord-recruitment-gateway-bot.mjs
-  -> POST /api/discord/recruitment-advice/message
-  -> аналіз guildRoster + Raider.IO даних
-  -> відповідь у той самий channel_id / thread
+        ↓
+Cloudflare Worker Durable Object
+        ↓
+POST /api/discord/recruitment-advice/message
+        ↓
+аналіз guildRoster + Raider.IO + utility/бафи
+        ↓
+відповідь у той самий Discord channel_id/thread_id
 ```
 
-## Що робить
+Vercel cron більше не використовується для цієї функції. На Vercel Hobby погодинний cron недоступний, тому слухач повідомлень перенесено у Cloudflare Worker.
 
-- Реагує на нові повідомлення Discord через Gateway `MESSAGE_CREATE`.
-- Не потребує `DISCORD_RECRUITMENT_ADVICE_CHANNEL_IDS`.
-- Відповідає саме там, де користувач написав: у каналі або треді з `message.channel_id`.
-- Визначає повідомлення з наміром: повернення у WoW, питання про вибір класу, згадка гільдії/рейдів/RIO/дефіциту.
-- Бере останній нормалізований склад гільдії з `guildRosterRecords`, не запускаючи важкі live-запити до Raider.IO під кожне повідомлення.
-- Аналізує високорівневих персонажів із RIO, дефіцит класів, корисні raid/M+ бафи й ролі.
-- Формує розгорнуту українську відповідь з рекомендаціями, альтернативами і footer:
-
-```text
-_Повідомлення є автоматичним._
-```
-
-- Захищає від повторних відповідей через Firestore-колекцію `discordRecruitmentAdviceReplies`; без Firebase використовує runtime-захист на час життя процесу.
-
-## Dashboard endpoint для Gateway-бота
+## Dashboard endpoint
 
 ```text
 POST /api/discord/recruitment-advice/message
 ```
 
-Потрібен Bearer token з одного з env:
+Endpoint приймає payload Discord Gateway `MESSAGE_CREATE`, перевіряє внутрішній bearer token і передає повідомлення в `handleDiscordRecruitmentAdviceMessage`.
 
-```text
-DISCORD_RECRUITMENT_ADVICE_SECRET
-CRON_SECRET
-INTERNAL_API_TOKEN
-WORKER_STATS_TOKEN
-```
+## Env на dashboard
 
-Приклад payload:
-
-```json
-{
-  "message": {
-    "id": "123456789012345678",
-    "channel_id": "123456789012345678",
-    "content": "Доброго вечора... за який клас краще розпочати гру?",
-    "timestamp": "2026-07-06T19:30:00.000000+00:00",
-    "type": 0,
-    "author": {
-      "id": "123456789012345678",
-      "username": "user",
-      "global_name": "User",
-      "bot": false
-    }
-  }
-}
-```
-
-## Запуск Gateway-бота
-
-```bash
-npm run discord:recruitment-bot
-```
-
-Цей процес має працювати постійно: на твоєму сервері, VPS, домашньому сервері, PM2, Docker, systemd або іншому процес-менеджері. Vercel serverless для цього не підходить, бо Discord Gateway — це довгий WebSocket-звʼязок.
-
-Мінімальні env:
-
-```text
+```env
 DISCORD_BOT_TOKEN=
 DISCORD_GUILD_ID=
-DASHBOARD_URL=https://admin.lihvodruida.pp.ua
 DISCORD_RECRUITMENT_ADVICE_ENABLED=true
 DISCORD_RECRUITMENT_ADVICE_SECRET=long-random-secret
 ```
 
-`DISCORD_RECRUITMENT_ADVICE_DASHBOARD_URL` можна задати окремо, якщо Gateway-бот має слати події не на `DASHBOARD_URL`.
+`DISCORD_RECRUITMENT_ADVICE_SECRET` має збігатися з Cloudflare Worker secret.
 
-## Discord Developer Portal
+## Env на Cloudflare Worker
 
-Для миттєвої реакції на повідомлення бот має підключатися до Discord Gateway з intents:
-
-```text
-Guilds
-Guild Messages
-Message Content
-```
-
-Message Content треба окремо ввімкнути в Discord Developer Portal для застосунку. Без цього Discord може присилати подію, але `message.content` буде порожнім, і система не зможе зрозуміти питання.
-
-## Старий scan endpoint
-
-```text
-GET /api/discord/recruitment-advice
-POST /api/discord/recruitment-advice
-```
-
-Залишений тільки для ручного `dryRun`, тестів або backfill по останніх повідомленнях. У `vercel.json` цей endpoint більше не стоїть у cron.
-
-Preview без відправки:
+У `workers/guild-applications-worker`:
 
 ```bash
-curl -H "Authorization: Bearer $DISCORD_RECRUITMENT_ADVICE_SECRET" \
-  "https://admin.lihvodruida.pp.ua/api/discord/recruitment-advice?dryRun=1&force=1&limit=2"
+wrangler secret put DISCORD_BOT_TOKEN
+wrangler secret put DISCORD_GUILD_ID
+wrangler secret put DISCORD_RECRUITMENT_ADVICE_SECRET
 ```
 
-## Env
+У `wrangler.toml` додано Durable Object:
 
-```text
-DISCORD_RECRUITMENT_ADVICE_ENABLED=false
-DISCORD_RECRUITMENT_ADVICE_SECRET=
-DISCORD_RECRUITMENT_ADVICE_DASHBOARD_URL=
-DISCORD_RECRUITMENT_ADVICE_MAX_CHANNELS=100
-DISCORD_RECRUITMENT_ADVICE_LOOKBACK_HOURS=48
-DISCORD_RECRUITMENT_ADVICE_MAX_PAGES=4
-DISCORD_RECRUITMENT_ADVICE_MAX_REPLIES=4
-DISCORD_RECRUITMENT_ADVICE_MIN_RIO=0
-DISCORD_RECRUITMENT_ADVICE_MIN_ILVL=0
-DISCORD_RECRUITMENT_ADVICE_DRY_RUN=false
+```toml
+[[durable_objects.bindings]]
+name = "DISCORD_RECRUITMENT_GATEWAY"
+class_name = "DiscordRecruitmentGateway"
+
+[[migrations]]
+tag = "v1-discord-recruitment-gateway"
+new_sqlite_classes = ["DiscordRecruitmentGateway"]
 ```
 
-`DISCORD_RECRUITMENT_ADVICE_MIN_RIO=0` означає адаптивний поріг за складом: система бере RIO-персонажів і рахує високорівневу групу відносно поточного roster. Якщо потрібно жорстко відсікати слабких персонажів — виставити, наприклад, `1800` або `2200`.
+## Поведінка відповіді
 
-## Важливо
+Система:
 
-Бот не має відповідати на власні повідомлення, webhook-и та системні повідомлення. Це вже враховано в `shouldIgnoreMessage()` і в Gateway-скрипті.
+- ігнорує ботів, webhook-и й системні повідомлення;
+- не дублює відповідь на той самий Discord message id;
+- аналізує текст повідомлення за наміром, а не тільки за одним словом;
+- бере актуальний склад гільдії з `guildRoster`;
+- дивиться високорівневих персонажів з Raider.IO;
+- оцінює дефіцит ролей, класів, рейдових бафів і utility;
+- формує відповідь з рекомендаціями;
+- в кінці додає `_Повідомлення є автоматичним._`.
+
+## Ручна перевірка
+
+Статус Gateway:
+
+```bash
+curl -H "Authorization: Bearer $WORKER_STATS_TOKEN" \
+  "https://guild-applications-worker.<account>.workers.dev/api/discord-recruitment-gateway?action=status"
+```
+
+Ручний старт:
+
+```bash
+curl -X POST -H "Authorization: Bearer $WORKER_STATS_TOKEN" \
+  "https://guild-applications-worker.<account>.workers.dev/api/discord-recruitment-gateway?action=start"
+```
+
+Тест dashboard endpoint без реального Discord Gateway:
+
+```bash
+curl -X POST "https://admin.lihvodruida.pp.ua/api/discord/recruitment-advice/message?dryRun=1&force=1" \
+  -H "Authorization: Bearer $DISCORD_RECRUITMENT_ADVICE_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": {
+      "id": "1449767281453301865",
+      "channel_id": "1498719949550784540",
+      "content": "Доброго вечора! Повертаюсь у WoW після BFA. Раніше грав Локом та Хантом. За який клас краще почати?",
+      "timestamp": "2026-07-06T20:00:00.000Z",
+      "author": { "id": "1449811152168437772", "username": "test-user", "bot": false },
+      "type": 0
+    }
+  }'
+```
