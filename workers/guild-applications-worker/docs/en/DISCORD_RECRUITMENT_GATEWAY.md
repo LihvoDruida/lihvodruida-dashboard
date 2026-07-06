@@ -86,3 +86,17 @@ curl -X POST -H "Authorization: Bearer $WORKER_STATS_TOKEN" \
 curl -X POST -H "Authorization: Bearer $WORKER_STATS_TOKEN" \
   "https://guild-applications-worker.<account>.workers.dev/api/discord-recruitment-gateway?action=reconnect"
 ```
+
+
+## Startup backfill
+
+Discord Gateway only delivers live `MESSAGE_CREATE` events. The Worker also calls the dashboard scan for the last 48 hours after the gateway starts/reconnects, so messages sent before the Durable Object connected can still receive an automatic answer.
+
+Config:
+
+```env
+DISCORD_RECRUITMENT_BACKFILL_ENABLED=1
+DISCORD_RECRUITMENT_BACKFILL_MIN_INTERVAL_MS=1800000
+DISCORD_RECRUITMENT_BACKFILL_LIMIT=4
+DASHBOARD_RECRUITMENT_ADVICE_SCAN_ENDPOINT=https://dashboard.lihvodruida.pp.ua/api/discord/recruitment-advice?limit=4
+```

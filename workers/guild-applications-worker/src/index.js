@@ -4691,6 +4691,93 @@ function recruitmentGatewayDashboardEndpoint(env) {
   return dashboardUrl(env, "/api/discord/recruitment-advice/message");
 }
 
+function recruitmentBackfillEnabled(env) {
+  return !["0", "false", "no", "off"].includes(String(
+    env.DISCORD_RECRUITMENT_BACKFILL_ENABLED ||
+    env.DISCORD_RECRUITMENT_ADVICE_BACKFILL_ENABLED ||
+    "1"
+  ).trim().toLowerCase());
+}
+
+function recruitmentBackfillMinIntervalMs(env) {
+  return readDurationMs(
+    env,
+    ["DISCORD_RECRUITMENT_BACKFILL_MIN_INTERVAL_MS", "DISCORD_RECRUITMENT_ADVICE_BACKFILL_MIN_INTERVAL_MS"],
+    30 * 60_000,
+    60_000,
+    24 * 60 * 60_000,
+  );
+}
+
+function recruitmentBackfillEndpoint(env) {
+  const explicit = String(env.DASHBOARD_RECRUITMENT_ADVICE_SCAN_ENDPOINT || "").trim();
+  if (explicit) return explicit;
+  const limit = parsePositiveInt(env.DISCORD_RECRUITMENT_BACKFILL_LIMIT, 4, 1, 20);
+  try {
+    const url = new URL(dashboardUrl(env, "/api/discord/recruitment-advice"));
+    url.searchParams.set("limit", String(limit));
+    return url.toString();
+  } catch {
+    return `https://dashboard.lihvodruida.pp.ua/api/discord/recruitment-advice?limit=${limit}`;
+  }
+}
+
+async function runRecruitmentBackfillUnsafe(env, reason = "scheduled") {
+  if (!recruitmentGatewayEnabled(env)) return { ok: true, skipped: true, reason: "disabled" };
+  if (!recruitmentBackfillEnabled(env)) return { ok: true, skipped: true, reason: "backfill_disabled" };
+  const token = recruitmentGatewaySecret(env);
+  if (!token) {
+    logWorkerEvent("warn", "recruitment_backfill.missing_secret", { reason });
+    return { ok: false, error: "missing recruitment secret" };
+  }
+
+  const endpoint = recruitmentBackfillEndpoint(env);
+  try {
+    const { response, raw } = await fetchDashboardText(env, endpoint, token, {
+      method: "GET",
+      headers: {
+        accept: "application/json",
+        authorization: `Bearer ${token}`,
+        "x-worker-stats-token": token,
+      },
+    }, { timeoutMs: 25000, retries: 1 });
+
+    let data = null;
+    try { data = raw ? JSON.parse(raw) : null; } catch { data = null; }
+    if (!response.ok || !data?.ok) {
+      logWorkerEvent("warn", "recruitment_backfill.bad_response", {
+        reason,
+        status: response.status,
+        raw: raw.slice(0, 220),
+      });
+      return { ok: false, status: response.status, error: data?.error || "bad dashboard response" };
+    }
+
+    logWorkerEvent("info", "recruitment_backfill.done", {
+      reason,
+      scanned: data.scanned || 0,
+      matched: data.matched || 0,
+      replied: data.replied || 0,
+      skipped: data.skipped || 0,
+      errors: Array.isArray(data.errors) ? data.errors.length : 0,
+    });
+    return data;
+  } catch (error) {
+    logWorkerEvent("error", "recruitment_backfill.failed", { reason, message: error?.message });
+    return { ok: false, error: error?.message || "unknown" };
+  }
+}
+
+async function runRecruitmentBackfill(env, reason = "scheduled") {
+  return runWorkerCronGuarded(
+    env,
+    "recruitment_backfill",
+    reason,
+    recruitmentBackfillMinIntervalMs(env),
+    () => runRecruitmentBackfillUnsafe(env, reason),
+  );
+}
+
 function recruitmentGatewayObject(env) {
   const binding = env.DISCORD_RECRUITMENT_GATEWAY;
   if (!binding || typeof binding.idFromName !== "function" || typeof binding.get !== "function") return null;
@@ -4744,6 +4831,13 @@ async function ensureRecruitmentGatewayCron(env) {
   }
   const result = await callRecruitmentGateway(env, "start", { reason: "cloudflare-cron", requestedAt: new Date().toISOString() });
   logWorkerEvent(result?.ok ? "info" : "warn", "recruitment_gateway.ensure", result || {});
+
+  // Gateway receives only live MESSAGE_CREATE events. This backfill covers messages
+  // posted shortly before the Durable Object connected or after a Worker redeploy.
+  if (result?.ok) {
+    await runRecruitmentBackfill(env, "gateway-ensure-backfill");
+  }
+
   return result;
 }
 
