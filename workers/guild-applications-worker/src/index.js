@@ -4810,8 +4810,12 @@ async function handleRecruitmentGatewayControl(request, env) {
   if (token && !(await verifyBearerOrStatsToken(request, token))) {
     return json({ ok: false, error: "Доступ заборонено." }, 401, origin);
   }
-  const allowed = new Set(["status", "start", "reconnect", "stop"]);
+  const allowed = new Set(["status", "start", "reconnect", "stop", "backfill"]);
   if (!allowed.has(action)) return json({ ok: false, error: "Unknown gateway action." }, 400, origin);
+  if (action === "backfill") {
+    const result = await runRecruitmentBackfillUnsafe(env, "manual-panel");
+    return json({ ok: Boolean(result?.ok), backfill: result }, result?.ok ? 200 : 500, origin);
+  }
   const result = await callRecruitmentGateway(env, action, { manual: true, requestedAt: new Date().toISOString() });
   return json(result, result?.ok ? 200 : 500, origin);
 }
@@ -4832,12 +4836,8 @@ async function ensureRecruitmentGatewayCron(env) {
   const result = await callRecruitmentGateway(env, "start", { reason: "cloudflare-cron", requestedAt: new Date().toISOString() });
   logWorkerEvent(result?.ok ? "info" : "warn", "recruitment_gateway.ensure", result || {});
 
-  // Gateway receives only live MESSAGE_CREATE events. This backfill covers messages
-  // posted shortly before the Durable Object connected or after a Worker redeploy.
-  if (result?.ok) {
-    await runRecruitmentBackfill(env, "gateway-ensure-backfill");
-  }
-
+  // Backfill is intentionally manual now. Live MESSAGE_CREATE is instant,
+  // old messages are scanned from the dashboard panel to avoid surprise replies.
   return result;
 }
 
@@ -4887,7 +4887,7 @@ export class DiscordRecruitmentGateway {
   }
 
   async status() {
-    const persisted = await this.state.storage.get(["seq", "sessionId", "resumeGatewayUrl", "lastEventAt", "lastError"]);
+    const persisted = await this.state.storage.get(["seq", "sessionId", "resumeGatewayUrl", "lastEventAt", "lastError", "lastRelayAt", "lastRelayStatus", "lastRelaySummary", "lastRelayedMessageId", "lastRelayedChannelId"]);
     return {
       ok: true,
       enabled: this.enabled(),
@@ -4901,6 +4901,11 @@ export class DiscordRecruitmentGateway {
       sessionId: Boolean(this.sessionId || persisted.get("sessionId")),
       resumeGatewayUrl: Boolean(this.resumeGatewayUrl || persisted.get("resumeGatewayUrl")),
       lastError: this.lastError || persisted.get("lastError") || "",
+      lastRelayAt: persisted.get("lastRelayAt") || null,
+      lastRelayStatus: persisted.get("lastRelayStatus") || null,
+      lastRelaySummary: persisted.get("lastRelaySummary") || null,
+      lastRelayedMessageId: persisted.get("lastRelayedMessageId") || null,
+      lastRelayedChannelId: persisted.get("lastRelayedChannelId") || null,
     };
   }
 
@@ -5113,10 +5118,8 @@ export class DiscordRecruitmentGateway {
     const channelId = String(message?.channel_id || "").trim();
     if (!/^\d{16,25}$/.test(id) || !/^\d{16,25}$/.test(channelId)) return;
 
-    const dedupeKey = `message:${id}`;
-    if (await this.state.storage.get(dedupeKey)) return;
-    await this.state.storage.put(dedupeKey, Date.now(), { expirationTtl: 3 * 24 * 60 * 60 });
-
+    // Do not hard-dedupe here. The dashboard stores final reply claims in Firebase,
+    // so failed/skipped relays can still be retried from the panel without duplicates.
     const endpoint = recruitmentGatewayDashboardEndpoint(this.env);
     const token = recruitmentGatewaySecret(this.env);
     const payload = {
@@ -5137,19 +5140,28 @@ export class DiscordRecruitmentGateway {
         body: JSON.stringify(payload),
       }, { timeoutMs: 14000, retries: 1 });
 
+      let parsed = null;
+      try { parsed = raw ? JSON.parse(raw) : null; } catch {}
       if (!response.ok) {
         await this.recordError("dashboard-relay", `status ${response.status}: ${raw.slice(0, 220)}`);
         return;
       }
+      const relaySummary = `matched=${Boolean(parsed?.matched)} replied=${Boolean(parsed?.replied)} skipped=${Boolean(parsed?.skipped)}${parsed?.skipReason ? ` reason=${parsed.skipReason}` : ""}${parsed?.error ? ` error=${String(parsed.error).slice(0, 120)}` : ""}`;
+      await this.state.storage.put({
+        lastRelayAt: new Date().toISOString(),
+        lastRelayStatus: response.status,
+        lastRelaySummary: relaySummary,
+        lastRelayedMessageId: id,
+        lastRelayedChannelId: channelId,
+      });
       if (String(this.env.DEBUG_LOGS || "").trim() === "1") {
-        let parsed = null;
-        try { parsed = raw ? JSON.parse(raw) : null; } catch {}
         logWorkerEvent("info", "recruitment_gateway.message_relayed", {
           messageId: id,
           channelId,
           matched: Boolean(parsed?.matched),
           replied: Boolean(parsed?.replied),
           skipped: Boolean(parsed?.skipped),
+          skipReason: parsed?.skipReason || "",
         });
       }
     } catch (error) {

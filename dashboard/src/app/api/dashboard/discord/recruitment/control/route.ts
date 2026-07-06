@@ -1,0 +1,129 @@
+import { NextRequest } from "next/server";
+
+import {
+  adminDiscordResponse,
+  auditDiscordAdmin,
+  discordAdminError,
+  requireDiscordAdmin,
+} from "@/lib/dashboardDiscordRoute";
+import {
+  callRecruitmentGatewayControl,
+  type RecruitmentGatewayAction,
+} from "@/lib/discordRecruitmentGatewayControl";
+import { scanDiscordRecruitmentAdvice } from "@/lib/discordRecruitmentAdvisor";
+import { getRecruitmentAdvisorSettings } from "@/lib/discordRecruitmentAdvisorSettings";
+
+export const revalidate = 0;
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+function cleanAction(value: unknown) {
+  return String(value || "status")
+    .trim()
+    .toLowerCase();
+}
+
+function isGatewayAction(action: string): action is RecruitmentGatewayAction {
+  return ["status", "start", "reconnect", "stop", "backfill"].includes(action);
+}
+
+function resultSummary(data: any) {
+  if (!data || typeof data !== "object") return "Немає даних.";
+  if ("scanned" in data || "matched" in data || "replied" in data) {
+    return `Перевірено повідомлень: ${data.scanned || 0}; знайдено: ${data.matched || 0}; відповідей: ${data.replied || 0}; пропущено: ${data.skipped || 0}; помилок: ${Array.isArray(data.errors) ? data.errors.length : 0}.`;
+  }
+  return `enabled=${Boolean(data.enabled)}, connected=${Boolean(data.connected)}, readyState=${data.readyState ?? "—"}, lastEventAt=${data.lastEventAt || "—"}${data.lastError ? `, error=${data.lastError}` : ""}.`;
+}
+
+export async function POST(request: NextRequest) {
+  const guard = await requireDiscordAdmin(request, "recruitment-control");
+  if ("error" in guard) return guard.error;
+
+  try {
+    const form = await request.formData();
+    const action = cleanAction(form.get("action"));
+    const settings = await getRecruitmentAdvisorSettings({ bypassCache: true });
+
+    if (action === "scan" || action === "dry-run-scan") {
+      const dryRun = action === "dry-run-scan";
+      const result = await scanDiscordRecruitmentAdvice({
+        dryRun,
+        force: true,
+        limit: settings.manualScanLimit,
+      });
+
+      await auditDiscordAdmin(
+        dryRun
+          ? "discord.recruitment_advice.manual_dry_scan"
+          : "discord.recruitment_advice.manual_scan",
+        guard.session,
+        {
+          status: result.ok && !result.errors.length ? "success" : "warning",
+          summary: resultSummary(result),
+          result,
+        },
+      );
+
+      return adminDiscordResponse(request, {
+        ok: result.ok,
+        tone: result.errors.length
+          ? "warning"
+          : result.replied || result.samples.length
+            ? "success"
+            : "info",
+        title: dryRun
+          ? "Тестову перевірку завершено"
+          : "Ручну перевірку повідомлень завершено",
+        message: `${resultSummary(result)}${dryRun && result.samples[0]?.response ? ` Приклад відповіді: ${result.samples[0].response.slice(0, 220)}...` : ""}`,
+        ttl: 14000,
+        data: { result, refresh: true },
+      });
+    }
+
+    if (!isGatewayAction(action)) {
+      return adminDiscordResponse(request, {
+        ok: false,
+        tone: "warning",
+        title: "Невідома дія",
+        message: `Дія ${action} не підтримується.`,
+        status: 400,
+      });
+    }
+
+    const result = await callRecruitmentGatewayControl(action);
+
+    await auditDiscordAdmin(
+      `discord.recruitment_gateway.${action}`,
+      guard.session,
+      {
+        status:
+          result.ok && !result.error && !result.lastError
+            ? "success"
+            : "warning",
+        summary: resultSummary(result),
+        result,
+      },
+    );
+
+    return adminDiscordResponse(request, {
+      ok: Boolean(result.ok),
+      tone:
+        result.ok && !result.error && !result.lastError ? "success" : "warning",
+      title:
+        action === "backfill"
+          ? "Worker backfill виконано"
+          : "Команду Gateway виконано",
+      message: resultSummary(result),
+      ttl: 12000,
+      data: { result, refresh: true },
+    });
+  } catch (error) {
+    return await discordAdminError(
+      request,
+      "admin.discord.recruitment_control_failed",
+      error,
+      "Команду автовідповідей не виконано.",
+      guard.session,
+    );
+  }
+}

@@ -5,7 +5,8 @@ import {
   canViewAdminLogs,
 } from "@/lib/permissions";
 
-export type AdminTabKey = "overview" | "groups" | "discord" | "logs";
+export type AdminTabKey =
+  "overview" | "groups" | "discord" | "recruitment" | "logs";
 
 export default function AdminTabs({
   active,
@@ -40,6 +41,13 @@ export default function AdminTabs({
       visible: canOpenDiscord,
     },
     {
+      key: "recruitment" as const,
+      href: "/dashboard/discord/recruitment",
+      label: "Автовідповіді",
+      description: "Discord-рекрутинг",
+      visible: canOpenDiscord,
+    },
+    {
       key: "logs" as const,
       href: "/dashboard/logs",
       label: "Логи",
@@ -53,7 +61,12 @@ export default function AdminTabs({
   return (
     <nav className="admin-tabs dashboard-subnav" aria-label="Розділи керування">
       {tabs.map((tab) => (
-        <a key={tab.key} href={tab.href} className={active === tab.key ? "is-active" : undefined} aria-current={active === tab.key ? "page" : undefined}>
+        <a
+          key={tab.key}
+          href={tab.href}
+          className={active === tab.key ? "is-active" : undefined}
+          aria-current={active === tab.key ? "page" : undefined}
+        >
           <strong>{tab.label}</strong>
           <small>{tab.description}</small>
         </a>

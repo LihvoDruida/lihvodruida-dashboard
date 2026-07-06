@@ -107,15 +107,19 @@ curl -X POST "https://admin.lihvodruida.pp.ua/api/discord/recruitment-advice/mes
 ```
 
 
-## Backfill після старту
+## Ручний backfill через панель
 
-Discord Gateway надсилає тільки нові `MESSAGE_CREATE` події. Тому Worker додатково запускає dashboard-scan останніх 48 годин після старту/перепідключення gateway. Це потрібно, щоб бот відповів на повідомлення, які були написані до фактичного підключення Durable Object.
+Discord Gateway надсилає тільки нові `MESSAGE_CREATE` події. Старі повідомлення більше не перевіряються автоматично після старту Worker, щоб не було неочікуваних відповідей. Для перевірки старих повідомлень відкрий:
 
-Керування:
-
-```env
-DISCORD_RECRUITMENT_BACKFILL_ENABLED=1
-DISCORD_RECRUITMENT_BACKFILL_MIN_INTERVAL_MS=1800000
-DISCORD_RECRUITMENT_BACKFILL_LIMIT=4
-DASHBOARD_RECRUITMENT_ADVICE_SCAN_ENDPOINT=https://dashboard.lihvodruida.pp.ua/api/discord/recruitment-advice?limit=4
+```text
+/dashboard/discord/recruitment
 ```
+
+Там є дії:
+
+- `Тест без відправки` — dry-run сканування старих повідомлень;
+- `Перевірити і відповісти` — ручна перевірка за заданий період;
+- `Worker backfill` — ручний виклик Cloudflare Worker `action=backfill`;
+- `start/reconnect/stop/status` для Durable Object Gateway.
+
+Повторних відповідей не буде: dashboard зберігає успішні відповіді у `discordRecruitmentAdviceReplies` за Discord `message.id`. Якщо відповідь уже має статус `replied` або `replyMessageId`, навіть ручна перевірка не дублює її.
