@@ -27,6 +27,7 @@ const DEFAULT_MAX_PAGES_PER_CHANNEL = 4;
 const DEFAULT_MAX_REPLIES_PER_RUN = 4;
 const DEFAULT_MAX_CHANNELS_PER_RUN = 100;
 const AUTO_FOOTER = "_Повідомлення є автоматичним._";
+const RECRUITMENT_RELAYABLE_MESSAGE_TYPES = new Set([0, 19]); // DEFAULT + REPLY; Discord replies must still be analyzable
 
 type DiscordAuthor = {
   id?: string;
@@ -1295,8 +1296,11 @@ function shouldIgnoreMessage(message: DiscordMessage): IgnoreMessageDecision {
   if (!snowflake(message.id)) return { ignored: true, reason: "missing_message_id" };
   if (message.author?.bot) return { ignored: true, reason: "author_bot" };
   if (message.webhook_id) return { ignored: true, reason: "webhook_message" };
-  if (message.type !== undefined && Number(message.type) !== 0) {
-    return { ignored: true, reason: `unsupported_message_type_${Number(message.type)}` };
+  if (message.type !== undefined) {
+    const messageType = Number(message.type);
+    if (!RECRUITMENT_RELAYABLE_MESSAGE_TYPES.has(messageType)) {
+      return { ignored: true, reason: `unsupported_message_type_${messageType}` };
+    }
   }
   if (typeof message.content !== "string" || !cleanText(message.content, 4000)) {
     return { ignored: true, reason: "empty_content_message_content_intent_or_permission" };
