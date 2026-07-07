@@ -461,7 +461,7 @@ export default async function DiscordRecruitmentPage() {
               </div>
             </section>
 
-            <section className="panel discord-management-card discord-management-card--action">
+            <section className="panel discord-management-card discord-management-card--action discord-management-card--preview">
               <div className="profile-card-head profile-card-head--inline">
                 <div>
                   <span className="eyebrow">Тест алгоритму</span>
@@ -498,7 +498,7 @@ export default async function DiscordRecruitmentPage() {
               </form>
             </section>
 
-            <section className="panel discord-management-card discord-management-card--action">
+            <section className="panel discord-management-card discord-management-card--action discord-management-card--worker">
               <div className="profile-card-head profile-card-head--inline">
                 <div>
                   <span className="eyebrow">Cloudflare</span>
@@ -527,7 +527,7 @@ export default async function DiscordRecruitmentPage() {
               </div>
             </section>
 
-            <section className="panel discord-management-card discord-management-card--action">
+            <section className="panel discord-management-card discord-management-card--action discord-management-card--live">
               <div className="profile-card-head profile-card-head--inline">
                 <div>
                   <span className="eyebrow">Live pipeline</span>
