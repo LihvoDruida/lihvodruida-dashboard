@@ -1,6 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
+import GuildRosterRefreshButton, {
+  type GuildRosterRefreshSettings,
+} from "@/components/GuildRosterRefreshButton";
 import type { GuildRosterMember, GuildRosterStats } from "@/lib/guildRoster";
 import { useDashboardApiResource } from "@/lib/dashboardBackgroundApi";
 
@@ -9,6 +12,8 @@ type Props = {
   stats: GuildRosterStats;
   source: string;
   error?: string | null;
+  refreshSettings?: GuildRosterRefreshSettings;
+  autoStartMissingRecords?: boolean;
 };
 
 type GuildRosterLivePayload = Props & {
@@ -37,6 +42,8 @@ export default function GuildRosterLiveHeroStats({
   stats,
   source,
   error,
+  refreshSettings,
+  autoStartMissingRecords = false,
 }: Props) {
   const initialRoster = useMemo<GuildRosterLivePayload>(
     () => ({ members, stats, source, error: error || null }),
@@ -110,6 +117,15 @@ export default function GuildRosterLiveHeroStats({
             <strong>{round(liveStats.maxRioAll)}</strong>
           </div>
         </div>
+
+        {refreshSettings ? (
+          <div className="guild-summary-card__actions">
+            <GuildRosterRefreshButton
+              autoStartMissingRecords={autoStartMissingRecords}
+              settings={refreshSettings}
+            />
+          </div>
+        ) : null}
       </div>
 
       {rosterResource.status === "checking" ? (

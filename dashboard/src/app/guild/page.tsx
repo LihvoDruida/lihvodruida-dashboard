@@ -3,7 +3,6 @@ import AppProblemScreen from "@/components/AppProblemScreen";
 import DashboardIdentity from "@/components/DashboardIdentity";
 import GuildRosterExplorer from "@/components/GuildRosterExplorer";
 import GuildRosterLiveHeroStats from "@/components/GuildRosterLiveHeroStats";
-import GuildRosterRefreshButton from "@/components/GuildRosterRefreshButton";
 import { getSessionUser, isAuthenticated } from "@/lib/auth";
 import { loadGuildRosterData } from "@/lib/guildRoster";
 import { getOwnProfilePath } from "@/lib/profiles";
@@ -116,7 +115,7 @@ export default async function GuildRosterPage() {
         aria-label="Панель Mistblossom Vanguard"
       >
         <DashboardIdentity user={user} activeSection="guild" />
-        <header className="hero panel guild-hero app-page-hero">
+        <header className="hero panel guild-hero app-page-hero directory-hero">
           <div className="hero-copy dashboard-hero__copy guild-hero__copy">
             <div className="eyebrow">Mistblossom Vanguard • Склад гільдії</div>
             <h1>Склад гільдії</h1>
@@ -133,21 +132,16 @@ export default async function GuildRosterPage() {
               stats={roster.stats}
               source={roster.source}
               error={roster.error}
+              autoStartMissingRecords={members.length === 0}
+              refreshSettings={{
+                clientDrivenSyncEnabled:
+                  apiSettings.guildRosterClientDrivenSyncEnabled,
+                clientStepDelayMs: apiSettings.guildRosterClientStepDelayMs,
+                clientRequestTimeoutMs:
+                  apiSettings.guildRosterClientRequestTimeoutMs,
+                clientMaxSteps: apiSettings.guildRosterClientMaxSteps,
+              }}
             />
-
-            <div className="guild-hero-actions">
-              <GuildRosterRefreshButton
-                autoStartMissingRecords={members.length === 0}
-                settings={{
-                  clientDrivenSyncEnabled:
-                    apiSettings.guildRosterClientDrivenSyncEnabled,
-                  clientStepDelayMs: apiSettings.guildRosterClientStepDelayMs,
-                  clientRequestTimeoutMs:
-                    apiSettings.guildRosterClientRequestTimeoutMs,
-                  clientMaxSteps: apiSettings.guildRosterClientMaxSteps,
-                }}
-              />
-            </div>
           </div>
         </header>
         <GuildRosterExplorer

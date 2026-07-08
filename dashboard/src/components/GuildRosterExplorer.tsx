@@ -175,7 +175,7 @@ function FilterSelect({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="guild-filter-field" htmlFor={id}>
+    <label className="guild-filter-field directory-filter-field" htmlFor={id}>
       <span>{label}</span>
       <select
         id={id}
@@ -251,7 +251,7 @@ function RangeFilter({
   const endPercent = 100 - ((high - absoluteMin) / span) * 100;
 
   return (
-    <div className="guild-range-group guild-range-group--inline">
+    <div className="guild-range-group guild-range-group--inline directory-range-filter">
       <div className="guild-range-head">
         <span>{label}</span>
       </div>
@@ -783,13 +783,13 @@ export default function GuildRosterExplorer({
 
   return (
     <>
-      <section className="dashboard-table-card dashboard-list-panel dashboard-table-card--roster panel" aria-label="Компактний склад гільдії">
-        <div className="dashboard-table-titlebar dashboard-list-head">
+      <section className="dashboard-table-card dashboard-list-panel dashboard-table-card--roster panel directory-panel" aria-label="Компактний склад гільдії">
+        <div className="dashboard-table-titlebar dashboard-list-head directory-section-header">
           <div>
             <span className="eyebrow">Склад</span>
             <h2>Ростер гільдії</h2>
           </div>
-          <div className="dashboard-table-controls" aria-label="Пошук і швидкі фільтри складу">
+          <div className="dashboard-table-controls directory-toolbar" aria-label="Пошук і швидкі фільтри складу">
             <label className="dashboard-table-search" htmlFor="guild-roster-search">
               <span className="sr-only">Пошук персонажа</span>
               <input
@@ -823,7 +823,7 @@ export default function GuildRosterExplorer({
           </div>
         </div>
 
-        <div className="dashboard-table-stats" aria-label="Показники складу">
+        <div className="dashboard-table-stats directory-stats" aria-label="Показники складу">
           <div>
             <span>Учасників</span>
             <strong>{formatNumber(liveStats.memberCount || liveMembers.length)}</strong>
@@ -851,7 +851,7 @@ export default function GuildRosterExplorer({
         </div>
 
         {filtersOpen ? (
-          <div className="dashboard-table-advanced panel" aria-label="Розширені фільтри складу">
+          <div className="dashboard-table-advanced panel directory-filter-grid" aria-label="Розширені фільтри складу">
             <RangeFilter
               idBase="guild-roster-rio"
               nameBase="guild_roster_rio"
@@ -866,7 +866,7 @@ export default function GuildRosterExplorer({
             <RangeFilter
               idBase="guild-roster-item-level"
               nameBase="guild_roster_item_level"
-              label="Item level"
+              label="ILVL"
               minValue={itemLevelMin}
               maxValue={itemLevelMax}
               absoluteMin={0}
@@ -906,7 +906,7 @@ export default function GuildRosterExplorer({
               options={options.factions}
               onChange={setFactionFilter}
             />
-            <label className="guild-filter-field" htmlFor="guild-roster-sort">
+            <label className="guild-filter-field directory-filter-field" htmlFor="guild-roster-sort">
               <span>Сортування</span>
               <select
                 id="guild-roster-sort"
@@ -933,7 +933,7 @@ export default function GuildRosterExplorer({
         ) : null}
 
         <div className="dashboard-table-scroll">
-          <div className="dashboard-table dashboard-list dashboard-table--guild" role="table" aria-label="Список персонажів гільдії">
+          <div className="dashboard-table dashboard-list dashboard-table--guild directory-list" role="table" aria-label="Список персонажів гільдії">
             <div className="dashboard-table-head" role="row">
               <span role="columnheader">Персонаж</span>
               <span role="columnheader">Клас / спек</span>

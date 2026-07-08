@@ -171,7 +171,7 @@ export default async function ProfilesPage({
       >
         <DashboardIdentity user={user} activeSection="profiles" />
 
-        <header className="hero panel dashboard-hero profile-directory-hero-modern app-page-hero profile-directory-hero-ref">
+        <header className="hero panel dashboard-hero profile-directory-hero-modern app-page-hero profile-directory-hero-ref directory-hero">
           <div className="hero-copy dashboard-hero__copy profile-directory-hero-modern__copy">
             <div className="eyebrow">Mistblossom Vanguard • Профілі</div>
             <h1>Профілі</h1>

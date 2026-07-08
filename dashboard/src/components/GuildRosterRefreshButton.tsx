@@ -36,7 +36,7 @@ type GuildRosterRefreshPayload = {
   };
 };
 
-type GuildRosterRefreshSettings = {
+export type GuildRosterRefreshSettings = {
   clientDrivenSyncEnabled?: boolean;
   clientStepDelayMs?: number;
   clientRequestTimeoutMs?: number;
