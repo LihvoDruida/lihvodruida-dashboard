@@ -1,0 +1,166 @@
+/* ==========================================================================
+   normalize-ux.css — шар нормалізації UI/UX
+   Підключається ОСТАННІМ (після globals / profile / theme / refactor).
+
+   Призначення: виправити наскрізні дефекти взаємодії, які неможливо
+   полагодити локально через те, що geometry контролів у проєкті
+   визначена в 4 файлах одночасно й вирішується випадковим порядком
+   каскаду. Тут — тільки те, що стосується зручності й доступності.
+   Візуальна мова (кольори, тіні, радіуси) НЕ змінюється.
+
+   Кожен блок прокоментовано: що саме було зламано і чому саме так.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Токени геометрії контролів.
+   theme.css жорстко фіксував min-height: 40px !important для кнопок і
+   36px !important для .btn-sm — тобто всі інші 5 визначень (42/38/36/34px)
+   у globals.css / profile.css / refactor.css були мертвим кодом.
+   Тепер значення керується змінною, і на сенсорних екранах піднімається
+   до 44px (мінімум за WCAG 2.5.5 / Apple HIG / Material).
+   -------------------------------------------------------------------------- */
+:root {
+  --control-min-h: 40px;
+  --control-min-h-sm: 36px;
+  --field-font-size: var(--type-body, 1rem);
+  --focus-ring-color: var(--ui-accent-strong, #ffc35a);
+}
+
+@media (pointer: coarse) {
+  :root {
+    --control-min-h: 44px;
+    --control-min-h-sm: 44px;
+    /* 16px — поріг, нижче якого iOS Safari примусово зумить сторінку
+       при фокусі на полі вводу. Було ~15.04px, тому кожен тап у форму
+       смикав масштаб. */
+    --field-font-size: 16px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   2. Мінімальна площа дотику.
+   Явний список класів контролів — навмисно НЕ чіпаємо `a` загалом,
+   щоб не рознесло текстові посилання всередині абзаців.
+   -------------------------------------------------------------------------- */
+@media (pointer: coarse) {
+  :where(
+    .btn,
+    .btn-sm,
+    .action-button,
+    .status-select,
+    .dashboard-table-filter,
+    .raid-action,
+    .discord-role-toggle,
+    .application-status-button,
+    .dashboard-nav a,
+    .dashboard-nav-more__trigger,
+    .dashboard-nav-more__menu a,
+    .dashboard-user__logout button,
+    .profile-account-sidebar__nav a,
+    .profile-icon-action,
+    .profile-character-btn,
+    .profile-character-add-button,
+    .profile-bnet-status__action,
+    .guild-filter-toggle,
+    .guild-refresh-action button,
+    .admin-tabs.dashboard-subnav a,
+    .raid-list-actions .btn,
+    .raid-list-actions .btn-sm,
+    .raid-poll-list-card__actions .btn,
+    .discord-rules-row-actions .btn,
+    .content-row-actions .btn,
+    .discord-load-message-btn
+  ) {
+    min-height: var(--control-min-h) !important;
+  }
+
+  /* Іконкові кнопки мають бути квадратними, а не 44×28. */
+  :where(.profile-icon-action, .dashboard-nav-more__trigger) {
+    min-width: var(--control-min-h) !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   3. Поля вводу: заборона авто-зуму на iOS.
+   Дублює токен напряму, бо частина правил у globals.css задає
+   font-size у px в обхід --type-body (11px, 12.5px, 13px, 14px).
+   -------------------------------------------------------------------------- */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea,
+  .input,
+  .select,
+  .textarea,
+  .status-select,
+  .discord-role-select,
+  .dashboard-table-search input,
+  .guild-range-value input {
+    font-size: 16px !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   4. Гарантований індикатор фокуса з клавіатури.
+   У проєкті 26 місць гасять `outline: none`, частина — з !important
+   (theme.css:619, 3009, 7960, 8800, 9422). Заміна через box-shadow у
+   refactor.css:46 йде БЕЗ !important, тож на цих елементах кільце фокуса
+   зникало повністю — сторінка ставала непрохідною з клавіатури.
+   Outline не впливає на layout і не конфліктує з наявними тінями.
+   -------------------------------------------------------------------------- */
+:where(a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid var(--focus-ring-color) !important;
+  outline-offset: 2px !important;
+  border-radius: inherit;
+}
+
+/* Рядки-посилання в таблицях мали за індикатор фокуса лише підсвітку тла
+   на 8% — це нижче за контраст 3:1 і на практиці непомітно. */
+.dashboard-table-row--clickable:focus-visible,
+.dashboard-table-row:focus-visible {
+  outline: 2px solid var(--focus-ring-color) !important;
+  outline-offset: -2px !important;
+}
+
+/* --------------------------------------------------------------------------
+   5. Надійне приховування overflow-меню навігації.
+   Було три конкурентні визначення .dashboard-nav-more__menu:
+   refactor.css ставив display:none у закритому стані, але globals.css
+   перебивав це через `display: grid !important`, лишаючи меню в потоці.
+   Тримається на visibility+pointer-events, що ламається від будь-якої
+   наступної правки. Фіксуємо явно.
+   -------------------------------------------------------------------------- */
+.dashboard-nav-more:not(.is-open) .dashboard-nav-more__menu {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   6. Повага до prefers-reduced-motion.
+   Було покрито лише 4 локальні блоки з ~68 анімацій/переходів,
+   плюс окремо анімований starfield у <body>.
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   7. Захист від горизонтального скролу на вузьких екранах.
+   У проєкті 12 різних overflow-x правил, частина з !important, які
+   конфліктують між собою; довгі нікнейми/Discord ID виштовхували
+   макет за межі вʼюпорта.
+   -------------------------------------------------------------------------- */
+@media (max-width: 620px) {
+  :where(.dashboard-table-row, .raid-roster-member, .profile-character-meta, .guild-member-side) :where(strong, span, em, code) {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}

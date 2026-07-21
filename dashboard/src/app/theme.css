@@ -1710,19 +1710,19 @@ main.container,
 :where(.input, .select, .textarea, input:not([type="checkbox"]):not([type="radio"]), textarea, select, .dashboard-table-search input) {
   width: 100%;
   padding-inline: 12px !important;
-  font-size: var(--type-body) !important;
+  font-size: var(--field-font-size, var(--type-body)) !important;
   line-height: 1.35 !important;
 }
 
 :where(.btn, button.btn, .action-button, .dashboard-table-filter, .raid-action, .discord-role-toggle, .application-status-button) {
-  min-height: 40px !important;
+  min-height: var(--control-min-h, 40px) !important;
   padding-inline: 14px !important;
   font-size: var(--type-small) !important;
   line-height: 1.2 !important;
 }
 
 :where(.btn-sm, .dashboard-list-actions .btn, .dashboard-list-actions button) {
-  min-height: 36px !important;
+  min-height: var(--control-min-h-sm, 36px) !important;
   font-size: var(--type-small) !important;
 }
 

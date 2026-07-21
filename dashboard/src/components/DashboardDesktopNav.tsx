@@ -44,6 +44,7 @@ export default function DashboardDesktopNav({
   const [visibleCount, setVisibleCount] = useState(items.length);
   const navRef = useRef<HTMLElement | null>(null);
   const moreRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
   const measureItemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const measureMoreRef = useRef<HTMLButtonElement | null>(null);
   const menuId = useId();
@@ -122,7 +123,9 @@ export default function DashboardDesktopNav({
   useEffect(() => {
     if (!open) return;
 
-    const handlePointerDown = (event: MouseEvent) => {
+    // pointerdown замість mousedown: на тач-екранах mousedown не спрацьовує
+    // до завершення тапу, тож меню не закривалося дотиком поза ним.
+    const handlePointerDown = (event: PointerEvent) => {
       if (!moreRef.current) return;
       if (!moreRef.current.contains(event.target as Node)) {
         setOpen(false);
@@ -130,16 +133,28 @@ export default function DashboardDesktopNav({
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key !== "Escape") return;
+      setOpen(false);
+      // Без повернення фокуса він лишався на закритому меню, і подальша
+      // навігація з клавіатури провалювалася на початок сторінки.
+      triggerRef.current?.focus();
+    };
+
+    // Меню лишалося відкритим «за спиною», якщо піти з нього табом.
+    const handleFocusIn = (event: FocusEvent) => {
+      if (!moreRef.current) return;
+      if (!moreRef.current.contains(event.target as Node)) {
         setOpen(false);
       }
     };
 
-    window.addEventListener("mousedown", handlePointerDown);
+    window.addEventListener("pointerdown", handlePointerDown);
     window.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("focusin", handleFocusIn);
     return () => {
-      window.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("pointerdown", handlePointerDown);
       window.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("focusin", handleFocusIn);
     };
   }, [open]);
 
@@ -174,8 +189,9 @@ export default function DashboardDesktopNav({
           <div ref={moreRef} className={`dashboard-nav-more${open ? " is-open" : ""}`}>
             <button
               type="button"
+              ref={triggerRef}
               className={`dashboard-nav-more__trigger${activeSecondaryItem ? " is-active" : ""}`}
-              aria-haspopup="menu"
+              aria-haspopup="true"
               aria-expanded={open}
               aria-controls={menuId}
               onClick={() => setOpen((value) => !value)}
@@ -185,7 +201,7 @@ export default function DashboardDesktopNav({
               <span className="dashboard-nav-more__trigger-count" aria-hidden="true">{secondaryNavItems.length}</span>
             </button>
 
-            <div id={menuId} className="dashboard-nav-more__menu" role="menu" aria-hidden={!open}>
+            <div id={menuId} className="dashboard-nav-more__menu" aria-hidden={!open}>
               <div className="dashboard-nav-more__menu-head">
                 <strong>Додаткові розділи</strong>
                 <span>{activeSecondaryItem ? `Активний: ${activeSecondaryItem.desktopLabel}` : "Швидкий доступ до інших сторінок"}</span>
@@ -196,7 +212,6 @@ export default function DashboardDesktopNav({
                   <a
                     key={item.href}
                     href={item.href}
-                    role="menuitem"
                     className={activeSection === item.section ? "is-active" : undefined}
                     aria-current={activeSection === item.section ? "page" : undefined}
                     title={item.desktopLabel}
@@ -212,7 +227,7 @@ export default function DashboardDesktopNav({
         ) : null}
       </nav>
 
-      <div className="dashboard-nav-measure" aria-hidden="true">
+      <div className="dashboard-nav-measure" aria-hidden="true" inert>
         {items.map((item, index) => (
           <a
             key={`${item.href}-measure`}
