@@ -4092,6 +4092,115 @@ async function handleRaidAnnouncementInteraction(interaction, env, raidAction, c
   return interactionResultResponse(interaction, fallback);
 }
 
+function decodeRosterCustomId(customId, values) {
+  const value = String(customId || "").trim();
+  const match = value.match(/^mbv1:roster_(pick|class|spec|leave):([A-Za-z0-9_-]{6,40})(?::([a-z0-9_]{2,20}))?$/);
+  if (!match) return null;
+  const selected = Array.isArray(values)
+    ? values.map((item) => String(item || "").trim()).filter(Boolean).slice(0, 5)
+    : [];
+  return { rosterId: match[2], kind: match[1], classKey: match[3] || "", values: selected };
+}
+
+function dashboardRosterActionEndpoint(env) {
+  const explicit = String(env.DASHBOARD_ROSTER_ACTION_ENDPOINT || "").trim();
+  if (explicit) return explicit;
+  try {
+    return new URL("/api/roster/discord-action", dashboardAuthUrl(env)).toString();
+  } catch {
+    return "https://dashboard.lihvodruida.pp.ua/api/roster/discord-action";
+  }
+}
+
+function normalizeRosterProxyResult(data) {
+  const content = String(data?.content || "Готово.").trim();
+  return {
+    ok: Boolean(data?.ok),
+    content: limitText(content, 1800, "Готово."),
+    components: safeDiscordComponents(data?.components),
+  };
+}
+
+async function rosterProxyContent(interaction, env, rosterAction) {
+  const token = String(env.INTERNAL_PROFILE_LOOKUP_TOKEN || env.DISCORD_RULES_STATS_TOKEN || env.WORKER_STATS_TOKEN || "").trim();
+  if (!token) {
+    logWorkerEvent("warn", "roster.proxy.missing_token", { rosterId: rosterAction.rosterId });
+    return {
+      ok: false,
+      content: "❌ Формування складу тимчасово недоступне: звʼязок із панеллю не налаштований. Звернись до гільдмайстра.",
+    };
+  }
+
+  try {
+    const userId = getDiscordUserId(interaction);
+    const idempotencyKey = `discord-roster:${rosterAction.rosterId}:${userId}:${rosterAction.kind}:${rosterAction.values.join(".")}:${interaction?.id || Date.now()}`;
+    const { response, raw } = await fetchDashboardText(env, dashboardRosterActionEndpoint(env), token, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json; charset=utf-8",
+        "x-worker-stats-token": token,
+        "x-idempotency-key": idempotencyKey,
+      },
+      body: JSON.stringify({
+        rosterId: rosterAction.rosterId,
+        kind: rosterAction.kind,
+        classKey: rosterAction.classKey || "",
+        values: rosterAction.values,
+        userId,
+        userName: getDiscordUserLabel(interaction),
+        guildId: getInteractionGuildId(interaction, env),
+        source: "discord-interaction-worker",
+      }),
+    }, { timeoutMs: 9000, retries: 1 });
+
+    let data = null;
+    try { data = raw ? JSON.parse(raw) : null; } catch { data = null; }
+    if (!response.ok || !data) {
+      logWorkerEvent("warn", "roster.proxy.bad_response", { rosterId: rosterAction.rosterId, status: response.status, raw: raw.slice(0, 180) });
+      return { ok: false, content: "❌ Не вдалося оновити склад. Спробуй пізніше або звернись до офіцера." };
+    }
+
+    const result = normalizeRosterProxyResult(data);
+    logWorkerEvent(result.ok ? "info" : "warn", "roster.proxy.done", {
+      rosterId: rosterAction.rosterId,
+      kind: rosterAction.kind,
+      ok: result.ok,
+    });
+    return result;
+  } catch (error) {
+    logWorkerEvent("error", "roster.proxy.failed", { rosterId: rosterAction.rosterId, kind: rosterAction.kind, message: error?.message });
+    return { ok: false, content: "❌ Не вдалося оновити склад. Спробуй пізніше або звернись до офіцера." };
+  }
+}
+
+async function handleRosterInteraction(interaction, env, rosterAction, ctx) {
+  // pick/leave тиснуть із публічного повідомлення → нова ефемерна відповідь;
+  // class/spec — із ефемерного меню → редагуємо його на місці. Та сама логіка, що й у рейд-пулах.
+  const updatePrivatePanel = isEphemeralMessageInteraction(interaction) || (rosterAction.kind !== "pick" && rosterAction.kind !== "leave");
+  const fallbackContent = "❌ Не вдалося оновити склад. Спробуй ще раз або звернись до офіцера.";
+  const task = rosterProxyContent(interaction, env, rosterAction);
+
+  if (ctx && typeof ctx.waitUntil === "function") {
+    deferAndPatchInteraction(interaction, task, ctx, {
+      patchEvent: "roster.deferred.patch",
+      failedEvent: "roster.deferred.failed",
+      details: { rosterId: rosterAction.rosterId, kind: rosterAction.kind, updatePrivatePanel },
+    }, fallbackContent);
+
+    return updatePrivatePanel ? deferredMessageUpdate() : deferredEphemeral();
+  }
+
+  const fallback = await task.catch((error) => {
+    logWorkerEvent("error", "roster.fallback.failed", {
+      rosterId: rosterAction.rosterId,
+      kind: rosterAction.kind,
+      message: error?.message,
+    });
+    return { ok: false, content: fallbackContent, components: [] };
+  });
+  return interactionResultResponse(interaction, fallback);
+}
+
 async function handleDiscordInteraction(request, env, ctx) {
   const rawBody = await request.text();
   const verified = await verifyDiscordRequest(request, env, rawBody);
@@ -4134,6 +4243,9 @@ async function handleDiscordInteraction(request, env, ctx) {
 
   const raidAnnouncementAction = decodeRaidAttendanceCustomId(customId);
   if (raidAnnouncementAction) return handleRaidAnnouncementInteraction(interaction, env, raidAnnouncementAction, ctx);
+
+  const rosterAction = decodeRosterCustomId(customId, interaction?.data?.values);
+  if (rosterAction) return handleRosterInteraction(interaction, env, rosterAction, ctx);
 
   const rulesAction = decodeRulesCustomId(customId);
   if (rulesAction) return handleRulesInteraction(interaction, env, rulesAction);

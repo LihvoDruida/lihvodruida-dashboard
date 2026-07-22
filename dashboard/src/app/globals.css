@@ -16432,7 +16432,7 @@ a.is-submitting[aria-busy="true"] {
   min-width: 0;
 }
 
-.rules-registration-block__head > span:not(.rules-registration-block__icon):first-of-type {
+.rules-registration-block__head > span:not([class]) {
   display: grid;
   gap: 3px;
   min-width: 0;
@@ -17076,9 +17076,12 @@ a.is-submitting[aria-busy="true"] {
     grid-template-columns: 1fr !important;
   }
 
-  .rules-registration-block__head,
-  .rules-registration-bnet-action {
+  .rules-registration-block__head {
     grid-template-columns: 34px minmax(0, 1fr) !important;
+  }
+
+  .rules-registration-bnet-action {
+    grid-template-columns: 1fr !important;
   }
 
   .rules-registration-block__head > .profile-count-pill,

@@ -56,7 +56,7 @@ export default async function DashboardIdentity({
           ? { href: "/roster", section: "roster" as const, label: "Склад", desktopLabel: "Формування складу" }
           : null,
         canUseGuildRoster
-          ? { href: "/guild", section: "guild" as const, label: "Склад", desktopLabel: "Склад гільдії" }
+          ? { href: "/guild", section: "guild" as const, label: "Гільдія", desktopLabel: "Склад гільдії" }
           : null,
         canUseDiscord
           ? { href: "/discord", section: "discord" as const, label: "Discord", desktopLabel: "Discord" }
@@ -105,7 +105,15 @@ export default async function DashboardIdentity({
                 </div>
                 <div>
                   <strong>{displayName}</strong>
-                  <span>{user.groupName || hierarchyTitle(user.role)} • {user.isServerOwner ? "Власник сервера" : siteStatusLabel(user.role)}</span>
+                  {(() => {
+                    const primaryTitle = user.groupName || hierarchyTitle(user.role);
+                    const secondaryTitle = user.isServerOwner ? "Власник сервера" : siteStatusLabel(user.role);
+                    const subtitle =
+                      primaryTitle && secondaryTitle && primaryTitle !== secondaryTitle
+                        ? `${primaryTitle} • ${secondaryTitle}`
+                        : primaryTitle || secondaryTitle;
+                    return <span>{subtitle}</span>;
+                  })()}
                 </div>
               </a>
               <LogoutButton />

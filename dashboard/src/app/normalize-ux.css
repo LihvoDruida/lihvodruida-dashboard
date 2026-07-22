@@ -218,3 +218,32 @@
     height: auto;
   }
 }
+
+/* --------------------------------------------------------------------------
+   9. Мобільний футер: роздільники в розмітці існували, але не мали жодного
+   CSS (порожні aria-hidden span-и) — звідси «поламані» проміжки між
+   «Умови» й «Приватність». Даємо їм вигляд крапки-роздільника; у
+   стовпчиковому мобільному розкладі бренд-роздільник ховаємо.
+   -------------------------------------------------------------------------- */
+.app-footer__separator,
+.app-footer__link-separator {
+  flex: none;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.42;
+}
+
+@media (max-width: 760px) {
+  /* бренд стекається у стовпчик — крапка між назвою й описом висить у повітрі */
+  .app-footer--site-wide .app-footer__separator {
+    display: none;
+  }
+  /* посилання лишаємо в рядок із крапкою між ними */
+  .app-footer--site-wide .app-footer__links {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+}
