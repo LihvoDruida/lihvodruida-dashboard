@@ -164,3 +164,57 @@
     overflow-wrap: anywhere;
   }
 }
+
+/* --------------------------------------------------------------------------
+   8. Мобільне доопрацювання сторінки /rules/accept.
+   Верстка сторінки вже адаптивна (герой стекається, форми згортаються в 1
+   колонку, головна кнопка на всю ширину). Лишалася одна дірка: довгі
+   нерозривні токени — Discord ID, ніки з кількох альтів через дефіс, назви
+   реалмів — могли виштовхувати макет за межі вʼюпорта, бо глобальний захист
+   вище не покриває rules-селектори.
+   -------------------------------------------------------------------------- */
+@media (max-width: 560px) {
+  .rules-onboarding-page,
+  .rules-onboarding-shell,
+  .rules-onboarding-card {
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .rules-onboarding-summary strong,
+  .rules-onboarding-summary small,
+  .rules-onboarding-role-box span,
+  .rules-onboarding-role-box small,
+  .rules-onboarding-final-action__copy strong,
+  .rules-onboarding-final-action__copy small,
+  .profile-character-candidate__body strong,
+  .profile-character-candidate__body small,
+  .rules-registration-block__head small,
+  .profile-nickname-preview strong,
+  .profile-nickname-preview small {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .profile-nickname-preview,
+  .rules-onboarding-role-box {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  /* Нижній відступ з урахуванням «домашньої смуги» на iPhone, щоб фінальна
+     кнопка не липла до краю екрана / під браузерний UI. */
+  .rules-onboarding-shell {
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .profile-character-candidate {
+    min-width: 0;
+  }
+  .profile-character-candidate__avatar img {
+    max-width: 100%;
+    height: auto;
+  }
+}
