@@ -149,6 +149,48 @@
   gap: 16px;
 }
 
+/* ---- Паті ---- */
+.roster-party-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.roster-party {
+  border: 1px solid var(--ui-line, rgba(148, 163, 184, 0.22));
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: var(--ui-bg-2, rgba(255, 255, 255, 0.02));
+}
+
+.roster-party__head {
+  font-weight: 700;
+  margin-bottom: 6px;
+  font-size: var(--type-small, 0.9rem);
+  color: var(--ui-text-muted, #c2c9d4);
+}
+
+.roster-party__slots {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 3px;
+  font-size: var(--type-small, 0.88rem);
+}
+
+.roster-slot-empty {
+  color: var(--ui-text-muted, #7c8494);
+  font-style: italic;
+}
+
+.roster-bench-note {
+  margin: 10px 0 0;
+  font-size: var(--type-small, 0.85rem);
+  color: var(--ui-text-muted, #9aa4b2);
+}
+
 @media (max-width: 620px) {
   .roster-formation-card__actions .btn {
     width: 100%;

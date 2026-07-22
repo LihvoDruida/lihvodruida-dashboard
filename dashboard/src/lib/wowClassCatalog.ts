@@ -17,7 +17,7 @@ import type { WowCharacterRole } from "@/lib/wowRoles";
 export type WowSpecDefinition = {
   /** Стабільний ключ для custom_id Discord-інтеракції (лише [a-z0-9_]). */
   key: string;
-  /** Назва спеки українською для меню й ембеду. */
+  /** Назва спеки англійською (як у грі), напр. "Restoration". */
   label: string;
   role: WowCharacterRole;
 };
@@ -25,7 +25,7 @@ export type WowSpecDefinition = {
 export type WowClassDefinition = {
   /** Стабільний ключ для custom_id (лише [a-z0-9_]). */
   key: string;
-  /** Назва класу українською. */
+  /** Назва класу англійською (як у грі), напр. "Druid". */
   label: string;
   /** Колір класу (#RRGGBB) — узгоджений з рейдовими ембедами. */
   color: string;
@@ -36,145 +36,145 @@ export type WowClassDefinition = {
 export const WOW_CLASS_CATALOG: WowClassDefinition[] = [
   {
     key: "deathknight",
-    label: "Лицар смерті",
+    label: "Death Knight",
     color: "#C41E3A",
     emoji: "🩸",
     specs: [
-      { key: "blood", label: "Кров", role: "tank" },
-      { key: "frost", label: "Лід", role: "dps" },
-      { key: "unholy", label: "Нечестивість", role: "dps" },
+      { key: "blood", label: "Blood", role: "tank" },
+      { key: "frost", label: "Frost", role: "dps" },
+      { key: "unholy", label: "Unholy", role: "dps" },
     ],
   },
   {
     key: "demonhunter",
-    label: "Мисливець на демонів",
+    label: "Demon Hunter",
     color: "#A330C9",
     emoji: "😈",
     specs: [
-      { key: "havoc", label: "Хаос", role: "dps" },
-      { key: "vengeance", label: "Помста", role: "tank" },
+      { key: "havoc", label: "Havoc", role: "dps" },
+      { key: "vengeance", label: "Vengeance", role: "tank" },
     ],
   },
   {
     key: "druid",
-    label: "Друїд",
+    label: "Druid",
     color: "#FF7C0A",
     emoji: "🐻",
     specs: [
-      { key: "balance", label: "Баланс", role: "dps" },
-      { key: "feral", label: "Хижак", role: "dps" },
-      { key: "guardian", label: "Страж", role: "tank" },
-      { key: "restoration", label: "Відновлення", role: "healer" },
+      { key: "balance", label: "Balance", role: "dps" },
+      { key: "feral", label: "Feral", role: "dps" },
+      { key: "guardian", label: "Guardian", role: "tank" },
+      { key: "restoration", label: "Restoration", role: "healer" },
     ],
   },
   {
     key: "evoker",
-    label: "Викликач",
+    label: "Evoker",
     color: "#33937F",
     emoji: "🐲",
     specs: [
-      { key: "devastation", label: "Спустошення", role: "dps" },
-      { key: "preservation", label: "Збереження", role: "healer" },
-      { key: "augmentation", label: "Підсилення", role: "dps" },
+      { key: "devastation", label: "Devastation", role: "dps" },
+      { key: "preservation", label: "Preservation", role: "healer" },
+      { key: "augmentation", label: "Augmentation", role: "dps" },
     ],
   },
   {
     key: "hunter",
-    label: "Мисливець",
+    label: "Hunter",
     color: "#AAD372",
     emoji: "🏹",
     specs: [
-      { key: "beastmastery", label: "Повелитель звірів", role: "dps" },
-      { key: "marksmanship", label: "Влучність", role: "dps" },
-      { key: "survival", label: "Виживання", role: "dps" },
+      { key: "beastmastery", label: "Beast Mastery", role: "dps" },
+      { key: "marksmanship", label: "Marksmanship", role: "dps" },
+      { key: "survival", label: "Survival", role: "dps" },
     ],
   },
   {
     key: "mage",
-    label: "Маг",
+    label: "Mage",
     color: "#3FC7EB",
     emoji: "🔮",
     specs: [
-      { key: "arcane", label: "Тайна магія", role: "dps" },
-      { key: "fire", label: "Вогонь", role: "dps" },
-      { key: "frost", label: "Лід", role: "dps" },
+      { key: "arcane", label: "Arcane", role: "dps" },
+      { key: "fire", label: "Fire", role: "dps" },
+      { key: "frost", label: "Frost", role: "dps" },
     ],
   },
   {
     key: "monk",
-    label: "Монах",
+    label: "Monk",
     color: "#00FF98",
     emoji: "🐉",
     specs: [
-      { key: "brewmaster", label: "Пивовар", role: "tank" },
-      { key: "mistweaver", label: "Ткач туманів", role: "healer" },
-      { key: "windwalker", label: "Мандрівник вітрів", role: "dps" },
+      { key: "brewmaster", label: "Brewmaster", role: "tank" },
+      { key: "mistweaver", label: "Mistweaver", role: "healer" },
+      { key: "windwalker", label: "Windwalker", role: "dps" },
     ],
   },
   {
     key: "paladin",
-    label: "Паладин",
+    label: "Paladin",
     color: "#F48CBA",
     emoji: "🔨",
     specs: [
-      { key: "holy", label: "Світло", role: "healer" },
-      { key: "protection", label: "Захист", role: "tank" },
-      { key: "retribution", label: "Відплата", role: "dps" },
+      { key: "holy", label: "Holy", role: "healer" },
+      { key: "protection", label: "Protection", role: "tank" },
+      { key: "retribution", label: "Retribution", role: "dps" },
     ],
   },
   {
     key: "priest",
-    label: "Жрець",
+    label: "Priest",
     color: "#FFFFFF",
     emoji: "✨",
     specs: [
-      { key: "discipline", label: "Послух", role: "healer" },
-      { key: "holy", label: "Святість", role: "healer" },
-      { key: "shadow", label: "Тінь", role: "dps" },
+      { key: "discipline", label: "Discipline", role: "healer" },
+      { key: "holy", label: "Holy", role: "healer" },
+      { key: "shadow", label: "Shadow", role: "dps" },
     ],
   },
   {
     key: "rogue",
-    label: "Розбійник",
+    label: "Rogue",
     color: "#FFF468",
     emoji: "🗡️",
     specs: [
-      { key: "assassination", label: "Вбивство", role: "dps" },
-      { key: "outlaw", label: "Головоріз", role: "dps" },
-      { key: "subtlety", label: "Підступність", role: "dps" },
+      { key: "assassination", label: "Assassination", role: "dps" },
+      { key: "outlaw", label: "Outlaw", role: "dps" },
+      { key: "subtlety", label: "Subtlety", role: "dps" },
     ],
   },
   {
     key: "shaman",
-    label: "Шаман",
+    label: "Shaman",
     color: "#0070DE",
     emoji: "⚡",
     specs: [
-      { key: "elemental", label: "Стихія", role: "dps" },
-      { key: "enhancement", label: "Підсилення", role: "dps" },
-      { key: "restoration", label: "Відновлення", role: "healer" },
+      { key: "elemental", label: "Elemental", role: "dps" },
+      { key: "enhancement", label: "Enhancement", role: "dps" },
+      { key: "restoration", label: "Restoration", role: "healer" },
     ],
   },
   {
     key: "warlock",
-    label: "Чорнокнижник",
+    label: "Warlock",
     color: "#8788EE",
     emoji: "💜",
     specs: [
-      { key: "affliction", label: "Страждання", role: "dps" },
-      { key: "demonology", label: "Демонологія", role: "dps" },
-      { key: "destruction", label: "Руйнування", role: "dps" },
+      { key: "affliction", label: "Affliction", role: "dps" },
+      { key: "demonology", label: "Demonology", role: "dps" },
+      { key: "destruction", label: "Destruction", role: "dps" },
     ],
   },
   {
     key: "warrior",
-    label: "Воїн",
+    label: "Warrior",
     color: "#C69B6D",
     emoji: "⚔️",
     specs: [
-      { key: "arms", label: "Зброя", role: "dps" },
-      { key: "fury", label: "Лють", role: "dps" },
-      { key: "protection", label: "Захист", role: "tank" },
+      { key: "arms", label: "Arms", role: "dps" },
+      { key: "fury", label: "Fury", role: "dps" },
+      { key: "protection", label: "Protection", role: "tank" },
     ],
   },
 ];
@@ -205,6 +205,24 @@ export function wowClassColorInt(classKey: unknown): number {
   const hex = (cls?.color || "#94a3b8").replace("#", "");
   const parsed = Number.parseInt(hex, 16);
   return Number.isFinite(parsed) ? parsed : 0x94a3b8;
+}
+
+/**
+ * Повна назва спеки у форматі «спека + клас», як прийнято в англомовному
+ * ком'юніті WoW: "Restoration Druid", "Frost Death Knight", "Beast Mastery Hunter".
+ * Приймає або обидва обʼєкти, або пару ключів.
+ */
+export function wowSpecFullName(
+  cls: WowClassDefinition | string | null | undefined,
+  spec: WowSpecDefinition | string | null | undefined,
+): string {
+  const resolvedCls = typeof cls === "string" || cls == null ? findWowClass(cls) : cls;
+  if (!resolvedCls) return "";
+  const resolvedSpec =
+    typeof spec === "string" || spec == null
+      ? resolvedCls.specs.find((item) => item.key === String(spec || "").trim().toLowerCase()) || null
+      : spec;
+  return resolvedSpec ? `${resolvedSpec.label} ${resolvedCls.label}` : resolvedCls.label;
 }
 
 export function roleLabelShort(role: WowCharacterRole): string {

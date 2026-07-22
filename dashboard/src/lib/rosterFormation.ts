@@ -17,11 +17,15 @@ import {
   WOW_CLASS_CATALOG,
   findWowClass,
   findWowSpec,
-  roleEmoji,
-  roleLabelShort,
   wowClassColorInt,
   wowClassCount,
+  wowSpecFullName,
 } from "@/lib/wowClassCatalog";
+import {
+  RAID_ALGORITHM_PARTY_SIZE,
+  raidAlgorithmAutoCompositionForSize,
+  raidAlgorithmDpsRangeType,
+} from "@/lib/raidCompositionAlgorithm";
 
 /* ==========================================================================
    Система «Формування складу».
@@ -256,6 +260,146 @@ export function rosterRoleCounts(roster: RosterFormation) {
 }
 
 /* ----------------------------------------------------------------------------
+   Деталізована роль: танк / хіл / ДД (мелі) / РДД (рендж).
+   Мелі-vs-рендж визначається автоматично тим самим класифікатором, що вже
+   використовують рейди на сайті (raidAlgorithmDpsRangeType), тож джерело
+   правди одне.
+   -------------------------------------------------------------------------- */
+
+export type RosterDetailedRole = "tank" | "healer" | "melee" | "ranged";
+
+export function rosterPickDetailedRole(pick: RosterMemberPick): RosterDetailedRole {
+  if (pick.role === "tank") return "tank";
+  if (pick.role === "healer") return "healer";
+  return raidAlgorithmDpsRangeType({ className: pick.classKey, activeSpecName: pick.specKey, role: "dps" });
+}
+
+export function rosterDetailedRoleLabel(role: RosterDetailedRole) {
+  if (role === "tank") return "Танк";
+  if (role === "healer") return "Хіл";
+  if (role === "melee") return "ДД"; // ближній бій
+  return "РДД"; // дальній бій
+}
+
+export function rosterDetailedRoleEmoji(role: RosterDetailedRole) {
+  if (role === "tank") return "🛡️";
+  if (role === "healer") return "💚";
+  if (role === "melee") return "⚔️";
+  return "🏹";
+}
+
+export function rosterRoleBreakdown(roster: RosterFormation) {
+  return roster.picks.reduce(
+    (acc, pick) => {
+      acc[rosterPickDetailedRole(pick)] += 1;
+      return acc;
+    },
+    { tank: 0, healer: 0, melee: 0, ranged: 0 } as Record<RosterDetailedRole, number>,
+  );
+}
+
+/* ----------------------------------------------------------------------------
+   Формування паті.
+
+   Цільова композиція береться з тієї ж механіки, що й рейди на сайті:
+   raidAlgorithmAutoCompositionForSize(20, "mythic") → 2 танки / 4 хіли / 14 ДД.
+   Далі гравці розкладаються по паті (по 5) так, щоб у кожній паті був хіл,
+   танки рознесені по перших паті, а ДД заповнювали решту з перевагою до
+   різноманіття класів у межах паті (як assignDpsToParties у raids.ts).
+   -------------------------------------------------------------------------- */
+
+export type RosterParty = {
+  index: number;
+  tank: RosterMemberPick | null;
+  healer: RosterMemberPick | null;
+  dps: RosterMemberPick[];
+  members: RosterMemberPick[];
+};
+
+export type RosterComposition = {
+  /** Ціль для 20 гравців: { tanks: 2, healers: 4, dps: 14 }. */
+  target: { tanks: number; healers: number; dps: number };
+  partyCount: number;
+  parties: RosterParty[];
+  bench: RosterMemberPick[];
+  breakdown: Record<RosterDetailedRole, number>;
+};
+
+function rosterPartyCapacity(party: RosterParty) {
+  return RAID_ALGORITHM_PARTY_SIZE - (party.tank ? 1 : 0) - (party.healer ? 1 : 0) - party.dps.length;
+}
+
+function rosterPartyMemberCount(party: RosterParty) {
+  return (party.tank ? 1 : 0) + (party.healer ? 1 : 0) + party.dps.length;
+}
+
+function rosterPartyHasClass(party: RosterParty, classKey: string) {
+  return (
+    party.tank?.classKey === classKey ||
+    party.healer?.classKey === classKey ||
+    party.dps.some((member) => member.classKey === classKey)
+  );
+}
+
+export function buildRosterComposition(roster: RosterFormation): RosterComposition {
+  const target = raidAlgorithmAutoCompositionForSize(ROSTER_TARGET_SIZE, "mythic");
+  const partyCount = Math.max(1, Math.ceil(ROSTER_TARGET_SIZE / RAID_ALGORITHM_PARTY_SIZE));
+  const parties: RosterParty[] = Array.from({ length: partyCount }, (_, i) => ({
+    index: i + 1,
+    tank: null,
+    healer: null,
+    dps: [],
+    members: [],
+  }));
+
+  const ordered = [...roster.picks].sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
+  const tanks = ordered.filter((pick) => pick.role === "tank");
+  const healers = ordered.filter((pick) => pick.role === "healer");
+  const dps = ordered.filter((pick) => pick.role === "dps");
+  const bench: RosterMemberPick[] = [];
+
+  // Танки: по одному в паті, у порядку індексів.
+  for (const tank of tanks) {
+    const slot = parties.find((party) => !party.tank && rosterPartyCapacity(party) > 0);
+    if (slot) slot.tank = tank;
+    else bench.push(tank);
+  }
+
+  // Хіли: рівно по одному в кожну паті (4 хіли → 4 паті). Зайві — на лаву.
+  for (const healer of healers) {
+    const slot = parties.find((party) => !party.healer && rosterPartyCapacity(party) > 0);
+    if (slot) slot.healer = healer;
+    else bench.push(healer);
+  }
+
+  // ДД: заповнюють вільні слоти; перевага паті без такого ж класу, потім найменш заповненій.
+  for (const member of dps) {
+    const candidates = parties.filter((party) => rosterPartyCapacity(party) > 0);
+    if (!candidates.length) {
+      bench.push(member);
+      continue;
+    }
+    candidates.sort((a, b) => {
+      const aHas = rosterPartyHasClass(a, member.classKey);
+      const bHas = rosterPartyHasClass(b, member.classKey);
+      return (
+        Number(aHas) - Number(bHas) ||
+        a.dps.length - b.dps.length ||
+        rosterPartyMemberCount(a) - rosterPartyMemberCount(b) ||
+        a.index - b.index
+      );
+    });
+    candidates[0].dps.push(member);
+  }
+
+  for (const party of parties) {
+    party.members = [party.tank, party.healer, ...party.dps].filter(Boolean) as RosterMemberPick[];
+  }
+
+  return { target, partyCount, parties, bench, breakdown: rosterRoleBreakdown(roster) };
+}
+
+/* ----------------------------------------------------------------------------
    Custom ID кодування для Discord-інтеракцій
    -------------------------------------------------------------------------- */
 
@@ -293,7 +437,24 @@ export function decodeRosterCustomId(
    -------------------------------------------------------------------------- */
 
 function pickLine(pick: RosterMemberPick) {
-  return `${roleEmoji(pick.role)} **${pick.discordName}** — ${pick.className} · ${pick.specName}`;
+  const detailed = rosterPickDetailedRole(pick);
+  return `${rosterDetailedRoleEmoji(detailed)} **${pick.discordName}** — ${wowSpecFullName(pick.classKey, pick.specKey)}`;
+}
+
+function partiesFieldValue(composition: RosterComposition) {
+  return composition.parties
+    .map((party) => {
+      const slots: string[] = [];
+      slots.push(party.tank ? `🛡️ ${party.tank.discordName}` : "🛡️ —");
+      slots.push(party.healer ? `💚 ${party.healer.discordName}` : "💚 —");
+      for (const member of party.dps) {
+        const detailed = rosterPickDetailedRole(member);
+        slots.push(`${rosterDetailedRoleEmoji(detailed)} ${member.discordName}`);
+      }
+      return `**Паті ${party.index}** (${party.members.length}/${RAID_ALGORITHM_PARTY_SIZE})\n${slots.join(" · ")}`;
+    })
+    .join("\n\n")
+    .slice(0, 1024);
 }
 
 function coverageFieldValue(roster: RosterFormation) {
@@ -319,7 +480,9 @@ function rosterListFieldValue(roster: RosterFormation) {
 export function buildRosterDiscordPayload(roster: RosterFormation) {
   const closed = roster.status === "closed";
   const covered = rosterCoveredClassCount(roster);
-  const roleCounts = rosterRoleCounts(roster);
+  const composition = buildRosterComposition(roster);
+  const breakdown = composition.breakdown;
+  const target = composition.target;
   const total = roster.picks.length;
 
   const fields = [
@@ -342,7 +505,17 @@ export function buildRosterDiscordPayload(roster: RosterFormation) {
     },
     {
       name: "⚔️ Ролі",
-      value: `🛡️ Танки: **${roleCounts.tank}**\n💚 Хіли: **${roleCounts.healer}**\n⚔️ ДД: **${roleCounts.dps}**`,
+      value:
+        `🛡️ Танки: **${breakdown.tank}/${target.tanks}**\n` +
+        `💚 Хіли: **${breakdown.healer}/${target.healers}**\n` +
+        `⚔️ ДД (мелі): **${breakdown.melee}**\n` +
+        `🏹 РДД (рендж): **${breakdown.ranged}**\n` +
+        `Разом ДД: **${breakdown.melee + breakdown.ranged}/${target.dps}**`,
+      inline: false,
+    },
+    {
+      name: `🧩 Паті (по ${RAID_ALGORITHM_PARTY_SIZE}, хіл у кожній)`,
+      value: total ? partiesFieldValue(composition) : "Паті сформуються, щойно гравці почнуть обирати ролі.",
       inline: false,
     },
   ];
@@ -356,7 +529,7 @@ export function buildRosterDiscordPayload(roster: RosterFormation) {
     footer: {
       text: closed
         ? "Mistblossom Vanguard • Формування складу завершено"
-        : `Mistblossom Vanguard • Мета: ${ROSTER_TARGET_SIZE} гравців, мінімум 1 представник кожного класу`,
+        : `Mistblossom Vanguard • Мета: ${target.tanks} танки / ${target.healers} хіли / ${target.dps} ДД, мінімум 1 представник кожного класу`,
     },
     timestamp: new Date().toISOString(),
   });
@@ -434,12 +607,18 @@ function specSelectComponents(rosterId: string, classKey: string) {
           min_values: 1,
           max_values: 1,
           options: cls.specs
-            .map((spec) => ({
-              label: spec.label,
-              value: spec.key,
-              description: roleLabelShort(spec.role),
-              emoji: { name: roleEmoji(spec.role) },
-            }))
+            .map((spec) => {
+              const detailed: RosterDetailedRole =
+                spec.role === "dps"
+                  ? raidAlgorithmDpsRangeType({ className: cls.key, activeSpecName: spec.key, role: "dps" })
+                  : spec.role;
+              return {
+                label: `${spec.label} ${cls.label}`,
+                value: spec.key,
+                description: rosterDetailedRoleLabel(detailed),
+                emoji: { name: rosterDetailedRoleEmoji(detailed) },
+              };
+            })
             .slice(0, 25),
         },
       ],
@@ -563,9 +742,13 @@ export async function handleRosterFormationDiscordAction(params: {
     });
 
     await rerenderRosterMessage(updated);
+    const detailedRole: RosterDetailedRole =
+      resolved.spec.role === "dps"
+        ? raidAlgorithmDpsRangeType({ className: resolved.cls.key, activeSpecName: resolved.spec.key, role: "dps" })
+        : resolved.spec.role;
     return {
       ok: true,
-      content: `✅ Тебе записано у склад: **${resolved.cls.label} · ${resolved.spec.label}** (${roleLabelShort(resolved.spec.role)}).`,
+      content: `✅ Тебе записано у склад: **${wowSpecFullName(resolved.cls, resolved.spec)}** (${rosterDetailedRoleLabel(detailedRole)}).`,
     };
   }
 

@@ -6,16 +6,19 @@ import { canManageRaids } from "@/lib/permissions";
 import { getOwnProfilePath } from "@/lib/profiles";
 import { fetchDiscordRoles, fetchDiscordTextChannels, hasDiscordEmbedConfig } from "@/lib/discordAdmin";
 import { buildPageMetadata } from "@/lib/seo";
-import { WOW_CLASS_CATALOG, roleEmoji, wowClassCount } from "@/lib/wowClassCatalog";
+import { WOW_CLASS_CATALOG, wowClassCount, wowSpecFullName } from "@/lib/wowClassCatalog";
 import "../roster.css";
 import {
   ROSTER_SEASONS,
   ROSTER_TARGET_SIZE,
+  buildRosterComposition,
   hasRosterStorage,
   listRosterFormations,
   rosterClassCoverage,
   rosterCoveredClassCount,
-  rosterRoleCounts,
+  rosterDetailedRoleEmoji,
+  rosterPickDetailedRole,
+  rosterRoleBreakdown,
   rosterSeasonLabel,
   type RosterFormation,
 } from "@/lib/rosterFormation";
@@ -89,7 +92,8 @@ function CoverageTable({ roster }: { roster: RosterFormation | null }) {
                 <ul className="roster-coverage-cell__members">
                   {row.members.map((member) => (
                     <li key={member.discordUserId}>
-                      {roleEmoji(member.role)} {member.discordName} · {member.specName}
+                      {rosterDetailedRoleEmoji(rosterPickDetailedRole(member))} {member.discordName} ·{" "}
+                      {wowSpecFullName(member.classKey, member.specKey)}
                     </li>
                   ))}
                 </ul>
@@ -102,9 +106,50 @@ function CoverageTable({ roster }: { roster: RosterFormation | null }) {
   );
 }
 
+function PartyGrid({ roster }: { roster: RosterFormation }) {
+  const composition = buildRosterComposition(roster);
+  if (!roster.picks.length) return null;
+
+  return (
+    <div className="content-form-section roster-parties">
+      <div className="content-form-section-head">
+        <strong>🧩 Паті</strong>
+        <small>
+          По {5} у кожній, хіл у кожній паті. Ціль: {composition.target.tanks} танки / {composition.target.healers} хіли /{" "}
+          {composition.target.dps} ДД.
+        </small>
+      </div>
+      <div className="roster-party-grid">
+        {composition.parties.map((party) => (
+          <div key={party.index} className="roster-party">
+            <div className="roster-party__head">
+              Паті {party.index} · {party.members.length}/5
+            </div>
+            <ul className="roster-party__slots">
+              <li>🛡️ {party.tank ? party.tank.discordName : <span className="roster-slot-empty">вільно</span>}</li>
+              <li>💚 {party.healer ? party.healer.discordName : <span className="roster-slot-empty">вільно</span>}</li>
+              {party.dps.map((member) => (
+                <li key={member.discordUserId}>
+                  {rosterDetailedRoleEmoji(rosterPickDetailedRole(member))} {member.discordName}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+      {composition.bench.length ? (
+        <p className="roster-bench-note">
+          На лаві ({composition.bench.length}): {composition.bench.map((m) => m.discordName).join(", ")}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function FormationCard({ roster }: { roster: RosterFormation }) {
   const covered = rosterCoveredClassCount(roster);
-  const roles = rosterRoleCounts(roster);
+  const breakdown = rosterRoleBreakdown(roster);
+  const composition = buildRosterComposition(roster);
   const closed = roster.status === "closed";
 
   return (
@@ -117,7 +162,8 @@ function FormationCard({ roster }: { roster: RosterFormation }) {
             присутньо {covered}/{wowClassCount()} класів
           </p>
           <p className="roster-formation-card__roles">
-            🛡️ Танки: {roles.tank} · 💚 Хіли: {roles.healer} · ⚔️ ДД: {roles.dps}
+            🛡️ Танки: {breakdown.tank}/{composition.target.tanks} · 💚 Хіли: {breakdown.healer}/
+            {composition.target.healers} · ⚔️ ДД: {breakdown.melee} · 🏹 РДД: {breakdown.ranged}
           </p>
         </div>
         {roster.messageUrl ? (
@@ -126,6 +172,8 @@ function FormationCard({ roster }: { roster: RosterFormation }) {
           </a>
         ) : null}
       </header>
+
+      <PartyGrid roster={roster} />
 
       <CoverageTable roster={roster} />
 
