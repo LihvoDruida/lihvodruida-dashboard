@@ -400,25 +400,27 @@ function RegistrationGenderForm({
 
       <form className="profile-gender-form" action="/api/profile/gender" method="post">
         <input type="hidden" name="returnTo" value={returnTo} />
-        {PROFILE_GENDER_OPTIONS.map((option) => {
-          const checked = selected === option.value;
-          return (
-            <label className={`profile-gender-option${checked ? " is-selected" : ""}`} key={option.value}>
-              <input
-                type="radio"
-                name="grammaticalGender"
-                value={option.value}
-                defaultChecked={checked}
-                required
-              />
-              <span>
-                <strong>{option.label}</strong>
-                <small>{option.hint}</small>
-                <em>Приклад: {option.example}</em>
-              </span>
-            </label>
-          );
-        })}
+        <div role="radiogroup" aria-label="Стать або звертання профілю" style={{ display: "contents" }}>
+          {PROFILE_GENDER_OPTIONS.map((option) => {
+            const checked = selected === option.value;
+            return (
+              <label className={`profile-gender-option${checked ? " is-selected" : ""}`} key={option.value}>
+                <input
+                  type="radio"
+                  name="grammaticalGender"
+                  value={option.value}
+                  defaultChecked={checked}
+                  required
+                />
+                <span>
+                  <strong>{option.label}</strong>
+                  <small>{option.hint}</small>
+                  <em>Приклад: {option.example}</em>
+                </span>
+              </label>
+            );
+          })}
+        </div>
         <button className="btn btn-primary btn-sm" type="submit">
           Зберегти звертання
         </button>
@@ -464,25 +466,27 @@ function RegistrationRaidRoleForm({
       {mainCharacter ? (
         <form className="profile-raid-role-form" action="/api/profile/raid-role" method="post">
           <input type="hidden" name="returnTo" value={returnTo} />
-          {RAID_ROLE_OPTIONS.map((option) => {
-            const checked =
-              option.value === "auto" ? !manualRole : manualRole === option.value;
-            const label = option.value === "auto" ? `Авто: ${wowRoleLabel(autoRole)}` : option.label;
-            return (
-              <label className={`profile-raid-role-option${checked ? " is-selected" : ""}`} key={option.value}>
-                <input
-                  type="radio"
-                  name="raidRole"
-                  value={option.value}
-                  defaultChecked={checked}
-                />
-                <span>
-                  <strong>{label}</strong>
-                  <small>{option.hint}</small>
-                </span>
-              </label>
-            );
-          })}
+          <div role="radiogroup" aria-label="Роль для запису на рейди" style={{ display: "contents" }}>
+            {RAID_ROLE_OPTIONS.map((option) => {
+              const checked =
+                option.value === "auto" ? !manualRole : manualRole === option.value;
+              const label = option.value === "auto" ? `Авто: ${wowRoleLabel(autoRole)}` : option.label;
+              return (
+                <label className={`profile-raid-role-option${checked ? " is-selected" : ""}`} key={option.value}>
+                  <input
+                    type="radio"
+                    name="raidRole"
+                    value={option.value}
+                    defaultChecked={checked}
+                  />
+                  <span>
+                    <strong>{label}</strong>
+                    <small>{option.hint}</small>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
           <button className="btn btn-primary btn-sm" type="submit">
             Зберегти роль
           </button>
@@ -541,7 +545,7 @@ function RegistrationNicknameCharactersForm({
       {altCandidates.length ? (
         <form className="profile-nickname-character-form" action="/api/profile/nickname-characters" method="post">
           <input type="hidden" name="returnTo" value={returnTo} />
-          <div className="profile-nickname-character-list">
+          <div className="profile-nickname-character-list" role="group" aria-label="Альти для Discord-ніку">
             {altCandidates.map((character) => {
               const checked = selected.has(character.key);
               return (
@@ -959,12 +963,12 @@ function PublicRulesAction({
       aria-label="Фінальна дія прийняття правил"
     >
       <span className="rules-onboarding-final-action__copy">
-        <strong>
+        <strong id="rules-public-action-title">
           {canAcceptPublicly
             ? "Можна прийняти правила без входу"
             : "Потрібне Discord-підтвердження"}
         </strong>
-        <small>
+        <small id="rules-public-action-help">
           {canAcceptPublicly
             ? "Discord-кнопка вже передала сайту підписаний userId. Натисни кнопку — бот видасть ту ж роль без перевірок профільного редактора."
             : "Відкрий цю сторінку з кнопки правил у Discord або увійди через Discord, інакше сайт не знає, кому видавати роль."}
@@ -976,18 +980,24 @@ function PublicRulesAction({
           action="/api/rules/accept/complete"
           method="post"
           data-dashboard-action="/api/rules/accept/complete"
+          aria-label="Прийняття правил без авторизації"
         >
           <input type="hidden" name="rt" value={token} />
           <button
             className="btn primary rules-onboarding-primary-action"
             type="submit"
             data-loading-label="Видаємо роль..."
+            aria-describedby="rules-public-action-help"
           >
             Прийняти правила й отримати роль
           </button>
         </form>
       ) : (
-        <a className="btn primary rules-onboarding-primary-action" href={loginHref}>
+        <a
+          className="btn primary rules-onboarding-primary-action"
+          href={loginHref}
+          aria-describedby="rules-public-action-help"
+        >
           Увійти через Discord
         </a>
       )}
