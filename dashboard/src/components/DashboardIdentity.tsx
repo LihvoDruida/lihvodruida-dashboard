@@ -25,7 +25,7 @@ export default async function DashboardIdentity({
   activeSection = "home",
 }: {
   user: DashboardSession | null;
-  activeSection?: "home" | "admin" | "applications" | "content" | "discord" | "guild" | "profile" | "profiles" | "raids" | "rules";
+  activeSection?: "home" | "admin" | "applications" | "content" | "discord" | "guild" | "profile" | "profiles" | "raids" | "roster" | "rules";
 }) {
   const [guild, nicknamePolicy] = await Promise.all([
     getGuildBranding(),
@@ -51,6 +51,9 @@ export default async function DashboardIdentity({
           : null,
         canUseRaids
           ? { href: "/raids", section: "raids" as const, label: "Рейди", desktopLabel: canCreateRaids ? "Рейди" : "Мої рейди" }
+          : null,
+        canCreateRaids
+          ? { href: "/roster", section: "roster" as const, label: "Склад", desktopLabel: "Формування складу" }
           : null,
         canUseGuildRoster
           ? { href: "/guild", section: "guild" as const, label: "Склад", desktopLabel: "Склад гільдії" }

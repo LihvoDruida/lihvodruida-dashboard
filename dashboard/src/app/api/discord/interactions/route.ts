@@ -10,6 +10,7 @@ import { getMainCharacter, getProfileByDiscordUserId } from "@/lib/profiles";
 import { rulesAcceptUrlForDiscordUser } from "@/lib/rulesOnboarding";
 import { dashboardProfileUrl, dashboardRaidRulesUrl, decodeRaidAttendanceCustomId, decodeRaidCharacterSelectCustomId, decodeRaidRoleSelectCustomId, decodeRaidSignupSubmitCustomId, handleRaidDiscordAction, raidActionHelpComponents, type RaidCharacterRole } from "@/lib/raids";
 import { handleRaidPollDiscordVote } from "@/lib/raidPolls";
+import { decodeRosterCustomId, handleRosterFormationDiscordAction } from "@/lib/rosterFormation";
 import { logDashboardEvent, noStoreHeaders, safeErrorMessage } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
@@ -238,8 +239,9 @@ export async function POST(request: NextRequest) {
   const raidSelectAction = decodeRaidCharacterSelectCustomId(customId, interaction?.data?.values);
   const raidAction = raidSubmitAction || raidRoleAction || raidSelectAction || decodeRaidAttendanceCustomId(customId);
   const pollAction = raidAction ? null : decodeRaidPollCustomId(customId, interaction?.data?.values);
-  const parsed = raidAction || pollAction ? null : decodeRulesCustomId(customId);
-  if (!raidAction && !pollAction && !parsed) {
+  const rosterAction = raidAction || pollAction ? null : decodeRosterCustomId(customId, interaction?.data?.values);
+  const parsed = raidAction || pollAction || rosterAction ? null : decodeRulesCustomId(customId);
+  if (!raidAction && !pollAction && !rosterAction && !parsed) {
     logDashboardEvent("warn", "discord.rules.unknown_custom_id", request, { customId: customId.slice(0, 24) });
     return ephemeral("Ця кнопка не належить панелі Mistblossom або вже застаріла.");
   }
@@ -247,6 +249,37 @@ export async function POST(request: NextRequest) {
   const guildId = String(interaction?.guild_id || getDiscordGuildId() || "");
   const userId = getInteractionUserId(interaction);
   const userName = getInteractionUserName(interaction);
+
+  if (rosterAction) {
+    try {
+      const result = await handleRosterFormationDiscordAction({
+        rosterId: rosterAction.rosterId,
+        kind: rosterAction.kind,
+        classKey: rosterAction.classKey,
+        values: rosterAction.values,
+        userId,
+        userName,
+      });
+      logDashboardEvent(result.ok ? "info" : "warn", "discord.roster.action", request, {
+        rosterId: rosterAction.rosterId,
+        kind: rosterAction.kind,
+        userId,
+        ok: result.ok,
+      });
+      // pick/leave надходять із публічного повідомлення → нова ефемерна відповідь;
+      // class/spec надходять із ефемерного меню → редагуємо його на місці. finishDecision
+      // сам обирає type 4 чи type 7 за прапором ефемерності вихідного повідомлення.
+      return finishDecision(interaction, result.content, result.components || []);
+    } catch (error) {
+      logDashboardEvent("error", "discord.roster.action_failed", request, {
+        message: safeErrorMessage(error),
+        rosterId: rosterAction.rosterId,
+        kind: rosterAction.kind,
+        userId,
+      });
+      return ephemeral("❌ Не вдалося оновити склад. Спробуй ще раз пізніше або звернись до офіцера.");
+    }
+  }
 
   if (pollAction) {
     try {

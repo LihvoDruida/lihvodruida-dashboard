@@ -1,0 +1,159 @@
+/* ==========================================================================
+   roster.css — стилі сторінки «Формування складу».
+   Використовує наявні токени проєкту (--ui-*, --type-*), нічого не перевизначає
+   глобально. Імпортується локально сторінкою /roster.
+   ========================================================================== */
+
+.roster-page .app-page-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.roster-section-title {
+  margin: 4px 0 2px;
+  font-size: var(--type-h3, 1.35rem);
+}
+
+/* ---- Форма створення ---- */
+.roster-create-form {
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+}
+
+.roster-create-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.roster-create-form__submit {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.roster-create-form__hint {
+  color: var(--ui-text-muted, #9aa4b2);
+}
+
+/* ---- Пікер ролей для згадки ---- */
+.roster-role-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px 16px;
+  margin-top: 10px;
+}
+
+.roster-role-check {
+  min-height: 36px;
+}
+
+/* ---- Таблиця покриття класів ---- */
+.roster-coverage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.roster-coverage-cell {
+  border: 1px solid var(--ui-line, rgba(148, 163, 184, 0.22));
+  border-left-width: 4px;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: var(--ui-bg-2, rgba(255, 255, 255, 0.02));
+}
+
+.roster-coverage-cell.is-free {
+  opacity: 0.72;
+  border-style: dashed;
+}
+
+.roster-coverage-cell__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.roster-coverage-cell__name {
+  font-weight: 650;
+}
+
+.roster-coverage-cell__badge {
+  font-size: var(--type-small, 0.85rem);
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--ui-accent-strong, #6ee7a8);
+}
+
+.roster-coverage-cell__badge.is-free {
+  color: var(--ui-text-muted, #9aa4b2);
+}
+
+.roster-coverage-cell__members {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 3px;
+  font-size: var(--type-small, 0.85rem);
+  color: var(--ui-text-muted, #c2c9d4);
+}
+
+/* ---- Картка формування ---- */
+.roster-formation-card {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+}
+
+.roster-formation-card.is-closed {
+  opacity: 0.86;
+}
+
+.roster-formation-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.roster-formation-card__head h3 {
+  margin: 0 0 4px;
+}
+
+.roster-formation-card__meta,
+.roster-formation-card__roles {
+  margin: 2px 0;
+  color: var(--ui-text-muted, #9aa4b2);
+  font-size: var(--type-small, 0.9rem);
+}
+
+.roster-formation-card__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.roster-inline-form {
+  margin: 0;
+}
+
+.roster-formations-list {
+  display: grid;
+  gap: 16px;
+}
+
+@media (max-width: 620px) {
+  .roster-formation-card__actions .btn {
+    width: 100%;
+  }
+  .roster-inline-form {
+    width: 100%;
+  }
+}
