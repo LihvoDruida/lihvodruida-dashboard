@@ -6,6 +6,7 @@ import "./profile.css";
 import "./theme.css";
 import "./refactor.css";
 import "./normalize-ux.css";
+import "./admin-mobile.css";
 import DashboardFormEnhancer from "@/components/DashboardFormEnhancer";
 import GlobalToasts from "@/components/GlobalToasts";
 import AppFooter from "@/components/AppFooter";

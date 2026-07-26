@@ -124,8 +124,8 @@ export default async function AdminGroupsPage() {
   const groups = await listAccessGroups();
 
   return (
-    <main className="container access-groups-container">
-      <section className="dashboard-shell content-shell access-groups-page" aria-label="Керування групами та правами доступу Mistblossom Vanguard">
+    <main className="container admin-container access-groups-container">
+      <section className="dashboard-shell content-shell admin-page access-groups-page" aria-label="Керування групами та правами доступу Mistblossom Vanguard">
         <DashboardIdentity user={user} activeSection="admin" />
         <header className="hero panel admin-hero access-groups-hero">
           <div className="hero-copy dashboard-hero__copy guild-hero__copy">
