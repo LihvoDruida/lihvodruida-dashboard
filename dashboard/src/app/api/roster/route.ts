@@ -16,6 +16,7 @@ import {
   deleteRosterFormation,
   hasRosterStorage,
   saveRosterFormationFromInput,
+  setRosterFormationStatus,
 } from "@/lib/rosterFormation";
 
 export const runtime = "nodejs";
@@ -99,6 +100,27 @@ export async function POST(request: NextRequest) {
         tone: "success",
         title: "Склад очищено",
         message: "Усі вибори гравців прибрано. Discord-повідомлення оновлено.",
+        ttl: 6400,
+      });
+    }
+
+    if (action === "close" || action === "reopen") {
+      const rosterId = String(form.get("rosterId") || "").trim();
+      if (!rosterId) throw new Error("Не вказано, який склад змінювати.");
+      const status = action === "close" ? "closed" : "open";
+      const roster = await setRosterFormationStatus(rosterId, status);
+      logDashboardEvent("info", `roster.${action}`, request, {
+        rosterId,
+        actorId: session.id,
+        actorRole: session.role,
+      });
+      return redirectWithToast(request, "/roster", {
+        tone: "success",
+        title: status === "closed" ? "Набір закрито" : "Набір відкрито",
+        message:
+          status === "closed"
+            ? `${roster.title}: кнопки в Discord стали неактивними, склад збережено.`
+            : `${roster.title}: гравці знову можуть обирати клас.`,
         ttl: 6400,
       });
     }

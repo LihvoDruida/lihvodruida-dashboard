@@ -545,7 +545,9 @@ export function buildRosterDiscordPayload(roster: RosterFormation) {
 }
 
 function buildRosterDiscordComponents(roster: RosterFormation) {
-  if (roster.status === "closed") return [];
+  // Після закриття кнопки НЕ прибираємо, а робимо неактивними: повідомлення
+  // лишається візуально цілим, і всім видно, що набір саме закрито, а не зламано.
+  const closed = roster.status === "closed";
   return [
     {
       type: 1,
@@ -553,9 +555,10 @@ function buildRosterDiscordComponents(roster: RosterFormation) {
         {
           type: 2,
           style: 1,
-          label: "Обрати / змінити клас",
-          emoji: { name: "🧭" },
+          label: closed ? "Набір закрито" : "Обрати / змінити клас",
+          emoji: { name: closed ? "🔒" : "🧭" },
           custom_id: buildRosterPickCustomId(roster.id),
+          disabled: closed,
         },
         {
           type: 2,
@@ -563,6 +566,7 @@ function buildRosterDiscordComponents(roster: RosterFormation) {
           label: "Покинути склад",
           emoji: { name: "🚪" },
           custom_id: buildRosterLeaveCustomId(roster.id),
+          disabled: closed,
         },
       ],
     },
@@ -873,6 +877,39 @@ export async function clearRosterFormation(rosterId: string): Promise<RosterForm
   await rerenderRosterMessage(cleared);
   clearRosterCaches(rosterId);
   return cleared;
+}
+
+/**
+ * Закриття або повторне відкриття набору (лише адмін), БЕЗ видалення
+ * повідомлення. Кнопки в Discord стають неактивними, дані складу лишаються.
+ */
+export async function setRosterFormationStatus(
+  rosterId: string,
+  status: "open" | "closed",
+): Promise<RosterFormation> {
+  if (!hasRosterStorage()) throw new Error(firebaseUnavailableMessage("raid", "write"));
+
+  const updated = await firebaseWrite<RosterFormation>(
+    "raid",
+    `roster:status:${rosterId}:${status}`,
+    async () => {
+      const ref = rosterRef(rosterId);
+      return getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists) throw new Error("Формування складу не знайдено.");
+        const roster = normalizeRosterFormation(snap.id, snap.data() || {});
+        if (roster.status === status) return roster;
+        const updatedAt = new Date().toISOString();
+        tx.update(ref, { status, updatedAt, updatedAtMs: Date.now() });
+        return { ...roster, status, updatedAt };
+      });
+    },
+    { logEvent: "roster.status_failed" },
+  );
+
+  await rerenderRosterMessage(updated);
+  clearRosterCaches(rosterId);
+  return updated;
 }
 
 /** Закриття набору + видалення повідомлення (опційно для адміна). */

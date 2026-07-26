@@ -178,6 +178,34 @@ function FormationCard({ roster }: { roster: RosterFormation }) {
       <CoverageTable roster={roster} />
 
       <div className="roster-formation-card__actions">
+        {closed ? (
+          <form
+            method="post"
+            action="/api/roster"
+            className="roster-inline-form"
+            data-confirm-message="Відкрити набір знову? Кнопки в Discord знову стануть активними."
+          >
+            <input type="hidden" name="action" value="reopen" />
+            <input type="hidden" name="rosterId" value={roster.id} />
+            <button type="submit" className="btn primary">
+              Відкрити набір
+            </button>
+          </form>
+        ) : (
+          <form
+            method="post"
+            action="/api/roster"
+            className="roster-inline-form"
+            data-confirm-message="Закрити набір? Кнопки в Discord стануть неактивними, склад залишиться збереженим."
+          >
+            <input type="hidden" name="action" value="close" />
+            <input type="hidden" name="rosterId" value={roster.id} />
+            <button type="submit" className="btn subtle">
+              Закрити набір
+            </button>
+          </form>
+        )}
+
         <form
           method="post"
           action="/api/roster"

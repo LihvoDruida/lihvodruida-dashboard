@@ -2141,6 +2141,18 @@ function getDiscordUserLabel(interaction) {
 }
 
 
+function getDiscordServerNickname(interaction) {
+  // Склад фіксує СЕРВЕРНИЙ нік (member.nick), а не глобальне імʼя Discord:
+  // в гільдії людей знають саме за ніком на сервері.
+  const member = interaction?.member || {};
+  const user = member.user || interaction?.user || {};
+  const nick = String(member.nick || "").trim();
+  if (nick) return nick;
+  // Якщо серверного ніка немає — Discord сам показує global_name/username,
+  // тому беремо те саме, щоб не записати порожнє імʼя.
+  return String(user.global_name || user.username || user.id || "").trim() || "Учасник Discord";
+}
+
 function getStatusByKey(statusKey) {
   return Object.values(STATUS).find((item) => item.key === statusKey) || STATUS.REVIEW;
 }
@@ -4147,7 +4159,7 @@ async function rosterProxyContent(interaction, env, rosterAction) {
         classKey: rosterAction.classKey || "",
         values: rosterAction.values,
         userId,
-        userName: getDiscordUserLabel(interaction),
+        userName: getDiscordServerNickname(interaction),
         guildId: getInteractionGuildId(interaction, env),
         source: "discord-interaction-worker",
       }),
