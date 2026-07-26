@@ -119,7 +119,13 @@ export default async function DashboardIdentity({
               <LogoutButton />
             </div>
           </>
-        ) : null}
+        ) : (
+          <div className="dashboard-user dashboard-user--guest">
+            <a className="btn primary dashboard-user__login" href="/login">
+              Увійти
+            </a>
+          </div>
+        )}
       </header>
 
       {user && hasMobileNav ? (

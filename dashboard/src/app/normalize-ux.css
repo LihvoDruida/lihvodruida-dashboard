@@ -220,30 +220,74 @@
 }
 
 /* --------------------------------------------------------------------------
-   9. Мобільний футер: роздільники в розмітці існували, але не мали жодного
-   CSS (порожні aria-hidden span-и) — звідси «поламані» проміжки між
-   «Умови» й «Приватність». Даємо їм вигляд крапки-роздільника; у
-   стовпчиковому мобільному розкладі бренд-роздільник ховаємо.
+   8. Мобільний топбар: повертаємо блок профілю з «Вийти» / «Увійти».
+
+   theme.css (@media max-width:900px) ховав УВЕСЬ .dashboard-topbar через
+   `display:none !important`, тож на телефоні не було ні профілю, ні кнопки
+   виходу — лише нижня навігація. Повертаємо топбар, але БЕЗ десктопного
+   меню: навігацію на мобільному виконує нижня панель, дублювати її не треба.
+
+   Специфічність підібрана під правила theme.css (там є варіанти з :has()),
+   інакше вони перебили б це навіть із !important.
    -------------------------------------------------------------------------- */
-.app-footer__separator,
-.app-footer__link-separator {
-  flex: none;
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: currentColor;
-  opacity: 0.42;
+@media (max-width: 900px) {
+  .dashboard-topbar,
+  body .dashboard-topbar,
+  body:has(.dashboard-mobile-nav-shell) .dashboard-topbar,
+  body:has(.profile-account-page) .dashboard-topbar,
+  body:has(.profile-account-page) .profile-account-page > .dashboard-topbar {
+    display: flex !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+
+  /* Десктопне меню всередині топбара на мобільному не потрібне. */
+  .dashboard-topbar .dashboard-nav--desktop {
+    display: none !important;
+  }
+
+  /* Профіль/логін притискаємо праворуч від бренду. */
+  .dashboard-topbar .dashboard-user {
+    margin-left: auto !important;
+    min-width: 0 !important;
+  }
+
+  .dashboard-topbar .dashboard-user__profile-link {
+    min-width: 0 !important;
+  }
+
+  .dashboard-topbar .dashboard-user__profile-link strong,
+  .dashboard-topbar .dashboard-user__profile-link span {
+    overflow-wrap: anywhere;
+  }
 }
 
-@media (max-width: 760px) {
-  /* бренд стекається у стовпчик — крапка між назвою й описом висить у повітрі */
-  .app-footer--site-wide .app-footer__separator {
-    display: none;
+/* На дуже вузьких екранах лишаємо аватар + кнопку, підпис бренду ховаємо,
+   щоб рядок не переносився в три поверхи. */
+@media (max-width: 420px) {
+  .dashboard-topbar .dashboard-brand > div span {
+    display: none !important;
   }
-  /* посилання лишаємо в рядок із крапкою між ними */
-  .app-footer--site-wide .app-footer__links {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
+}
+
+/* --------------------------------------------------------------------------
+   9. Мертвий простір над футером на мобільному (глобально, усі сторінки).
+
+   На ≤900px і body, і main.container отримували резерв під фіксовану нижню
+   навігацію (--dashboard-mobile-nav-reserve ≈ 100px). Але футер рендериться
+   ПІСЛЯ main (layout.tsx: {children} → <AppFooter/>), тому резерв на main
+   нічого не захищав — він лише додавав ~114px порожнечі між контентом і
+   футером. Клірес під навігацію лишається на body, як і має бути.
+   -------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  body > main.container,
+  body > section.container,
+  body main.container,
+  body .profile-page-container,
+  body:has(.profile-account-page) .profile-page-container {
+    padding-bottom: 22px !important;
   }
 }
