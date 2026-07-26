@@ -50,7 +50,8 @@ function isInternalBearerApiPath(pathname: string) {
     pathname === "/api/raids/lifecycle" ||
     pathname === "/api/polls/close-due" ||
     /^\/api\/raids\/[^/]+\/discord-action$/.test(pathname) ||
-    /^\/api\/polls\/[^/]+\/vote$/.test(pathname)
+    /^\/api\/polls\/[^/]+\/vote$/.test(pathname) ||
+    pathname === "/api/roster/discord-action"
   );
 }
 
