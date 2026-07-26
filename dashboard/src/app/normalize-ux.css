@@ -38,12 +38,24 @@
 }
 
 /* --------------------------------------------------------------------------
-   2. Мінімальна площа дотику.
-   Явний список класів контролів — навмисно НЕ чіпаємо `a` загалом,
-   щоб не рознесло текстові посилання всередині абзаців.
+   2. Мінімальна площа дотику (WCAG 2.5.5).
+
+   ВАЖЛИВО про специфічність. Раніше цей блок був загорнутий у :where(), який
+   має НУЛЬОВУ специфічність. У проєкті ж є власні правила на кшталт
+   `.admin-tabs.dashboard-subnav a { min-height: 40px !important }` (0,2,1) чи
+   `body:has(.profile-account-page) .profile-bnet-status__action` (0,3,1).
+   При однаковому !important виграє специфічніший селектор — тому 12 із 20
+   контролів насправді лишалися 36–42px на сенсорних екранах.
+
+   Тепер специфічність піднято `html body` + подвійним :not(._) (клас-заглушка,
+   якої немає в розмітці) до (0,3,2) — цього вистачає, щоб перекрити наявні
+   правила, і при цьому нічого не ламається на десктопі: блок під pointer:coarse.
+
+   Список навмисно поіменний — `a` загалом НЕ чіпаємо, щоб не рознесло
+   текстові посилання в абзацах.
    -------------------------------------------------------------------------- */
 @media (pointer: coarse) {
-  :where(
+  html body :is(
     .btn,
     .btn-sm,
     .action-button,
@@ -66,16 +78,21 @@
     .admin-tabs.dashboard-subnav a,
     .raid-list-actions .btn,
     .raid-list-actions .btn-sm,
+    .raid-list-icon-action,
     .raid-poll-list-card__actions .btn,
     .discord-rules-row-actions .btn,
     .content-row-actions .btn,
     .discord-load-message-btn
-  ) {
+  ):not(._):not(._) {
     min-height: var(--control-min-h) !important;
   }
 
   /* Іконкові кнопки мають бути квадратними, а не 44×28. */
-  :where(.profile-icon-action, .dashboard-nav-more__trigger) {
+  html body :is(
+    .profile-icon-action,
+    .dashboard-nav-more__trigger,
+    .raid-list-icon-action
+  ):not(._):not(._) {
     min-width: var(--control-min-h) !important;
   }
 }
