@@ -11,6 +11,7 @@ import "./admin-layout.css";
 import "./admin-template.css";
 import "./nav-shell.css";
 import "./polls.css";
+import "./app-shell.css";
 import DashboardFormEnhancer from "@/components/DashboardFormEnhancer";
 import GlobalToasts from "@/components/GlobalToasts";
 import AppFooter from "@/components/AppFooter";
@@ -159,9 +160,28 @@ export default function RootLayout({
               const root = document.body;
               if (!root) return;
               const threshold = 8;
+              // Ховаємо шапку лише після помітного руху вниз, щоб вона не
+              // блимала на інерційному скролі iOS та дрібних коригуваннях.
+              const hideAfter = 120;
+              const delta = 6;
               let ticking = false;
+              let lastY = window.scrollY;
               const update = () => {
-                root.classList.toggle("dashboard-scrolled", window.scrollY > threshold);
+                const y = window.scrollY;
+                root.classList.toggle("dashboard-scrolled", y > threshold);
+
+                const movedDown = y > lastY + delta;
+                const movedUp = y < lastY - delta;
+                // Меню «Ще» відкрите — шапку не рухаємо, інакше воно
+                // з'їжджало б разом з нею з-під курсора.
+                const menuOpen = !!document.querySelector(".dashboard-nav-more.is-open");
+
+                if (!menuOpen) {
+                  if (movedDown && y > hideAfter) root.classList.add("dashboard-nav-hidden");
+                  else if (movedUp || y <= hideAfter) root.classList.remove("dashboard-nav-hidden");
+                }
+
+                if (movedDown || movedUp) lastY = y;
                 ticking = false;
               };
               const requestUpdate = () => {

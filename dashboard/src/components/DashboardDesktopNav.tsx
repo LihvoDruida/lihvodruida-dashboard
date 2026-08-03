@@ -10,9 +10,11 @@ type DashboardNavItem = {
   desktopLabel: string;
 };
 
-const ITEM_GAP = 8;
-const NAV_PADDING = 12;
+const ITEM_GAP = 4;
+const NAV_PADDING = 14;
 const ACTIVE_VISIBILITY_FALLBACK = 1;
+/** Скільки пунктів лишається в капсулі навіть на найвужчому десктопі. */
+const MIN_VISIBLE_ITEMS = 3;
 
 function getMeasuredWidth(element: HTMLElement | null) {
   if (!element) return 0;
@@ -43,10 +45,14 @@ export default function DashboardDesktopNav({
 }) {
   const [open, setOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(items.length);
+  // compact = лишаються тільки іконки. Це перший ступінь стиснення,
+  // і лише коли навіть іконки не влазять — вмикається «Ще».
+  const [compact, setCompact] = useState(false);
   const railRef = useRef<HTMLDivElement | null>(null);
   const moreRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const measureItemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+  const measureCompactRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const measureMoreRef = useRef<HTMLButtonElement | null>(null);
   const menuId = useId();
   const activeIndex = items.findIndex((item) => item.section === activeSection);
@@ -70,36 +76,52 @@ export default function DashboardDesktopNav({
     const recompute = () => {
       cancelAnimationFrame(frame);
       frame = window.requestAnimationFrame(() => {
+        // Рейка займає вільну колонку сітки і не залежить від вмісту капсули,
+        // тому вимір не зациклюється: підписи можуть і зникати, і повертатись.
         const availableWidth = Math.floor(nav.getBoundingClientRect().width) - NAV_PADDING;
-        const itemWidths = items.map((_, index) => getMeasuredWidth(measureItemRefs.current[index] || null));
-        const moreWidth = Math.max(getMeasuredWidth(measureMoreRef.current), 96);
+        const labelWidths = items.map((_, index) => getMeasuredWidth(measureItemRefs.current[index] || null));
+        const iconWidths = items.map((_, index) => getMeasuredWidth(measureCompactRefs.current[index] || null));
+        const moreWidth = Math.max(getMeasuredWidth(measureMoreRef.current), 64);
 
-        if (!availableWidth || itemWidths.some((width) => width <= 0)) {
+        if (!availableWidth || labelWidths.some((width) => width <= 0) || iconWidths.some((width) => width <= 0)) {
+          setCompact(false);
           setVisibleCount(items.length);
           return;
         }
 
-        const fullWidth = itemWidths.reduce((sum, width) => sum + width, 0) + Math.max(0, items.length - 1) * ITEM_GAP;
-        if (fullWidth <= availableWidth) {
+        const totalWidth = (widths: number[]) =>
+          widths.reduce((sum, width) => sum + width, 0) + Math.max(0, widths.length - 1) * ITEM_GAP;
+
+        // Ступінь 1: усе з підписами.
+        if (totalWidth(labelWidths) <= availableWidth) {
+          setCompact(false);
           setVisibleCount(items.length);
           return;
         }
 
+        // Ступінь 2: ті самі пункти, але самими іконками.
+        if (totalWidth(iconWidths) <= availableWidth) {
+          setCompact(true);
+          setVisibleCount(items.length);
+          return;
+        }
+
+        // Ступінь 3: іконки + частина розділів їде у «Ще».
         let consumed = 0;
         let count = 0;
-        for (let index = 0; index < itemWidths.length; index += 1) {
-          const width = itemWidths[index];
+        for (let index = 0; index < iconWidths.length; index += 1) {
+          const width = iconWidths[index];
           const nextGap = count > 0 ? ITEM_GAP : 0;
-          const reservedMore = index < itemWidths.length - 1 ? ITEM_GAP + moreWidth : 0;
-          if (consumed + nextGap + width + reservedMore > availableWidth) {
-            break;
-          }
+          const reservedMore = index < iconWidths.length - 1 ? ITEM_GAP + moreWidth : 0;
+          if (consumed + nextGap + width + reservedMore > availableWidth) break;
           consumed += nextGap + width;
           count += 1;
         }
 
-        const nextVisibleCount = Math.max(ACTIVE_VISIBILITY_FALLBACK, Math.min(items.length, count));
-        setVisibleCount(nextVisibleCount);
+        setCompact(true);
+        setVisibleCount(
+          Math.max(ACTIVE_VISIBILITY_FALLBACK, Math.min(items.length, Math.max(count, Math.min(MIN_VISIBLE_ITEMS, items.length)))),
+        );
       });
     };
 
@@ -109,6 +131,9 @@ export default function DashboardDesktopNav({
     observer.observe(nav);
     if (nav.parentElement) observer.observe(nav.parentElement);
     measureItemRefs.current.forEach((node) => {
+      if (node) observer.observe(node);
+    });
+    measureCompactRefs.current.forEach((node) => {
       if (node) observer.observe(node);
     });
     if (measureMoreRef.current) observer.observe(measureMoreRef.current);
@@ -173,6 +198,7 @@ export default function DashboardDesktopNav({
         <nav
           className="dashboard-nav dashboard-nav--desktop"
           aria-label="Панель керування"
+          data-compact={compact ? "true" : "false"}
           data-items={items.length}
           data-overflow={secondaryNavItems.length > 0 ? "true" : "false"}
         >
@@ -182,10 +208,11 @@ export default function DashboardDesktopNav({
             href={item.href}
             className={activeSection === item.section ? "is-active" : undefined}
             aria-current={activeSection === item.section ? "page" : undefined}
+            aria-label={item.desktopLabel}
             title={item.desktopLabel}
           >
             <DashboardNavIcon section={item.section} />
-            <span>{item.desktopLabel}</span>
+            <span className="dashboard-nav__label">{item.desktopLabel}</span>
           </a>
         ))}
 
@@ -201,7 +228,7 @@ export default function DashboardDesktopNav({
               onClick={() => setOpen((value) => !value)}
               title={activeSecondaryItem ? `Поточний додатковий розділ: ${activeSecondaryItem.desktopLabel}` : "Додаткові розділи"}
             >
-              <span className="dashboard-nav-more__trigger-label">Ще</span>
+              <span className="dashboard-nav-more__trigger-label dashboard-nav__label">Ще</span>
               <span className="dashboard-nav-more__trigger-count" aria-hidden="true">{secondaryNavItems.length}</span>
             </button>
 
@@ -244,6 +271,17 @@ export default function DashboardDesktopNav({
           >
             <DashboardNavIcon section={item.section} />
             <span>{item.desktopLabel}</span>
+          </a>
+        ))}
+        {items.map((item, index) => (
+          <a
+            key={`${item.href}-measure-compact`}
+            ref={(node) => {
+              measureCompactRefs.current[index] = node;
+            }}
+            className="dashboard-nav-measure__item dashboard-nav-measure__item--compact"
+          >
+            <DashboardNavIcon section={item.section} />
           </a>
         ))}
         <button

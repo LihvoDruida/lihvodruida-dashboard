@@ -1,0 +1,165 @@
+/*
+  app-shell.css — каркас сторінки: прилипливий футер і поведінка топбару.
+  Підключається ОСТАННІМ у layout.tsx, після nav-shell.css.
+*/
+
+/* ---------------- Прилипливий футер ---------------- */
+
+html {
+  min-height: 100%;
+}
+
+/*
+  body стає flex-колонкою, а футер отримує margin-top: auto.
+  Це працює незалежно від кількості вузлів перед футером (скрипти, тости,
+  порталі), на відміну від grid-template-rows, який ламається щойно
+  зʼявляється зайвий елемент.
+  100dvh, а не 100vh: на мобільних 100vh не враховує адресний рядок і
+  футер опинявся б нижче видимої області.
+*/
+html body {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 100dvh !important;
+}
+
+/* Скрипти й клієнтські вузли без розмітки не повинні ставати flex-елементами
+   з власною висотою. */
+html body > script,
+html body > next-route-announcer {
+  display: none !important;
+}
+
+html body > main,
+html body > .legal-page,
+html body > .app-state-page {
+  flex: 1 0 auto !important;
+}
+
+html body .app-footer.app-footer--site-wide {
+  flex: 0 0 auto !important;
+  /* Притискає футер до низу, коли контенту мало, і не робить нічого,
+     коли сторінка довша за екран. */
+  margin-top: auto !important;
+  margin-bottom: 0 !important;
+  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+}
+
+/* Прибираємо старий відступ під мобільну навігацію: вона більше не
+   займає місце внизу. */
+@media (max-width: 640px) {
+  html body:has(.dashboard-mobile-nav-shell) .app-footer,
+  html body:has(.dashboard-mobile-nav-shell) .app-footer.app-footer--site-wide {
+    margin-bottom: 0 !important;
+  }
+
+  html body:has(.dashboard-mobile-nav-shell) .container,
+  html body:has(.dashboard-mobile-nav-shell) main.container {
+    padding-bottom: clamp(20px, 5vw, 32px) !important;
+  }
+}
+
+/* ---------------- Мобільний режим: лишається тільки блок користувача ---------------- */
+
+@media (max-width: 640px) {
+  /* Нижня навігація повністю зникає — на мобільному в шапці лишається
+     лише авторизація та перехід у власний профіль. */
+  html body .dashboard-mobile-nav-shell,
+  html body .dashboard-mobile-nav {
+    display: none !important;
+  }
+
+  html body {
+    --dashboard-mobile-nav-reserve: 0px;
+    --dash-mobile-nav-actual-height: 0px;
+  }
+
+  html body .dashboard-topbar {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+
+  html body .dashboard-user {
+    gap: 8px !important;
+  }
+}
+
+/* ---------------- Анімація топбару ---------------- */
+
+html body .dashboard-topbar {
+  transition:
+    transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    background-color 240ms ease,
+    box-shadow 240ms ease,
+    border-color 240ms ease !important;
+  will-change: transform;
+}
+
+/*
+  Ховаємо шапку при прокручуванні вниз і повертаємо при русі вгору.
+  Тільки від 901px: нижче цієї межі theme.css робить топбар position: relative,
+  і зсув трансформом лишив би на його місці порожню дірку замість того,
+  щоб звільнити екран.
+*/
+@media (min-width: 901px) {
+  html body.dashboard-nav-hidden .dashboard-topbar {
+    transform: translate3d(0, calc(-100% - 12px), 0) !important;
+  }
+}
+
+html body.dashboard-scrolled .dashboard-topbar {
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.34) !important;
+}
+
+/* Капсула та її пункти плавно реагують на зміну режиму «підписи ↔ іконки». */
+html body .dashboard-nav.dashboard-nav--desktop {
+  transition:
+    padding 200ms ease,
+    background-color 200ms ease,
+    border-color 200ms ease !important;
+}
+
+html body .dashboard-nav.dashboard-nav--desktop > a,
+html body .dashboard-nav-more__trigger {
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    padding 200ms ease,
+    gap 200ms ease !important;
+}
+
+html body .dashboard-nav__label {
+  transition: opacity 160ms ease !important;
+}
+
+/* М'яка поява шапки при першому завантаженні. */
+@keyframes dashboard-topbar-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+html body .dashboard-topbar {
+  animation: dashboard-topbar-in 380ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body .dashboard-topbar,
+  html body .dashboard-nav.dashboard-nav--desktop,
+  html body .dashboard-nav.dashboard-nav--desktop > a,
+  html body .dashboard-nav-more__trigger,
+  html body .dashboard-nav__label {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* Без анімації ховати шапку не можна: вона просто зникала б ривком. */
+  html body.dashboard-nav-hidden .dashboard-topbar {
+    transform: none !important;
+  }
+}

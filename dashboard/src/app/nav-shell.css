@@ -21,9 +21,11 @@
 /* ---------- Топбар: три зони, капсула по центру ---------- */
 
 html body .dashboard-topbar {
-  /* Центральна колонка гнучка (minmax(0,auto)), а не auto: інакше капсула
-     з 9 пунктів забирала всю ширину й розчавлювала бренд і блок користувача. */
-  grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr) !important;
+  /* Бренд і блок користувача — по вмісту (auto), центр забирає залишок (1fr).
+     Це критично: якби центральна колонка сама залежала від вмісту навігації,
+     рейка міряла б власну ширину капсули, і перехід «підписи → іконки» став би
+     дверима в один бік — згорнувшись, підписи вже не повернулися б. */
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
   align-items: center !important;
   gap: clamp(10px, 1.6vw, 22px) !important;
   padding-block: calc(9px + var(--safe-top)) 9px !important;
@@ -33,7 +35,6 @@ html body .dashboard-topbar {
    пунктів у «Ще» бачила реальний доступний простір. */
 html body .dashboard-nav-rail {
   grid-column: 2;
-  justify-self: center;
   display: flex;
   justify-content: center;
   width: 100%;
@@ -156,6 +157,35 @@ html body .dashboard-nav.dashboard-nav--desktop > a:hover .dashboard-nav__icon {
 /* Скрол-стан не має «гасити» активний пункт: він лишається орієнтиром. */
 html body.dashboard-scrolled .dashboard-nav.dashboard-nav--desktop > a.is-active {
   opacity: 1 !important;
+}
+
+/* ---------- Компактний режим: лишаються самі іконки ---------- */
+
+html body .dashboard-nav--desktop[data-compact="true"] > a,
+html body .dashboard-nav--desktop[data-compact="true"] .dashboard-nav-more__trigger {
+  padding: 0 10px !important;
+  gap: 0 !important;
+}
+
+html body .dashboard-nav--desktop[data-compact="true"] .dashboard-nav__label {
+  display: none !important;
+}
+
+html body .dashboard-nav--desktop[data-compact="true"] .dashboard-nav__icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Лічильник у «Ще» лишається видимим і без підпису — інакше кнопка
+   перетворилась би на порожній прямокутник. */
+html body .dashboard-nav--desktop[data-compact="true"] .dashboard-nav-more__trigger-count {
+  margin: 0 !important;
+}
+
+/* Вимірювальний рядок для компактного стану має ту саму геометрію. */
+html body .dashboard-nav-measure__item--compact {
+  padding: 0 10px !important;
+  gap: 0 !important;
 }
 
 /* ---------- Меню «Ще» ---------- */
@@ -321,4 +351,23 @@ html body .dashboard-mobile-nav a.is-active {
   html body .dashboard-nav__icon {
     transition: none !important;
   }
+}
+
+
+/* ---------- Порядок і специфічність ---------- */
+
+@media (min-width: 1025px) {
+  /* Бренд не повинен з'їдати вільний простір центральної колонки. */
+  html body .dashboard-topbar .dashboard-brand {
+    max-width: clamp(150px, 18vw, 260px) !important;
+  }
+}
+
+/* Це правило мусить стояти ПІСЛЯ загального .dashboard-nav-measure__item:
+   при однаковій специфічності виграє останнє, інакше компактний рядок
+   вимірювався б із padding звичайного пункту й іконковий режим
+   вмикався б надто пізно. */
+html body .dashboard-nav-measure .dashboard-nav-measure__item--compact {
+  padding: 0 10px !important;
+  gap: 0 !important;
 }
