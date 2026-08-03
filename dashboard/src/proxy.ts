@@ -25,7 +25,10 @@ function hasDashboardSessionCookie(request: NextRequest) {
 
 function isProtectedPagePath(pathname: string) {
   if (pathname === "/") return true;
-  return /^\/(?:dashboard|admin|guild|profile|profiles|raids|discord|content)(?:\/|$)/.test(
+  // /polls і /roster раніше були відсутні: сторінки покладалися лише на
+  // серверний getSession(), тож неавторизований користувач бачив спалах layout
+  // замість чистого редиректу на /login.
+  return /^\/(?:dashboard|admin|guild|profile|profiles|raids|polls|roster|discord|content)(?:\/|$)/.test(
     pathname,
   );
 }

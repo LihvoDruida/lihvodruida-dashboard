@@ -1,0 +1,254 @@
+/*
+  nav-shell.css — уніфікована навігація сайту (за зразком плаваючої капсули).
+  Шар додається ОСТАННІМ у layout.tsx і не редагує легасі-CSS напряму.
+  Специфічність: html body .selector (>= 0,2,2) перекриває !important-блоки theme.css
+  тільки там, де це справді потрібно.
+*/
+
+:root {
+  --nav-capsule-bg: rgba(13, 18, 30, 0.72);
+  --nav-capsule-border: rgba(255, 255, 255, 0.09);
+  --nav-capsule-radius: 999px;
+  --nav-item-radius: 999px;
+  --nav-item-color: rgba(226, 232, 244, 0.62);
+  --nav-item-color-hover: rgba(240, 245, 255, 0.94);
+  --nav-active-bg: rgba(96, 132, 255, 0.16);
+  --nav-active-border: rgba(120, 155, 255, 0.42);
+  --nav-active-color: #e8efff;
+  --nav-active-glow: 0 0 0 1px rgba(120, 155, 255, 0.16), 0 8px 22px rgba(43, 74, 180, 0.28);
+}
+
+/* ---------- Топбар: три зони, капсула по центру ---------- */
+
+html body .dashboard-topbar {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: clamp(10px, 1.6vw, 22px) !important;
+  padding-block: calc(9px + var(--safe-top)) 9px !important;
+}
+
+html body .dashboard-topbar .dashboard-brand {
+  justify-self: start !important;
+  min-width: 0 !important;
+}
+
+html body .dashboard-topbar .dashboard-user {
+  justify-self: end !important;
+}
+
+/* ---------- Капсула десктопної навігації ---------- */
+
+html body .dashboard-nav.dashboard-nav--desktop {
+  width: auto !important;
+  max-width: 100% !important;
+  justify-self: center !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  padding: 5px !important;
+  border: 1px solid var(--nav-capsule-border) !important;
+  border-radius: var(--nav-capsule-radius) !important;
+  background: var(--nav-capsule-bg) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 10px 30px rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(14px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(120%) !important;
+  overflow: visible !important;
+}
+
+html body .dashboard-nav.dashboard-nav--desktop > a,
+html body .dashboard-nav-more__trigger {
+  min-height: 34px !important;
+  padding: 0 13px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--nav-item-radius) !important;
+  color: var(--nav-item-color) !important;
+  background: transparent !important;
+  font-size: 0.79rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.055em !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease !important;
+}
+
+html body .dashboard-nav__icon {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  opacity: 0.78;
+  transition: opacity 160ms ease;
+}
+
+html body .dashboard-nav.dashboard-nav--desktop > a:hover,
+html body .dashboard-nav.dashboard-nav--desktop > a:focus-visible,
+html body .dashboard-nav-more__trigger:hover,
+html body .dashboard-nav-more__trigger:focus-visible {
+  color: var(--nav-item-color-hover) !important;
+  border-color: transparent !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+}
+
+html body .dashboard-nav.dashboard-nav--desktop > a.is-active,
+html body .dashboard-nav-more__trigger.is-active,
+html body .dashboard-nav-more.is-open .dashboard-nav-more__trigger {
+  color: var(--nav-active-color) !important;
+  border-color: var(--nav-active-border) !important;
+  background: var(--nav-active-bg) !important;
+  box-shadow: var(--nav-active-glow) !important;
+}
+
+html body .dashboard-nav.dashboard-nav--desktop > a.is-active .dashboard-nav__icon,
+html body .dashboard-nav.dashboard-nav--desktop > a:hover .dashboard-nav__icon {
+  opacity: 1;
+}
+
+/* Скрол-стан не має «гасити» активний пункт: він лишається орієнтиром. */
+html body.dashboard-scrolled .dashboard-nav.dashboard-nav--desktop > a.is-active {
+  opacity: 1 !important;
+}
+
+/* ---------- Меню «Ще» ---------- */
+
+html body .dashboard-nav-more__menu {
+  border-radius: 18px !important;
+  border: 1px solid var(--nav-capsule-border) !important;
+  background: rgba(11, 15, 25, 0.96) !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5) !important;
+}
+
+html body .dashboard-nav-more__menu-list a {
+  display: grid !important;
+  grid-template-columns: 18px minmax(0, 1fr) !important;
+  grid-template-areas: "icon title" "icon note" !important;
+  align-items: center !important;
+  column-gap: 10px !important;
+  border-radius: 12px !important;
+}
+
+html body .dashboard-nav-more__menu-list a .dashboard-nav__icon {
+  grid-area: icon;
+}
+
+html body .dashboard-nav-more__menu-list a strong {
+  grid-area: title;
+  min-width: 0;
+}
+
+html body .dashboard-nav-more__menu-list a small {
+  grid-area: note;
+  min-width: 0;
+}
+
+/* ---------- Юзер-чіп праворуч ---------- */
+
+html body .dashboard-user__profile-link {
+  gap: 9px !important;
+  padding: 4px 12px 4px 5px !important;
+  border: 1px solid transparent !important;
+  border-radius: 999px !important;
+  transition: border-color 160ms ease, background-color 160ms ease !important;
+}
+
+html body .dashboard-user__profile-link:hover,
+html body .dashboard-user__profile-link:focus-visible,
+html body .dashboard-user__profile-link.is-active {
+  border-color: var(--nav-capsule-border) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+html body .dashboard-user__profile-link strong {
+  font-size: 0.86rem !important;
+  line-height: 1.2 !important;
+}
+
+html body .dashboard-user__profile-link span {
+  font-size: 0.68rem !important;
+  line-height: 1.2 !important;
+}
+
+/* ---------- Планшет: капсула стискається, лишаються іконки ---------- */
+
+@media (max-width: 1180px) {
+  html body .dashboard-nav.dashboard-nav--desktop > a,
+  html body .dashboard-nav-more__trigger {
+    padding: 0 10px !important;
+    font-size: 0.74rem !important;
+    letter-spacing: 0.04em !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  html body .dashboard-topbar {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+
+  html body .dashboard-nav.dashboard-nav--desktop {
+    display: none !important;
+  }
+}
+
+/* ---------- Мобільна нижня навігація: іконка + підпис ---------- */
+
+html body .dashboard-mobile-nav a {
+  flex-direction: column !important;
+  gap: 3px !important;
+  padding: 6px 4px !important;
+  min-height: 52px !important;
+  border-radius: 14px !important;
+}
+
+html body .dashboard-mobile-nav a .dashboard-nav__icon {
+  width: 18px;
+  height: 18px;
+}
+
+html body .dashboard-mobile-nav a strong {
+  font-size: 0.63rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.03em !important;
+  line-height: 1 !important;
+}
+
+html body .dashboard-mobile-nav a.is-active {
+  color: var(--nav-active-color) !important;
+  background: var(--nav-active-bg) !important;
+  border-color: var(--nav-active-border) !important;
+}
+
+/* Багато пунктів на вузькому екрані — горизонтальний скрол зі snap
+   замість роздавлювання підписів у один символ. */
+@media (max-width: 560px) {
+  html body .dashboard-mobile-nav {
+    overflow-x: auto !important;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  html body .dashboard-mobile-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  html body .dashboard-mobile-nav a {
+    flex: 0 0 auto !important;
+    min-width: 68px !important;
+    scroll-snap-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body .dashboard-nav.dashboard-nav--desktop > a,
+  html body .dashboard-nav-more__trigger,
+  html body .dashboard-user__profile-link,
+  html body .dashboard-nav__icon {
+    transition: none !important;
+  }
+}

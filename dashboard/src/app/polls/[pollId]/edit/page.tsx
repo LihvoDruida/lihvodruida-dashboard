@@ -65,6 +65,7 @@ export default async function EditPollPage({ params }: { params: Promise<{ pollI
       user={user}
       title="Редагування рейд-пулу"
       description="Зміни назву, складність, дні, дедлайн або Discord-канал. Після збереження Firebase і Discord embed синхронізуються."
+      eyebrow="Mistblossom Vanguard • Редагування"
     >
       {!hasRaidPollStorage() ? <div className="notice panel error-note raid-notice">Firebase для рейд-пулів не налаштований.</div> : null}
       {!discordEnabled ? <div className="notice panel error-note raid-notice">Discord-публікація недоступна: перевір bot token або worker relay.</div> : null}

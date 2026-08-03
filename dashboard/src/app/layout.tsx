@@ -9,6 +9,8 @@ import "./normalize-ux.css";
 import "./admin-mobile.css";
 import "./admin-layout.css";
 import "./admin-template.css";
+import "./nav-shell.css";
+import "./polls.css";
 import DashboardFormEnhancer from "@/components/DashboardFormEnhancer";
 import GlobalToasts from "@/components/GlobalToasts";
 import AppFooter from "@/components/AppFooter";

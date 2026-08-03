@@ -21,6 +21,7 @@ import {
   raidPollDifficultyLabel,
   raidPollSlotSummary,
   raidPollStatusLabel,
+  raidPollStateKey,
   raidPollUniqueDayRecommendations,
 } from "@/lib/raidPolls";
 import { RAID_POLL_DAYS, type RaidPollDay, type RaidPollItem } from "@/lib/raidPollShared";
@@ -270,17 +271,18 @@ function pollRecommendationSummary(poll: RaidPollItem, relatedPolls: RaidPollIte
 
 function PollResultCard({ poll, relatedPolls }: { poll: RaidPollItem; relatedPolls: RaidPollItem[] }) {
   const counts = pollVoteCounts(poll);
+  const state = raidPollStateKey(poll);
   return (
-    <article className={`raid-poll-list-card dashboard-list-row home-poll-card home-poll-card--${poll.status}`}>
+    <article className={`raid-poll-list-card dashboard-list-row home-poll-card home-poll-card--${state}`}>
       <div className="raid-poll-list-card__status" aria-label={`Статус: ${raidPollStatusLabel(poll)}`}>
-        {poll.status === "open" ? "Активний" : "Архів"}
+        {state === "open" ? "Активний" : state === "paused" ? "Пауза" : "Архів"}
       </div>
 
       <div className="raid-poll-list-card__body home-poll-card__body">
         <header className="raid-poll-list-card__header">
           <div className="raid-poll-list-card__badges">
             <span className={`raid-poll-difficulty-badge raid-poll-difficulty-badge--${poll.difficulty}`}>{raidPollDifficultyLabel(poll.difficulty)}</span>
-            <span className={`raid-status-pill ${poll.status === "open" ? "published" : "closed"}`}>{raidPollStatusLabel(poll)}</span>
+            <span className={`raid-status-pill ${state === "open" ? "published" : state === "paused" ? "paused" : "closed"}`}>{raidPollStatusLabel(poll)}</span>
           </div>
           <h3><a href={`/polls/${encodeURIComponent(poll.id)}`}>{poll.title}</a></h3>
           <p>{formatPollDays(poll.days)}</p>
@@ -292,8 +294,8 @@ function PollResultCard({ poll, relatedPolls }: { poll: RaidPollItem; relatedPol
             <dd>{counts.total}</dd>
           </div>
           <div>
-            <dt>{poll.status === "open" ? "Закриття" : "Завершено"}</dt>
-            <dd><HomeLocalTime value={poll.status === "open" ? poll.closesAtMs : poll.closedAt || poll.closesAtMs} fallback={poll.status === "open" ? formatDateTime(poll.closesAtMs) : formatDateTime(poll.closedAt || poll.closesAtMs)} mode="compact" /></dd>
+            <dt>{state === "closed" ? "Завершено" : "Закриття"}</dt>
+            <dd><HomeLocalTime value={state === "closed" ? poll.closedAt || poll.closesAtMs : poll.closesAtMs} fallback={state === "closed" ? formatDateTime(poll.closedAt || poll.closesAtMs) : formatDateTime(poll.closesAtMs)} mode="compact" /></dd>
           </div>
           <div>
             <dt>Рекомендації</dt>
@@ -361,9 +363,11 @@ export default async function HomePage() {
       };
     })
     .filter(Boolean) as HomeUpcomingRaid[];
-  const openPolls = polls.filter((poll) => poll.status === "open");
+  // Активні й призупинені показуємо першими: пауза — робочий стан, не архів.
+  const openPolls = polls.filter((poll) => raidPollStateKey(poll) === "open");
+  const pausedPolls = polls.filter((poll) => raidPollStateKey(poll) === "paused");
   const publishedPolls = polls.filter((poll) => poll.channelId && poll.messageId);
-  const spotlightPolls = [...openPolls, ...polls.filter((poll) => poll.status === "closed")].slice(0, 6);
+  const spotlightPolls = [...openPolls, ...pausedPolls, ...polls.filter((poll) => raidPollStateKey(poll) === "closed")].slice(0, 6);
   return (
     <main className="container home-page">
       <section className="dashboard-shell content-shell home-shell" aria-label="Головна панель Mistblossom Vanguard">

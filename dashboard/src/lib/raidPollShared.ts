@@ -1,4 +1,4 @@
-export type RaidPollStatus = "open" | "closed";
+export type RaidPollStatus = "open" | "paused" | "closed";
 export type RaidPollDifficulty = "normal" | "heroic" | "mythic";
 export type RaidPollDay = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 export type RaidPollTime = "19:00" | "19:30" | "20:00" | "20:30" | "21:00";
@@ -42,6 +42,13 @@ export type RaidPollItem = {
   closesAtMs: number;
   closedAt?: string | null;
   closedReason?: "manual" | "auto" | null;
+  /** Пауза заморожує дедлайн: closesAtMs не тікає, поки пул призупинено. */
+  pausedAt?: string | null;
+  pausedByName?: string | null;
+  pausedNote?: string | null;
+  /** Скільки мілісекунд лишалося до закриття на момент паузи. */
+  pausedRemainingMs?: number | null;
+  resumedAt?: string | null;
   createdByDiscordId: string;
   createdByName: string;
   channelId?: string | null;
@@ -146,6 +153,38 @@ export const RAID_POLL_CLASS_COLORS: Record<string, string> = {
 
 export function raidPollDescription() {
   return RAID_POLL_DESCRIPTION;
+}
+
+export type RaidPollStateLike = Pick<RaidPollItem, "status" | "closesAtMs">;
+
+/** Пул на паузі: голоси не приймаються, але дедлайн заморожений і пул не архівується. */
+export function raidPollIsPaused(poll: Pick<RaidPollItem, "status">) {
+  return poll.status === "paused";
+}
+
+export function raidPollIsClosed(poll: RaidPollStateLike) {
+  return poll.status === "closed" || (poll.status === "open" && poll.closesAtMs <= Date.now());
+}
+
+/** Єдина точка правди: чи приймає пул нові голоси прямо зараз. */
+export function raidPollAcceptsVotes(poll: RaidPollStateLike) {
+  return poll.status === "open" && poll.closesAtMs > Date.now();
+}
+
+/** Чи треба вимикати Discord-кнопки. Пауза теж вимикає, але з іншим підписом. */
+export function raidPollVotingLocked(poll: RaidPollStateLike) {
+  return !raidPollAcceptsVotes(poll);
+}
+
+export function raidPollStateKey(poll: RaidPollStateLike): "open" | "paused" | "closed" {
+  if (poll.status === "paused") return "paused";
+  return raidPollIsClosed(poll) ? "closed" : "open";
+}
+
+export function raidPollStateTone(poll: RaidPollStateLike): "success" | "warning" | "muted" {
+  const key = raidPollStateKey(poll);
+  if (key === "open") return "success";
+  return key === "paused" ? "warning" : "muted";
 }
 
 export function raidPollAvailabilityLabel(value: RaidPollScheduleValue | null | undefined) {

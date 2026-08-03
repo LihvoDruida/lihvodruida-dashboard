@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import DashboardNavIcon from "@/components/DashboardNavIcon";
 
 type DashboardNavItem = {
   href: string;
@@ -181,6 +182,7 @@ export default function DashboardDesktopNav({
             aria-current={activeSection === item.section ? "page" : undefined}
             title={item.desktopLabel}
           >
+            <DashboardNavIcon section={item.section} />
             <span>{item.desktopLabel}</span>
           </a>
         ))}
@@ -217,6 +219,7 @@ export default function DashboardDesktopNav({
                     title={item.desktopLabel}
                     onClick={() => setOpen(false)}
                   >
+                    <DashboardNavIcon section={item.section} />
                     <strong>{item.desktopLabel}</strong>
                     <small>{activeSection === item.section ? "Відкрито" : "Перейти"}</small>
                   </a>
@@ -236,6 +239,7 @@ export default function DashboardDesktopNav({
             }}
             className="dashboard-nav-measure__item"
           >
+            <DashboardNavIcon section={item.section} />
             <span>{item.desktopLabel}</span>
           </a>
         ))}

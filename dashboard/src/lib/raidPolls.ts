@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import {
   FieldValue,
   type QueryDocumentSnapshot,
@@ -10,7 +10,8 @@ import { loadStoredGuildRosterData } from "@/lib/guildRoster";
 import { resolveWowCharacterRole } from "@/lib/wowRoles";
 import { buildBattleNetCharacterKey, normalizeCharacterKey } from "@/lib/wowCharacters";
 import { firebaseRead, firebaseWrite, firebaseUnavailableMessage } from "@/lib/firebaseAccess";
-import { clearRuntimeCachedValue, clearRuntimeCachedValuesByPrefix } from "@/lib/runtimeResilience";
+import { clearRuntimeCachedValue, clearRuntimeCachedValuesByPrefix, getRuntimeCachedValue, setRuntimeCachedValue } from "@/lib/runtimeResilience";
+import { mapConcurrentSettled } from "@/lib/concurrency";
 import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
 import {
   createDiscordRaidMessage,
@@ -35,6 +36,12 @@ export {
   raidPollAvailabilityLabel,
   raidPollClassColor,
   raidPollRoleLabel,
+  raidPollAcceptsVotes,
+  raidPollIsClosed,
+  raidPollIsPaused,
+  raidPollStateKey,
+  raidPollStateTone,
+  raidPollVotingLocked,
 } from "@/lib/raidPollShared";
 export type {
   RaidPollAvailability,
@@ -63,6 +70,9 @@ import {
   RAID_POLL_TIMES,
   raidPollAvailabilityLabel,
   raidPollRoleLabel,
+  raidPollAcceptsVotes,
+  raidPollIsPaused,
+  raidPollVotingLocked,
   type RaidPollAvailability,
   type RaidPollCreateInput,
   type RaidPollUpdateInput,
@@ -87,6 +97,8 @@ const RAID_POLL_DEFAULT_GET_CACHE_TTL_MS = 60_000;
 const RAID_POLL_GET_CACHE_PREFIX = "raid-poll:";
 const RAID_POLL_DEFAULT_GUILD_MEMBERSHIP_CACHE_TTL_MS = 90_000;
 const RAID_POLL_VOTE_CLEANUP_DEFAULT_MIN_MS = 10 * 60_000;
+const RAID_POLL_DISCORD_SIGNATURE_PREFIX = "raid-poll:discord-signature:";
+const RAID_POLL_DISCORD_SIGNATURE_TTL_MS = 6 * 60 * 60_000;
 
 function envFlag(names: string[], fallback = false) {
   for (const name of names) {
@@ -137,6 +149,11 @@ function clearRaidPollRuntimeCaches(pollId?: string | null) {
   const id = cleanString(pollId, 80);
   if (id) clearRuntimeCachedValue(`${RAID_POLL_GET_CACHE_PREFIX}${id}`);
   clearRuntimeCachedValuesByPrefix(`${RAID_POLL_LIST_CACHE_KEY}:`);
+}
+
+function clearRaidPollDiscordSignatureCache(pollId?: string | null) {
+  const id = cleanString(pollId, 80);
+  clearRuntimeCachedValuesByPrefix(id ? `${RAID_POLL_DISCORD_SIGNATURE_PREFIX}${id}:` : RAID_POLL_DISCORD_SIGNATURE_PREFIX);
 }
 
 function isMissingDiscordMessageError(error: unknown) {
@@ -390,7 +407,23 @@ export function raidPollTitle(poll: Pick<RaidPollItem, "title" | "difficulty">) 
 
 export function raidPollStatusLabel(poll: Pick<RaidPollItem, "status" | "closesAtMs">) {
   if (poll.status === "closed") return "Закрито";
+  if (poll.status === "paused") return "На паузі";
   return poll.closesAtMs <= Date.now() ? "Завершується" : "Відкрите";
+}
+
+/** Скільки лишилось до автозакриття у людському форматі. Для паузи — заморожений залишок. */
+export function raidPollRemainingLabel(poll: Pick<RaidPollItem, "status" | "closesAtMs" | "pausedRemainingMs">) {
+  if (poll.status === "closed") return "Завершено";
+  const remaining = poll.status === "paused"
+    ? Math.max(0, Number(poll.pausedRemainingMs) || 0)
+    : poll.closesAtMs - Date.now();
+  if (remaining <= 0) return poll.status === "paused" ? "Час вичерпано" : "Закривається";
+  const minutes = Math.floor(remaining / 60_000);
+  const days = Math.floor(minutes / (60 * 24));
+  const hours = Math.floor((minutes % (60 * 24)) / 60);
+  if (days > 0) return `${days} дн ${hours} год`;
+  if (hours > 0) return `${hours} год ${minutes % 60} хв`;
+  return `${Math.max(1, minutes)} хв`;
 }
 
 function dashboardBaseUrl() {
@@ -560,7 +593,13 @@ export function normalizeRaidPoll(id: string, data: Record<string, unknown>): Ra
   // Важливо: не закриваємо обʼєкт тільки під час normalize.
   // Інакше closeDueRaidPoll() бачить already closed і не PATCH-ить Discord,
   // через що публічна кнопка "Проголосувати" лишається активною у старому embed.
-  const status = cleanString(data.status, 20).toLowerCase() === "closed" ? "closed" : "open";
+  const rawStatus = cleanString(data.status, 20).toLowerCase();
+  const status: RaidPollStatus = rawStatus === "closed" ? "closed" : rawStatus === "paused" ? "paused" : "open";
+  const pausedAt = status === "paused" ? timestampToIso(data.pausedAt || data.paused_at) : null;
+  // Пауза морозить дедлайн. Якщо залишок не збережений (старий документ) — рахуємо від pausedAt.
+  const pausedRemainingMs = status === "paused"
+    ? Math.max(0, Math.floor(Number(data.pausedRemainingMs ?? data.paused_remaining_ms ?? (pausedAt ? closesAtMs - Date.parse(pausedAt) : 0)) || 0))
+    : null;
   const autoRepeatWeekly = cleanBoolean(data.autoRepeatWeekly ?? data.auto_repeat_weekly ?? data.repeatWeekly ?? data.repeat_weekly);
   const repeatWeeklyDay = autoRepeatWeekly ? cleanRepeatWeeklyDay(data.repeatWeeklyDay ?? data.repeat_weekly_day ?? data.repeatDay ?? data.repeat_day) : null;
   const repeatWeeklyTime = autoRepeatWeekly ? cleanRepeatWeeklyTime(data.repeatWeeklyTime ?? data.repeat_weekly_time ?? data.repeatTime ?? data.repeat_time) : null;
@@ -578,6 +617,11 @@ export function normalizeRaidPoll(id: string, data: Record<string, unknown>): Ra
     closesAt: new Date(closesAtMs).toISOString(),
     closesAtMs,
     closedAt: timestampToIso(data.closedAt || data.closed_at),
+    pausedAt,
+    pausedByName: status === "paused" ? cleanString(data.pausedByName || data.paused_by_name, 120) || null : null,
+    pausedNote: status === "paused" ? cleanString(data.pausedNote || data.paused_note, 300) || null : null,
+    pausedRemainingMs,
+    resumedAt: timestampToIso(data.resumedAt || data.resumed_at),
     closedReason: cleanString(data.closedReason || data.closed_reason, 20) === "manual" ? "manual" : cleanString(data.closedReason || data.closed_reason, 20) === "auto" ? "auto" : null,
     createdByDiscordId: cleanSnowflake(data.createdByDiscordId || data.created_by_discord_id),
     createdByName: cleanString(data.createdByName || data.created_by_name, 120) || "Dashboard",
@@ -647,7 +691,7 @@ async function cleanupRaidPollDocumentVotes(pollId: string, membership: RaidPoll
 
   if (cleaned?.poll) {
     clearRaidPollRuntimeCaches(cleaned.poll.id);
-    await editPollDiscordMessage(cleaned.poll).catch(() => null);
+    await syncRaidPollDiscordMessage(cleaned.poll).catch(() => null);
   }
   return cleaned;
 }
@@ -1318,11 +1362,22 @@ function votersDiscordValue(poll: RaidPollItem) {
     .slice(0, 1000);
 }
 
+function raidPollDiscordStatusValue(poll: RaidPollItem) {
+  if (poll.status === "closed") return "🔒 **Голосування завершено**";
+  if (poll.status === "paused") {
+    const note = poll.pausedNote ? `\n📝 ${poll.pausedNote}` : "";
+    const remaining = raidPollRemainingLabel(poll);
+    return `⏸️ **Голосування призупинено**\nЗалишок часу заморожено: ${remaining}${note}`;
+  }
+  return `🟢 **Голосування відкрите**\nЗакриття: ${formatDiscordTimestamp(poll.closesAtMs)}`;
+}
+
 export function buildRaidPollDiscordPayload(poll: RaidPollItem, relatedPolls: RaidPollRecommendationContext[] = [poll]) {
   const counts = pollVoteCounts(poll);
-  const closed = poll.status === "closed" || poll.closesAtMs <= Date.now();
+  const closed = poll.status === "closed" || (poll.status === "open" && poll.closesAtMs <= Date.now());
+  const paused = raidPollIsPaused(poll);
   const fields = [
-    { name: "📌 Статус", value: closed ? "🔒 **Голосування завершено**" : `🟢 **Голосування відкрите**\nЗакриття: ${formatDiscordTimestamp(poll.closesAtMs)}`, inline: false },
+    { name: "📌 Статус", value: raidPollDiscordStatusValue(poll), inline: false },
     { name: "🗓️ Голоси за днями", value: dayCountsDiscordValue(poll), inline: true },
     { name: "⏰ Голоси за часом", value: timeCountsDiscordValue(poll), inline: true },
     { name: "👥 Проголосували", value: `${counts.total}`, inline: true },
@@ -1331,17 +1386,29 @@ export function buildRaidPollDiscordPayload(poll: RaidPollItem, relatedPolls: Ra
   ];
 
   const embed = normalizeDiscordEmbed({
-    title: `${closed ? "🔒" : "🗳️"} ${raidPollTitle(poll)}`,
+    title: `${closed ? "🔒" : paused ? "⏸️" : "🗳️"} ${raidPollTitle(poll)}`,
     description: poll.description,
-    color: closed ? 0x5865f2 : DIFFICULTY_COLORS[poll.difficulty],
+    color: closed ? 0x5865f2 : paused ? 0x9aa4b2 : DIFFICULTY_COLORS[poll.difficulty],
     url: dashboardPollUrl(poll.id),
     fields,
-    footer: { text: closed ? "Mistblossom Vanguard • Рейд-пул завершено" : "Mistblossom Vanguard • Натисни кнопку голосування й підтвердь вибір" },
-    timestamp: new Date().toISOString(),
+    footer: {
+      text: closed
+        ? "Mistblossom Vanguard • Рейд-пул завершено"
+        : paused
+          ? "Mistblossom Vanguard • Пауза: голоси тимчасово не приймаються"
+          : "Mistblossom Vanguard • Натисни кнопку голосування й підтвердь вибір",
+    },
+    // Детермінований timestamp: інакше кожен payload унікальний і Discord
+    // отримує PATCH навіть тоді, коли нічого не змінилося.
+    timestamp: safeIso(poll.updatedAt, poll.createdAt),
   });
 
   return {
-    content: closed ? "🔒 **Голосування завершено. Фінальний результат нижче.**" : "🗳️ **Рейд-пул відкрито. Натисніть кнопку, оберіть персонажа/роль/розклад і підтвердьте голос.**",
+    content: closed
+      ? "🔒 **Голосування завершено. Фінальний результат нижче.**"
+      : paused
+        ? "⏸️ **Рейд-пул на паузі. Голоси тимчасово не приймаються — стежте за оновленням.**"
+        : "🗳️ **Рейд-пул відкрито. Натисніть кнопку, оберіть персонажа/роль/розклад і підтвердьте голос.**",
     embed,
     components: buildRaidPollDiscordComponents(poll),
     mentionRoleIds: cleanSnowflakeIds(poll.mentionRoleIds || []),
@@ -1366,8 +1433,19 @@ function scheduleSelectOptions(days: RaidPollDay[]) {
   })));
 }
 
+/** Текст приватної Discord-відповіді, коли пул на паузі. */
+function raidPollPausedContent(poll: Pick<RaidPollItem, "status" | "closesAtMs" | "pausedRemainingMs" | "pausedNote">) {
+  const note = poll.pausedNote ? `\n📝 ${poll.pausedNote}` : "";
+  return `⏸️ Рейд-пул на паузі — голоси тимчасово не приймаються.\nТвій попередній голос збережено, час до закриття заморожено (${raidPollRemainingLabel(poll)}).${note}`;
+}
+
+function raidPollLockedButtonLabel(poll: Pick<RaidPollItem, "status">, activeLabel: string) {
+  if (raidPollIsPaused(poll)) return "⏸️ Пауза — голоси не приймаються";
+  return activeLabel;
+}
+
 export function buildRaidPollDiscordComponents(poll: Pick<RaidPollItem, "id" | "status" | "closesAtMs" | "days">) {
-  const disabled = poll.status === "closed" || poll.closesAtMs <= Date.now();
+  const disabled = raidPollVotingLocked(poll);
 
   return [
     {
@@ -1377,7 +1455,7 @@ export function buildRaidPollDiscordComponents(poll: Pick<RaidPollItem, "id" | "
           type: 2,
           style: disabled ? 2 : 3,
           custom_id: `${RAID_POLL_ACTION_PREFIX}_character_prompt:${poll.id}`,
-          label: disabled ? "Голосування завершено" : "Проголосувати / змінити голос",
+          label: disabled ? raidPollLockedButtonLabel(poll, "Голосування завершено") : "Проголосувати / змінити голос",
           disabled,
         },
         { type: 2, style: 5, label: "Деталі на сайті", url: dashboardPollUrl(poll.id) },
@@ -1387,7 +1465,7 @@ export function buildRaidPollDiscordComponents(poll: Pick<RaidPollItem, "id" | "
 }
 
 function buildRaidPollSubmittedComponents(poll: Pick<RaidPollItem, "id" | "status" | "closesAtMs" | "days">) {
-  const disabled = poll.status === "closed" || poll.closesAtMs <= Date.now();
+  const disabled = raidPollVotingLocked(poll);
   return [
     {
       type: 1,
@@ -1396,7 +1474,7 @@ function buildRaidPollSubmittedComponents(poll: Pick<RaidPollItem, "id" | "statu
           type: 2,
           style: 2,
           custom_id: `${RAID_POLL_ACTION_PREFIX}_character_prompt:${poll.id}`,
-          label: disabled ? "Голосування завершено" : "Змінити голос",
+          label: disabled ? raidPollLockedButtonLabel(poll, "Голосування завершено") : "Змінити голос",
           disabled,
         },
         { type: 2, style: 5, label: "Деталі на сайті", url: dashboardPollUrl(poll.id) },
@@ -1476,7 +1554,7 @@ function buildRaidPollVoteDraftComponents(
   membership?: RaidPollGuildMembershipSnapshot | null,
   schedulePageInput: unknown = 0,
 ) {
-  const disabled = poll.status === "closed" || poll.closesAtMs <= Date.now();
+  const disabled = raidPollVotingLocked(poll);
   const rows: Array<Record<string, unknown>> = [];
 
   const characterOptions: Array<{ label: string; description: string; value: string; default: boolean }> = [];
@@ -1621,31 +1699,76 @@ async function loadPublishedRaidPollsForRecommendations(current?: RaidPollItem |
   return Array.from(byId.values());
 }
 
-export async function recalculatePublishedRaidPollDiscordRecommendations(current?: RaidPollItem | null) {
+/**
+ * Підпис відрендереного Discord-повідомлення. Discord не має where-умов, тому
+ * єдиний спосіб не витрачати rate limit — не слати PATCH, якщо байти ті самі.
+ * Працює тільки завдяки детермінованому embed timestamp у buildRaidPollDiscordPayload.
+ */
+function raidPollDiscordSignature(payload: { content: string; embed: unknown; components: unknown; mentionRoleIds: string[] }) {
+  try {
+    return createHash("sha1")
+      .update(JSON.stringify({ c: payload.content, e: payload.embed, k: payload.components, m: payload.mentionRoleIds }))
+      .digest("hex");
+  } catch {
+    return "";
+  }
+}
+
+function raidPollSignatureCacheKey(pollId: string, messageId: string) {
+  return `${RAID_POLL_DISCORD_SIGNATURE_PREFIX}${pollId}:${messageId}`;
+}
+
+export async function recalculatePublishedRaidPollDiscordRecommendations(
+  current?: RaidPollItem | null,
+  options: { force?: boolean } = {},
+) {
   if (!current) clearRaidPollRuntimeCaches();
   const polls = await loadPublishedRaidPollsForRecommendations(current);
   const publishedPolls = polls.filter((poll) => cleanSnowflake(poll.channelId) && cleanSnowflake(poll.messageId));
-  const result = { total: publishedPolls.length, updated: 0, failed: 0, failedPollIds: [] as string[] };
+  const result = { total: publishedPolls.length, updated: 0, skipped: 0, failed: 0, failedPollIds: [] as string[] };
 
-  for (const poll of publishedPolls) {
-    await editPollDiscordMessage(poll, publishedPolls).then(() => {
-      result.updated += 1;
-    }).catch((error) => {
-      result.failed += 1;
-      result.failedPollIds.push(poll.id);
-      console.warn("[raidPolls] Failed to recalculate published poll recommendation message", {
-        pollId: poll.id,
-        message: error instanceof Error ? error.message : String(error || "unknown"),
-      });
+  // Паралельно, але з профілем external-api: Discord не любить бурсти на 10+ PATCH.
+  const settled = await mapConcurrentSettled(
+    publishedPolls,
+    (poll) => syncRaidPollDiscordMessage(poll, { relatedPolls: publishedPolls, force: options.force }),
+    { profile: "external-api", envKey: "RAID_POLL_DISCORD_SYNC_CONCURRENCY", max: 4 },
+  );
+
+  for (const item of settled.results) {
+    if (item.ok) {
+      if (item.value === "skipped") result.skipped += 1;
+      else result.updated += 1;
+      continue;
+    }
+    result.failed += 1;
+    result.failedPollIds.push(item.item.id);
+    console.warn("[raidPolls] Failed to recalculate published poll recommendation message", {
+      pollId: item.item.id,
+      message: item.error instanceof Error ? item.error.message : String(item.error || "unknown"),
     });
   }
 
   return result;
 }
 
-async function editPollDiscordMessage(poll: RaidPollItem, relatedPolls?: RaidPollRecommendationContext[]) {
-  if (!poll.channelId || !poll.messageId) return;
-  const payload = buildRaidPollDiscordPayload(poll, relatedPolls || await loadPublishedRaidPollsForRecommendations(poll));
+/**
+ * Єдина точка синхронізації існуючого Discord-повідомлення пулу.
+ * Повертає "skipped", якщо стан не змінився з попереднього PATCH.
+ */
+export async function syncRaidPollDiscordMessage(
+  poll: RaidPollItem,
+  options: { relatedPolls?: RaidPollRecommendationContext[]; force?: boolean } = {},
+): Promise<"updated" | "skipped" | "noop"> {
+  if (!poll.channelId || !poll.messageId) return "noop";
+  const payload = buildRaidPollDiscordPayload(poll, options.relatedPolls || await loadPublishedRaidPollsForRecommendations(poll));
+  const signature = raidPollDiscordSignature(payload);
+  const cacheKey = raidPollSignatureCacheKey(poll.id, poll.messageId);
+
+  if (!options.force && signature) {
+    const previous = getRuntimeCachedValue<string>(cacheKey, RAID_POLL_DISCORD_SIGNATURE_TTL_MS);
+    if (previous === signature) return "skipped";
+  }
+
   await editDiscordRaidMessage({
     ref: { channelId: poll.channelId, messageId: poll.messageId },
     content: payload.content,
@@ -1654,6 +1777,9 @@ async function editPollDiscordMessage(poll: RaidPollItem, relatedPolls?: RaidPol
     mentionRoleIds: payload.mentionRoleIds,
     auditReason: `Raid poll sync: ${poll.id}`,
   });
+
+  if (signature) setRuntimeCachedValue(cacheKey, signature);
+  return "updated";
 }
 
 async function publishOrUpdatePollDiscordMessage(poll: RaidPollItem, channelIdInput?: string | null) {
@@ -1729,6 +1855,7 @@ async function savePollDiscordRef(pollId: string, ref: { channelId: string; mess
     return true;
   }, { logEvent: "raid_polls.discord_ref_failed" });
   clearRaidPollRuntimeCaches(pollId);
+  clearRaidPollDiscordSignatureCache(pollId);
   return updatedAt;
 }
 
@@ -2166,6 +2293,9 @@ export async function repeatDueRaidPolls(options: { limit?: number } = {}) {
   for (const doc of docs) {
     const poll = normalizeRaidPoll(doc.id, doc.data() || {});
     if (!poll.repeatNextAtMs || poll.repeatNextAtMs > nowMs) continue;
+    // Пауза морозить і автоповтор: інакше cron перестворив би пул і видалив
+    // Discord-повідомлення, повністю зруйнувавши сенс паузи.
+    if (raidPollIsPaused(poll)) continue;
     checked += 1;
     const lockId = randomUUID();
     const claimed = await claimRaidPollRepeat(doc.id, nowMs, lockId).catch((error) => {
@@ -2311,6 +2441,120 @@ export async function closeRaidPoll(pollId: string, reason: "manual" | "auto" = 
 
   clearRaidPollRuntimeCaches(updated.id);
   await recalculatePublishedRaidPollDiscordRecommendations(updated).catch(() => null);
+  return updated;
+}
+
+const RAID_POLL_MIN_RESUME_WINDOW_MS = 5 * 60_000;
+
+/**
+ * Пауза не архівує пул: статус стає "paused", а залишок часу до автозакриття
+ * заморожується в pausedRemainingMs. Cron шукає тільки status == "open",
+ * тому призупинений пул не буде закрито автоматично.
+ */
+export async function pauseRaidPoll(pollId: string, options: { actorName?: string; note?: string } = {}) {
+  if (!hasRaidPollStorage()) throw new Error(firebaseUnavailableMessage("raid", "write"));
+  const pausedAt = new Date().toISOString();
+  const actorName = cleanString(options.actorName, 120) || "Dashboard";
+  const note = cleanString(options.note, 300);
+
+  const updated = await firebaseWrite<RaidPollItem>("raid", `raid-poll:pause:${pollId}`, async () => {
+    const ref = pollRef(pollId);
+    return getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw new Error("Рейд-пул не знайдено.");
+      const poll = normalizeRaidPoll(snap.id, snap.data() || {});
+      if (poll.status === "closed") throw new Error("Закритий рейд-пул не можна поставити на паузу. Спочатку створи новий.");
+      if (poll.status === "paused") return poll;
+
+      const remaining = Math.max(0, poll.closesAtMs - Date.now());
+      tx.update(ref, {
+        status: "paused",
+        pausedAt,
+        pausedByName: actorName,
+        pausedNote: note || null,
+        pausedRemainingMs: remaining,
+        updatedAt: pausedAt,
+        updatedAtMs: Date.now(),
+      });
+      return {
+        ...poll,
+        status: "paused" as RaidPollStatus,
+        pausedAt,
+        pausedByName: actorName,
+        pausedNote: note || null,
+        pausedRemainingMs: remaining,
+        updatedAt: pausedAt,
+      };
+    });
+  }, { logEvent: "raid_polls.pause_failed" });
+
+  clearRaidPollRuntimeCaches(updated.id);
+  await syncRaidPollDiscordMessage(updated, { force: true }).catch(() => null);
+  return updated;
+}
+
+/**
+ * Відновлення повертає статус "open" і зсуває дедлайн на замороженний залишок,
+ * щоб пауза не з'їдала час голосування.
+ */
+export async function resumeRaidPoll(pollId: string, options: { actorName?: string; extendMinutes?: number } = {}) {
+  if (!hasRaidPollStorage()) throw new Error(firebaseUnavailableMessage("raid", "write"));
+  const resumedAt = new Date().toISOString();
+  const extendMs = Math.max(0, Math.floor(Number(options.extendMinutes) || 0)) * 60_000;
+
+  const updated = await firebaseWrite<RaidPollItem>("raid", `raid-poll:resume:${pollId}`, async () => {
+    const ref = pollRef(pollId);
+    return getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw new Error("Рейд-пул не знайдено.");
+      const poll = normalizeRaidPoll(snap.id, snap.data() || {});
+      if (poll.status === "closed") throw new Error("Рейд-пул уже закрито, відновлення неможливе.");
+      if (poll.status !== "paused") return poll;
+
+      // Мінімальне вікно, щоб пул не закрився тією ж секундою, якщо пауза почалась на межі дедлайну.
+      const frozen = Math.max(0, Number(poll.pausedRemainingMs) || 0);
+      const remaining = Math.max(RAID_POLL_MIN_RESUME_WINDOW_MS, frozen + extendMs);
+      const closesAtMs = Date.now() + remaining;
+
+      // Якщо автоповтор «протермінувався» під час паузи — переносимо його на
+      // наступну майбутню дату, щоб пул не продублювався одразу після відновлення.
+      const repeatOverdue = Boolean(poll.autoRepeatWeekly && poll.repeatNextAtMs && poll.repeatNextAtMs <= Date.now());
+      const repeatNextAtMs = repeatOverdue
+        ? nextWeeklyRepeatMs(Date.now(), poll.repeatWeeklyDay || "mon", poll.repeatWeeklyTime || "12:00")
+        : poll.repeatNextAtMs || null;
+
+      tx.update(ref, {
+        status: "open",
+        closesAtMs,
+        closesAt: new Date(closesAtMs).toISOString(),
+        ...(repeatOverdue ? { repeatNextAtMs, repeatNextAt: new Date(repeatNextAtMs as number).toISOString() } : {}),
+        pausedAt: null,
+        pausedByName: null,
+        pausedNote: null,
+        pausedRemainingMs: null,
+        resumedAt,
+        updatedAt: resumedAt,
+        updatedAtMs: Date.now(),
+      });
+      return {
+        ...poll,
+        status: "open" as RaidPollStatus,
+        closesAtMs,
+        closesAt: new Date(closesAtMs).toISOString(),
+        repeatNextAtMs,
+        repeatNextAt: repeatNextAtMs ? new Date(repeatNextAtMs).toISOString() : null,
+        pausedAt: null,
+        pausedByName: null,
+        pausedNote: null,
+        pausedRemainingMs: null,
+        resumedAt,
+        updatedAt: resumedAt,
+      };
+    });
+  }, { logEvent: "raid_polls.resume_failed" });
+
+  clearRaidPollRuntimeCaches(updated.id);
+  await syncRaidPollDiscordMessage(updated, { force: true }).catch(() => null);
   return updated;
 }
 
@@ -2511,7 +2755,10 @@ export async function handleRaidPollDiscordVote(params: {
     if (!state) return { ok: false, content: "❌ Рейд-пул не знайдено або його було видалено." };
     const { poll, draft } = state;
     const schedulePage = params.kind === "schedule_page" ? schedulePageFromGroup(params.group, poll) : 0;
-    if (poll.status === "closed" || poll.closesAtMs <= Date.now()) {
+    if (raidPollIsPaused(poll)) {
+      return { ok: false, poll, content: raidPollPausedContent(poll) };
+    }
+    if (!raidPollAcceptsVotes(poll)) {
       return { ok: false, closed: true, poll, content: "🔒 Голосування вже завершено. Голос змінити не можна." };
     }
     if (!profile?.characters?.length) {
@@ -2561,7 +2808,12 @@ export async function handleRaidPollDiscordVote(params: {
       if (!snap.exists) return { ok: false, content: "❌ Рейд-пул не знайдено або його було видалено." };
 
       const poll = normalizeRaidPoll(snap.id, snap.data() || {});
-      if (poll.status === "closed" || poll.closesAtMs <= Date.now()) {
+      // Пауза перевіряється першою: у призупиненого пулу closesAtMs може вже бути
+      // в минулому, і без цієї гілки транзакція помилково закрила б його назавжди.
+      if (raidPollIsPaused(poll)) {
+        return { ok: false, poll, content: raidPollPausedContent(poll) };
+      }
+      if (!raidPollAcceptsVotes(poll)) {
         const closedPoll = poll.status === "closed" ? poll : { ...poll, status: "closed" as RaidPollStatus, closedAt: nowIso, closedReason: "auto" as const, updatedAt: nowIso };
         tx.update(ref, {
           status: "closed",

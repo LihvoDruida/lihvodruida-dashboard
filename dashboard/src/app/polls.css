@@ -1,0 +1,891 @@
+/*
+  polls.css — новий шар для сторінок рейд-пулів (/polls, /polls/[id], /polls/[id]/edit).
+  Стилі писані з нуля під нову розмітку (poll-*), тому не воюють зі старими
+  raid-poll-* правилами з globals.css / theme.css.
+*/
+
+.poll-page {
+  --poll-radius: 18px;
+  --poll-radius-sm: 12px;
+  --poll-surface: rgba(13, 19, 30, 0.72);
+  --poll-surface-soft: rgba(255, 255, 255, 0.035);
+  --poll-border: rgba(255, 255, 255, 0.085);
+  --poll-border-strong: rgba(255, 255, 255, 0.15);
+  --poll-text: #eef2f8;
+  --poll-text-soft: rgba(226, 232, 244, 0.72);
+  --poll-text-muted: rgba(200, 210, 226, 0.5);
+  --poll-open: #5ed6a4;
+  --poll-paused: #efb45c;
+  --poll-closed: rgba(190, 200, 216, 0.7);
+}
+
+/* ---------------- Херо ---------------- */
+
+.poll-page .poll-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: clamp(16px, 3vw, 40px);
+  margin-bottom: var(--space-lg, 20px);
+  padding: clamp(18px, 2.4vw, 26px) clamp(18px, 2.6vw, 28px);
+  border: 1px solid var(--poll-border);
+  border-radius: var(--poll-radius);
+  background:
+    radial-gradient(90rem 22rem at 8% -30%, rgba(96, 132, 255, 0.1), transparent 60%),
+    var(--poll-surface);
+}
+
+.poll-page .poll-hero__copy {
+  min-width: 0;
+}
+
+.poll-page .poll-hero__eyebrow {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--poll-text-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.poll-page .poll-hero h1 {
+  margin: 0 0 8px;
+  font-size: clamp(1.6rem, 1.1rem + 1.9vw, 2.5rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.poll-page .poll-hero p {
+  max-width: 62ch;
+  margin: 0;
+  color: var(--poll-text-soft);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.poll-page .poll-hero__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
+.poll-page .poll-hero__stats > div {
+  min-width: 84px;
+  padding: 9px 14px;
+  border: 1px solid var(--poll-border);
+  border-radius: var(--poll-radius-sm);
+  background: var(--poll-surface-soft);
+}
+
+.poll-page .poll-hero__stats dt {
+  margin: 0 0 3px;
+  color: var(--poll-text-muted);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.poll-page .poll-hero__stats dd {
+  margin: 0;
+  color: var(--poll-text);
+  font-size: 1.2rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.poll-page .poll-hero__actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 860px) {
+  .poll-page .poll-hero {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+/* ---------------- Спільні чіпи стану ---------------- */
+
+.poll-page .poll-chip,
+.poll-page .poll-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border: 1px solid var(--poll-border);
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.poll-page .poll-chip--mythic { border-color: var(--difficulty-mythic-border); background: var(--difficulty-mythic-bg); color: var(--difficulty-mythic-text); }
+.poll-page .poll-chip--heroic { border-color: var(--difficulty-heroic-border); background: var(--difficulty-heroic-bg); color: var(--difficulty-heroic-text); }
+.poll-page .poll-chip--normal { border-color: var(--difficulty-normal-border); background: var(--difficulty-normal-bg); color: var(--difficulty-normal-text); }
+.poll-page .poll-chip--ghost { background: var(--poll-surface-soft); color: var(--poll-text-soft); text-transform: none; letter-spacing: 0.02em; }
+
+.poll-page .poll-state::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.poll-page .poll-state--open { color: var(--poll-open); border-color: rgba(94, 214, 164, 0.34); background: rgba(94, 214, 164, 0.1); }
+.poll-page .poll-state--paused { color: var(--poll-paused); border-color: rgba(239, 180, 92, 0.36); background: rgba(239, 180, 92, 0.11); }
+.poll-page .poll-state--closed { color: var(--poll-closed); background: var(--poll-surface-soft); }
+
+/* ---------------- Браузер списку ---------------- */
+
+.poll-page .poll-browser {
+  display: grid;
+  gap: 16px;
+  padding: clamp(16px, 2.2vw, 24px);
+  border: 1px solid var(--poll-border);
+  border-radius: var(--poll-radius);
+  background: var(--poll-surface);
+}
+
+.poll-page .poll-browser__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.poll-page .poll-browser__headline h2 {
+  margin: 0 0 4px;
+  font-size: 1.15rem;
+  letter-spacing: -0.01em;
+}
+
+.poll-page .poll-browser__headline p {
+  max-width: 60ch;
+  margin: 0;
+  color: var(--poll-text-soft);
+  font-size: 0.85rem;
+}
+
+.poll-page .poll-browser__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.poll-page .poll-tabs {
+  display: inline-flex;
+  gap: 3px;
+  padding: 4px;
+  border: 1px solid var(--poll-border);
+  border-radius: 999px;
+  background: var(--poll-surface-soft);
+}
+
+.poll-page .poll-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--poll-text-soft);
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.poll-page .poll-tab b {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.poll-page .poll-tab:hover { color: var(--poll-text); background: rgba(255, 255, 255, 0.05); }
+.poll-page .poll-tab.is-active { color: var(--poll-text); background: rgba(96, 132, 255, 0.18); }
+.poll-page .poll-tab.is-active b { background: rgba(120, 155, 255, 0.28); }
+
+.poll-page .poll-search input {
+  min-width: min(260px, 100%);
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--poll-border);
+  border-radius: 999px;
+  background: var(--poll-surface-soft);
+  color: var(--poll-text);
+  /* 16px мінімум: інакше iOS зумить сторінку при фокусі. */
+  font-size: 16px;
+}
+
+@media (min-width: 768px) {
+  .poll-page .poll-search input { font-size: 0.85rem; }
+}
+
+.poll-page .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.poll-page .poll-list {
+  display: grid;
+  gap: 10px;
+}
+
+.poll-page .poll-empty {
+  margin: 0;
+  padding: 26px 16px;
+  border: 1px dashed var(--poll-border);
+  border-radius: var(--poll-radius-sm);
+  color: var(--poll-text-muted);
+  text-align: center;
+  font-size: 0.88rem;
+}
+
+/* ---------------- Картка пулу ---------------- */
+
+.poll-page .poll-card {
+  position: relative;
+  display: grid;
+  /* minmax(0,...) обовʼязково: без нього довгі рядки рекомендацій
+     розпирають грід і ламають колонку дій. */
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  grid-template-areas: "main stats" "actions actions";
+  gap: 14px clamp(14px, 2vw, 26px);
+  padding: 16px 18px 16px 22px;
+  border: 1px solid var(--poll-border);
+  border-radius: var(--poll-radius);
+  background: var(--poll-surface-soft);
+  overflow: hidden;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.poll-page .poll-card:hover {
+  border-color: var(--poll-border-strong);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.poll-page .poll-card__rail {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--poll-closed);
+}
+
+.poll-page .poll-card--open .poll-card__rail { background: var(--poll-open); }
+.poll-page .poll-card--paused .poll-card__rail { background: var(--poll-paused); }
+
+.poll-page .poll-card__main { grid-area: main; min-width: 0; }
+
+.poll-page .poll-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 9px;
+}
+
+.poll-page .poll-card__id {
+  color: var(--poll-text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.68rem;
+}
+
+.poll-page .poll-card__title {
+  margin: 0 0 4px;
+  font-size: 1.06rem;
+  line-height: 1.25;
+}
+
+.poll-page .poll-card__title a {
+  color: var(--poll-text);
+  text-decoration: none;
+}
+
+.poll-page .poll-card__title a:hover { text-decoration: underline; }
+
+.poll-page .poll-card__description {
+  margin: 0 0 10px;
+  color: var(--poll-text-soft);
+  font-size: 0.83rem;
+  line-height: 1.45;
+  /* Опис у Discord довгий — обрізаємо до двох рядків замість того,
+     щоб він займав пів картки. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.poll-page .poll-card__note {
+  margin: 0 0 10px;
+  color: var(--poll-paused);
+  font-size: 0.8rem;
+}
+
+.poll-page .poll-card__days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.poll-page .poll-card__days li {
+  min-width: 34px;
+  padding: 3px 8px;
+  border: 1px solid var(--poll-border);
+  border-radius: 8px;
+  color: var(--poll-text-soft);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.poll-page .poll-card__stats {
+  grid-area: stats;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 10px;
+  margin: 0;
+  min-width: 0;
+}
+
+.poll-page .poll-card__stats-wide { grid-column: 1 / -1; }
+
+.poll-page .poll-card__stats dt {
+  margin: 0 0 3px;
+  color: var(--poll-text-muted);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.poll-page .poll-card__stats dd {
+  margin: 0;
+  color: var(--poll-text);
+  font-size: 0.98rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.poll-page .poll-card__stats dd small {
+  display: block;
+  margin-top: 2px;
+  color: var(--poll-text-muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.poll-page .poll-card__recommendation {
+  display: block;
+  color: var(--poll-text-soft);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.4;
+  /* break-word, не anywhere: anywhere ламає min-content і схлопує колонку. */
+  overflow-wrap: break-word;
+}
+
+.poll-page .poll-card__actions {
+  grid-area: actions;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  padding-top: 12px;
+  border-top: 1px solid var(--poll-border);
+}
+
+.poll-page .poll-card__actions form { margin: 0; }
+
+@media (max-width: 900px) {
+  .poll-page .poll-card {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "main" "stats" "actions";
+  }
+}
+
+/* ---------------- Сторінка результатів ---------------- */
+
+.poll-page .poll-detail {
+  display: grid;
+  gap: 14px;
+}
+
+.poll-page .poll-detail__bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 16px;
+  padding: clamp(16px, 2.2vw, 22px);
+  border: 1px solid var(--poll-border);
+  border-radius: var(--poll-radius);
+  background: var(--poll-surface);
+}
+
+.poll-page .poll-detail__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 9px;
+}
+
+.poll-page .poll-detail__identity h2 {
+  margin: 0 0 6px;
+  font-size: clamp(1.2rem, 1rem + 0.8vw, 1.6rem);
+  line-height: 1.2;
+}
+
+.poll-page .poll-detail__identity p {
+  max-width: 72ch;
+  margin: 0;
+  color: var(--poll-text-soft);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.poll-page .poll-detail__paused {
+  margin-top: 10px !important;
+  padding: 9px 12px;
+  border: 1px solid rgba(239, 180, 92, 0.3);
+  border-radius: var(--poll-radius-sm);
+  background: rgba(239, 180, 92, 0.09);
+  color: var(--poll-paused) !important;
+}
+
+.poll-page .poll-detail__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+  max-width: 100%;
+}
+
+.poll-page .poll-detail__actions form { margin: 0; }
+
+@media (max-width: 900px) {
+  .poll-page .poll-detail__bar { grid-template-columns: minmax(0, 1fr); }
+  .poll-page .poll-detail__actions { justify-content: flex-start; }
+}
+
+.poll-page .poll-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: 10px;
+}
+
+.poll-page .poll-metrics > div {
+  padding: 14px 16px;
+  border: 1px solid var(--poll-border);
+  border-radius: var(--poll-radius-sm);
+  background: var(--poll-surface-soft);
+}
+
+.poll-page .poll-metrics span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--poll-text-muted);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.poll-page .poll-metrics strong {
+  display: block;
+  color: var(--poll-text);
+  font-size: 1.12rem;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+}
+
+.poll-page .poll-metrics small {
+  display: block;
+  margin-top: 4px;
+  color: var(--poll-text-muted);
+  font-size: 0.72rem;
+}
+
+.poll-page .poll-section-head { margin-bottom: 12px; }
+
+.poll-page .poll-section-head h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.poll-page .poll-section-head p {
+  max-width: 70ch;
+  margin: 0;
+  color: var(--poll-text-soft);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.poll-page .poll-recommendation,
+.poll-page .poll-matrix,
+.poll-page .poll-sync,
+.poll-page .poll-voters {
+  padding: clamp(16px, 2.2vw, 22px);
+  border: 1px solid var(--poll-border);
+  border-radius: var(--poll-radius);
+  background: var(--poll-surface);
+}
+
+.poll-page .poll-recommendation__eyebrow {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--color-accent-strong, #f7d38d);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.poll-page .poll-recommendation__head h3 { margin: 0 0 12px; font-size: 1.05rem; }
+
+.poll-page .poll-recommendation__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .poll-page .poll-recommendation__body { grid-template-columns: minmax(0, 1fr); }
+}
+
+.poll-page .poll-recommendation__best {
+  padding: 14px 16px;
+  border: 1px solid rgba(96, 132, 255, 0.26);
+  border-radius: var(--poll-radius-sm);
+  background: rgba(96, 132, 255, 0.09);
+}
+
+.poll-page .poll-recommendation__best strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--poll-text);
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.poll-page .poll-recommendation__best span {
+  color: var(--poll-text-soft);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.poll-page .poll-recommendation__list {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: slot;
+}
+
+.poll-page .poll-recommendation__list li {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: start;
+  gap: 9px;
+  padding: 10px 12px;
+  border: 1px solid var(--poll-border);
+  border-radius: var(--poll-radius-sm);
+  background: var(--poll-surface-soft);
+  color: var(--poll-text-soft);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.poll-page .poll-recommendation__list li b {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.72rem;
+}
+
+.poll-page .poll-recommendation__list li.is-best {
+  border-color: rgba(94, 214, 164, 0.3);
+  background: rgba(94, 214, 164, 0.08);
+}
+
+.poll-page .poll-recommendation__list li.is-empty {
+  grid-template-columns: minmax(0, 1fr);
+  font-style: italic;
+}
+
+.poll-page .poll-recommendation__how {
+  margin-top: 12px;
+  border-top: 1px solid var(--poll-border);
+  padding-top: 10px;
+}
+
+.poll-page .poll-recommendation__how summary {
+  color: var(--poll-text-soft);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.poll-page .poll-recommendation__how p {
+  margin: 8px 0 0;
+  color: var(--poll-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+/* ---------------- Матриця днів ---------------- */
+
+.poll-page .poll-matrix__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  gap: 10px;
+}
+
+.poll-page .poll-day {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+  padding: 14px;
+  border: 1px solid var(--poll-border);
+  border-radius: var(--poll-radius-sm);
+  background: var(--poll-surface-soft);
+  min-width: 0;
+}
+
+.poll-page .poll-day__head strong {
+  display: block;
+  color: var(--poll-text);
+  font-size: 0.92rem;
+}
+
+.poll-page .poll-day__head small {
+  display: block;
+  margin-top: 2px;
+  color: var(--poll-text-muted);
+  font-size: 0.72rem;
+}
+
+.poll-page .poll-day__bar {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+
+.poll-page .poll-day__bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--poll-open);
+}
+
+.poll-page .poll-day__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.74rem;
+}
+
+.poll-page .poll-day__stats span {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--poll-text-soft);
+}
+
+.poll-page .poll-day__stats .is-ready b { color: var(--poll-open); }
+.poll-page .poll-day__stats .is-absent b { color: var(--color-danger, #ff8c8c); }
+
+.poll-page .poll-day__times {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(62px, 1fr));
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.poll-page .poll-day__times li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  padding: 4px 8px;
+  border: 1px solid var(--poll-border);
+  border-radius: 8px;
+  color: var(--poll-text-muted);
+  font-size: 0.71rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.poll-page .poll-day__times li.has-votes {
+  border-color: rgba(94, 214, 164, 0.3);
+  background: rgba(94, 214, 164, 0.09);
+  color: var(--poll-text);
+}
+
+.poll-page .poll-day__voters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  font-size: 0.73rem;
+}
+
+.poll-page .poll-day__voters span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--poll-text-soft);
+}
+
+.poll-page .poll-day__voters span b { color: var(--poll-text); font-weight: 700; }
+.poll-page .poll-day__voters em { color: var(--poll-text-muted); font-size: 0.75rem; }
+
+.poll-page .poll-day__absent {
+  margin: 0;
+  color: var(--poll-text-muted);
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
+/* ---------------- Discord ---------------- */
+
+.poll-page .poll-sync__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.poll-page .poll-sync__metrics > div {
+  padding: 12px 14px;
+  border: 1px solid var(--poll-border);
+  border-radius: var(--poll-radius-sm);
+  background: var(--poll-surface-soft);
+}
+
+.poll-page .poll-sync__metrics span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--poll-text-muted);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.poll-page .poll-sync__metrics strong {
+  color: var(--poll-text);
+  font-size: 0.9rem;
+}
+
+/* ---------------- Голоси ---------------- */
+
+.poll-page .poll-voters__list {
+  display: grid;
+  gap: 8px;
+}
+
+.poll-page .poll-voter {
+  display: grid;
+  grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border: 1px solid var(--poll-border);
+  border-radius: var(--poll-radius-sm);
+  background: var(--poll-surface-soft);
+}
+
+.poll-page .poll-voter__schedule {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.poll-page .poll-voter__schedule span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border: 1px solid var(--poll-border);
+  border-radius: 999px;
+  color: var(--poll-text-muted);
+  font-size: 0.72rem;
+}
+
+.poll-page .poll-voter__schedule .is-ready {
+  border-color: rgba(94, 214, 164, 0.3);
+  background: rgba(94, 214, 164, 0.08);
+  color: var(--poll-text);
+}
+
+.poll-page .poll-voter__schedule .is-absent {
+  border-color: rgba(255, 140, 140, 0.28);
+  background: rgba(255, 140, 140, 0.08);
+}
+
+.poll-page .poll-voter__meta {
+  grid-column: 1 / -1;
+  color: var(--poll-text-muted);
+  font-size: 0.71rem;
+}
+
+@media (max-width: 720px) {
+  .poll-page .poll-voter { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---------------- Кнопка паузи ---------------- */
+
+.poll-page .raid-poll-pause-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.poll-page .raid-poll-pause-button.is-paused {
+  border-color: rgba(94, 214, 164, 0.34) !important;
+  color: var(--poll-open) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .poll-page .poll-card,
+  .poll-page .poll-tab {
+    transition: none;
+  }
+}

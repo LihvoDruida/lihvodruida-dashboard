@@ -37,8 +37,9 @@ export default async function PollDetailsPage({ params }: { params: Promise<{ po
   return (
     <RaidPollPageShell
       user={user}
-      title="Результати рейд-пулу"
-      description="Повний результат голосування: дні, час, список учасників і Discord-повідомлення."
+      title={poll ? poll.title : "Рейд-пул"}
+      description="Повний результат голосування: дні, час, список учасників і стан Discord-синхронізації."
+      eyebrow="Mistblossom Vanguard • Результати"
     >
       {!hasRaidPollStorage() ? <div className="notice panel error-note raid-notice">Рейд-пули тимчасово недоступні: Firebase не налаштований.</div> : null}
       {poll ? <>

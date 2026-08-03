@@ -16,6 +16,7 @@ import {
 } from "@/lib/permissions";
 import LogoutButton from "@/components/LogoutButton";
 import MobileNavSafeAreaSync from "@/components/MobileNavSafeAreaSync";
+import DashboardNavIcon from "@/components/DashboardNavIcon";
 import DashboardDesktopNav from "@/components/DashboardDesktopNav";
 import { getProfileById, getProfilePublicName } from "@/lib/profiles";
 import { getGuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
@@ -25,7 +26,7 @@ export default async function DashboardIdentity({
   activeSection = "home",
 }: {
   user: DashboardSession | null;
-  activeSection?: "home" | "admin" | "applications" | "content" | "discord" | "guild" | "profile" | "profiles" | "raids" | "roster" | "rules";
+  activeSection?: "home" | "admin" | "applications" | "content" | "discord" | "guild" | "polls" | "profile" | "profiles" | "raids" | "roster" | "rules";
 }) {
   const [guild, nicknamePolicy] = await Promise.all([
     getGuildBranding(),
@@ -51,6 +52,9 @@ export default async function DashboardIdentity({
           : null,
         canUseRaids
           ? { href: "/raids", section: "raids" as const, label: "Рейди", desktopLabel: canCreateRaids ? "Рейди" : "Мої рейди" }
+          : null,
+        canUseRaids
+          ? { href: "/polls", section: "polls" as const, label: "Пули", desktopLabel: "Рейд-пули" }
           : null,
         canCreateRaids
           ? { href: "/roster", section: "roster" as const, label: "Склад", desktopLabel: "Формування складу" }
@@ -148,6 +152,7 @@ export default async function DashboardIdentity({
                   className={activeSection === item.section ? "is-active" : undefined}
                   aria-current={activeSection === item.section ? "page" : undefined}
                 >
+                  <DashboardNavIcon section={item.section} />
                   <strong>{item.label}</strong>
                 </a>
               ))}
