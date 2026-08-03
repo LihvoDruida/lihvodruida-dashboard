@@ -43,7 +43,7 @@ export default function DashboardDesktopNav({
 }) {
   const [open, setOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(items.length);
-  const navRef = useRef<HTMLElement | null>(null);
+  const railRef = useRef<HTMLDivElement | null>(null);
   const moreRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const measureItemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
@@ -62,7 +62,7 @@ export default function DashboardDesktopNav({
   const activeSecondaryItem = secondaryNavItems.find((item) => item.section === activeSection) || null;
 
   useLayoutEffect(() => {
-    const nav = navRef.current;
+    const nav = railRef.current;
     if (!nav) return;
 
     let frame = 0;
@@ -167,13 +167,15 @@ export default function DashboardDesktopNav({
 
   return (
     <>
-      <nav
-        ref={navRef}
-        className="dashboard-nav dashboard-nav--desktop"
-        aria-label="Панель керування"
-        data-items={items.length}
-        data-overflow={secondaryNavItems.length > 0 ? "true" : "false"}
-      >
+      {/* Рейка на всю ширину колонки: саме вона вимірюється для згортання
+          пунктів у «Ще». Капсула всередині лишається завширшки з вміст. */}
+      <div ref={railRef} className="dashboard-nav-rail">
+        <nav
+          className="dashboard-nav dashboard-nav--desktop"
+          aria-label="Панель керування"
+          data-items={items.length}
+          data-overflow={secondaryNavItems.length > 0 ? "true" : "false"}
+        >
         {primaryNavItems.map((item) => (
           <a
             key={item.href}
@@ -227,8 +229,9 @@ export default function DashboardDesktopNav({
               </div>
             </div>
           </div>
-        ) : null}
-      </nav>
+          ) : null}
+        </nav>
+      </div>
 
       <div className="dashboard-nav-measure" aria-hidden="true" inert>
         {items.map((item, index) => (
