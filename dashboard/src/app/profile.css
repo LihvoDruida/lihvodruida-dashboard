@@ -2338,13 +2338,9 @@
   isolation: isolate;
 }
 
-.profile-account-page > .dashboard-topbar {
-  display: grid;
-}
-
-.profile-account-page > .dashboard-mobile-nav-shell {
-  display: none;
-}
+/* Навігація описана виключно в nav-shell.css (єдиний стандарт).
+   Тут раніше стояв display: grid для топбара — саме він ламав капсулу
+   на сторінці профілю. */
 
 .profile-account-page::before {
   content: "";

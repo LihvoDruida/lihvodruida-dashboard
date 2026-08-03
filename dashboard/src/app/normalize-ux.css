@@ -140,20 +140,6 @@
 }
 
 /* --------------------------------------------------------------------------
-   5. Надійне приховування overflow-меню навігації.
-   Було три конкурентні визначення .dashboard-nav-more__menu:
-   refactor.css ставив display:none у закритому стані, але globals.css
-   перебивав це через `display: grid !important`, лишаючи меню в потоці.
-   Тримається на visibility+pointer-events, що ламається від будь-якої
-   наступної правки. Фіксуємо явно.
-   -------------------------------------------------------------------------- */
-.dashboard-nav-more:not(.is-open) .dashboard-nav-more__menu {
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-/* --------------------------------------------------------------------------
    6. Повага до prefers-reduced-motion.
    Було покрито лише 4 локальні блоки з ~68 анімацій/переходів,
    плюс окремо анімований starfield у <body>.
@@ -233,60 +219,6 @@
   .profile-character-candidate__avatar img {
     max-width: 100%;
     height: auto;
-  }
-}
-
-/* --------------------------------------------------------------------------
-   8. Мобільний топбар: повертаємо блок профілю з «Вийти» / «Увійти».
-
-   theme.css (@media max-width:900px) ховав УВЕСЬ .dashboard-topbar через
-   `display:none !important`, тож на телефоні не було ні профілю, ні кнопки
-   виходу — лише нижня навігація. Повертаємо топбар, але БЕЗ десктопного
-   меню: навігацію на мобільному виконує нижня панель, дублювати її не треба.
-
-   Специфічність підібрана під правила theme.css (там є варіанти з :has()),
-   інакше вони перебили б це навіть із !important.
-   -------------------------------------------------------------------------- */
-@media (max-width: 900px) {
-  .dashboard-topbar,
-  body .dashboard-topbar,
-  body:has(.dashboard-mobile-nav-shell) .dashboard-topbar,
-  body:has(.profile-account-page) .dashboard-topbar,
-  body:has(.profile-account-page) .profile-account-page > .dashboard-topbar {
-    display: flex !important;
-    visibility: visible !important;
-    pointer-events: auto !important;
-    align-items: center !important;
-    flex-wrap: wrap !important;
-    gap: 10px !important;
-  }
-
-  /* Десктопне меню всередині топбара на мобільному не потрібне. */
-  .dashboard-topbar .dashboard-nav--desktop {
-    display: none !important;
-  }
-
-  /* Профіль/логін притискаємо праворуч від бренду. */
-  .dashboard-topbar .dashboard-user {
-    margin-left: auto !important;
-    min-width: 0 !important;
-  }
-
-  .dashboard-topbar .dashboard-user__profile-link {
-    min-width: 0 !important;
-  }
-
-  .dashboard-topbar .dashboard-user__profile-link strong,
-  .dashboard-topbar .dashboard-user__profile-link span {
-    overflow-wrap: anywhere;
-  }
-}
-
-/* На дуже вузьких екранах лишаємо аватар + кнопку, підпис бренду ховаємо,
-   щоб рядок не переносився в три поверхи. */
-@media (max-width: 420px) {
-  .dashboard-topbar .dashboard-brand > div span {
-    display: none !important;
   }
 }
 
