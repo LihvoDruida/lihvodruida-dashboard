@@ -701,6 +701,14 @@ html body .dashboard-mobile-nav a.is-active {
   }
 }
 
+/* Нижня панель — виключно для вузьких екранів. На десктопі навігацію
+   виконує капсула, дублювати її не треба. */
+@media (min-width: 901px) {
+  html body .dashboard-mobile-nav-shell {
+    display: none;
+  }
+}
+
 /* Сторінка профілю має власну бічну навігацію — нижню панель тут не дублюємо. */
 html body .profile-account-page > .dashboard-mobile-nav-shell {
   display: none;
