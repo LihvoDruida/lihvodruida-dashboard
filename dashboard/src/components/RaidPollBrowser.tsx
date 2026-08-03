@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import RaidPollPauseButton from "@/components/RaidPollPauseButton";
+import { useRouter } from "next/navigation";
+import { dashboardErrorMessage, dispatchDashboardToast } from "@/lib/clientToasts";
+import RaidPollActions from "@/components/RaidPollActions";
 
 export type RaidPollCardModel = {
   id: string;
@@ -35,11 +37,28 @@ const TABS: Array<{ key: TabKey; label: string }> = [
   { key: "closed", label: "Архів" },
 ];
 
-function RaidPollCard({ card, canManage }: { card: RaidPollCardModel; canManage: boolean }) {
+function RaidPollCard({
+  card,
+  canManage,
+  selected,
+  onToggle,
+}: {
+  card: RaidPollCardModel;
+  canManage: boolean;
+  selected: boolean;
+  onToggle: (id: string) => void;
+}) {
   const href = `/polls/${encodeURIComponent(card.id)}`;
   return (
-    <article className={`poll-card poll-card--${card.state}`}>
+    <article className={`poll-card poll-card--${card.state}${selected ? " is-selected" : ""}`}>
       <div className="poll-card__rail" aria-hidden="true" />
+
+      {canManage ? (
+        <label className="poll-card__select">
+          <input type="checkbox" checked={selected} onChange={() => onToggle(card.id)} />
+          <span className="sr-only">Вибрати «{card.title}»</span>
+        </label>
+      ) : null}
 
       <div className="poll-card__main">
         <div className="poll-card__meta">
@@ -87,19 +106,15 @@ function RaidPollCard({ card, canManage }: { card: RaidPollCardModel; canManage:
       </dl>
 
       <footer className="poll-card__actions">
-        <a className="btn subtle poll-card__primary" href={href}>Результати</a>
-        {card.messageUrl ? (
-          <a className="btn subtle" href={card.messageUrl} target="_blank" rel="noreferrer">Discord</a>
-        ) : null}
-        {canManage ? <a className="btn subtle" href={`${href}/edit`}>Редагувати</a> : null}
-        {canManage && card.state !== "closed" ? (
-          <RaidPollPauseButton pollId={card.id} paused={card.state === "paused"} />
-        ) : null}
-        {canManage && card.state !== "closed" ? (
-          <form action={`/api/polls/${encodeURIComponent(card.id)}/close`} method="post" data-confirm-message="Закрити рейд-пул зараз? Це фінальна дія.">
-            <button className="btn danger" type="submit">Закрити</button>
-          </form>
-        ) : null}
+        <RaidPollActions
+          pollId={card.id}
+          pollTitle={card.title}
+          state={card.state}
+          canManage={canManage}
+          editHref={`${href}/edit`}
+          messageUrl={card.messageUrl}
+          showView
+        />
       </footer>
     </article>
   );
@@ -130,6 +145,61 @@ export default function RaidPollBrowser({
     return counts.closed ? "closed" : "open";
   });
   const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [bulkPending, setBulkPending] = useState(false);
+  const router = useRouter();
+
+  function toggle(id: string) {
+    setSelected((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
+  }
+
+  /**
+   * Масові дії йдуть послідовно, а не Promise.all: паралельні виклики
+   * вперлися б у rate limit Discord і частина пулів лишилась би
+   * неоновленою без жодного сигналу користувачу.
+   */
+  async function runBulk(kind: "close" | "delete") {
+    if (bulkPending || !selected.length) return;
+    const question = kind === "close"
+      ? `Закрити вибрані рейд-пули (${selected.length})?`
+      : `Видалити вибрані рейд-пули (${selected.length})? Дію не можна скасувати.`;
+    if (!window.confirm(question)) return;
+
+    setBulkPending(true);
+    let done = 0;
+    let failed = 0;
+
+    for (const id of selected) {
+      try {
+        const response = await fetch(
+          kind === "delete" ? `/api/polls/${encodeURIComponent(id)}` : `/api/polls/${encodeURIComponent(id)}/close`,
+          {
+            method: kind === "delete" ? "DELETE" : "POST",
+            headers: { Accept: "application/json", "Content-Type": "application/json", "X-Dashboard-Action": `bulk-${kind}-raid-poll` },
+            credentials: "same-origin",
+            cache: "no-store",
+            body: kind === "close" ? JSON.stringify({ action: "close" }) : undefined,
+          },
+        );
+        const data = await response.json().catch(() => null);
+        if (!response.ok || data?.ok === false) failed += 1;
+        else done += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+
+    dispatchDashboardToast({
+      tone: failed ? "warning" : "success",
+      title: failed ? "Виконано частково" : kind === "close" ? "Рейд-пули закрито" : "Рейд-пули видалено",
+      message: failed ? `Успішно: ${done}, з помилкою: ${failed}.` : `Оброблено ${done}.`,
+      ttl: 7200,
+    });
+
+    setSelected([]);
+    setBulkPending(false);
+    router.refresh();
+  }
 
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -181,9 +251,33 @@ export default function RaidPollBrowser({
         </label>
       </div>
 
+      {canManage && selected.length ? (
+        <div className="poll-bulk" role="region" aria-label="Масові дії">
+          <strong>Вибрано: {selected.length}</strong>
+          <button type="button" className="btn subtle" onClick={() => setSelected([])} disabled={bulkPending}>Зняти вибір</button>
+          <button type="button" className="btn subtle" onClick={() => setSelected(visible.map((card) => card.id))} disabled={bulkPending}>
+            Вибрати всі у вкладці
+          </button>
+          <button type="button" className="btn danger" onClick={() => runBulk("close")} disabled={bulkPending}>
+            {bulkPending ? "Обробляємо…" : "Закрити вибрані"}
+          </button>
+          <button type="button" className="btn danger" onClick={() => runBulk("delete")} disabled={bulkPending}>
+            {bulkPending ? "Обробляємо…" : "Видалити вибрані"}
+          </button>
+        </div>
+      ) : null}
+
       <div className="poll-list">
         {visible.length ? (
-          visible.map((card) => <RaidPollCard key={card.id} card={card} canManage={canManage} />)
+          visible.map((card) => (
+            <RaidPollCard
+              key={card.id}
+              card={card}
+              canManage={canManage}
+              selected={selected.includes(card.id)}
+              onToggle={toggle}
+            />
+          ))
         ) : (
           <p className="poll-empty">
             {query.trim()

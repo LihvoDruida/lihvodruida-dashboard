@@ -2440,6 +2440,11 @@ export async function closeRaidPoll(pollId: string, reason: "manual" | "auto" = 
   }, { logEvent: "raid_polls.close_failed" });
 
   clearRaidPollRuntimeCaches(updated.id);
+  clearRaidPollDiscordSignatureCache(updated.id);
+  // Спочатку примусово гасимо кнопки в самому пулі, і тільки потім
+  // перераховуємо рекомендації решти — щоб закритий embed оновився навіть
+  // якщо загальний перерахунок частково впаде.
+  await syncRaidPollDiscordMessage(updated, { force: true }).catch(() => null);
   await recalculatePublishedRaidPollDiscordRecommendations(updated).catch(() => null);
   return updated;
 }
@@ -2556,6 +2561,85 @@ export async function resumeRaidPoll(pollId: string, options: { actorName?: stri
   clearRaidPollRuntimeCaches(updated.id);
   await syncRaidPollDiscordMessage(updated, { force: true }).catch(() => null);
   return updated;
+}
+
+/**
+ * Повторне відкриття закритого пулу. Раніше закриття було незворотним:
+ * помилковий клік означав видалення пулу й створення нового з нуля.
+ */
+export async function reopenRaidPoll(pollId: string, options: { minutes?: number } = {}) {
+  if (!hasRaidPollStorage()) throw new Error(firebaseUnavailableMessage("raid", "write"));
+  const reopenedAt = new Date().toISOString();
+  const minutes = Math.max(5, Math.min(20160, Math.floor(Number(options.minutes) || 0) || 1440));
+
+  const updated = await firebaseWrite<RaidPollItem>("raid", `raid-poll:reopen:${pollId}`, async () => {
+    const ref = pollRef(pollId);
+    return getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw new Error("Рейд-пул не знайдено.");
+      const poll = normalizeRaidPoll(snap.id, snap.data() || {});
+      if (poll.status === "open" && poll.closesAtMs > Date.now()) return poll;
+
+      const closesAtMs = Date.now() + minutes * 60_000;
+      tx.update(ref, {
+        status: "open",
+        closesAtMs,
+        closesAt: new Date(closesAtMs).toISOString(),
+        closedAt: null,
+        closedReason: null,
+        pausedAt: null,
+        pausedByName: null,
+        pausedNote: null,
+        pausedRemainingMs: null,
+        updatedAt: reopenedAt,
+        updatedAtMs: Date.now(),
+      });
+      return {
+        ...poll,
+        status: "open" as RaidPollStatus,
+        closesAtMs,
+        closesAt: new Date(closesAtMs).toISOString(),
+        closedAt: null,
+        closedReason: null,
+        pausedAt: null,
+        pausedByName: null,
+        pausedNote: null,
+        pausedRemainingMs: null,
+        updatedAt: reopenedAt,
+      };
+    });
+  }, { logEvent: "raid_polls.reopen_failed" });
+
+  clearRaidPollRuntimeCaches(updated.id);
+  clearRaidPollDiscordSignatureCache(updated.id);
+  await syncRaidPollDiscordMessage(updated, { force: true }).catch(() => null);
+  return updated;
+}
+
+/**
+ * Ручна пересинхронізація з Discord. Якщо повідомлення зникло (видалене
+ * вручну або канал перестворено) — публікує його заново замість тихої помилки.
+ */
+export async function resyncRaidPollDiscord(pollId: string) {
+  if (!hasRaidPollStorage()) throw new Error(firebaseUnavailableMessage("raid", "write"));
+  const poll = await getRaidPoll(pollId, { bypassCache: true });
+  if (!poll) throw new Error("Рейд-пул не знайдено.");
+
+  clearRaidPollDiscordSignatureCache(poll.id);
+
+  if (poll.channelId && poll.messageId) {
+    try {
+      await syncRaidPollDiscordMessage(poll, { force: true });
+      return { poll, republished: false };
+    } catch (error) {
+      if (!isMissingDiscordMessageError(error)) throw error;
+    }
+  }
+
+  const ref = await publishOrUpdatePollDiscordMessage(poll, poll.channelId);
+  await savePollDiscordRef(poll.id, ref);
+  const refreshed = await getRaidPoll(poll.id, { bypassCache: true });
+  return { poll: refreshed || poll, republished: true };
 }
 
 function orderedProfileCharacters(profile: DashboardProfile | null | undefined) {
@@ -3050,6 +3134,7 @@ export async function deleteRaidPoll(pollId: string) {
   }, { logEvent: "raid_polls.delete_failed" });
 
   clearRaidPollRuntimeCaches(poll.id);
+  clearRaidPollDiscordSignatureCache(poll.id);
   return { poll, discordDeleted, discordDeleteFailed };
 }
 

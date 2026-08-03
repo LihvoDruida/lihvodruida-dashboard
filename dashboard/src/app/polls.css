@@ -889,3 +889,57 @@
     transition: none;
   }
 }
+
+/* ---------------- Вибір і масові дії ---------------- */
+
+.poll-page .poll-card__select {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+}
+
+.poll-page .poll-card__select input {
+  width: 17px;
+  height: 17px;
+  accent-color: #6084ff;
+  cursor: pointer;
+}
+
+.poll-page .poll-card.is-selected {
+  border-color: rgba(120, 155, 255, 0.44);
+  background: rgba(96, 132, 255, 0.08);
+}
+
+.poll-page .poll-bulk {
+  position: sticky;
+  top: calc(var(--dashboard-fixed-topbar-height, 74px) + 8px);
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid rgba(120, 155, 255, 0.34);
+  border-radius: var(--poll-radius-sm);
+  background: rgba(18, 26, 44, 0.96);
+  backdrop-filter: blur(10px);
+}
+
+.poll-page .poll-bulk strong {
+  margin-right: 4px;
+  color: var(--poll-text);
+  font-size: 0.84rem;
+}
+
+/* Картка має бути позиційним контекстом для чекбокса, і дії не повинні
+   заповзати під нього. */
+.poll-page .poll-card__actions { padding-right: 34px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .poll-page .poll-bulk { position: static; }
+}

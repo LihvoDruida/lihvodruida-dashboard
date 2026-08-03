@@ -1,8 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import RaidPollCreateClientForm from "@/components/RaidPollCreateClientForm";
-import RaidPollDeleteButton from "@/components/RaidPollDeleteButton";
 import RaidPollRecalculateButton from "@/components/RaidPollRecalculateButton";
-import RaidPollPauseButton from "@/components/RaidPollPauseButton";
+import RaidPollActions from "@/components/RaidPollActions";
 import RaidPollBrowser, { type RaidPollCardModel } from "@/components/RaidPollBrowser";
 import DashboardIdentity from "@/components/DashboardIdentity";
 import type { DashboardSession } from "@/lib/auth";
@@ -250,16 +249,16 @@ export function RaidPollResults({ poll, canManage = false, relatedPolls = [poll]
 
         <div className="poll-detail__actions">
           <a className="btn subtle" href="/polls">До списку</a>
-          {poll.messageUrl ? <a className="btn subtle" href={poll.messageUrl} target="_blank" rel="noreferrer">Discord</a> : null}
-          {canManage ? <a className="btn subtle" href={`/polls/${encodeURIComponent(poll.id)}/edit`}>Редагувати</a> : null}
-          {canManage && state !== "closed" ? <RaidPollPauseButton pollId={poll.id} paused={state === "paused"} /> : null}
+          <RaidPollActions
+            pollId={poll.id}
+            pollTitle={poll.title}
+            state={state}
+            canManage={canManage}
+            editHref={`/polls/${encodeURIComponent(poll.id)}/edit`}
+            messageUrl={poll.messageUrl}
+            redirectAfterDelete="/polls"
+          />
           {canManage ? <RaidPollRecalculateButton /> : null}
-          {canManage && state !== "closed" ? (
-            <form action={`/api/polls/${encodeURIComponent(poll.id)}/close`} method="post" data-confirm-message="Закрити рейд-пул зараз? Це фінальна дія.">
-              <button className="btn danger" type="submit">Закрити</button>
-            </form>
-          ) : null}
-          {canManage ? <RaidPollDeleteButton pollId={poll.id} pollTitle={poll.title} /> : null}
         </div>
       </section>
 
