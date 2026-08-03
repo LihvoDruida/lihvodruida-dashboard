@@ -160,9 +160,10 @@ export default function RootLayout({
               const root = document.body;
               if (!root) return;
               const threshold = 8;
-              // Ховаємо шапку лише після помітного руху вниз, щоб вона не
-              // блимала на інерційному скролі iOS та дрібних коригуваннях.
-              const hideAfter = 120;
+              // Навбар не ховається: лише перемикається Default <-> Compact.
+              // Поріг і дельта підібрані так, щоб стан не блимав на
+              // інерційному скролі iOS та дрібних коригуваннях.
+              const condenseAfter = 60;
               const delta = 6;
               let ticking = false;
               let lastY = window.scrollY;
@@ -172,13 +173,11 @@ export default function RootLayout({
 
                 const movedDown = y > lastY + delta;
                 const movedUp = y < lastY - delta;
-                // Меню «Ще» відкрите — шапку не рухаємо, інакше воно
-                // з'їжджало б разом з нею з-під курсора.
-                const menuOpen = !!document.querySelector(".dashboard-nav-more.is-open");
 
-                if (!menuOpen) {
-                  if (movedDown && y > hideAfter) root.classList.add("dashboard-nav-hidden");
-                  else if (movedUp || y <= hideAfter) root.classList.remove("dashboard-nav-hidden");
+                if (y <= condenseAfter || movedUp) {
+                  root.classList.remove("dashboard-nav-condensed");
+                } else if (movedDown) {
+                  root.classList.add("dashboard-nav-condensed");
                 }
 
                 if (movedDown || movedUp) lastY = y;

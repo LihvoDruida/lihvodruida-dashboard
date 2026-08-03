@@ -81,6 +81,9 @@ export default async function DashboardIdentity({
   return (
     <>
       <header className="dashboard-topbar">
+        {/* Один плаваючий контейнер: лого, розділи й профіль живуть усередині
+            спільної капсули, а не трьома окремими блоками. */}
+        <div className="nav-capsule">
         <div className="dashboard-brand">
           <img className="guild-mark" src={guild.iconUrl} alt="" width={44} height={44} loading="eager" referrerPolicy="no-referrer" />
           <div>
@@ -91,10 +94,14 @@ export default async function DashboardIdentity({
 
         {user ? (
           <>
+            <span className="nav-capsule__divider" aria-hidden="true" />
+
             <DashboardDesktopNav
               items={navItems}
               activeSection={activeSection}
             />
+
+            <span className="nav-capsule__divider" aria-hidden="true" />
 
             <div className="dashboard-user">
               <a
@@ -130,6 +137,7 @@ export default async function DashboardIdentity({
             </a>
           </div>
         )}
+        </div>
       </header>
 
       {user && hasMobileNav ? (

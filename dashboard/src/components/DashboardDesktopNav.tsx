@@ -11,7 +11,7 @@ type DashboardNavItem = {
 };
 
 const ITEM_GAP = 4;
-const NAV_PADDING = 14;
+const NAV_PADDING = 96;
 const ACTIVE_VISIBILITY_FALLBACK = 1;
 /** Скільки пунктів лишається в капсулі навіть на найвужчому десктопі. */
 const MIN_VISIBLE_ITEMS = 3;
@@ -76,9 +76,18 @@ export default function DashboardDesktopNav({
     const recompute = () => {
       cancelAnimationFrame(frame);
       frame = window.requestAnimationFrame(() => {
-        // Рейка займає вільну колонку сітки і не залежить від вмісту капсули,
-        // тому вимір не зациклюється: підписи можуть і зникати, і повертатись.
-        const availableWidth = Math.floor(nav.getBoundingClientRect().width) - NAV_PADDING;
+        // Капсула тепер обіймає вміст, тож міряти саму рейку не можна —
+        // вона залежала б від того, що всередині, і перехід «підписи → іконки»
+        // став би дверима в один бік. Тому рахуємо вільне місце від шапки:
+        // її ширина визначається вікном, а лого й профіль не змінюються
+        // від режиму навігації.
+        const header = nav.closest(".dashboard-topbar") as HTMLElement | null;
+        const brand = header?.querySelector(".dashboard-brand") as HTMLElement | null;
+        const profile = header?.querySelector(".dashboard-user") as HTMLElement | null;
+        const headerWidth = header ? Math.floor(header.clientWidth) : 0;
+        const availableWidth = headerWidth
+          ? headerWidth - getMeasuredWidth(brand) - getMeasuredWidth(profile) - NAV_PADDING
+          : Math.floor(nav.getBoundingClientRect().width) - NAV_PADDING;
         const labelWidths = items.map((_, index) => getMeasuredWidth(measureItemRefs.current[index] || null));
         const iconWidths = items.map((_, index) => getMeasuredWidth(measureCompactRefs.current[index] || null));
         const moreWidth = Math.max(getMeasuredWidth(measureMoreRef.current), 64);
@@ -130,6 +139,8 @@ export default function DashboardDesktopNav({
     const observer = new ResizeObserver(recompute);
     observer.observe(nav);
     if (nav.parentElement) observer.observe(nav.parentElement);
+    const header = nav.closest(".dashboard-topbar");
+    if (header) observer.observe(header);
     measureItemRefs.current.forEach((node) => {
       if (node) observer.observe(node);
     });

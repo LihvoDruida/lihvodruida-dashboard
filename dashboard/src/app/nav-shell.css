@@ -1,78 +1,120 @@
 /*
-  nav-shell.css — уніфікована навігація сайту (за зразком плаваючої капсули).
-  Шар додається ОСТАННІМ у layout.tsx і не редагує легасі-CSS напряму.
-  Специфічність: html body .selector (>= 0,2,2) перекриває !important-блоки theme.css
-  тільки там, де це справді потрібно.
+  nav-shell.css — головна навігація: одна плаваюча капсула (лого + розділи + профіль).
+  Два стани: Default (спокій / скрол угору) і Compact (скрол униз).
+  Навбар ніколи не ховається — лише ущільнюється.
 */
 
 :root {
-  --nav-capsule-bg: rgba(13, 18, 30, 0.72);
-  --nav-capsule-border: rgba(255, 255, 255, 0.09);
-  --nav-capsule-radius: 999px;
-  --nav-item-radius: 999px;
-  --nav-item-color: rgba(226, 232, 244, 0.62);
-  --nav-item-color-hover: rgba(240, 245, 255, 0.94);
-  --nav-active-bg: rgba(96, 132, 255, 0.16);
-  --nav-active-border: rgba(120, 155, 255, 0.42);
-  --nav-active-color: #e8efff;
-  --nav-active-glow: 0 0 0 1px rgba(120, 155, 255, 0.16), 0 8px 22px rgba(43, 74, 180, 0.28);
+  --nav-bg: rgba(10, 14, 22, 0.82);
+  --nav-border: rgba(255, 255, 255, 0.08);
+  --nav-text: #c7d4ea;
+  --nav-text-hover: #d6e5ff;
+  --nav-accent: #89afff;
+  --nav-active: #ffffff;
+
+  /* Ці чотири змінні керують обома станами. Компактний режим лише міняє
+     їхні значення — саме тому перехід виходить без стрибків розкладки. */
+  --nav-height: 76px;
+  --nav-pad-x: 26px;
+  --nav-gap: 6px;
+  --nav-scale: 1;
+
+  --nav-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --nav-duration: 340ms;
 }
 
-/* ---------- Топбар: три зони, капсула по центру ---------- */
+/* ---------- Шапка: контейнер, що центрує капсулу ---------- */
 
 html body .dashboard-topbar {
-  /* Бренд і блок користувача — по вмісту (auto), центр забирає залишок (1fr).
-     Це критично: якби центральна колонка сама залежала від вмісту навігації,
-     рейка міряла б власну ширину капсули, і перехід «підписи → іконки» став би
-     дверима в один бік — згорнувшись, підписи вже не повернулися б. */
-  grid-template-columns: auto minmax(0, 1fr) auto !important;
-  align-items: center !important;
-  gap: clamp(10px, 1.6vw, 22px) !important;
-  padding-block: calc(9px + var(--safe-top)) 9px !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: flex-start !important;
+  gap: 0 !important;
+  padding: calc(14px + var(--safe-top)) clamp(12px, 2vw, 26px) 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
-/* Рейка вимірювання: тримає повну ширину колонки, щоб логіка згортання
-   пунктів у «Ще» бачила реальний доступний простір. */
-html body .dashboard-nav-rail {
-  grid-column: 2;
+/* ---------- Капсула ---------- */
+
+html body .nav-capsule {
+  box-sizing: border-box;
   display: flex;
-  justify-content: center;
-  width: 100%;
+  align-items: center;
+  gap: clamp(10px, 1.4vw, 20px);
+  /* Обіймає вміст, але не вилазить за екран. */
+  width: fit-content;
+  max-width: 100%;
   min-width: 0;
+  height: var(--nav-height);
+  padding-inline: var(--nav-pad-x);
+  border: 1px solid var(--nav-border);
+  border-radius: 9999px;
+  background: var(--nav-bg);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.045),
+    0 18px 46px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(20px) saturate(125%);
+  -webkit-backdrop-filter: blur(20px) saturate(125%);
+  transition:
+    height var(--nav-duration) var(--nav-ease),
+    padding var(--nav-duration) var(--nav-ease),
+    gap var(--nav-duration) var(--nav-ease),
+    background-color var(--nav-duration) var(--nav-ease),
+    border-color var(--nav-duration) var(--nav-ease),
+    box-shadow var(--nav-duration) var(--nav-ease);
 }
+
+html body .nav-capsule__divider {
+  flex: 0 0 auto;
+  width: 1px;
+  height: calc(26px * var(--nav-scale));
+  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.14), transparent);
+  transition: height var(--nav-duration) var(--nav-ease);
+}
+
+/* ---------- Лого ---------- */
 
 html body .dashboard-topbar .dashboard-brand {
-  justify-self: start !important;
+  flex: 0 0 auto;
+  display: flex !important;
+  align-items: center !important;
+  gap: 11px !important;
   min-width: 0 !important;
+  max-width: clamp(150px, 17vw, 250px) !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: none !important;
 }
 
-html body .dashboard-topbar .dashboard-user {
-  justify-self: end !important;
-  min-width: 0 !important;
-  gap: 10px !important;
+html body .dashboard-brand .guild-mark {
+  width: calc(44px * var(--nav-scale)) !important;
+  height: calc(44px * var(--nav-scale)) !important;
+  transition:
+    width var(--nav-duration) var(--nav-ease),
+    height var(--nav-duration) var(--nav-ease);
 }
 
-/* Кнопка виходу — незмінна ширина. Без цього вона стискалась до одного
-   символу й напис розсипався у вертикальний стовпчик. */
-html body .dashboard-user__logout,
-html body .dashboard-user__logout button,
-html body .dashboard-user__logout .btn,
-html body .dashboard-user__logout a {
-  flex: 0 0 auto !important;
-  white-space: nowrap !important;
-  word-break: normal !important;
-  overflow-wrap: normal !important;
+html body .dashboard-brand strong {
+  color: #f2f6ff !important;
+  font-size: calc(0.98rem * var(--nav-scale)) !important;
+  line-height: 1.15 !important;
+  letter-spacing: 0.01em !important;
 }
 
-/* Довге імʼя або назва ролі ріжеться трьома крапками, а не ламає розкладку. */
-html body .dashboard-user__profile-link > div {
-  min-width: 0 !important;
-}
-
-html body .dashboard-user__profile-link strong,
-html body .dashboard-user__profile-link span,
-html body .dashboard-brand strong,
 html body .dashboard-brand span {
+  color: rgba(199, 212, 234, 0.56) !important;
+  font-size: calc(0.72rem * var(--nav-scale)) !important;
+  line-height: 1.2 !important;
+}
+
+html body .dashboard-brand strong,
+html body .dashboard-brand span,
+html body .dashboard-user__profile-link strong,
+html body .dashboard-user__profile-link span {
   display: block !important;
   max-width: 100% !important;
   overflow: hidden !important;
@@ -80,87 +122,120 @@ html body .dashboard-brand span {
   white-space: nowrap !important;
 }
 
-/* ---------- Капсула десктопної навігації ---------- */
+/* ---------- Розділи ---------- */
+
+html body .dashboard-nav-rail {
+  flex: 0 1 auto;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
 
 html body .dashboard-nav.dashboard-nav--desktop {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: var(--nav-gap) !important;
   width: auto !important;
   max-width: 100% !important;
   min-width: 0 !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 2px !important;
-  padding: 5px !important;
-  border: 1px solid var(--nav-capsule-border) !important;
-  border-radius: var(--nav-capsule-radius) !important;
-  background: var(--nav-capsule-bg) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 10px 30px rgba(0, 0, 0, 0.3) !important;
-  backdrop-filter: blur(14px) saturate(120%) !important;
-  -webkit-backdrop-filter: blur(14px) saturate(120%) !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   overflow: visible !important;
+  transition: gap var(--nav-duration) var(--nav-ease) !important;
 }
 
 html body .dashboard-nav.dashboard-nav--desktop > a,
 html body .dashboard-nav-more__trigger {
-  min-height: 34px !important;
-  padding: 0 13px !important;
+  position: relative !important;
   display: inline-flex !important;
   align-items: center !important;
-  gap: 7px !important;
-  border: 1px solid transparent !important;
-  border-radius: var(--nav-item-radius) !important;
-  color: var(--nav-item-color) !important;
+  gap: 8px !important;
+  min-height: calc(40px * var(--nav-scale)) !important;
+  padding: 0 clamp(10px, 0.9vw, 15px) !important;
+  border: 0 !important;
+  border-radius: 9999px !important;
+  color: var(--nav-text) !important;
   background: transparent !important;
-  font-size: 0.79rem !important;
-  font-weight: 800 !important;
-  letter-spacing: 0.055em !important;
+  font-size: calc(0.76rem * var(--nav-scale)) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.1em !important;
   text-transform: uppercase !important;
   white-space: nowrap !important;
   transition:
-    color 160ms ease,
-    background-color 160ms ease,
-    border-color 160ms ease !important;
+    color 220ms var(--nav-ease),
+    background-color 220ms var(--nav-ease),
+    min-height var(--nav-duration) var(--nav-ease),
+    font-size var(--nav-duration) var(--nav-ease),
+    padding var(--nav-duration) var(--nav-ease) !important;
 }
 
 html body .dashboard-nav__icon {
   flex: 0 0 auto;
-  width: 16px;
-  height: 16px;
-  opacity: 0.78;
-  transition: opacity 160ms ease;
+  width: calc(17px * var(--nav-scale));
+  height: calc(17px * var(--nav-scale));
+  opacity: 0.72;
+  transition:
+    opacity 220ms var(--nav-ease),
+    width var(--nav-duration) var(--nav-ease),
+    height var(--nav-duration) var(--nav-ease);
 }
 
 html body .dashboard-nav.dashboard-nav--desktop > a:hover,
 html body .dashboard-nav.dashboard-nav--desktop > a:focus-visible,
 html body .dashboard-nav-more__trigger:hover,
 html body .dashboard-nav-more__trigger:focus-visible {
-  color: var(--nav-item-color-hover) !important;
-  border-color: transparent !important;
-  background: rgba(255, 255, 255, 0.055) !important;
+  color: var(--nav-text-hover) !important;
+  background: rgba(255, 255, 255, 0.045) !important;
 }
 
-html body .dashboard-nav.dashboard-nav--desktop > a.is-active,
-html body .dashboard-nav-more__trigger.is-active,
-html body .dashboard-nav-more.is-open .dashboard-nav-more__trigger {
-  color: var(--nav-active-color) !important;
-  border-color: var(--nav-active-border) !important;
-  background: var(--nav-active-bg) !important;
-  box-shadow: var(--nav-active-glow) !important;
-}
-
-html body .dashboard-nav.dashboard-nav--desktop > a.is-active .dashboard-nav__icon,
 html body .dashboard-nav.dashboard-nav--desktop > a:hover .dashboard-nav__icon {
   opacity: 1;
 }
 
-/* Скрол-стан не має «гасити» активний пункт: він лишається орієнтиром. */
-html body.dashboard-scrolled .dashboard-nav.dashboard-nav--desktop > a.is-active {
-  opacity: 1 !important;
+/* Активний розділ: тонка лінія-акцент, без надмірного світіння. */
+html body .dashboard-nav.dashboard-nav--desktop > a.is-active,
+html body .dashboard-nav-more__trigger.is-active,
+html body .dashboard-nav-more.is-open .dashboard-nav-more__trigger {
+  color: var(--nav-active) !important;
+  background: rgba(137, 175, 255, 0.1) !important;
 }
 
-/* ---------- Компактний режим: лишаються самі іконки ---------- */
+html body .dashboard-nav.dashboard-nav--desktop > a.is-active .dashboard-nav__icon {
+  opacity: 1;
+  color: var(--nav-accent);
+}
 
+html body .dashboard-nav.dashboard-nav--desktop > a::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  width: 0;
+  height: 1.5px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--nav-accent), transparent);
+  opacity: 0;
+  transform: translateX(-50%);
+  transition:
+    width 260ms var(--nav-ease),
+    opacity 260ms var(--nav-ease);
+}
+
+html body .dashboard-nav.dashboard-nav--desktop > a.is-active::after {
+  width: 62%;
+  opacity: 1;
+}
+
+html body .dashboard-nav.dashboard-nav--desktop > a:hover::after {
+  width: 38%;
+  opacity: 0.5;
+}
+
+/* Іконковий режим підписів — окремо від скрол-стану. */
 html body .dashboard-nav--desktop[data-compact="true"] > a,
 html body .dashboard-nav--desktop[data-compact="true"] .dashboard-nav-more__trigger {
   padding: 0 10px !important;
@@ -172,29 +247,19 @@ html body .dashboard-nav--desktop[data-compact="true"] .dashboard-nav__label {
 }
 
 html body .dashboard-nav--desktop[data-compact="true"] .dashboard-nav__icon {
-  width: 18px;
-  height: 18px;
-}
-
-/* Лічильник у «Ще» лишається видимим і без підпису — інакше кнопка
-   перетворилась би на порожній прямокутник. */
-html body .dashboard-nav--desktop[data-compact="true"] .dashboard-nav-more__trigger-count {
-  margin: 0 !important;
-}
-
-/* Вимірювальний рядок для компактного стану має ту саму геометрію. */
-html body .dashboard-nav-measure__item--compact {
-  padding: 0 10px !important;
-  gap: 0 !important;
+  width: calc(19px * var(--nav-scale));
+  height: calc(19px * var(--nav-scale));
 }
 
 /* ---------- Меню «Ще» ---------- */
 
 html body .dashboard-nav-more__menu {
   border-radius: 18px !important;
-  border: 1px solid var(--nav-capsule-border) !important;
-  background: rgba(11, 15, 25, 0.96) !important;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5) !important;
+  border: 1px solid var(--nav-border) !important;
+  background: rgba(11, 17, 26, 0.97) !important;
+  box-shadow: 0 26px 64px rgba(0, 0, 0, 0.52) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
 }
 
 html body .dashboard-nav-more__menu-list a {
@@ -204,170 +269,145 @@ html body .dashboard-nav-more__menu-list a {
   align-items: center !important;
   column-gap: 10px !important;
   border-radius: 12px !important;
+  color: var(--nav-text) !important;
 }
 
-html body .dashboard-nav-more__menu-list a .dashboard-nav__icon {
-  grid-area: icon;
-}
+html body .dashboard-nav-more__menu-list a .dashboard-nav__icon { grid-area: icon; }
+html body .dashboard-nav-more__menu-list a strong { grid-area: title; min-width: 0; }
+html body .dashboard-nav-more__menu-list a small { grid-area: note; min-width: 0; }
 
-html body .dashboard-nav-more__menu-list a strong {
-  grid-area: title;
-  min-width: 0;
-}
+/* ---------- Профіль ---------- */
 
-html body .dashboard-nav-more__menu-list a small {
-  grid-area: note;
-  min-width: 0;
+html body .dashboard-topbar .dashboard-user {
+  flex: 0 0 auto;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-width: 0 !important;
 }
-
-/* ---------- Юзер-чіп праворуч ---------- */
 
 html body .dashboard-user__profile-link {
+  display: flex !important;
+  align-items: center !important;
   gap: 9px !important;
-  padding: 4px 12px 4px 5px !important;
+  max-width: clamp(140px, 15vw, 230px) !important;
+  padding: calc(4px * var(--nav-scale)) 12px calc(4px * var(--nav-scale)) calc(4px * var(--nav-scale)) !important;
   border: 1px solid transparent !important;
-  border-radius: 999px !important;
-  transition: border-color 160ms ease, background-color 160ms ease !important;
+  border-radius: 9999px !important;
+  transition:
+    border-color 220ms var(--nav-ease),
+    background-color 220ms var(--nav-ease),
+    padding var(--nav-duration) var(--nav-ease) !important;
 }
 
 html body .dashboard-user__profile-link:hover,
 html body .dashboard-user__profile-link:focus-visible,
 html body .dashboard-user__profile-link.is-active {
-  border-color: var(--nav-capsule-border) !important;
+  border-color: var(--nav-border) !important;
   background: rgba(255, 255, 255, 0.05) !important;
 }
 
+html body .dashboard-user__profile-link .discord-avatar,
+html body .dashboard-user__profile-link .discord-avatar-fallback {
+  width: calc(38px * var(--nav-scale)) !important;
+  height: calc(38px * var(--nav-scale)) !important;
+  transition:
+    width var(--nav-duration) var(--nav-ease),
+    height var(--nav-duration) var(--nav-ease);
+}
+
 html body .dashboard-user__profile-link strong {
-  font-size: 0.86rem !important;
-  line-height: 1.2 !important;
+  color: #eff4ff !important;
+  font-size: calc(0.85rem * var(--nav-scale)) !important;
 }
 
 html body .dashboard-user__profile-link span {
-  font-size: 0.68rem !important;
-  line-height: 1.2 !important;
+  color: rgba(199, 212, 234, 0.58) !important;
+  font-size: calc(0.7rem * var(--nav-scale)) !important;
 }
 
-/* Вимірювальні вузли мусять точно повторювати геометрію реальних пунктів:
-   інакше згортання рахується по старих ширинах (0.9rem без uppercase),
-   і в капсулу «влазить» більше пунктів, ніж є місця. */
+/* Кнопка виходу не стискається: інакше напис розсипався б у стовпчик. */
+html body .dashboard-user__logout,
+html body .dashboard-user__logout button,
+html body .dashboard-user__logout .btn,
+html body .dashboard-user__logout a,
+html body .dashboard-user__login {
+  flex: 0 0 auto !important;
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  border-radius: 9999px !important;
+  font-size: calc(0.78rem * var(--nav-scale)) !important;
+  transition: font-size var(--nav-duration) var(--nav-ease) !important;
+}
+
+/* ---------- Вимірювальні вузли ---------- */
+
+/* Мусять повторювати геометрію реальних пунктів, інакше згортання
+   рахується по чужих ширинах. */
 html body .dashboard-nav-measure {
-  gap: 2px !important;
+  gap: 6px !important;
 }
 
 html body .dashboard-nav-measure__item,
 html body .dashboard-nav-measure__more {
-  min-height: 34px !important;
-  padding: 0 13px !important;
-  gap: 7px !important;
-  border-radius: 999px !important;
-  font-size: 0.79rem !important;
-  font-weight: 800 !important;
-  letter-spacing: 0.055em !important;
+  min-height: 40px !important;
+  padding: 0 15px !important;
+  gap: 8px !important;
+  border-radius: 9999px !important;
+  font-size: 0.76rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.1em !important;
   text-transform: uppercase !important;
 }
 
-html body .dashboard-nav-measure__count {
-  min-width: 20px;
-  height: 20px;
-  font-size: 0.7rem;
+/* Це правило мусить стояти ПІСЛЯ загального: при однаковій специфічності
+   виграє останнє, інакше іконковий рядок міряється з чужим padding. */
+html body .dashboard-nav-measure .dashboard-nav-measure__item--compact {
+  padding: 0 10px !important;
+  gap: 0 !important;
 }
 
-/* ---------- Планшет: капсула стискається, лишаються іконки ---------- */
+/* ---------- Планшет і мобільний ---------- */
 
 @media (max-width: 1180px) {
-  html body .dashboard-nav.dashboard-nav--desktop > a,
-  html body .dashboard-nav-more__trigger {
-    padding: 0 10px !important;
-    font-size: 0.74rem !important;
-    letter-spacing: 0.04em !important;
+  :root {
+    --nav-pad-x: 18px;
+    --nav-gap: 3px;
   }
 }
 
-@media (max-width: 1024px) {
-  html body .dashboard-topbar {
-    grid-template-columns: minmax(0, 1fr) auto !important;
+@media (max-width: 900px) {
+  :root {
+    --nav-height: 64px;
+    --nav-pad-x: 14px;
   }
 
-  /* Ховаємо саме рейку: інакше порожня колонка далі забирала б місце. */
+  html body .nav-capsule {
+    width: 100%;
+    justify-content: space-between;
+  }
+
   html body .dashboard-nav-rail,
-  html body .dashboard-nav.dashboard-nav--desktop {
+  html body .nav-capsule__divider {
     display: none !important;
   }
-}
 
-/* ---------- Мобільна нижня навігація: іконка + підпис ---------- */
-
-html body .dashboard-mobile-nav a {
-  flex-direction: column !important;
-  gap: 3px !important;
-  padding: 6px 4px !important;
-  min-height: 52px !important;
-  border-radius: 14px !important;
-}
-
-html body .dashboard-mobile-nav a .dashboard-nav__icon {
-  width: 18px;
-  height: 18px;
-}
-
-html body .dashboard-mobile-nav a strong {
-  font-size: 0.63rem !important;
-  font-weight: 800 !important;
-  letter-spacing: 0.03em !important;
-  line-height: 1 !important;
-}
-
-html body .dashboard-mobile-nav a.is-active {
-  color: var(--nav-active-color) !important;
-  background: var(--nav-active-bg) !important;
-  border-color: var(--nav-active-border) !important;
-}
-
-/* Багато пунктів на вузькому екрані — горизонтальний скрол зі snap
-   замість роздавлювання підписів у один символ. */
-@media (max-width: 560px) {
-  html body .dashboard-mobile-nav {
-    overflow-x: auto !important;
-    scroll-snap-type: x proximity;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-
-  html body .dashboard-mobile-nav::-webkit-scrollbar {
-    display: none;
-  }
-
-  html body .dashboard-mobile-nav a {
-    flex: 0 0 auto !important;
-    min-width: 68px !important;
-    scroll-snap-align: center;
+  html body .dashboard-topbar .dashboard-brand {
+    flex: 1 1 auto;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html body .nav-capsule,
+  html body .nav-capsule__divider,
+  html body .dashboard-nav.dashboard-nav--desktop,
   html body .dashboard-nav.dashboard-nav--desktop > a,
+  html body .dashboard-nav.dashboard-nav--desktop > a::after,
   html body .dashboard-nav-more__trigger,
+  html body .dashboard-nav__icon,
   html body .dashboard-user__profile-link,
-  html body .dashboard-nav__icon {
+  html body .dashboard-brand .guild-mark {
     transition: none !important;
   }
-}
-
-
-/* ---------- Порядок і специфічність ---------- */
-
-@media (min-width: 1025px) {
-  /* Бренд не повинен з'їдати вільний простір центральної колонки. */
-  html body .dashboard-topbar .dashboard-brand {
-    max-width: clamp(150px, 18vw, 260px) !important;
-  }
-}
-
-/* Це правило мусить стояти ПІСЛЯ загального .dashboard-nav-measure__item:
-   при однаковій специфічності виграє останнє, інакше компактний рядок
-   вимірювався б із padding звичайного пункту й іконковий режим
-   вмикався б надто пізно. */
-html body .dashboard-nav-measure .dashboard-nav-measure__item--compact {
-  padding: 0 10px !important;
-  gap: 0 !important;
 }
