@@ -1,131 +1,121 @@
 import { redirect } from "next/navigation";
 import DashboardIdentity from "@/components/DashboardIdentity";
-import HeroSidePanel from "@/components/HeroSidePanel";
+import DiscordEmbedEditor from "@/components/DiscordEmbedEditor";
 import { getSession } from "@/lib/auth";
-import { canManageGeneralEmbeds, canManageRaids, canManageRulesEmbeds, canViewRulesStats, hierarchyTitle } from "@/lib/permissions";
-import { hasDiscordEmbedConfig } from "@/lib/discordAdmin";
+import { resolveAuthorIdentity } from "@/lib/authorIdentity";
+import { canManageGeneralEmbeds } from "@/lib/permissions";
 import { getOwnProfilePath } from "@/lib/profiles";
+import { defaultGeneralEmbed, prettyDiscordJson } from "@/lib/discordEmbedDefaults";
+import {
+  fetchDiscordEditableMessage,
+  fetchDiscordRoles,
+  fetchDiscordTextChannels,
+  hasDiscordEmbedConfig,
+  parseDiscordMessageRef,
+} from "@/lib/discordAdmin";
 import { buildPageMetadata } from "@/lib/seo";
 
 export const metadata = buildPageMetadata({
-  title: "Discord-повідомлення",
-  description: "Керування повідомленнями, правилами та ролями Discord для Mistblossom Vanguard з акуратним попереднім переглядом.",
-  path: "/discord",
-  keywords: ["Discord повідомлення", "правила Discord", "ролі Discord"],
+  title: "Редактор Discord-повідомлень",
+  description: "Підготовка, перевірка та публікація Discord-повідомлень Mistblossom Vanguard у зручному редакторі.",
+  path: "/discord/embed",
+  keywords: ["Discord embed", "редактор повідомлень"],
 });
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 function StatusNotice({ params }: { params: Record<string, string | undefined> }) {
-  if (params.published) {
-    return (
-      <div className="notice panel success discord-notice">
-        Опубліковано Discord-повідомлення: <a href={params.published} target="_blank" rel="noreferrer">відкрити</a>
-      </div>
-    );
-  }
-
-  if (params.updated) {
-    return (
-      <div className="notice panel success discord-notice">
-        Оновлено Discord-повідомлення: <a href={params.updated} target="_blank" rel="noreferrer">відкрити</a>
-      </div>
-    );
-  }
-
+  if (params.published) return <div className="notice panel success discord-notice">Опубліковано повідомлення: <a href={params.published} target="_blank" rel="noreferrer">відкрити</a></div>;
+  if (params.updated) return <div className="notice panel success discord-notice">Оновлено повідомлення: <a href={params.updated} target="_blank" rel="noreferrer">відкрити</a></div>;
   if (params.error) return <div className="notice panel error-note discord-notice">{params.error}</div>;
   return null;
 }
 
-export default async function DiscordHubPage({
+export default async function GeneralDiscordEmbedPage({
   searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const user = await getSession();
   if (!user) { redirect("/login"); throw new Error("Login required"); }
 
-  const params = await searchParams;
   const canUseGeneralEmbeds = canManageGeneralEmbeds(user);
-  const canEditRules = canManageRulesEmbeds(user);
-  const canViewRules = canViewRulesStats(user);
-  const canCreateRaidPolls = canManageRaids(user);
-  if (!canUseGeneralEmbeds && !canViewRules && !canCreateRaidPolls) redirect(await getOwnProfilePath(user));
+  if (!canUseGeneralEmbeds) redirect(await getOwnProfilePath(user));
 
-  const discordEnabled = hasDiscordEmbedConfig();
+  const params = await searchParams;
+  const authorIdentity = await resolveAuthorIdentity(user);
+  const messageParam = String(params.message || params.url || "").trim();
+  const editMode = Boolean(messageParam);
+  let configError = "";
+  let channels: Array<{ id: string; name: string; type: number }> = [];
+  let roles: Array<{ id: string; name: string; color: number; position: number; managed: boolean }> = [];
+  let suggestedChannelId = "";
+  let embedJson = prettyDiscordJson({ ...defaultGeneralEmbed, author: { name: authorIdentity.primaryName } });
+  let content = "";
+  let messageLink = messageParam;
+  let selectedRoleIds: string[] = [];
+
+  if (canUseGeneralEmbeds && hasDiscordEmbedConfig()) {
+    try {
+      const [channelData, roleData] = await Promise.all([fetchDiscordTextChannels(), fetchDiscordRoles().catch(() => [])]);
+      channels = channelData.channels;
+      roles = roleData;
+      suggestedChannelId = channels[0]?.id || channelData.suggestedRulesChannelId || "";
+
+      const ref = parseDiscordMessageRef(messageParam);
+      if (ref) {
+        const message = await fetchDiscordEditableMessage(ref);
+        embedJson = message.embedJson || embedJson;
+        content = message.content;
+        messageLink = message.url || messageParam;
+        suggestedChannelId = message.channelId || suggestedChannelId;
+        selectedRoleIds = message.roleIds;
+      } else if (messageParam) {
+        configError = "Посилання на Discord-повідомлення невалідне.";
+      }
+    } catch (error) {
+      configError = error instanceof Error ? error.message : String(error || "Discord API error");
+    }
+  }
 
   return (
     <main className="container">
-      <section className="dashboard-shell content-shell discord-shell" aria-label="Панель Discord-дій Mistblossom Vanguard">
+      <section className="dashboard-shell content-shell discord-shell" aria-label="Звичайне Discord-повідомлення Mistblossom Vanguard">
         <DashboardIdentity user={user} activeSection="discord" />
-        <header className="hero panel dashboard-hero content-dashboard-hero discord-dashboard-hero">
-          <div className="hero-copy dashboard-hero__copy content-dashboard-hero__copy">
-            <div className="eyebrow">Mistblossom Vanguard • Discord</div>
-            <div className="content-hero-status-row" aria-label="Стан Discord редактора">
-              <span className="content-mode-pill content-mode-pill--library">{hierarchyTitle(user.role)}</span>
-              <span className="content-hero-path">{canCreateRaidPolls ? "Рейд-голосування • Discord повідомлення" : canViewRules ? "Статистика правил • Звичайні повідомлення" : "Звичайні повідомлення"}</span>
-            </div>
-            <h1>Discord-повідомлення</h1>
-            <span className="hero-accent" aria-hidden="true" />
-            <p className="lead">Публікація Discord-повідомлень, правила, статистика й доступи за ролями в одному місці.</p>
-            <div className="hero-secure-note content-hero-actions">
-              <span className="hero-lock" aria-hidden="true">✦</span>
-              <span>Панель показує тільки ті дії, які дозволені твоєю роллю.</span>
-            </div>
+        <header className="discord-editor-header panel">
+          <div>
+            <span className="eyebrow">Звичайне повідомлення • {editMode ? "Редагування" : "Створення"}</span>
+            <h1>{editMode ? "Редагування повідомлення" : "Звичайна відправка повідомлення"}</h1>
+            <p>Створи або онови Discord-повідомлення. Канал, текст, теги ролей і посилання на повідомлення розділені окремо.</p>
           </div>
-
-          <HeroSidePanel
-            ariaLabel="Огляд Discord-повідомлень"
-            summary={[
-              { label: "ДОСТУП", value: hierarchyTitle(user.role), note: "Дії залежать від ролі" },
-              { label: "РОЗДІЛ", value: canCreateRaidPolls ? "Пули + повідомлення" : canViewRules ? "Правила + повідомлення" : "Повідомлення", note: discordEnabled ? "Discord API налаштовано" : "Discord API недоступний" },
-            ]}
-            stats={[
-              { label: "EMBEDS", value: canUseGeneralEmbeds ? "ON" : "—" },
-              { label: "RULES", value: canEditRules ? "EDIT" : canViewRules ? "VIEW" : "—" },
-              { label: "CONFIG", value: discordEnabled ? "OK" : "ERR" },
-            ]}
-          />
+          <a className="btn subtle" href="/discord">Назад</a>
         </header>
       <StatusNotice params={params} />
-      {!canUseGeneralEmbeds && !canCreateRaidPolls ? (
-        <div className="notice panel">Твоя роль не має доступу до Discord-дій.</div>
-      ) : !discordEnabled ? (
+      {!canUseGeneralEmbeds ? (
+        <div className="notice panel">Ця сторінка доступна гільдмайстеру та офіцерам.</div>
+      ) : !hasDiscordEmbedConfig() ? (
         <div className="notice panel error-note">Публікація в Discord тимчасово недоступна.</div>
+      ) : configError && !messageParam ? (
+        <div className="notice panel error-note">Не вдалося завантажити дані Discord. Спробуй оновити сторінку.</div>
+      ) : channels.length === 0 ? (
+        <div className="notice panel error-note">Не знайдено текстових каналів для вибору.</div>
       ) : (
-        <section className={`discord-hub-grid discord-hub-grid--compact ${canViewRules || canCreateRaidPolls ? "" : "discord-hub-grid--single"}`} aria-label="Розділи Discord-повідомлень">
-          {canViewRules ? (
-            <a className="panel discord-hub-card discord-hub-card--rules" href="/discord/rules">
-              <span className="eyebrow">Статистика правил • {hierarchyTitle(user.role)}</span>
-              <strong>{canEditRules ? "Правила сервера" : "Статистика правил"}</strong>
-              <p>{canEditRules ? "Правила, статистика і ролі кнопки прийняття." : "Статистика звичайних правил і список підписантів правил рейду."}</p>
-              <span className="btn primary">{canEditRules ? "Відкрити правила" : "Відкрити статистику"}</span>
-            </a>
-          ) : null}
-
-          <a className="panel discord-hub-card discord-hub-card--raid" href="/raids">
-            <span className="eyebrow">Рейди • {hierarchyTitle(user.role)}</span>
-            <strong>Рейдові оголошення</strong>
-            <p>Створення рейдів, кнопки запису й автоматична побудова паті.</p>
-            <span className="btn primary">Відкрити рейди</span>
-          </a>
-
-          {canCreateRaidPolls ? (
-            <a className="panel discord-hub-card discord-hub-card--poll" href="/polls">
-              <span className="eyebrow">Рейд-голосування • {hierarchyTitle(user.role)}</span>
-              <strong>Raid Polls</strong>
-              <p>Створення голосування за дні та час рейду з публікацією в Discord і результатами на сайті.</p>
-              <span className="btn subtle">Відкрити пули</span>
-            </a>
-          ) : null}
-
-          <a className="panel discord-hub-card" href="/discord/embed">
-            <span className="eyebrow">Звичайні повідомлення • {hierarchyTitle(user.role)}</span>
-            <strong>Звичайні повідомлення</strong>
-            <p>Повідомлення, редагування за посиланням і теги ролей.</p>
-            <span className="btn subtle">Відкрити редактор</span>
-          </a>
-        </section>
+        <>
+          {configError ? <div className="notice panel error-note">Не вдалося завантажити дані Discord. Спробуй оновити сторінку.</div> : null}
+          <DiscordEmbedEditor
+            mode="general"
+            editorMode={editMode ? "edit" : "create"}
+            channels={channels}
+            roles={roles}
+            suggestedChannelId={suggestedChannelId}
+            defaultEmbedJson={embedJson}
+            defaultContent={content}
+            defaultMessageLink={messageLink}
+            selectedRoleIds={selectedRoleIds}
+            authorSuggestions={authorIdentity.suggestions}
+            defaultAuthorName={authorIdentity.primaryName}
+            returnTo="/discord/embed"
+          />
+        </>
       )}
-
       </section>
     </main>
   );

@@ -1,108 +1,111 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
-import { recordAdminAudit } from "@/lib/accessGroups";
-import { canManageRaids } from "@/lib/permissions";
-import { getProfileById } from "@/lib/profiles";
-import { saveRaidFromForm } from "@/lib/raids";
-import { assertRequestBodySize, logDashboardEvent, noStoreHeaders, safeErrorMessage } from "@/lib/security";
-import { dashboardToastCookie } from "@/lib/serverToasts";
+import { syncRaidLifecycleBatch } from "@/lib/raids";
+import {
+  logDashboardEvent,
+  noStoreHeaders,
+  safeErrorMessage,
+  unauthorizedResponse,
+  verifyInternalBearerToken,
+} from "@/lib/security";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 export const revalidate = 0;
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
-type ToastInput = { tone?: "info" | "success" | "warning" | "error"; title: string; message?: string; ttl?: number };
-
-function appBaseUrl() {
-  return process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL || process.env.ADMIN_DASHBOARD_URL || process.env.NEXT_PUBLIC_ADMIN_DASHBOARD_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
+function integerParam(value: string | null, fallback: number, min: number, max: number) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.max(min, Math.min(Math.floor(number), max));
 }
 
-function redirectWithToast(path: string, toast?: ToastInput) {
-  const url = new URL(path, appBaseUrl());
-  const response = NextResponse.redirect(url, { status: 303, headers: noStoreHeaders() });
-  if (toast) response.headers.append("Set-Cookie", dashboardToastCookie(toast));
-  return response;
+declare global {
+  // eslint-disable-next-line no-var
+  var __mistblossomRaidLifecycleRouteGuard:
+    | { inFlight?: Promise<unknown>; lastStartedAt: number; lastResult?: Record<string, unknown> }
+    | undefined;
 }
 
-export async function POST(request: NextRequest) {
-  const tooLarge = assertRequestBodySize(request, 64 * 1024);
-  if (tooLarge) return tooLarge;
+function lifecycleGuard() {
+  const guard = globalThis.__mistblossomRaidLifecycleRouteGuard || { lastStartedAt: 0 };
+  globalThis.__mistblossomRaidLifecycleRouteGuard = guard;
+  return guard;
+}
 
-  const user = await getSession();
-  if (!user || !canManageRaids(user)) {
-    return redirectWithToast("/raids", {
-      tone: "error",
-      title: "Доступ заборонено",
-      message: "Твоя роль не має доступу до керування рейдами.",
-      ttl: 7600,
-    });
+function envFlag(names: string[], fallback = false) {
+  for (const name of names) {
+    const raw = process.env[name];
+    if (raw === undefined || raw === null || raw === "") continue;
+    return ["1", "true", "yes", "on"].includes(String(raw).trim().toLowerCase());
+  }
+  return fallback;
+}
+
+function lifecycleMinIntervalMs() {
+  const eco = envFlag(["FIREBASE_ECO_MODE", "FIRESTORE_ECO_MODE", "DASHBOARD_ECO_MODE"], false);
+  const fallback = eco ? 10 * 60_000 : 5 * 60_000;
+  const value = Number(process.env.RAID_LIFECYCLE_MIN_INTERVAL_MS || process.env.DASHBOARD_RAID_LIFECYCLE_MIN_INTERVAL_MS || fallback);
+  if (!Number.isFinite(value)) return fallback;
+  return Math.max(60_000, Math.min(Math.floor(value), 60 * 60_000));
+}
+
+function lifecycleDefaultLimit() {
+  return envFlag(["FIREBASE_ECO_MODE", "FIRESTORE_ECO_MODE", "DASHBOARD_ECO_MODE"], false) ? 20 : 40;
+}
+
+function wantsForceRun(request: NextRequest) {
+  const url = new URL(request.url);
+  return url.searchParams.get("force") === "1" || request.headers.get("x-force-lifecycle") === "1";
+}
+
+export async function GET(request: NextRequest) {
+  const token = await verifyInternalBearerToken(request, [
+    "RAID_LIFECYCLE_SECRET",
+    "CRON_SECRET",
+    "INTERNAL_API_TOKEN",
+    "INTERNAL_PROFILE_LOOKUP_TOKEN",
+    "DISCORD_RULES_STATS_TOKEN",
+    "WORKER_STATS_TOKEN",
+  ], { minLength: 24 });
+  if (!token.ok) {
+    logDashboardEvent("warn", "raids.lifecycle.forbidden", request, { reason: token.reason, envName: token.envName || null });
+    return unauthorizedResponse();
   }
 
-  let failurePath = "/raids";
+  const guard = lifecycleGuard();
+  const force = wantsForceRun(request);
+  const minInterval = lifecycleMinIntervalMs();
+  const now = Date.now();
+
+  if (!force && guard.inFlight) {
+    return NextResponse.json(
+      { ok: true, skipped: true, reason: "in_flight", ...(guard.lastResult || {}) },
+      { headers: noStoreHeaders({ "X-Mistblossom-Lifecycle": "in-flight" }) },
+    );
+  }
+
+  if (!force && guard.lastStartedAt && now - guard.lastStartedAt < minInterval) {
+    return NextResponse.json(
+      { ok: true, skipped: true, reason: "cooldown", cooldownMs: minInterval, ...(guard.lastResult || {}) },
+      { headers: noStoreHeaders({ "X-Mistblossom-Lifecycle": "cooldown" }) },
+    );
+  }
 
   try {
-    const form = await request.formData();
-    const action = String(form.get("action") || "").trim();
-    const raidId = String(form.get("raidId") || "").trim();
-    failurePath = raidId ? `/raids/${encodeURIComponent(raidId)}/edit` : "/raids/new";
-
-    if (action && action !== "save") {
-      return redirectWithToast(failurePath, {
-        tone: "warning",
-        title: "Дія не для цієї кнопки",
-        message: "Ця кнопка тільки зберігає зміни в панелі. Для Discord використовуй кнопку “Опублікувати” або “Оновити Discord”.",
-        ttl: 7200,
-      });
-    }
-
-    const profile = user.profileId ? await getProfileById(user.profileId) : null;
-    logDashboardEvent("info", "raids.save.start", request, {
-      action: "save",
-      raidId,
-      actorId: user.id,
-      actorRole: user.role,
-      hasChannel: Boolean(form.get("channelId")),
-    });
-    const raid = await saveRaidFromForm(form, user, profile);
-    logDashboardEvent("info", "raids.saved", request, {
-      action: "save",
-      raidId: raid.id,
-      actorId: user.id,
-      actorRole: user.role,
-      channelId: raid.channelId || "",
-      messageId: raid.messageId || "",
-    });
-    await recordAdminAudit("raids.save", user, {
-      status: "success",
-      summary: `${raid.status === "draft" ? "Чернетку рейду" : "Рейд"} збережено: ${raid.title || raid.id}.`,
-      raidId: raid.id,
-      raidStatus: raid.status,
-      title: raid.title || null,
-      channelId: raid.channelId || null,
-      messageId: raid.messageId || null,
-    }).catch((auditError) => {
-      logDashboardEvent("warn", "raids.save.audit_failed", request, { raidId: raid.id, message: auditError instanceof Error ? auditError.message : String(auditError || "unknown") });
-    });
-    return redirectWithToast(`/raids/${encodeURIComponent(raid.id)}/edit`, {
-      tone: "success",
-      title: raid.status === "draft" ? "Чернетку збережено" : "Зміни збережено",
-      message: raid.status === "published" ? "Зміни збережено в панелі. Щоб показати їх у Discord, натисни “Оновити Discord”." : "Чернетку збережено. У Discord її ще не опубліковано.",
-      ttl: 6200,
-    });
+    const url = new URL(request.url);
+    const limit = integerParam(url.searchParams.get("limit"), lifecycleDefaultLimit(), 1, 50);
+    guard.lastStartedAt = now;
+    const promise = syncRaidLifecycleBatch(limit);
+    guard.inFlight = promise;
+    const result = await promise;
+    guard.lastResult = result as Record<string, unknown>;
+    logDashboardEvent("info", "raids.lifecycle.cron", request, { ...result, cooldownMs: minInterval });
+    return NextResponse.json({ ok: true, ...result }, { headers: noStoreHeaders() });
   } catch (error) {
     const message = safeErrorMessage(error);
-    logDashboardEvent("error", "raids.action.failed", request, { actorId: user.id, actorRole: user.role, message });
-    await recordAdminAudit("raids.save_failed", user, {
-      status: "error",
-      summary: `Рейд не збережено: ${message}`,
-      error: error instanceof Error ? error.message : String(error || ""),
-    }).catch(() => false);
-    return redirectWithToast(failurePath, {
-      tone: "error",
-      title: "Дію з рейдом не виконано",
-      message: safeErrorMessage(error),
-      ttl: 8600,
-    });
+    logDashboardEvent("warn", "raids.lifecycle.cron_failed", request, { message });
+    return NextResponse.json({ ok: false, error: message }, { status: 500, headers: noStoreHeaders() });
+  } finally {
+    const guard = lifecycleGuard();
+    guard.inFlight = undefined;
   }
 }

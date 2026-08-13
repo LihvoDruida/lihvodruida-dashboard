@@ -1,179 +1,114 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
-import { canManageRaids } from "@/lib/permissions";
+import {
+  handleRosterFormationDiscordAction,
+  type RosterDiscordKind,
+} from "@/lib/rosterFormation";
 import {
   assertRequestBodySize,
   checkRateLimit,
-  getClientIp,
   logDashboardEvent,
   noStoreHeaders,
   safeErrorMessage,
-  verifyTrustedOrigin,
+  verifyInternalBearerToken,
 } from "@/lib/security";
-import { dashboardToastCookie, type DashboardToastCookie } from "@/lib/serverToasts";
-import {
-  clearRosterFormation,
-  deleteRosterFormation,
-  hasRosterStorage,
-  saveRosterFormationFromInput,
-  setRosterFormationStatus,
-} from "@/lib/rosterFormation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function appBaseUrl() {
-  return (
-    process.env.DASHBOARD_URL ||
-    process.env.NEXT_PUBLIC_DASHBOARD_URL ||
-    process.env.ADMIN_DASHBOARD_URL ||
-    process.env.NEXT_PUBLIC_ADMIN_DASHBOARD_URL ||
-    process.env.NEXTAUTH_URL ||
-    "http://localhost:3000"
-  );
+/**
+ * Discord-інтеракції обробляє окремий Cloudflare-воркер (guild-applications-worker):
+ * він перевіряє підпис Discord, робить швидкий ACK і ПРОКСУЄ дію сюди. Уся логіка
+ * складу живе в панелі (rosterFormation.ts), тому воркеру не треба знати Firestore —
+ * він лише пересилає {rosterId, kind, classKey, values, userId, userName} і показує
+ * повернутий content + components. Так само вже влаштовані рейд-пули й рейд-оголошення.
+ */
+
+const INTERNAL_ROSTER_ACTION_TOKENS = [
+  "DISCORD_RULES_STATS_TOKEN",
+  "WORKER_STATS_TOKEN",
+  "INTERNAL_PROFILE_LOOKUP_TOKEN",
+];
+
+function cleanKind(value: unknown): RosterDiscordKind | null {
+  const kind = String(value || "").trim().toLowerCase();
+  if (kind === "pick" || kind === "class" || kind === "spec" || kind === "leave") return kind;
+  return null;
 }
 
-function redirectWithToast(request: NextRequest, path: string, toast?: DashboardToastCookie) {
-  const url = new URL(path, appBaseUrl());
-  const response = NextResponse.redirect(url, { status: 303, headers: noStoreHeaders() });
-  if (toast) response.headers.append("Set-Cookie", dashboardToastCookie(toast));
-  void request;
-  return response;
+function cleanValues(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => String(item || "").trim())
+    .filter(Boolean)
+    .slice(0, 5);
 }
 
 export async function POST(request: NextRequest) {
-  if (!verifyTrustedOrigin(request)) {
-    return redirectWithToast(request, "/roster", {
-      tone: "error",
-      title: "Недовірене джерело запиту",
-      message: "Спробуй ще раз зі сторінки формування складу.",
-      ttl: 7600,
-    });
-  }
-
-  const tooLarge = assertRequestBodySize(request, 32 * 1024);
+  const tooLarge = assertRequestBodySize(request, 16 * 1024);
   if (tooLarge) return tooLarge;
 
-  const session = await getSession();
-  if (!session || !canManageRaids(session)) {
-    return redirectWithToast(request, "/roster", {
-      tone: "error",
-      title: "Доступ заборонено",
-      message: "Публікувати й очищати склад може лише гільдмайстер або офіцер.",
-      ttl: 7600,
-    });
+  const auth = await verifyInternalBearerToken(request, INTERNAL_ROSTER_ACTION_TOKENS, { minLength: 24 });
+  if (!auth.ok) {
+    logDashboardEvent("warn", "roster.discord_action.forbidden", request, { reason: auth.reason });
+    return NextResponse.json({ ok: false, content: "Forbidden" }, { status: 403, headers: noStoreHeaders() });
   }
-
-  if (!hasRosterStorage()) {
-    return redirectWithToast(request, "/roster", {
-      tone: "error",
-      title: "Сховище недоступне",
-      message: "Firebase не налаштований, тому склад не збережеться. Звернись до гільдмайстра.",
-      ttl: 8600,
-    });
-  }
-
-  const ip = getClientIp(request);
-  const limit = checkRateLimit(`roster:${session.id}:${ip}`, 20, 10 * 60 * 1000);
-  if (!limit.ok) {
-    return redirectWithToast(request, "/roster", {
-      tone: "error",
-      title: "Забагато операцій",
-      message: "Трохи зачекай і спробуй ще раз.",
-      ttl: 6800,
-    });
-  }
-
-  let action = "publish";
 
   try {
-    const form = await request.formData();
-    action = String(form.get("action") || "publish").trim();
+    const body = await request.json().catch(() => ({}));
+    const rosterId = String(body?.rosterId || "").trim();
+    const kind = cleanKind(body?.kind);
+    const classKey = body?.classKey ? String(body.classKey).trim() : undefined;
+    const values = cleanValues(body?.values);
+    const userId = String(body?.userId || body?.user_id || "").trim();
+    const userName = String(body?.userName || body?.user_name || "").trim();
 
-    if (action === "clear") {
-      const rosterId = String(form.get("rosterId") || "").trim();
-      if (!rosterId) throw new Error("Не вказано, який склад очищати.");
-      await clearRosterFormation(rosterId);
-      logDashboardEvent("info", "roster.clear", request, { rosterId, actorId: session.id, actorRole: session.role });
-      return redirectWithToast(request, "/roster", {
-        tone: "success",
-        title: "Склад очищено",
-        message: "Усі вибори гравців прибрано. Discord-повідомлення оновлено.",
-        ttl: 6400,
-      });
+    if (!rosterId || !kind) {
+      return NextResponse.json(
+        { ok: false, content: "Некоректний запит складу." },
+        { status: 400, headers: noStoreHeaders() },
+      );
     }
 
-    if (action === "close" || action === "reopen") {
-      const rosterId = String(form.get("rosterId") || "").trim();
-      if (!rosterId) throw new Error("Не вказано, який склад змінювати.");
-      const status = action === "close" ? "closed" : "open";
-      const roster = await setRosterFormationStatus(rosterId, status);
-      logDashboardEvent("info", `roster.${action}`, request, {
-        rosterId,
-        actorId: session.id,
-        actorRole: session.role,
-      });
-      return redirectWithToast(request, "/roster", {
-        tone: "success",
-        title: status === "closed" ? "Набір закрито" : "Набір відкрито",
-        message:
-          status === "closed"
-            ? `${roster.title}: кнопки в Discord стали неактивними, склад збережено.`
-            : `${roster.title}: гравці знову можуть обирати клас.`,
-        ttl: 6400,
-      });
+    // Захист від флуду тим самим користувачем; select-и (pick/class/spec) щедріші.
+    const limit = checkRateLimit(`roster-discord-action:${rosterId}:${userId}`, 120, 5 * 60 * 1000);
+    if (!limit.ok) {
+      return NextResponse.json(
+        { ok: false, content: "⏳ Забагато дій підряд. Зачекай кілька секунд і спробуй ще раз." },
+        {
+          status: 429,
+          headers: noStoreHeaders({
+            "Retry-After": String(Math.max(1, Math.ceil((limit.resetAt - Date.now()) / 1000))),
+          }),
+        },
+      );
     }
 
-    if (action === "delete") {
-      const rosterId = String(form.get("rosterId") || "").trim();
-      if (!rosterId) throw new Error("Не вказано, який склад видаляти.");
-      await deleteRosterFormation(rosterId);
-      logDashboardEvent("info", "roster.delete", request, { rosterId, actorId: session.id, actorRole: session.role });
-      return redirectWithToast(request, "/roster", {
-        tone: "success",
-        title: "Формування складу видалено",
-        message: "Discord-повідомлення прибрано, запис у базі стерто.",
-        ttl: 6400,
-      });
-    }
+    const result = await handleRosterFormationDiscordAction({
+      rosterId,
+      kind,
+      classKey,
+      values,
+      userId,
+      userName,
+    });
 
-    // publish (default)
-    const roster = await saveRosterFormationFromInput(
-      {
-        season: form.get("season"),
-        description: form.get("description"),
-        channelId: form.get("channelId"),
-        mentionRoleIds: form.getAll("mentionRoleIds"),
-      },
-      session,
+    logDashboardEvent(result.ok ? "info" : "warn", "roster.discord_action.done", request, {
+      rosterId,
+      kind,
+      userId,
+      ok: result.ok,
+    });
+
+    return NextResponse.json(
+      { ok: result.ok, content: result.content, components: result.components || [] },
+      { headers: noStoreHeaders() },
     );
-
-    logDashboardEvent("info", "roster.publish", request, {
-      rosterId: roster.id,
-      season: roster.season,
-      channelId: roster.channelId,
-      actorId: session.id,
-      actorRole: session.role,
-    });
-
-    return redirectWithToast(request, "/roster", {
-      tone: "success",
-      title: "Оголошення складу опубліковано",
-      message: `${roster.title} відправлено в Discord. Гравці вже можуть обирати клас.`,
-      ttl: 7200,
-    });
   } catch (error) {
-    logDashboardEvent("error", "roster.action_failed", request, {
-      action,
-      actorId: session.id,
-      message: safeErrorMessage(error),
-    });
-    return redirectWithToast(request, "/roster", {
-      tone: "error",
-      title: "Дію не виконано",
-      message: safeErrorMessage(error, "Не вдалося виконати дію зі складом. Спробуй ще раз."),
-      ttl: 8600,
-    });
+    logDashboardEvent("error", "roster.discord_action.failed", request, { message: safeErrorMessage(error) });
+    return NextResponse.json(
+      { ok: false, content: "❌ Не вдалося оновити склад. Спробуй ще раз пізніше або звернись до офіцера." },
+      { status: 500, headers: noStoreHeaders() },
+    );
   }
 }

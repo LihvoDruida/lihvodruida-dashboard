@@ -154,46 +154,6 @@ export default function RootLayout({
         <Script src="/js/dashboard-starfield.js" strategy="afterInteractive" />
         <ClientErrorReporter />
         <ClientAuthGuard />
-        <Script id="dashboard-scroll-chrome" strategy="afterInteractive">
-          {`
-            (() => {
-              const root = document.body;
-              if (!root) return;
-              const threshold = 8;
-              // Навбар не ховається: лише перемикається Default <-> Compact.
-              // Поріг і дельта підібрані так, щоб стан не блимав на
-              // інерційному скролі iOS та дрібних коригуваннях.
-              const condenseAfter = 60;
-              const delta = 6;
-              let ticking = false;
-              let lastY = window.scrollY;
-              const update = () => {
-                const y = window.scrollY;
-                root.classList.toggle("dashboard-scrolled", y > threshold);
-
-                const movedDown = y > lastY + delta;
-                const movedUp = y < lastY - delta;
-
-                if (y <= condenseAfter || movedUp) {
-                  root.classList.remove("dashboard-nav-condensed");
-                } else if (movedDown) {
-                  root.classList.add("dashboard-nav-condensed");
-                }
-
-                if (movedDown || movedUp) lastY = y;
-                ticking = false;
-              };
-              const requestUpdate = () => {
-                if (ticking) return;
-                ticking = true;
-                window.requestAnimationFrame(update);
-              };
-              update();
-              window.addEventListener("scroll", requestUpdate, { passive: true });
-              window.addEventListener("resize", requestUpdate, { passive: true });
-            })();
-          `}
-        </Script>
         <DashboardFormEnhancer />
         <Suspense fallback={null}>
           <GlobalToasts />

@@ -1,60 +1,77 @@
 import { redirect } from "next/navigation";
+
+import AdminTabs from "@/components/AdminTabs";
 import DashboardIdentity from "@/components/DashboardIdentity";
 import HeroSidePanel from "@/components/HeroSidePanel";
-import AdminTabs from "@/components/AdminTabs";
-import { buildPageMetadata } from "@/lib/seo";
 import { getSession } from "@/lib/auth";
+import { safeRecruitmentGatewayStatus } from "@/lib/discordRecruitmentGatewayControl";
+import { getRecruitmentAdvisorSettings } from "@/lib/discordRecruitmentAdvisorSettings";
+import { listRecentRecruitmentAdviceEntries } from "@/lib/discordRecruitmentAdvisor";
 import { canManageDiscordMembers } from "@/lib/permissions";
-import { fetchDiscordRoleControlSnapshot, getDiscordGuildId, type DiscordManageableRoleOption } from "@/lib/discordAdmin";
-import { getGuildNicknamePolicy, nicknameTemplateExample } from "@/lib/guildNicknamePolicy";
+import { buildPageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export const metadata = buildPageMetadata({
-  title: "Discord-учасники",
-  description: "Перевірка Discord-профілів, очищення Firebase-профілів, серверні ніки та глобальний шаблон ніку Mistblossom Vanguard.",
-  path: "/dashboard/discord",
-  keywords: ["Discord", "ролі", "ніки", "керування"],
+  title: "Discord-автовідповіді",
+  description:
+    "Керування автоматичними відповідями для новачків і поверненців у Discord.",
+  path: "/dashboard/discord/recruitment",
+  keywords: ["Discord", "рекрутинг", "автовідповіді", "Raider.IO"],
 });
 
-function RoleCheckboxes({
-  roles,
-  fieldName = "roleIds",
-  emptyText = "Discord-ролі не завантажились. Перевір bot token, guild ID і право “Керувати ролями”.",
-  inputType = "checkbox",
-}: {
-  roles: DiscordManageableRoleOption[];
-  fieldName?: string;
-  emptyText?: string;
-  inputType?: "checkbox" | "radio";
-}) {
-  if (!roles.length) {
-    return <div className="discord-role-checkboxes discord-role-checkboxes--empty">{emptyText}</div>;
-  }
-
-  return (
-    <div className="discord-role-checkboxes">
-      {roles.map((role) => (
-        <label key={`${fieldName}-${role.id}`} className={!role.manageable ? "is-disabled" : ""} title={role.blockedReason || role.name}>
-          <input type={inputType} name={fieldName} value={role.id} disabled={!role.manageable} />
-          <span>{role.name}</span>
-          <small>{role.manageable ? `Позиція ${role.position} • ID ${role.id}` : role.blockedReason || "Недоступна для керування"}</small>
-        </label>
-      ))}
-    </div>
-  );
+function onOffHuman(value: unknown, on: string, off: string) {
+  return value ? on : off;
 }
 
-function SectionHeader({ eyebrow, title, description }: { eyebrow: string; title: string; description?: string }) {
+function statusHuman(status: string) {
+  const map: Record<string, string> = {
+    processing: "Обробляється",
+    replied: "Відповіли",
+    skipped: "Пропущено",
+    failed: "Помилка",
+    no_content: "Без тексту",
+    discord_send_error: "Discord не прийняв",
+  };
+  return map[status] || status || "—";
+}
+
+function gatewayHint(gateway: Awaited<ReturnType<typeof safeRecruitmentGatewayStatus>>) {
+  if (!gateway.connected) return "Gateway не підключений → натисни “Перепідключити”.";
+  if (gateway.lastDispatchType && !gateway.lastMessageCreateAt) return "Dispatch є, але MESSAGE_CREATE не приходить → перевір Message Content Intent, guild id і права каналу.";
+  if (gateway.lastMessageContentLength === 0) return "MESSAGE_CREATE без тексту → найчастіше вимкнений Message Content Intent або немає права читати канал.";
+  if (gateway.lastRelayError) return "Relay помиляється → перевір dashboard URL і секрет Worker/dashboard.";
+  if (gateway.lastMessageDropReason) return `Останній drop: ${gateway.lastMessageDropReason}.`;
+  return "Якщо нове повідомлення не дає відповіді — перевір Preview і останні обробки нижче.";
+}
+
+function dateText(value: unknown) {
+  if (!value) return "—";
+  const date = new Date(String(value));
+  if (!Number.isFinite(date.getTime())) return String(value);
+  return date.toLocaleString("uk-UA", { timeZone: "Europe/Kyiv" });
+}
+
+function StatusTile({
+  label,
+  value,
+  note,
+  ok,
+}: {
+  label: string;
+  value: string;
+  note?: string;
+  ok?: boolean;
+}) {
   return (
-    <header className="discord-management-section-head">
-      <span className="eyebrow">{eyebrow}</span>
-      <div>
-        <h2>{title}</h2>
-        {description ? <p>{description}</p> : null}
-      </div>
-    </header>
+    <div
+      className={`discord-management-status__item ${ok ? "is-ok" : "is-warning"}`}
+    >
+      <strong>{value}</strong>
+      <small>{label}</small>
+      {note ? <em>{note}</em> : null}
+    </div>
   );
 }
 
@@ -67,270 +84,487 @@ function InfoChip({ title, text }: { title: string; text: string }) {
   );
 }
 
-export default async function AdminDiscordPage() {
+function ControlButton({
+  action,
+  label,
+  tone = "primary",
+  confirm,
+}: {
+  action: string;
+  label: string;
+  tone?: "primary" | "subtle" | "danger";
+  confirm?: string;
+}) {
+  return (
+    <form
+      action="/api/dashboard/discord/recruitment/control"
+      method="post"
+      data-dashboard-action-form="true"
+      data-dashboard-live-submit="true"
+    >
+      <input type="hidden" name="action" value={action} />
+      <button
+        className={`btn ${tone}`}
+        type="submit"
+        data-confirm-message={confirm || undefined}
+      >
+        {label}
+      </button>
+    </form>
+  );
+}
+
+export default async function DiscordRecruitmentPage() {
   const user = await getSession();
-  if (!user) { redirect("/login"); throw new Error("Login required"); }
+  if (!user) {
+    redirect("/login");
+    throw new Error("Login required");
+  }
   if (!canManageDiscordMembers(user)) {
-    redirect("/access-denied?reason=discord&from=/dashboard/discord");
+    redirect(
+      "/access-denied?reason=discord-recruitment&from=/dashboard/discord/recruitment",
+    );
     throw new Error("Access denied");
   }
 
-  const [policy, control] = await Promise.all([
-    getGuildNicknamePolicy(),
-    fetchDiscordRoleControlSnapshot(),
+  const [settings, gateway, recentEntries] = await Promise.all([
+    getRecruitmentAdvisorSettings({ bypassCache: true }),
+    safeRecruitmentGatewayStatus(),
+    listRecentRecruitmentAdviceEntries(18),
   ]);
-  const roles = control.roles;
-  const manageableRoles = control.manageableRoles;
-  const hasManageableRoles = manageableRoles.length > 0;
-  const guild = control.guild;
-  const guildId = getDiscordGuildId();
-
-  const statusItems = [
-    {
-      label: "Discord server ID",
-      value: guildId || "—",
-      note: guildId ? "Сервер підключено" : "Немає DISCORD_GUILD_ID",
-      ok: Boolean(guildId),
-    },
-    {
-      label: "Сервер",
-      value: guild?.name || "Сервер не прочитано",
-      note: guild ? "Bot API відповідає" : "Перевір DISCORD_BOT_TOKEN і права бота",
-      ok: Boolean(guild),
-    },
-    {
-      label: "Бот",
-      value: control.bot?.displayName || "—",
-      note: control.error ? `Bot API: ${control.error}` : "Поточний Discord-бот",
-      ok: !control.error,
-    },
-    {
-      label: "Найвища роль бота",
-      value: control.botTopRole?.name || "—",
-      note: control.botTopRole ? `Позиція ${control.botTopRole.position}` : "Не вдалося визначити роль",
-      ok: Boolean(control.botTopRole),
-    },
-    {
-      label: "Керування ролями",
-      value: control.botCanManageRoles ? "Так" : "Ні",
-      note: "Discord permission Manage Roles",
-      ok: Boolean(control.botCanManageRoles),
-    },
-    {
-      label: "Доступні ролі",
-      value: `${manageableRoles.length} / ${roles.length}`,
-      note: hasManageableRoles ? "Нижче ролі бота" : "Бот не може керувати ролями",
-      ok: hasManageableRoles,
-    },
-  ];
 
   return (
     <main className="container admin-container">
-      <section className="dashboard-shell content-shell admin-page discord-management-page" aria-label="Керування Discord-учасниками">
+      <section
+        className="dashboard-shell content-shell admin-page discord-management-page"
+        aria-label="Discord-автовідповіді"
+      >
         <DashboardIdentity user={user} activeSection="admin" />
         <header className="hero panel admin-hero discord-admin-hero">
           <div className="hero-copy dashboard-hero__copy guild-hero__copy">
             <span className="eyebrow">Mistblossom Vanguard • Discord</span>
-            <h1>Discord-учасники</h1>
+            <h1>Автовідповіді новачкам</h1>
             <span className="hero-accent" aria-hidden="true" />
-            <p className="lead">Очищення Firebase-профілів, контроль серверних ніків, шаблон і безпечні масові Discord-дії в одному місці.</p>
+            <p className="lead">
+              Gateway слухає нові повідомлення миттєво, а ручна перевірка
+              проходить старі повідомлення за вибраний період без повторних
+              відповідей на вже оброблені.
+            </p>
           </div>
           <HeroSidePanel
-            ariaLabel="Огляд Discord-керування"
+            ariaLabel="Стан автовідповідей"
             summary={[
-              { label: "ДОСТУП", value: user.groupName || user.role, note: "Права поточного користувача" },
-              { label: "СЕРВЕР", value: guild ? guild.name : "Недоступно", note: guildId ? guildId : "Discord не підключено" },
+              {
+                label: "СИСТЕМА",
+                value: settings.enabled ? "Увімкнено" : "Вимкнено",
+                note: settings.dryRun ? "Dry-run активний" : "Бойовий режим",
+              },
+              {
+                label: "GATEWAY",
+                value: gateway.connected ? "Підключений" : "Відключений",
+                note:
+                  gateway.lastError ||
+                  gateway.error ||
+                  "Cloudflare Durable Object",
+              },
             ]}
             stats={[
-              { label: "РОЛЕЙ", value: roles.length.toLocaleString("uk-UA") },
-              { label: "ДОСТУПНО", value: manageableRoles.length.toLocaleString("uk-UA") },
-              { label: "BOT", value: control.botCanManageRoles ? "OK" : "ERR" },
+              { label: "ГОД.", value: String(settings.lookbackHours) },
+              { label: "ВІДП.", value: String(settings.manualScanLimit) },
+              {
+                label: "RIO",
+                value: settings.minRio ? String(settings.minRio) : "AUTO",
+              },
             ]}
           />
         </header>
 
-        <AdminTabs active="discord" user={user} />
+        <AdminTabs active="recruitment" user={user} />
 
-        <section className="panel discord-management-section discord-management-section--status" aria-label="Стан Discord-підключення">
-          <SectionHeader
-            eyebrow="Система"
-            title="Стан підключення"
-            description="Швидка діагностика Discord API, ролі бота та доступності масових дій."
-          />
-          <div className="discord-management-status">
-            {statusItems.map((item) => (
-              <div key={item.label} className={`discord-management-status__item ${item.ok ? "is-ok" : "is-warning"}`}>
-                <strong>{item.value}</strong>
-                <small>{item.label}</small>
-                <em>{item.note}</em>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className={`panel discord-management-section discord-management-section--roles ${hasManageableRoles ? "is-ok" : "is-warning"}`} aria-label="Перевірка ієрархії ролей Discord">
-          <div className="discord-management-section-head discord-management-section-head--inline">
+        <section
+          className="panel discord-management-section discord-management-section--status"
+          aria-label="Стан Discord Gateway"
+        >
+          <header className="discord-management-section-head">
+            <span className="eyebrow">Gateway</span>
             <div>
-              <span className="eyebrow">Ієрархія ролей</span>
-              <h2>{hasManageableRoles ? "Бот може керувати робочими ролями" : "Керування ролями обмежене"}</h2>
-              <p>Панель бере найвищу роль саме з Discord-учасника бота. Недоступні ролі не показуються як робочі дії.</p>
+              <h2>Стан Cloudflare Discord Gateway</h2>
+              <p>
+                Якщо <strong>connected=true</strong>, Worker отримує
+                Discord-події. Якщо відповідей немає — запускай тестову або
+                ручну перевірку нижче.
+              </p>
             </div>
-            <span className={`status-pill ${hasManageableRoles ? "good" : "warning"}`}>{manageableRoles.length} доступно</span>
+          </header>
+          <div className="discord-management-status">
+            <StatusTile
+              label="Увімкнено"
+              value={onOffHuman(gateway.enabled, "Gateway дозволений", "Gateway вимкнений")}
+              ok={Boolean(gateway.enabled)}
+            />
+            <StatusTile
+              label="Підключено"
+              value={onOffHuman(gateway.connected, "Gateway підключений", "Gateway не підключений")}
+              ok={Boolean(gateway.connected)}
+            />
+            <StatusTile
+              label="readyState"
+              value={String(gateway.readyState ?? "—")}
+              ok={gateway.readyState === 1}
+            />
+            <StatusTile
+              label="Остання подія"
+              value={dateText(gateway.lastEventAt)}
+              ok={Boolean(gateway.lastEventAt)}
+            />
+            <StatusTile
+              label="Старт"
+              value={dateText(gateway.startedAt)}
+              ok={Boolean(gateway.startedAt)}
+            />
+            <StatusTile
+              label="Останній dispatch"
+              value={gateway.lastDispatchType || "Dispatch ще не було"}
+              note={dateText(gateway.lastDispatchAt)}
+              ok={Boolean(gateway.lastDispatchType)}
+            />
+            <StatusTile
+              label="MESSAGE_CREATE"
+              value={dateText(gateway.lastMessageCreateAt)}
+              note={`подій=${gateway.messageCreateCount || 0}, довжина тексту=${gateway.lastMessageContentLength ?? "—"}`}
+              ok={Boolean(gateway.lastMessageCreateAt)}
+            />
+            <StatusTile
+              label="Останній relay"
+              value={dateText(gateway.lastRelayAt)}
+              note={gateway.lastRelaySummary || `спроб=${gateway.relayAttemptCount || 0}`}
+              ok={Boolean(gateway.lastRelayAt)}
+            />
+            <StatusTile
+              label="Остання причина пропуску"
+              value={gateway.lastMessageDropReason || "Пропусків не було"}
+              note={gateway.lastMessageDropSummary || undefined}
+              ok={!gateway.lastMessageDropReason}
+            />
+            <StatusTile
+              label="Остання помилка"
+              value={gateway.lastError || gateway.error || "Помилок не видно"}
+              ok={!gateway.lastError && !gateway.error}
+            />
           </div>
-          {control.blockedRoles.length ? (
-            <details className="discord-management-details">
-              <summary>Недоступні ролі: {control.blockedRoles.length}</summary>
-              <div className="discord-management-blocked-roles">
-                {control.blockedRoles.slice(0, 12).map((role) => (
-                  <span key={role.id}><strong>{role.name}</strong><small>{role.blockedReason}</small></span>
-                ))}
-              </div>
-            </details>
-          ) : null}
+          <div className="discord-recruitment-hint">
+            <strong>Що робити зараз:</strong> {gatewayHint(gateway)}
+          </div>
+          <details className="discord-management-details">
+            <summary>Деталі Gateway</summary>
+            <pre className="discord-debug-pre">{JSON.stringify(gateway, null, 2)}</pre>
+          </details>
+          <div className="form-actions form-actions--split">
+            <ControlButton action="start" label="Запустити" />
+            <ControlButton
+              action="reconnect"
+              label="Перепідключити"
+              tone="subtle"
+            />
+            <ControlButton
+              action="status"
+              label="Оновити статус"
+              tone="subtle"
+            />
+            <ControlButton
+              action="stop"
+              label="Зупинити"
+              tone="danger"
+              confirm="Зупинити Discord Gateway? Нові повідомлення не будуть оброблятись, доки не запустиш знову."
+            />
+          </div>
         </section>
 
-        <section className="discord-management-layout" aria-label="Налаштування та Discord-дії">
-          <aside className="discord-management-sidebar" aria-label="Швидкі налаштування Discord">
-            <form className="panel discord-management-card discord-management-card--compact" action="/api/dashboard/discord/nickname" method="post" data-dashboard-action-form="true" data-dashboard-live-submit="true">
+        <section
+          className="discord-management-layout"
+          aria-label="Налаштування автовідповідей"
+        >
+          <aside className="discord-management-sidebar">
+            <form
+              className="panel discord-management-card discord-management-card--settings"
+              action="/api/dashboard/discord/recruitment/settings"
+              method="post"
+              data-dashboard-action-form="true"
+              data-dashboard-live-submit="true"
+            >
               <div className="profile-card-head">
-                <span className="eyebrow">Учасник</span>
-                <h2>Перейменувати на сервері</h2>
+                <span className="eyebrow">Конфігурація</span>
+                <h2>Параметри аналізу</h2>
               </div>
               <div className="discord-management-card__body">
-                <label className="field-label">Discord user ID<input className="input" name="userId" inputMode="numeric" pattern="[0-9]{16,25}" required /></label>
-                <label className="field-label">Новий серверний нік<input className="input" name="nickname" maxLength={32} required placeholder={nicknameTemplateExample(policy.template)} /></label>
-                <button className="btn primary" type="submit">Змінити нік</button>
-              </div>
-            </form>
-
-            <form className="panel discord-management-card discord-management-card--settings" action="/api/dashboard/discord/settings" method="post" data-dashboard-action-form="true" data-dashboard-live-submit="true">
-              <div className="profile-card-head profile-card-head--inline">
-                <div>
-                  <span className="eyebrow">Серверний нік</span>
-                  <h2>Глобальний шаблон</h2>
-                </div>
-                <span className="profile-count-pill">{manageableRoles.length} рол.</span>
-              </div>
-              <div className="discord-management-card__body">
-                <p className="profile-card-lead">Джерело правди для профілю, прийняття правил і масових Discord-операцій.</p>
-                <label className="field-label">Шаблон ніку
-                  <input className="input" name="template" defaultValue={policy.template} placeholder="{name} [{main}, {alt}, {alt}]" required />
-                  <small>Змінні: <code>{"{name}"}</code>, <code>{"{main}"}</code>, <code>{"{alt}"}</code>. Приклад: {nicknameTemplateExample(policy.template)}.</small>
+                <label className="check-row">
+                  <input
+                    type="checkbox"
+                    name="enabled"
+                    value="1"
+                    defaultChecked={settings.enabled}
+                  />{" "}
+                  <span>Увімкнути автовідповіді</span>
                 </label>
-                <div className="discord-settings-grid" aria-label="Паралельність Discord-дій">
-                  <label className="field-label">Зняття ролей
-                    <input className="input" name="roleRemoveConcurrency" type="number" min="0" max={policy.roleRemoveMaxConcurrency} defaultValue={policy.roleRemoveConcurrency} />
-                    <small>0 = автоматично.</small>
-                  </label>
-                  <label className="field-label">Макс. зняття
-                    <input className="input" name="roleRemoveMaxConcurrency" type="number" min="1" max="5" defaultValue={policy.roleRemoveMaxConcurrency} />
-                    <small>Рекомендовано 3–5.</small>
-                  </label>
-                  <label className="field-label">Перевірка ніків
-                    <input className="input" name="nicknameCleanupConcurrency" type="number" min="0" max={policy.nicknameCleanupMaxConcurrency} defaultValue={policy.nicknameCleanupConcurrency} />
-                    <small>0 = автоматично.</small>
-                  </label>
-                  <label className="field-label">Макс. перевірка
-                    <input className="input" name="nicknameCleanupMaxConcurrency" type="number" min="1" max="4" defaultValue={policy.nicknameCleanupMaxConcurrency} />
-                    <small>Ліміт cleanup-операцій.</small>
-                  </label>
-                </div>
-                <div className="discord-settings-summary" aria-label="Поточна конфігурація Discord-дій">
-                  <InfoChip title={String(policy.roleRemoveConcurrency || "Авто")} text="Зняття ролей" />
-                  <InfoChip title={String(policy.roleRemoveMaxConcurrency)} text="Макс. зняття" />
-                  <InfoChip title={String(policy.nicknameCleanupConcurrency || "Авто")} text="Перевірка ніків" />
-                  <InfoChip title={String(policy.nicknameCleanupMaxConcurrency)} text="Макс. перевірка" />
-                </div>
-                <button className="btn primary" type="submit">Зберегти Discord-налаштування</button>
+                <label className="check-row">
+                  <input
+                    type="checkbox"
+                    name="dryRun"
+                    value="1"
+                    defaultChecked={settings.dryRun}
+                  />{" "}
+                  <span>Dry-run: аналізувати, але не писати в Discord</span>
+                </label>
+                <label className="field-label">
+                  Скільки годин дивитись назад
+                  <input
+                    className="input"
+                    name="lookbackHours"
+                    type="number"
+                    min="1"
+                    max="168"
+                    defaultValue={settings.lookbackHours}
+                  />
+                  <small>
+                    Для ручної перевірки старих повідомлень. Рекомендовано 48.
+                  </small>
+                </label>
+                <label className="field-label">
+                  Максимум сторінок на канал
+                  <input
+                    className="input"
+                    name="maxPages"
+                    type="number"
+                    min="1"
+                    max="20"
+                    defaultValue={settings.maxPages}
+                  />
+                </label>
+                <label className="field-label">
+                  Ліміт відповідей за запуск
+                  <input
+                    className="input"
+                    name="maxReplies"
+                    type="number"
+                    min="1"
+                    max="20"
+                    defaultValue={settings.maxReplies}
+                  />
+                </label>
+                <label className="field-label">
+                  Ручний ліміт відповідей
+                  <input
+                    className="input"
+                    name="manualScanLimit"
+                    type="number"
+                    min="1"
+                    max="20"
+                    defaultValue={settings.manualScanLimit}
+                  />
+                </label>
+                <label className="field-label">
+                  Макс. каналів
+                  <input
+                    className="input"
+                    name="maxChannels"
+                    type="number"
+                    min="1"
+                    max="200"
+                    defaultValue={settings.maxChannels}
+                  />
+                </label>
+                <label className="field-label">
+                  Мінімальний RIO
+                  <input
+                    className="input"
+                    name="minRio"
+                    type="number"
+                    min="0"
+                    max="6000"
+                    defaultValue={settings.minRio}
+                  />
+                  <small>0 = авто-поріг по складу.</small>
+                </label>
+                <label className="field-label">
+                  Мінімальний ilvl
+                  <input
+                    className="input"
+                    name="minIlvl"
+                    type="number"
+                    min="0"
+                    max="2000"
+                    defaultValue={settings.minIlvl}
+                  />
+                  <small>0 = не фільтрувати по ilvl.</small>
+                </label>
+                <button className="btn primary" type="submit">
+                  Зберегти параметри
+                </button>
               </div>
             </form>
           </aside>
 
-          <div className="discord-management-main" aria-label="Масові Discord-дії">
-            <form className="panel discord-management-card discord-management-card--action" action="/api/dashboard/discord/officers/sync" method="post" data-dashboard-action-form="true" data-dashboard-live-submit="true">
+          <div className="discord-management-main">
+            <section className="panel discord-management-card discord-management-card--primary">
               <div className="profile-card-head profile-card-head--inline">
                 <div>
-                  <span className="eyebrow">Склад гільдії</span>
-                  <h2>Офіцерська роль</h2>
+                  <span className="eyebrow">Ручна перевірка</span>
+                  <h2>Старі повідомлення без повторів</h2>
                 </div>
-                <span className="status-pill good">1 роль за раз</span>
+                <span className="status-pill warning">
+                  {settings.lookbackHours} год.
+                </span>
               </div>
               <div className="discord-management-card__body">
-                <p className="profile-card-lead">Видає роль тільки профілям, де хоча б один персонаж у збереженому складі має <strong>Глава</strong> або <strong>Офіцер</strong>. Серверний нік перевіряється через <code>member.nick</code>.</p>
-                <input type="hidden" name="limit" value="0" />
-                <RoleCheckboxes roles={roles} fieldName="officerRoleIds" inputType="radio" emptyText="Немає доступних ролей для видачі офіцерам. Перевір роль бота та право “Керувати ролями”." />
-                <div className="discord-officer-sync-summary" aria-label="Що перевіряється">
-                  <InfoChip title="Склад" text="officer/guild_master" />
-                  <InfoChip title="Профілі" text="Усі персонажі" />
-                  <InfoChip title="Discord" text="member.nick" />
-                </div>
-                <div className="form-actions">
-                  <button className="btn primary" type="submit" disabled={!hasManageableRoles} data-confirm-message="Видати вибрану Discord-роль тільки профілям, де персонаж є у збереженому складі гільдії зі статусом Глава або Офіцер?">Синхронізувати роль</button>
-                </div>
-              </div>
-            </form>
-
-            <form className="panel discord-management-card discord-management-card--primary" action="/api/dashboard/discord/profiles/cleanup" method="post" data-dashboard-action-form="true" data-dashboard-live-submit="true">
-              <div className="profile-card-head profile-card-head--inline">
-                <div>
-                  <span className="eyebrow">Firebase-профілі</span>
-                  <h2>Глобальне очищення акаунтів</h2>
-                </div>
-                <span className="status-pill warning">Roster + Discord</span>
-              </div>
-              <div className="discord-management-card__body">
-                <p className="profile-card-lead">Перед перевіркою система автоматично оновлює склад гільдії в базі, а потім проходить по Firebase-профілях зі звіркою проти актуального складу та Discord-сервера. Видаляються лише акаунти, які одночасно не мають персонажів у складі гільдії і вже не є учасниками Discord. Перед видаленням прибираються всі записи цього акаунта з рейдів.</p>
-                <label className="field-label discord-management-limit-field">Скільки профілів перевірити
-                  <input className="input" name="limit" type="number" min="0" max="50000" defaultValue="0" />
-                  <small>0 = пройти всі профілі посторінково, без обмеження першими 5/10 записами.</small>
-                </label>
-                <div className="discord-officer-sync-summary" aria-label="Що перевіряється перед очищенням профілів">
-                  <InfoChip title="Firebase" text="dashboardProfiles" />
-                  <InfoChip title="Roster" text="Автооновлення" />
-                  <InfoChip title="Discord" text="Учасники сервера" />
-                  <InfoChip title="Рейди" text="Чистка записів" />
-                  <InfoChip title="Повторно" text="Перед delete" />
+                <p className="profile-card-lead">
+                  Ця дія сканує доступні текстові канали й активні треди за
+                  заданий період. Якщо на повідомлення вже була успішна
+                  відповідь, Firebase-мітка{" "}
+                  <code>discordRecruitmentAdviceReplies</code> заблокує дубль.
+                </p>
+                <div className="discord-officer-sync-summary">
+                  <InfoChip
+                    title={String(settings.maxChannels)}
+                    text="каналів"
+                  />
+                  <InfoChip
+                    title={String(settings.maxPages)}
+                    text="сторінок/канал"
+                  />
+                  <InfoChip
+                    title={String(settings.manualScanLimit)}
+                    text="відповідей зараз"
+                  />
+                  <InfoChip
+                    title={settings.dryRun ? "Dry-run" : "Live"}
+                    text="режим"
+                  />
                 </div>
                 <div className="form-actions form-actions--split">
-                  <button className="btn subtle" name="mode" value="inspect" type="submit">Тільки перевірити</button>
-                  <button className="btn danger" name="mode" value="apply" type="submit" data-confirm-message="Ця дія видалить Firebase-профілі тільки якщо акаунт одночасно відсутній у складі гільдії та не є учасником Discord-сервера. Усі записи цього акаунта з рейдів також будуть прибрані. Якщо roster порожній або недоступний — дія заблокується. Продовжити?">Видалити неактуальні профілі</button>
+                  <ControlButton
+                    action="dry-run-scan"
+                    label="Тест без відправки"
+                    tone="subtle"
+                  />
+                  <ControlButton
+                    action="scan"
+                    label="Перевірити і відповісти"
+                    confirm="Запустити ручну перевірку старих Discord-повідомлень і відповісти на релевантні, якщо ще не було відповіді?"
+                  />
+                  <ControlButton
+                    action="retry-failed-skipped"
+                    label="Повторити failed/skipped"
+                    tone="subtle"
+                    confirm="Повторити обробку повідомлень, які раніше були failed/skipped/no_content/dashboard_error/discord_send_error?"
+                  />
                 </div>
               </div>
-            </form>
+            </section>
 
-            <form className="panel discord-management-card discord-management-card--action" action="/api/dashboard/discord/nicknames/cleanup" method="post" data-dashboard-action-form="true" data-dashboard-live-submit="true">
+            <section className="panel discord-management-card discord-management-card--action discord-management-card--preview">
               <div className="profile-card-head profile-card-head--inline">
                 <div>
-                  <span className="eyebrow">Автоперевірка</span>
-                  <h2>Ролі за неправильний нік</h2>
+                  <span className="eyebrow">Тест алгоритму</span>
+                  <h2>Перевірити будь-яке повідомлення</h2>
                 </div>
-                <span className="status-pill warning">member.nick</span>
+                <span className="status-pill good">preview</span>
+              </div>
+              <form
+                className="discord-management-card__body"
+                action="/api/dashboard/discord/recruitment/control"
+                method="post"
+                data-dashboard-action-form="true"
+                data-dashboard-live-submit="true"
+              >
+                <input type="hidden" name="action" value="preview-text" />
+                <p className="profile-card-lead">
+                  Встав текст із Discord. Панель покаже score, причини
+                  спрацювання, розпізнані версії гри й приклад адаптивної
+                  відповіді без відправки в Discord.
+                </p>
+                <label className="field-label">
+                  Текст повідомлення
+                  <textarea
+                    className="input"
+                    name="content"
+                    rows={7}
+                    placeholder="Наприклад: Останній раз грав у Ліча/Драгонфлай/БФА, ким краще почати і хто потрібен гільдії?"
+                    required
+                  />
+                </label>
+                <button className="btn subtle" type="submit">
+                  Проаналізувати текст
+                </button>
+              </form>
+            </section>
+
+            <section className="panel discord-management-card discord-management-card--action discord-management-card--worker">
+              <div className="profile-card-head profile-card-head--inline">
+                <div>
+                  <span className="eyebrow">Cloudflare</span>
+                  <h2>Worker manual-scan</h2>
+                </div>
+                <span className="status-pill good">ручний</span>
               </div>
               <div className="discord-management-card__body">
-                <p className="profile-card-lead">Перевіряє тільки серверні ніки <code>member.nick</code>. Перед зміною кожен учасник перечитується з Discord ще раз.</p>
-                <input type="hidden" name="apply" value="1" />
-                <label className="field-label discord-management-limit-field">Скільки учасників перевірити
-                  <input className="input" name="limit" type="number" min="0" max="50000" defaultValue="0" />
-                  <small>0 = пройти всіх учасників Discord-сервера посторінково.</small>
-                </label>
-                <div className="discord-cleanup-role-grid" aria-label="Ролі для масової дії за серверним ніком">
-                  <section className="discord-cleanup-role-column">
-                    <div className="discord-role-column-head"><span className="eyebrow">Зняти</span><h3>Прибрати ролі</h3></div>
-                    <p className="profile-card-lead">Ролі знімаються з учасників, чиї ніки не відповідають шаблону.</p>
-                    <RoleCheckboxes roles={roles} fieldName="removeRoleIds" />
-                  </section>
-                  <section className="discord-cleanup-role-column">
-                    <div className="discord-role-column-head"><span className="eyebrow">Видати</span><h3>Додати ролі</h3></div>
-                    <p className="profile-card-lead">Опційно для службової або санкційної ролі. Офіцерські ролі тут не використовувати.</p>
-                    <RoleCheckboxes roles={roles} fieldName="addRoleIds" />
-                  </section>
-                </div>
+                <p className="profile-card-lead">
+                  Автоматичний backfill при старті Worker вимкнений. Якщо треба
+                  перевірити пропущене після reconnect/deploy — запускай його
+                  вручну з панелі.
+                </p>
                 <div className="form-actions form-actions--split">
-                  <button className="btn subtle" formAction="/api/dashboard/discord/nicknames/inspect" formMethod="post" type="submit">Тільки перевірити</button>
-                  <button className="btn danger" name="mode" value="apply" type="submit" disabled={!hasManageableRoles} data-confirm-message="Ця дія перечитає кожного учасника з Discord і змінить ролі тільки тим, у кого серверний нік member.nick досі не відповідає шаблону. Офіцерські ролі тут не використовуй. Продовжити?">Застосувати ролі</button>
+                  <ControlButton
+                    action="test-relay"
+                    label="Тест Worker → dashboard"
+                    tone="subtle"
+                  />
+                  <ControlButton
+                    action="manual-scan"
+                    label="Запустити Worker manual-scan"
+                    tone="subtle"
+                  />
                 </div>
               </div>
-            </form>
+            </section>
+
+            <section className="panel discord-management-card discord-management-card--action discord-management-card--live">
+              <div className="profile-card-head profile-card-head--inline">
+                <div>
+                  <span className="eyebrow">Live pipeline</span>
+                  <h2>Останні обробки</h2>
+                </div>
+                <span className="status-pill good">Firebase</span>
+              </div>
+              <div className="discord-management-card__body">
+                {recentEntries.length ? (
+                  <div className="discord-recruitment-events">
+                    {recentEntries.map((entry) => (
+                      <article key={entry.messageId} className="discord-recruitment-event">
+                        <div>
+                          <strong>{statusHuman(entry.status)}</strong>
+                          <small>{dateText(entry.updatedAt || entry.createdAt)}</small>
+                        </div>
+                        <p>{entry.responsePreview || entry.error || entry.skipReason || entry.decisionReasons.join(", ") || "Без деталей"}</p>
+                        <dl>
+                          <div><dt>Автор</dt><dd>{entry.authorId || "—"}</dd></div>
+                          <div><dt>Канал</dt><dd>{entry.channelId || "—"}</dd></div>
+                          <div><dt>Score</dt><dd>{entry.score}</dd></div>
+                          <div><dt>Reply</dt><dd>{entry.replyMessageId || "—"}</dd></div>
+                        </dl>
+                        {entry.status !== "replied" ? (
+                          <form action="/api/dashboard/discord/recruitment/control" method="post" data-dashboard-action-form="true" data-dashboard-live-submit="true">
+                            <input type="hidden" name="action" value="retry-failed-skipped" />
+                            <button className="btn subtle" type="submit">Retry failed/skipped</button>
+                          </form>
+                        ) : null}
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="profile-card-lead">Ще немає записів обробки або Firebase недоступний.</p>
+                )}
+              </div>
+            </section>
           </div>
         </section>
       </section>

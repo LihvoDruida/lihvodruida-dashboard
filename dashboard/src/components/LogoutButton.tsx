@@ -7,7 +7,13 @@ import {
   dispatchDashboardToast,
 } from "@/lib/clientToasts";
 
-export default function LogoutButton() {
+export default function LogoutButton({
+  className = "nav-account__logout",
+  errorClassName = "nav-account__logout-error",
+}: {
+  className?: string;
+  errorClassName?: string;
+} = {}) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
@@ -81,7 +87,7 @@ export default function LogoutButton() {
     <form
       method="post"
       action="/api/auth/logout"
-      className="dashboard-user__logout"
+      className={className}
       data-toast-managed="true"
       onSubmit={submitLogout}
     >
@@ -94,7 +100,7 @@ export default function LogoutButton() {
         {pending ? "Виходимо..." : "Вийти"}
       </button>
       {error ? (
-        <small className="dashboard-user__logout-error" role="alert">
+        <small className={errorClassName} role="alert">
           {error}
         </small>
       ) : null}

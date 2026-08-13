@@ -163,12 +163,10 @@
      (лого + розділи + профіль в одному рядку) і є нижня
      мобільна панель. Значення — тільки розміри, не кольори.
      ======================================================= */
-  --nav-h: 76px;
-  --nav-h-compact: 56px;
-  --nav-inset: 14px;
+  /* Геометрія навігації — ті самі числа, що в assets/css/nav.css сайту */
+  --nav-h: 54px;
+  --nav-inset: 16px;
   --nav-space: calc(var(--nav-h) + var(--nav-inset) * 2);
-  --nav-mobile-h: 64px;
-  --nav-mobile-space: calc(var(--nav-mobile-h) + env(safe-area-inset-bottom, 0px));
 
   --nav-surface: rgba(26, 21, 17, 0.82);
   --nav-surface-solid: rgba(18, 15, 12, 0.95);

@@ -982,33 +982,113 @@ a.dashboard-list-row:hover {
 }
 
 /* Мобільний вигляд рядків: картка з підписами колонок */
+/* ---------- Мобільний вигляд списків ----------
+   Табличний рядок перетворюється на картку: підпис колонки стає
+   надрядком, значення — під ним. Двоколонковий варіант із підписом
+   збоку тут не працює — довгі значення (ніки, спеки, дати) стискали
+   праву колонку до 2-3 символів на 390px. */
 @media (max-width: 860px) {
   .dashboard-table-head {
     display: none;
   }
 
+  .dashboard-table-scroll {
+    overflow-x: visible;
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+
+  .dashboard-list,
+  .dashboard-table {
+    gap: var(--space-sm);
+  }
+
   .dashboard-list-row,
   .dashboard-table-row {
     grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
     gap: var(--space-xs);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
   }
 
-  .dashboard-list-row > [role="cell"][data-label],
-  .dashboard-table-row > [role="cell"][data-label] {
-    grid-template-columns: minmax(0, auto) minmax(0, 1fr);
-    align-items: baseline;
-    column-gap: var(--space-sm);
+  .dashboard-list-row > [role="cell"],
+  .dashboard-table-row > [role="cell"] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3xs);
   }
 
   .dashboard-list-row > [role="cell"][data-label]::before,
   .dashboard-table-row > [role="cell"][data-label]::before {
     content: attr(data-label);
-    grid-row: span 2;
-    font-size: 0.68rem;
+    font-size: 0.64rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--text-faint);
+  }
+
+  /* Перша комірка — заголовок картки, підпис їй не потрібен */
+  .dashboard-table-row > [role="cell"]:first-child::before {
+    content: none;
+  }
+
+  .dashboard-table-row > [role="cell"]:first-child {
+    padding-bottom: var(--space-xs);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .dashboard-table-row > [role="cell"]:first-child strong {
+    font-size: 1rem;
+  }
+
+  /* Решта комірок лягає у дві колонки — інакше картка стає вежею */
+  .dashboard-table-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-table-row > [role="cell"]:first-child,
+  .dashboard-table-row > [role="cell"]:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .dashboard-table-row > [role="cell"]:last-child {
+    padding-top: var(--space-xs);
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .dashboard-list-row > *:first-child {
+    flex: 1 1 100%;
+  }
+
+  /* Дії у складених рядках розтягуються на всю ширину картки */
+  .dashboard-list-actions,
+  .dashboard-list-row [class$="-actions"] {
+    width: 100%;
+  }
+
+  .dashboard-table-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-table-controls,
+  .dashboard-table-search-form {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+  }
+
+  .dashboard-table-search {
+    max-width: none;
+    flex: 1 1 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  /* Одна колонка: на вузькому екрані пара «підпис + значення»
+     вже не влазить поруч із сусідньою. */
+  .dashboard-table-row {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -1131,7 +1211,7 @@ details > *:not(:where(summary)) {
 .global-toast-stack {
   position: fixed;
   right: var(--space-md);
-  bottom: calc(var(--space-md) + var(--nav-mobile-space));
+  bottom: calc(var(--space-md) + env(safe-area-inset-bottom, 0px));
   z-index: var(--z-toast);
   display: flex;
   flex-direction: column;

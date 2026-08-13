@@ -22,7 +22,7 @@ main,
 .app-page {
   flex: 1 0 auto;
   padding: var(--space-xl) var(--pad-page-inline);
-  padding-bottom: calc(var(--space-3xl) + var(--nav-mobile-space));
+  padding-bottom: calc(var(--space-3xl) + env(safe-area-inset-bottom, 0px));
 }
 
 /* Вкладені оболонки не подвоюють відступи */
@@ -394,7 +394,7 @@ main .dashboard-shell {
 .app-footer {
   flex: 0 0 auto;
   margin-top: auto;
-  padding: var(--space-xl) var(--pad-page-inline) calc(var(--space-lg) + var(--nav-mobile-space));
+  padding: var(--space-xl) var(--pad-page-inline) calc(var(--space-lg) + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--border-subtle);
   background: var(--surface-sunken);
   font-size: 0.9rem;

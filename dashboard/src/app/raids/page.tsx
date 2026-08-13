@@ -1,175 +1,78 @@
-import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { canManageRaids, canViewRaidDirectory } from "@/lib/permissions";
-import { getOwnProfilePath } from "@/lib/profiles";
-import { hasDiscordEmbedConfig } from "@/lib/discordAdmin";
-import { hasRaidStorage, isRaidClosed, listRaids } from "@/lib/raids";
-import {
-  RaidListCard,
-  RaidPageShell,
-  StatusNotice,
-} from "@/components/RaidViews";
+import { canManageRaids, canViewRaidRoster } from "@/lib/permissions";
+import { getMainCharacter, getProfileByDiscordUserId, getProfileById } from "@/lib/profiles";
+import { getRaid, hasRaidStorage, raidLiveRevision } from "@/lib/raids";
+import RaidLiveSync from "@/components/RaidLiveSync";
+import { RaidAnnouncementPreview, RaidAttendanceActions, RaidManageActions, RaidPageShell, RaidUnavailableState, RosterSideList, StatusNotice } from "@/components/RaidViews";
 import { buildPageMetadata } from "@/lib/seo";
-import { recordDashboardSystemLog } from "@/lib/dashboardSystemLogs";
-import RaidArchiveLoadMore from "@/components/RaidArchiveLoadMore";
 
 export const runtime = "nodejs";
-export const metadata = buildPageMetadata({
-  title: "Рейди",
-  description:
-    "Список активних і минулих рейдів Mistblossom Vanguard із записом, складом, правилами та архівом.",
-  path: "/raids",
-  keywords: ["рейди WoW", "запис на рейд", "архів рейдів"],
-});
-
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function RaidsListPage({
-    searchParams,
-}: {
-  searchParams: Promise<Record<string, string | undefined>>;
-}) {
-  const user = await getSession();
-  if (!user) {
-    redirect("/login");
-    throw new Error("Login required");
-  }
-  if (!canViewRaidDirectory(user)) redirect(await getOwnProfilePath(user));
+export async function generateMetadata({ params }: { params: Promise<{ raidId: string }> }) {
+  const { raidId } = await params;
+  const path = `/raids/${encodeURIComponent(raidId)}`;
 
-  const canManage = canManageRaids(user);
-  const params = await searchParams;
-  if (params.raid) redirect(`/raids/${encodeURIComponent(params.raid)}`);
-
-  const raids = await listRaids(100).catch((error) => {
-    void recordDashboardSystemLog(
-      "error",
-      "page.raids.list_read_failed",
-      {
-        summary:
-          "Сторінка рейдів відкрилась без списку: читання рейдів не спрацювало.",
-        message:
-          error instanceof Error ? error.message : String(error || "unknown"),
-      },
-      { persist: true },
-    );
-    return [];
+  return buildPageMetadata({
+    title: "Сторінка рейду",
+    description: "Сторінка рейду Mistblossom Vanguard з записом, статусом участі, складом і посиланням на правила.",
+    path,
+    keywords: ["сторінка рейду", "запис на рейд", "рейд WoW"],
   });
-  const activeRaids = raids.filter(
-    (raid) => raid.status === "published" && !isRaidClosed(raid),
-  );
-  const draftRaids = canManage
-    ? raids.filter((raid) => raid.status === "draft")
-    : [];
-  const closedRaids = raids.filter((raid) => isRaidClosed(raid));
-  const currentRaids = canManage
-    ? [...activeRaids, ...draftRaids]
-    : activeRaids;
-  const visibleTotal = canManage
-    ? raids.length
-    : activeRaids.length + closedRaids.length;
+}
+
+export default async function RaidDetailsPage({
+  params, searchParams }: { params: Promise<{ raidId: string }>; searchParams: Promise<Record<string, string | undefined>> }) {
+  const user = await getSession();
+  const canManage = canManageRaids(user);
+  const canSeeRoster = canViewRaidRoster(user);
+  const { raidId } = await params;
+  const query = await searchParams;
+  const raid = await getRaid(raidId);
+  const visibleRaid = raid && (raid.status === "published" || raid.status === "closed" || canManage) ? raid : null;
+  const userDiscordId = user?.provider === "discord" && /^\d{16,25}$/.test(user.id) ? user.id : "";
+  const profile = user?.profileId
+    ? await getProfileById(user.profileId).catch(() => null)
+    : userDiscordId
+      ? await getProfileByDiscordUserId(userDiscordId).catch(() => null)
+      : null;
+  const hasMainCharacter = user ? Boolean(profile && getMainCharacter(profile)) : null;
 
   return (
     <RaidPageShell
       user={user}
-      title={canManage ? "Рейди" : "Мої рейди"}
-      description={
-        canManage
-          ? "Керування рейдами, оголошеннями, складом, лімітами та записами. Минулі рейди залишаються в архіві до ручного видалення."
-          : "Опубліковані рейди, запис на участь і посилання на правила без зайвих адмінських блоків."
-      }
+      title="Сторінка рейду"
+      description="Пряме посилання доступне учасникам. Вони можуть тільки підписатися, пропустити рейд або позначити запізнення."
     >
-      <StatusNotice params={params} />
-      {!hasRaidStorage() ? (
-        <div className="notice panel error-note raid-notice">
-          Рейди тимчасово недоступні. Спробуй пізніше або звернись до офіцера.
-        </div>
-      ) : null}
-      {hasRaidStorage() && raids.length === 0 ? (
-        <div className="notice panel raid-notice">
-          Якщо рейди були створені раніше, зараз база могла не відповісти.
-          Сторінка відкрита без падіння — повтори оновлення трохи пізніше.
-        </div>
-      ) : null}
-      {canManage && !hasDiscordEmbedConfig() ? (
-        <div className="notice panel error-note raid-notice">
-          Публікація в Discord тимчасово недоступна. Чернетки можна підготувати
-          й опублікувати пізніше.
-        </div>
-      ) : null}
+      <StatusNotice params={query} />
+      {visibleRaid ? <RaidLiveSync raidId={visibleRaid.id} initialRevision={raidLiveRevision(visibleRaid)} /> : null}
+      {!hasRaidStorage() ? <div className="notice panel error-note raid-notice">Запис на рейди тимчасово недоступний. Повтори пізніше або звернись до офіцера.</div> : null}
 
-      <section className="panel raid-list-page-panel dashboard-list-panel">
-        <div className="raid-list-page-head dashboard-list-head">
-          <div>
-            <h2>{canManage ? "Поточні рейди" : "Доступні рейди"}</h2>
-            <p>
-              {canManage
-                ? "Активні рейди та чернетки. Закриті рейди винесені в окремий архів нижче."
-                : "Тут видно рейди, на які можна записатися або переглянути свій статус."}
-            </p>
-            <div
-              className="raid-list-summary dashboard-list-summary"
-              aria-label="Коротка статистика рейдів"
-            >
-              <span>Усього: {visibleTotal}</span>
-              <span>Активні: {activeRaids.length}</span>
-              {canManage ? <span>Чернетки: {draftRaids.length}</span> : null}
-              <span>Архів: {closedRaids.length}</span>
+      {visibleRaid ? (
+        <section className="raid-member-layout">
+          <div className="raid-preview-column">
+            <RaidAnnouncementPreview
+              raid={visibleRaid}
+              actions={<RaidAttendanceActions raid={visibleRaid} user={user} profile={profile} hasMainCharacter={hasMainCharacter} />}
+              manageActions={canManage ? <RaidManageActions raid={visibleRaid} /> : null}
+              showRosterDetails={true}
+              showMemberItemLevels={canManage}
+            />
+            <div className="raid-detail-links">
+              {canManage ? <a className="btn subtle" href="/raids">До списку рейдів</a> : null}
+              {visibleRaid.messageUrl ? <a className="btn subtle" href={visibleRaid.messageUrl} target="_blank" rel="noreferrer">Відкрити повідомлення в Discord</a> : null}
             </div>
           </div>
-          {canManage ? (
-            <div className="raid-list-head-actions">
-              <a className="btn subtle" href="/raids/bench-priority">
-                🩶 Сірий список
-              </a>
-              <a className="btn primary" href="/raids/new">
-                ＋ Створити рейд
-              </a>
-            </div>
+          {canSeeRoster ? (
+            <RosterSideList
+              raid={visibleRaid}
+              showItemLevel={canManage}
+              showBenchPriorityMarkers={canManage}
+            />
           ) : null}
-        </div>
-        <div className="raid-manager-list dashboard-list">
-          {currentRaids.length ? (
-            currentRaids.map((raid) => (
-              <RaidListCard key={raid.id} raid={raid} canManage={canManage} />
-            ))
-          ) : (
-            <p className="raid-empty">Активних рейдів поки немає.</p>
-          )}
-        </div>
-      </section>
-
-      <section className="panel raid-list-page-panel raid-list-page-panel--archive dashboard-list-panel dashboard-list-panel--archive">
-        <div className="raid-list-page-head raid-list-page-head--archive dashboard-list-head">
-          <div>
-            <h2>Минулі рейди</h2>
-            <p>
-              {canManage
-                ? "Архів для перегляду складу, записів, середнього item level і посилань на Discord-повідомлення."
-                : "Завершені рейди залишаються доступними для перегляду."}
-            </p>
-            <div
-              className="raid-list-summary dashboard-list-summary"
-              aria-label="Статистика архіву рейдів"
-            >
-              <span>Закрито: {closedRaids.length}</span>
-            </div>
-          </div>
-        </div>
-        {closedRaids.length ? (
-          <RaidArchiveLoadMore step={6} total={closedRaids.length}>
-            {closedRaids.map((raid) => (
-              <RaidListCard key={raid.id} raid={raid} canManage={canManage} />
-            ))}
-          </RaidArchiveLoadMore>
-        ) : (
-          <div className="raid-manager-list raid-manager-list--archive dashboard-list dashboard-list--archive">
-            <p className="raid-empty">
-              Минулі рейди з’являться тут після завершення.
-            </p>
-          </div>
-        )}
-      </section>
+        </section>
+      ) : <RaidUnavailableState canManage={canManage} />}
     </RaidPageShell>
   );
 }

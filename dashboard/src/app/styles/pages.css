@@ -1257,3 +1257,61 @@
   align-items: center;
   gap: var(--space-xs);
 }
+
+/* =========================================================
+   МОБІЛЬНІ СПИСКИ РЕЙДІВ
+   ========================================================= */
+@media (max-width: 860px) {
+  .raid-list-main-link {
+    align-items: flex-start;
+    gap: var(--space-sm);
+  }
+
+  .raid-list-main-link img {
+    width: 56px;
+    height: 56px;
+  }
+
+  .raid-list-title-row strong {
+    font-size: 0.95rem;
+  }
+
+  .raid-list-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    width: 100%;
+    padding-top: var(--space-xs);
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .raid-list-actions > a,
+  .raid-list-actions > button {
+    flex: 1 1 auto;
+  }
+
+  .raid-list-action-tools {
+    flex: 0 0 auto;
+  }
+
+  .raid-party-row {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    padding: var(--space-xs);
+  }
+
+  .profile-account-sidebar__avatar {
+    width: 72px;
+    height: 72px;
+  }
+}
+
+@media (max-width: 520px) {
+  .raid-list-main-link {
+    flex-wrap: wrap;
+  }
+
+  .raid-list-main-link img {
+    width: 44px;
+    height: 44px;
+  }
+}

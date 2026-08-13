@@ -1,590 +1,1007 @@
 /* =========================================================
-   NAV — плаваюча капсула зверху + мобільна панель знизу
+   NAVIGATION — порт assets/css/nav.css із lihvodruida.github.io
 
-   Мова та сама, що в assets/css/nav.css сайту: скляна
-   поверхня, бурштиновий акцент на активному пункті,
-   капсула-пігулка. Відрізняється лише склад: у дашборду
-   в одному рядку живуть лого, розділи й профіль.
+   Геометрія, класи й поведінка збігаються з сайтом один в один:
+   плаваюча пігулка згори, дропдаун акаунта, бургер і повноекранна
+   мобільна панель. Дашбордна специфіка — лише блок виходу
+   всередині меню та довший список розділів.
 
-   Жодного !important. Усі розміри — з токенів.
+   Токени (--nav-h, --nav-surface, ...) живуть у tokens.css.
+   Жодного !important.
    ========================================================= */
 
-/* ---------- 1. Верхня смуга ---------- */
-.dashboard-topbar {
+/* Обгортка <aside> не бере участі в лейауті */
+.sidebar {
+  display: contents;
+}
+
+/* ---------- Оболонка ---------- */
+.site-nav {
   position: fixed;
-  inset: 0 0 auto 0;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: var(--z-navbar);
   display: flex;
   justify-content: center;
-  padding: var(--nav-inset) var(--pad-page-inline);
+  padding: calc(var(--nav-inset) + env(safe-area-inset-top)) var(--space-md) 0;
   pointer-events: none;
 }
 
-.dashboard-topbar > * {
+.site-nav__shell {
   pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  height: var(--nav-h);
+  max-width: 100%;
+  padding: 0 var(--space-xs) 0 var(--space-lg);
+  border-radius: 999px;
+  background: var(--nav-surface);
+  border: 1px solid var(--nav-line);
+  box-shadow: var(--nav-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(18px) saturate(1.25);
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+  transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
-.nav-capsule {
+/* Щільніший фон під час скролу */
+.sidebar.is-scrolled .site-nav__shell {
+  background: var(--nav-surface-solid);
+  border-color: var(--border-strong);
+  box-shadow: 0 18px 40px -20px rgba(0, 0, 0, 0.9);
+}
+
+/* ---------- Бренд ---------- */
+.site-nav__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+  min-height: 0;
+  padding-right: var(--space-3xs);
+  color: var(--nav-ink);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.site-nav__brand-mark {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+}
+
+.site-nav__brand-text {
+  font-family: var(--font-brand);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+}
+
+.site-nav__brand:hover {
+  color: var(--c-accent-200);
+}
+
+/* ---------- Розділювач ---------- */
+.site-nav__rule {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 22px;
+  margin: 0 var(--space-sm);
+  background: linear-gradient(180deg, transparent, var(--nav-line-soft) 25%, var(--nav-line-soft) 75%, transparent);
+}
+
+/* ---------- Пункти меню ---------- */
+.site-nav__links {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.nav-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  height: 38px;
+  min-height: 38px;
+  min-width: 0;
+  padding: 0 var(--space-sm);
+  border-radius: 999px;
+  color: var(--nav-muted);
+  text-decoration: none;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.nav-item svg {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  opacity: 0.68;
+  transition: opacity 0.2s ease, transform 0.2s var(--nav-ease);
+}
+
+.nav-item:hover,
+.nav-item:focus-visible {
+  color: var(--nav-ink);
+  background: var(--surface-hover);
+}
+
+.nav-item:hover svg,
+.nav-item:focus-visible svg {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.nav-item[aria-current="page"] {
+  color: var(--text-strong);
+  background: var(--accent-soft);
+}
+
+.nav-item[aria-current="page"] svg {
+  opacity: 1;
+  color: var(--nav-accent);
+}
+
+.nav-item[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  width: 14px;
+  height: 2px;
+  border-radius: 2px;
+  transform: translateX(-50%);
+  background: var(--nav-accent);
+  box-shadow: 0 0 10px var(--accent-ring);
+}
+
+/* ---------- Блок акаунта (аватар + меню) ---------- */
+.nav-account {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.nav-account__btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  height: 42px;
+  min-height: 42px;
+  min-width: 0;
+  padding: 0 var(--space-2xs);
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.nav-account__btn:hover,
+.nav-account.is-open .nav-account__btn {
+  background: var(--surface-hover);
+}
+
+.nav-account__avatar {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  object-fit: cover;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* Заглушка з ініціалом, коли аватара немає */
+.nav-account__avatar--fallback {
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--c-accent-300);
+  text-transform: uppercase;
+}
+
+.nav-account__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3xs);
+  line-height: 1.1;
+  text-align: left;
+}
+
+.nav-account__name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-strong);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.nav-account__sub {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--nav-dim);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.nav-account__chev {
+  display: inline-flex;
+  color: var(--nav-muted);
+  transition: transform 0.25s var(--nav-ease);
+}
+
+.nav-account__chev svg {
+  width: 14px;
+  height: 14px;
+}
+
+.nav-account.is-open .nav-account__chev {
+  transform: rotate(180deg);
+}
+
+/* Випадна панель */
+.nav-account__menu {
+  position: absolute;
+  top: calc(100% + 14px);
+  right: 0;
+  min-width: 248px;
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  padding: var(--space-xs);
+  border-radius: 18px;
+  background: var(--nav-panel);
+  border: 1px solid var(--nav-line);
+  box-shadow: 0 28px 60px -22px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px) scale(0.97);
+  transform-origin: top right;
+  transition: opacity 0.18s ease, transform 0.25s var(--nav-ease), visibility 0.18s;
+}
+
+/* backdrop-filter лише на відкритому меню — див. коментар у .nav-sheet */
+.nav-account.is-open .nav-account__menu {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.nav-account__group {
+  margin: 0;
+  padding: var(--space-xs) var(--space-sm) var(--space-2xs);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--nav-dim);
+}
+
+.nav-account__menu a,
+.nav-account__menu button {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-sm);
   width: 100%;
-  max-width: var(--page-max-wide);
-  height: var(--nav-h);
-  padding: 0 var(--space-md);
-  border: 1px solid var(--nav-line);
-  border-radius: var(--radius-xl);
-  background: var(--nav-surface);
-  box-shadow: var(--nav-shadow);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-  transition:
-    height var(--dur-base) var(--nav-ease),
-    padding var(--dur-base) var(--nav-ease),
-    background-color var(--dur-base) var(--nav-ease),
-    border-color var(--dur-base) var(--nav-ease);
-}
-
-/* Скрол униз — капсула стискається. Відступ сторінки згори не
-   змінюється, тож контент не смикається. */
-body.dashboard-nav-condensed .nav-capsule {
-  height: var(--nav-h-compact);
-  padding: 0 var(--space-sm);
-}
-
-body.dashboard-scrolled .nav-capsule {
-  background: var(--nav-surface-solid);
-  border-color: var(--border-strong);
-}
-
-/* ---------- 2. Бренд ---------- */
-.dashboard-brand {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
+  min-height: 0;
   min-width: 0;
-  flex: 0 0 auto;
-}
-
-.guild-mark {
-  width: 44px;
-  height: 44px;
-  flex: 0 0 auto;
-  border-radius: var(--radius-md);
-  object-fit: cover;
-  border: 1px solid var(--border-strong);
-  box-shadow: var(--shadow-sm);
-  transition: width var(--dur-base) var(--nav-ease), height var(--dur-base) var(--nav-ease);
-}
-
-body.dashboard-nav-condensed .guild-mark {
-  width: 34px;
-  height: 34px;
-}
-
-.dashboard-brand > div {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  line-height: 1.25;
-}
-
-.dashboard-brand strong {
-  font-family: var(--font-brand);
-  font-size: 0.95rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--nav-ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.dashboard-brand span {
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
-  color: var(--nav-dim);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* У стиснутому стані лишається тільки назва гільдії */
-body.dashboard-nav-condensed .dashboard-brand span {
-  display: none;
-}
-
-.nav-capsule__divider {
-  flex: 0 0 auto;
-  width: 1px;
-  height: 26px;
-  background: var(--nav-line);
-}
-
-/* ---------- 3. Рейка розділів ---------- */
-.dashboard-nav-rail {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  justify-content: center;
-}
-
-.dashboard-nav--desktop {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2xs);
-  min-width: 0;
-}
-
-.dashboard-nav--desktop > a,
-.dashboard-nav-more__trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  height: 40px;
-  padding: 0 var(--space-sm);
-  border: 1px solid transparent;
-  border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--nav-muted);
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-  cursor: pointer;
-  transition:
-    color var(--dur-fast) var(--nav-ease),
-    background-color var(--dur-fast) var(--nav-ease),
-    border-color var(--dur-fast) var(--nav-ease);
-}
-
-.dashboard-nav--desktop > a:hover,
-.dashboard-nav-more__trigger:hover {
-  color: var(--nav-ink);
-  background: var(--surface-hover);
-  border-color: var(--nav-line-soft);
-}
-
-.dashboard-nav--desktop > a.is-active,
-.dashboard-nav-more__trigger.is-active {
-  color: var(--c-base-900);
-  background: var(--accent-gradient);
-  border-color: transparent;
-  box-shadow: 0 6px 18px -10px var(--accent-ring);
-}
-
-.dashboard-nav__icon {
-  width: 18px;
-  height: 18px;
-  flex: 0 0 auto;
-}
-
-.dashboard-nav__label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Ступінь стиснення: самі іконки */
-.dashboard-nav--desktop[data-compact="true"] > a {
-  padding: 0 var(--space-xs);
-  width: 40px;
-  justify-content: center;
-}
-
-.dashboard-nav--desktop[data-compact="true"] .dashboard-nav__label {
-  display: none;
-}
-
-.dashboard-nav--desktop[data-compact="true"] .dashboard-nav-more__trigger .dashboard-nav__label {
-  display: inline;
-}
-
-/* ---------- 4. Меню «Ще» ---------- */
-.dashboard-nav-more {
-  position: relative;
-  flex: 0 0 auto;
-}
-
-.dashboard-nav-more__trigger-count {
-  display: inline-grid;
-  place-items: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 var(--space-3xs);
-  border-radius: var(--radius-pill);
-  background: var(--accent-soft);
-  color: var(--c-accent-200);
-  font-size: 0.68rem;
-  font-weight: 700;
-}
-
-.dashboard-nav-more__trigger.is-active .dashboard-nav-more__trigger-count {
-  background: rgba(12, 10, 7, 0.25);
-  color: var(--c-base-900);
-}
-
-.dashboard-nav-more__menu {
-  position: absolute;
-  top: calc(100% + var(--space-xs));
-  right: 0;
-  z-index: var(--z-dropdown);
-  width: min(320px, calc(100vw - var(--space-xl)));
   padding: var(--space-sm);
-  border: 1px solid var(--nav-line);
-  border-radius: var(--radius-lg);
-  background: var(--nav-panel);
-  box-shadow: var(--shadow-lg);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-6px);
-  transition:
-    opacity var(--dur-fast) var(--nav-ease),
-    transform var(--dur-fast) var(--nav-ease),
-    visibility var(--dur-fast) var(--nav-ease);
-}
-
-.dashboard-nav-more.is-open .dashboard-nav-more__menu {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-.dashboard-nav-more__menu-head {
-  display: grid;
-  gap: var(--space-3xs);
-  padding: var(--space-2xs) var(--space-xs) var(--space-sm);
-  border-bottom: 1px solid var(--nav-line-soft);
-  margin-bottom: var(--space-xs);
-}
-
-.dashboard-nav-more__menu-head strong {
-  font-size: 0.8rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--c-accent-300);
-}
-
-.dashboard-nav-more__menu-head span {
-  font-size: 0.78rem;
-  color: var(--nav-dim);
-}
-
-.dashboard-nav-more__menu-list {
-  display: grid;
-  gap: var(--space-3xs);
-  max-height: min(52vh, 420px);
-  overflow-y: auto;
-}
-
-.dashboard-nav-more__menu-list a {
-  display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-xs) var(--space-sm);
-  border-radius: var(--radius-md);
-  color: var(--nav-muted);
-  transition: background-color var(--dur-fast) var(--nav-ease), color var(--dur-fast) var(--nav-ease);
-}
-
-.dashboard-nav-more__menu-list a:hover {
-  background: var(--surface-hover);
-  color: var(--nav-ink);
-}
-
-.dashboard-nav-more__menu-list a.is-active {
-  background: var(--accent-soft);
-  color: var(--c-accent-200);
-}
-
-.dashboard-nav-more__menu-list strong {
-  font-size: 0.86rem;
-  font-weight: 600;
-  color: inherit;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.dashboard-nav-more__menu-list small {
-  font-size: 0.7rem;
-  color: var(--nav-dim);
-}
-
-/* ---------- 5. Вимірювальна рейка ----------
-   Невидима копія пунктів: з неї беруться справжні ширини
-   підписів та іконок. Не впливає на розкладку. */
-.dashboard-nav-measure {
-  position: absolute;
-  top: 0;
-  left: 0;
-  visibility: hidden;
-  pointer-events: none;
-  display: flex;
-  gap: var(--space-2xs);
-  white-space: nowrap;
-}
-
-.dashboard-nav-measure__item,
-.dashboard-nav-measure__more {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  height: 40px;
-  padding: 0 var(--space-sm);
-  border: 1px solid transparent;
-  border-radius: var(--radius-pill);
+  border: 0;
+  border-radius: 12px;
   background: transparent;
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-.dashboard-nav-measure__item--compact {
-  width: 40px;
-  padding: 0 var(--space-xs);
-  justify-content: center;
-}
-
-.dashboard-nav-measure__item--compact span {
-  display: none;
-}
-
-.dashboard-nav-measure__count {
-  display: inline-grid;
-  place-items: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 var(--space-3xs);
-  border-radius: var(--radius-pill);
-  font-size: 0.68rem;
-  font-weight: 700;
-}
-
-/* ---------- 6. Профіль у капсулі ---------- */
-.dashboard-user {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-  flex: 0 0 auto;
-  min-width: 0;
-}
-
-.dashboard-user__profile-link {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  min-width: 0;
-  max-width: 240px;
-  padding: var(--space-2xs) var(--space-xs);
-  border: 1px solid transparent;
-  border-radius: var(--radius-pill);
-  color: var(--nav-ink);
-  transition: background-color var(--dur-fast) var(--nav-ease), border-color var(--dur-fast) var(--nav-ease);
-}
-
-.dashboard-user__profile-link:hover,
-.dashboard-user__profile-link.is-active {
-  background: var(--surface-hover);
-  border-color: var(--nav-line-soft);
-  color: var(--nav-ink);
-}
-
-.dashboard-user__avatar-wrap {
-  position: relative;
-  flex: 0 0 auto;
-}
-
-.discord-avatar,
-.discord-avatar-fallback {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 1px solid var(--border-strong);
-  background: var(--surface-raised);
-  transition: width var(--dur-base) var(--nav-ease), height var(--dur-base) var(--nav-ease);
-}
-
-.discord-avatar-fallback {
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-  color: var(--c-accent-300);
-  text-transform: uppercase;
-}
-
-body.dashboard-nav-condensed .dashboard-user__avatar-wrap .discord-avatar,
-body.dashboard-nav-condensed .dashboard-user__avatar-wrap .discord-avatar-fallback {
-  width: 32px;
-  height: 32px;
-}
-
-.dashboard-user__status {
-  position: absolute;
-  right: -1px;
-  bottom: -1px;
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: var(--c-success);
-  box-shadow: 0 0 0 2px var(--nav-panel);
-}
-
-.dashboard-user__profile-link > div:last-child {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  line-height: 1.25;
-}
-
-.dashboard-user__profile-link strong {
-  font-size: 0.86rem;
-  font-weight: 700;
-  color: var(--nav-ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.dashboard-user__profile-link span {
-  font-size: 0.72rem;
-  color: var(--nav-dim);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.dashboard-user__logout {
-  display: inline-grid;
-  place-items: center;
-  height: 36px;
-  padding: 0 var(--space-sm);
-  border: 1px solid var(--nav-line);
-  border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--nav-muted);
-  font-size: 0.78rem;
-  font-weight: 600;
+  color: var(--text-soft);
+  text-align: left;
+  text-decoration: none;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
   cursor: pointer;
-  transition: color var(--dur-fast) var(--nav-ease), border-color var(--dur-fast) var(--nav-ease), background-color var(--dur-fast) var(--nav-ease);
+  transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s var(--nav-ease);
 }
 
-.dashboard-user__logout:hover {
+.nav-account__menu a svg,
+.nav-account__menu button svg {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  opacity: 0.6;
+  transition: opacity 0.18s ease;
+}
+
+.nav-account__menu a:hover,
+.nav-account__menu a:focus-visible,
+.nav-account__menu button:hover,
+.nav-account__menu button:focus-visible {
+  background: var(--surface-hover);
+  color: var(--text-strong);
+  transform: translateX(3px);
+}
+
+.nav-account__menu a:hover svg,
+.nav-account__menu button:hover svg {
+  opacity: 1;
+}
+
+.nav-account__menu a.is-discord:hover {
+  background: color-mix(in srgb, var(--c-discord) 18%, transparent);
+  color: #d6daff;
+}
+
+.nav-account__menu a[aria-current="page"] {
+  background: var(--accent-soft);
+  color: var(--text-strong);
+}
+
+/* Вихід — єдина деструктивна дія в меню */
+.nav-account__logout {
+  margin: 0;
+  display: grid;
+  gap: var(--space-3xs);
+}
+
+/* Кнопка виходу без іконки — вирівнюємо текст із рештою пунктів */
+.nav-account__logout button {
+  padding-left: calc(var(--space-sm) * 2 + 17px);
+}
+
+.nav-account__logout button:hover {
+  background: color-mix(in srgb, var(--c-danger) 16%, transparent);
+  color: #ffbdb1;
+}
+
+.nav-account__logout-error {
+  padding: 0 var(--space-sm) var(--space-2xs);
+  font-size: 11px;
   color: var(--c-danger);
-  border-color: rgba(224, 112, 95, 0.4);
-  background: rgba(224, 112, 95, 0.1);
 }
 
-.dashboard-user__logout-error {
-  font-size: 0.72rem;
-  color: var(--c-danger);
+/* ---------- Бургер ---------- */
+.nav-burger {
+  display: none;
+  position: relative;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.2s ease;
 }
 
-.dashboard-user--guest {
-  margin-left: auto;
+.nav-burger:hover,
+.nav-burger.is-active {
+  background: var(--surface-hover);
 }
 
-/* ---------- 7. Адаптив капсули ---------- */
-@media (max-width: 1100px) {
-  .dashboard-user__profile-link > div:last-child {
-    display: none;
-  }
+.nav-burger__bars,
+.nav-burger__bars::before,
+.nav-burger__bars::after {
+  position: absolute;
+  width: 18px;
+  height: 1.8px;
+  border-radius: 2px;
+  background: var(--nav-ink);
+  transition: transform 0.35s var(--nav-ease), background-color 0.2s ease;
 }
 
-@media (max-width: 900px) {
-  /* На мобільному розділи живуть у нижній панелі, тож із капсули
-     вони зникають повністю разом із роздільниками. */
-  .dashboard-nav-rail,
-  .dashboard-nav-measure,
-  .nav-capsule__divider {
-    display: none;
-  }
-
-  .nav-capsule {
-    justify-content: space-between;
-    height: var(--nav-h-compact);
-    padding: 0 var(--space-sm);
-  }
-
-  .dashboard-brand span {
-    display: none;
-  }
-
-  .guild-mark {
-    width: 34px;
-    height: 34px;
-  }
-
-  .dashboard-user__logout {
-    height: 32px;
-    padding: 0 var(--space-xs);
-  }
+.nav-burger__bars::before,
+.nav-burger__bars::after {
+  content: "";
+  left: 0;
 }
 
-/* ---------- 8. Нижня мобільна панель ---------- */
-.dashboard-mobile-nav-shell {
+.nav-burger__bars::before {
+  transform: translateY(-6px);
+}
+
+.nav-burger__bars::after {
+  transform: translateY(6px);
+}
+
+.nav-burger.is-active .nav-burger__bars {
+  background: transparent;
+}
+
+.nav-burger.is-active .nav-burger__bars::before {
+  transform: rotate(45deg);
+}
+
+.nav-burger.is-active .nav-burger__bars::after {
+  transform: rotate(-45deg);
+}
+
+/* ---------- Мобільна панель ---------- */
+.nav-sheet {
   display: none;
   position: fixed;
-  inset: auto 0 0 0;
-  z-index: var(--z-navbar);
-  padding: var(--space-xs) var(--space-sm) calc(var(--space-xs) + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid var(--nav-line);
-  background: var(--nav-surface-solid);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-  box-shadow: 0 -12px 30px -18px rgba(0, 0, 0, 0.9);
+  inset: 0;
+  z-index: calc(var(--z-navbar) - 1);
+  padding: calc(var(--nav-space) + var(--space-xs)) var(--space-md) calc(var(--space-xl) + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: rgba(14, 11, 8, 0.95);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: opacity 0.28s ease, transform 0.32s var(--nav-ease), visibility 0.28s;
 }
 
-.dashboard-mobile-nav {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(56px, 1fr);
-  gap: var(--space-3xs);
-  overflow-x: auto;
-  scroll-snap-type: x proximity;
-  scrollbar-width: none;
+/* backdrop-filter вмикається ТІЛЬКИ на відкритій панелі.
+
+   Chrome на Android композитить backdrop-filter навіть при opacity: 0,
+   і при будь-якому перемальовуванні (тап по кнопці його викликає) цей
+   повноекранний шар встигає блимнути чорним прямокутником поверх сайту.
+   Поки панель закрита — фільтра просто немає, отже блимати нема чому. */
+.nav-sheet.is-open {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  backdrop-filter: blur(22px) saturate(1.15);
+  -webkit-backdrop-filter: blur(22px) saturate(1.15);
 }
 
-.dashboard-mobile-nav::-webkit-scrollbar {
-  display: none;
+.nav-sheet__inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  width: min(100%, 460px);
+  margin: 0 auto;
 }
 
-.dashboard-mobile-nav a {
-  display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: var(--space-3xs);
-  min-height: 52px;
-  padding: var(--space-2xs);
-  border-radius: var(--radius-md);
+.nav-sheet__group {
+  margin: var(--space-md) 0 var(--space-2xs);
+  padding-left: var(--space-md);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
   color: var(--nav-dim);
-  scroll-snap-align: center;
-  transition: color var(--dur-fast) var(--nav-ease), background-color var(--dur-fast) var(--nav-ease);
 }
 
-.dashboard-mobile-nav a strong {
-  font-size: 0.65rem;
+.nav-sheet__group:first-child {
+  margin-top: 0;
+}
+
+.nav-sheet__link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: 52px;
+  padding: 0 var(--space-md);
+  border-radius: 16px;
+  border: 1px solid var(--nav-line-soft);
+  background: var(--surface);
+  color: var(--text-soft);
+  text-decoration: none;
+  font-size: 15px;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: inherit;
-  white-space: nowrap;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
 }
 
-.dashboard-mobile-nav a.is-active {
-  color: var(--c-accent-300);
+.nav-sheet__link svg {
+  flex: 0 0 auto;
+  width: 19px;
+  height: 19px;
+  opacity: 0.6;
+}
+
+.nav-sheet__link:active {
+  transform: scale(0.985);
+}
+
+.nav-sheet__link[aria-current="page"] {
+  color: var(--text-strong);
+  border-color: var(--border-strong);
   background: var(--accent-soft);
 }
 
-.dashboard-mobile-nav a:hover {
-  color: var(--nav-ink);
+.nav-sheet__link[aria-current="page"] svg {
+  opacity: 1;
+  color: var(--nav-accent);
 }
 
-@media (max-width: 900px) {
-  .dashboard-mobile-nav-shell {
+.nav-sheet__link.is-discord svg {
+  opacity: 0.75;
+}
+
+/* Вихід у мобільній панелі — той самий рядок, але червоний */
+.nav-sheet__logout {
+  margin: 0;
+  display: grid;
+  gap: var(--space-2xs);
+}
+
+.nav-sheet__logout button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  width: 100%;
+  min-height: 52px;
+  padding: 0 var(--space-md);
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--c-danger) 32%, transparent);
+  background: color-mix(in srgb, var(--c-danger) 10%, transparent);
+  color: var(--c-danger);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.nav-sheet__logout-error {
+  padding-left: var(--space-md);
+  font-size: 12px;
+  color: var(--c-danger);
+}
+
+/* Гість: кнопка входу замість акаунта */
+.nav-account__login {
+  min-height: 38px;
+  padding: 0 var(--space-md);
+  font-size: 12px;
+}
+
+/* Блокування скролу під час відкритого меню */
+body.nav-open {
+  overflow: hidden;
+  touch-action: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  width: 100%;
+}
+
+/* ---------- Адаптив ---------- */
+@media (max-width: 1240px) {
+  .site-nav__brand-text {
+    letter-spacing: 0.12em;
+  }
+
+  .site-nav__rule {
+    margin: 0 var(--space-xs);
+  }
+
+  .nav-item {
+    padding: 0 var(--space-xs);
+    gap: var(--space-xs);
+    letter-spacing: 0.1em;
+  }
+}
+
+@media (max-width: 1100px) {
+  .site-nav__brand-text {
+    font-size: 13px;
+    letter-spacing: 0.1em;
+  }
+
+  .site-nav__rule {
+    margin: 0 var(--space-xs);
+  }
+
+  .nav-item {
+    gap: var(--space-2xs);
+    padding: 0 var(--space-xs);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+  }
+
+  .nav-item svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .nav-account__sub {
+    display: none;
+  }
+
+  .nav-account__avatar {
+    width: 28px;
+    height: 28px;
+  }
+
+  .nav-account__btn {
+    gap: var(--space-xs);
+  }
+}
+
+@media (max-width: 1000px) {
+  :root {
+    --nav-h: 52px;
+    --nav-inset: 12px;
+  }
+
+  .site-nav {
+    padding-left: var(--space-sm);
+    padding-right: var(--space-sm);
+  }
+
+  .site-nav__shell {
+    width: 100%;
+    gap: var(--space-xs);
+    padding: 0 var(--space-xs) 0 var(--space-lg);
+    border-radius: 20px;
+  }
+
+  .site-nav__links,
+  .site-nav__rule,
+  .nav-account__meta,
+  .nav-account__chev {
+    display: none;
+  }
+
+  .nav-account {
+    margin-left: auto;
+  }
+
+  .nav-account__btn {
+    padding: 0;
+    margin-right: var(--space-2xs);
+    pointer-events: none;
+  }
+
+  .nav-account__menu {
+    display: none;
+  }
+
+  .nav-burger {
+    display: inline-flex;
+  }
+
+  .nav-sheet {
     display: block;
+  }
+}
+
+@media (max-width: 420px) {
+  .site-nav__shell {
+    padding-left: var(--space-md);
+  }
+
+  .site-nav__brand-text {
+    font-size: 12.5px;
+    letter-spacing: 0.1em;
+  }
+
+  .nav-account__avatar {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* ---------- Доступність ---------- */
+.site-nav :focus-visible,
+.nav-sheet :focus-visible {
+  outline: 2px solid var(--nav-accent);
+  outline-offset: 2px;
+}
+
+/* =========================================================
+   АНІМАЦІЇ НАВІГАЦІЇ
+   ========================================================= */
+
+@keyframes nav-drop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.site-nav__shell {
+  animation: nav-drop-in var(--dur-slow) var(--ease-spring) both;
+}
+
+@keyframes nav-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.site-nav__brand,
+.site-nav__rule,
+.site-nav__links .nav-item,
+.nav-account {
+  animation: nav-item-in var(--dur-base) var(--ease-out) both;
+}
+
+.site-nav__brand {
+  animation-delay: 0.1s;
+}
+
+.site-nav__rule {
+  animation-delay: 0.14s;
+}
+
+.nav-item:nth-child(1) {
+  animation-delay: 0.18s;
+}
+
+.nav-item:nth-child(2) {
+  animation-delay: 0.22s;
+}
+
+.nav-item:nth-child(3) {
+  animation-delay: 0.26s;
+}
+
+.nav-item:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+.nav-item:nth-child(5) {
+  animation-delay: 0.34s;
+}
+
+.nav-item:nth-child(6) {
+  animation-delay: 0.38s;
+}
+
+.nav-account {
+  animation-delay: 0.42s;
+}
+
+/* Підсвітка пункту виїжджає знизу, а не просто з'являється */
+.nav-item::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--surface-hover);
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-spring);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.nav-item:hover::before,
+.nav-item:focus-visible::before {
+  opacity: 1;
+  transform: none;
+}
+
+/* Фон уже малює ::before — прибираємо дубль, щоб не було двох шарів */
+.nav-item:hover,
+.nav-item:focus-visible {
+  background: transparent;
+}
+
+.nav-item > svg,
+.nav-item > span {
+  position: relative;
+  z-index: 1;
+}
+
+.nav-item[aria-current="page"]::after {
+  animation: nav-underline-grow var(--dur-base) var(--ease-spring) both;
+  animation-delay: 0.45s;
+}
+
+@keyframes nav-underline-grow {
+  from {
+    width: 0;
+    opacity: 0;
+  }
+  to {
+    width: 14px;
+    opacity: 1;
+  }
+}
+
+.nav-item:hover svg {
+  animation: nav-icon-pop var(--dur-base) var(--ease-spring);
+}
+
+@keyframes nav-icon-pop {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  45% {
+    transform: translateY(-3px) scale(1.12);
+  }
+  100% {
+    transform: translateY(-1px) scale(1);
+  }
+}
+
+/* Бренд: м'який бурштиновий відблиск на наведенні */
+.site-nav__brand-text {
+  background-image: linear-gradient(
+    100deg,
+    currentColor 0%,
+    currentColor 40%,
+    var(--c-accent-200) 50%,
+    currentColor 60%,
+    currentColor 100%
+  );
+  background-size: 250% 100%;
+  background-position: 150% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.site-nav__brand:hover .site-nav__brand-text {
+  animation: nav-brand-sheen 0.9s var(--ease-in-out);
+}
+
+@keyframes nav-brand-sheen {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
+.nav-account__avatar {
+  transition: transform var(--dur-base) var(--ease-spring), box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.nav-account__btn:hover .nav-account__avatar {
+  transform: scale(1.07) rotate(-3deg);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.nav-account.is-open .nav-account__menu a {
+  animation: nav-item-in var(--dur-fast) var(--ease-out) both;
+}
+
+.nav-account.is-open .nav-account__menu a:nth-of-type(1) {
+  animation-delay: 0.04s;
+}
+
+.nav-account.is-open .nav-account__menu a:nth-of-type(2) {
+  animation-delay: 0.08s;
+}
+
+.nav-account.is-open .nav-account__menu a:nth-of-type(3) {
+  animation-delay: 0.12s;
+}
+
+.nav-account.is-open .nav-account__menu a:nth-of-type(n + 4) {
+  animation-delay: 0.16s;
+}
+
+@keyframes nav-sheet-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.nav-sheet.is-open .nav-sheet__link {
+  animation: nav-sheet-row-in var(--dur-base) var(--ease-out) both;
+}
+
+.nav-sheet.is-open .nav-sheet__link:nth-of-type(1) {
+  animation-delay: 0.05s;
+}
+
+.nav-sheet.is-open .nav-sheet__link:nth-of-type(2) {
+  animation-delay: 0.09s;
+}
+
+.nav-sheet.is-open .nav-sheet__link:nth-of-type(3) {
+  animation-delay: 0.13s;
+}
+
+.nav-sheet.is-open .nav-sheet__link:nth-of-type(4) {
+  animation-delay: 0.17s;
+}
+
+.nav-sheet.is-open .nav-sheet__link:nth-of-type(5) {
+  animation-delay: 0.21s;
+}
+
+.nav-sheet.is-open .nav-sheet__link:nth-of-type(6) {
+  animation-delay: 0.25s;
+}
+
+.nav-sheet.is-open .nav-sheet__link:nth-of-type(n + 7) {
+  animation-delay: 0.29s;
+}
+
+.nav-sheet.is-open .nav-sheet__group {
+  animation: nav-item-in var(--dur-fast) var(--ease-out) both;
+}
+
+.nav-burger__bars,
+.nav-burger__bars::before,
+.nav-burger__bars::after {
+  transition: transform var(--dur-base) var(--ease-spring), background-color var(--dur-fast) var(--ease-out),
+    width var(--dur-fast) var(--ease-out);
+}
+
+.nav-burger:hover .nav-burger__bars::before {
+  transform: translateY(-7px);
+}
+
+.nav-burger:hover .nav-burger__bars::after {
+  transform: translateY(7px);
+}
+
+.nav-burger.is-active:hover .nav-burger__bars::before {
+  transform: rotate(45deg);
+}
+
+.nav-burger.is-active:hover .nav-burger__bars::after {
+  transform: rotate(-45deg);
+}
+
+/* Хто просить менше руху — отримує статику, але не зламану верстку */
+@media (prefers-reduced-motion: reduce) {
+  .site-nav__shell,
+  .nav-item,
+  .nav-item svg,
+  .nav-account__menu,
+  .nav-account__chev,
+  .nav-sheet,
+  .nav-burger__bars,
+  .nav-burger__bars::before,
+  .nav-burger__bars::after {
+    transition: none;
+  }
+
+  .site-nav__shell,
+  .site-nav__brand,
+  .site-nav__rule,
+  .site-nav__links .nav-item,
+  .nav-account,
+  .nav-item[aria-current="page"]::after,
+  .nav-account.is-open .nav-account__menu a,
+  .nav-sheet.is-open .nav-sheet__link,
+  .nav-sheet.is-open .nav-sheet__group {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .nav-item[aria-current="page"]::after {
+    width: 14px;
+    transform: translateX(-50%);
+  }
+
+  .nav-account__btn:hover .nav-account__avatar {
+    transform: none;
   }
 }
