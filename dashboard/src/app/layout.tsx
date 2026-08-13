@@ -1,17 +1,17 @@
 import { Suspense, type ReactNode } from "react";
 import Script from "next/script";
 import type { Metadata, Viewport } from "next";
-import "./globals.css";
-import "./profile.css";
-import "./theme.css";
-import "./refactor.css";
-import "./normalize-ux.css";
-import "./admin-mobile.css";
-import "./admin-layout.css";
-import "./admin-template.css";
-import "./nav-shell.css";
-import "./polls.css";
-import "./app-shell.css";
+// Порядок шарів повторює порядок сайту lihvodruida.github.io:
+// variables → style → site-polish → nav → сторінкові стилі.
+import "./styles/tokens.css";
+import "./styles/base.css";
+import "./styles/layout.css";
+// patterns — структурні заглушки за суфіксом класу. Свідомо йдуть
+// ПЕРЕД іменними шарами, щоб будь-яке конкретне правило їх перекривало.
+import "./styles/patterns.css";
+import "./styles/components.css";
+import "./styles/nav.css";
+import "./styles/pages.css";
 import DashboardFormEnhancer from "@/components/DashboardFormEnhancer";
 import GlobalToasts from "@/components/GlobalToasts";
 import AppFooter from "@/components/AppFooter";

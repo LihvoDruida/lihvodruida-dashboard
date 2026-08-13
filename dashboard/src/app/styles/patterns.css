@@ -1,0 +1,329 @@
+
+/* =========================================================
+   PATTERNS — структурні заглушки за суфіксом класу
+
+   У дашборді ~1250 класів. Описувати кожен окремо означало б
+   повернути той самий борг,
+з якого ми щойно вийшли. Тому тут
+   зібрані загальні правила за суфіксом імені: будь-який
+   *-row поводиться як рядок, *-stack — як вертикальний стек,
+*-meta — як приглушений підпис.
+
+   Цей шар підключається ПІСЛЯ components.css і pages.css,
+але
+   свідомо тримає низьку специфічність (один клас або атрибут),
+тож будь-яке іменне правило вище лишається сильнішим.
+   Виняток — тільки там,
+де без цього ламається розкладка.
+   ========================================================= */
+
+/* ---------- Рядки: зміст ліворуч,
+дії праворуч ---------- */
+[class$="-row"]:not(:where([role="row"])):not(:where(.form-row)),
+[class*="-row "]:not(:where([role="row"])):not(:where(.form-row)),
+[class$="__row"],
+[class*="__row "],
+[class$="-bar"]:not(:where(.action-bar)),
+[class*="-bar "]:not(:where(.action-bar)),
+[class$="__bar"],
+[class*="__bar "],
+[class$="-toolbar"],
+[class*="-toolbar "],
+[class$="-links"],
+[class*="-links "],
+[class$="-badges"],
+[class*="-badges "],
+[class$="-pills"],
+[class*="-pills "],
+[class$="__pills"],
+[class*="__pills "] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+/* ---------- Вертикальні стеки ---------- */
+[class$="-stack"],
+/* ---------- Вертикальні стеки ---------- */
+[class*="-stack "],
+[class$="__stack"],
+[class*="__stack "],
+[class$="-column"],
+[class*="-column "],
+[class$="__column"],
+[class*="__column "],
+[class$="-body"],
+[class*="-body "],
+[class$="__body"],
+[class*="__body "],
+[class$="-copy"],
+[class*="-copy "],
+[class$="__copy"],
+[class*="__copy "],
+[class$="-content"]:not(:where(.discord-preview-content)),
+[class*="-content "]:not(:where(.discord-preview-content)),
+[class$="__content"],
+[class*="__content "],
+[class$="-main"],
+[class*="-main "],
+[class$="__main"],
+[class*="__main "],
+[class$="-identity"],
+[class*="-identity "],
+[class$="__identity"],
+[class*="__identity "],
+[class$="-summary"]:not(:where(summary)),
+[class*="-summary "]:not(:where(summary)),
+[class$="__summary"],
+[class*="__summary "],
+[class$="-details"]:not(:where(details)),
+[class*="-details "]:not(:where(details)),
+[class$="-steps"],
+[class*="-steps "],
+[class$="-group"],
+[class*="-group "],
+[class$="__group"],
+[class*="__group "],
+[class$="-groups"],
+[class*="-groups "] {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+/* ---------- Сторінкові контейнери ---------- */
+[class$="-page"],
+/* ---------- Сторінкові контейнери ---------- */
+[class*="-page "],
+[class$="-container"]:not(:where(.container)),
+[class*="-container "]:not(:where(.container)),
+[class$="-shell"]:not(:where(.discord-builder-shell)),
+[class*="-shell "]:not(:where(.discord-builder-shell)) {
+  min-width: 0;
+}
+/* ---------- Форми ---------- */
+[class$="-form"]:not(:where(.roster-inline-form)),
+/* ---------- Форми ---------- */
+[class*="-form "]:not(:where(.roster-inline-form)),
+[class$="__form"],
+[class*="__form "] {
+  display: grid;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+/* Форма-обгортка навколо однієї кнопки не має розтягуватись */
+[class$="-action-form"],
+/* Форма-обгортка навколо однієї кнопки не має розтягуватись */
+[class*="-action-form "],
+[class$="-button-form"],
+[class*="-button-form "],
+[class$="-bulk-form"],
+[class*="-bulk-form "] {
+  display: inline-grid;
+  gap: var(--space-2xs);
+}
+/* ---------- Дрібний службовий текст ---------- */
+[class$="-meta"],
+/* ---------- Дрібний службовий текст ---------- */
+[class*="-meta "],
+[class$="__meta"],
+[class*="__meta "],
+[class$="-hint"],
+[class*="-hint "],
+[class$="__hint"],
+[class*="__hint "],
+[class$="-status"],
+[class*="-status "],
+[class$="__status"]:not(:where(.dashboard-user__status)),
+[class*="__status "]:not(:where(.dashboard-user__status)),
+[class$="-caption"],
+[class*="-caption "],
+[class$="-placeholder"],
+[class*="-placeholder "],
+[class$="-counter"],
+[class*="-counter "],
+[class$="__counter"],
+[class*="__counter "],
+[class$="-order"],
+[class*="-order "] {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+/* ---------- Заголовки блоків ---------- */
+.section-title,
+[class$="-title"]:not(:where(.discord-preview-title)),
+[class*="-title "]:not(:where(.discord-preview-title)),
+[class$="__title"]:not(:where(.app-footer__title)),
+[class*="__title "]:not(:where(.app-footer__title)),
+[class$="-label"]:not(:where(.field-label)),
+[class*="-label "]:not(:where(.field-label)),
+[class$="__label"],
+[class*="__label "] {
+  color: var(--text-strong);
+  font-weight: 700;
+  min-width: 0;
+}
+[class$="-label"]:not(:where(.field-label)),
+[class*="-label "]:not(:where(.field-label)),
+[class$="__label"],
+[class*="__label "] {
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+}
+[class$="-header"]:not(:where(.section-header)),
+[class*="-header "]:not(:where(.section-header)),
+[class$="__header"],
+[class*="__header "] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+/* ---------- Виділені врізки ---------- */
+[class$="-callout"],
+/* ---------- Виділені врізки ---------- */
+[class*="-callout "],
+[class$="-banner"],
+[class*="-banner "],
+[class$="-warning"]:not(:where(.warning-note)):not(:where(.profile-storage-warning)),
+[class*="-warning "]:not(:where(.warning-note)):not(:where(.profile-storage-warning)) {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--c-accent-400);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+/* ---------- Варіанти вибору: радіо-картки ---------- */
+[class$="-option"]:not(:where(option)),
+/* ---------- Варіанти вибору: радіо-картки ---------- */
+[class*="-option "]:not(:where(option)),
+[class$="__option"],
+[class*="__option "] {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 40px;
+  padding: var(--space-2xs) var(--space-sm);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--text-soft);
+  font-size: 0.84rem;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+}
+[class$="-option"]:hover,
+[class*="-option "]:hover,
+[class$="__option"]:hover,
+[class*="__option "]:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+[class$="-option"].is-selected,
+[class*="-option "].is-selected,
+[class$="-option"].is-active,
+[class*="-option "].is-active,
+[class$="__option"].is-selected,
+[class*="__option "].is-selected {
+  border-color: var(--border-strong);
+  background: var(--accent-soft);
+  color: var(--c-accent-200);
+}
+/* ---------- Дії та кнопки без класу .btn ---------- */
+[class$="-action"]:not(:where(.raid-action)):not(:where([class*="raid-action--"])),
+/* ---------- Дії та кнопки без класу .btn ---------- */
+[class*="-action "]:not(:where(.raid-action)):not(:where([class*="raid-action--"])),
+[class$="__action"],
+[class*="__action "],
+[class$="-button"]:not(:where(.btn)),
+[class*="-button "]:not(:where(.btn)),
+[class$="__button"],
+[class*="__button "] {
+  min-width: 0;
+}
+/* ---------- Роздільники ---------- */
+[class$="-divider"],
+/* ---------- Роздільники ---------- */
+[class*="-divider "],
+[class$="__divider"]:not(:where(.nav-capsule__divider)),
+[class*="__divider "]:not(:where(.nav-capsule__divider)),
+[class$="-separator"]:not(:where(.app-footer__separator)):not(:where(.app-footer__link-separator)):not(:where(.discord-preview-footer-separator)),
+[class*="-separator "]:not(:where(.app-footer__separator)):not(:where(.app-footer__link-separator)):not(:where(.discord-preview-footer-separator)) {
+  width: 100%;
+  height: 1px;
+  border: 0;
+  background: var(--border-subtle);
+}
+/* ---------- Крапка-індикатор ---------- */
+[class$="-dot"]:not(:where(.discord-role-dot)),
+/* ---------- Крапка-індикатор ---------- */
+[class*="-dot "]:not(:where(.discord-role-dot)) {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--tone, var(--c-ink-400));
+}
+/* ---------- Посилання всередині блоків ---------- */
+[class$="-link"]:not(:where(.discord-preview-link)):not(:where(.dashboard-table-link)),
+/* ---------- Посилання всередині блоків ---------- */
+[class*="-link "]:not(:where(.discord-preview-link)):not(:where(.dashboard-table-link)) {
+  color: var(--c-accent-300);
+}
+/* ---------- Підвал блоку ---------- */
+[class$="-footer"]:not(:where(.app-footer)),
+/* ---------- Підвал блоку ---------- */
+[class*="-footer "]:not(:where(.app-footer)),
+[class$="__footer"],
+[class*="__footer "] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  padding-top: var(--space-xs);
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+/* ---------- Пошук ---------- */
+[class$="-search"],
+/* ---------- Пошук ---------- */
+[class*="-search "],
+[class$="__search"],
+[class*="__search "] {
+  display: block;
+  min-width: 0;
+}
+/* ---------- Секції всередині сторінки ---------- */
+[class$="-section"]:not(:where([class*="form-section"])),
+/* ---------- Секції всередині сторінки ---------- */
+[class*="-section "]:not(:where([class*="form-section"])),
+[class$="__section"],
+[class*="__section "] {
+  display: grid;
+  gap: var(--gap-stack);
+  min-width: 0;
+}
+/* ---------- Елементи списків ---------- */
+[class$="-item"]:not(:where(.dashboard-list-row)):not(:where(.raid-list-item)),
+/* ---------- Елементи списків ---------- */
+[class*="-item "]:not(:where(.dashboard-list-row)):not(:where(.raid-list-item)),
+[class$="__item"]:not(:where(.dashboard-nav-measure__item)),
+[class*="__item "]:not(:where(.dashboard-nav-measure__item)) {
+  min-width: 0;
+}
+
+/* ---------- Нічого не має вилазити за межі екрана ---------- */
+[class*="-page"],
+[class*="-shell"],
+[class*="-panel"],
+[class*="-card"] {
+  max-width: 100%;
+}

@@ -1,0 +1,354 @@
+/* =========================================================
+   BASE — ресет, фон, типографіка
+   Перенесено з assets/css/style.css + site-polish.css сайту.
+   ========================================================= */
+
+/* ---------- 1. Мобільна доступність ---------- */
+
+/* Системна підсвітка тапу блимає суцільним прямокутником на темній
+   темі, перш ніж стати напівпрозорою. Прибираємо повністю й даємо
+   власний відгук через :active. */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a {
+  transition: transform var(--dur-instant) ease;
+}
+
+button:active,
+a:active {
+  transform: scale(0.985);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Вимикаємо hover-підйоми на тач-пристроях */
+@media (hover: none) {
+  .panel:hover,
+  .card:hover,
+  [class*="-card"]:hover {
+    transform: none;
+  }
+}
+
+/* ---------- 2. Ресет ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-sans);
+  font-size: 100%;
+  line-height: 1.5;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  overscroll-behavior-y: contain;
+  background: var(--site-bg-0);
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--text-body);
+  min-height: 100vh;
+  min-height: 100dvh;
+  touch-action: manipulation;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: clip;
+
+  /* Той самий фон, що на сайті */
+  background:
+    radial-gradient(circle at 16% 0%, rgba(200, 155, 60, 0.16), transparent 34rem),
+    radial-gradient(circle at 84% 14%, rgba(255, 122, 47, 0.1), transparent 32rem),
+    linear-gradient(180deg, var(--site-bg-0), var(--site-bg-1) 45%, var(--site-bg-2));
+  background-attachment: fixed;
+
+  /* Місце під плаваючу капсулу зверху й мобільну панель знизу */
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--nav-space);
+  padding-bottom: 0;
+}
+
+/* ---------- Зоряне поле (той самий скрипт, що на сайті) ---------- */
+body.has-starfield {
+  background: var(--site-bg-0);
+}
+
+body.has-starfield::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 18% 4%, rgba(200, 155, 60, 0.18), transparent 34rem),
+    radial-gradient(circle at 80% 10%, rgba(255, 122, 47, 0.12), transparent 30rem),
+    linear-gradient(180deg, rgba(14, 11, 8, 0.7), rgba(20, 14, 10, 0.74));
+}
+
+#site-starfield {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.82;
+}
+
+/* Весь контент — над зоряним полем */
+body > *:not(:where(#site-starfield)) {
+  position: relative;
+  z-index: 1;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+  display: block;
+}
+
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+/* iOS не зумить інпут, якщо шрифт ≥ 16px */
+input,
+textarea,
+select {
+  font-size: 16px;
+}
+
+a {
+  color: var(--c-accent-300);
+  text-decoration: none;
+  text-underline-offset: 0.14em;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+a:hover {
+  color: var(--c-accent-200);
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+hr {
+  height: 1px;
+  border: 0;
+  background: var(--border-subtle);
+  margin: var(--space-lg) 0;
+}
+
+code,
+kbd,
+pre,
+samp {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+code {
+  padding: 0.15em 0.4em;
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  color: var(--c-accent-200);
+}
+
+pre {
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  overflow-x: auto;
+  color: var(--text-soft);
+  line-height: 1.5;
+}
+
+pre code {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+}
+
+/* ---------- 3. Фокус і доступність ---------- */
+:focus-visible {
+  outline: 2px solid var(--orange-main);
+  outline-offset: 2px;
+}
+
+:focus:not(:where(:focus-visible)) {
+  outline: none;
+}
+
+:target {
+  scroll-margin-top: calc(var(--nav-space) + var(--space-sm));
+}
+
+.visually-hidden,
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: calc(-1 * var(--space-3xs));
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* ---------- 4. Типографіка ---------- */
+h1,
+h2,
+h3 {
+  color: var(--c-ink-100);
+  background: linear-gradient(to bottom, var(--c-ink-100) 0%, var(--c-accent-200) 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  position: relative;
+  padding-top: 0.2em;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: clamp(22px, 1.2rem + 1vw, 30px);
+  font-weight: 800;
+  padding-bottom: var(--space-2xs);
+  letter-spacing: 1.5px;
+  margin-bottom: var(--space-md);
+}
+
+h2 {
+  font-size: clamp(19px, 1.05rem + 0.6vw, 24px);
+  padding-bottom: var(--space-xs);
+  border-bottom: 2px solid rgba(191, 230, 255, 0.1);
+  margin-bottom: var(--space-sm);
+}
+
+h3 {
+  font-size: clamp(16px, 0.95rem + 0.35vw, 21px);
+  font-weight: 700;
+  padding-bottom: var(--space-xs);
+  opacity: 0.9;
+}
+
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+  color: var(--text-strong);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+h4 {
+  font-size: 15px;
+}
+
+h5 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--c-accent-300);
+}
+
+h6 {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--text-muted);
+}
+
+/* Заголовки всередині карток не тягнуть на себе градієнт і бордер —
+   інакше кожна панель виглядає як окрема сторінка. */
+.panel h2,
+[class*="-card"] h2,
+[class*="__head"] h2,
+.section-header h2 {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+p {
+  line-height: 1.6;
+}
+
+strong,
+b {
+  color: var(--text-strong);
+  font-weight: 700;
+}
+
+small {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+/* ---------- 5. Скролбар ---------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-base-400) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--c-base-400);
+  border-radius: var(--radius-pill);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--c-base-500);
+  background-clip: content-box;
+}
+
+::selection {
+  background: var(--accent-ring);
+  color: var(--c-ink-100);
+}

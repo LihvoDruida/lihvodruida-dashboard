@@ -1,0 +1,577 @@
+/* =========================================================
+   LAYOUT — оболонки сторінок, секції, сітки, футер
+   Ритм і максимальні ширини — ті самі, що на сайті:
+   1200px контенту, --pad-section по вертикалі,
+   --pad-page-inline по горизонталі.
+   ========================================================= */
+
+/* ---------- Головна колонка ---------- */
+main,
+.container,
+.app-page,
+.dashboard-shell,
+.content-shell,
+.admin-container {
+  width: 100%;
+  max-width: var(--page-max);
+  margin-inline: auto;
+}
+
+main,
+.container,
+.app-page {
+  flex: 1 0 auto;
+  padding: var(--space-xl) var(--pad-page-inline);
+  padding-bottom: calc(var(--space-3xl) + var(--nav-mobile-space));
+}
+
+/* Вкладені оболонки не подвоюють відступи */
+.container .container,
+.app-page .dashboard-shell,
+.container .dashboard-shell,
+main .dashboard-shell {
+  padding-inline: 0;
+  padding-block: 0;
+  max-width: none;
+}
+/* ---------- Вертикальний стек секцій ---------- */
+.dashboard-shell,
+.content-shell,
+.app-page-stack,
+.page-stack,
+[class$="-shell"],
+[class*="-shell "] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-grid);
+}
+
+/* ---------- Секція / панель сторінки ---------- */
+.page-section {
+  scroll-margin-top: calc(var(--nav-space) + var(--space-md));
+}
+/* ---------- Шапка секції ---------- */
+.section-header,
+.dashboard-list-head,
+.home-section-head,
+[class$="__head"],
+[class*="__head "],
+[class$="-head"]:not(:where(.profile-card-head--inline)),
+[class*="-head "]:not(:where(.profile-card-head--inline)) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.section-header > div,
+.dashboard-list-head > div,
+.home-section-head > div {
+  min-width: 0;
+}
+
+.section-header h1,
+.section-header h2,
+.section-header h3 {
+  margin-bottom: var(--space-2xs);
+}
+
+.section-header p,
+.dashboard-list-head p,
+.home-section-head p {
+  max-width: 72ch;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  line-height: 1.58;
+}
+/* ---------- Надзаголовок (section-tag сайту) ---------- */
+.eyebrow,
+.section-tag,
+.app-state-eyebrow,
+.home-kicker,
+[class$="__eyebrow"],
+[class*="__eyebrow "],
+[class$="-eyebrow"],
+[class*="-eyebrow "] {
+  display: inline-block;
+  /* У grid/flex-батьках inline-block блокифікується й розтягується
+     на всю ширину. fit-content + start тримають пігулку за змістом. */
+  width: fit-content;
+  justify-self: start;
+  align-self: start;
+  padding: var(--space-2xs) var(--space-sm);
+  margin-bottom: var(--space-xs);
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--orange-main);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 1.6;
+}
+/* ---------- Лід-абзац і приглушений текст ---------- */
+.lead,
+[class$="__lead"],
+[class*="__lead "],
+[class$="-lead"],
+[class*="-lead "] {
+  max-width: 72ch;
+  color: var(--text-soft);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+.subtle:not(:where(.btn)),
+.muted,
+.hint,
+.form-hint,
+[class$="__hint"],
+[class*="__hint "],
+[class$="__meta"],
+[class*="__meta "],
+[class$="__desc"],
+[class*="__desc "],
+[class$="-note"]:not(:where(.error-note)):not(:where(.warning-note)),
+[class*="-note "]:not(:where(.error-note)):not(:where(.warning-note)) {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+.hero-accent,
+.accent-text {
+  color: var(--c-accent-300);
+}
+/* =========================================================
+   HERO — велика картка-заголовок сторінки
+   Візуально це .page-hero сайту: панель із блиском зверху.
+   ========================================================= */
+.hero,
+.dashboard-hero,
+.admin-hero,
+.page-hero,
+.access-groups-hero,
+[class$="-hero"]:not(:where([class*="landing"])),
+[class*="-hero "]:not(:where([class*="landing"])) {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-lg);
+  padding: clamp(var(--space-md), 2.4vw, var(--space-xl));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+.hero::before,
+.dashboard-hero::before,
+.admin-hero::before,
+.page-hero::before,
+[class$="-hero"]:not(:where([class*="landing"]))::before,
+[class*="-hero "]:not(:where([class*="landing"]))::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.045),
+    transparent 30%,
+    transparent 70%,
+    rgba(255, 255, 255, 0.02)
+  );
+}
+
+.hero > *,
+.dashboard-hero > *,
+.admin-hero > *,
+.page-hero > * {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+.hero-copy,
+.dashboard-hero__copy,
+.guild-hero__copy,
+.page-hero-copy,
+[class$="-hero__copy"],
+[class*="-hero__copy "] {
+  min-width: 0;
+}
+.hero-copy h1,
+.dashboard-hero__copy h1,
+[class$="-hero__copy"] h1,
+[class*="-hero__copy "] h1 {
+  margin-bottom: var(--space-xs);
+}
+.hero-copy p,
+.dashboard-hero__copy p,
+[class$="-hero__copy"] p,
+[class*="-hero__copy "] p {
+  max-width: 62ch;
+  color: var(--text-soft);
+  line-height: 1.58;
+}
+.hero-actions,
+.hero-chip-row,
+[class$="-hero__actions"],
+[class*="-hero__actions "],
+[class$="__actions"],
+[class*="__actions "],
+.action-bar,
+.action-row,
+.form-actions,
+.dashboard-list-actions,
+[class$="-actions"],
+[class*="-actions "] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.hero-actions,
+.hero-chip-row,
+[class$="-hero__actions"],
+[class*="-hero__actions "] {
+  margin-top: var(--space-md);
+}
+
+.form-actions--split {
+  justify-content: space-between;
+}
+
+@media (max-width: 900px) {
+.hero,
+.dashboard-hero,
+.admin-hero,
+.page-hero,
+[class$="-hero"]:not(:where([class*="landing"])),
+[class*="-hero "]:not(:where([class*="landing"])) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- Лендинг-герой (сторінка входу) ---------- */
+.home-landing-hero,
+.login-hero {
+  display: grid;
+  place-items: center;
+  gap: var(--space-lg);
+  min-height: min(60vh, 520px);
+  padding: var(--pad-section) var(--pad-page-inline);
+  text-align: center;
+}
+
+.home-landing-hero__logo {
+  width: clamp(88px, 12vw, 132px);
+  height: auto;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg), 0 0 0 1px var(--border-strong);
+}
+
+.home-landing-hero__content {
+  display: grid;
+  gap: var(--space-sm);
+  justify-items: center;
+}
+
+.home-landing-hero__guild {
+  font-family: var(--font-brand);
+  font-size: clamp(24px, 2vw + 1rem, 40px);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-strong);
+}
+
+.home-landing-hero__lead {
+  max-width: 56ch;
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+
+.home-landing-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  justify-content: center;
+  margin-top: var(--space-sm);
+}
+/* =========================================================
+   СІТКИ
+   Один патерн auto-fit: не треба описувати кожну сітку окремо.
+   ========================================================= */
+[class$="-grid"],
+/* =========================================================
+   СІТКИ
+   Один патерн auto-fit: не треба описувати кожну сітку окремо.
+   ========================================================= */
+[class*="-grid "],
+[class$="__grid"],
+[class*="__grid "],
+.ui-blocks,
+.access-form-grid,
+.home-kd-grid,
+.home-polls-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: var(--gap-grid);
+}
+/* Дрібніші плитки: статистика,
+лічильники */
+[class*="-stats-grid"],
+[class*="-metrics"],
+[class$="-stat-grid"],
+[class*="-stat-grid "],
+.stat-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
+  gap: var(--space-sm);
+}
+
+/* Форма у дві колонки */
+.form-row,
+.access-form-grid,
+.content-form-grid,
+.raid-poll-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: var(--space-md);
+}
+
+.two {
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+}
+/* Поле на всю ширину сітки */
+.content-field--wide,
+.raid-poll-field--wide,
+[class$="--wide"],
+[class*="--wide "],
+[class$="--full"],
+[class*="--full "] {
+  grid-column: 1 / -1;
+}
+/* ---------- Головна: контент + бічний стек ---------- */
+.home-layout,
+.page-layout,
+[class$="-layout"]:not(:where(.access-groups-layout)),
+[class*="-layout "]:not(:where(.access-groups-layout)) {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: var(--gap-grid);
+  align-items: start;
+}
+
+.home-side-stack,
+.side-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-grid);
+  position: sticky;
+  top: calc(var(--nav-space) + var(--space-sm));
+}
+
+@media (max-width: 1000px) {
+.home-layout,
+.page-layout,
+[class$="-layout"]:not(:where(.access-groups-layout)),
+[class*="-layout "]:not(:where(.access-groups-layout)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-side-stack,
+  .side-stack {
+    position: static;
+  }
+}
+
+/* =========================================================
+   ФУТЕР — та сама мова, що .site-footer сайту
+   ========================================================= */
+.app-footer {
+  flex: 0 0 auto;
+  margin-top: auto;
+  padding: var(--space-xl) var(--pad-page-inline) calc(var(--space-lg) + var(--nav-mobile-space));
+  border-top: 1px solid var(--border-subtle);
+  background: var(--surface-sunken);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.app-footer__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  max-width: var(--page-max);
+  margin: 0 auto;
+}
+
+.app-footer__brand {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.app-footer__crest {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+}
+
+.app-footer__crest svg {
+  width: 100%;
+  height: 100%;
+}
+
+.app-footer__crest-shadow {
+  fill: rgba(0, 0, 0, 0.45);
+}
+
+.app-footer__crest-border {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 2;
+}
+
+.app-footer__crest-inner {
+  fill: var(--surface-raised);
+}
+
+.app-footer__crest-letter {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-brand);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--c-accent-300);
+}
+
+.app-footer__title {
+  font-family: var(--font-brand);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-strong);
+}
+
+.app-footer__separator,
+.app-footer__link-separator {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+}
+
+.app-footer__tagline {
+  max-width: 44ch;
+  color: var(--text-faint);
+  line-height: 1.5;
+}
+
+.app-footer__links {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.app-footer__links a {
+  color: var(--text-soft);
+}
+
+.app-footer__links a:hover {
+  color: var(--c-accent-200);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+  .app-footer__inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .app-footer__separator {
+    display: none;
+  }
+}
+
+/* =========================================================
+   СТАНИ ЗАВАНТАЖЕННЯ / ПОМИЛКИ
+   ========================================================= */
+.app-state-shell,
+.access-denied-shell {
+  display: grid;
+  place-items: center;
+  min-height: 60vh;
+  padding: var(--pad-section) var(--pad-page-inline);
+}
+
+.app-state-page {
+  width: 100%;
+  max-width: 560px;
+}
+
+.app-loading-mark {
+  width: 64px;
+  height: 64px;
+  margin-bottom: var(--space-md);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.app-loading-steps {
+  display: grid;
+  gap: var(--space-2xs);
+  margin-top: var(--space-md);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.app-loading-steps .is-done {
+  color: var(--c-success);
+}
+
+.app-loading-steps .is-active {
+  color: var(--c-accent-300);
+  font-weight: 600;
+}
+
+.app-loading-progress {
+  position: relative;
+  height: 4px;
+  margin-top: var(--space-md);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.app-loading-progress::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 38%;
+  border-radius: inherit;
+  background: var(--accent-gradient);
+  animation: app-loading-slide 1.4s var(--ease-in-out) infinite;
+}
+
+@keyframes app-loading-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(360%);
+  }
+}

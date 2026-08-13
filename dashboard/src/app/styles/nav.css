@@ -1,0 +1,590 @@
+/* =========================================================
+   NAV — плаваюча капсула зверху + мобільна панель знизу
+
+   Мова та сама, що в assets/css/nav.css сайту: скляна
+   поверхня, бурштиновий акцент на активному пункті,
+   капсула-пігулка. Відрізняється лише склад: у дашборду
+   в одному рядку живуть лого, розділи й профіль.
+
+   Жодного !important. Усі розміри — з токенів.
+   ========================================================= */
+
+/* ---------- 1. Верхня смуга ---------- */
+.dashboard-topbar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: var(--z-navbar);
+  display: flex;
+  justify-content: center;
+  padding: var(--nav-inset) var(--pad-page-inline);
+  pointer-events: none;
+}
+
+.dashboard-topbar > * {
+  pointer-events: auto;
+}
+
+.nav-capsule {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  max-width: var(--page-max-wide);
+  height: var(--nav-h);
+  padding: 0 var(--space-md);
+  border: 1px solid var(--nav-line);
+  border-radius: var(--radius-xl);
+  background: var(--nav-surface);
+  box-shadow: var(--nav-shadow);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  transition:
+    height var(--dur-base) var(--nav-ease),
+    padding var(--dur-base) var(--nav-ease),
+    background-color var(--dur-base) var(--nav-ease),
+    border-color var(--dur-base) var(--nav-ease);
+}
+
+/* Скрол униз — капсула стискається. Відступ сторінки згори не
+   змінюється, тож контент не смикається. */
+body.dashboard-nav-condensed .nav-capsule {
+  height: var(--nav-h-compact);
+  padding: 0 var(--space-sm);
+}
+
+body.dashboard-scrolled .nav-capsule {
+  background: var(--nav-surface-solid);
+  border-color: var(--border-strong);
+}
+
+/* ---------- 2. Бренд ---------- */
+.dashboard-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+  flex: 0 0 auto;
+}
+
+.guild-mark {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-sm);
+  transition: width var(--dur-base) var(--nav-ease), height var(--dur-base) var(--nav-ease);
+}
+
+body.dashboard-nav-condensed .guild-mark {
+  width: 34px;
+  height: 34px;
+}
+
+.dashboard-brand > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.dashboard-brand strong {
+  font-family: var(--font-brand);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--nav-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashboard-brand span {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--nav-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* У стиснутому стані лишається тільки назва гільдії */
+body.dashboard-nav-condensed .dashboard-brand span {
+  display: none;
+}
+
+.nav-capsule__divider {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 26px;
+  background: var(--nav-line);
+}
+
+/* ---------- 3. Рейка розділів ---------- */
+.dashboard-nav-rail {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.dashboard-nav--desktop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.dashboard-nav--desktop > a,
+.dashboard-nav-more__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  height: 40px;
+  padding: 0 var(--space-sm);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--nav-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color var(--dur-fast) var(--nav-ease),
+    background-color var(--dur-fast) var(--nav-ease),
+    border-color var(--dur-fast) var(--nav-ease);
+}
+
+.dashboard-nav--desktop > a:hover,
+.dashboard-nav-more__trigger:hover {
+  color: var(--nav-ink);
+  background: var(--surface-hover);
+  border-color: var(--nav-line-soft);
+}
+
+.dashboard-nav--desktop > a.is-active,
+.dashboard-nav-more__trigger.is-active {
+  color: var(--c-base-900);
+  background: var(--accent-gradient);
+  border-color: transparent;
+  box-shadow: 0 6px 18px -10px var(--accent-ring);
+}
+
+.dashboard-nav__icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.dashboard-nav__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Ступінь стиснення: самі іконки */
+.dashboard-nav--desktop[data-compact="true"] > a {
+  padding: 0 var(--space-xs);
+  width: 40px;
+  justify-content: center;
+}
+
+.dashboard-nav--desktop[data-compact="true"] .dashboard-nav__label {
+  display: none;
+}
+
+.dashboard-nav--desktop[data-compact="true"] .dashboard-nav-more__trigger .dashboard-nav__label {
+  display: inline;
+}
+
+/* ---------- 4. Меню «Ще» ---------- */
+.dashboard-nav-more {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.dashboard-nav-more__trigger-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 var(--space-3xs);
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--c-accent-200);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.dashboard-nav-more__trigger.is-active .dashboard-nav-more__trigger-count {
+  background: rgba(12, 10, 7, 0.25);
+  color: var(--c-base-900);
+}
+
+.dashboard-nav-more__menu {
+  position: absolute;
+  top: calc(100% + var(--space-xs));
+  right: 0;
+  z-index: var(--z-dropdown);
+  width: min(320px, calc(100vw - var(--space-xl)));
+  padding: var(--space-sm);
+  border: 1px solid var(--nav-line);
+  border-radius: var(--radius-lg);
+  background: var(--nav-panel);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition:
+    opacity var(--dur-fast) var(--nav-ease),
+    transform var(--dur-fast) var(--nav-ease),
+    visibility var(--dur-fast) var(--nav-ease);
+}
+
+.dashboard-nav-more.is-open .dashboard-nav-more__menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dashboard-nav-more__menu-head {
+  display: grid;
+  gap: var(--space-3xs);
+  padding: var(--space-2xs) var(--space-xs) var(--space-sm);
+  border-bottom: 1px solid var(--nav-line-soft);
+  margin-bottom: var(--space-xs);
+}
+
+.dashboard-nav-more__menu-head strong {
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-accent-300);
+}
+
+.dashboard-nav-more__menu-head span {
+  font-size: 0.78rem;
+  color: var(--nav-dim);
+}
+
+.dashboard-nav-more__menu-list {
+  display: grid;
+  gap: var(--space-3xs);
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+}
+
+.dashboard-nav-more__menu-list a {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-md);
+  color: var(--nav-muted);
+  transition: background-color var(--dur-fast) var(--nav-ease), color var(--dur-fast) var(--nav-ease);
+}
+
+.dashboard-nav-more__menu-list a:hover {
+  background: var(--surface-hover);
+  color: var(--nav-ink);
+}
+
+.dashboard-nav-more__menu-list a.is-active {
+  background: var(--accent-soft);
+  color: var(--c-accent-200);
+}
+
+.dashboard-nav-more__menu-list strong {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-nav-more__menu-list small {
+  font-size: 0.7rem;
+  color: var(--nav-dim);
+}
+
+/* ---------- 5. Вимірювальна рейка ----------
+   Невидима копія пунктів: з неї беруться справжні ширини
+   підписів та іконок. Не впливає на розкладку. */
+.dashboard-nav-measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  pointer-events: none;
+  display: flex;
+  gap: var(--space-2xs);
+  white-space: nowrap;
+}
+
+.dashboard-nav-measure__item,
+.dashboard-nav-measure__more {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  height: 40px;
+  padding: 0 var(--space-sm);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.dashboard-nav-measure__item--compact {
+  width: 40px;
+  padding: 0 var(--space-xs);
+  justify-content: center;
+}
+
+.dashboard-nav-measure__item--compact span {
+  display: none;
+}
+
+.dashboard-nav-measure__count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 var(--space-3xs);
+  border-radius: var(--radius-pill);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+/* ---------- 6. Профіль у капсулі ---------- */
+.dashboard-user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.dashboard-user__profile-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+  max-width: 240px;
+  padding: var(--space-2xs) var(--space-xs);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  color: var(--nav-ink);
+  transition: background-color var(--dur-fast) var(--nav-ease), border-color var(--dur-fast) var(--nav-ease);
+}
+
+.dashboard-user__profile-link:hover,
+.dashboard-user__profile-link.is-active {
+  background: var(--surface-hover);
+  border-color: var(--nav-line-soft);
+  color: var(--nav-ink);
+}
+
+.dashboard-user__avatar-wrap {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.discord-avatar,
+.discord-avatar-fallback {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
+  transition: width var(--dur-base) var(--nav-ease), height var(--dur-base) var(--nav-ease);
+}
+
+.discord-avatar-fallback {
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  color: var(--c-accent-300);
+  text-transform: uppercase;
+}
+
+body.dashboard-nav-condensed .dashboard-user__avatar-wrap .discord-avatar,
+body.dashboard-nav-condensed .dashboard-user__avatar-wrap .discord-avatar-fallback {
+  width: 32px;
+  height: 32px;
+}
+
+.dashboard-user__status {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--c-success);
+  box-shadow: 0 0 0 2px var(--nav-panel);
+}
+
+.dashboard-user__profile-link > div:last-child {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.dashboard-user__profile-link strong {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--nav-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashboard-user__profile-link span {
+  font-size: 0.72rem;
+  color: var(--nav-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashboard-user__logout {
+  display: inline-grid;
+  place-items: center;
+  height: 36px;
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--nav-line);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--nav-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--nav-ease), border-color var(--dur-fast) var(--nav-ease), background-color var(--dur-fast) var(--nav-ease);
+}
+
+.dashboard-user__logout:hover {
+  color: var(--c-danger);
+  border-color: rgba(224, 112, 95, 0.4);
+  background: rgba(224, 112, 95, 0.1);
+}
+
+.dashboard-user__logout-error {
+  font-size: 0.72rem;
+  color: var(--c-danger);
+}
+
+.dashboard-user--guest {
+  margin-left: auto;
+}
+
+/* ---------- 7. Адаптив капсули ---------- */
+@media (max-width: 1100px) {
+  .dashboard-user__profile-link > div:last-child {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  /* На мобільному розділи живуть у нижній панелі, тож із капсули
+     вони зникають повністю разом із роздільниками. */
+  .dashboard-nav-rail,
+  .dashboard-nav-measure,
+  .nav-capsule__divider {
+    display: none;
+  }
+
+  .nav-capsule {
+    justify-content: space-between;
+    height: var(--nav-h-compact);
+    padding: 0 var(--space-sm);
+  }
+
+  .dashboard-brand span {
+    display: none;
+  }
+
+  .guild-mark {
+    width: 34px;
+    height: 34px;
+  }
+
+  .dashboard-user__logout {
+    height: 32px;
+    padding: 0 var(--space-xs);
+  }
+}
+
+/* ---------- 8. Нижня мобільна панель ---------- */
+.dashboard-mobile-nav-shell {
+  display: none;
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: var(--z-navbar);
+  padding: var(--space-xs) var(--space-sm) calc(var(--space-xs) + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--nav-line);
+  background: var(--nav-surface-solid);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: 0 -12px 30px -18px rgba(0, 0, 0, 0.9);
+}
+
+.dashboard-mobile-nav {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(56px, 1fr);
+  gap: var(--space-3xs);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.dashboard-mobile-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.dashboard-mobile-nav a {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: var(--space-3xs);
+  min-height: 52px;
+  padding: var(--space-2xs);
+  border-radius: var(--radius-md);
+  color: var(--nav-dim);
+  scroll-snap-align: center;
+  transition: color var(--dur-fast) var(--nav-ease), background-color var(--dur-fast) var(--nav-ease);
+}
+
+.dashboard-mobile-nav a strong {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: inherit;
+  white-space: nowrap;
+}
+
+.dashboard-mobile-nav a.is-active {
+  color: var(--c-accent-300);
+  background: var(--accent-soft);
+}
+
+.dashboard-mobile-nav a:hover {
+  color: var(--nav-ink);
+}
+
+@media (max-width: 900px) {
+  .dashboard-mobile-nav-shell {
+    display: block;
+  }
+}

@@ -1,0 +1,1259 @@
+/* =========================================================
+   PAGES — родини сторінок дашборду
+
+   Базові поверхні, кнопки й поля вже описані в components.css.
+   Тут лишається тільки те, що специфічне для конкретної
+   сторінки: розкладка рядка рейду, перегляд Discord-повідомлення,
+   бічна колонка профілю тощо.
+
+   Жодного !important.
+   ========================================================= */
+
+/* =========================================================
+   ГОЛОВНА
+   ========================================================= */
+.home-kicker {
+  display: inline-block;
+}
+
+.home-empty-text {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.hero-secure-note {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  color: var(--text-faint);
+  font-size: 0.78rem;
+}
+
+.hero-lock {
+  color: var(--c-accent-300);
+}
+
+/* =========================================================
+   РЕЙДИ
+   ========================================================= */
+.raid-list-main-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  min-width: 0;
+  color: inherit;
+}
+
+.raid-list-main-link img {
+  width: 86px;
+  height: 86px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  border: 1px solid var(--border);
+}
+
+.raid-list-copy {
+  display: grid;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.raid-list-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.raid-list-title-row strong {
+  font-size: 1rem;
+  color: var(--text-strong);
+}
+
+.raid-list-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs) var(--space-sm);
+}
+
+.raid-list-facts small {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.raid-list-progress {
+  display: block;
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.raid-list-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent-gradient);
+  transition: width var(--dur-base) var(--ease-out);
+}
+
+.raid-list-actions {
+  flex: 0 0 auto;
+}
+
+.raid-list-action-tools {
+  display: inline-flex;
+  gap: var(--space-2xs);
+}
+
+.raid-list-icon-action {
+  width: 34px;
+  min-height: 34px;
+  padding: 0;
+}
+
+/* Статус рейду фарбує ліву грань рядка */
+.raid-list-item--active {
+  border-left: 3px solid var(--c-success);
+}
+
+.raid-list-item--closed,
+.raid-list-item--archived {
+  border-left: 3px solid var(--c-ink-500);
+  opacity: 0.85;
+}
+
+.raid-list-item--locked {
+  border-left: 3px solid var(--c-warning);
+}
+
+/* Склад рейду */
+.raid-party-row {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-2xs) var(--space-xs);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.raid-party-row--tank {
+  border-left: 3px solid var(--c-role-tank);
+}
+
+.raid-party-row--healer {
+  border-left: 3px solid var(--c-role-healer);
+}
+
+.raid-party-row--dps {
+  border-left: 3px solid var(--c-role-dps);
+}
+
+.raid-party-row.is-late {
+  border-color: rgba(232, 179, 74, 0.32);
+}
+
+.raid-party-row.is-undergeared {
+  background: rgba(232, 179, 74, 0.08);
+}
+
+.raid-party-row.is-blocked {
+  background: rgba(224, 112, 95, 0.1);
+  border-color: rgba(224, 112, 95, 0.32);
+}
+
+.raid-party-row.is-non-guild {
+  opacity: 0.8;
+}
+
+.raid-party-member-copy {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.raid-party-member-copy strong {
+  font-size: 0.86rem;
+  color: var(--text-strong);
+  overflow-wrap: break-word;
+}
+
+.raid-signup-side {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  flex: 0 0 auto;
+}
+
+.raid-role-icon {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.raid-party-card {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.raid-member-panel,
+.raid-manager-list {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.raid-signup-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+}
+
+/* Кнопки відповіді на рейд */
+.raid-preview-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.raid-action {
+  --tone: var(--c-ink-400);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-height: 40px;
+  padding: 0 var(--space-md);
+  border: 1px solid color-mix(in srgb, var(--tone) 32%, transparent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--tone) 12%, transparent);
+  color: var(--tone);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+
+.raid-action:hover {
+  background: color-mix(in srgb, var(--tone) 20%, transparent);
+  transform: translateY(-2px);
+}
+
+.raid-action--go {
+  --tone: var(--c-success);
+}
+
+.raid-action--maybe {
+  --tone: var(--c-warning);
+}
+
+.raid-action--skip {
+  --tone: var(--c-danger);
+}
+
+.raid-action--late {
+  --tone: var(--c-info);
+}
+
+.raid-checkbox-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 36px;
+}
+
+.raid-preview-column {
+  display: grid;
+  gap: var(--gap-stack);
+  min-width: 0;
+}
+
+/* =========================================================
+   ПУЛИ
+   ========================================================= */
+.poll-section-head {
+  align-items: center;
+}
+
+.raid-poll-list-card {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.raid-poll-list-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.poll-chip--ghost {
+  --tone: var(--c-ink-500);
+}
+
+/* =========================================================
+   ПРОФІЛЬ
+   ========================================================= */
+/* Сторінка профілю: бічна колонка + основний стовпчик */
+.profile-account-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  gap: var(--gap-grid);
+  align-items: start;
+}
+
+.profile-account-sidebar {
+  position: sticky;
+  top: calc(var(--nav-space) + var(--space-sm));
+  display: grid;
+  gap: var(--space-md);
+  justify-items: center;
+  text-align: center;
+}
+
+.profile-account-sidebar__identity {
+  display: grid;
+  gap: var(--space-2xs);
+  justify-items: center;
+}
+
+.profile-account-sidebar__avatar--fallback {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-brand);
+  font-size: 2rem;
+  color: var(--c-accent-300);
+}
+
+.profile-account-main {
+  display: grid;
+  gap: var(--gap-grid);
+  min-width: 0;
+}
+
+.profile-account-overview {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.profile-account-header__badge {
+  justify-self: start;
+}
+
+@media (max-width: 1000px) {
+  .profile-account-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-account-sidebar {
+    position: static;
+  }
+}
+
+.profile-character-candidate {
+  display: grid;
+  gap: var(--space-2xs);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+
+.profile-character-candidate__kind {
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.profile-discord-standard {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.profile-card--identity,
+.profile-card--clean-profile {
+  gap: var(--gap-stack);
+}
+
+.profile-card-head--inline {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.profile-account-overview-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.profile-account-sidebar__avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: var(--radius-lg);
+}
+
+.profile-character-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 40px;
+  padding: 0 var(--space-md);
+}
+
+.profile-character-btn--accent {
+  border-color: var(--border-strong);
+  color: var(--c-accent-200);
+}
+
+.profile-character-btn--danger {
+  border-color: rgba(224, 112, 95, 0.32);
+  color: var(--c-danger);
+}
+
+.profile-character-btn__icon {
+  width: 16px;
+  height: 16px;
+}
+
+.profile-candidate-group,
+.profile-character-candidates {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.profile-subsection-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  padding-bottom: var(--space-2xs);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.profile-subsection-head--compact {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.profile-empty-characters {
+  display: grid;
+  gap: var(--space-xs);
+  padding: var(--space-lg);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.profile-empty-characters--compact {
+  padding: var(--space-md);
+}
+
+.profile-nickname-preview {
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--c-accent-200);
+  overflow-wrap: anywhere;
+}
+
+.profile-nickname-hint {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+/* =========================================================
+   DISCORD — редактор і перегляд повідомлення
+   ========================================================= */
+.discord-builder-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 1fr);
+  gap: var(--gap-grid);
+  align-items: start;
+}
+
+.discord-builder-panel,
+.discord-preview-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.discord-builder-titlebar,
+.discord-preview-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.discord-builder-body,
+.discord-builder-form {
+  display: grid;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.discord-preview-mode-toggle {
+  display: inline-flex;
+  gap: var(--space-3xs);
+  padding: var(--space-3xs);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+}
+
+.discord-preview-mode-toggle button {
+  min-height: 28px;
+  padding: 0 var(--space-sm);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.discord-preview-mode-toggle button.is-active {
+  background: var(--accent-soft);
+  color: var(--c-accent-200);
+}
+
+/* Полотно перегляду — темніше за панель, як канал у Discord */
+.discord-preview-canvas {
+  padding: var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: #1a1611;
+  overflow-x: auto;
+}
+
+.discord-preview-panel--mobile .discord-preview-canvas {
+  max-width: 420px;
+}
+
+.discord-chat-preview {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-sm);
+}
+
+.discord-chat-preview__avatar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--c-discord);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.discord-chat-preview__body {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.discord-chat-preview__meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+}
+
+.discord-chat-preview__meta strong {
+  color: #fff;
+  font-size: 0.92rem;
+}
+
+.discord-chat-preview__meta span {
+  font-size: 0.7rem;
+  color: var(--text-faint);
+}
+
+.discord-preview-content {
+  display: grid;
+  gap: var(--space-2xs);
+  color: #dcddde;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.discord-preview-mentions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
+.discord-preview-mentions span,
+.discord-preview-mention {
+  padding: 0 var(--space-2xs);
+  border-radius: var(--radius-sm);
+  background: rgba(88, 101, 242, 0.24);
+  color: #c9cdfb;
+  font-weight: 600;
+}
+
+/* Сам ембед */
+.discord-message-preview {
+  border-left: 4px solid var(--c-accent-400);
+  border-radius: var(--radius-sm);
+  background: #211c16;
+  padding: var(--space-sm) var(--space-md);
+  max-width: 520px;
+}
+
+.discord-message-preview__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-sm);
+}
+
+.discord-message-preview__main {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.discord-preview-author-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.discord-preview-author-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+
+.discord-preview-author {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.discord-preview-title {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--c-accent-200);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.discord-preview-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
+  gap: var(--space-xs);
+}
+
+.discord-preview-fields--with-thumb {
+  padding-right: var(--space-sm);
+}
+
+/* Discord кладе inline-поля поруч, а звичайні — на всю ширину ембеда */
+.discord-preview-field--full {
+  grid-column: 1 / -1;
+}
+
+.discord-preview-field {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.discord-preview-field-name {
+  font-size: 0.82rem;
+  color: #fff;
+}
+
+.discord-preview-field-value {
+  font-size: 0.84rem;
+  color: #dcddde;
+}
+
+.discord-preview-thumb {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}
+
+.discord-preview-image {
+  width: 100%;
+  margin-top: var(--space-sm);
+  border-radius: var(--radius-sm);
+}
+
+.discord-message-preview footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-size: 0.72rem;
+  color: var(--text-faint);
+}
+
+.discord-message-preview footer img {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+}
+
+.discord-preview-error {
+  font-size: 0.8rem;
+  color: var(--c-danger);
+}
+
+/* Markdown усередині перегляду */
+.discord-preview-markdown {
+  display: grid;
+  gap: var(--space-xs);
+  color: #dcddde;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.discord-preview-markdown--compact {
+  gap: var(--space-2xs);
+}
+
+.discord-preview-link {
+  color: #00a8fc;
+}
+
+.discord-preview-heading {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.discord-preview-subtext {
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+
+.discord-preview-quote {
+  padding-left: var(--space-sm);
+  border-left: 3px solid var(--c-base-400);
+}
+
+.discord-preview-list {
+  display: grid;
+  gap: var(--space-3xs);
+  padding-left: var(--space-md);
+}
+
+.discord-preview-list-bullet {
+  color: var(--c-accent-300);
+}
+
+.discord-preview-codeblock {
+  padding: var(--space-sm);
+  border: 1px solid #111;
+  border-radius: var(--radius-sm);
+  background: #131313;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.discord-preview-spoiler {
+  border-radius: var(--radius-sm);
+  background: #202225;
+  color: transparent;
+  cursor: pointer;
+}
+
+.discord-preview-spoiler:hover {
+  color: #dcddde;
+}
+
+.discord-preview-timestamp {
+  padding: 0 var(--space-2xs);
+  border-radius: var(--radius-sm);
+  background: rgba(88, 101, 242, 0.18);
+}
+
+.discord-preview-emoji {
+  display: inline-block;
+  width: 1.25em;
+  height: 1.25em;
+  vertical-align: -0.2em;
+}
+
+.discord-preview-gap {
+  height: var(--space-xs);
+}
+
+/* Керування Discord */
+.discord-management-card {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.discord-management-card__body {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.discord-management-card--action {
+  border-color: var(--border-strong);
+}
+
+.discord-management-section {
+  display: grid;
+  gap: var(--gap-stack);
+}
+
+.discord-role-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.discord-visual-section {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.discord-shell,
+.discord-hub-card {
+  min-width: 0;
+}
+
+@media (max-width: 1000px) {
+  .discord-builder-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .discord-message-preview__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .discord-preview-thumb {
+    width: 100%;
+    height: auto;
+  }
+}
+
+/* =========================================================
+   ГІЛЬДІЯ
+   ========================================================= */
+.guild-hero-stat-card {
+  display: grid;
+  gap: var(--space-3xs);
+  text-align: left;
+}
+
+.guild-refresh-action__status {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+/* =========================================================
+   КОНТЕНТ (новини / гайди)
+   ========================================================= */
+.content-hero-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.content-hero-path {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--text-faint);
+  overflow-wrap: anywhere;
+}
+
+.content-mode-pill--library {
+  --tone: var(--c-info);
+}
+
+.content-section-head--toolbar {
+  align-items: center;
+}
+
+.content-add-btn {
+  flex: 0 0 auto;
+}
+
+/* =========================================================
+   АДМІН
+   ========================================================= */
+.admin-page {
+  min-width: 0;
+}
+
+.admin-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-grid);
+  min-width: 0;
+}
+
+.admin-overview-card {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.admin-overview-card--wide {
+  grid-column: 1 / -1;
+}
+
+.admin-policy-fieldset {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.admin-policy-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+/* На вузьких екранах адмінка ніколи не тягне горизонтальний скрол */
+.admin-page * {
+  overflow-wrap: break-word;
+}
+
+/* =========================================================
+   ПРАВИЛА / ОНБОРДИНГ
+   ========================================================= */
+.rules-registration-block {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.rules-registration-block__head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.rules-onboarding-primary-action {
+  width: min(320px, 100%);
+}
+
+/* =========================================================
+   ВХІД І СЛУЖБОВІ ЕКРАНИ
+   ========================================================= */
+.login-screen {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: var(--pad-section) var(--pad-page-inline);
+}
+
+/* Тло: два теплі спалахи, ледь помітна сітка й дві горизонтальні
+   риски згори й знизу. Кольори — тільки з токенів. */
+.login-screen__backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.login-glow {
+  position: absolute;
+  width: min(60vw, 620px);
+  height: min(60vw, 620px);
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.5;
+}
+
+.login-glow--gold {
+  top: -14%;
+  left: -8%;
+  background: radial-gradient(circle, rgba(200, 155, 60, 0.5), transparent 70%);
+}
+
+.login-glow--violet {
+  right: -10%;
+  bottom: -16%;
+  background: radial-gradient(circle, rgba(255, 122, 47, 0.35), transparent 70%);
+}
+
+.login-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  background-image:
+    linear-gradient(var(--border-subtle) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(circle at 50% 40%, #000 20%, transparent 75%);
+  -webkit-mask-image: radial-gradient(circle at 50% 40%, #000 20%, transparent 75%);
+}
+
+.login-ornament {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-strong), transparent);
+}
+
+.login-ornament--top {
+  top: 12%;
+}
+
+.login-ornament--bottom {
+  bottom: 12%;
+}
+
+.login-shell {
+  position: relative;
+  z-index: 1;
+  width: min(560px, 100%);
+  padding: clamp(var(--space-lg), 4vw, var(--space-2xl));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* Одна колонка по центру. Загальний .*-hero малює власну панель —
+   тут вона зайва, бо панеллю вже є .login-shell. */
+.login-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+  text-align: center;
+}
+
+.login-hero::before {
+  content: none;
+}
+
+.login-pill {
+  padding: var(--space-2xs) var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.login-brandmark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: var(--space-xs);
+}
+
+.login-brandmark img {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--accent-glow);
+}
+
+.login-brandmark > span {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-subtle);
+}
+
+.login-eyebrow {
+  margin: 0;
+  font-family: var(--font-brand);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--c-accent-300);
+}
+
+.login-hero h1 {
+  margin: 0;
+}
+
+/* Друга частина заголовка — окремий рядок, інакше слова злипаються */
+.login-hero h1 span {
+  display: block;
+}
+
+.login-lead {
+  max-width: 46ch;
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+
+.login-feature-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-xs);
+}
+
+.login-feature-list > span {
+  padding: var(--space-3xs) var(--space-sm);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.login-action-row {
+  display: grid;
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+.login-discord-button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid transparent;
+  border-radius: var(--control-radius);
+  background: var(--c-discord);
+  color: #fff;
+  text-align: left;
+  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.login-discord-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -16px rgba(88, 101, 242, 0.9);
+  color: #fff;
+}
+
+.login-discord-button__icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.login-discord-button strong {
+  display: block;
+  color: #fff;
+  font-size: 0.92rem;
+}
+
+.login-discord-button small {
+  display: block;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.72rem;
+}
+
+.login-discord-button__arrow {
+  font-size: 1.1rem;
+}
+
+.login-token {
+  width: 100%;
+  text-align: left;
+}
+
+.login-token__row {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.login-token__row button {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--control-radius);
+  background: var(--surface-raised);
+  color: var(--text-body);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.login-note {
+  max-width: 52ch;
+  color: var(--text-faint);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.login-alert {
+  width: 100%;
+  text-align: left;
+}
+
+.app-state-page {
+  display: grid;
+  gap: var(--space-sm);
+  justify-items: center;
+  text-align: center;
+}
+
+/* =========================================================
+   РОСТЕР
+   ========================================================= */
+.roster-inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}

@@ -7,7 +7,6 @@ import { getOwnProfilePath } from "@/lib/profiles";
 import { fetchDiscordRoles, fetchDiscordTextChannels, hasDiscordEmbedConfig } from "@/lib/discordAdmin";
 import { buildPageMetadata } from "@/lib/seo";
 import { WOW_CLASS_CATALOG, wowClassCount, wowSpecFullName } from "@/lib/wowClassCatalog";
-import "../roster.css";
 import {
   ROSTER_SEASONS,
   ROSTER_TARGET_SIZE,
