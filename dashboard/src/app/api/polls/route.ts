@@ -1,111 +1,132 @@
 import { NextRequest, NextResponse } from "next/server";
-import { closeDueRaidPolls } from "@/lib/raidPolls";
-import { logDashboardEvent, noStoreHeaders, safeErrorMessage, verifyInternalBearerToken } from "@/lib/security";
+import { getSession } from "@/lib/auth";
+import { recordAdminAudit } from "@/lib/accessGroups";
+import { canManageRaids, canViewRaidDirectory } from "@/lib/permissions";
+import { listRaidPolls, raidPollLiveRevision, saveRaidPollFromForm, saveRaidPollFromInput, type RaidPollCreateInput } from "@/lib/raidPolls";
+import { assertRequestBodySize, logDashboardEvent, noStoreHeaders, safeErrorMessage } from "@/lib/security";
+import { dashboardToastCookie } from "@/lib/serverToasts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const INTERNAL_POLL_CRON_TOKENS = ["RAID_LIFECYCLE_SECRET", "CRON_SECRET", "INTERNAL_API_TOKEN", "WORKER_STATS_TOKEN", "INTERNAL_PROFILE_LOOKUP_TOKEN", "DISCORD_RULES_STATS_TOKEN"];
+type ToastInput = { tone?: "info" | "success" | "warning" | "error"; title: string; message?: string; ttl?: number };
 
-type PollCloseDueRouteGuard = {
-  inFlight?: Promise<unknown>;
-  lastStartedAt: number;
-  lastResult?: Record<string, unknown>;
-};
-
-declare global {
-  // eslint-disable-next-line no-var
-  var __mistblossomRaidPollCloseDueRouteGuard: PollCloseDueRouteGuard | undefined;
-}
-
-function envFlag(names: string[], fallback = false) {
-  for (const name of names) {
-    const raw = process.env[name];
-    if (raw === undefined || raw === null || raw === "") continue;
-    return ["1", "true", "yes", "on"].includes(String(raw).trim().toLowerCase());
+function appBaseUrl() {
+  const configured = String(process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL || process.env.ADMIN_DASHBOARD_URL || process.env.NEXT_PUBLIC_ADMIN_DASHBOARD_URL || process.env.NEXTAUTH_URL || "https://dashboard.lihvodruida.pp.ua").trim();
+  try {
+    const url = new URL(configured || "https://dashboard.lihvodruida.pp.ua");
+    if (url.hostname.endsWith(".vercel.app")) return "https://dashboard.lihvodruida.pp.ua";
+    return url.origin;
+  } catch {
+    return "https://dashboard.lihvodruida.pp.ua";
   }
-  return fallback;
 }
 
-function pollCloseDueGuard() {
-  const guard = globalThis.__mistblossomRaidPollCloseDueRouteGuard || { lastStartedAt: 0 };
-  globalThis.__mistblossomRaidPollCloseDueRouteGuard = guard;
-  return guard;
+function redirectWithToast(path: string, toast?: ToastInput) {
+  const url = new URL(path, appBaseUrl());
+  const response = NextResponse.redirect(url, { status: 303, headers: noStoreHeaders() });
+  if (toast) response.headers.append("Set-Cookie", dashboardToastCookie(toast));
+  return response;
 }
 
-function pollCloseDueMinIntervalMs() {
-  const eco = envFlag(["FIREBASE_ECO_MODE", "FIRESTORE_ECO_MODE", "DASHBOARD_ECO_MODE"], false);
-  const fallback = eco ? 10 * 60_000 : 5 * 60_000;
-  const value = Number(process.env.RAID_POLL_CLOSE_DUE_MIN_INTERVAL_MS || process.env.DASHBOARD_RAID_POLL_CLOSE_DUE_MIN_INTERVAL_MS || fallback);
-  if (!Number.isFinite(value)) return fallback;
-  return Math.max(60_000, Math.min(Math.floor(value), 60 * 60_000));
+function wantsJson(request: NextRequest) {
+  const accept = request.headers.get("accept") || "";
+  const contentType = request.headers.get("content-type") || "";
+  return accept.includes("application/json") || contentType.includes("application/json");
 }
 
-function wantsForceRun(request: NextRequest) {
-  const url = new URL(request.url);
-  return url.searchParams.get("force") === "1" || request.headers.get("x-force-lifecycle") === "1" || request.headers.get("x-force-poll-close-due") === "1";
+function jsonError(message: string, status = 400) {
+  return NextResponse.json({ ok: false, error: message }, { status, headers: noStoreHeaders() });
 }
 
-async function run(request: NextRequest) {
-  const auth = await verifyInternalBearerToken(request, INTERNAL_POLL_CRON_TOKENS, { minLength: 24 });
-  if (!auth.ok) {
-    logDashboardEvent("warn", "raid_polls.close_due.forbidden", request, { reason: auth.reason, envName: auth.envName || null });
+async function readCreateInput(request: NextRequest): Promise<{ input?: RaidPollCreateInput; form?: FormData }> {
+  const contentType = request.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("Некоректне JSON-тіло запиту.");
+    return { input: body as RaidPollCreateInput };
+  }
+  return { form: await request.formData() };
+}
+
+export async function GET() {
+  const user = await getSession();
+  if (!user || !canViewRaidDirectory(user)) {
     return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403, headers: noStoreHeaders() });
   }
-
-  const guard = pollCloseDueGuard();
-  const force = wantsForceRun(request);
-  const minInterval = pollCloseDueMinIntervalMs();
-  const now = Date.now();
-
-  if (!force && guard.inFlight) {
-    return NextResponse.json(
-      { ok: true, skipped: true, reason: "in_flight", ...(guard.lastResult || {}) },
-      { headers: noStoreHeaders({ "X-Mistblossom-Poll-Close-Due": "in-flight" }) },
-    );
-  }
-
-  if (!force && guard.lastStartedAt && now - guard.lastStartedAt < minInterval) {
-    return NextResponse.json(
-      { ok: true, skipped: true, reason: "cooldown", cooldownMs: minInterval, ...(guard.lastResult || {}) },
-      { headers: noStoreHeaders({ "X-Mistblossom-Poll-Close-Due": "cooldown" }) },
-    );
-  }
-
-  try {
-    guard.lastStartedAt = now;
-    const promise = closeDueRaidPolls({ force });
-    guard.inFlight = promise;
-    const result = await promise;
-    guard.lastResult = result as Record<string, unknown>;
-    logDashboardEvent(result.failed ? "warn" : "info", "raid_polls.close_due", request, { ...result, cooldownMs: minInterval });
-    return NextResponse.json({ ok: true, ...result }, { headers: noStoreHeaders() });
-  } catch (error) {
-    const message = safeErrorMessage(error);
-    logDashboardEvent("warn", "raid_polls.close_due_degraded", request, { message });
-    const result = {
-      degraded: true,
-      checked: 0,
-      scanned: 0,
-      closed: 0,
-      repeatedChecked: 0,
-      repeated: 0,
-      deleted: 0,
-      failed: 1,
-      errors: [message],
-    };
-    guard.lastResult = result;
-    return NextResponse.json({ ok: true, ...result }, { headers: noStoreHeaders() });
-  } finally {
-    pollCloseDueGuard().inFlight = undefined;
-  }
-}
-
-export async function GET(request: NextRequest) {
-  return run(request);
+  const polls = await listRaidPolls(120);
+  return NextResponse.json({ ok: true, polls }, { headers: noStoreHeaders() });
 }
 
 export async function POST(request: NextRequest) {
-  return run(request);
+  const tooLarge = assertRequestBodySize(request, 32 * 1024);
+  if (tooLarge) return tooLarge;
+
+  const jsonMode = wantsJson(request);
+  const user = await getSession();
+  if (!user || !canManageRaids(user)) {
+    if (jsonMode) return jsonError("Твоя роль не має доступу до створення рейд-пулів.", 403);
+    return redirectWithToast("/polls", {
+      tone: "error",
+      title: "Доступ заборонено",
+      message: "Твоя роль не має доступу до створення рейд-пулів.",
+      ttl: 7600,
+    });
+  }
+
+  try {
+    const { input, form } = await readCreateInput(request);
+    const poll = input ? await saveRaidPollFromInput(input, user) : await saveRaidPollFromForm(form as FormData, user);
+    logDashboardEvent("info", "raid_polls.created", request, {
+      pollId: poll.id,
+      actorId: user.id,
+      channelId: poll.channelId || "",
+      messageId: poll.messageId || "",
+    });
+    await recordAdminAudit("raid_polls.create", user, {
+      auditId: `raid_polls.create:${poll.id}`,
+      status: "success",
+      summary: `Рейд-пул створено: ${poll.title}.`,
+      pollId: poll.id,
+      title: poll.title,
+      channelId: poll.channelId || null,
+      messageId: poll.messageId || null,
+    }).catch(() => false);
+
+    if (jsonMode) {
+      return NextResponse.json({
+        ok: true,
+        pollId: poll.id,
+        redirectTo: `/polls/${encodeURIComponent(poll.id)}`,
+        poll,
+        revision: raidPollLiveRevision(poll),
+      }, { status: 201, headers: noStoreHeaders() });
+    }
+
+    return redirectWithToast(`/polls/${encodeURIComponent(poll.id)}`, {
+      tone: "success",
+      title: "Рейд-пул створено",
+      message: "Повідомлення опубліковано в Discord, голосування відкрите.",
+      ttl: 6200,
+    });
+  } catch (error) {
+    const message = safeErrorMessage(error);
+    logDashboardEvent("error", "raid_polls.create_failed", request, { actorId: user.id, message });
+    await recordAdminAudit("raid_polls.create_failed", user, {
+      auditId: `raid_polls.create_failed:${Date.now().toString(36)}`,
+      status: "error",
+      summary: `Рейд-пул не створено: ${message}`,
+      error: error instanceof Error ? error.message : String(error || ""),
+    }).catch(() => false);
+
+    if (jsonMode) return jsonError(message, 400);
+
+    return redirectWithToast("/polls/new", {
+      tone: "error",
+      title: "Рейд-пул не створено",
+      message,
+      ttl: 8600,
+    });
+  }
 }

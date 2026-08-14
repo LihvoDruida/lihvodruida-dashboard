@@ -35,7 +35,7 @@
   box-shadow: var(--shadow-md);
 }
 
-.panel,
+.panel:not(:where([class*="hero"])),
 .card {
   padding: var(--pad-card);
 }
@@ -52,8 +52,10 @@
   padding: var(--pad-card-compact);
 }
 
-/* Панель — вертикальний стек: кожна панель дихає однаково */
-.panel,
+/* Панель — вертикальний стек: кожна панель дихає однаково.
+   Hero-блоки виключені: вони теж носять .panel, але мають власну
+   двоколонкову сітку в layout.css, і стек її перекривав. */
+.panel:not(:where([class*="hero"])),
 .page-section {
   display: flex;
   flex-direction: column;

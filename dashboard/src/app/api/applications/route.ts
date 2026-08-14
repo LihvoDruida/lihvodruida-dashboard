@@ -1,109 +1,83 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { recordAdminAudit } from "@/lib/accessGroups";
-import { resolveAuthorIdentity } from "@/lib/authorIdentity";
-import { ApplicationStatus } from "@/lib/github";
-import { moderateApplication } from "@/lib/moderation";
-import { canManageApplications, hierarchyTitle } from "@/lib/permissions";
-import {
-  assertRequestBodySize,
-  checkRateLimit,
-  forbiddenResponse,
-  getClientIp,
-  logDashboardEvent,
-  noStoreHeaders,
-  safeErrorMessage,
-  unauthorizedResponse,
-  verifyTrustedOrigin,
-} from "@/lib/security";
+import { canManageApplications, canViewApplicationBattleTag, canViewApplications } from "@/lib/permissions";
+import { listApplicationFilterOptions, listApplications, sanitizeApplicationsForMentorViewer } from "@/lib/github";
+import { logDashboardEvent, noStoreHeaders, safeErrorMessage, unauthorizedResponse } from "@/lib/security";
 
 export const runtime = "nodejs";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function POST(
-  request: NextRequest,
-  context: { params: Promise<{ number: string }> }
-) {
-  if (!verifyTrustedOrigin(request)) {
-    return forbiddenResponse("Недовірене джерело зміни статусу.");
+function workerApplicationsEndpoint() {
+  const raw = String(
+    process.env.GUILD_APPLICATIONS_WORKER_URL ||
+    process.env.NEXT_PUBLIC_GUILD_APPLICATIONS_WORKER_URL ||
+    process.env.DISCORD_INTERACTIONS_ENDPOINT ||
+    "",
+  ).trim();
+  if (!raw) return "";
+  try {
+    const url = new URL(raw);
+    url.pathname = "/api/guild-applications";
+    url.search = "";
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return "";
   }
+}
 
-  logDashboardEvent("info", "applications.status.attempt", request);
+function workerApplicationsHeaders(): HeadersInit {
+  const token = String(process.env.PUBLIC_API_CACHE_TOKEN || process.env.DISCORD_RULES_STATS_TOKEN || process.env.WORKER_STATS_TOKEN || process.env.INTERNAL_PROFILE_LOOKUP_TOKEN || "").trim();
+  return {
+    accept: "application/json",
+    ...(token ? { authorization: `Bearer ${token}`, "x-worker-stats-token": token } : {}),
+  };
+}
 
-  const tooLarge = assertRequestBodySize(request, 4096);
-  if (tooLarge) return tooLarge;
+async function listApplicationsFromWorker(searchParams: URLSearchParams) {
+  const endpoint = workerApplicationsEndpoint();
+  if (!endpoint) return null;
+  const url = new URL(endpoint);
+  for (const [key, value] of searchParams.entries()) url.searchParams.set(key, value);
+  if (!url.searchParams.has("limit")) url.searchParams.set("limit", "100");
+  const response = await fetch(url.toString(), { headers: workerApplicationsHeaders(), cache: "no-store" });
+  const payload = await response.json().catch(() => null) as { items?: unknown[] } | null;
+  if (!response.ok || !Array.isArray(payload?.items)) return null;
+  return payload.items as Awaited<ReturnType<typeof listApplications>>;
+}
 
+export async function GET(request: NextRequest) {
   const session = await getSession();
-  if (!session || !canManageApplications(session)) {
-    logDashboardEvent("warn", "applications.status.unauthorized", request);
+  if (!canViewApplications(session)) {
+    logDashboardEvent("warn", "applications.list.unauthorized", request);
     return unauthorizedResponse();
   }
 
-  const ip = getClientIp(request);
-  const limit = checkRateLimit(`moderation:${session.id}:${ip}`, 30, 60 * 1000);
-  if (!limit.ok) {
-    logDashboardEvent("warn", "applications.status.rate_limited", request, { userId: session.id, resetAt: limit.resetAt });
-    return NextResponse.json(
-      { error: "Забагато змін статусу. Зачекай хвилину." },
-      { status: 429, headers: noStoreHeaders({ "Retry-After": String(Math.ceil((limit.resetAt - Date.now()) / 1000)) }) }
-    );
-  }
-
-  const { number } = await context.params;
-  const issueNumber = Number(number);
-  if (!Number.isInteger(issueNumber) || issueNumber <= 0) {
-    logDashboardEvent("warn", "applications.status.invalid_issue", request, { issueNumber: number });
-    return NextResponse.json({ error: "Невірний номер заявки." }, { status: 400, headers: noStoreHeaders() });
-  }
-
-  const body = await request.json().catch(() => ({}));
-  const status = String(body.status || "") as ApplicationStatus;
-
-  if (status !== "accepted" && status !== "declined") {
-    logDashboardEvent("warn", "applications.status.unsupported_status", request, { issueNumber, status });
-    return NextResponse.json({ error: "Невідомий статус заявки" }, { status: 400, headers: noStoreHeaders() });
-  }
+  logDashboardEvent("debug", "applications.list.attempt", request, { userId: session?.id, role: session?.role });
 
   try {
-    const moderatorName = (await resolveAuthorIdentity(session)).primaryName;
-    const result = await moderateApplication({
-      issueNumber,
-      status,
-      moderator: `${moderatorName} (${hierarchyTitle(session.role)})`,
-      source: "dashboard",
-    });
+    const url = new URL(request.url);
+    const canSeeSensitiveFields = canViewApplicationBattleTag(session);
+    const workerItems = canSeeSensitiveFields ? null : await listApplicationsFromWorker(url.searchParams).catch(() => null);
+    const [rawItems, filterOptions] = workerItems
+      ? [workerItems, { classes: Array.from(new Set(workerItems.map((item) => String(item.class_name || "").trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, "uk")), total: workerItems.length }]
+      : await Promise.all([listApplications(url.searchParams), listApplicationFilterOptions()]);
+    const items = canSeeSensitiveFields ? rawItems : sanitizeApplicationsForMentorViewer(rawItems);
+    const counts = {
+      all: items.length,
+      review: items.filter((item) => item.status_key === "review").length,
+      accepted: items.filter((item) => item.status_key === "accepted").length,
+      declined: items.filter((item) => item.status_key === "declined").length,
+    };
 
-    const resultRecord = result as Record<string, unknown>;
-    const discordResult = resultRecord.discord && typeof resultRecord.discord === "object" && !Array.isArray(resultRecord.discord)
-      ? resultRecord.discord as Record<string, unknown>
-      : null;
-
-    logDashboardEvent("info", "applications.status.success", request, { issueNumber, status, userId: session.id });
-    await recordAdminAudit("applications.status.update", session, {
-      status: "success",
-      summary: `Заявка #${issueNumber}: статус змінено на ${status}.`,
-      issueNumber,
-      applicationStatus: status,
-      source: "dashboard",
-      discordUpdated: Boolean(resultRecord.discordUpdated || discordResult?.ok),
-    }).catch((auditError) => {
-      logDashboardEvent("warn", "applications.status.audit_failed", request, { issueNumber, status, message: auditError instanceof Error ? auditError.message : String(auditError || "unknown") });
-    });
-    return NextResponse.json(result, { headers: noStoreHeaders() });
+    logDashboardEvent("debug", "applications.list.success", request, { count: items.length, userId: session?.id });
+    return NextResponse.json({ items, counts, classOptions: filterOptions.classes, access: { role: session?.role || null, canManageApplications: canManageApplications(session), canViewBattleTag: canSeeSensitiveFields, canViewSensitiveFields: canSeeSensitiveFields } }, { headers: noStoreHeaders() });
   } catch (error) {
-    const message = safeErrorMessage(error);
-    logDashboardEvent("error", "applications.status.failed", request, { issueNumber, status, message });
-    await recordAdminAudit("applications.status.update_failed", session, {
-      status: "error",
-      summary: `Заявка #${issueNumber}: статус не змінено. ${message}`,
-      issueNumber,
-      applicationStatus: status,
-      error: error instanceof Error ? error.message : String(error || ""),
-    }).catch(() => false);
+    logDashboardEvent("error", "applications.list.failed", request, { message: safeErrorMessage(error) });
     return NextResponse.json(
-      { error: safeErrorMessage(error, "Не вдалося змінити статус заявки.") },
+      { error: safeErrorMessage(error, "Не вдалося завантажити заявки.") },
       { status: 500, headers: noStoreHeaders() }
     );
   }

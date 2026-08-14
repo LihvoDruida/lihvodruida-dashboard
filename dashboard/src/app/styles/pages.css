@@ -34,242 +34,6 @@
 }
 
 /* =========================================================
-   РЕЙДИ
-   ========================================================= */
-.raid-list-main-link {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  min-width: 0;
-  color: inherit;
-}
-
-.raid-list-main-link img {
-  width: 86px;
-  height: 86px;
-  flex: 0 0 auto;
-  border-radius: var(--radius-md);
-  object-fit: cover;
-  border: 1px solid var(--border);
-}
-
-.raid-list-copy {
-  display: grid;
-  gap: var(--space-2xs);
-  min-width: 0;
-}
-
-.raid-list-title-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-xs);
-}
-
-.raid-list-title-row strong {
-  font-size: 1rem;
-  color: var(--text-strong);
-}
-
-.raid-list-facts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2xs) var(--space-sm);
-}
-
-.raid-list-facts small {
-  font-size: 0.74rem;
-  color: var(--text-muted);
-}
-
-.raid-list-progress {
-  display: block;
-  height: 5px;
-  border-radius: var(--radius-pill);
-  background: var(--surface-sunken);
-  overflow: hidden;
-}
-
-.raid-list-progress > span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--accent-gradient);
-  transition: width var(--dur-base) var(--ease-out);
-}
-
-.raid-list-actions {
-  flex: 0 0 auto;
-}
-
-.raid-list-action-tools {
-  display: inline-flex;
-  gap: var(--space-2xs);
-}
-
-.raid-list-icon-action {
-  width: 34px;
-  min-height: 34px;
-  padding: 0;
-}
-
-/* Статус рейду фарбує ліву грань рядка */
-.raid-list-item--active {
-  border-left: 3px solid var(--c-success);
-}
-
-.raid-list-item--closed,
-.raid-list-item--archived {
-  border-left: 3px solid var(--c-ink-500);
-  opacity: 0.85;
-}
-
-.raid-list-item--locked {
-  border-left: 3px solid var(--c-warning);
-}
-
-/* Склад рейду */
-.raid-party-row {
-  display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr);
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-2xs) var(--space-xs);
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  background: var(--surface-sunken);
-  transition: border-color var(--dur-fast) var(--ease-out);
-}
-
-.raid-party-row--tank {
-  border-left: 3px solid var(--c-role-tank);
-}
-
-.raid-party-row--healer {
-  border-left: 3px solid var(--c-role-healer);
-}
-
-.raid-party-row--dps {
-  border-left: 3px solid var(--c-role-dps);
-}
-
-.raid-party-row.is-late {
-  border-color: rgba(232, 179, 74, 0.32);
-}
-
-.raid-party-row.is-undergeared {
-  background: rgba(232, 179, 74, 0.08);
-}
-
-.raid-party-row.is-blocked {
-  background: rgba(224, 112, 95, 0.1);
-  border-color: rgba(224, 112, 95, 0.32);
-}
-
-.raid-party-row.is-non-guild {
-  opacity: 0.8;
-}
-
-.raid-party-member-copy {
-  display: grid;
-  gap: var(--space-3xs);
-  min-width: 0;
-}
-
-.raid-party-member-copy strong {
-  font-size: 0.86rem;
-  color: var(--text-strong);
-  overflow-wrap: break-word;
-}
-
-.raid-signup-side {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2xs);
-  flex: 0 0 auto;
-}
-
-.raid-role-icon {
-  font-size: 0.9rem;
-  line-height: 1;
-}
-
-.raid-party-card {
-  display: grid;
-  gap: var(--space-xs);
-}
-
-.raid-member-panel,
-.raid-manager-list {
-  display: grid;
-  gap: var(--space-xs);
-}
-
-.raid-signup-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: var(--radius-sm);
-}
-
-/* Кнопки відповіді на рейд */
-.raid-preview-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-}
-
-.raid-action {
-  --tone: var(--c-ink-400);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2xs);
-  min-height: 40px;
-  padding: 0 var(--space-md);
-  border: 1px solid color-mix(in srgb, var(--tone) 32%, transparent);
-  border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--tone) 12%, transparent);
-  color: var(--tone);
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
-}
-
-.raid-action:hover {
-  background: color-mix(in srgb, var(--tone) 20%, transparent);
-  transform: translateY(-2px);
-}
-
-.raid-action--go {
-  --tone: var(--c-success);
-}
-
-.raid-action--maybe {
-  --tone: var(--c-warning);
-}
-
-.raid-action--skip {
-  --tone: var(--c-danger);
-}
-
-.raid-action--late {
-  --tone: var(--c-info);
-}
-
-.raid-checkbox-line {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-  min-height: 36px;
-}
-
-.raid-preview-column {
-  display: grid;
-  gap: var(--gap-stack);
-  min-width: 0;
-}
-
-/* =========================================================
    ПУЛИ
    ========================================================= */
 .poll-section-head {
@@ -841,6 +605,46 @@
   gap: var(--gap-stack);
 }
 
+.discord-role-picker {
+  display: grid;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.discord-role-selected {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
+.discord-role-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: var(--space-3xs) var(--space-sm);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.discord-role-chip:hover {
+  border-color: var(--border-strong);
+  color: var(--text-strong);
+}
+
+.discord-role-placeholder {
+  color: var(--text-faint);
+  font-size: 0.8rem;
+}
+
+.discord-role-search {
+  max-width: 360px;
+}
+
 .discord-role-dot {
   display: inline-block;
   width: 10px;
@@ -1256,62 +1060,4 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-xs);
-}
-
-/* =========================================================
-   МОБІЛЬНІ СПИСКИ РЕЙДІВ
-   ========================================================= */
-@media (max-width: 860px) {
-  .raid-list-main-link {
-    align-items: flex-start;
-    gap: var(--space-sm);
-  }
-
-  .raid-list-main-link img {
-    width: 56px;
-    height: 56px;
-  }
-
-  .raid-list-title-row strong {
-    font-size: 0.95rem;
-  }
-
-  .raid-list-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-xs);
-    width: 100%;
-    padding-top: var(--space-xs);
-    border-top: 1px solid var(--border-subtle);
-  }
-
-  .raid-list-actions > a,
-  .raid-list-actions > button {
-    flex: 1 1 auto;
-  }
-
-  .raid-list-action-tools {
-    flex: 0 0 auto;
-  }
-
-  .raid-party-row {
-    grid-template-columns: auto auto minmax(0, 1fr);
-    padding: var(--space-xs);
-  }
-
-  .profile-account-sidebar__avatar {
-    width: 72px;
-    height: 72px;
-  }
-}
-
-@media (max-width: 520px) {
-  .raid-list-main-link {
-    flex-wrap: wrap;
-  }
-
-  .raid-list-main-link img {
-    width: 44px;
-    height: 44px;
-  }
 }

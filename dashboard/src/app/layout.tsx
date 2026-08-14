@@ -12,6 +12,7 @@ import "./styles/patterns.css";
 import "./styles/components.css";
 import "./styles/nav.css";
 import "./styles/pages.css";
+import "./styles/raids.css";
 import DashboardFormEnhancer from "@/components/DashboardFormEnhancer";
 import GlobalToasts from "@/components/GlobalToasts";
 import AppFooter from "@/components/AppFooter";

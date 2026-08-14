@@ -1,474 +1,390 @@
+import type { ReactNode } from "react";
 import DashboardIdentity from "@/components/DashboardIdentity";
-import ProfileNameControls from "@/components/ProfileNameControls";
+import LogoutButton from "@/components/LogoutButton";
+import ProfileCandidateBulkActions from "@/components/ProfileCandidateBulkActions";
+import ProfileCandidateExpiryTimer from "@/components/ProfileCandidateExpiryTimer";
+import ProfileCharactersLiveSection from "@/components/ProfileCharactersLiveSection";
+import { getEnabledBattleNetRegions } from "@/lib/battlenet";
+import {
+  normalizeCharacterKey,
+  pickWowAvatarImageUrl,
+} from "@/lib/wowCharacters";
+import {
+  listProfileRaidSignups,
+  raidDisplayCapacity,
+  raidAutoCompositionLabel,
+  raidTitle,
+  raidDifficultyLabel,
+  type ProfileRaidSignup,
+} from "@/lib/raids";
 import { buildPageMetadata } from "@/lib/seo";
-import { getSession } from "@/lib/auth";
-import { recordDashboardSystemLog } from "@/lib/dashboardSystemLogs";
-import { withTimeout } from "@/lib/runtimeResilience";
+import { formatStableUkCompactDate } from "@/lib/stableUiText";
+import { getDashboardApiSettings } from "@/lib/dashboardApiSettings";
+import { wowRoleLabel } from "@/lib/wowRoles";
+import { getSession, type DashboardSession } from "@/lib/auth";
 import {
-  fetchDiscordGuildMemberSnapshot,
-  fetchDiscordGuildSnapshot,
-  hasDiscordEmbedConfig,
-} from "@/lib/discordAdmin";
-import { getGuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
+  canViewProfileAccessDetails,
+  dashboardRoleLabel,
+  guildStatusLabel,
+} from "@/lib/permissions";
 import {
-  wowRoleLabel,
-  resolveWowCharacterRole,
-  type WowCharacterRole,
-} from "@/lib/wowRoles";
-import { guildStatusLabel } from "@/lib/permissions";
-import {
-  buildProfileDiscordNickname,
-  buildProfileDiscordNicknamePlan,
+  canViewProfile,
+  profileGenderedText,
   getMainCharacter,
-  getProfileById,
   getProfilePublicName,
   getProfileRaidRole,
-  getProfileServerStyleName,
-  profileGenderLabel,
+  getProfileById,
+  profileNeedsSettingsSetup,
+  profileSettingsSetupPath,
   profileFromSession,
-  profileSettingsSetupStatus,
   upsertProfileFromSession,
   type DashboardProfile,
   type ProfileCharacter,
-  type ProfileGrammaticalGender,
 } from "@/lib/profiles";
+import { getGuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
 import { notFound, redirect } from "next/navigation";
 
 export const metadata = buildPageMetadata({
-  title: "Налаштування профілю",
+  title: "Профіль учасника",
   description:
-    "Налаштування імені профілю, Discord nickname, альтів для шаблону та ролі у рейдах.",
-  path: "/profile/settings",
-  keywords: [
-    "налаштування профілю",
-    "Discord nickname",
-    "Battle.net альти",
-    "рейдова роль",
-  ],
+    "Профіль учасника Mistblossom Vanguard з Battle.net-персонажами, мейном і записами на рейди.",
+  path: "/profile",
+  keywords: ["профіль учасника", "мейн персонаж", "Battle.net", "рейдова роль"],
 });
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function formatCompactDate(value?: string | null) {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  return new Intl.DateTimeFormat("uk-UA", {
-    day: "2-digit",
-    month: "short",
-  }).format(date);
+
+type ProfileUiIconKind =
+  | "home"
+  | "gear"
+  | "swords"
+  | "shield"
+  | "user"
+  | "group"
+  | "link"
+  | "check"
+  | "sync"
+  | "plus"
+  | "calendar"
+  | "crown"
+  | "leaf";
+
+function ProfileUiIcon({ kind }: { kind: ProfileUiIconKind }) {
+  return <span className={`profile-ui-icon profile-ui-icon--${kind}`} aria-hidden="true" />;
 }
 
-function characterAutoRaidRole(
-  character?: ProfileCharacter | null,
-): WowCharacterRole {
-  return character
-    ? resolveWowCharacterRole({
-        className: character.className,
-        activeSpecName: character.activeSpecName,
-        activeSpecId: character.activeSpecId,
-        activeSpecRole: character.activeSpecRole,
-      })
-    : "dps";
+function battleNetActionCopy(
+  profile: DashboardProfile,
+  hasFreshBattleNetSession: boolean,
+) {
+  if (hasFreshBattleNetSession) {
+    return {
+      eyebrow: "Готово до додавання",
+      title: "Додати персонажів",
+      hint: "Вибери потрібних зі свіжого списку",
+    };
+  }
+  if (profile.battlenet?.linked) {
+    return {
+      eyebrow: "Battle.net підключено",
+      title: "Оновити список",
+      hint: "Потрібно для нових або оновлених персонажів",
+    };
+  }
+  return {
+    eyebrow: "Battle.net не підключено",
+    title: "Підключити Battle.net",
+    hint: "Знайде гільдійних та інших персонажів Battle.net",
+  };
 }
 
-const RAID_ROLE_OPTIONS: {
-  value: "auto" | WowCharacterRole;
-  label: string;
-  hint: string;
-}[] = [
-  {
-    value: "auto",
-    label: "Авто зі спеки",
-    hint: "Авто, якщо спек визначено правильно",
-  },
-  { value: "tank", label: "Танк", hint: "Записувати мейна танком" },
-  { value: "healer", label: "Хіл", hint: "Записувати мейна хілом" },
-  { value: "dps", label: "ДД", hint: "Записувати мейна як ДД" },
-];
-
-type SelectableProfileGender = Exclude<ProfileGrammaticalGender, "unspecified">;
-
-const PROFILE_GENDER_OPTIONS: {
-  value: SelectableProfileGender;
-  label: string;
-  hint: string;
-  example: string;
-}[] = [
-  {
-    value: "male",
-    label: "Чоловіча форма",
-    hint: "Чоловіча форма в статусах і повідомленнях.",
-    example: "Підписаний",
-  },
-  {
-    value: "female",
-    label: "Жіноча форма",
-    hint: "Жіноча форма в статусах і повідомленнях.",
-    example: "Підписана",
-  },
-  {
-    value: "neutral",
-    label: "Нейтральне звертання",
-    hint: "Нейтральна форма без привʼязки.",
-    example: "Підписали",
-  },
-  {
-    value: "nonbinary",
-    label: "Небінарна особа",
-    hint: "Нейтральні персональні повідомлення.",
-    example: "Підписали",
-  },
-];
-
-function ProfileGenderPreferenceForm({
-  value,
-  returnTo = "",
-}: {
-  value?: ProfileGrammaticalGender | null;
-  returnTo?: string;
-}) {
-  const selected = value && value !== "unspecified" ? value : null;
-
-  return (
-    <section
-      className="profile-gender-box"
-      aria-label="Стать або звертання профілю"
-    >
-      <div className="profile-gender-box__head">
-        <span className="profile-gender-box__icon" aria-hidden="true">
-          ✦
-        </span>
-        <span>
-          <strong>Стать / звертання</strong>
-          <small>
-            Правильні форми у профілі, рейдах і Discord.
-          </small>
-        </span>
-        <span
-          className={`profile-gender-pill${selected ? " is-selected" : " is-missing"}`}
-        >
-          {profileGenderLabel(selected || "unspecified")}
-        </span>
-      </div>
-
-      <form
-        className="profile-gender-form"
-        action="/api/profile/gender"
-        method="post"
-      >
-        {returnTo ? (
-          <input type="hidden" name="returnTo" value={returnTo} />
-        ) : null}
-        {PROFILE_GENDER_OPTIONS.map((option) => {
-          const checked = selected === option.value;
-          return (
-            <label
-              className={`profile-gender-option${checked ? " is-selected" : ""}`}
-              key={option.value}
-            >
-              <input
-                type="radio"
-                name="grammaticalGender"
-                value={option.value}
-                defaultChecked={checked}
-                required
-              />
-              <span>
-                <strong>{option.label}</strong>
-                <small>{option.hint}</small>
-                <em>Приклад: {option.example}</em>
-              </span>
-            </label>
-          );
-        })}
-        <button className="btn btn-primary btn-sm" type="submit">
-          Зберегти звертання
-        </button>
-      </form>
-    </section>
+function characterAvatarUrl(
+  character?: Pick<
+    ProfileCharacter,
+    "renderUrl" | "avatarUrl" | "mediaUrl"
+  > | null,
+) {
+  if (!character) return null;
+  return pickWowAvatarImageUrl(
+    character.avatarUrl,
+    character.renderUrl,
+    character.mediaUrl,
   );
 }
 
-function RaidRolePreferenceForm({
-  mainCharacter,
-  manualRole,
-  selectedRole,
-  returnTo = "",
+function characterAuxMeta(
+  character: Pick<ProfileCharacter, "level" | "raceName" | "faction">,
+) {
+  return [
+    typeof character.level === "number" ? `Lvl ${character.level}` : null,
+    character.raceName || null,
+    character.faction || null,
+  ].filter(Boolean);
+}
+
+function raidSignupStatusLabel(
+  status: string,
+  gender?: DashboardProfile["grammaticalGender"] | null,
+) {
+  if (status === "going")
+    return profileGenderedText(gender, "Підписаний", "Підписана", "Підписали");
+  if (status === "tentative") return "50/50";
+  if (status === "late") return "Затримаюсь";
+  if (status === "skipped") return "Пропускає";
+  return "Невідомо";
+}
+
+function raidSignupStatusClass(status: string) {
+  if (status === "going") return "success";
+  if (status === "tentative") return "warning";
+  if (status === "late") return "info";
+  if (status === "skipped") return "muted";
+  return "muted";
+}
+
+function raidRoleClass(role: string) {
+  if (role === "tank") return "tank";
+  if (role === "healer") return "healer";
+  if (role === "dps") return "dps";
+  return "unknown";
+}
+
+function ProfileRaidMetaItem({
+  label,
+  value,
+  detail,
+  className = "",
 }: {
-  mainCharacter?: ProfileCharacter | null;
-  manualRole?: WowCharacterRole | null;
-  selectedRole: WowCharacterRole;
-  returnTo?: string;
+  label: string;
+  value: ReactNode;
+  detail?: ReactNode;
+  className?: string;
 }) {
-  const autoRole = characterAutoRaidRole(mainCharacter);
-  const sourceLabel = manualRole ? "Вибрано вручну" : "Авто з мейна";
-  const mainLabel = mainCharacter
-    ? `${mainCharacter.name}${mainCharacter.realmName || mainCharacter.realmSlug ? ` • ${mainCharacter.realmName || mainCharacter.realmSlug}` : ""}`
-    : "Мейн не вибрано";
+  return (
+    <span className={`profile-raid-meta-item ${className}`.trim()}>
+      <small>{label}</small>
+      <strong>{value}</strong>
+      {detail ? <em>{detail}</em> : null}
+    </span>
+  );
+}
+
+function ProfileRaidSignupCard({ item }: { item: ProfileRaidSignup }) {
+  const characterName = item.signup.characterName || item.signup.discordName || "Без персонажа";
+  const realmLabel = item.signup.realmName || item.signup.realmSlug || "";
+  const characterLabel = realmLabel ? `${characterName} • ${realmLabel}` : characterName;
+  const specLabel = [item.signup.activeSpecName, item.signup.className]
+    .filter(Boolean)
+    .join(" • ");
+  const activeRoster = item.raid.signups.filter(
+    (signup) => signup.status === "going" || signup.status === "tentative" || signup.status === "late",
+  ).length;
+  const composition = `${activeRoster} / ${raidDisplayCapacity(item.raid)} • ${raidAutoCompositionLabel(item.raid)}`;
+  const statusLabel = raidSignupStatusLabel(
+    item.signup.status,
+    item.signup.grammaticalGender,
+  );
+  const roleLabel = wowRoleLabel(item.signup.role);
+  const dateLabel =
+    [item.raid.date, item.raid.time].filter(Boolean).join(", ") ||
+    "Дата уточнюється";
+  const difficultyLabel = raidDifficultyLabel(item.raid.difficulty);
 
   return (
-    <div
-      className="profile-raid-role-box"
-      aria-label="Роль для запису на рейди"
+    <article
+      className={`profile-raid-card profile-raid-card--${item.signup.status}`}
     >
-      <div className="profile-raid-role-box__head">
-        <span className="profile-raid-role-box__icon" aria-hidden="true">
+      <a
+        className="profile-raid-card__main"
+        href={`/raids/${encodeURIComponent(item.raid.id)}`}
+      >
+        <span className={`profile-raid-card__icon profile-raid-card__icon--${raidRoleClass(item.signup.role)}`} aria-hidden="true">
           ⚔
         </span>
-        <span>
-          <strong>Роль у рейді</strong>
-          <small>{mainLabel}</small>
+        <span className="profile-raid-card__title">
+          <strong>{raidTitle(item.raid)}</strong>
+          <small>{dateLabel}</small>
+          <em>{difficultyLabel}</em>
         </span>
-        <span
-          className={`profile-raid-role-pill profile-raid-role-pill--${selectedRole}`}
-        >
-          {wowRoleLabel(selectedRole)}
-        </span>
-      </div>
+      </a>
 
-      <p className="profile-raid-role-box__note">
-        {sourceLabel}:{" "}
-        {manualRole
-          ? wowRoleLabel(manualRole)
-          : `${wowRoleLabel(autoRole)} зі спеки мейна`}
-        . Авто — нормальний стан; ручний вибір потрібен лише якщо спек
-        визначився неправильно. Для іншого персонажа роль береться з його
-        спеки.
+      <div className="profile-raid-card__body">
+        <div className="profile-raid-card__headline">
+          <span
+            className={`profile-raid-status-chip profile-raid-status-chip--${raidSignupStatusClass(item.signup.status)}`}
+          >
+            {statusLabel}
+          </span>
+          <span
+            className={`profile-raid-role-chip profile-raid-role-chip--${raidRoleClass(item.signup.role)}`}
+          >
+            {roleLabel}
+          </span>
+        </div>
+
+        <div className="profile-raid-card__meta">
+          <ProfileRaidMetaItem
+            label="Порядок"
+            value={item.signup.signupNumber ? `#${item.signup.signupNumber}` : "—"}
+            className="profile-raid-meta-item--order"
+          />
+          <ProfileRaidMetaItem
+            label="Персонаж"
+            value={characterLabel}
+            detail={specLabel || "Клас / спек не вказано"}
+            className="profile-raid-meta-item--character"
+          />
+          <ProfileRaidMetaItem
+            label="Роль"
+            value={roleLabel}
+            detail={specLabel || "Роль запису"}
+          />
+          <ProfileRaidMetaItem
+            label="Склад"
+            value={composition}
+          />
+        </div>
+
+        <div className="profile-raid-card__actions">
+          <a
+            className="profile-raid-card__action"
+            href={`/raids/${encodeURIComponent(item.raid.id)}`}
+          >
+            Відкрити рейд
+          </a>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function ProfileRaidSignups({ items }: { items: ProfileRaidSignup[] }) {
+  const active = items.filter(
+    (item) => item.signup.status === "going" || item.signup.status === "tentative" || item.signup.status === "late",
+  );
+  const skipped = items.filter((item) => item.signup.status === "skipped");
+
+  return (
+    <article
+      id="profile-raids"
+      className="panel profile-card profile-card--raids profile-card--raids-modern"
+    >
+      <div className="profile-card-head profile-card-head--inline profile-card-head--raids">
+        <div>
+          <span className="eyebrow">Рейди</span>
+          <h2>Мої записи</h2>
+        </div>
+        <span className="profile-count-pill profile-count-pill--raid-count">{active.length}</span>
+      </div>
+      <p className="profile-card-lead profile-card-lead--raids">
+        Тут видно активні записи на рейди. Для кожного нового запису персонажа
+        потрібно вибрати вручну.
       </p>
 
-      {mainCharacter ? (
-        <form
-          className="profile-raid-role-form"
-          action="/api/profile/raid-role"
-          method="post"
-        >
-          {returnTo ? (
-            <input type="hidden" name="returnTo" value={returnTo} />
-          ) : null}
-          {RAID_ROLE_OPTIONS.map((option) => {
-            const checked =
-              option.value === "auto"
-                ? !manualRole
-                : manualRole === option.value;
-            const label =
-              option.value === "auto"
-                ? `Авто: ${wowRoleLabel(autoRole)}`
-                : option.label;
-            const hint = option.value === "auto" ? option.hint : option.hint;
-            return (
-              <label
-                className={`profile-raid-role-option${checked ? " is-selected" : ""}`}
-                key={option.value}
-              >
-                <input
-                  type="radio"
-                  name="raidRole"
-                  value={option.value}
-                  defaultChecked={checked}
-                />
-                <span>
-                  <strong>{label}</strong>
-                  <small>{hint}</small>
-                </span>
-              </label>
-            );
-          })}
-          <button className="btn btn-primary btn-sm" type="submit">
-            Зберегти роль
-          </button>
-        </form>
-      ) : (
-        <div className="profile-empty-characters profile-empty-characters--compact">
-          <strong>Спочатку вибери мейна</strong>
-          <span>Після цього можна буде вказати роль для рейдів.</span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function NicknameCharactersForm({
-  profile,
-  nicknameTemplate,
-  returnTo = "",
-}: {
-  profile: DashboardProfile;
-  nicknameTemplate: string;
-  returnTo?: string;
-}) {
-  const main = getMainCharacter(profile);
-  const selected = new Set(
-    (profile.nicknameCharacterKeys || []).filter((key) => key !== main?.key),
-  );
-  const altCandidates = profile.characters
-    .filter((character) => character.key !== main?.key)
-    .sort((a, b) => {
-      if (a.verifiedGuild !== b.verifiedGuild) return a.verifiedGuild ? -1 : 1;
-      return a.name.localeCompare(b.name, "uk");
-    });
-  const plan = buildProfileDiscordNicknamePlan(profile, nicknameTemplate);
-  const previewCharacters = plan.requestedCharacterNames.length
-    ? plan.requestedCharacterNames.join(", ")
-    : "—";
-
-  return (
-    <section
-      className="profile-discord-standard profile-nickname-character-box"
-      aria-label="Персонажі для Discord nickname"
-    >
-      <div className="profile-discord-standard__head profile-discord-standard__head--modern">
-        <div className="profile-discord-standard__identity">
-          <span className="profile-name-panel__label">
-            Персонажі у Discord-ніку
-          </span>
-          <strong>{plan.value || "Спочатку вкажи імʼя"}</strong>
-          <small>Формат береться з dashboard-панелі: {nicknameTemplate}</small>
-        </div>
-        <span className="profile-count-pill">
-          {Math.min(2, selected.size)} / 2 альти
-        </span>
-      </div>
-
-      <div className="profile-nickname-preview is-synced">
-        <span>Порядок у шаблоні</span>
-        <strong>{previewCharacters}</strong>
-        <small>
-          Першим завжди іде мейн, нижче — до двох альтів.
-        </small>
-      </div>
-
-      {altCandidates.length ? (
-        <form
-          className="profile-nickname-character-form"
-          action="/api/profile/nickname-characters"
-          method="post"
-        >
-          {returnTo ? (
-            <input type="hidden" name="returnTo" value={returnTo} />
-          ) : null}
-          <div className="profile-nickname-character-list">
-            {altCandidates.map((character) => {
-              const checked = selected.has(character.key);
-              return (
-                <label
-                  className={`profile-nickname-character-option${checked ? " is-selected" : ""}`}
-                  key={character.key}
-                >
-                  <input
-                    type="checkbox"
-                    name="nicknameCharacterKeys"
-                    value={character.key}
-                    defaultChecked={checked}
+      {items.length ? (
+        <div className="profile-raid-list">
+          {active.map((item) => (
+            <ProfileRaidSignupCard
+              key={`${item.raid.id}-${item.signup.discordId}`}
+              item={item}
+            />
+          ))}
+          {skipped.length ? (
+            <details className="profile-raid-skipped">
+              <summary>Пропущені рейди: {skipped.length}</summary>
+              <div className="profile-raid-list profile-raid-list--nested">
+                {skipped.map((item) => (
+                  <ProfileRaidSignupCard
+                    key={`${item.raid.id}-${item.signup.discordId}-skipped`}
+                    item={item}
                   />
-                  <span>
-                    <strong>{character.name}</strong>
-                    <small>
-                      {[
-                        character.realmName || character.realmSlug,
-                        character.activeSpecName,
-                        character.className,
-                        character.verifiedGuild ? "Гільдійний" : "Інший",
-                      ]
-                        .filter(Boolean)
-                        .join(" • ")}
-                    </small>
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-          <p className="profile-nickname-hint">
-            Ліміт перевіряється на сервері: максимум 2 альти, без мейна.
-          </p>
-          <button className="btn btn-primary btn-sm" type="submit">
-            Зберегти альтів для ніку
-          </button>
-        </form>
+                ))}
+              </div>
+            </details>
+          ) : null}
+        </div>
       ) : (
-        <div className="profile-empty-characters profile-empty-characters--compact">
-          <strong>Немає альтів для вибору</strong>
-          <span>
-            Додай персонажів у профілі, після цього вони зʼявляться тут.
+        <div className="profile-raid-empty-state">
+          <span className="profile-raid-empty-state__icon" aria-hidden="true">
+            ⚔
           </span>
+          <div>
+            <strong>У тебе ще немає активних записів на рейди</strong>
+            <span>
+              Коли ти запишеш персонажа на рейд, запис зʼявиться тут.
+            </span>
+          </div>
+          <a className="profile-raid-empty-state__action" href="/raids">
+            Перейти до рейдів
+          </a>
         </div>
       )}
-    </section>
+    </article>
   );
 }
 
-function setupStepAnchor(key: string) {
-  if (key === "profile_name" || key === "profile_display_mode") {
-    return "#profile-name-settings";
-  }
-  if (key === "profile_gender") return "#profile-gender-settings";
-  return "#profile-settings-overview";
-}
-
-function ProfileSettingsCompletionPanel({
-  status,
+function CandidateRow({
+  character,
+  bulkFormId,
 }: {
-  status: ReturnType<typeof profileSettingsSetupStatus>;
+  character: ProfileCharacter;
+  bulkFormId: string;
 }) {
-  const completed = status.steps.filter((step) => step.complete).length;
-  const total = Math.max(1, status.steps.length);
-  const progress = Math.round((completed / total) * 100);
-
+  const kindLabel = character.verifiedGuild ? "🌿 Гільдійний" : "🤝 Інший";
+  const image = characterAvatarUrl(character);
+  const realmLabel = character.realmName || character.realmSlug || "Реалм —";
+  const extraMeta = characterAuxMeta(character);
   return (
-    <section
-      className={`profile-setup-progress-panel${status.complete ? " is-complete" : " is-missing"}`}
-      aria-label="Стан заповнення профілю"
+    <li
+      className={`profile-character-candidate${character.verifiedGuild ? " is-guild" : " is-other"}`}
     >
-      <div className="profile-setup-progress-panel__head">
-        <span className="profile-setup-progress-panel__icon" aria-hidden="true">
-          {status.complete ? "✓" : "!"}
-        </span>
-        <span>
-          <strong>
-            {status.complete
-              ? "Реєстраційні дані заповнені"
-              : "Потрібно виправити або доповнити дані"}
-          </strong>
-          <small>
-            {status.complete
-              ? "Профіль має валідне імʼя, звертання і формат відображення."
-              : `Не вистачає: ${status.missing.map((step) => step.title).join(", ")}.`}
-          </small>
-        </span>
-        <span className="profile-count-pill">
-          {completed}/{status.steps.length}
-        </span>
-      </div>
-      <div
-        className="profile-setup-progress-panel__bar"
-        role="progressbar"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={progress}
-        aria-valuetext={`${completed} з ${status.steps.length}`}
+      <label
+        className="profile-candidate-select"
+        title={`Позначити ${character.name}`}
       >
-        <span style={{ width: `${progress}%` }} />
-      </div>
-      <div className="profile-setup-progress-panel__steps" role="list">
-        {status.steps.map((step) => (
-          <a
-            className={`profile-setup-progress-step${step.complete ? " is-complete" : " is-missing"}`}
-            href={setupStepAnchor(step.key)}
-            role="listitem"
-            key={step.key}
-          >
-            <span aria-hidden="true">{step.complete ? "✓" : "!"}</span>
-            <strong>{step.title}</strong>
-            <small>{step.description}</small>
-          </a>
-        ))}
-      </div>
-    </section>
+        <input
+          data-profile-candidate-checkbox="true"
+          form={bulkFormId}
+          type="checkbox"
+          name="characterKeys"
+          value={character.key}
+          aria-label={`Вибрати ${character.name}`}
+        />
+        <span aria-hidden="true" />
+      </label>
+      <span className="profile-character-candidate__avatar">
+        {image ? (
+          <img src={image} alt="" loading="lazy" referrerPolicy="no-referrer" />
+        ) : (
+          character.name.charAt(0)
+        )}
+      </span>
+      <span className="profile-character-candidate__body">
+        <strong>
+          {character.name}{" "}
+          <em className="profile-character-candidate__kind">{kindLabel}</em>
+        </strong>
+        <small>
+          {realmLabel} •{" "}
+          {character.activeSpecName ? `${character.activeSpecName} ` : ""}
+          {character.className || "Клас невідомий"} •{" "}
+          {wowRoleLabel(character.activeSpecRole)}
+          {typeof character.itemLevel === "number"
+            ? ` • ilvl ${character.itemLevel}`
+            : ""}
+          {typeof character.level === "number"
+            ? ` • lvl ${character.level}`
+            : ""}
+        </small>
+        {extraMeta.length ? <small>{extraMeta.join(" • ")}</small> : null}
+      </span>
+    </li>
   );
 }
 
-export default async function ProfileSettingsPage({
+export default async function ProfilePage({
   params,
   searchParams,
 }: {
@@ -476,158 +392,133 @@ export default async function ProfileSettingsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const session = await getSession();
+  const nicknamePolicy = await getGuildNicknamePolicy();
   if (!session) {
     redirect("/login");
     throw new Error("Unauthorized");
   }
+  const viewer: DashboardSession = session;
 
-  const [nicknamePolicy, query] = await Promise.all([
-    getGuildNicknamePolicy().catch((error) => {
-      void recordDashboardSystemLog(
-        "warning",
-        "page.profile_settings.nickname_policy_unavailable",
-        {
-          summary:
-            "Шаблон Discord-ніку тимчасово недоступний, використано стандартний.",
-          message:
-            error instanceof Error ? error.message : String(error || "unknown"),
-        },
-        { persist: false },
-      );
-      return {
-        template: "{name} [{main}, {alt}, {alt}]",
-        roleRemoveConcurrency: 0,
-        roleRemoveMaxConcurrency: 5,
-        nicknameCleanupConcurrency: 0,
-        nicknameCleanupMaxConcurrency: 4,
-        updatedAt: null,
-        updatedBy: null,
-      };
-    }),
-    searchParams,
-  ]);
-
-  const { profileId } = await params;
+  const [{ profileId }, query] = await Promise.all([params, searchParams]);
   const rulesReturnToken = String(
     Array.isArray(query.rt) ? query.rt[0] : query.rt || "",
   ).trim();
   const isRulesReturn =
     String(Array.isArray(query.from) ? query.from[0] : query.from || "") ===
       "rules" && Boolean(rulesReturnToken);
-  const settingsRulesReturnPath = isRulesReturn
-    ? `/profile/${profileId}/settings?setup=1&from=rules&rt=${encodeURIComponent(rulesReturnToken)}`
-    : "";
   const profileRulesReturnPath = isRulesReturn
     ? `/profile/${profileId}?from=rules&rt=${encodeURIComponent(rulesReturnToken)}`
+    : "";
+  const settingsRulesReturnPath = isRulesReturn
+    ? `/profile/${profileId}/settings?setup=1&from=rules&rt=${encodeURIComponent(rulesReturnToken)}`
     : "";
   const rulesReviewPath = isRulesReturn
     ? `/rules/accept?rt=${encodeURIComponent(rulesReturnToken)}&status=incomplete`
     : "";
-  const isOwnProfile = Boolean(
-    session.profileId && session.profileId === profileId,
-  );
-  if (!isOwnProfile) notFound();
+  const initialProfile = await getProfileById(profileId);
 
-  let profile = await getProfileById(profileId);
+  const isOwnProfile = Boolean(
+    viewer.profileId && viewer.profileId === profileId,
+  );
+  if (initialProfile && !canViewProfile(viewer, profileId, initialProfile)) {
+    notFound();
+  }
+  if (!initialProfile && !isOwnProfile && !canViewProfile(viewer, profileId)) {
+    notFound();
+  }
+
+  let profile = initialProfile;
   let storageWarning = "";
 
-  if (!profile) {
-    const result = await upsertProfileFromSession(session).catch(() => null);
-    profile = result?.profile || { ...profileFromSession(session), profileId };
+  if (!profile && isOwnProfile) {
+    const result = await upsertProfileFromSession(viewer).catch(() => null);
+    profile = result?.profile || { ...profileFromSession(viewer), profileId };
     if (!result?.stored) {
       storageWarning =
         "Профіль тимчасово показано з поточної сесії. Частина даних може оновитися після повторного входу.";
     }
   }
 
-  if (!profile) notFound();
+  if (!profile) {
+    notFound();
+  }
+
+  if (isOwnProfile && profileNeedsSettingsSetup(profile)) {
+    const setupPath = profileSettingsSetupPath(profile.profileId);
+    redirect(
+      isRulesReturn
+        ? `${setupPath}&from=rules&rt=${encodeURIComponent(rulesReturnToken)}`
+        : setupPath,
+    );
+  }
 
   const mainCharacter = getMainCharacter(profile);
-  const raidRolePreference = profile.raidRolePreference || null;
-  const manualRaidRole =
-    raidRolePreference &&
-    mainCharacter &&
-    raidRolePreference.characterKey === mainCharacter.key
-      ? raidRolePreference.role
-      : null;
   const selectedRaidRole = getProfileRaidRole(profile);
+  const enabledBattleNetRegions = getEnabledBattleNetRegions();
+  const canManageCharacters = isOwnProfile;
+  const canViewPrivateProfileBlocks =
+    isOwnProfile || canViewProfileAccessDetails(viewer);
+  const addedKeys = new Set(
+    profile.characters
+      .map((item) => normalizeCharacterKey(item.key))
+      .filter(Boolean),
+  );
+  const candidateByKey = new Map<string, ProfileCharacter>();
+  for (const candidate of profile.battlenet?.candidateCharacters || []) {
+    const key = normalizeCharacterKey(candidate.key);
+    if (key && !candidateByKey.has(key)) candidateByKey.set(key, candidate);
+  }
+  const availableCandidates = Array.from(candidateByKey.values()).filter(
+    (item) => !addedKeys.has(normalizeCharacterKey(item.key)),
+  );
+  const availableGuildCandidates = availableCandidates.filter(
+    (item) => item.verifiedGuild,
+  );
+  const availableOtherCandidates = availableCandidates.filter(
+    (item) => !item.verifiedGuild,
+  );
+  const profileGuildCharacterCount = profile.characters.filter(
+    (item) => item.verifiedGuild,
+  ).length;
+  const hasAvailableBattleNetCandidates = Boolean(
+    availableCandidates.length && profile.battlenet?.candidateExpiresAt,
+  );
+  const hasFreshBattleNetSession = hasAvailableBattleNetCandidates;
+  const primaryBattleNetRegion = enabledBattleNetRegions[0] || "eu";
+  const battleNetAction = battleNetActionCopy(
+    profile,
+    hasFreshBattleNetSession,
+  );
+  const battleNetRefreshHref = `/api/auth/battlenet/start?region=${primaryBattleNetRegion}${profileRulesReturnPath ? `&next=${encodeURIComponent(profileRulesReturnPath)}` : ""}`;
+  const battleNetLastSyncAt =
+    profile.battlenet?.lastProfileViewRefreshAt ||
+    profile.battlenet?.lastCharacterRefreshAt ||
+    profile.battlenet?.lastSyncAt ||
+    null;
+  const battleNetLastSyncLabel = formatStableUkCompactDate(battleNetLastSyncAt);
+  const bulkFormId = "profile-candidate-bulk-add";
   const publicNamePreview = getProfilePublicName(
     profile,
     nicknamePolicy.template,
   );
-  const serverStyleNamePreview = getProfileServerStyleName(
-    profile,
-    80,
-    nicknamePolicy.template,
-  );
-  const discordNicknamePreview = buildProfileDiscordNickname(
-    profile,
-    nicknamePolicy.template,
-  );
-  const discordMemberReadable =
-    profile.provider === "discord" &&
-    /^\d{16,25}$/.test(profile.providerUserId) &&
-    hasDiscordEmbedConfig();
-  const canSyncDiscordNickname = discordMemberReadable;
-  let discordOwnerLocked = false;
-  let currentServerNickname: string | null = null;
-  let liveDiscordMember: Awaited<
-    ReturnType<typeof fetchDiscordGuildMemberSnapshot>
-  > | null = null;
-
-  if (discordMemberReadable) {
-    const [guild, member] = await withTimeout(
-      Promise.all([
-        fetchDiscordGuildSnapshot().catch(() => null),
-        fetchDiscordGuildMemberSnapshot(profile.providerUserId).catch(
-          () => null,
-        ),
-      ]),
-      1_800,
-      "profile settings discord member read",
-    ).catch((error) => {
-      void recordDashboardSystemLog(
-        "warning",
-        "page.profile_settings.discord_live_read_failed",
-        {
-          summary:
-            "Discord-нік не перевірено наживо, показано збережені дані профілю.",
-          profileId,
-          message:
-            error instanceof Error ? error.message : String(error || "unknown"),
-        },
-        { persist: false },
-      );
-      return [null, null] as const;
-    });
-    liveDiscordMember = member;
-    discordOwnerLocked = Boolean(
-      guild?.ownerId && guild.ownerId === profile.providerUserId,
-    );
-    currentServerNickname = member?.nick || null;
-  }
-
-  const setupStatus = profileSettingsSetupStatus(profile);
-  const isSetupEntry =
-    String(Array.isArray(query.setup) ? query.setup[0] : query.setup || "") ===
-      "1" || setupStatus.missing.length > 0;
-  const setupCompleteCount = setupStatus.steps.filter(
-    (step) => step.complete,
-  ).length;
-  const settingsPageTitle = isSetupEntry
-    ? "Реєстрація профілю"
-    : "Налаштування профілю";
   const guildStatus = guildStatusLabel(profile.role);
-  const accountStatusLabel = guildStatus;
-  const savedCharacterCount = profile.characters.length;
-
+  const apiSettings = await getDashboardApiSettings();
+  const raidSignups = canViewPrivateProfileBlocks
+    ? await listProfileRaidSignups(profile).catch(() => [])
+    : [];
+  const accountStatusLabel = dashboardRoleLabel(profile.role);
+  const visibleCharacters = [...profile.characters].sort((a, b) => {
+    if (a.isMain !== b.isMain) return a.isMain ? -1 : 1;
+    if (a.verifiedGuild !== b.verifiedGuild) return a.verifiedGuild ? -1 : 1;
+    return a.name.localeCompare(b.name, "uk");
+  });
   return (
     <main className="container profile-page-container">
       <section
-        className="dashboard-shell content-shell profile-shell profile-account-page profile-settings-page"
-        aria-label="Налаштування профілю Mistblossom Vanguard"
+        className="dashboard-shell content-shell profile-shell profile-account-page"
+        aria-label="Профіль Mistblossom Vanguard"
       >
-        <DashboardIdentity user={session} activeSection="profile" />
+        <DashboardIdentity user={viewer} activeSection="profile" />
         <div className="profile-account-layout">
           <aside
             className="panel profile-account-sidebar"
@@ -658,10 +549,7 @@ export default async function ProfileSettingsPage({
                 className="profile-account-sidebar__pills"
                 aria-label="Стан профілю"
               >
-                <span>☘ {savedCharacterCount} перс.</span>
-                <span>
-                  ✓ {setupCompleteCount}/{setupStatus.steps.length}
-                </span>
+                <span>☘ {profileGuildCharacterCount} гільд.</span>
                 <span>⚔ {wowRoleLabel(selectedRaidRole)}</span>
               </div>
             </div>
@@ -670,85 +558,85 @@ export default async function ProfileSettingsPage({
               aria-label="Розділи профілю"
             >
               <a
-                href={
-                  profileRulesReturnPath ||
-                  `/profile/${encodeURIComponent(profile.profileId)}`
-                }
-              >
-                <span aria-hidden="true">✦</span> Профіль
-              </a>
-              <a
-                href={
-                  settingsRulesReturnPath ||
-                  `/profile/${encodeURIComponent(profile.profileId)}/settings`
-                }
+                href={`/profile/${encodeURIComponent(profile.profileId)}`}
                 aria-current="page"
               >
-                <span aria-hidden="true">⚙</span> Налаштування
+                <ProfileUiIcon kind="home" /> Профіль
               </a>
-              <a href="#profile-name-settings">
-                <span aria-hidden="true">#</span> Імʼя
+              <a href="#profile-characters">
+                <ProfileUiIcon kind="swords" /> Персонажі
               </a>
-              <a href="#profile-gender-settings">
-                <span aria-hidden="true">✦</span> Звертання
-              </a>
-              <a href="#profile-nickname-settings">
-                <span aria-hidden="true">◆</span> Discord-нік
-              </a>
-              <a href="#profile-role-settings">
-                <span aria-hidden="true">⚔</span> Роль
-              </a>
+              {canViewPrivateProfileBlocks ? (
+                <a href="#profile-raids">
+                  <ProfileUiIcon kind="shield" /> Рейди
+                </a>
+              ) : null}
             </nav>
+            <div className="profile-account-sidebar__footer">
+              <LogoutButton />
+            </div>
           </aside>
 
           <div className="profile-account-main">
-            <header
-              className="profile-account-header"
-              id="profile-settings-overview"
-            >
+            <header className="profile-account-header" id="profile-overview">
               <div>
-                <span className="eyebrow">
-                  Mistblossom Vanguard •{" "}
-                  {isSetupEntry ? "Реєстрація" : "Налаштування"}
-                </span>
-                <h1>{settingsPageTitle}</h1>
+                <span className="eyebrow">Mistblossom Vanguard • Профіль</span>
+                <h1>{isOwnProfile ? "Мій профіль" : "Профіль учасника"}</h1>
                 <p>
-                  Коротко налаштуй імʼя, звертання, Discord-нік, альтів для
-                  шаблону та роль для рейдів. Помилки й незаповнені поля видно
-                  у статусі нижче.
+                  Профіль тепер розділений на два зрозумілі рівні: тут —
+                  Battle.net, персонажі, мейн і рейдові записи; у налаштуваннях
+                  — імʼя, звертання, Discord nickname і формат відображення.
                 </p>
               </div>
-              <span className="profile-account-header__badge">
-                {guildStatus}
-              </span>
+              <div className="profile-account-header__actions">
+                <span className="profile-account-header__badge">
+                  <ProfileUiIcon kind="crown" />
+                  <span>{guildStatus}</span>
+                </span>
+                {isOwnProfile ? (
+                  <a
+                    className="btn btn-ghost btn-sm profile-header-settings"
+                    href={
+                      settingsRulesReturnPath ||
+                      `/profile/${encodeURIComponent(profile.profileId)}/settings`
+                    }
+                  >
+                    <ProfileUiIcon kind="gear" />
+                    <span>Налаштування профілю</span>
+                  </a>
+                ) : null}
+              </div>
             </header>
 
             <section
               className="profile-account-overview profile-account-overview--clean"
-              aria-label="Короткий стан налаштувань"
+              aria-label="Короткий стан профілю"
             >
               <div className="profile-account-overview-card profile-account-overview-card--primary">
                 <span
                   className="profile-account-overview-card__icon"
                   aria-hidden="true"
                 >
-                  #
+                  <ProfileUiIcon kind="user" />
                 </span>
                 <span>
-                  <small>Публічно</small>
+                  <small>Імʼя профілю</small>
                   <strong>{publicNamePreview}</strong>
                 </span>
               </div>
-              <div className="profile-account-overview-card">
+              <div className="profile-account-overview-card profile-account-overview-card--main-role">
                 <span
                   className="profile-account-overview-card__icon"
                   aria-hidden="true"
                 >
-                  ⌁
+                  <ProfileUiIcon kind="swords" />
                 </span>
                 <span>
-                  <small>Discord-нік</small>
-                  <strong>{discordNicknamePreview || "—"}</strong>
+                  <small>Мейн / роль у рейді</small>
+                  <strong>{mainCharacter?.name || "—"}</strong>
+                  <small className="profile-account-overview-card__meta">
+                    {wowRoleLabel(selectedRaidRole)}
+                  </small>
                 </span>
               </div>
               <div className="profile-account-overview-card">
@@ -756,30 +644,31 @@ export default async function ProfileSettingsPage({
                   className="profile-account-overview-card__icon"
                   aria-hidden="true"
                 >
-                  ✦
+                  <ProfileUiIcon kind="group" />
                 </span>
                 <span>
-                  <small>Звертання</small>
+                  <small>Персонажі</small>
+                  <strong>{visibleCharacters.length}</strong>
+                  <small className="profile-account-overview-card__meta">
+                    {profileGuildCharacterCount} гільдійних
+                  </small>
+                </span>
+              </div>
+              <div className="profile-account-overview-card profile-account-overview-card--success">
+                <span
+                  className="profile-account-overview-card__icon"
+                  aria-hidden="true"
+                >
+                  <ProfileUiIcon kind="link" />
+                </span>
+                <span>
+                  <small>Battle.net</small>
                   <strong>
-                    {profileGenderLabel(profile.grammaticalGender)}
+                    {profile.battlenet?.linked ? "Підключено" : "Не підключено"}
                   </strong>
                 </span>
               </div>
-              <div className="profile-account-overview-card">
-                <span
-                  className="profile-account-overview-card__icon"
-                  aria-hidden="true"
-                >
-                  ⚔
-                </span>
-                <span>
-                  <small>Роль у рейді</small>
-                  <strong>{wowRoleLabel(selectedRaidRole)}</strong>
-                </span>
-              </div>
             </section>
-
-            <ProfileSettingsCompletionPanel status={setupStatus} />
 
             {storageWarning ? (
               <div
@@ -797,7 +686,7 @@ export default async function ProfileSettingsPage({
                     Ти завершуєш реєстрацію через правила Discord.
                   </strong>
                   <small>
-                    Заповни обовʼязкові поля, потім повернись до перевірки
+                    Перевір персонажів і мейна, потім повернись до перевірки
                     правил.
                   </small>
                 </span>
@@ -806,132 +695,189 @@ export default async function ProfileSettingsPage({
                 </a>
               </div>
             ) : null}
-            {isSetupEntry ? (
+            {!isOwnProfile && canViewPrivateProfileBlocks ? (
               <div
-                className={`profile-setup-callout${setupStatus.complete ? " is-complete" : " is-warning"}`}
+                className="login-alert profile-storage-warning"
                 role="status"
               >
-                <span
-                  className="profile-setup-callout__icon"
-                  aria-hidden="true"
-                >
-                  {setupStatus.complete ? "✓" : "!"}
-                </span>
-                <span>
-                  <strong>
-                    {setupStatus.complete
-                      ? "Базові налаштування профілю заповнені"
-                      : "Потрібно завершити базові налаштування"}
-                  </strong>
-                  <small>
-                    {setupStatus.complete
-                      ? "Тепер можна перейти до профілю, Battle.net і персонажів."
-                      : `Не вистачає: ${setupStatus.missing.map((step) => step.title).join(", ")}. Заповни або виправ ці поля прямо на цій сторінці.`}
-                  </small>
-                </span>
-                {setupStatus.complete ? (
-                  <a
-                    className="btn btn-ghost btn-sm"
-                    href={
-                      profileRulesReturnPath ||
-                      `/profile/${encodeURIComponent(profile.profileId)}`
-                    }
-                  >
-                    Перейти в профіль
-                  </a>
-                ) : null}
+                Ти можеш переглядати цей профіль, але змінювати персонажів може
+                тільки власник.
               </div>
             ) : null}
 
             <section
-              className="profile-grid profile-grid--settings"
-              aria-label="Налаштування профілю"
+              className="profile-grid profile-grid--single"
+              aria-label="Персонажі профілю"
             >
               <article
-                id="profile-name-settings"
-                className="panel profile-card profile-card--identity profile-card--clean-profile"
+                id="profile-characters"
+                className="panel profile-card profile-card--characters"
               >
-                <div className="profile-card-head">
-                  <span className="eyebrow">Профіль</span>
-                  <h2>Імʼя та відображення</h2>
+                <div className="profile-card-head profile-card-head--inline profile-card-head--bnet">
+                  <div className="profile-card-title-with-icon">
+                    <span className="profile-card-title-icon" aria-hidden="true">
+                      <ProfileUiIcon kind="user" />
+                    </span>
+                    <span>
+                      <span className="eyebrow">Battle.net</span>
+                      <h2>Персонажі Battle.net</h2>
+                    </span>
+                  </div>
+                  {canManageCharacters ? (
+                    <div
+                      className={`profile-bnet-status${profile.battlenet?.linked ? " is-connected" : " is-disconnected"}`}
+                      aria-label="Підключити або оновити Battle.net"
+                    >
+                      <span className="profile-bnet-status__icon" aria-hidden="true">
+                        <ProfileUiIcon kind={profile.battlenet?.linked ? "check" : "link"} />
+                      </span>
+                      <span className="profile-bnet-status__copy">
+                        <strong>{profile.battlenet?.linked ? "Battle.net підключено" : battleNetAction.eyebrow}</strong>
+                        <small>{profile.battlenet?.linked ? `Остання синхронізація: ${battleNetLastSyncLabel}` : battleNetAction.hint}</small>
+                      </span>
+                      <a className="profile-bnet-status__action" href={battleNetRefreshHref}>
+                        <ProfileUiIcon kind={profile.battlenet?.linked ? "sync" : "link"} />
+                        <span>{battleNetAction.title}</span>
+                      </a>
+                    </div>
+                  ) : null}
                 </div>
 
-                <ProfileNameControls
-                  preferredName={profile.preferredName}
-                  publicNameMode={profile.publicNameMode}
-                  discordName={profile.displayName}
-                  publicNamePreview={publicNamePreview}
-                  serverStyleNamePreview={serverStyleNamePreview}
-                  nicknamePreview={discordNicknamePreview}
-                  lastSyncedNickname={profile.discordNickname?.value}
-                  lastSyncedAt={
-                    profile.discordNickname?.syncedAt
-                      ? formatCompactDate(profile.discordNickname.syncedAt)
-                      : null
+                <ProfileCharactersLiveSection
+                  profileId={profile.profileId}
+                  initialCharacters={visibleCharacters}
+                  initialUpdatedAt={
+                    profile.battlenet?.lastProfileViewRefreshAt ||
+                    profile.battlenet?.lastCharacterRefreshAt ||
+                    profile.battlenet?.lastSyncAt ||
+                    profile.updatedAt ||
+                    profile.lastLoginAt ||
+                    mainCharacter?.lastSeenAt ||
+                    null
                   }
-                  currentServerNickname={currentServerNickname}
-                  serverNicknameChecked={Boolean(
-                    discordMemberReadable && liveDiscordMember,
-                  )}
-                  canManage={true}
-                  canSyncDiscord={canSyncDiscordNickname}
-                  discordOwnerLocked={discordOwnerLocked}
-                  returnTo={settingsRulesReturnPath}
+                  canManage={canManageCharacters}
+                  showMainBadge={canViewPrivateProfileBlocks}
+                  returnTo={profileRulesReturnPath}
+                  candidateCount={availableCandidates.length}
+                  emptyMessage={
+                    canManageCharacters
+                      ? "Підключи Battle.net і додай мейна для рейдів."
+                      : "Учасник ще не додав персонажів."
+                  }
+                  refreshMinMs={apiSettings.profileViewRefreshMinSeconds * 1000}
                 />
+
+                {canManageCharacters ? (
+                  <div className="profile-character-add-footer">
+                    <span>
+                      <ProfileUiIcon kind="plus" />
+                      <span>Персонажів можна додати: {availableCandidates.length}</span>
+                    </span>
+                    <a className="profile-character-add-button" href={battleNetRefreshHref}>
+                      <ProfileUiIcon kind="plus" />
+                      <span>Додати персонажа</span>
+                    </a>
+                  </div>
+                ) : null}
+
+                {canManageCharacters && hasAvailableBattleNetCandidates ? (
+                  <div
+                    className="profile-candidates-box"
+                    data-profile-candidates-box="true"
+                  >
+                    <div className="profile-card-head profile-card-head--inline">
+                      <div>
+                        <span className="eyebrow">Battle.net</span>
+                        <h3>Можна додати</h3>
+                        <small className="profile-card-note">
+                          Вибери гільдійних або інших персонажів, які мають бути
+                          в профілі.
+                        </small>
+                      </div>
+                      <div
+                        className="profile-candidate-counter"
+                        aria-label="Скільки ще доступний список Battle.net"
+                      >
+                        <span
+                          className="profile-count-pill"
+                          data-profile-candidate-count="true"
+                        >
+                          {availableCandidates.length}
+                        </span>
+                        {profile.battlenet?.candidateExpiresAt ? (
+                          <ProfileCandidateExpiryTimer
+                            expiresAt={profile.battlenet.candidateExpiresAt}
+                          />
+                        ) : null}
+                      </div>
+                    </div>
+                    <form
+                      id={bulkFormId}
+                      className="profile-candidate-bulk-form"
+                      action="/api/profile/characters/bulk-add"
+                      method="post"
+                    >
+                      {profileRulesReturnPath ? (
+                        <input
+                          type="hidden"
+                          name="returnTo"
+                          value={profileRulesReturnPath}
+                        />
+                      ) : null}
+                    </form>
+                    <ProfileCandidateBulkActions
+                      formId={bulkFormId}
+                      count={availableCandidates.length}
+                    />
+                    <div className="profile-candidate-groups">
+                      {availableGuildCandidates.length ? (
+                        <section
+                          className="profile-candidate-group"
+                          aria-label="Кандидати гільдії"
+                        >
+                          <div className="profile-subsection-head profile-subsection-head--compact">
+                            <strong>Гільдійні</strong>
+                            <small>{availableGuildCandidates.length}</small>
+                          </div>
+                          <ul className="profile-character-candidates">
+                            {availableGuildCandidates.map((character) => (
+                              <CandidateRow
+                                key={character.key}
+                                character={character}
+                                bulkFormId={bulkFormId}
+                              />
+                            ))}
+                          </ul>
+                        </section>
+                      ) : null}
+                      {availableOtherCandidates.length ? (
+                        <section
+                          className="profile-candidate-group"
+                          aria-label="Інші кандидати"
+                        >
+                          <div className="profile-subsection-head profile-subsection-head--compact">
+                            <strong>Інші</strong>
+                            <small>{availableOtherCandidates.length}</small>
+                          </div>
+                          <ul className="profile-character-candidates">
+                            {availableOtherCandidates.map((character) => (
+                              <CandidateRow
+                                key={character.key}
+                                character={character}
+                                bulkFormId={bulkFormId}
+                              />
+                            ))}
+                          </ul>
+                        </section>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
               </article>
 
-              <article
-                id="profile-gender-settings"
-                className="panel profile-card profile-card--identity profile-card--clean-profile"
-              >
-                <div className="profile-card-head">
-                  <span className="eyebrow">Система</span>
-                  <h2>Стать / звертання</h2>
-                  <p className="profile-card-lead">
-                    Впливає на персональні тексти, рейди й статус завершення
-                    профілю.
-                  </p>
-                </div>
-                <ProfileGenderPreferenceForm
-                  value={profile.grammaticalGender}
-                  returnTo={settingsRulesReturnPath}
-                />
-              </article>
-
-              <article
-                id="profile-nickname-settings"
-                className="panel profile-card profile-card--identity profile-card--clean-profile"
-              >
-                <div className="profile-card-head">
-                  <span className="eyebrow">Discord</span>
-                  <h2>Шаблон ніку</h2>
-                  <p className="profile-card-lead">
-                    Мейн додається автоматично, нижче вибираються тільки два
-                    альти для шаблону Discord-ніка.
-                  </p>
-                </div>
-                <NicknameCharactersForm
-                  profile={profile}
-                  nicknameTemplate={nicknamePolicy.template}
-                  returnTo={settingsRulesReturnPath}
-                />
-              </article>
-
-              <article
-                id="profile-role-settings"
-                className="panel profile-card profile-card--identity profile-card--clean-profile"
-              >
-                <div className="profile-card-head">
-                  <span className="eyebrow">Рейди</span>
-                  <h2>Роль у рейді</h2>
-                </div>
-                <RaidRolePreferenceForm
-                  mainCharacter={mainCharacter}
-                  manualRole={manualRaidRole}
-                  selectedRole={selectedRaidRole}
-                  returnTo={settingsRulesReturnPath}
-                />
-              </article>
+              {canViewPrivateProfileBlocks ? (
+                <ProfileRaidSignups items={raidSignups} />
+              ) : null}
             </section>
           </div>
         </div>
