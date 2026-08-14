@@ -47,19 +47,34 @@ function cleanAction(value: unknown): RaidSignupStatus {
   return "going";
 }
 
-async function readAttendanceInput(request: NextRequest): Promise<{ action: RaidSignupStatus; characterKey: string | null }> {
+type AttendanceInput = {
+  action: RaidSignupStatus;
+  characterKey: string | null;
+  /** Другий метод запису: клас+спек замість персонажа Battle.net. */
+  manual: { classKey: string; specKey: string } | null;
+};
+
+function readManualSelection(classKey: unknown, specKey: unknown) {
+  const cls = String(classKey || "").trim().toLowerCase();
+  const spec = String(specKey || "").trim().toLowerCase();
+  return cls && spec ? { classKey: cls, specKey: spec } : null;
+}
+
+async function readAttendanceInput(request: NextRequest): Promise<AttendanceInput> {
   const contentType = request.headers.get("content-type") || "";
   if (contentType.includes("application/json")) {
-    const body = await request.json().catch(() => null) as { action?: unknown; characterKey?: unknown; character_key?: unknown } | null;
+    const body = await request.json().catch(() => null) as { action?: unknown; characterKey?: unknown; character_key?: unknown; classKey?: unknown; specKey?: unknown } | null;
     return {
       action: cleanAction(body?.action),
       characterKey: String(body?.characterKey || body?.character_key || "").trim() || null,
+      manual: readManualSelection(body?.classKey, body?.specKey),
     };
   }
   const form = await request.formData();
   return {
     action: cleanAction(form.get("action")),
     characterKey: String(form.get("characterKey") || "").trim() || null,
+    manual: readManualSelection(form.get("classKey"), form.get("specKey")),
   };
 }
 
@@ -83,8 +98,8 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ra
   }
 
   try {
-    const { action, characterKey } = await readAttendanceInput(request);
-    const result = await handleRaidSessionAction({ raidId, action, user, characterKey, syncDiscord: false });
+    const { action, characterKey, manual } = await readAttendanceInput(request);
+    const result = await handleRaidSessionAction({ raidId, action, user, characterKey, manual, syncDiscord: false });
 
     if (!result.ok) {
       if (jsonMode) return jsonToast({ ok: false, tone: "error", title: "Запис не оновлено", message: result.content || "Дію не виконано." });

@@ -49,6 +49,12 @@ import {
 } from "@/lib/wowCharacters";
 import { resolveWowCharacterRole } from "@/lib/wowRoles";
 import {
+  WOW_CLASS_CATALOG,
+  findWowClass,
+  findWowSpec,
+  wowSpecFullName,
+} from "@/lib/wowClassCatalog";
+import {
   createDiscordRaidMessage,
   deleteDiscordRaidMessage,
   discordMessageUrl,
@@ -113,6 +119,9 @@ export type RaidSignup = {
   verifiedGuild?: boolean | null;
   guildName?: string | null;
   guildRealmSlug?: string | null;
+  /** Ручний запис: клас і спек, обрані вручну замість персонажа Battle.net. */
+  manualClassKey?: string | null;
+  manualSpecKey?: string | null;
   signedAt?: string | null;
   updatedAt?: string | null;
 };
@@ -328,6 +337,17 @@ export function raidActionHelpComponents(raidId?: string | null) {
   if (raidId)
     buttons.push(discordLinkButton("Сторінка рейду", dashboardRaidUrl(raidId)));
   return [{ type: 1, components: buttons.slice(0, 5) }];
+}
+
+function raidManualSignupPromptText(reason: "login" | "main") {
+  const profile = dashboardProfileUrl();
+  const intro =
+    reason === "login"
+      ? "ℹ️ Ти ще не входив у панель, тому персонажів Battle.net немає."
+      : "ℹ️ У профілі немає жодного персонажа Battle.net.";
+  return `${intro}
+Можна записатися вручну: обери клас, далі спек — роль визначиться автоматично.
+Щоб запис підтягував ilvl і персонажа, привʼяжи Battle.net у профілі: ${profile}`;
 }
 
 function raidActionHelpText(reason: "login" | "main") {
@@ -1042,6 +1062,12 @@ function normalizeSignup(value: unknown): RaidSignup | null {
     guildName: cleanString(item.guildName || item.guild_name, 120) || null,
     guildRealmSlug:
       cleanString(item.guildRealmSlug || item.guild_realm_slug, 120) || null,
+    // Ручний запис: зберігаємо ключі каталогу, щоб роль і підпис
+    // лишались стабільними навіть якщо назви спеків зміняться.
+    manualClassKey:
+      cleanString(item.manualClassKey || item.manual_class_key, 40) || null,
+    manualSpecKey:
+      cleanString(item.manualSpecKey || item.manual_spec_key, 40) || null,
     signedAt: timestampToIso(item.signedAt) || null,
     updatedAt: timestampToIso(item.updatedAt) || null,
   };
@@ -4506,6 +4532,223 @@ function resolveRaidSignupRole(
   );
 }
 
+/* ----------------------------------------------------------------------------
+   РУЧНИЙ ЗАПИС: клас + спек замість персонажа Battle.net
+
+   Другий метод запису для тих, у кого немає привʼязаних персонажів.
+   Роль не питаємо окремо — у каталозі кожен спек має рівно одну роль
+   (Guardian → tank, Feral → dps), тож зайвий крок лише плодив би
+   розбіжність між обраним спеком і роллю у складі.
+   -------------------------------------------------------------------------- */
+
+export type RaidManualSelection = { classKey: string; specKey: string };
+
+export function cleanRaidManualSelection(
+  classKey: unknown,
+  specKey: unknown,
+): RaidManualSelection | null {
+  const resolved = findWowSpec(classKey, specKey);
+  if (!resolved) return null;
+  return { classKey: resolved.cls.key, specKey: resolved.spec.key };
+}
+
+export function buildRaidManualClassSelectCustomId(
+  raidId: string,
+  action: RaidSignupStatus,
+) {
+  const id = cleanRaidId(raidId);
+  const safeAction = cleanSignupStatus(action);
+  const customId = `mbv1:rmc:${id}:${safeAction}`;
+  if (!id || customId.length > 100)
+    throw new Error("Некоректний ID рейду для ручного вибору класу.");
+  return customId;
+}
+
+export function buildRaidManualSpecSelectCustomId(
+  raidId: string,
+  action: RaidSignupStatus,
+  classKey: string,
+) {
+  const id = cleanRaidId(raidId);
+  const safeAction = cleanSignupStatus(action);
+  const cls = findWowClass(classKey);
+  const customId = `mbv1:rms:${id}:${safeAction}:${cls?.key || ""}`;
+  if (!id || !cls || customId.length > 100)
+    throw new Error("Некоректний ID рейду або класу для ручного вибору спеку.");
+  return customId;
+}
+
+export function decodeRaidManualClassCustomId(
+  customId: string,
+  values?: unknown,
+) {
+  const value = cleanString(customId, 120);
+  const match = value.match(
+    /^mbv1:rmc:([A-Za-z0-9_-]{8,80}):(going|tentative|late)$/,
+  );
+  if (!match) return null;
+  const selected = Array.isArray(values) ? values : [];
+  const cls = findWowClass(cleanString(selected[0], 40));
+  if (!cls) return null;
+  return {
+    raidId: match[1],
+    action: cleanSignupStatus(match[2]),
+    classKey: cls.key,
+  };
+}
+
+export function decodeRaidManualSpecCustomId(
+  customId: string,
+  values?: unknown,
+) {
+  const value = cleanString(customId, 120);
+  const match = value.match(
+    /^mbv1:rms:([A-Za-z0-9_-]{8,80}):(going|tentative|late):([a-z]{2,20})$/,
+  );
+  if (!match) return null;
+  const selected = Array.isArray(values) ? values : [];
+  const manual = cleanRaidManualSelection(match[3], cleanString(selected[0], 40));
+  if (!manual) return null;
+  return {
+    raidId: match[1],
+    action: cleanSignupStatus(match[2]),
+    manual,
+  };
+}
+
+export function buildRaidManualClassComponents(
+  raidId: string,
+  action: RaidSignupStatus,
+) {
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 3,
+          custom_id: buildRaidManualClassSelectCustomId(raidId, action),
+          placeholder: "Обери клас",
+          min_values: 1,
+          max_values: 1,
+          options: WOW_CLASS_CATALOG.slice(0, 25).map((cls) => ({
+            label: cls.label.slice(0, 100),
+            value: cls.key,
+            emoji: cls.emoji ? { name: cls.emoji } : undefined,
+            description: `${cls.specs.length} спеків`.slice(0, 100),
+          })),
+        },
+      ],
+    },
+  ];
+}
+
+export function buildRaidManualSpecComponents(
+  raidId: string,
+  action: RaidSignupStatus,
+  classKey: string,
+) {
+  const cls = findWowClass(classKey);
+  if (!cls) return buildRaidManualClassComponents(raidId, action);
+  return [
+    {
+      type: 1,
+      components: [
+        {
+          type: 3,
+          custom_id: buildRaidManualSpecSelectCustomId(raidId, action, cls.key),
+          placeholder: `${cls.label}: обери спек`.slice(0, 150),
+          min_values: 1,
+          max_values: 1,
+          options: cls.specs.slice(0, 25).map((spec) => ({
+            label: spec.label.slice(0, 100),
+            value: spec.key,
+            description: raidManualRoleLabel(spec.role).slice(0, 100),
+          })),
+        },
+      ],
+    },
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: 2,
+          label: "Інший клас",
+          emoji: { name: "↩️" },
+          custom_id: buildRaidAttendanceCustomId(raidId, action),
+        },
+      ],
+    },
+  ];
+}
+
+/** Каталог класів і спеків для ручного вибору у вебінтерфейсі. */
+export function raidManualClassOptions() {
+  return WOW_CLASS_CATALOG.map((cls) => ({
+    key: cls.key,
+    label: cls.label,
+    color: cls.color,
+    emoji: cls.emoji,
+    specs: cls.specs.map((spec) => ({
+      key: spec.key,
+      label: spec.label,
+      role: spec.role,
+      roleLabel: raidManualRoleLabel(spec.role),
+    })),
+  }));
+}
+
+function raidManualRoleLabel(role: RaidCharacterRole) {
+  if (role === "tank") return "🛡️ Танк";
+  if (role === "healer") return "💚 Хіл";
+  return "⚔️ ДД";
+}
+
+/** Запис без персонажа Battle.net: імʼя береться з гільдійного ніку Discord. */
+function signupFromManualSelection(
+  status: RaidSignupStatus,
+  userId: string,
+  userName: string,
+  manual: RaidManualSelection,
+  profile?: DashboardProfile | null,
+): RaidSignup {
+  const resolved = findWowSpec(manual.classKey, manual.specKey);
+  const now = new Date().toISOString();
+  return {
+    discordId: userId,
+    // Саме гільдійний нік, а не глобальне імʼя Discord: userName приходить
+    // із interaction.member.nick, який специфічний для сервера гільдії.
+    discordName: userName || "Discord user",
+    profileId: profile?.profileId || null,
+    characterKey: null,
+    status,
+    role: resolved?.spec.role || "dps",
+    grammaticalGender: cleanProfileGrammaticalGender(profile?.grammaticalGender),
+    characterName: null,
+    realmName: null,
+    realmSlug: null,
+    region: null,
+    className: resolved?.cls.label || null,
+    activeSpecName: resolved?.spec.label || null,
+    activeSpecId: null,
+    level: null,
+    raceName: null,
+    faction: null,
+    avatarUrl: null,
+    renderUrl: null,
+    mediaUrl: null,
+    itemLevel: null,
+    profileUrl: null,
+    verifiedGuild: null,
+    guildName: null,
+    guildRealmSlug: null,
+    manualClassKey: manual.classKey,
+    manualSpecKey: manual.specKey,
+    signedAt: now,
+    updatedAt: now,
+  };
+}
+
 function signupFromProfile(
   status: RaidSignupStatus,
   userId: string,
@@ -4840,7 +5083,9 @@ function attendanceSuccessText(
   const warning = raidMinItemLevelWarning(raid, signup);
   const characterText = signup?.characterName
     ? ` як ${signup.characterName}`
-    : "";
+    : signup?.manualClassKey && signup?.manualSpecKey
+      ? ` як ${wowSpecFullName(signup.manualClassKey, signup.manualSpecKey)}`
+      : "";
   const signupNumberText = raidSignupNumberLabel(signup)
     ? ` Номер запису: ${raidSignupNumberLabel(signup)}.`
     : "";
@@ -4866,6 +5111,8 @@ export async function handleRaidDiscordAction(params: {
   userName: string;
   characterKey?: string | null;
   signupRole?: RaidCharacterRole | null;
+  /** Ручний запис клас+спек для тих, у кого немає персонажів Battle.net. */
+  manual?: RaidManualSelection | null;
   commit?: boolean;
   messageRef?: DiscordMessageRefInput | null;
   syncDiscord?: boolean;
@@ -4908,6 +5155,9 @@ export async function handleRaidDiscordAction(params: {
 
   let profile: DashboardProfile | null = null;
   let selectedCharacter: ProfileCharacter | null = null;
+  const manualSelection = params.manual
+    ? cleanRaidManualSelection(params.manual.classKey, params.manual.specKey)
+    : null;
   if (params.action !== "skipped") {
     profile = await getProfileByDiscordUserId(params.userId);
     profile = await refreshProfileBeforeRaidSignup(profile, {
@@ -4915,14 +5165,22 @@ export async function handleRaidDiscordAction(params: {
       userId: params.userId,
     });
     if (!profile || !profile.characters.length) {
-      return {
-        ok: false,
-        content: raidActionHelpText(!profile ? "login" : "main"),
-        components: raidActionHelpComponents(raid.id),
-        blockedByProfile: true,
-      };
+      // Другий метод запису: замість глухого блокування ведемо
+      // через вибір клас → спек. Роль виводиться зі спеку.
+      if (!manualSelection) {
+        return {
+          ok: false,
+          content: raidManualSignupPromptText(!profile ? "login" : "main"),
+          components: buildRaidManualClassComponents(raid.id, params.action),
+          blockedByProfile: true,
+          manualSignupOffered: true,
+        };
+      }
     }
 
+    // Ручний запис не має персонажа: перевірки ilvl і меню вибору
+    // персонажа пропускаємо повністю, далі одразу збірка запису.
+    if (!manualSelection && profile) {
     const requestedCharacter = resolveProfileCharacterSelection(
       profile,
       params.characterKey,
@@ -5015,18 +5273,27 @@ export async function handleRaidDiscordAction(params: {
         blockedByMinItemLevel: allBlocked,
       };
     }
+    }
   } else {
     profile = await getProfileByDiscordUserId(params.userId).catch(() => null);
   }
 
-  const signup = signupFromProfile(
-    params.action,
-    params.userId,
-    params.userName,
-    profile,
-    selectedCharacter?.key || params.characterKey,
-    params.signupRole,
-  );
+  const signup = manualSelection
+    ? signupFromManualSelection(
+        params.action,
+        params.userId,
+        params.userName,
+        manualSelection,
+        profile,
+      )
+    : signupFromProfile(
+        params.action,
+        params.userId,
+        params.userName,
+        profile,
+        selectedCharacter?.key || params.characterKey,
+        params.signupRole,
+      );
   const block = raidMinItemLevelBlockMessage(raid, signup);
   if (block)
     return {
@@ -5079,8 +5346,13 @@ export async function handleRaidSessionAction(params: {
   action: RaidSignupStatus;
   user: DashboardSession;
   characterKey?: string | null;
+  /** Ручний запис клас+спек для авторизованих без персонажів Battle.net. */
+  manual?: RaidManualSelection | null;
   syncDiscord?: boolean;
 }) {
+  const manualSelection = params.manual
+    ? cleanRaidManualSelection(params.manual.classKey, params.manual.specKey)
+    : null;
   const raid = await getRaid(params.raidId);
   if (!raid)
     return { ok: false, content: "❌ Рейд не знайдено або він уже видалений." };
@@ -5136,6 +5408,9 @@ export async function handleRaidSessionAction(params: {
       raidId: raid.id,
       userId: discordId,
     });
+    // Ручний запис не має персонажа: перевірки ilvl і меню вибору
+    // персонажа пропускаємо повністю, далі одразу збірка запису.
+    if (!manualSelection && profile) {
     const requestedCharacter = resolveProfileCharacterSelection(
       profile,
       params.characterKey,
@@ -5186,15 +5461,39 @@ export async function handleRaidSessionAction(params: {
         blockedByMinItemLevel: allBlocked,
       };
     }
+    }
   }
 
-  const signup = signupFromProfile(
-    params.action,
-    discordId,
-    params.user.name || params.user.login || "Discord user",
-    profile,
-    selectedCharacter?.key || params.characterKey,
-  );
+  // Авторизований без персонажів: пропонуємо той самий ручний метод.
+  if (
+    params.action !== "skipped" &&
+    !manualSelection &&
+    (!profile || !profile.characters.length)
+  ) {
+    return {
+      ok: false,
+      content: raidManualSignupPromptText(!profile ? "login" : "main"),
+      blockedByProfile: true,
+      manualSignupOffered: true,
+      manualClasses: raidManualClassOptions(),
+    };
+  }
+
+  const signup = manualSelection
+    ? signupFromManualSelection(
+        params.action,
+        discordId,
+        params.user.name || params.user.login || "Discord user",
+        manualSelection,
+        profile,
+      )
+    : signupFromProfile(
+        params.action,
+        discordId,
+        params.user.name || params.user.login || "Discord user",
+        profile,
+        selectedCharacter?.key || params.characterKey,
+      );
   const block = raidMinItemLevelBlockMessage(raid, signup);
   if (block)
     return {

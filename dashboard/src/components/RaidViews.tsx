@@ -40,6 +40,7 @@ import {
   type RaidItem,
   type RaidParty,
   type RaidSignup,
+  raidManualClassOptions,
 } from "@/lib/raids";
 
 export type RaidChannelOption = { id: string; name: string };
@@ -129,14 +130,23 @@ function signupSpecLabel(item?: RaidSignup | null) {
 
 function signupExtraLabel(item?: RaidSignup | null) {
   if (!item) return "";
+  // Ручний запис не має ані рівня, ані раси — офіцеру важливо бачити,
+  // що клас і спек вказані вручну, а не підтягнуті з Battle.net.
+  const manualNote = isManualSignup(item) ? "Ручний запис" : null;
   return [
     typeof item.level === "number" ? `Lvl ${item.level}` : null,
     item.raceName || null,
     item.faction || null,
     item.guildName || null,
+    manualNote,
   ]
     .filter(Boolean)
     .join(" • ");
+}
+
+/** Запис без персонажа Battle.net: клас і спек обрані вручну. */
+function isManualSignup(item?: RaidSignup | null) {
+  return Boolean(item && !item.characterKey && item.manualClassKey && item.manualSpecKey);
 }
 
 function signupAvatarUrl(item?: RaidSignup | null) {
@@ -265,7 +275,7 @@ function RoleRow({
   const issue = block || warning;
   return (
     <div
-      className={`raid-party-row raid-party-row--${role}${item?.status === "late" ? " is-late" : ""}${item?.verifiedGuild === false ? " is-non-guild" : ""}${issue ? " is-undergeared" : ""}${block ? " is-blocked" : ""}`}
+      className={`raid-party-row raid-party-row--${role}${item?.status === "late" ? " is-late" : ""}${item?.verifiedGuild === false ? " is-non-guild" : ""}${issue ? " is-undergeared" : ""}${block ? " is-blocked" : ""}${isManualSignup(item) ? " is-manual" : ""}`}
       aria-label={`${label}: ${signupDisplayName(item, { showItemLevel, hasItemLevelIssue: Boolean(issue), isBenchPriority })}`}
     >
       <RoleMarkerStack item={item} role={role} />
@@ -710,6 +720,7 @@ export function RaidAttendanceActions({
       rulesHref={dashboardRaidRulesUrl()}
       characterOptions={characterOptions}
       selectedCharacterKey={selectedCharacterKey}
+      manualClasses={raidManualClassOptions()}
       title={
         hiddenByMinItemLevel > 0 && !needsEligibleCharacter
           ? `${hiddenByMinItemLevel} персонаж(ів) нижче мінімального ilvl приховано.`

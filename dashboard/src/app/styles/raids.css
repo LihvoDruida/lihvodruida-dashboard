@@ -1651,3 +1651,69 @@
   font-size: 0.84rem;
   overflow-wrap: anywhere;
 }
+
+/* =========================================================
+   8. РУЧНИЙ ЗАПИС: КЛАС + СПЕК
+
+   Другий метод запису для тих, у кого немає персонажів
+   Battle.net. Показується замість вибору персонажа.
+   ========================================================= */
+.raid-manual-picker {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--pad-card-compact);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--c-accent-400);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.raid-manual-picker__head {
+  display: grid;
+  gap: var(--space-3xs);
+}
+
+.raid-manual-picker__head strong {
+  color: var(--c-accent-200);
+  font-size: 0.9rem;
+}
+
+.raid-manual-picker__head small {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+/* Два селекти поруч, на вузькому екрані — один під одним */
+.raid-manual-picker__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+  gap: var(--space-sm);
+}
+
+/* Виведена роль — не вибір користувача, а наслідок спеку,
+   тому це підпис-пігулка, а не ще один контрол. */
+.raid-manual-picker__role {
+  justify-self: start;
+  padding: var(--space-3xs) var(--space-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--c-accent-200);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.raid-manual-picker__hint {
+  color: var(--text-faint);
+  font-size: 0.76rem;
+}
+
+/* Учасник без персонажа: пунктирна рамка аватара вже є,
+   додаємо приглушений підпис «ручний запис». */
+.raid-party-row.is-manual .raid-party-member-copy small:last-child,
+.raid-roster-member.is-manual .raid-roster-member-copy small:last-child {
+  color: var(--text-faint);
+  font-style: italic;
+}

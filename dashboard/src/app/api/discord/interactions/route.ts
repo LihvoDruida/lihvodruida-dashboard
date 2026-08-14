@@ -8,7 +8,7 @@ import {
 } from "@/lib/discordAdmin";
 import { getMainCharacter, getProfileByDiscordUserId } from "@/lib/profiles";
 import { rulesAcceptUrlForDiscordUser } from "@/lib/rulesOnboarding";
-import { dashboardProfileUrl, dashboardRaidRulesUrl, decodeRaidAttendanceCustomId, decodeRaidCharacterSelectCustomId, decodeRaidRoleSelectCustomId, decodeRaidSignupSubmitCustomId, handleRaidDiscordAction, raidActionHelpComponents, type RaidCharacterRole } from "@/lib/raids";
+import { buildRaidManualSpecComponents, dashboardProfileUrl, dashboardRaidRulesUrl, decodeRaidAttendanceCustomId, decodeRaidCharacterSelectCustomId, decodeRaidManualClassCustomId, decodeRaidManualSpecCustomId, decodeRaidRoleSelectCustomId, decodeRaidSignupSubmitCustomId, handleRaidDiscordAction, raidActionHelpComponents, type RaidCharacterRole } from "@/lib/raids";
 import { handleRaidPollDiscordVote } from "@/lib/raidPolls";
 import { decodeRosterCustomId, handleRosterFormationDiscordAction } from "@/lib/rosterFormation";
 import { logDashboardEvent, noStoreHeaders, safeErrorMessage } from "@/lib/security";
@@ -235,13 +235,17 @@ export async function POST(request: NextRequest) {
 
   const customId = String(interaction?.data?.custom_id || "");
   const raidSubmitAction = decodeRaidSignupSubmitCustomId(customId);
+  // Ручний запис: вибір класу лише перемальовує меню спеків,
+  // вибір спека вже комітить запис через handleRaidDiscordAction.
+  const raidManualClass = decodeRaidManualClassCustomId(customId, interaction?.data?.values);
+  const raidManualSpec = decodeRaidManualSpecCustomId(customId, interaction?.data?.values);
   const raidRoleAction = decodeRaidRoleSelectCustomId(customId, interaction?.data?.values);
   const raidSelectAction = decodeRaidCharacterSelectCustomId(customId, interaction?.data?.values);
-  const raidAction = raidSubmitAction || raidRoleAction || raidSelectAction || decodeRaidAttendanceCustomId(customId);
-  const pollAction = raidAction ? null : decodeRaidPollCustomId(customId, interaction?.data?.values);
-  const rosterAction = raidAction || pollAction ? null : decodeRosterCustomId(customId, interaction?.data?.values);
-  const parsed = raidAction || pollAction || rosterAction ? null : decodeRulesCustomId(customId);
-  if (!raidAction && !pollAction && !rosterAction && !parsed) {
+  const raidAction = raidSubmitAction || raidRoleAction || raidSelectAction || raidManualSpec || decodeRaidAttendanceCustomId(customId);
+  const pollAction = raidAction || raidManualClass ? null : decodeRaidPollCustomId(customId, interaction?.data?.values);
+  const rosterAction = raidAction || raidManualClass || pollAction ? null : decodeRosterCustomId(customId, interaction?.data?.values);
+  const parsed = raidAction || raidManualClass || pollAction || rosterAction ? null : decodeRulesCustomId(customId);
+  if (!raidAction && !raidManualClass && !pollAction && !rosterAction && !parsed) {
     logDashboardEvent("warn", "discord.rules.unknown_custom_id", request, { customId: customId.slice(0, 24) });
     return ephemeral("Ця кнопка не належить панелі Mistblossom або вже застаріла.");
   }
@@ -303,6 +307,26 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  if (raidManualClass) {
+    // Проміжний крок без запису в базу: міняємо ефемерне меню на список спеків.
+    // Білдер кидає помилку, якщо custom_id не влазить у 100 символів Discord
+    // (можливо лише на дуже довгих raidId), тож не даємо їй стати 500-кою.
+    try {
+      return finishDecision(
+        interaction,
+        "Обери спек — роль визначиться автоматично.",
+        buildRaidManualSpecComponents(raidManualClass.raidId, raidManualClass.action, raidManualClass.classKey),
+      );
+    } catch (error) {
+      logDashboardEvent("error", "discord.raid.manual_spec_failed", request, {
+        message: safeErrorMessage(error),
+        raidId: raidManualClass.raidId,
+        userId,
+      });
+      return ephemeral("❌ Не вдалося показати список спеків. Запишись на сторінці рейду.");
+    }
+  }
+
   if (raidAction) {
     try {
       const result = await handleRaidDiscordAction({
@@ -313,6 +337,7 @@ export async function POST(request: NextRequest) {
         characterKey: "characterKey" in raidAction ? String(raidAction.characterKey || "") : null,
         signupRole: "signupRole" in raidAction ? cleanRaidSignupRole(raidAction.signupRole) : null,
         commit: Boolean((raidAction as { commit?: boolean }).commit),
+        manual: raidManualSpec ? raidManualSpec.manual : null,
         messageRef: getInteractionMessageRef(interaction),
       });
       logDashboardEvent(result.ok ? "info" : "warn", "discord.raid.action", request, { raidId: raidAction.raidId, action: raidAction.action, userId, ok: result.ok });
