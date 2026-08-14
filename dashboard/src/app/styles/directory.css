@@ -1,0 +1,813 @@
+/* =========================================================
+   DIRECTORY — єдиний шаблон сторінок-довідників
+
+   Одна розкладка на всі сторінки, де є «hero + фільтри + таблиця»:
+   /guild (склад гільдії), /profiles (профілі) і будь-яка майбутня.
+
+   Замість трьох паралельних наборів (`guild-*`, `profile-directory-*`,
+   `directory-*`) правила описані один раз і згруповані селекторами,
+   бо в розмітці ці класи вже стоять поруч на тих самих вузлах.
+
+   Порядок блоків: оболонка → hero → підсумок → тулбар → фільтри →
+   таблиця → віджети → адаптив. Жодного !important.
+   ========================================================= */
+
+/* =========================================================
+   1. ОБОЛОНКА
+   ========================================================= */
+.directory-page,
+.guild-page,
+.profile-directory-page {
+  min-width: 0;
+}
+
+.directory-shell,
+.guild-shell,
+.profile-directory-shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-grid);
+  min-width: 0;
+}
+
+/* =========================================================
+   2. HERO
+   ========================================================= */
+.directory-hero-side,
+.guild-hero-side,
+.profile-directory-hero-side {
+  display: grid;
+  gap: var(--space-md);
+  align-content: start;
+  min-width: 0;
+}
+
+/* Бічна панель hero: підсумок + лічильники */
+.guild-hero-summary {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.guild-hero-summary__block {
+  display: grid;
+  gap: var(--space-3xs);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.guild-hero-summary__label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.guild-hero-summary__block strong {
+  font-size: 0.98rem;
+  color: var(--text-strong);
+}
+
+.guild-hero-summary__block p {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.guild-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(96px, 100%), 1fr));
+  gap: var(--space-xs);
+}
+
+.guild-hero-stat-card {
+  display: grid;
+  gap: var(--space-3xs);
+  padding: var(--space-sm);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  text-align: left;
+}
+
+.guild-hero-stat-card > span {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.guild-hero-stat-card > strong {
+  font-size: 1.05rem;
+  color: var(--c-accent-200);
+}
+
+.guild-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+/* Підсумкова картка: емблема + лічильник + смуга показників */
+.guild-summary-card {
+  display: grid;
+  gap: var(--space-md);
+  padding: var(--pad-card-compact);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.guild-summary-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.guild-summary-card__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.guild-summary-card__icon {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  border: 1px solid var(--border);
+}
+
+.guild-summary-card__brand-copy {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.guild-summary-card__brand-copy strong {
+  font-size: 0.95rem;
+  color: var(--text-strong);
+}
+
+.guild-summary-card__brand-copy p,
+.guild-summary-card__count p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.guild-summary-card__count {
+  display: grid;
+  gap: var(--space-3xs);
+  text-align: right;
+  min-width: 0;
+}
+
+.guild-summary-card__count strong {
+  font-size: 0.95rem;
+  color: var(--c-accent-200);
+  white-space: nowrap;
+}
+
+.guild-summary-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+/* Кнопка ручного оновлення складу */
+.guild-refresh-action {
+  display: grid;
+  gap: var(--space-2xs);
+  justify-items: start;
+}
+
+.guild-refresh-action__status {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.guild-refresh-action__status--loading {
+  color: var(--c-info);
+}
+
+.guild-refresh-action__status--error {
+  color: var(--c-danger);
+}
+
+/* =========================================================
+   3. ТУЛБАР І ФІЛЬТРИ
+   ========================================================= */
+.directory-toolbar {
+  align-items: center;
+}
+
+.directory-search,
+.guild-roster-search {
+  display: block;
+  min-width: 0;
+}
+
+/* Розгорнута панель розширених фільтрів */
+.dashboard-table-advanced {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  gap: var(--space-md);
+  align-items: start;
+  padding: var(--pad-card-compact);
+  min-width: 0;
+}
+
+.dashboard-table-advanced__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  grid-column: 1 / -1;
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.dashboard-table-advanced__actions small {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.directory-filter-field,
+.guild-filter-field {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.directory-filter-field > span:first-child,
+.guild-filter-field > span:first-child {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* ---------- Діапазон від/до з двома повзунками ---------- */
+.guild-range-group {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.guild-range-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+.guild-range-head span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* Поля «від» і «до» стоять поруч, повзунок — під ними на всю ширину */
+.guild-range-group--inline {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+}
+
+.guild-range-group--inline .guild-range-head,
+.guild-range-group--inline .guild-dual-range {
+  grid-column: 1 / -1;
+}
+
+.guild-range-value {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.guild-range-value > span {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.guild-range-value input {
+  min-height: 40px;
+  padding: 0 var(--space-sm);
+}
+
+/* Два range-инпути накладаються один на одного над спільною лінією.
+   Клікабельні лише «бігунки», тож нижній повзунок не перехоплює
+   натискання по всій ширині доріжки. */
+.guild-dual-range {
+  position: relative;
+  height: 28px;
+  min-width: 0;
+}
+
+.guild-dual-range__line,
+.guild-dual-range__active {
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.guild-dual-range__line {
+  left: 0;
+  right: 0;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+}
+
+.guild-dual-range__active {
+  left: var(--range-start, 0%);
+  right: calc(100% - var(--range-end, 100%));
+  background: var(--accent-gradient);
+}
+
+.guild-dual-range__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 28px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  appearance: none;
+  pointer-events: none;
+}
+
+.guild-dual-range__input:focus {
+  outline: 0;
+  box-shadow: none;
+}
+
+.guild-dual-range__input::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--c-base-900);
+  background: var(--c-accent-400);
+  box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.8);
+  cursor: grab;
+  pointer-events: auto;
+}
+
+.guild-dual-range__input::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--c-base-900);
+  background: var(--c-accent-400);
+  cursor: grab;
+  pointer-events: auto;
+}
+
+.guild-dual-range__input:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.guild-dual-range__input::-moz-range-track {
+  background: transparent;
+}
+
+/* =========================================================
+   4. ТАБЛИЦЯ ДОВІДНИКА
+   ========================================================= */
+.directory-panel {
+  min-width: 0;
+}
+
+.dashboard-table-titlebar,
+.directory-section-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.dashboard-table-titlebar > div:first-child {
+  display: grid;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+/* Головна комірка рядка: імʼя крупніше за решту */
+.dashboard-list-row > .dashboard-table-primary,
+.dashboard-table-row > .dashboard-table-primary,
+.dashboard-table-primary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.dashboard-table-primary strong {
+  font-size: 0.9rem;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.dashboard-table-score {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.dashboard-table-score strong {
+  font-size: 0.95rem;
+  color: var(--c-accent-200);
+}
+
+.dashboard-table-score small,
+.dashboard-table-muted {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+}
+
+.dashboard-table-pill--ok {
+  --tone: var(--c-success);
+}
+
+.dashboard-table-pill--muted {
+  --tone: var(--c-ink-400);
+}
+
+.dashboard-table-pill--tank {
+  --tone: var(--c-role-tank);
+}
+
+.dashboard-table-pill--healer {
+  --tone: var(--c-role-healer);
+}
+
+.dashboard-table-pill--dps {
+  --tone: var(--c-role-dps);
+}
+
+.dashboard-table-filter--muted {
+  color: var(--text-muted);
+}
+
+.dashboard-table-action-form {
+  display: inline-grid;
+}
+
+/* Підвал таблиці: пагінація + підпис */
+.dashboard-table-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.dashboard-table-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
+/* Роль фарбує ліву грань рядка — так само, як статус у списку рейдів */
+.guild-table-row {
+  border-left: 3px solid var(--c-ink-500);
+}
+
+.guild-table-row--tank {
+  border-left-color: var(--c-role-tank);
+}
+
+.guild-table-row--healer {
+  border-left-color: var(--c-role-healer);
+}
+
+.guild-table-row--dps {
+  border-left-color: var(--c-role-dps);
+}
+
+.guild-roster-empty {
+  display: grid;
+  gap: var(--space-2xs);
+  padding: var(--space-xl) var(--space-md);
+  text-align: center;
+  color: var(--text-muted);
+}
+
+/* =========================================================
+   5. ВІДЖЕТИ СКЛАДУ
+   ========================================================= */
+
+/* Аватар персонажа */
+.guild-member-avatar {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-sunken);
+}
+
+.guild-member-avatar--empty {
+  display: grid;
+  place-items: center;
+  color: var(--c-accent-300);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+/* Клас + спек однією коміркою з кольоровою міткою класу */
+.dashboard-list-row > .guild-class-cell,
+.dashboard-table-row > .guild-class-cell,
+.guild-class-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.guild-class-mark {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--guild-class-color, var(--c-accent-400)) 45%, transparent);
+  background: color-mix(in srgb, var(--guild-class-color, var(--c-accent-400)) 16%, transparent);
+  color: var(--guild-class-color, var(--c-accent-300));
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.guild-class-copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.guild-class-copy strong {
+  font-size: 0.85rem;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.guild-class-copy small {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* Сегменти Raider.IO: активний виділений, решта приглушені */
+.guild-score-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.guild-score-badges > span {
+  display: grid;
+  gap: 1px;
+  padding: 2px var(--space-2xs);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  text-align: center;
+}
+
+.guild-score-badges > span > small {
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.guild-score-badges > span > strong {
+  font-size: 0.78rem;
+  color: var(--text-soft);
+}
+
+.guild-score-badges > span.is-active {
+  border-color: var(--border-strong);
+  background: var(--accent-soft);
+}
+
+.guild-score-badges > span.is-active > strong {
+  color: var(--c-accent-200);
+}
+
+/* ---------- Кільцева діаграма ---------- */
+.guild-stat-card {
+  gap: var(--gap-stack);
+}
+
+.guild-stat-card__head {
+  display: grid;
+  gap: var(--space-2xs);
+}
+
+.guild-stat-card__head h2 {
+  margin: 0;
+}
+
+.guild-stat-card__head p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+}
+
+.guild-donut-layout {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-lg);
+  min-width: 0;
+}
+
+.guild-donut {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 148px;
+  height: 148px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: conic-gradient(var(--guild-donut, var(--c-ink-500) 0 100%));
+}
+
+/* Внутрішній отвір — окремий шар, щоб conic-gradient лишався цілим */
+.guild-donut::after {
+  content: "";
+  position: absolute;
+  inset: 26px;
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.guild-donut > div {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 1px;
+  justify-items: center;
+  text-align: center;
+}
+
+.guild-donut > div > strong {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.guild-donut > div > span {
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.guild-stat-legend {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.guild-stat-legend__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.guild-stat-legend__item > div {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.guild-stat-legend__item strong {
+  font-size: 0.84rem;
+  color: var(--text-soft);
+}
+
+.guild-stat-legend__item small {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.guild-stat-dot {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.guild-roster-cache-sync {
+  color: var(--text-faint);
+  font-size: 0.74rem;
+}
+
+/* =========================================================
+   6. АДАПТИВ
+
+   Мобільні правила рядків таблиці живуть у components.css
+   (рядок → картка з підписами колонок). Тут лише те, що
+   стосується довідника: hero, фільтри й віджети.
+   ========================================================= */
+@media (max-width: 1080px) {
+  .guild-donut-layout {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: var(--space-md);
+  }
+
+  .guild-stat-legend {
+    width: 100%;
+  }
+}
+
+@media (max-width: 860px) {
+  .guild-summary-card__head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .guild-summary-card__count {
+    text-align: left;
+  }
+
+  .dashboard-table-advanced {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-table-advanced__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dashboard-table-advanced__actions .btn {
+    width: 100%;
+  }
+
+  .dashboard-table-footer,
+  .dashboard-table-pagination {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Клас/спек лишається одним рядком навіть у картковому вигляді */
+  .guild-class-cell {
+    align-items: center;
+  }
+
+  .guild-donut {
+    width: 128px;
+    height: 128px;
+  }
+
+  .guild-donut::after {
+    inset: 22px;
+  }
+}
+
+@media (max-width: 520px) {
+  .guild-range-group--inline {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .guild-score-badges > span {
+    flex: 1 1 auto;
+  }
+
+  .guild-summary-card__icon {
+    width: 38px;
+    height: 38px;
+  }
+}
