@@ -108,7 +108,8 @@ export default function SiteNavBehaviour() {
     if (accountRoot && dropdownTrigger && dropdownMenu) {
       const onTriggerClick = (event: MouseEvent) => {
         event.stopPropagation();
-        dropdownIsOpen() ? closeDropdown() : openDropdown();
+        if (dropdownIsOpen()) closeDropdown();
+        else openDropdown();
       };
       const onFocusOut = (event: FocusEvent) => {
         if (!accountRoot.contains(event.relatedTarget as Node | null)) closeDropdown();

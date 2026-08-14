@@ -50,7 +50,7 @@ function RaidPollCard({
 }) {
   const href = `/polls/${encodeURIComponent(card.id)}`;
   return (
-    <article className={`poll-card poll-card--${card.state}${selected ? " is-selected" : ""}`}>
+    <article className={`poll-card dashboard-list-row poll-card--${card.state}${selected ? " is-selected" : ""}`}>
       <div className="poll-card__rail" aria-hidden="true" />
 
       {canManage ? (
@@ -105,7 +105,7 @@ function RaidPollCard({
         </div>
       </dl>
 
-      <footer className="poll-card__actions">
+      <footer className="poll-card__actions dashboard-list-actions">
         <RaidPollActions
           pollId={card.id}
           pollTitle={card.title}
@@ -211,8 +211,8 @@ export default function RaidPollBrowser({
   }, [cards, tab, query]);
 
   return (
-    <section className="panel poll-browser" aria-label="Список рейд-пулів">
-      <header className="poll-browser__head">
+    <section className="panel poll-browser dashboard-list-panel" aria-label="Список рейд-пулів">
+      <header className="poll-browser__head dashboard-list-head">
         <div className="poll-browser__headline">
           <h2>Рейд-пули</h2>
           <p>Голосування за день і час рейду. Створення — через сайт, голоси — через Discord.</p>
@@ -267,7 +267,7 @@ export default function RaidPollBrowser({
         </div>
       ) : null}
 
-      <div className="poll-list">
+      <div className="poll-list dashboard-list">
         {visible.length ? (
           visible.map((card) => (
             <RaidPollCard

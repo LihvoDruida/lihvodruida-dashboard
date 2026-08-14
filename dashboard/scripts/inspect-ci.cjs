@@ -150,14 +150,14 @@ if (exists('src/components/HomeUpcomingRaidList.tsx')) {
 }
 
 
-const listStyleText = exists('src/app/globals.css') ? read('src/app/globals.css') : '';
-assert(/dashboard-list-panel/.test(listStyleText) && /dashboard-list-row/.test(listStyleText), 'Global dashboard list styles must stay centralized in globals.css.');
+const LIST_STYLE_SOURCE = 'src/app/styles/components.css';
+const listStyleText = exists(LIST_STYLE_SOURCE) ? read(LIST_STYLE_SOURCE) : '';
+assert(/dashboard-list-panel/.test(listStyleText) && /dashboard-list-row/.test(listStyleText), `Global dashboard list styles must stay centralized in ${LIST_STYLE_SOURCE}.`);
 const listUnifiedFiles = {
   'src/components/GuildRosterExplorer.tsx': ['dashboard-list', 'dashboard-list-row', 'dashboard-list-head'],
   'src/components/RaidViews.tsx': ['dashboard-list-row', 'dashboard-list-actions'],
-  'src/components/RaidPollViews.tsx': ['dashboard-list-row', 'dashboard-list-actions'],
+  'src/components/RaidPollBrowser.tsx': ['dashboard-list-panel', 'dashboard-list-head', 'dashboard-list', 'dashboard-list-row', 'dashboard-list-actions'],
   'src/app/raids/page.tsx': ['dashboard-list-panel', 'dashboard-list-head', 'dashboard-list'],
-  'src/app/polls/page.tsx': ['dashboard-list-panel', 'dashboard-list-head', 'dashboard-list'],
   'src/app/content/page.tsx': ['dashboard-list-panel', 'dashboard-list-row', 'dashboard-list-actions'],
   'src/app/discord/rules/page.tsx': ['dashboard-list-panel', 'dashboard-list-row', 'dashboard-list-actions'],
   'src/app/profiles/page.tsx': ['dashboard-list', 'dashboard-list-row'],

@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { FieldValue, type Transaction } from "firebase-admin/firestore";
+import { FieldValue, type QueryDocumentSnapshot, type Transaction } from "firebase-admin/firestore";
 import type { DashboardSession } from "@/lib/auth";
 import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
 import { firebaseRead, firebaseUnavailableMessage, firebaseWrite } from "@/lib/firebaseAccess";
@@ -191,7 +191,7 @@ export async function listRosterFormations(limit = 60): Promise<RosterFormation[
         .orderBy("createdAt", "desc")
         .limit(Math.max(1, Math.min(limit, 120)))
         .get();
-      return snap.docs.map((doc) => normalizeRosterFormation(doc.id, doc.data() || {}));
+      return snap.docs.map((doc: QueryDocumentSnapshot) => normalizeRosterFormation(doc.id, doc.data() || {}));
     },
     { ttlMs: ROSTER_LIST_TTL_MS, fallback: () => [], logEvent: "roster.list_failed" },
   );

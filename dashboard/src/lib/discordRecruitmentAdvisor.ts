@@ -1,5 +1,9 @@
 import { createHash } from "node:crypto";
-import { FieldValue } from "firebase-admin/firestore";
+import {
+  FieldValue,
+  type QueryDocumentSnapshot,
+  type Transaction,
+} from "firebase-admin/firestore";
 import {
   discordApi,
   fetchDiscordTextChannels,
@@ -1151,7 +1155,7 @@ async function tryClaimMessage(
     .collection(REPLIES_COLLECTION)
     .doc(messageId);
   try {
-    return await getFirebaseAdminDb().runTransaction(async (transaction) => {
+    return await getFirebaseAdminDb().runTransaction(async (transaction: Transaction) => {
       const snapshot = await transaction.get(ref);
       const basePatch = {
         messageId,
@@ -1728,7 +1732,7 @@ export async function listRecentRecruitmentAdviceEntries(
     .get()
     .catch(() => null);
   if (!snapshot) return [];
-  return snapshot.docs.map((doc) => {
+  return snapshot.docs.map((doc: QueryDocumentSnapshot) => {
     const data = doc.data() || {};
     return {
       messageId: String(data.messageId || doc.id || ""),
