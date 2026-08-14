@@ -1,5 +1,5 @@
 import { after, NextRequest, NextResponse } from "next/server";
-import { handleRaidDiscordAction, syncRaidDiscordSignupUpdate, type RaidCharacterRole, type RaidSignupStatus } from "@/lib/raids";
+import { buildRaidManualSpecComponents, cleanRaidManualSelection, handleRaidDiscordAction, syncRaidDiscordSignupUpdate, type RaidCharacterRole, type RaidSignupStatus } from "@/lib/raids";
 import {
   assertRequestBodySize,
   checkRateLimit,
@@ -41,6 +41,12 @@ function cleanSignupRole(value: unknown): RaidCharacterRole | null {
   return null;
 }
 
+/** Ручний запис: клас без спека — це проміжний крок, а не запис. */
+function cleanManualKey(value: unknown) {
+  const key = String(value || "").trim().toLowerCase();
+  return /^[a-z]{2,20}$/.test(key) ? key : "";
+}
+
 function cleanDiscordId(value: unknown) {
   const id = String(value || "").trim();
   return /^\d{16,25}$/.test(id) ? id : "";
@@ -69,14 +75,46 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ra
     const messageId = cleanDiscordMessageId(body?.messageId || body?.message_id);
     const action = cleanAction(body?.action);
     const commit = Boolean(body?.commit);
+    const manualClassKey = cleanManualKey(body?.classKey || body?.class_key);
+    const manualSpecKey = cleanManualKey(body?.specKey || body?.spec_key);
 
     if (!userId) {
       return NextResponse.json({ ok: false, content: "Invalid Discord user id" }, { status: 400, headers: noStoreHeaders() });
     }
 
+    // Крок «обрано клас» лише перемальовує ефемерне меню на список спеків.
+    // Каталог класів живе тут, тож воркеру не треба його дублювати.
+    if (manualClassKey && !manualSpecKey) {
+      try {
+        const components = buildRaidManualSpecComponents(raidId, action, manualClassKey);
+        // Невідомий клас — білдер повертає меню класів, тож підпис має
+        // відповідати тому, що людина реально бачить.
+        const isSpecMenu = String(
+          (components?.[0] as { components?: { custom_id?: string }[] })?.components?.[0]?.custom_id || "",
+        ).startsWith("mbv1:rms:");
+        return NextResponse.json(
+          {
+            ok: false,
+            content: isSpecMenu
+              ? "Обери спек — роль визначиться автоматично."
+              : "Клас не розпізнано. Обери клас зі списку ще раз.",
+            components,
+          },
+          { headers: noStoreHeaders() },
+        );
+      } catch (error) {
+        logDashboardEvent("error", "raids.discord_action.manual_spec_failed", request, { raidId, message: safeErrorMessage(error) });
+        return NextResponse.json({ ok: false, content: "❌ Не вдалося показати список спеків. Запишись на сторінці рейду." }, { headers: noStoreHeaders() });
+      }
+    }
+
+    const manual = manualClassKey && manualSpecKey
+      ? cleanRaidManualSelection(manualClassKey, manualSpecKey)
+      : null;
+
     // Вибір персонажа/ролі лише оновлює приватний Discord-пульт і не має ловити cooldown.
     // Rate-limit залишаємо тільки на реальний запис/пропуск, щоб різні користувачі та швидкі select-дії не блокували одне одного.
-    if (commit || action === "skipped") {
+    if (commit || manual || action === "skipped") {
       const limit = checkRateLimit(`raid-discord-action:${raidId}:${userId}:commit`, 120, 5 * 60 * 1000);
       if (!limit.ok) {
         logDashboardEvent("warn", "raids.discord_action.rate_limited", request, { raidId, userId, resetAt: limit.resetAt });
@@ -109,6 +147,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ra
           userName: String(body?.userName || body?.user_name || "Discord user").trim().slice(0, 120) || "Discord user",
           characterKey: String(body?.characterKey || body?.character_key || "").trim().slice(0, 120) || null,
           signupRole: cleanSignupRole(body?.signupRole || body?.signup_role || body?.role),
+          manual,
           commit,
           messageRef: {
             channelId,

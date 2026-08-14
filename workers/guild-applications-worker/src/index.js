@@ -3785,6 +3785,25 @@ function decodeRaidRoleSelectCustomId(customId, values) {
   };
 }
 
+function decodeRaidManualClassCustomId(customId, values) {
+  const value = String(customId || "").trim();
+  const match = value.match(/^mbv1:rmc:([A-Za-z0-9_-]{8,80}):(going|tentative|late)$/);
+  if (!match) return null;
+  const selected = Array.isArray(values) ? String(values[0] || "").trim().toLowerCase() : "";
+  if (!/^[a-z]{2,20}$/.test(selected)) return null;
+  // Спека ще немає: дашборд поверне меню спеків цього класу.
+  return { raidId: match[1], action: match[2], characterKey: "", classKey: selected, specKey: "", commit: false };
+}
+
+function decodeRaidManualSpecCustomId(customId, values) {
+  const value = String(customId || "").trim();
+  const match = value.match(/^mbv1:rms:([A-Za-z0-9_-]{8,80}):(going|tentative|late):([a-z]{2,20})$/);
+  if (!match) return null;
+  const selected = Array.isArray(values) ? String(values[0] || "").trim().toLowerCase() : "";
+  if (!/^[a-z]{2,20}$/.test(selected)) return null;
+  return { raidId: match[1], action: match[2], characterKey: "", classKey: match[3], specKey: selected, commit: true };
+}
+
 function decodeRaidSignupSubmitCustomId(customId) {
   const value = String(customId || "").trim();
   const match = value.match(/^mbv1:rss:([A-Za-z0-9_-]{8,80}):(going|tentative|late):([A-Za-z0-9._-]{1,64}):(tank|healer|dps)$/);
@@ -4003,7 +4022,8 @@ async function raidAnnouncementProxyContent(interaction, env, raidAction) {
   }
 
   try {
-    const idempotencyKey = `discord-raid:${raidAction.raidId}:${getDiscordUserId(interaction)}:${raidAction.action}:${raidAction.characterKey || "main"}:${raidAction.signupRole || "auto"}:${interaction?.id || Date.now()}`;
+    const manualKeyPart = raidAction.classKey ? `${raidAction.classKey}-${raidAction.specKey || "pick"}` : "";
+    const idempotencyKey = `discord-raid:${raidAction.raidId}:${getDiscordUserId(interaction)}:${raidAction.action}:${raidAction.characterKey || manualKeyPart || "main"}:${raidAction.signupRole || "auto"}:${interaction?.id || Date.now()}`;
     const { response, raw } = await fetchDashboardText(env, dashboardRaidActionEndpoint(env, raidAction.raidId), token, {
       method: "POST",
       headers: {
@@ -4015,6 +4035,8 @@ async function raidAnnouncementProxyContent(interaction, env, raidAction) {
         action: raidAction.action,
         characterKey: raidAction.characterKey || "",
         signupRole: raidAction.signupRole || "",
+        classKey: raidAction.classKey || "",
+        specKey: raidAction.specKey || "",
         commit: Boolean(raidAction.commit),
         userId: getDiscordUserId(interaction),
         userName: getDiscordUserLabel(interaction),
@@ -4252,6 +4274,12 @@ async function handleDiscordInteraction(request, env, ctx) {
 
   const raidCharacterSelectAction = decodeRaidCharacterSelectCustomId(customId, interaction?.data?.values);
   if (raidCharacterSelectAction) return handleRaidAnnouncementInteraction(interaction, env, raidCharacterSelectAction, ctx);
+
+  const raidManualSpecAction = decodeRaidManualSpecCustomId(customId, interaction?.data?.values);
+  if (raidManualSpecAction) return handleRaidAnnouncementInteraction(interaction, env, raidManualSpecAction, ctx);
+
+  const raidManualClassAction = decodeRaidManualClassCustomId(customId, interaction?.data?.values);
+  if (raidManualClassAction) return handleRaidAnnouncementInteraction(interaction, env, raidManualClassAction, ctx);
 
   const raidAnnouncementAction = decodeRaidAttendanceCustomId(customId);
   if (raidAnnouncementAction) return handleRaidAnnouncementInteraction(interaction, env, raidAnnouncementAction, ctx);
