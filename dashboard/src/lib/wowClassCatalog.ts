@@ -53,6 +53,8 @@ export const WOW_CLASS_CATALOG: WowClassDefinition[] = [
     specs: [
       { key: "havoc", label: "Havoc", role: "dps" },
       { key: "vengeance", label: "Vengeance", role: "tank" },
+      // Третій спек ДХ із Midnight: далекобійний ДД на Інтелекті.
+      { key: "devourer", label: "Devourer", role: "dps" },
     ],
   },
   {

@@ -89,6 +89,11 @@ const ROLE_BY_SPEC_KEY: Record<string, WowCharacterRole> = {
   retribution: "dps",
   devastation: "dps",
   augmentation: "dps",
+  // Третій спек ДХ із Midnight. Числового spec ID у нас ще немає,
+  // тож роль визначається за назвою — Battle.net віддає її разом із ID.
+  devourer: "dps",
+  пожирач: "dps",
+  пожиратель: "dps",
 };
 
 function normalizeKey(value: unknown) {

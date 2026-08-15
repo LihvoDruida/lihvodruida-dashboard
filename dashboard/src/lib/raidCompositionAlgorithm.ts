@@ -248,9 +248,12 @@ export function raidAlgorithmDpsRangeType(member: RaidAlgorithmMember): RaidAlgo
   if (classToken === "hunter") return specToken === "survival" ? "melee" : "ranged";
   if (classToken === "druid") return specToken === "feral" ? "melee" : "ranged";
   if (classToken === "shaman") return specToken === "enhancement" ? "melee" : "ranged";
+  // Devourer — єдиний далекобійний спек ДХ (близько 25 ярдів),
+  // тож класу вже недостатньо, треба дивитись на спек.
+  if (classToken === "demonhunter") return specToken === "devourer" ? "ranged" : "melee";
   if (classToken === "priest") return "ranged";
   if (["mage", "warlock", "evoker"].includes(classToken)) return "ranged";
-  if (["warrior", "rogue", "deathknight", "demonhunter", "monk", "paladin"].includes(classToken)) return "melee";
+  if (["warrior", "rogue", "deathknight", "monk", "paladin"].includes(classToken)) return "melee";
   return "ranged";
 }
 

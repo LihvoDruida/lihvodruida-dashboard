@@ -1,0 +1,1129 @@
+/* =========================================================
+   ONBOARDING — спільний шаблон реєстрації
+
+   /rules/accept і /profile/[id]/settings показують по суті
+   один і той самий блок: прогрес заповнення, список кроків
+   із позначкою ✓ / ! та пари «значення + підпис».
+
+   Раніше жоден із цих класів не мав правил, тому пари
+   `<strong>значення</strong><small>підпис</small>` злипалися
+   в один рядок («ДмитроІмʼя», «ЧоловічаЗвертання»).
+
+   Тут вони описані один раз і згруповані селекторами.
+   Жодного !important.
+   ========================================================= */
+
+/* =========================================================
+   1. БАЗОВА ПАРА «ЗНАЧЕННЯ + ПІДПИС»
+
+   Найпоширеніша форма на обох сторінках. Виносимо окремо,
+   щоб не повторювати в кожному блоці.
+   ========================================================= */
+.rules-onboarding-summary > span,
+.rules-onboarding-progress__meta,
+.rules-onboarding-step__body,
+.rules-row-main,
+.rules-metric,
+.profile-setup-progress-panel__head > span:not(:where([class])),
+.rules-data-panel > span {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.rules-onboarding-summary > span > strong,
+.rules-onboarding-step__body > strong,
+.rules-row-main > strong,
+.rules-metric > strong {
+  font-size: 0.92rem;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.rules-onboarding-summary > span > small,
+.rules-onboarding-step__body > small,
+.rules-row-main > small,
+.rules-metric > small {
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* =========================================================
+   2. ОБОЛОНКА СТОРІНКИ РЕЄСТРАЦІЇ
+   ========================================================= */
+.rules-onboarding-page {
+  min-width: 0;
+}
+
+.rules-onboarding-shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-grid);
+  min-width: 0;
+}
+
+.rules-onboarding-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-stack);
+  min-width: 0;
+}
+
+.rules-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.rules-section-head > div {
+  display: grid;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+/* =========================================================
+   3. ПРОГРЕС ЗАПОВНЕННЯ
+   ========================================================= */
+.rules-onboarding-progress,
+.profile-setup-progress-panel {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--pad-card-compact);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--c-accent-400);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.profile-setup-progress-panel.is-complete,
+.rules-onboarding-progress.is-complete {
+  border-left-color: var(--c-success);
+}
+
+.profile-setup-progress-panel.is-missing,
+.rules-onboarding-progress.is-missing {
+  border-left-color: var(--c-warning);
+}
+
+/* Шапка: іконка стану, текст, лічильник */
+.profile-setup-progress-panel__head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.profile-setup-progress-panel__icon,
+.rules-onboarding-step__state,
+.rules-row-icon,
+.profile-setup-callout__icon,
+.rules-registration-locked-card__icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.is-complete .profile-setup-progress-panel__icon,
+.is-complete > .rules-onboarding-step__state {
+  border-color: rgba(124, 196, 143, 0.4);
+  background: rgba(124, 196, 143, 0.14);
+  color: var(--c-success);
+}
+
+.is-missing .profile-setup-progress-panel__icon,
+.is-missing > .rules-onboarding-step__state {
+  border-color: rgba(232, 179, 74, 0.4);
+  background: rgba(232, 179, 74, 0.14);
+  color: var(--c-warning);
+}
+
+/* Значення відсотка окремим рядком над смугою */
+.rules-onboarding-progress__meta {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--space-xs);
+}
+
+.rules-onboarding-progress__meta > strong {
+  font-size: 1.15rem;
+  color: var(--c-accent-200);
+}
+
+.rules-onboarding-progress__meta > small {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.rules-onboarding-progress__bar,
+.profile-setup-progress-panel__bar {
+  display: block;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+.rules-onboarding-progress__bar > span,
+.profile-setup-progress-panel__bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent-gradient);
+  transition: width var(--dur-base) var(--ease-out);
+}
+
+.rules-onboarding-progress > small {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* =========================================================
+   4. СПИСОК КРОКІВ
+   ========================================================= */
+.rules-onboarding-steps,
+.profile-setup-progress-panel__steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.rules-onboarding-step {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  min-width: 0;
+}
+
+/* Крок у профілі — посилання-якір, тому реагує на наведення */
+.profile-setup-progress-step {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-2xs) var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: inherit;
+  min-width: 0;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.profile-setup-progress-step:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  transform: translateY(-2px);
+  color: inherit;
+}
+
+/* Позначка стану займає перший стовпчик обох рядків */
+.profile-setup-progress-step > span[aria-hidden] {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.profile-setup-progress-step.is-complete > span[aria-hidden] {
+  border-color: rgba(124, 196, 143, 0.4);
+  background: rgba(124, 196, 143, 0.14);
+  color: var(--c-success);
+}
+
+.profile-setup-progress-step.is-missing > span[aria-hidden] {
+  border-color: rgba(232, 179, 74, 0.4);
+  background: rgba(232, 179, 74, 0.14);
+  color: var(--c-warning);
+}
+
+.profile-setup-progress-step > strong {
+  font-size: 0.88rem;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.profile-setup-progress-step > small {
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.profile-setup-progress-step.is-complete {
+  border-left: 3px solid var(--c-success);
+}
+
+.profile-setup-progress-step.is-missing {
+  border-left: 3px solid var(--c-warning);
+}
+
+.rules-onboarding-step.is-next {
+  border-color: var(--border-strong);
+  background: var(--accent-soft);
+}
+
+.rules-onboarding-step.is-missing {
+  border-left: 3px solid var(--c-warning);
+}
+
+.rules-onboarding-step.is-complete {
+  border-left: 3px solid var(--c-success);
+}
+
+/* Стан «проблем немає» */
+.rules-onboarding-problems {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2xs) var(--space-sm);
+  padding: var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--c-ink-500);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.rules-onboarding-problems > span[aria-hidden] {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.rules-onboarding-problems > strong {
+  color: var(--text-strong);
+  font-size: 0.92rem;
+}
+
+.rules-onboarding-problems > small {
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.rules-onboarding-problems.is-clear {
+  border-left-color: var(--c-success);
+}
+
+.rules-onboarding-problems.is-clear > span[aria-hidden] {
+  border: 1px solid rgba(124, 196, 143, 0.4);
+  background: rgba(124, 196, 143, 0.14);
+  color: var(--c-success);
+}
+
+/* =========================================================
+   5. ПІДСУМОК ПРОФІЛЮ
+   ========================================================= */
+.rules-onboarding-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
+  gap: var(--space-sm);
+  padding: var(--pad-card-compact);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+/* Підпис під значенням має читатися як підпис, а не як текст */
+.rules-onboarding-summary > span > small {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  order: -1;
+}
+
+.rules-onboarding-summary > span {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+}
+
+/* =========================================================
+   6. ВРІЗКИ Й ПІДКАЗКИ
+   ========================================================= */
+.rules-onboarding-notice,
+.rules-return-callout,
+.profile-setup-callout,
+.rules-onboarding-data-warning,
+.rules-registration-block__note,
+.rules-complete-help,
+.rules-public-action-help {
+  display: grid;
+  gap: var(--space-2xs);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--c-accent-400);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  line-height: 1.55;
+  min-width: 0;
+}
+
+.profile-setup-callout {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.rules-onboarding-notice--warning,
+.rules-onboarding-data-warning {
+  border-left-color: var(--c-warning);
+  border-color: rgba(232, 179, 74, 0.28);
+  background: rgba(232, 179, 74, 0.08);
+  color: #f4d79a;
+}
+
+.rules-onboarding-notice--success,
+.rules-onboarding-notice--ok {
+  border-left-color: var(--c-success);
+  background: rgba(124, 196, 143, 0.08);
+  color: #b6e2c3;
+}
+
+.rules-onboarding-notice--error {
+  border-left-color: var(--c-danger);
+  border-color: rgba(224, 112, 95, 0.28);
+  background: rgba(224, 112, 95, 0.08);
+  color: #ffbdb1;
+}
+
+.rules-onboarding-notice strong,
+.rules-return-callout strong,
+.profile-setup-callout strong {
+  color: var(--text-strong);
+}
+
+.rules-hint,
+.rules-data-note,
+.rules-onboarding-benefits {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.rules-onboarding-benefits {
+  display: grid;
+  gap: var(--space-2xs);
+  margin: 0;
+  padding-left: var(--space-md);
+}
+
+/* =========================================================
+   7. РЕЄСТРАЦІЙНІ БЛОКИ Й ФІНАЛЬНА ДІЯ
+   ========================================================= */
+.rules-registration-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  gap: var(--gap-grid);
+  align-items: start;
+  min-width: 0;
+}
+
+.rules-registration-block--wide {
+  grid-column: 1 / -1;
+}
+
+.rules-registration-editor {
+  display: grid;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.rules-registration-editor--locked {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.rules-registration-locked-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+}
+
+.rules-registration-bnet-action,
+.rules-profile-candidate-bulk-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.rules-onboarding-final-action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--pad-card-compact);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  min-width: 0;
+}
+
+.rules-onboarding-final-action__copy {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.rules-onboarding-final-action__copy strong {
+  color: var(--text-strong);
+  font-size: 0.95rem;
+}
+
+.rules-onboarding-final-action__copy small {
+  color: var(--text-soft);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.rules-onboarding-role-box {
+  display: grid;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.rules-profile-name {
+  font-family: var(--font-mono);
+  color: var(--c-accent-200);
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   8. ДАНІ ПРОФІЛЮ Й МЕТРИКИ
+   ========================================================= */
+.rules-data-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.rules-data-panel {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--pad-card-compact);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--c-ink-500);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.rules-data-panel--guild {
+  border-left-color: var(--c-accent-400);
+}
+
+.rules-data-panel--raid {
+  border-left-color: var(--c-info);
+}
+
+.rules-data-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+.rules-data-head strong {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-accent-300);
+}
+
+.rules-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
+  gap: var(--space-sm);
+}
+
+.rules-metric {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.rules-metric > small {
+  order: -1;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.rules-metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+}
+
+/* =========================================================
+   9. СПИСОК ПРАВИЛ (бібліотека)
+   ========================================================= */
+.rules-library-split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  gap: var(--gap-grid);
+  align-items: start;
+}
+
+.rules-list-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-stack);
+  min-width: 0;
+}
+
+.rules-list,
+.rules-table {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.rules-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--c-ink-500);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  min-width: 0;
+}
+
+.rules-row--raid {
+  border-left-color: var(--c-info);
+}
+
+.rules-row-title {
+  font-size: 0.9rem;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.rules-row-meta,
+.rules-row-roles-label {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.rules-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  flex: 0 0 auto;
+}
+
+.rules-row-state,
+.rules-status-pill,
+.rules-type-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: var(--space-3xs) var(--space-sm);
+  border: 1px solid color-mix(in srgb, var(--tone, var(--c-ink-400)) 32%, transparent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--tone, var(--c-ink-400)) 12%, transparent);
+  color: var(--tone, var(--text-soft));
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.rules-status-pill--error {
+  --tone: var(--c-danger);
+}
+
+.rules-type-chip--raid {
+  --tone: var(--c-info);
+}
+
+.rules-role-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
+.rules-role-chip {
+  padding: var(--space-3xs) var(--space-xs);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.rules-role-empty {
+  color: var(--text-faint);
+  font-size: 0.76rem;
+}
+
+.rules-public-action-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+/* =========================================================
+   10. АДАПТИВ
+   ========================================================= */
+@media (max-width: 860px) {
+  .profile-setup-progress-panel__head {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  /* Лічильник кроків переїжджає під текст, щоб не тиснути його */
+  .profile-setup-progress-panel__head > .profile-count-pill {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .rules-onboarding-final-action {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rules-onboarding-final-action .btn {
+    width: 100%;
+  }
+
+  .rules-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .rules-row-actions {
+    grid-column: 1 / -1;
+    padding-top: var(--space-xs);
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .rules-row-actions .btn {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .rules-onboarding-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rules-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* =========================================================
+   10. НАЛАШТУВАННЯ ПРОФІЛЮ (?setup=1)
+
+   Та сама сторінка сценарію реєстрації, але окремим маршрутом.
+   Класи `profile-*` тут описані поруч із `rules-*`, бо обидві
+   сторінки показують ті самі пари «значення + підпис» і ті самі
+   блоки-кроки — розводити їх по файлах означало б дублювати.
+   ========================================================= */
+.profile-settings-page {
+  min-width: 0;
+}
+
+.profile-account-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+/* Смуга «Реєстраційні дані заповнені» */
+.profile-account-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.profile-account-overview-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.profile-account-overview-card--primary {
+  border-left: 3px solid var(--c-accent-400);
+}
+
+/* Друга колонка картки — знову пара «назва + пояснення» */
+.profile-account-overview-card > div,
+.profile-account-overview-card > span:not(:where([class$="__icon"])) {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.profile-account-overview-card strong {
+  font-size: 0.9rem;
+  color: var(--text-strong);
+}
+
+.profile-account-overview-card small,
+.profile-account-overview-card p {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* ---------- Бічна колонка ---------- */
+.profile-account-sidebar__nav {
+  display: grid;
+  gap: var(--space-2xs);
+  width: 100%;
+}
+
+.profile-account-sidebar__nav a {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 40px;
+  padding: 0 var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-soft);
+  font-size: 0.84rem;
+  font-weight: 600;
+  transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+
+.profile-account-sidebar__nav a:hover {
+  border-color: var(--border-strong);
+  color: var(--text-strong);
+}
+
+.profile-account-sidebar__pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2xs);
+}
+
+/* ---------- Сітка карток налаштувань ---------- */
+.profile-grid--settings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: var(--gap-grid);
+  align-items: start;
+}
+
+.profile-gender-box,
+.profile-raid-role-box,
+.profile-name-panel {
+  display: grid;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.profile-gender-box__head,
+.profile-raid-role-box__head,
+.profile-discord-standard__head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.profile-gender-box__icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--c-accent-300);
+}
+
+.profile-gender-box__head > span:not(:where([class$="__icon"])),
+.profile-raid-role-box__head > span,
+.profile-discord-standard__head > span {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.profile-gender-box__head strong,
+.profile-raid-role-box__head strong,
+.profile-discord-standard__head strong {
+  font-size: 0.9rem;
+  color: var(--text-strong);
+}
+
+.profile-gender-box__head small,
+.profile-raid-role-box__head small,
+.profile-discord-standard__head small {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* ---------- Вибір звертання ---------- */
+.profile-gender-form {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+/* Варіанти — картки з радіо, а не голий список */
+.profile-gender-form label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+}
+
+.profile-gender-form label:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+.profile-gender-form label > span {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.profile-gender-form strong {
+  font-size: 0.88rem;
+  color: var(--text-strong);
+}
+
+.profile-gender-form small,
+.profile-gender-form em {
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.profile-name-panel__label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+.profile-nickname-character-list {
+  display: grid;
+  gap: var(--space-2xs);
+}
+
+.profile-nickname-character-form {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.profile-discord-standard__identity {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+@media (max-width: 860px) {
+  .profile-account-overview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-gender-box__head,
+  .profile-raid-role-box__head,
+  .profile-discord-standard__head {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  /* Пігулка стану переїжджає під заголовок, щоб не тиснути текст */
+  .profile-gender-box__head > *:nth-child(3),
+  .profile-raid-role-box__head > *:nth-child(3),
+  .profile-discord-standard__head > *:nth-child(3) {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
+/* ---------- Дрібні модифікатори, які лишались без правил ---------- */
+.profile-account-page,
+.profile-gender-settings {
+  min-width: 0;
+}
+
+.profile-account-header__actions,
+.profile-account-sidebar__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.profile-account-overview--clean {
+  gap: var(--space-sm);
+}
+
+.profile-account-overview-card--success {
+  border-left: 3px solid var(--c-success);
+}
+
+.profile-account-overview-card--main-role {
+  border-left: 3px solid var(--c-accent-400);
+}
+
+.profile-account-overview-card__meta {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* Варіант звертання — та сама картка, що й у profile-gender-form */
+.profile-gender-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  cursor: pointer;
+}
+
+.profile-gender-option:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+.profile-gender-option.is-selected {
+  border-color: var(--border-strong);
+  background: var(--accent-soft);
+}
+
+/* Пігулка стану звертання: тон уже заданий вище через --tone */
+.profile-gender-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-3xs) var(--space-sm);
+  border: 1px solid color-mix(in srgb, var(--tone, var(--c-ink-400)) 32%, transparent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--tone, var(--c-ink-400)) 12%, transparent);
+  color: var(--tone, var(--text-soft));
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.profile-gender-pill.is-selected {
+  --tone: var(--c-success);
+}
+
+.profile-gender-pill.is-missing {
+  --tone: var(--c-warning);
+}
+
+.rules-onboarding-hero {
+  min-width: 0;
+}
+
+/* Шапка блоку реєстрації: іконка + текст + пігулка стану в один рядок.
+   Двоколонкова версія в pages.css кидала пігулку на власний рядок. */
+.rules-registration-block__head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.rules-registration-block__head > span:not(:where(.rules-registration-block__icon)):not(:where(.profile-gender-pill)) {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+@media (max-width: 860px) {
+  .rules-registration-block__head {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .rules-registration-block__head > .profile-gender-pill {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}

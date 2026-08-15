@@ -760,13 +760,6 @@
   gap: var(--space-sm);
 }
 
-.rules-registration-block__head {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: var(--space-sm);
-}
-
 .rules-onboarding-primary-action {
   width: min(320px, 100%);
 }
