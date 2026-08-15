@@ -2137,7 +2137,12 @@ function buildApplicationButtons(issueNumber) {
 
 function getDiscordUserLabel(interaction) {
   const user = interaction?.member?.user || interaction?.user || {};
-  return user.global_name || user.username || user.id || "Discord moderator";
+  // Нік на сервері гільдії має пріоритет над глобальним іменем Discord:
+  // одна людина може зватися по-різному на різних серверах, а нас
+  // цікавить саме наш. global_name лишається запасним варіантом для
+  // інтеракцій поза гільдією (DM), де member.nick не приходить узагалі.
+  const guildNick = String(interaction?.member?.nick || "").trim();
+  return guildNick || user.global_name || user.username || user.id || "Discord moderator";
 }
 
 

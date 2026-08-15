@@ -59,6 +59,7 @@ import {
   deleteDiscordRaidMessage,
   discordMessageUrl,
   editDiscordRaidMessage,
+  fetchDiscordGuildMemberSnapshot,
   getDiscordDefaultChannelId,
   normalizeDiscordEmbed,
   type DiscordMessageRef,
@@ -5368,6 +5369,24 @@ export async function handleRaidDiscordAction(params: {
   };
 }
 
+/**
+ * Імʼя для запису беремо з ніку на сервері гільдії, а не з глобального
+ * імені Discord: у людини можуть бути різні ніки на різних серверах,
+ * і в рейді має стояти саме наш. Порядок: живий member.nick → імʼя
+ * сесії (воно вже збагачене displayName у auth.ts) → логін.
+ */
+async function resolveGuildSignupName(
+  user: DashboardSession,
+  discordId: string,
+) {
+  const fallback = user.name || user.login || "Discord user";
+  if (!discordId) return fallback;
+  const snapshot = await fetchDiscordGuildMemberSnapshot(discordId).catch(
+    () => null,
+  );
+  return snapshot?.nick || fallback;
+}
+
 export async function handleRaidSessionAction(params: {
   raidId: string;
   action: RaidSignupStatus;
@@ -5429,6 +5448,9 @@ export async function handleRaidSessionAction(params: {
     profile = await getProfileByDiscordUserId(discordId).catch(() => null);
   }
 
+  // Нік саме з нашого сервера, а не глобальне імʼя Discord.
+  const signupName = await resolveGuildSignupName(params.user, discordId);
+
   let selectedCharacter: ProfileCharacter | null = null;
   if (params.action !== "skipped") {
     profile = await refreshProfileBeforeRaidSignup(profile, {
@@ -5450,7 +5472,7 @@ export async function handleRaidSessionAction(params: {
       const blockedSignup = signupFromProfile(
         params.action,
         discordId,
-        params.user.name || params.user.login || "Discord user",
+        signupName,
         profile,
         requestedCharacter.key,
       );
@@ -5510,14 +5532,14 @@ export async function handleRaidSessionAction(params: {
     ? signupFromManualSelection(
         params.action,
         discordId,
-        params.user.name || params.user.login || "Discord user",
+        signupName,
         manualSelection,
         profile,
       )
     : signupFromProfile(
         params.action,
         discordId,
-        params.user.name || params.user.login || "Discord user",
+        signupName,
         profile,
         selectedCharacter?.key || params.characterKey,
       );
