@@ -1082,12 +1082,14 @@ export default async function RulesAcceptPage({
         className="dashboard-shell content-shell rules-onboarding-shell"
         aria-label="Прийняття правил Mistblossom Vanguard"
       >
-        {session ? (
-          <DashboardIdentity
-            user={session as DashboardSession}
-            activeSection="profile"
-          />
-        ) : null}
+        {/* Шапка потрібна і гостю: без неї сторінка лишалась без жодного
+            виходу назад, а зарезервований під фіксовану навігацію відступ
+            згори перетворювався на порожню смугу. Для гостя компонент
+            показує бренд і кнопку входу. */}
+        <DashboardIdentity
+          user={(session as DashboardSession | null) ?? null}
+          activeSection="profile"
+        />
         <header className="hero panel dashboard-hero rules-onboarding-hero">
           <div className="hero-copy dashboard-hero__copy guild-hero__copy">
             <div className="eyebrow">Mistblossom Vanguard • Правила</div>

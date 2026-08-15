@@ -480,9 +480,12 @@
   pointer-events: none;
 }
 
+/* Іконка + текст + дія в один рядок. Двоколонкова версія кидала
+   кнопку на другий ряд, а <span> із <strong>+<small> усередині
+   лишався інлайновим — звідси «Увійти через DiscordПісля входу…». */
 .rules-registration-locked-card {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-sm);
   padding: var(--space-md);
@@ -1211,4 +1214,39 @@
   font-size: 0.78rem;
   line-height: 1.5;
   color: var(--text-muted);
+}
+
+/* Текстова колонка замкненої картки — вертикальна пара */
+.rules-registration-locked-card > span:not(:where(.rules-registration-locked-card__icon)) {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.rules-registration-locked-card strong {
+  font-size: 0.92rem;
+  color: var(--text-strong);
+}
+
+.rules-registration-locked-card small {
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.rules-registration-locked-card > .btn {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 760px) {
+  .rules-registration-locked-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  /* Кнопка свідомо переїжджає вниз на всю ширину — на телефоні
+     тиснути її зручніше, ніж тиснути текст у вузьку колонку. */
+  .rules-registration-locked-card > .btn {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
 }
