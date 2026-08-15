@@ -1025,3 +1025,385 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* =========================================================
+   10. КЕРУВАННЯ ІМЕНЕМ (ProfileNameControls)
+
+   Ці класи не мали правил узагалі, тому:
+   - кнопка-галочка розтягувалась у сіру смугу на всю ширину,
+   - «Застосувати» ставало велетенським порожнім прямокутником,
+   - варіанти формату злипались у «ІмʼяДмитро».
+
+   Компонент спільний для /rules/accept і налаштувань профілю,
+   тож правила описані один раз тут.
+   ========================================================= */
+.profile-name-section {
+  display: grid;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.profile-name-section__head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.profile-name-section__head > span:not(:where([class$="__icon"])):not(:where([class$="-pill"])) {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.profile-name-status-pill {
+  --tone: var(--c-ink-400);
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-3xs) var(--space-sm);
+  border: 1px solid color-mix(in srgb, var(--tone) 32%, transparent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--tone) 12%, transparent);
+  color: var(--tone);
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.profile-name-status-pill.is-synced,
+.profile-name-status-pill.is-ok {
+  --tone: var(--c-success);
+}
+
+.profile-name-status-pill.is-missing,
+.profile-name-status-pill.is-invalid {
+  --tone: var(--c-warning);
+}
+
+/* ---------- Поле імені з кнопкою-галочкою ---------- */
+.profile-name-edit-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.profile-name-edit-form.is-invalid .input {
+  border-color: rgba(224, 112, 95, 0.5);
+}
+
+/* Квадратна кнопка-іконка: без ширини вона займала весь рядок */
+.profile-icon-action {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--control-radius);
+  background: var(--surface-raised);
+  color: var(--text-soft);
+  cursor: pointer;
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.profile-icon-action:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+  color: var(--text-strong);
+}
+
+.profile-icon-action svg {
+  width: 18px;
+  height: 18px;
+}
+
+.profile-icon-action--confirm {
+  border-color: transparent;
+  background: var(--accent-gradient);
+  color: #1c1208;
+}
+
+.profile-icon-action--confirm:hover {
+  color: #1c1208;
+}
+
+.profile-icon-action:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ---------- Збережене імʼя ---------- */
+.profile-name-display-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.profile-name-display-row.is-empty {
+  border-style: dashed;
+}
+
+.profile-name-display-row__value {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.profile-name-display-row__value strong {
+  font-size: 0.95rem;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.profile-name-display-row__value small {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+/* ---------- Формат відображення ---------- */
+.profile-display-mode-section {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.profile-display-mode-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+/* Кожен варіант — окрема форма-кнопка на всю ширину клітинки */
+.profile-display-mode-action {
+  display: grid;
+  min-width: 0;
+}
+
+.profile-display-mode-action > .profile-display-mode-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-soft);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.profile-display-mode-action > .profile-display-mode-option:disabled {
+  cursor: default;
+}
+
+/* Кружечок намальований span-ом, бо це кнопка, а не radio */
+.profile-display-mode-option__radio {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.profile-display-mode-option.is-selected .profile-display-mode-option__radio {
+  border-color: transparent;
+  background: var(--accent-gradient);
+}
+
+.profile-display-mode-option.is-selected .profile-display-mode-option__radio::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: #1c1208;
+}
+
+/* Пара «назва + приклад» — у стовпчик, інакше «ІмʼяДмитро» */
+.profile-display-mode-option > span:not(:where(.profile-display-mode-option__radio)) {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.profile-display-mode-option strong {
+  font-size: 0.86rem;
+  color: var(--text-strong);
+}
+
+.profile-display-mode-option small {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Discord-нік ---------- */
+.profile-discord-standard__head--modern,
+.profile-name-section__head--modern {
+  align-items: flex-start;
+}
+
+.profile-server-nickname {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.profile-server-nickname__icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--c-accent-300);
+}
+
+.profile-server-nickname__body {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.profile-server-nickname__body small {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.profile-server-nickname__body strong {
+  font-size: 0.9rem;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+/* Кнопка синхронізації ніку: та сама квадратна іконка */
+.profile-discord-nick-form {
+  display: inline-grid;
+}
+
+.profile-nick-sync-button {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--control-radius);
+  background: var(--surface-raised);
+  color: var(--c-accent-300);
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+
+.profile-nick-sync-button:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+}
+
+.profile-nick-sync-button.is-synced {
+  border-color: color-mix(in srgb, var(--c-success) 40%, transparent);
+  background: color-mix(in srgb, var(--c-success) 12%, transparent);
+  color: var(--c-success);
+}
+
+.profile-nick-sync-button--copy {
+  color: var(--text-soft);
+}
+
+.profile-nick-sync-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ---------- Роль у рейді ---------- */
+.profile-raid-role-form {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.profile-raid-role-pill {
+  --tone: var(--c-role-dps);
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-3xs) var(--space-sm);
+  border: 1px solid color-mix(in srgb, var(--tone) 32%, transparent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--tone) 12%, transparent);
+  color: var(--tone);
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.profile-raid-role-pill--tank {
+  --tone: var(--c-role-tank);
+}
+
+.profile-raid-role-pill--healer {
+  --tone: var(--c-role-healer);
+}
+
+.profile-raid-role-pill--dps,
+.profile-raid-role-pill--auto {
+  --tone: var(--c-role-dps);
+}
+
+.profile-name-hint code,
+.profile-nickname-hint code {
+  padding: 0 var(--space-3xs);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--c-accent-200);
+}
+
+@media (max-width: 640px) {
+  .profile-name-section__head {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .profile-name-section__head > .profile-name-status-pill {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .profile-display-mode-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

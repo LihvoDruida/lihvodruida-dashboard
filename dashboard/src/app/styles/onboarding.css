@@ -451,9 +451,15 @@
 /* =========================================================
    7. РЕЄСТРАЦІЙНІ БЛОКИ Й ФІНАЛЬНА ДІЯ
    ========================================================= */
+/* Кроки реєстрації йдуть ОДИН ЗА ОДНИМ.
+
+   Чотири колонки змушували стрибати очима по сторінці й ламали
+   логіку «зверху вниз»: імʼя → звертання → персонажі → нік → роль.
+   Кожен крок тепер на всю ширину і має свій номер. */
 .rules-registration-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  grid-template-columns: minmax(0, 1fr);
+  counter-reset: rules-step;
   gap: var(--gap-grid);
   align-items: start;
   min-width: 0;
@@ -1119,4 +1125,90 @@
     grid-column: 1 / -1;
     justify-self: start;
   }
+}
+
+/* =========================================================
+   11. КРОКИ РЕЄСТРАЦІЇ: НУМЕРАЦІЯ Й ПОСЛІДОВНІСТЬ
+
+   Сторінка правил — це майстер, а не набір карток. Нумерація
+   робиться лічильником CSS, тож порядок у розмітці лишається
+   єдиним джерелом правди: додали крок — номери зсунулись самі.
+   ========================================================= */
+.rules-registration-grid > .rules-registration-block {
+  counter-increment: rules-step;
+}
+
+.rules-registration-block--wide {
+  grid-column: 1 / -1;
+}
+
+/* Номер замість декоративної іконки, коли крок пронумерований */
+.rules-registration-grid > .rules-registration-block > .rules-registration-block__head > .rules-registration-block__icon::before {
+  content: counter(rules-step);
+  font-family: var(--font-brand);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.rules-registration-grid > .rules-registration-block > .rules-registration-block__head > .rules-registration-block__icon {
+  font-size: 0;
+}
+
+/* Виконаний крок — зелена грань і приглушений номер */
+.rules-registration-block:not(:where(.is-problem)) > .rules-registration-block__head > .rules-registration-block__icon {
+  border-color: color-mix(in srgb, var(--c-success) 40%, transparent);
+  background: color-mix(in srgb, var(--c-success) 12%, transparent);
+  color: var(--c-success);
+}
+
+.rules-registration-block.is-problem > .rules-registration-block__head > .rules-registration-block__icon {
+  border-color: color-mix(in srgb, var(--c-warning) 40%, transparent);
+  background: color-mix(in srgb, var(--c-warning) 12%, transparent);
+  color: var(--c-warning);
+}
+
+/* Тіло кроку відступає під номер, щоб форма читалась як його частина */
+.rules-registration-editor,
+.rules-registration-block > form,
+.rules-registration-block > .profile-gender-form {
+  display: grid;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+/* Підсумок проблемних місць — список, а не плитка */
+.rules-onboarding-issues {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-xs);
+}
+
+.rules-onboarding-issue {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid rgba(232, 179, 74, 0.28);
+  border-left: 3px solid var(--c-warning);
+  border-radius: var(--radius-md);
+  background: rgba(232, 179, 74, 0.07);
+  min-width: 0;
+}
+
+.rules-onboarding-issue > span:not(:where([class$="__icon"])) {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.rules-onboarding-issue strong {
+  font-size: 0.88rem;
+  color: #f4d79a;
+}
+
+.rules-onboarding-issue small {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-muted);
 }
