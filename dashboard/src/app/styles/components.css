@@ -1389,3 +1389,77 @@ label:has(> input[type="checkbox"]:checked) {
 .input-with-action > .btn {
   flex: 0 0 auto;
 }
+
+/* =========================================================
+   11. РОЗМІР ЦІЛІ ДЛЯ ДОТИКУ
+
+   На десктопі компактні кнопки (34–38px) доречні: миша точна.
+   На сенсорі це замало — палець промахується. Тому мінімум
+   піднімається саме за шириною екрана, а не глобально:
+   інакше десктопні тулбари роздулися б без причини.
+   ========================================================= */
+@media (max-width: 860px) {
+  .btn-sm,
+  .dashboard-table-filter,
+  .raid-list-icon-action,
+  .poll-tab,
+  .profile-character-btn,
+  .nav-sheet__link {
+    min-height: 44px;
+  }
+
+  /* Іконкові кнопки лишаються квадратними, просто більшими */
+  .raid-list-icon-action,
+  .profile-icon-action,
+  .profile-nick-sync-button {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+  }
+
+  /* Чекбокс і радіо: сам контрол більший, мітка клікабельна вся */
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: 24px;
+    height: 24px;
+  }
+
+  input[type="checkbox"]:checked::after {
+    left: 8px;
+    top: 3px;
+    width: 6px;
+    height: 12px;
+  }
+
+  input[type="radio"]:checked::after {
+    inset: 6px;
+  }
+
+  .inline-check,
+  .roster-role-check {
+    min-height: 44px;
+  }
+}
+
+/* Товщий бігунок діапазону там, де вказівник грубий.
+   pointer: coarse точніший за ширину екрана: планшет із мишею
+   лишається з тонким бігунком, телефон отримує великий. */
+@media (pointer: coarse) {
+  .guild-dual-range {
+    height: 36px;
+  }
+
+  .guild-dual-range__input {
+    height: 36px;
+  }
+
+  .guild-dual-range__input::-webkit-slider-thumb {
+    width: 26px;
+    height: 26px;
+  }
+
+  .guild-dual-range__input::-moz-range-thumb {
+    width: 26px;
+    height: 26px;
+  }
+}

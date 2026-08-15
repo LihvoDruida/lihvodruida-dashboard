@@ -810,18 +810,6 @@
   min-width: 0;
 }
 
-.profile-account-overview-card {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  min-width: 0;
-}
-
 .profile-account-overview-card--primary {
   border-left: 3px solid var(--c-accent-400);
 }
@@ -1044,14 +1032,6 @@
 
 .profile-account-overview-card--main-role {
   border-left: 3px solid var(--c-accent-400);
-}
-
-.profile-account-overview-card__meta {
-  display: grid;
-  gap: var(--space-3xs);
-  min-width: 0;
-  font-size: 0.78rem;
-  color: var(--text-muted);
 }
 
 /* Варіант звертання — та сама картка, що й у profile-gender-form */

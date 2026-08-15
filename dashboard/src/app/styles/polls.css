@@ -1,0 +1,477 @@
+/* =========================================================
+   POLLS — рейд-пули: голосування за день і час
+
+   Останній домен без власних правил. Сторінка показує сітку
+   днів із розподілом голосів, рекомендовані слоти та стан
+   синхронізації з Discord.
+
+   Порядок: список → деталі → дні → рекомендації → синхронізація
+   → адаптив. Жодного !important.
+   ========================================================= */
+
+/* =========================================================
+   1. СПИСОК ПУЛІВ
+   ========================================================= */
+.poll-browser {
+  min-width: 0;
+}
+
+.poll-browser__head {
+  align-items: flex-start;
+}
+
+.poll-browser__headline {
+  display: grid;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.poll-browser__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.poll-browser__create {
+  flex: 0 0 auto;
+}
+
+/* Вкладки станів пулу */
+.poll-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-height: 38px;
+  padding: 0 var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  color: var(--text-soft);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+
+.poll-tab:hover {
+  border-color: var(--border-strong);
+  color: var(--text-strong);
+}
+
+.poll-tab.is-active {
+  border-color: transparent;
+  background: var(--accent-gradient);
+  color: #1c1208;
+}
+
+.poll-bulk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+/* =========================================================
+   2. ДЕТАЛІ ПУЛУ
+   ========================================================= */
+.poll-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-stack);
+  min-width: 0;
+}
+
+.poll-detail__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
+/* Призупинений пул приглушений, як закритий рейд */
+.poll-detail__paused {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid rgba(232, 179, 74, 0.28);
+  border-left: 3px solid var(--c-warning);
+  border-radius: var(--radius-md);
+  background: rgba(232, 179, 74, 0.08);
+  color: #f4d79a;
+  font-size: 0.85rem;
+}
+
+/* =========================================================
+   3. СІТКА ДНІВ
+   ========================================================= */
+.poll-matrix {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.poll-day {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--pad-card-compact);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.poll-day__head {
+  display: grid;
+  gap: var(--space-3xs);
+  padding-bottom: var(--space-2xs);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.poll-day__head strong {
+  font-size: 0.92rem;
+  color: var(--text-strong);
+}
+
+.poll-day__head small {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+/* Смуга голосів дня */
+.poll-day__bar {
+  display: block;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+.poll-day__bar > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent-gradient);
+  transition: width var(--dur-base) var(--ease-out);
+}
+
+/* «Можуть» і «не можуть» — дві пігулки з різними тонами */
+.poll-day__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
+.poll-day__stats > span {
+  --tone: var(--c-ink-400);
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-3xs);
+  padding: var(--space-3xs) var(--space-sm);
+  border: 1px solid color-mix(in srgb, var(--tone) 30%, transparent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--tone) 10%, transparent);
+  color: var(--tone);
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.poll-day__stats > span.is-ready {
+  --tone: var(--c-success);
+}
+
+.poll-day__stats > span.is-absent {
+  --tone: var(--c-danger);
+}
+
+.poll-day__stats b {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+/* Слоти часу: список із заповненням */
+.poll-day__times {
+  display: grid;
+  gap: var(--space-3xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.poll-day__times li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-3xs) var(--space-xs);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+/* Час, за який хтось проголосував, підсвічений */
+.poll-day__times li.has-votes {
+  border-color: var(--border-strong);
+  background: var(--accent-soft);
+  color: var(--c-accent-200);
+  font-weight: 600;
+}
+
+.poll-day__voters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.poll-day__voters > span {
+  padding: 2px var(--space-2xs);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-soft);
+  font-size: 0.72rem;
+  overflow-wrap: anywhere;
+}
+
+.poll-day__absent {
+  margin: 0;
+  color: var(--text-faint);
+  font-size: 0.74rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   4. РЕКОМЕНДАЦІЇ
+   ========================================================= */
+.poll-recommendation {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-stack);
+  border-left: 3px solid var(--c-accent-400);
+  min-width: 0;
+}
+
+.poll-recommendation__head {
+  display: grid;
+  gap: var(--space-2xs);
+}
+
+.poll-recommendation__head h3 {
+  margin: 0;
+}
+
+.poll-recommendation__eyebrow {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-accent-300);
+}
+
+.poll-recommendation__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+/* Найкращий слот — виділений блок над списком решти */
+.poll-recommendation__best {
+  display: grid;
+  gap: var(--space-2xs);
+  padding: var(--pad-card-compact);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  min-width: 0;
+}
+
+.poll-recommendation__best strong {
+  font-size: 1rem;
+  color: var(--c-accent-200);
+}
+
+.poll-recommendation__best span {
+  color: var(--text-soft);
+  font-size: 0.8rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.poll-recommendation__list {
+  display: grid;
+  gap: var(--space-2xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: poll-slot;
+}
+
+.poll-recommendation__list li {
+  counter-increment: poll-slot;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-soft);
+  font-size: 0.82rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.poll-recommendation__list li::before {
+  content: counter(poll-slot);
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--surface-raised);
+  color: var(--text-faint);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.poll-recommendation__list li.is-best {
+  border-color: var(--border-strong);
+  background: var(--accent-soft);
+}
+
+.poll-recommendation__list li.is-best::before {
+  background: var(--accent-gradient);
+  color: #1c1208;
+}
+
+.poll-recommendation__how {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+/* =========================================================
+   5. СИНХРОНІЗАЦІЯ Й ГОЛОСИ
+   ========================================================= */
+.poll-sync {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-stack);
+  min-width: 0;
+}
+
+.poll-sync__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+  gap: var(--space-sm);
+}
+
+.poll-sync__metrics > div,
+.mini-metric {
+  display: grid;
+  gap: var(--space-3xs);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.poll-sync__metrics strong,
+.mini-metric strong {
+  font-size: 1.05rem;
+  color: var(--text-strong);
+}
+
+.poll-sync__metrics small,
+.mini-metric small {
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.poll-voters {
+  display: grid;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.poll-voters__list {
+  display: grid;
+  gap: var(--space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.poll-voter {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3xs);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.poll-voter strong {
+  font-size: 0.86rem;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.poll-voter__schedule {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3xs);
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   6. АДАПТИВ
+   ========================================================= */
+@media (max-width: 860px) {
+  .poll-matrix,
+  .poll-sync__metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .poll-browser__controls,
+  .poll-bulk {
+    width: 100%;
+  }
+
+  .poll-browser__create,
+  .poll-bulk .btn {
+    flex: 1 1 auto;
+  }
+
+  /* Вкладки прокручуються вбік замість переносу в три ряди */
+  .poll-browser__controls {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: var(--space-3xs);
+  }
+
+  .poll-browser__controls::-webkit-scrollbar {
+    display: none;
+  }
+
+  .poll-tab {
+    flex: 0 0 auto;
+  }
+}

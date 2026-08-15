@@ -1,0 +1,409 @@
+/* =========================================================
+   ROSTER — формування складу
+
+   Три частини на одній сторінці: форма створення оголошення,
+   таблиця покриття класів і список опублікованих формувань.
+   Жоден із 48 класів `roster-*` не мав правил, тому все
+   трималося на суфіксних патернах і розсипалося.
+
+   Порядок: форма → покриття → паті → картки формувань → адаптив.
+   Жодного !important.
+   ========================================================= */
+
+.roster-page {
+  min-width: 0;
+}
+
+/* =========================================================
+   1. ФОРМА СТВОРЕННЯ
+   ========================================================= */
+.roster-create-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-stack);
+  min-width: 0;
+}
+
+/* Три коротких поля в ряд: сезон, канал, автор.
+   Кожне має свій мінімум, тож на вузькому екрані вони
+   згортаються по одному, а не всі разом. */
+.roster-create-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: var(--space-md);
+  align-items: start;
+  min-width: 0;
+}
+
+/* Поле автора заповнюється системою — показуємо це візуально */
+.roster-create-form input[readonly] {
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.roster-create-form input[readonly]:focus {
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+/* Вибір ролей для пінгу — сітка чекбоксів-карток */
+.roster-role-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
+  gap: var(--space-xs);
+  max-height: 280px;
+  overflow-y: auto;
+  padding: var(--space-2xs);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.roster-role-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 40px;
+  padding: var(--space-2xs) var(--space-sm);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+}
+
+.roster-role-check:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+.roster-role-check > span {
+  min-width: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Дія публікації відділена рискою — це кінець форми */
+.roster-create-form__submit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.roster-create-form__submit .btn {
+  min-width: 240px;
+}
+
+.roster-create-form__hint {
+  flex: 1 1 240px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   2. ПОКРИТТЯ КЛАСІВ
+   ========================================================= */
+.roster-reference {
+  min-width: 0;
+}
+
+.roster-coverage {
+  display: grid;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.roster-coverage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+/* Ліва грань фарбується кольором класу через inline style */
+.roster-coverage-cell {
+  display: grid;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--c-ink-500);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+/* Вільний клас — пунктир: одразу видно, кого бракує */
+.roster-coverage-cell.is-free {
+  border-style: dashed;
+  background: var(--surface);
+  opacity: 0.85;
+}
+
+.roster-coverage-cell__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.roster-coverage-cell__name {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.roster-coverage-cell__badge {
+  flex: 0 0 auto;
+  padding: var(--space-3xs) var(--space-xs);
+  border: 1px solid color-mix(in srgb, var(--c-success) 32%, transparent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--c-success) 12%, transparent);
+  color: var(--c-success);
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.roster-coverage-cell__badge.is-free {
+  border-color: var(--border);
+  background: transparent;
+  color: var(--text-faint);
+}
+
+.roster-coverage-cell__members {
+  display: grid;
+  gap: var(--space-3xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.roster-coverage-cell__members li {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   3. ПАТІ
+   ========================================================= */
+.roster-parties {
+  display: grid;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.roster-party-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(230px, 100%), 1fr));
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.roster-party {
+  display: grid;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.roster-party__head {
+  padding-bottom: var(--space-2xs);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-accent-300);
+}
+
+.roster-party__slots {
+  display: grid;
+  gap: var(--space-3xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.roster-party__slots li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-height: 26px;
+  font-size: 0.82rem;
+  color: var(--text-soft);
+  overflow-wrap: anywhere;
+}
+
+/* Суфіксний патерн [class$="-empty"] у components.css робить із цього
+   повноцінний порожній стан із рамкою й падінгом на 32px. Тут це лише
+   слово «вільно» всередині рядка паті, тож скидаємо блокові властивості. */
+.roster-slot-empty {
+  display: inline;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  text-align: left;
+  color: var(--text-faint);
+  font-style: italic;
+  font-size: inherit;
+}
+
+.roster-bench-note {
+  margin: 0;
+  padding: var(--space-xs) var(--space-md);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   4. СПИСОК ФОРМУВАНЬ
+   ========================================================= */
+.roster-formations-list {
+  display: grid;
+  gap: var(--gap-grid);
+  min-width: 0;
+}
+
+.roster-section-title {
+  margin: 0;
+}
+
+.roster-formation-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-stack);
+  border-left: 3px solid var(--c-success);
+  min-width: 0;
+}
+
+/* Закритий набір приглушений — щоб активні читались першими */
+.roster-formation-card.is-closed {
+  border-left-color: var(--c-ink-500);
+  opacity: 0.88;
+}
+
+.roster-formation-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.roster-formation-card__head > div:first-child {
+  display: grid;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.roster-formation-card__head h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.roster-formation-card__meta,
+.roster-formation-card__roles {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.roster-formation-card__roles {
+  color: var(--text-soft);
+}
+
+/* Дії набору: небезпечні відсунуті вправо */
+.roster-formation-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.roster-inline-form {
+  display: inline-grid;
+  min-width: 0;
+}
+
+.roster-formation-card__actions > .roster-inline-form:last-child {
+  margin-left: auto;
+}
+
+/* =========================================================
+   5. АДАПТИВ
+   ========================================================= */
+@media (max-width: 860px) {
+  .roster-create-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .roster-create-form__submit .btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .roster-role-picker {
+    grid-template-columns: minmax(0, 1fr);
+    max-height: 240px;
+  }
+
+  .roster-coverage-grid,
+  .roster-party-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .roster-formation-card__head > .btn {
+    width: 100%;
+  }
+
+  /* Дії в стовпчик на всю ширину: у рядок вони не влазять */
+  .roster-formation-card__actions {
+    flex-direction: column;
+  }
+
+  .roster-formation-card__actions > .roster-inline-form {
+    width: 100%;
+  }
+
+  .roster-formation-card__actions > .roster-inline-form:last-child {
+    margin-left: 0;
+  }
+
+  .roster-formation-card__actions .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .roster-coverage-cell__head {
+    flex-wrap: wrap;
+  }
+}

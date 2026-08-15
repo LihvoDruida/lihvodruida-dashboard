@@ -66,40 +66,6 @@
   align-items: start;
 }
 
-.profile-account-sidebar {
-  position: sticky;
-  top: calc(var(--nav-space) + var(--space-sm));
-  display: grid;
-  gap: var(--space-md);
-  justify-items: center;
-  text-align: center;
-}
-
-.profile-account-sidebar__identity {
-  display: grid;
-  gap: var(--space-2xs);
-  justify-items: center;
-}
-
-.profile-account-sidebar__avatar--fallback {
-  display: grid;
-  place-items: center;
-  font-family: var(--font-brand);
-  font-size: 2rem;
-  color: var(--c-accent-300);
-}
-
-.profile-account-main {
-  display: grid;
-  gap: var(--gap-grid);
-  min-width: 0;
-}
-
-.profile-account-overview {
-  display: grid;
-  gap: var(--space-md);
-}
-
 .profile-account-header__badge {
   justify-self: start;
 }
@@ -109,18 +75,6 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .profile-account-sidebar {
-    position: static;
-  }
-}
-
-.profile-character-candidate {
-  display: grid;
-  gap: var(--space-2xs);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-raised);
 }
 
 .profile-character-candidate__kind {
@@ -147,25 +101,10 @@
   gap: var(--space-sm);
 }
 
-.profile-account-overview-card {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: var(--space-sm);
-}
-
 .profile-account-sidebar__avatar {
   width: 88px;
   height: 88px;
   border-radius: var(--radius-lg);
-}
-
-.profile-character-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  min-height: 40px;
-  padding: 0 var(--space-md);
 }
 
 .profile-character-btn--accent {
@@ -181,22 +120,6 @@
 .profile-character-btn__icon {
   width: 16px;
   height: 16px;
-}
-
-.profile-candidate-group,
-.profile-character-candidates {
-  display: grid;
-  gap: var(--space-xs);
-}
-
-.profile-subsection-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-xs);
-  padding-bottom: var(--space-2xs);
-  border-bottom: 1px solid var(--border-subtle);
 }
 
 .profile-subsection-head--compact {
@@ -1039,4 +962,348 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-xs);
+}
+
+/* =========================================================
+   ГОЛОВНА: КАЛЕНДАР І НАЙБЛИЖЧІ ПОДІЇ
+   ========================================================= */
+.home-upcoming-events,
+.home-calendar-events {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.home-upcoming-event,
+.home-calendar-event {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--c-accent-400);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.home-upcoming-event--soon,
+.home-calendar-event--soon {
+  border-left-color: var(--c-success);
+}
+
+.home-upcoming-event--past,
+.home-calendar-event--past {
+  border-left-color: var(--c-ink-500);
+  opacity: 0.8;
+}
+
+.home-upcoming-event__main,
+.home-calendar-event__details {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.home-calendar-event__title,
+.home-upcoming-event__main strong {
+  font-size: 0.88rem;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.home-upcoming-event__meta,
+.home-calendar-event__time {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+.home-kd-progress {
+  display: block;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+.home-kd-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent-gradient);
+}
+
+.home-local-time-zone,
+.home-upcoming-timezone {
+  color: var(--text-faint);
+  font-size: 0.74rem;
+}
+
+/* =========================================================
+   DISCORD: РЕДАКТОР, ДІАГНОСТИКА, ТАБЛИЦІ
+   ========================================================= */
+.discord-builder-textarea,
+.discord-description-area {
+  min-height: 180px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.discord-send-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.discord-load-message-btn {
+  flex: 0 0 auto;
+}
+
+/* Вибір кольору: системний свотч + код поруч */
+.discord-color-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.discord-color-picker input[type="color"] {
+  width: 46px;
+  height: 44px;
+  min-height: 0;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--control-radius);
+  background: var(--surface-sunken);
+  cursor: pointer;
+}
+
+.discord-color-code {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--c-accent-200);
+  text-transform: uppercase;
+}
+
+/* Чекбокси ролей і службові прапорці */
+.discord-role-checkboxes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
+  gap: var(--space-xs);
+  max-height: 260px;
+  overflow-y: auto;
+  padding: var(--space-2xs);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.discord-inline-check,
+.discord-timestamp-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 38px;
+  color: var(--text-soft);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+/* Діагностика та JSON-помилки — моноширинні блоки */
+.discord-diagnostics {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.discord-debug-pre {
+  max-height: 320px;
+  overflow: auto;
+  padding: var(--space-sm);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.discord-json-error {
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid rgba(224, 112, 95, 0.28);
+  border-left: 3px solid var(--c-danger);
+  border-radius: var(--radius-md);
+  background: rgba(224, 112, 95, 0.08);
+  color: #ffbdb1;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+/* Бічна колонка керування Discord */
+.discord-management-sidebar {
+  display: grid;
+  gap: var(--space-md);
+  align-content: start;
+  min-width: 0;
+}
+
+.discord-management-blocked-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
+/* Таблиці Discord-розділу успадковують шаблон довідника */
+.discord-raid-signups-table,
+.discord-rules-table,
+.content-table {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.discord-rules-data-overview,
+.discord-recruitment-events {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: var(--space-sm);
+}
+
+.discord-recruitment-event {
+  display: grid;
+  gap: var(--space-3xs);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.discord-rules-metric {
+  display: grid;
+  gap: var(--space-3xs);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.discord-rules-metric strong {
+  font-size: 1.05rem;
+  color: var(--text-strong);
+}
+
+.discord-rules-metric small {
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* Дві колонки «бібліотека + редактор» */
+.discord-rules-library-split,
+.content-library-split {
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+  gap: var(--gap-grid);
+  align-items: start;
+  min-width: 0;
+}
+
+.discord-preview-quote--multi {
+  display: grid;
+  gap: var(--space-3xs);
+}
+
+/* =========================================================
+   ДРІБНІ КЛАСИ БЕЗ ВЛАСНОГО ДОМЕНУ
+   ========================================================= */
+.status-select,
+.admin-policy-input {
+  min-width: 0;
+}
+
+.admin-log-highlight {
+  padding: 0 var(--space-3xs);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--c-accent-200);
+}
+
+.sync-message,
+.app-loading-current,
+.permission-check {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.global-toast--persistent {
+  border-left-color: var(--c-warning);
+}
+
+.access-denied-topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+/* Завантаження зображення: підпис поверх поля */
+.image-upload-control {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.image-upload-text {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.content-back-btn,
+.content-remove-cover {
+  flex: 0 0 auto;
+}
+
+/* Таблиці з модифікатором домену — ті самі правила довідника */
+.dashboard-table--guild,
+.dashboard-table--profiles {
+  min-width: 0;
+}
+
+@media (max-width: 1000px) {
+  .discord-rules-library-split,
+  .content-library-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 860px) {
+  .home-upcoming-event,
+  .home-calendar-event {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-upcoming-event__meta,
+  .home-calendar-event__time {
+    white-space: normal;
+  }
+
+  .discord-role-checkboxes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .discord-send-controls .btn {
+    width: 100%;
+  }
 }

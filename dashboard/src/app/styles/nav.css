@@ -650,6 +650,11 @@ body.nav-open {
     border-radius: 20px;
   }
 
+  /* Бренд — це посилання на головну, тобто повноцінна ціль дотику */
+  .site-nav__brand {
+    min-height: 44px;
+  }
+
   .site-nav__links,
   .site-nav__rule,
   .nav-account__meta,
