@@ -1279,3 +1279,113 @@ details > *:not(:where(summary)) {
     width: auto;
   }
 }
+
+/* =========================================================
+   10. КАСТОМНІ ЧЕКБОКСИ Й РАДІО
+
+   Системні контроли на темному тлі виглядають чужорідно:
+   у Chrome вони світлі, у Firefox — інші за розміром.
+   Малюємо власні, зберігаючи справжній input для доступності.
+   ========================================================= */
+input[type="checkbox"],
+input[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  width: 20px;
+  height: 20px;
+  min-height: 0;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-sunken);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+input[type="checkbox"] {
+  border-radius: var(--radius-sm);
+}
+
+input[type="radio"] {
+  border-radius: 50%;
+}
+
+input[type="checkbox"]:hover,
+input[type="radio"]:hover {
+  border-color: var(--c-accent-400);
+}
+
+input[type="checkbox"]:checked,
+input[type="radio"]:checked {
+  border-color: transparent;
+  background: var(--accent-gradient);
+}
+
+/* Галочка домальована рамкою — жодних зображень і шрифтів */
+input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid #1c1208;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+input[type="radio"]:checked::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: #1c1208;
+}
+
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+input[type="checkbox"]:disabled,
+input[type="radio"]:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Мітка поруч із контролом клікабельна цілком */
+label:has(> input[type="checkbox"]),
+label:has(> input[type="radio"]) {
+  cursor: pointer;
+}
+
+/* Вибраний варіант підсвічує всю картку, а не лише кружечок */
+label:has(> input[type="radio"]:checked),
+label:has(> input[type="checkbox"]:checked) {
+  border-color: var(--border-strong);
+}
+
+/* ---------- Поле з кнопкою в один рядок ---------- */
+.input-with-action {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  align-items: center;
+  min-width: 0;
+}
+
+.input-with-action > .input,
+.input-with-action > input {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.input-with-action > .btn {
+  flex: 0 0 auto;
+}

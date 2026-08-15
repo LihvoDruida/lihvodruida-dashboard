@@ -14,6 +14,7 @@ import "./styles/nav.css";
 import "./styles/pages.css";
 import "./styles/directory.css";
 import "./styles/onboarding.css";
+import "./styles/profile.css";
 import "./styles/raids.css";
 import DashboardFormEnhancer from "@/components/DashboardFormEnhancer";
 import GlobalToasts from "@/components/GlobalToasts";

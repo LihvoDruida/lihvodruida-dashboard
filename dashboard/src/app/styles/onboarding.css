@@ -873,13 +873,6 @@
 }
 
 /* ---------- Сітка карток налаштувань ---------- */
-.profile-grid--settings {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
-  gap: var(--gap-grid);
-  align-items: start;
-}
-
 .profile-gender-box,
 .profile-raid-role-box,
 .profile-name-panel {

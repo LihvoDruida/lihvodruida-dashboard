@@ -1,0 +1,1027 @@
+/* =========================================================
+   PROFILE — профіль, налаштування та суміжні сторінки
+
+   Головна зміна структури: розділи йдуть ОДИН ЗА ОДНИМ згори вниз,
+   а не розкидані в чотири колонки. Горизонтальна сітка на широкому
+   екрані змушувала читати зигзагом і різала довгі підписи, а на
+   вузькому все одно згорталася в стовпчик — тобто дві різні
+   структури для одного змісту.
+
+   Другий наскрізний мотив: пари <strong>значення</strong><small>підпис</small>
+   тут описані один раз, бо саме через їхню відсутність підписи
+   зліплювалися («ІмʼяДмитро», «0Гільдійні 0Інші»).
+
+   Порядок: оболонка → бічна колонка → статуси → секції →
+   персонажі → рейди → Battle.net → кандидати → адаптив.
+   Жодного !important.
+   ========================================================= */
+
+/* =========================================================
+   1. ОБОЛОНКА
+   ========================================================= */
+.profile-page-container,
+.profile-shell {
+  min-width: 0;
+}
+
+/* Дві колонки: липка бічна навігація + основний потік */
+.profile-account-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  gap: var(--gap-grid);
+  align-items: start;
+}
+
+.profile-account-main {
+  display: grid;
+  gap: var(--gap-grid);
+  min-width: 0;
+}
+
+/* ---------- Бічна колонка ---------- */
+.profile-account-sidebar {
+  position: sticky;
+  top: calc(var(--nav-space) + var(--space-sm));
+  display: grid;
+  gap: var(--space-md);
+  justify-items: center;
+  text-align: center;
+}
+
+.profile-account-sidebar__identity {
+  display: grid;
+  gap: var(--space-3xs);
+  justify-items: center;
+  min-width: 0;
+}
+
+.profile-account-sidebar__identity strong {
+  font-size: 1.05rem;
+  color: var(--text-strong);
+}
+
+.profile-account-sidebar__identity span,
+.profile-account-sidebar__identity small {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.profile-account-sidebar__avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius-lg);
+  object-fit: cover;
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+}
+
+.profile-account-sidebar__avatar--fallback {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-brand);
+  font-size: 2rem;
+  color: var(--c-accent-300);
+}
+
+/* =========================================================
+   2. СТАТУСНА СМУГА
+   ========================================================= */
+.profile-account-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.profile-account-overview-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--c-ink-500);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+/* Іконка-плитка: без неї в розмітці лишалося порожнє коло */
+.profile-account-overview-card__icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--c-accent-300);
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.profile-account-overview-card--primary {
+  border-left-color: var(--c-accent-400);
+}
+
+.profile-account-overview-card--success {
+  border-left-color: var(--c-success);
+}
+
+.profile-account-overview-card--main-role {
+  border-left-color: var(--c-role-dps);
+}
+
+.profile-account-overview-card > div,
+.profile-account-overview-card > span:not(:where([class$="__icon"])),
+.profile-account-overview-card__meta {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.profile-account-overview-card strong {
+  font-size: 0.92rem;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.profile-account-overview-card small,
+.profile-account-overview-card p,
+.profile-account-overview-card__meta {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* =========================================================
+   3. СЕКЦІЇ — ОДНА ЗА ОДНОЮ
+
+   Раніше .profile-grid--settings робив auto-fit і чотири картки
+   ставали в ряд. Тепер це просто вертикальний стек: форма →
+   форма → форма, як у будь-якому майстрі налаштувань.
+   ========================================================= */
+.profile-grid,
+.profile-grid--settings,
+.profile-grid--single {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--gap-grid);
+  min-width: 0;
+}
+
+.profile-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-stack);
+  min-width: 0;
+}
+
+/* Шапка секції: заголовок ліворуч, дії праворуч */
+.profile-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.profile-card-head--inline {
+  align-items: center;
+}
+
+.profile-card-title-with-icon {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.profile-card-title-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--c-accent-300);
+}
+
+.profile-card-lead {
+  margin: 0;
+  max-width: 80ch;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.profile-card-note {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.profile-card-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.profile-card-toolbar--compact {
+  gap: var(--space-2xs);
+}
+
+/* Підрозділ усередині секції */
+.profile-subsection-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  padding-bottom: var(--space-2xs);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.profile-subsection-head--compact {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+/* =========================================================
+   4. ІМʼЯ ТА ВІДОБРАЖЕННЯ
+   ========================================================= */
+.profile-name-panel,
+.profile-name-form {
+  display: grid;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.profile-name-panel__label,
+.profile-name-field__label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+.profile-name-hint,
+.profile-name-note {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* Варіанти формату імені — картки-перемикачі, а не злиплі рядки */
+.profile-display-options,
+.profile-display-modes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+  gap: var(--space-xs);
+}
+
+.profile-display-mode-option {
+  display: grid;
+  gap: var(--space-3xs);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+}
+
+.profile-display-mode-option:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+.profile-display-mode-option.is-selected {
+  border-color: var(--border-strong);
+  background: var(--accent-soft);
+}
+
+.profile-display-mode-option strong {
+  font-size: 0.85rem;
+  color: var(--text-strong);
+}
+
+.profile-display-mode-option small,
+.profile-display-mode-option span {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.profile-display-mode-option__radio {
+  accent-color: var(--c-accent-500);
+}
+
+/* Реальний серверний нік + кнопка копіювання */
+.profile-server-nick,
+.profile-server-nickname {
+  display: grid;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.profile-server-nick__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.profile-nickname-preview {
+  flex: 1 1 220px;
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--c-accent-200);
+  overflow-wrap: anywhere;
+}
+
+.profile-nickname-hint {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+/* =========================================================
+   5. ПЕРСОНАЖІ
+   ========================================================= */
+.profile-character-list {
+  display: grid;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+/* Один потік: картки на всю ширину, а не плитка */
+.profile-character-list--single-flow {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.profile-character-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-md);
+  padding: var(--pad-card-compact);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--c-ink-500);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.profile-character-card.is-main {
+  border-left-color: var(--c-accent-400);
+}
+
+.profile-character-artwork {
+  width: 92px;
+  height: 92px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+}
+
+.profile-character-artwork__fallback {
+  display: grid;
+  place-items: center;
+  color: var(--c-accent-300);
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.profile-character-body {
+  display: grid;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.profile-character-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.profile-character-title-row--stacked {
+  align-items: flex-start;
+}
+
+.profile-character-title-copy {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.profile-character-title-copy strong {
+  font-size: 1rem;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.profile-character-title-copy small,
+.profile-character-meta {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.profile-character-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+  font-size: 0.8rem;
+}
+
+.profile-character-main-corner {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+}
+
+/* Показники персонажа */
+.profile-character-stats-grid,
+.profile-character-stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr));
+  gap: var(--space-xs);
+}
+
+.profile-character-stat {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-2xs) var(--space-sm);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  min-width: 0;
+}
+
+.profile-character-stat__icon {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--c-accent-300);
+  font-size: 0.78rem;
+}
+
+.profile-character-stat__copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.profile-character-stat__copy strong {
+  font-size: 0.85rem;
+  color: var(--text-strong);
+}
+
+.profile-character-stat__copy small {
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.profile-character-stats-divider {
+  height: 1px;
+  border: 0;
+  background: var(--border-subtle);
+}
+
+/* Значки гільдії / статусу */
+.profile-character-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
+.profile-character-badge {
+  --tone: var(--c-ink-400);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  padding: var(--space-3xs) var(--space-sm);
+  border: 1px solid color-mix(in srgb, var(--tone) 32%, transparent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--tone) 12%, transparent);
+  color: var(--tone);
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.profile-character-badge--guild {
+  --tone: var(--c-success);
+}
+
+.profile-character-badge--external {
+  --tone: var(--c-warning);
+}
+
+.profile-character-badge--main {
+  --tone: var(--c-accent-400);
+}
+
+/* Дії над персонажем */
+.profile-character-actions {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.profile-character-actions__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+  gap: var(--space-xs);
+}
+
+.profile-character-actions__row.is-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.profile-character-actions__full > * {
+  width: 100%;
+}
+
+.profile-character-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  min-height: 40px;
+  padding: 0 var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--control-radius);
+  background: var(--surface-raised);
+  color: var(--text-soft);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.profile-character-btn:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+  color: var(--text-strong);
+}
+
+.profile-character-btn--accent {
+  border-color: transparent;
+  background: var(--accent-gradient);
+  color: #1c1208;
+}
+
+.profile-character-btn--accent:hover {
+  color: #1c1208;
+}
+
+.profile-character-btn--danger {
+  border-color: rgba(224, 112, 95, 0.32);
+  background: rgba(224, 112, 95, 0.1);
+  color: var(--c-danger);
+}
+
+.profile-character-btn--ghost {
+  border-color: transparent;
+  background: transparent;
+}
+
+.profile-character-btn.is-disabled,
+.profile-character-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.profile-character-btn__icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.profile-character-add-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.profile-character-add-button {
+  flex: 0 0 auto;
+}
+
+/* =========================================================
+   6. BATTLE.NET
+   ========================================================= */
+.profile-bnet-status {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.profile-bnet-status__icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--c-accent-300);
+}
+
+.profile-bnet-status__copy {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.profile-bnet-status__copy strong {
+  font-size: 0.88rem;
+  color: var(--text-strong);
+}
+
+.profile-bnet-status__copy small,
+.profile-bnet-status__copy a {
+  font-size: 0.78rem;
+}
+
+.profile-bnet-status__action {
+  flex: 0 0 auto;
+}
+
+.profile-bnet-cta {
+  display: grid;
+  gap: var(--space-xs);
+  padding: var(--pad-card-compact);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  text-align: center;
+  justify-items: center;
+}
+
+.profile-bnet-cta__eyebrow {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* Лічильники «0 гільдійних · 0 інших» — сітка пар, не суцільний рядок */
+.profile-character-counters,
+.profile-summary-counters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(110px, 100%), 1fr));
+  gap: var(--space-xs);
+}
+
+.profile-character-counters > span,
+.profile-summary-counters > span {
+  display: grid;
+  gap: 1px;
+  padding: var(--space-2xs) var(--space-sm);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.profile-character-counters strong,
+.profile-summary-counters strong {
+  font-size: 0.95rem;
+  color: var(--text-strong);
+}
+
+.profile-character-counters small,
+.profile-summary-counters small {
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* =========================================================
+   7. РЕЙДОВІ ЗАПИСИ
+   ========================================================= */
+.profile-raid-list {
+  display: grid;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.profile-raid-list--nested {
+  gap: var(--space-xs);
+}
+
+.profile-raid-card {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--pad-card-compact);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--c-accent-400);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.profile-raid-card__main,
+.profile-raid-card__body {
+  display: grid;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.profile-raid-card__headline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.profile-raid-card__title {
+  font-size: 0.95rem;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.profile-raid-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3xs) var(--space-sm);
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.profile-raid-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.profile-raid-card__action {
+  flex: 0 0 auto;
+}
+
+.profile-raid-skipped {
+  opacity: 0.75;
+  border-left-color: var(--c-ink-500);
+}
+
+/* Порожній стан із дією, а не голий текст */
+.profile-raid-empty-state {
+  display: grid;
+  gap: var(--space-xs);
+  justify-items: center;
+  padding: var(--space-xl) var(--space-md);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.profile-raid-empty-state strong {
+  color: var(--text-soft);
+  font-size: 0.95rem;
+}
+
+.profile-raid-empty-state__icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--c-accent-300);
+}
+
+.profile-raid-empty-state__action {
+  margin-top: var(--space-2xs);
+}
+
+.profile-raid-meta-item--character,
+.profile-raid-meta-item--order {
+  white-space: nowrap;
+}
+
+/* =========================================================
+   8. КАНДИДАТИ НА ДОДАВАННЯ
+   ========================================================= */
+.profile-candidates-box {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--pad-card-compact);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.profile-candidate-groups,
+.profile-candidate-group,
+.profile-character-candidates {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.profile-character-candidate {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-2xs) var(--space-sm);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  min-width: 0;
+}
+
+.profile-character-candidate__avatar {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border-subtle);
+}
+
+.profile-character-candidate__body {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.profile-character-candidate__kind {
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.profile-candidate-bulk-form,
+.profile-candidate-bulk-actions {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.profile-candidate-bulk-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.profile-candidate-summary,
+.profile-candidate-counter,
+.profile-candidate-count,
+.profile-candidate-expiry {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.profile-candidate-toggle-all {
+  justify-self: start;
+}
+
+.profile-candidate-select {
+  display: block;
+  min-width: 0;
+}
+
+.profile-rules-return-callout {
+  display: grid;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--c-accent-400);
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  color: var(--text-soft);
+  font-size: 0.85rem;
+}
+
+/* =========================================================
+   9. АДАПТИВ
+   ========================================================= */
+@media (max-width: 1000px) {
+  .profile-account-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-account-sidebar {
+    position: static;
+  }
+
+  /* Навігація профілю стає рядком пігулок над контентом */
+  .profile-account-sidebar__nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .profile-account-sidebar__nav a {
+    flex: 1 1 140px;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 860px) {
+  .profile-account-overview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-character-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-character-artwork {
+    width: 64px;
+    height: 64px;
+  }
+
+  .profile-character-main-corner {
+    position: static;
+    justify-self: start;
+  }
+
+  .profile-bnet-status {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .profile-bnet-status__action {
+    grid-column: 1 / -1;
+  }
+
+  .profile-bnet-status__action > * {
+    width: 100%;
+  }
+
+  .profile-card-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .profile-character-add-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 520px) {
+  .profile-account-sidebar__avatar {
+    width: 76px;
+    height: 76px;
+  }
+
+  .profile-character-actions__row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
