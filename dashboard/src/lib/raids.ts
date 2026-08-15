@@ -1525,6 +1525,10 @@ type RaidMinimumPolicy = Pick<
   "minItemLevel" | "minItemLevelRequired"
 >;
 type RaidItemLevelSubject =
+  | Pick<
+      RaidSignup,
+      "itemLevel" | "status" | "characterKey" | "manualClassKey" | "manualSpecKey"
+    >
   | Pick<RaidSignup, "itemLevel" | "status">
   | Pick<ProfileCharacter, "itemLevel">
   | null
@@ -1538,6 +1542,21 @@ function raidMinimumItemLevel(raid: Pick<RaidItem, "minItemLevel">) {
 function raidSubjectItemLevel(subject: RaidItemLevelSubject) {
   const current = Number(subject?.itemLevel || 0);
   return Number.isFinite(current) && current > 0 ? Math.floor(current) : null;
+}
+
+/**
+ * Ручний запис (клас+спек без персонажа Battle.net) не має і не може мати
+ * item level: дані просто нізвідки взяти. Перевірку порогу для таких
+ * записів пропускаємо — інакше рейд із мінімальним ilvl блокував би
+ * геть усіх, хто записується вручну.
+ */
+function isUnverifiableItemLevelSubject(subject: RaidItemLevelSubject) {
+  if (!subject || typeof subject !== "object") return false;
+  const hasManual =
+    "manualClassKey" in subject && Boolean((subject as RaidSignup).manualClassKey);
+  const hasCharacter =
+    "characterKey" in subject && Boolean((subject as RaidSignup).characterKey);
+  return hasManual && !hasCharacter;
 }
 
 function isSkippedItemLevelSubject(subject: RaidItemLevelSubject) {
@@ -1563,7 +1582,8 @@ export function isRaidSubjectBlockedByMinItemLevel(
   if (
     !raid.minItemLevelRequired ||
     !required ||
-    isSkippedItemLevelSubject(subject)
+    isSkippedItemLevelSubject(subject) ||
+    isUnverifiableItemLevelSubject(subject)
   )
     return false;
   const current = raidSubjectItemLevel(subject);
@@ -1578,7 +1598,8 @@ export function isRaidSubjectWarnedByMinItemLevel(
   if (
     raid.minItemLevelRequired ||
     !required ||
-    isSkippedItemLevelSubject(subject)
+    isSkippedItemLevelSubject(subject) ||
+    isUnverifiableItemLevelSubject(subject)
   )
     return false;
   return isRaidSubjectBelowMinItemLevel(raid, subject);
@@ -5030,6 +5051,9 @@ export function raidMinItemLevelBlockMessage(
     | "discordName"
     | "status"
     | "grammaticalGender"
+    | "characterKey"
+    | "manualClassKey"
+    | "manualSpecKey"
   > | null,
 ) {
   if (!isRaidSubjectBlockedByMinItemLevel(raid, signup)) return null;
@@ -5052,6 +5076,9 @@ export function raidMinItemLevelWarning(
     | "discordName"
     | "status"
     | "grammaticalGender"
+    | "characterKey"
+    | "manualClassKey"
+    | "manualSpecKey"
   > | null,
 ) {
   if (!isRaidSubjectWarnedByMinItemLevel(raid, signup)) return null;
