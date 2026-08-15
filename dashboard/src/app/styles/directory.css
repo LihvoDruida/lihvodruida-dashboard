@@ -219,7 +219,7 @@
 /* Розгорнута панель розширених фільтрів */
 .dashboard-table-advanced {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr));
   gap: var(--space-md);
   align-items: start;
   padding: var(--pad-card-compact);
@@ -246,7 +246,13 @@
 .guild-filter-field {
   display: grid;
   gap: var(--space-xs);
+  align-content: start;
   min-width: 0;
+}
+
+/* Група діапазону займає дві колонки: усередині вже є дві */
+.guild-range-group--inline {
+  grid-column: span 2;
 }
 
 .directory-filter-field > span:first-child,
@@ -280,15 +286,49 @@
   color: var(--text-faint);
 }
 
-/* Поля «від» і «до» стоять поруч, повзунок — під ними на всю ширину */
+/* Поля «від» і «до» стоять поруч, повзунок — під ними на всю ширину.
+
+   Позиції задані явно, бо в розмітці порядок інший:
+   заголовок → «від» → повзунок → «до». З автоматичним
+   розміщенням «до» падало у третій рядок, і група
+   розтягувалась у вежу з трьох поверхів. */
 .guild-range-group--inline {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: end;
 }
 
-.guild-range-group--inline .guild-range-head,
-.guild-range-group--inline .guild-dual-range {
+.guild-range-group--inline .guild-range-head {
+  grid-row: 1;
   grid-column: 1 / -1;
+}
+
+.guild-range-group--inline .guild-range-value:first-of-type {
+  grid-row: 2;
+  grid-column: 1;
+}
+
+.guild-range-group--inline .guild-range-value:last-of-type {
+  grid-row: 2;
+  grid-column: 2;
+}
+
+.guild-range-group--inline .guild-dual-range {
+  grid-row: 3;
+  grid-column: 1 / -1;
+}
+
+/* Суфіксний патерн [class$="-filter"] у components.css робить із
+   .directory-range-filter кнопку-пігулку: капсульна рамка, padding
+   і min-height. Тут це контейнер групи полів, тож скидаємо. */
+.directory-range-filter {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font-size: inherit;
+  font-weight: inherit;
+  cursor: default;
 }
 
 .guild-range-value {
@@ -754,6 +794,10 @@
 }
 
 @media (max-width: 860px) {
+  .guild-range-group--inline {
+    grid-column: span 1;
+  }
+
   .guild-summary-card__head {
     flex-direction: column;
     align-items: flex-start;
@@ -798,8 +842,38 @@
 }
 
 @media (max-width: 520px) {
+  /* Одна колонка: явні позиції з десктопа треба скинути, інакше
+     «до» лишається у другій колонці, якої вже немає, і накладається
+     на «від» — саме через це поле «від» зникало, а повзунок
+     стискався в крапку. */
   .guild-range-group--inline {
     grid-template-columns: minmax(0, 1fr);
+    grid-column: span 1;
+  }
+
+  .guild-range-group--inline .guild-range-head,
+  .guild-range-group--inline .guild-range-value:first-of-type,
+  .guild-range-group--inline .guild-range-value:last-of-type,
+  .guild-range-group--inline .guild-dual-range {
+    grid-row: auto;
+    grid-column: 1 / -1;
+  }
+
+  /* Порядок під одну колонку: заголовок → від → до → повзунок */
+  .guild-range-group--inline .guild-range-head {
+    order: 1;
+  }
+
+  .guild-range-group--inline .guild-range-value:first-of-type {
+    order: 2;
+  }
+
+  .guild-range-group--inline .guild-range-value:last-of-type {
+    order: 3;
+  }
+
+  .guild-range-group--inline .guild-dual-range {
+    order: 4;
   }
 
   .guild-score-badges > span {
