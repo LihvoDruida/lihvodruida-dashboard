@@ -519,95 +519,108 @@ export default async function ProfilePage({
         aria-label="Профіль Mistblossom Vanguard"
       >
         <DashboardIdentity user={viewer} activeSection="profile" />
-        <div className="profile-account-layout">
-          <aside
-            className="panel profile-account-sidebar"
-            aria-label="Коротка навігація профілю"
-          >
-            <div className="profile-account-sidebar__identity">
-              {profile.avatarUrl ? (
-                <img
-                  className="profile-account-sidebar__avatar"
-                  src={profile.avatarUrl}
-                  alt=""
-                  width={84}
-                  height={84}
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <span
-                  className="profile-account-sidebar__avatar profile-account-sidebar__avatar--fallback"
-                  aria-hidden="true"
-                >
-                  {(publicNamePreview || profile.displayName || "A").charAt(0)}
-                </span>
-              )}
-              <strong>{publicNamePreview}</strong>
-              <span>{accountStatusLabel}</span>
-              <div
-                className="profile-account-sidebar__pills"
-                aria-label="Стан профілю"
-              >
-                <span>☘ {profileGuildCharacterCount} гільд.</span>
-                <span>⚔ {wowRoleLabel(selectedRaidRole)}</span>
-              </div>
+        {/* Профіль переписано під один потік згори вниз: банер із
+            аватаром, стрічка показників, вкладки розділів. Бічна
+            колонка прибрана — на телефоні вона все одно згорталась
+            у той самий стек, а на ПК звужувала основний вміст. */}
+        <header className="profile-banner">
+          {profile.avatarUrl ? (
+            <img
+              className="profile-banner__avatar"
+              src={profile.avatarUrl}
+              alt=""
+              width={108}
+              height={108}
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <span className="profile-banner__avatar profile-banner__avatar--fallback" aria-hidden="true">
+              {(publicNamePreview || profile.displayName || "A").charAt(0)}
+            </span>
+          )}
+
+          <div className="profile-banner__identity">
+            <h1 className="profile-banner__name">{publicNamePreview}</h1>
+            <span className="profile-banner__subtitle">
+              {isOwnProfile ? "Мій профіль" : "Профіль учасника"} · {accountStatusLabel}
+            </span>
+            <div className="profile-banner__pills">
+              <span className="status-pill">{guildStatus}</span>
+              <span className="status-pill">⚔ {wowRoleLabel(selectedRaidRole)}</span>
+              <span className={`status-pill ${profile.battlenet?.linked ? "is-ok" : "is-warning"}`}>
+                {profile.battlenet?.linked ? "Battle.net підключено" : "Battle.net не підключено"}
+              </span>
             </div>
-            <nav
-              className="profile-account-sidebar__nav"
-              aria-label="Розділи профілю"
-            >
+          </div>
+
+          <div className="profile-banner__actions">
+            {isOwnProfile ? (
               <a
-                href={`/profile/${encodeURIComponent(profile.profileId)}`}
-                aria-current="page"
+                className="btn primary profile-header-settings"
+                href={
+                  settingsRulesReturnPath ||
+                  `/profile/${encodeURIComponent(profile.profileId)}/settings`
+                }
               >
-                <ProfileUiIcon kind="home" /> Профіль
+                <ProfileUiIcon kind="gear" />
+                <span>Налаштування</span>
               </a>
-              <a href="#profile-characters">
-                <ProfileUiIcon kind="swords" /> Персонажі
-              </a>
-              {canViewPrivateProfileBlocks ? (
-                <a href="#profile-raids">
-                  <ProfileUiIcon kind="shield" /> Рейди
-                </a>
-              ) : null}
-            </nav>
-            <div className="profile-account-sidebar__footer">
-              <LogoutButton />
-            </div>
-          </aside>
+            ) : null}
+            {/* Підключення Battle.net винесено в банер: це головна дія
+                профілю, доки акаунт не привʼязаний. */}
+            <a className="btn subtle" href={battleNetRefreshHref}>
+              <ProfileUiIcon kind="swords" />
+              <span>{profile.battlenet?.linked ? "Оновити Battle.net" : "Підключити Battle.net"}</span>
+            </a>
+            {isOwnProfile ? <LogoutButton className="btn ghost" errorClassName="profile-card-note" /> : null}
+          </div>
+        </header>
 
-          <div className="profile-account-main">
-            <header className="profile-account-header" id="profile-overview">
-              <div>
-                <span className="eyebrow">Mistblossom Vanguard • Профіль</span>
-                <h1>{isOwnProfile ? "Мій профіль" : "Профіль учасника"}</h1>
-                <p>
-                  Профіль тепер розділений на два зрозумілі рівні: тут —
-                  Battle.net, персонажі, мейн і рейдові записи; у налаштуваннях
-                  — імʼя, звертання, Discord nickname і формат відображення.
-                </p>
-              </div>
-              <div className="profile-account-header__actions">
-                <span className="profile-account-header__badge">
-                  <ProfileUiIcon kind="crown" />
-                  <span>{guildStatus}</span>
-                </span>
-                {isOwnProfile ? (
-                  <a
-                    className="btn btn-ghost btn-sm profile-header-settings"
-                    href={
-                      settingsRulesReturnPath ||
-                      `/profile/${encodeURIComponent(profile.profileId)}/settings`
-                    }
-                  >
-                    <ProfileUiIcon kind="gear" />
-                    <span>Налаштування профілю</span>
-                  </a>
-                ) : null}
-              </div>
-            </header>
+        <div className="profile-stat-strip" aria-label="Показники профілю">
+          <div className="profile-stat-strip__item">
+            <span className="profile-stat-strip__icon" aria-hidden="true"><ProfileUiIcon kind="swords" /></span>
+            <span className="profile-stat-strip__copy">
+              <strong>{profile.characters.length}</strong>
+              <small>Персонажів</small>
+            </span>
+          </div>
+          <div className="profile-stat-strip__item">
+            <span className="profile-stat-strip__icon" aria-hidden="true"><ProfileUiIcon kind="crown" /></span>
+            <span className="profile-stat-strip__copy">
+              <strong>{profileGuildCharacterCount}</strong>
+              <small>Гільдійних</small>
+            </span>
+          </div>
+          <div className="profile-stat-strip__item">
+            <span className="profile-stat-strip__icon" aria-hidden="true"><ProfileUiIcon kind="shield" /></span>
+            <span className="profile-stat-strip__copy">
+              <strong>{mainCharacter?.name || "—"}</strong>
+              <small>Мейн</small>
+            </span>
+          </div>
+          <div className="profile-stat-strip__item">
+            <span className="profile-stat-strip__icon" aria-hidden="true"><ProfileUiIcon kind="home" /></span>
+            <span className="profile-stat-strip__copy">
+              <strong>{wowRoleLabel(selectedRaidRole)}</strong>
+              <small>Роль у рейді</small>
+            </span>
+          </div>
+        </div>
 
+        <nav className="profile-tabs" aria-label="Розділи профілю">
+          <a href="#profile-overview" className="is-active">Огляд</a>
+          <a href="#profile-characters">
+            Персонажі
+            {profile.characters.length ? <span className="profile-tabs__count">{profile.characters.length}</span> : null}
+          </a>
+          {canViewPrivateProfileBlocks ? <a href="#profile-raids">Рейди</a> : null}
+          {isOwnProfile ? (
+            <a href={`/profile/${encodeURIComponent(profile.profileId)}/settings`}>Налаштування</a>
+          ) : null}
+        </nav>
+
+        <div className="profile-account-main" id="profile-overview">
             <section
               className="profile-account-overview profile-account-overview--clean"
               aria-label="Короткий стан профілю"
@@ -880,7 +893,6 @@ export default async function ProfilePage({
               ) : null}
             </section>
           </div>
-        </div>
       </section>
     </main>
   );
