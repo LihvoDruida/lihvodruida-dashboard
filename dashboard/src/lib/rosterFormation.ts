@@ -47,8 +47,16 @@ const ROSTER_COLLECTION = "dashboardRosterFormations";
 const ROSTER_ACTION_PREFIX = "mbv1:roster";
 const ROSTER_LIST_CACHE_KEY = "roster-formations:list:v1";
 const ROSTER_GET_CACHE_PREFIX = "roster-formation:";
-const ROSTER_LIST_TTL_MS = 60_000;
-const ROSTER_GET_TTL_MS = 60_000;
+/* Кеш складу свідомо коротший за рейдовий (60 с).
+
+   Скидання кешу після запису працює лише в межах одного інстансу:
+   інтеракцію з Discord може обробити один, а сторінку відрендерити
+   інший, у якого копія ще стара. У рейдів це закриває інвалідація
+   публічного кеша Cloudflare, у складу такої немає — тож вікно
+   розбіжності обмежуємо коротшим TTL. Документів мало (до 60),
+   тож зайві читання Firestore дешеві. */
+const ROSTER_LIST_TTL_MS = 15_000;
+const ROSTER_GET_TTL_MS = 15_000;
 
 export type RosterMemberPick = {
   discordUserId: string;
@@ -136,17 +144,31 @@ function normalizePick(raw: unknown): RosterMemberPick | null {
   if (!raw || typeof raw !== "object") return null;
   const data = raw as Record<string, unknown>;
   const discordUserId = cleanSnowflake(data.discordUserId);
+  // Без Discord ID пік неможливо ані показати, ані прибрати — тільки він
+  // є справжньою підставою відкинути запис.
+  if (!discordUserId) return null;
+
   const resolved = findWowSpec(data.classKey, data.specKey);
-  if (!discordUserId || !resolved) return null;
   const createdAt = typeof data.createdAt === "string" ? data.createdAt : new Date().toISOString();
+
+  // Раніше нерозпізнаний спек ТИХО викидав учасника зі складу: у Firestore
+  // і в ембеді Discord він лишався, а на сайті зникав. Досить було нового
+  // спека в грі або старого ключа в базі. Тепер падаємо на збережені
+  // назви — краще показати незвіданий спек, ніж загубити людину.
+  const fallbackClassKey = String(data.classKey || "").trim().toLowerCase();
+  const fallbackSpecKey = String(data.specKey || "").trim().toLowerCase();
+  const storedRole = String(data.role || "").trim().toLowerCase();
+  const role: WowCharacterRole =
+    storedRole === "tank" || storedRole === "healer" ? storedRole : "dps";
+
   return {
     discordUserId,
     discordName: cleanText(data.discordName, 80) || "Учасник Discord",
-    classKey: resolved.cls.key,
-    className: resolved.cls.label,
-    specKey: resolved.spec.key,
-    specName: resolved.spec.label,
-    role: resolved.spec.role,
+    classKey: resolved?.cls.key || fallbackClassKey,
+    className: resolved?.cls.label || cleanText(data.className, 60) || fallbackClassKey || "Невідомий клас",
+    specKey: resolved?.spec.key || fallbackSpecKey,
+    specName: resolved?.spec.label || cleanText(data.specName, 60) || fallbackSpecKey || "Невідомий спек",
+    role: resolved?.spec.role || role,
     createdAt,
     updatedAt: typeof data.updatedAt === "string" ? data.updatedAt : createdAt,
   };
@@ -658,7 +680,7 @@ async function applyPickTransaction(
   rosterId: string,
   mutate: (roster: RosterFormation) => { picks: RosterMemberPick[] },
 ): Promise<RosterFormation> {
-  return firebaseWrite<RosterFormation>(
+  const saved = await firebaseWrite<RosterFormation>(
     "raid",
     `roster:mutate:${rosterId}:${Date.now()}`,
     async () => {
@@ -676,6 +698,14 @@ async function applyPickTransaction(
     },
     { logEvent: "roster.mutate_failed" },
   );
+
+  // Кеш списку і картки складу треба скинути одразу після запису.
+  // Без цього вибір, зроблений кнопкою в Discord, не зʼявлявся на сайті
+  // до 60 секунд (TTL кешу), а інколи й довше — сторінка бачила стару
+  // копію. Решта мутацій складу вже робили це, а саме гаряча гілка
+  // «гравець натиснув кнопку» — ні.
+  clearRosterCaches(rosterId);
+  return saved;
 }
 
 /**
@@ -938,3 +968,98 @@ export async function deleteRosterFormation(rosterId: string): Promise<void> {
 
 // FieldValue збережено для майбутніх часткових оновлень; тримаємо імпорт живим.
 void FieldValue;
+
+/**
+ * Прибирає зі складів сезону тих, кого вже немає в Discord.
+ *
+ * Раніше очищення акаунтів чистило профілі та рейдові записи, але
+ * формування складу лишалися недоторканими: людина виходила з сервера,
+ * а її пік і далі займав місце в паті та зараховувався в покриття класів.
+ *
+ * Закриті набори не чіпаємо: це історія сезону, а не активний склад.
+ */
+export async function removeRosterPicksForAccounts(input: {
+  discordUserIds?: Iterable<unknown>;
+  dryRun?: boolean;
+  limit?: unknown;
+}) {
+  const targets = new Set(
+    [...(input.discordUserIds || [])]
+      .map((value) => String(value || "").trim())
+      .filter((value) => /^\d{16,25}$/.test(value)),
+  );
+
+  const empty = {
+    dryRun: Boolean(input.dryRun),
+    scannedRosters: 0,
+    changedRosters: 0,
+    removedPicks: 0,
+    changedItems: [] as Array<{
+      rosterId: string;
+      title: string;
+      removed: number;
+      remaining: number;
+      names: string[];
+    }>,
+  };
+
+  if (!targets.size || !hasRosterStorage()) return empty;
+
+  const rosters = await listRosterFormations(Number(input.limit) || 60).catch(
+    () => [] as RosterFormation[],
+  );
+  const result = { ...empty, scannedRosters: rosters.length };
+
+  for (const roster of rosters) {
+    if (roster.status === "closed") continue;
+    const staying = roster.picks.filter(
+      (pick) => !targets.has(String(pick.discordUserId || "").trim()),
+    );
+    const removed = roster.picks.length - staying.length;
+    if (!removed) continue;
+
+    result.changedRosters += 1;
+    result.removedPicks += removed;
+    result.changedItems.push({
+      rosterId: roster.id,
+      title: roster.title,
+      removed,
+      remaining: staying.length,
+      names: roster.picks
+        .filter((pick) => targets.has(String(pick.discordUserId || "").trim()))
+        .map((pick) => pick.discordName || pick.discordUserId)
+        .slice(0, 20),
+    });
+
+    if (input.dryRun) continue;
+
+    // Пишемо через транзакцію: між читанням списку і записом хтось
+    // міг натиснути кнопку в Discord, і його вибір не має зникнути.
+    const saved = await firebaseWrite<RosterFormation>(
+      "raid",
+      `roster:cleanup:${roster.id}:${Date.now()}`,
+      async () => {
+        const ref = rosterRef(roster.id);
+        return getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
+          const snap = await tx.get(ref);
+          if (!snap.exists) throw new Error("Формування складу не знайдено.");
+          const current = normalizeRosterFormation(snap.id, snap.data() || {});
+          const picks = current.picks.filter(
+            (pick) => !targets.has(String(pick.discordUserId || "").trim()),
+          );
+          const updatedAt = new Date().toISOString();
+          tx.update(ref, { picks, updatedAt, updatedAtMs: Date.now() });
+          return { ...current, picks, updatedAt };
+        });
+      },
+      { logEvent: "roster.cleanup_failed" },
+    ).catch(() => null);
+
+    if (saved) {
+      await rerenderRosterMessage(saved);
+      clearRosterCaches(roster.id);
+    }
+  }
+
+  return result;
+}

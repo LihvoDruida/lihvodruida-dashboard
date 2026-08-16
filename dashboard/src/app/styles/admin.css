@@ -1,0 +1,571 @@
+/* =========================================================
+   ADMIN — панель керування, Discord-адмінка та журнали
+
+   64 класи адмінки не мали правил, тому картки дій, журнал
+   і політики доступу трималися на суфіксних патернах.
+
+   Мова та сама, що в решті панелі. Ключове рішення структури:
+   картки дій ідуть у ДВІ колонки на широкому екрані й в одну
+   нижче 1100px — адмінські форми довгі, три колонки різали б
+   підписи, а одна колонка на 1920px лишала б пів екрана порожнім.
+
+   Жодного !important.
+   ========================================================= */
+
+.discord-management-page,
+.admin-logs-page {
+  min-width: 0;
+}
+
+/* =========================================================
+   1. ОБОЛОНКА Й РОЗКЛАДКА
+   ========================================================= */
+.discord-management-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  gap: var(--gap-grid);
+  align-items: start;
+  min-width: 0;
+}
+
+.discord-management-main {
+  display: grid;
+  gap: var(--gap-grid);
+  min-width: 0;
+}
+
+.discord-management-section {
+  display: grid;
+  gap: var(--gap-stack);
+  min-width: 0;
+}
+
+.discord-management-section-head {
+  display: grid;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.discord-management-section-head--inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.discord-management-section-head h2 {
+  margin: 0;
+}
+
+/* Картки дій парами: адмінська форма надто довга для трьох колонок */
+.discord-settings-grid,
+.admin-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+  gap: var(--gap-grid);
+  align-items: start;
+  min-width: 0;
+}
+
+.admin-overview-grid--security {
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+}
+
+/* =========================================================
+   2. КАРТКИ ДІЙ
+   ========================================================= */
+.discord-management-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-stack);
+  border-left: 3px solid var(--c-ink-500);
+  min-width: 0;
+}
+
+/* Тон грані = ступінь ризику дії */
+.discord-management-card--primary {
+  border-left-color: var(--c-accent-400);
+}
+
+.discord-management-card--action {
+  border-left-color: var(--c-warning);
+}
+
+.discord-management-card--settings,
+.discord-management-card--worker {
+  border-left-color: var(--c-info);
+}
+
+.discord-management-card--live {
+  border-left-color: var(--c-success);
+}
+
+.discord-management-card--preview,
+.discord-management-card--compact {
+  border-left-color: var(--border-strong);
+}
+
+.discord-management-card__body {
+  display: grid;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.discord-management-limit-field {
+  max-width: 320px;
+}
+
+.discord-management-details {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.discord-recruitment-hint {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+/* =========================================================
+   3. СТАТУС І ЧІПИ
+   ========================================================= */
+.discord-management-status {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
+  gap: var(--space-sm);
+}
+
+.discord-management-status__item,
+.admin-overview-status-card,
+.admin-system-summary-card {
+  display: grid;
+  gap: var(--space-3xs);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.discord-management-status__item strong,
+.admin-overview-status-card strong,
+.admin-system-summary-card strong {
+  font-size: 0.95rem;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.discord-management-status__item small,
+.admin-overview-status-card small,
+.admin-system-summary-card small {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* Ряд чіпів «що саме перевіряється» */
+.discord-officer-sync-summary,
+.discord-settings-summary,
+.admin-log-discord-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
+.discord-info-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-3xs);
+  padding: var(--space-3xs) var(--space-sm);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+
+.discord-info-chip strong {
+  font-weight: 700;
+  color: var(--c-accent-300);
+}
+
+.discord-info-chip span {
+  color: var(--text-muted);
+}
+
+/* =========================================================
+   4. РОЛІ
+   ========================================================= */
+.discord-cleanup-role-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.discord-cleanup-role-column {
+  display: grid;
+  gap: var(--space-xs);
+  align-content: start;
+  min-width: 0;
+}
+
+.discord-role-column-head {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* Порожній список ролей — підказка, а не пуста рамка */
+.discord-role-checkboxes--empty {
+  display: grid;
+  place-items: center;
+  min-height: 80px;
+  padding: var(--space-md);
+  border-style: dashed;
+  color: var(--text-faint);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+/* =========================================================
+   5. ПОЛІТИКИ ДОСТУПУ
+   ========================================================= */
+.admin-policy-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-stack);
+  min-width: 0;
+}
+
+.admin-policy-card__header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.admin-policy-card__icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--c-accent-300);
+}
+
+.admin-policy-card__title {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.admin-policy-card__title strong {
+  font-size: 0.95rem;
+  color: var(--text-strong);
+}
+
+.admin-policy-card__title small,
+.admin-policy-hint {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.admin-policy-hint--split {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+.admin-policy-fieldset--compact {
+  gap: var(--space-xs);
+}
+
+.admin-policy-fieldset--roles {
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+}
+
+/* Небезпечний перемикач видно з першого погляду */
+.admin-policy-toggle--danger {
+  border-color: rgba(224, 112, 95, 0.3);
+  background: rgba(224, 112, 95, 0.07);
+}
+
+.admin-policy-status {
+  --tone: var(--c-ink-400);
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-3xs) var(--space-sm);
+  border: 1px solid color-mix(in srgb, var(--tone) 32%, transparent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--tone) 12%, transparent);
+  color: var(--tone);
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-policy-status.is-on,
+.admin-policy-status.is-enabled {
+  --tone: var(--c-success);
+}
+
+.admin-policy-status.is-off,
+.admin-policy-status.is-disabled {
+  --tone: var(--c-ink-400);
+}
+
+.admin-policy-empty {
+  padding: var(--space-lg) var(--space-md);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+/* =========================================================
+   6. ЖУРНАЛ ПОДІЙ
+   ========================================================= */
+.admin-log-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.admin-log-toolbar--settings {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-log-limit-form,
+.admin-log-discord-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-xs);
+}
+
+.admin-log-toggle-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.admin-log-discord-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: var(--space-md);
+}
+
+.admin-log-list {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+/* Рядок журналу: тон грані = рівень події */
+.admin-log-row {
+  display: grid;
+  gap: var(--space-2xs);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--c-ink-500);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.admin-log-row--info {
+  border-left-color: var(--c-info);
+}
+
+.admin-log-row--success {
+  border-left-color: var(--c-success);
+}
+
+.admin-log-row--warning {
+  border-left-color: var(--c-warning);
+}
+
+.admin-log-row--error {
+  border-left-color: var(--c-danger);
+}
+
+.admin-log-row__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.admin-log-row__head strong {
+  font-size: 0.88rem;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.admin-log-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3xs) var(--space-sm);
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  overflow-wrap: anywhere;
+}
+
+.admin-log-status {
+  --tone: var(--c-ink-400);
+  padding: var(--space-3xs) var(--space-xs);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--tone) 14%, transparent);
+  color: var(--tone);
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-log-status--success {
+  --tone: var(--c-success);
+}
+
+.admin-log-status--warning {
+  --tone: var(--c-warning);
+}
+
+.admin-log-status--error {
+  --tone: var(--c-danger);
+}
+
+.admin-log-status--info {
+  --tone: var(--c-info);
+}
+
+/* Технічні деталі згорнуті — інакше журнал не прочитати */
+.admin-log-details {
+  margin: 0;
+}
+
+.admin-log-details pre {
+  max-height: 280px;
+  overflow: auto;
+  font-size: 0.72rem;
+}
+
+.admin-log-highlight--success {
+  background: color-mix(in srgb, var(--c-success) 16%, transparent);
+  color: #b6e2c3;
+}
+
+.admin-log-highlight--error {
+  background: color-mix(in srgb, var(--c-danger) 16%, transparent);
+  color: #ffbdb1;
+}
+
+/* =========================================================
+   7. АДАПТИВ
+   ========================================================= */
+@media (max-width: 1100px) {
+  .discord-management-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .discord-settings-grid,
+  .admin-overview-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 860px) {
+  .discord-management-limit-field {
+    max-width: none;
+  }
+
+  .admin-policy-card__header {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  /* Пігулка статусу переїжджає під заголовок, а не тисне текст */
+  .admin-policy-card__header > .admin-policy-status {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .admin-log-toolbar,
+  .admin-log-limit-form,
+  .admin-log-discord-form {
+    width: 100%;
+  }
+
+  .admin-log-limit-form .btn,
+  .admin-log-discord-form .btn {
+    flex: 1 1 auto;
+  }
+
+  .discord-cleanup-role-grid,
+  .admin-log-discord-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Форми адмінки: дії на всю ширину — вони довгі й важливі */
+  .discord-management-card .form-actions .btn {
+    width: 100%;
+  }
+}
+
+/* ---------- Останні дрібні класи адмінки ---------- */
+.discord-admin-hero,
+.admin-logs-hero {
+  min-width: 0;
+}
+
+.admin-policy-form {
+  display: grid;
+  gap: var(--gap-stack);
+  min-width: 0;
+}
+
+.admin-policy-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.discord-management-section--status,
+.discord-management-section--roles {
+  gap: var(--gap-stack);
+}
+
+@media (max-width: 860px) {
+  .admin-policy-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-policy-footer .btn {
+    width: 100%;
+  }
+}

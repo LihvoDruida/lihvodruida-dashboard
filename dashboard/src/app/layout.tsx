@@ -16,6 +16,7 @@ import "./styles/directory.css";
 import "./styles/onboarding.css";
 import "./styles/profile.css";
 import "./styles/raids.css";
+import "./styles/admin.css";
 import "./styles/polls.css";
 import "./styles/roster.css";
 import DashboardFormEnhancer from "@/components/DashboardFormEnhancer";

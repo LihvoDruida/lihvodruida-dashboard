@@ -22,6 +22,7 @@ import { refreshGuildRosterApiBatch, loadStoredGuildRosterData, type GuildRoster
 import { deleteDashboardProfilesByDiscordUserId, listAllDashboardProfilesForDiscordSync, getProfilePublicName, type DashboardProfile, type ProfileCharacter } from "@/lib/profiles";
 import { buildBattleNetCharacterKey, normalizeBattleNetNameSlug, normalizeBattleNetRealmSlug, normalizeCharacterKey } from "@/lib/wowCharacters";
 import { removeRaidSignupsForAccounts } from "@/lib/raids";
+import { removeRosterPicksForAccounts } from "@/lib/rosterFormation";
 
 function snowflake(value: unknown) {
   const text = String(value || "").trim();
@@ -1063,6 +1064,20 @@ export async function cleanupDashboardProfilesDiscordMembership(input: {
     error: safeErrorText(error, "Не вдалося порахувати рейдові записи для очищення."),
   }));
 
+  // Формування складу теж треба чистити: раніше пік того, хто вийшов
+  // із Discord, лишався в паті й зараховувався в покриття класів.
+  const rosterPickPreview = await removeRosterPicksForAccounts({
+    discordUserIds: inspection.targets.map((target) => target.userId),
+    dryRun: true,
+  }).catch((error) => ({
+    dryRun: true,
+    scannedRosters: 0,
+    changedRosters: 0,
+    removedPicks: 0,
+    changedItems: [],
+    error: safeErrorText(error, "Не вдалося порахувати склади сезону для очищення."),
+  }));
+
   const rosterRefreshBlocked = Boolean(rosterRefresh.attempted && rosterRefresh.failed);
 
   if (input.dryRun || inspection.rosterSafetyBlocked || rosterRefreshBlocked) {
@@ -1076,6 +1091,9 @@ export async function cleanupDashboardProfilesDiscordMembership(input: {
       removedRaidSignupsTotal: 0,
       updatedRaidsTotal: 0,
       raidCleanupPreview: raidPreview,
+      rosterPickCleanupPreview: rosterPickPreview,
+      removedRosterPicksTotal: 0,
+      updatedRostersTotal: 0,
       skippedFreshMember: 0,
       skippedNotFound: 0,
       failed: 0,
@@ -1169,6 +1187,20 @@ export async function cleanupDashboardProfilesDiscordMembership(input: {
     },
   );
 
+  // Піки в складах прибираються одним проходом після профілів:
+  // формувань небагато, а транзакція на кожне і так атомарна.
+  const rosterPickCleanup = await removeRosterPicksForAccounts({
+    discordUserIds: inspection.targets.map((target) => target.userId),
+    dryRun: false,
+  }).catch((error) => ({
+    dryRun: false,
+    scannedRosters: 0,
+    changedRosters: 0,
+    removedPicks: 0,
+    changedItems: [],
+    error: safeErrorText(error, "Не вдалося очистити склади сезону."),
+  }));
+
   const okItems = results.filter((item) => item.ok);
   const failedItems = results.filter((item) => !item.ok);
   const changedItems = okItems.filter((item) => !item.value.skipped && item.value.deletedProfiles > 0).map((item) => item.value);
@@ -1190,6 +1222,10 @@ export async function cleanupDashboardProfilesDiscordMembership(input: {
     removedRaidSignupsTotal,
     updatedRaidsTotal,
     raidCleanupPreview: raidPreview,
+    rosterPickCleanupPreview: rosterPickPreview,
+    rosterPickCleanup,
+    removedRosterPicksTotal: rosterPickCleanup.removedPicks,
+    updatedRostersTotal: rosterPickCleanup.changedRosters,
     skippedFreshMember,
     skippedNotFound,
     skippedItems: skippedItems.slice(0, 100),
