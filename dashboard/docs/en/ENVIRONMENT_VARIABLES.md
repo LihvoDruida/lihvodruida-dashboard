@@ -125,7 +125,7 @@ Put values into Worker only when Worker actually owns the corresponding responsi
 | `BATTLENET_REQUEST_TIMEOUT_MS` | optional | Battle.net API timeout. |
 | `BATTLENET_SCAN_CONCURRENCY` | optional | Scan concurrency, `0` means adaptive. |
 | `BATTLENET_SCAN_MAX_CONCURRENCY` | optional | Max scan concurrency. |
-| `BATTLENET_CANDIDATE_TTL_MINUTES` | optional | Temporary Battle.net candidate lifetime after OAuth. Defaults to `3` minutes. |
+| `BATTLENET_CANDIDATE_TTL_MINUTES` | optional | Temporary Battle.net candidate lifetime after OAuth. Defaults to `30` minutes. |
 | `BATTLENET_SIGNUP_REFRESH_CONCURRENCY` | optional | Auto refresh concurrency before raid signup. |
 | `BATTLENET_SIGNUP_REFRESH_REST_LIMIT` | optional | How many alts to refresh after the main before raid signup. |
 | `WOW_GUILD_NAME` | required | Guild name used to filter characters. |

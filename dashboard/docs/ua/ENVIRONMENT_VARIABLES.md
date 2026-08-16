@@ -125,7 +125,7 @@
 | `BATTLENET_REQUEST_TIMEOUT_MS` | optional | Timeout Battle.net API. |
 | `BATTLENET_SCAN_CONCURRENCY` | optional | Concurrency сканування, `0` — adaptive. |
 | `BATTLENET_SCAN_MAX_CONCURRENCY` | optional | Max concurrency сканування. |
-| `BATTLENET_CANDIDATE_TTL_MINUTES` | optional | Час життя тимчасового списку Battle.net кандидатів після OAuth. Типово `3` хвилини. |
+| `BATTLENET_CANDIDATE_TTL_MINUTES` | optional | Час життя тимчасового списку Battle.net кандидатів після OAuth. Типово `30` хвилин. |
 | `BATTLENET_SIGNUP_REFRESH_CONCURRENCY` | optional | Concurrency автооновлення перед рейдом. |
 | `BATTLENET_SIGNUP_REFRESH_REST_LIMIT` | optional | Скільки альтів оновлювати після мейна перед рейдом. |
 | `WOW_GUILD_NAME` | required | Назва гільдії для фільтрації персонажів. |

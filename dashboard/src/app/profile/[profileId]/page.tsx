@@ -784,11 +784,43 @@ export default async function ProfilePage({
                   <div className="profile-character-add-footer">
                     <span>
                       <ProfileUiIcon kind="plus" />
-                      <span>Персонажів можна додати: {availableCandidates.length}</span>
+                      <span>
+                        {hasAvailableBattleNetCandidates
+                          ? `Персонажів можна додати: ${availableCandidates.length}`
+                          : profile.battlenet?.linked
+                            ? "Список персонажів Battle.net застарів — онови, щоб додати ще"
+                            : "Підключи Battle.net, щоб додати персонажів"}
+                      </span>
                     </span>
                     <a className="profile-character-add-button" href={battleNetRefreshHref}>
                       <ProfileUiIcon kind="plus" />
-                      <span>Додати персонажа</span>
+                      <span>
+                        {hasAvailableBattleNetCandidates
+                          ? "Додати персонажа"
+                          : profile.battlenet?.linked
+                            ? "Оновити список"
+                            : "Підключити Battle.net"}
+                      </span>
+                    </a>
+                  </div>
+                ) : null}
+
+                {/* Раніше блок «Можна додати» просто зникав, коли список
+                    кандидатів застарівав, і людина не розуміла, чому
+                    кнопка нічого не дає. Тепер стан названо явно. */}
+                {canManageCharacters &&
+                !hasAvailableBattleNetCandidates &&
+                profile.battlenet?.linked ? (
+                  <div className="profile-bnet-cta" role="status">
+                    <span className="profile-bnet-cta__eyebrow">Battle.net</span>
+                    <strong>Список персонажів більше не активний</strong>
+                    <span>
+                      Список тримається обмежений час після входу через Battle.net.
+                      Натисни «Оновити список» — і персонажі знову зʼявляться тут.
+                      Уже додані персонажі нікуди не зникають.
+                    </span>
+                    <a className="btn primary btn-sm" href={battleNetRefreshHref}>
+                      Оновити список Battle.net
                     </a>
                   </div>
                 ) : null}
