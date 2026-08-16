@@ -10,6 +10,7 @@ import "./styles/layout.css";
 // ПЕРЕД іменними шарами, щоб будь-яке конкретне правило їх перекривало.
 import "./styles/patterns.css";
 import "./styles/components.css";
+import "./styles/lists.css";
 import "./styles/nav.css";
 import "./styles/pages.css";
 import "./styles/directory.css";

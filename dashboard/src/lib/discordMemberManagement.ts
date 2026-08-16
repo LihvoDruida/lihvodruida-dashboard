@@ -23,6 +23,7 @@ import { deleteDashboardProfilesByDiscordUserId, listAllDashboardProfilesForDisc
 import { buildBattleNetCharacterKey, normalizeBattleNetNameSlug, normalizeBattleNetRealmSlug, normalizeCharacterKey } from "@/lib/wowCharacters";
 import { removeRaidSignupsForAccounts } from "@/lib/raids";
 import { removeRosterPicksForAccounts } from "@/lib/rosterFormation";
+import { removeRaidPollVotesForAccounts } from "@/lib/raidPolls";
 
 function snowflake(value: unknown) {
   const text = String(value || "").trim();
@@ -964,7 +965,48 @@ export async function inspectDashboardProfilesDiscordMembership(limit: unknown =
 
   if (rosterAvailable) {
     for (const [userId, userProfiles] of profilesByDiscordUser.entries()) {
+      const member = discordMemberMap.get(userId) || null;
       const rosterMatches = Array.from(new Set(userProfiles.flatMap((profile) => guildRosterCharacterMatchesForProfile(profile, rosterKeyMap))));
+
+      // ПРІОРИТЕТ — членство в Discord.
+      //
+      // Раніше першою була звірка зі складом гільдії WoW, і людина, яка
+      // вийшла з Discord, але чий персонаж ще лишався в збереженому
+      // ростері, потрапляла в «захищені» й не чистилась ніколи. Саме
+      // так учасник зникав із сервера, але лишався в записах на рейди
+      // та в складі сезону.
+      //
+      // Склад гільдії — це знімок WoW-ростера, який оновлюється рідше
+      // за Discord і може містити персонажа ще довго після виходу.
+      // Тому він більше не скасовує факт відсутності в Discord, а лише
+      // захищає тих, хто в Discord Є.
+      if (!member) {
+        const ban = banMap.get(userId);
+        for (const profile of userProfiles) {
+          if (ban) {
+            targets.push(discordProfileCleanupPreview(
+              profile,
+              "banned",
+              ban.reason ? `Discord-акаунт у бані сервера: ${ban.reason}` : "Discord-акаунт у бані сервера.",
+              ban.reason,
+            ));
+            continue;
+          }
+
+          targets.push(discordProfileCleanupPreview(
+            profile,
+            "not_member",
+            rosterMatches.length
+              ? `Discord-акаунта немає серед учасників сервера. Персонажі ще є в збереженому складі гільдії (${rosterMatches.slice(0, 3).join(", ")}), але це знімок WoW-ростера, а не підтвердження членства в Discord.`
+              : banCheckError
+                ? "Discord-акаунта немає серед учасників сервера. Бан-лист не вдалося прочитати, тому статус бану не уточнено."
+                : "Discord-акаунта немає серед учасників сервера.",
+            null,
+          ));
+        }
+        continue;
+      }
+
       if (rosterMatches.length) {
         for (const profile of userProfiles) {
           rosterProtectedProfiles.push(discordProfileRosterProtectedPreview(profile, rosterMatches));
@@ -972,7 +1014,6 @@ export async function inspectDashboardProfilesDiscordMembership(limit: unknown =
         continue;
       }
 
-      const member = discordMemberMap.get(userId) || null;
       if (member) {
         for (const profile of userProfiles) {
           activeMembers.push({
@@ -985,27 +1026,6 @@ export async function inspectDashboardProfilesDiscordMembership(limit: unknown =
         continue;
       }
 
-      const ban = banMap.get(userId);
-      for (const profile of userProfiles) {
-        if (ban) {
-          targets.push(discordProfileCleanupPreview(
-            profile,
-            "banned",
-            ban.reason ? `Discord-акаунт у бані сервера: ${ban.reason}` : "Discord-акаунт у бані сервера.",
-            ban.reason,
-          ));
-          continue;
-        }
-
-        targets.push(discordProfileCleanupPreview(
-          profile,
-          "not_member",
-          banCheckError
-            ? "Discord-акаунта немає серед учасників сервера. Бан-лист не вдалося прочитати, тому статус бану не уточнено."
-            : "Discord-акаунта немає серед учасників сервера.",
-          null,
-        ));
-      }
     }
   }
 
@@ -1078,6 +1098,21 @@ export async function cleanupDashboardProfilesDiscordMembership(input: {
     error: safeErrorText(error, "Не вдалося порахувати склади сезону для очищення."),
   }));
 
+  // Голоси в пулах теж лишалися після виходу з Discord і далі
+  // висіли в ембеді голосування.
+  const pollVotePreview = await removeRaidPollVotesForAccounts({
+    discordUserIds: inspection.targets.map((target) => target.userId),
+    dryRun: true,
+  }).catch((error) => ({
+    dryRun: true,
+    scannedPolls: 0,
+    changedPolls: 0,
+    removedVotes: 0,
+    discordSynced: 0,
+    changedItems: [],
+    error: safeErrorText(error, "Не вдалося порахувати голоси в пулах."),
+  }));
+
   const rosterRefreshBlocked = Boolean(rosterRefresh.attempted && rosterRefresh.failed);
 
   if (input.dryRun || inspection.rosterSafetyBlocked || rosterRefreshBlocked) {
@@ -1092,8 +1127,11 @@ export async function cleanupDashboardProfilesDiscordMembership(input: {
       updatedRaidsTotal: 0,
       raidCleanupPreview: raidPreview,
       rosterPickCleanupPreview: rosterPickPreview,
+      pollVoteCleanupPreview: pollVotePreview,
       removedRosterPicksTotal: 0,
       updatedRostersTotal: 0,
+      removedPollVotesTotal: 0,
+      updatedPollsTotal: 0,
       skippedFreshMember: 0,
       skippedNotFound: 0,
       failed: 0,
@@ -1201,6 +1239,19 @@ export async function cleanupDashboardProfilesDiscordMembership(input: {
     error: safeErrorText(error, "Не вдалося очистити склади сезону."),
   }));
 
+  const pollVoteCleanup = await removeRaidPollVotesForAccounts({
+    discordUserIds: inspection.targets.map((target) => target.userId),
+    dryRun: false,
+  }).catch((error) => ({
+    dryRun: false,
+    scannedPolls: 0,
+    changedPolls: 0,
+    removedVotes: 0,
+    discordSynced: 0,
+    changedItems: [],
+    error: safeErrorText(error, "Не вдалося очистити голоси в пулах."),
+  }));
+
   const okItems = results.filter((item) => item.ok);
   const failedItems = results.filter((item) => !item.ok);
   const changedItems = okItems.filter((item) => !item.value.skipped && item.value.deletedProfiles > 0).map((item) => item.value);
@@ -1226,6 +1277,10 @@ export async function cleanupDashboardProfilesDiscordMembership(input: {
     rosterPickCleanup,
     removedRosterPicksTotal: rosterPickCleanup.removedPicks,
     updatedRostersTotal: rosterPickCleanup.changedRosters,
+    pollVoteCleanupPreview: pollVotePreview,
+    pollVoteCleanup,
+    removedPollVotesTotal: pollVoteCleanup.removedVotes,
+    updatedPollsTotal: pollVoteCleanup.changedPolls,
     skippedFreshMember,
     skippedNotFound,
     skippedItems: skippedItems.slice(0, 100),

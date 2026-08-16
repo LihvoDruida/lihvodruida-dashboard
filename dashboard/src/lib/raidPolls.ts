@@ -3149,3 +3149,97 @@ export function raidPollDayFullLabel(value: RaidPollDay) {
 export function raidPollDescription() {
   return RAID_POLL_DESCRIPTION;
 }
+
+/**
+ * Прибирає голоси тих, кого вже немає в Discord.
+ *
+ * Відрізняється від cleanupRaidPollVotesForGuildMembers: та звіряє
+ * голоси зі складом гільдії WoW і працює за розкладом, а ця викликається
+ * з очищення акаунтів і б'є точково по конкретних Discord ID.
+ *
+ * Після запису ембед пулу перемальовується — інакше в Discord далі
+ * висить голос людини, якої на сервері вже немає.
+ */
+export async function removeRaidPollVotesForAccounts(input: {
+  discordUserIds?: Iterable<unknown>;
+  dryRun?: boolean;
+  limit?: unknown;
+}) {
+  const targets = new Set(
+    [...(input.discordUserIds || [])]
+      .map((value) => String(value || "").trim())
+      .filter((value) => /^\d{16,25}$/.test(value)),
+  );
+
+  const empty = {
+    dryRun: Boolean(input.dryRun),
+    scannedPolls: 0,
+    changedPolls: 0,
+    removedVotes: 0,
+    discordSynced: 0,
+    changedItems: [] as Array<{ pollId: string; title: string; removed: number; remaining: number }>,
+  };
+
+  if (!targets.size || !hasRaidPollStorage()) return empty;
+
+  const limit = Math.max(1, Math.min(100, Math.floor(Number(input.limit) || 80)));
+  const polls = await listRaidPolls(limit).catch(() => [] as RaidPollItem[]);
+  const result = { ...empty, scannedPolls: polls.length };
+
+  for (const poll of polls) {
+    // Закриті пули — історія голосування, її не переписуємо.
+    if (poll.status !== "open") continue;
+    const staying = poll.votes.filter(
+      (vote) => !targets.has(String(vote.discordId || "").trim()),
+    );
+    const removed = poll.votes.length - staying.length;
+    if (!removed) continue;
+
+    result.changedPolls += 1;
+    result.removedVotes += removed;
+    result.changedItems.push({
+      pollId: poll.id,
+      title: poll.title || poll.id,
+      removed,
+      remaining: staying.length,
+    });
+
+    if (input.dryRun) continue;
+
+    const nowIso = new Date().toISOString();
+    const cleaned = await firebaseWrite<RaidPollItem | null>(
+      "raid",
+      `raid-poll:account-cleanup:${poll.id}:${Date.now()}`,
+      async () => {
+        const ref = pollRef(poll.id);
+        return getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
+          const snap = await tx.get(ref);
+          if (!snap.exists) return null;
+          const current = normalizeRaidPoll(snap.id, snap.data() || {});
+          const votes = current.votes.filter(
+            (vote) => !targets.has(String(vote.discordId || "").trim()),
+          );
+          if (votes.length === current.votes.length) return null;
+          tx.update(ref, {
+            votes,
+            votesByDiscordId: votesByDiscordId(votes),
+            updatedAt: nowIso,
+            updatedAtMs: Date.now(),
+          });
+          return { ...current, votes, updatedAt: nowIso };
+        });
+      },
+      { logEvent: "raid_polls.account_cleanup_failed" },
+    ).catch(() => null);
+
+    if (cleaned) {
+      clearRaidPollRuntimeCaches(cleaned.id);
+      const synced = await syncRaidPollDiscordMessage(cleaned)
+        .then(() => true)
+        .catch(() => false);
+      if (synced) result.discordSynced += 1;
+    }
+  }
+
+  return result;
+}

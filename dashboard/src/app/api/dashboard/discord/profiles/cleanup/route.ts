@@ -40,8 +40,8 @@ export async function POST(request: NextRequest) {
       ? " Очищення заблоковано: збережений склад гільдії порожній."
       : ` Склад гільдії перевірено: ${result.checkedRosterCharacters}; захищено по roster: ${result.rosterProtectedTotal}.`;
     const summary = apply
-      ? `Перевірено профілів: ${result.checkedDiscordProfiles}; кандидатів: ${result.targetProfilesTotal}; видалено профілів: ${result.deletedProfilesTotal}; прибрано рейдових записів: ${result.removedRaidSignupsTotal}; оновлено рейдів: ${result.updatedRaidsTotal}; прибрано зі складів сезону: ${result.removedRosterPicksTotal || 0}; оновлено складів: ${result.updatedRostersTotal || 0}; помилок: ${result.failed}.${refreshHint}${rosterHint}${banHint}`
-      : `Перевірено профілів: ${result.checkedDiscordProfiles}; не на сервері: ${result.missingMemberTotal}; у бані: ${result.bannedTotal}; кандидатів: ${result.targetProfilesTotal}; потенційно рейдових записів до видалення: ${result.raidCleanupPreview?.removedSignups || 0}; піків у складах сезону: ${result.rosterPickCleanupPreview?.removedPicks || 0}.${refreshHint}${rosterHint}${banHint}`;
+      ? `Перевірено профілів: ${result.checkedDiscordProfiles}; кандидатів: ${result.targetProfilesTotal}; видалено профілів: ${result.deletedProfilesTotal}; прибрано рейдових записів: ${result.removedRaidSignupsTotal}; оновлено рейдів: ${result.updatedRaidsTotal}; прибрано зі складів сезону: ${result.removedRosterPicksTotal || 0}; оновлено складів: ${result.updatedRostersTotal || 0}; прибрано голосів у пулах: ${result.removedPollVotesTotal || 0}; оновлено пулів: ${result.updatedPollsTotal || 0}; помилок: ${result.failed}.${refreshHint}${rosterHint}${banHint}`
+      : `Перевірено профілів: ${result.checkedDiscordProfiles}; не на сервері: ${result.missingMemberTotal}; у бані: ${result.bannedTotal}; кандидатів: ${result.targetProfilesTotal}; потенційно рейдових записів до видалення: ${result.raidCleanupPreview?.removedSignups || 0}; піків у складах сезону: ${result.rosterPickCleanupPreview?.removedPicks || 0}; голосів у пулах: ${result.pollVoteCleanupPreview?.removedVotes || 0}.${refreshHint}${rosterHint}${banHint}`;
 
     await auditDiscordAdmin(apply ? "discord.profiles.cleanup_apply" : "discord.profiles.cleanup_inspect", guard.session, {
       ...compactProfileCleanupResult(result),
@@ -64,6 +64,8 @@ export async function POST(request: NextRequest) {
       updatedRaidsTotal: result.updatedRaidsTotal,
       removedRosterPicksTotal: result.removedRosterPicksTotal || 0,
       updatedRostersTotal: result.updatedRostersTotal || 0,
+      removedPollVotesTotal: result.removedPollVotesTotal || 0,
+      updatedPollsTotal: result.updatedPollsTotal || 0,
       changed: result.changed,
     });
 

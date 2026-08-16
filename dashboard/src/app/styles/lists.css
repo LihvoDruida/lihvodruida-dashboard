@@ -1,0 +1,547 @@
+/* =========================================================
+   LISTS — універсальний вивід даних
+
+   Один набір правил на всі списки панелі. До цього кожна
+   сторінка вирішувала по-своєму: рейди — рядками, профілі —
+   таблицею, заявки — картками з узагальненими іменами
+   (`grid`, `stats`, `meta`, `card-main`), які не мали правил
+   узагалі.
+
+   Три форми виводу, одна логіка:
+     1. Таблиця      — багато однотипних рядків (профілі, склад)
+     2. Список карток — різнорідні записи з діями (рейди, заявки)
+     3. Пари         — «підпис + значення» (деталі, показники)
+
+   Наскрізне рішення для мобільного: жодного горизонтального
+   скролу. Таблиця стає карткою, підпис колонки — надрядком.
+   Горизонтальний скрол на телефоні ховає дані: людина не бачить,
+   що праворуч щось є.
+
+   Жодного !important.
+   ========================================================= */
+
+/* =========================================================
+   1. ПОКАЗНИКИ НАД СПИСКОМ
+   ========================================================= */
+.stats,
+.metric-grid,
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.details-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+}
+
+/* Картка показника: число крупно, підпис під ним */
+.stat {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.stat > strong {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-strong);
+  line-height: 1.2;
+}
+
+.stat > span {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* Тон показника за станом заявки */
+.stat.review {
+  border-left: 3px solid var(--c-warning);
+}
+
+.stat.accepted {
+  border-left: 3px solid var(--c-success);
+}
+
+.stat.declined {
+  border-left: 3px solid var(--c-danger);
+}
+
+.stat.review > strong {
+  color: var(--c-warning);
+}
+
+.stat.accepted > strong {
+  color: var(--c-success);
+}
+
+.stat.declined > strong {
+  color: var(--c-danger);
+}
+
+/* =========================================================
+   2. ПАРА «ПІДПИС + ЗНАЧЕННЯ»
+
+   Найчастіша форма в панелі. Підпис завжди згори й дрібний,
+   значення — знизу й контрастне: так рядок читається як
+   одна одиниця, а не як два незалежні слова.
+   ========================================================= */
+.detail-box {
+  display: grid;
+  gap: var(--space-3xs);
+  padding: var(--space-sm) var(--space-md);
+  min-width: 0;
+}
+
+.detail-box > span {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.detail-box > strong {
+  font-size: 0.88rem;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   3. СПИСОК КАРТОК
+   ========================================================= */
+.grid,
+.raid-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--gap-grid);
+  min-width: 0;
+}
+
+.card-main {
+  display: grid;
+  gap: var(--gap-stack);
+  min-width: 0;
+}
+
+/* Шапка запису: аватар + заголовок + метадані */
+.character-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.character-head > div {
+  display: grid;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.character-head h2 {
+  margin: 0;
+  font-size: 1.02rem;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.character-avatar {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+}
+
+.character-avatar.placeholder {
+  display: grid;
+  place-items: center;
+  border-style: dashed;
+  color: var(--c-accent-300);
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+/* Метадані одним рядком через крапку */
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3xs) var(--space-sm);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  min-width: 0;
+}
+
+.meta > span {
+  position: relative;
+  white-space: nowrap;
+}
+
+.meta > span + span::before {
+  content: "·";
+  position: absolute;
+  left: calc(var(--space-sm) / -2);
+  transform: translateX(-50%);
+  color: var(--text-faint);
+}
+
+/* Панель дій запису */
+.actions-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Ліва грань картки = статус заявки */
+.card.review {
+  border-left: 3px solid var(--c-warning);
+}
+
+.card.accepted {
+  border-left: 3px solid var(--c-success);
+}
+
+.card.declined {
+  border-left: 3px solid var(--c-danger);
+}
+
+/* Блок Raider.IO усередині запису */
+.rio-panel {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--pad-card-compact);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.rio-link {
+  color: var(--c-accent-300);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* =========================================================
+   4. АДАПТИВ СПИСКІВ
+   ========================================================= */
+@media (max-width: 860px) {
+  .stats,
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .details-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Аватар над заголовком: у рядок вони тиснуть імʼя персонажа */
+  .character-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .character-avatar {
+    width: 52px;
+    height: 52px;
+  }
+
+  .actions-panel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .actions-panel .btn,
+  .actions-panel form {
+    width: 100%;
+  }
+
+  .stat > strong {
+    font-size: 1.15rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .stats,
+  .metric-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Крапка-роздільник зникає: метадані переносяться в стовпчик */
+  .meta > span + span::before {
+    content: none;
+  }
+
+  .meta {
+    gap: var(--space-3xs) var(--space-xs);
+  }
+}
+
+/* =========================================================
+   4. РЯДКИ, ЩО МАЛИ ВЛАСНУ РОЗМІТКУ
+
+   Діагностика знайшла три різні способи робити одне й те саме:
+     1. .dashboard-table-row + data-label       (профілі, гільдія)
+     2. .discord-raid-signups-row + .…-mobile-label (правила)
+     3. .content-row без підписів узагалі       (новини/гайди)
+
+   Третій варіант на телефоні давав набір значень без пояснень:
+   «15.08.2026 / Дмитро / Чернетка» — і незрозуміло, де дата,
+   а де автор. Тут усі три зводяться до однієї поведінки:
+   ПК — рядок-сітка з шапкою, мобайл — картка з підписами.
+   ========================================================= */
+
+.content-list,
+.discord-raid-signups-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-stack);
+  min-width: 0;
+}
+
+.content-table,
+.discord-raid-signups-table {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.discord-raid-signups-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+/* ---------- Рядок контенту ---------- */
+.content-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--c-ink-500);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+}
+
+.content-row:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+.content-row.is-active {
+  border-left-color: var(--c-accent-400);
+}
+
+.content-row--draft {
+  border-left-color: var(--c-warning);
+}
+
+.content-row--published {
+  border-left-color: var(--c-success);
+}
+
+.content-row-main {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-md);
+  min-width: 0;
+  color: inherit;
+}
+
+.content-row-thumb {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+  color: var(--c-accent-300);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.content-row-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.content-row-title {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.content-row-title strong {
+  font-size: 0.92rem;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.content-row-title small {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  overflow-wrap: anywhere;
+}
+
+.content-row-meta {
+  display: grid;
+  gap: var(--space-3xs);
+  justify-items: end;
+  text-align: right;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+.content-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  flex: 0 0 auto;
+}
+
+/* ---------- Рядок підписантів правил ---------- */
+.discord-raid-signups-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.discord-raid-signups-row > [role="cell"] {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.discord-raid-signups-row strong {
+  font-size: 0.88rem;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.discord-raid-signups-row small,
+.discord-raid-signups-row time {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.discord-raid-signups-row--head {
+  padding: var(--space-2xs) var(--space-md);
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Підпис усередині комірки потрібен лише на телефоні */
+.discord-raid-mobile-label {
+  display: none;
+}
+
+/* =========================================================
+   5. МОБІЛЬНИЙ ВИГЛЯД: РЯДОК → КАРТКА
+   ========================================================= */
+@media (max-width: 860px) {
+  .content-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-sm);
+  }
+
+  .content-row-main {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+
+  /* Метадані з правого краю переїжджають під картку: праворуч
+     вони втрачали звʼязок із рядком, до якого належать. */
+  .content-row-meta {
+    grid-column: 1 / -1;
+    justify-items: start;
+    text-align: left;
+    white-space: normal;
+  }
+
+  .content-row-actions {
+    width: 100%;
+    padding-top: var(--space-xs);
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .content-row-actions > * {
+    flex: 1 1 auto;
+  }
+
+  .content-row-thumb {
+    width: 44px;
+    height: 44px;
+  }
+
+  .discord-raid-signups-row--head {
+    display: none;
+  }
+
+  .discord-raid-signups-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-xs);
+  }
+
+  /* Підпис колонки стає надрядком значення */
+  .discord-raid-mobile-label {
+    display: block;
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+
+  .discord-raid-signups-row > [role="cell"]:first-child {
+    padding-bottom: var(--space-xs);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .discord-raid-signups-row > [role="cell"]:first-child strong {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .content-row-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .content-row-thumb {
+    width: 100%;
+    height: 110px;
+  }
+}

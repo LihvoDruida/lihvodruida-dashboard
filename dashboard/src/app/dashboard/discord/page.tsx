@@ -279,7 +279,7 @@ export default async function AdminDiscordPage() {
                 <span className="status-pill warning">Roster + Discord</span>
               </div>
               <div className="discord-management-card__body">
-                <p className="profile-card-lead">Перед перевіркою система автоматично оновлює склад гільдії в базі, а потім проходить по Firebase-профілях зі звіркою проти актуального складу та Discord-сервера. Видаляються лише акаунти, які одночасно не мають персонажів у складі гільдії і вже не є учасниками Discord. Перед видаленням прибираються всі записи цього акаунта з рейдів і його піки з активних складів сезону (закриті склади лишаються як історія).</p>
+                <p className="profile-card-lead">Перед перевіркою система автоматично оновлює склад гільдії в базі, а потім проходить по Firebase-профілях зі звіркою проти актуального складу та Discord-сервера. Видаляються лише акаунти, які одночасно не мають персонажів у складі гільдії і вже не є учасниками Discord. Перед видаленням прибираються всі записи цього акаунта з рейдів і його піки з активних складів сезону та голоси у відкритих пулах (закриті лишаються як історія). Ембеди рейдів, складу і пулів у Discord перемальовуються.</p>
                 <label className="field-label discord-management-limit-field">Скільки профілів перевірити
                   <input className="input" name="limit" type="number" min="0" max="50000" defaultValue="0" />
                   <small>0 = пройти всі профілі посторінково, без обмеження першими 5/10 записами.</small>
@@ -290,6 +290,8 @@ export default async function AdminDiscordPage() {
                   <InfoChip title="Discord" text="Учасники сервера" />
                   <InfoChip title="Рейди" text="Чистка записів" />
                   <InfoChip title="Склад сезону" text="Чистка піків" />
+                  <InfoChip title="Пули" text="Чистка голосів" />
+                  <InfoChip title="Ембеди" text="Перемальовка" />
                   <InfoChip title="Повторно" text="Перед delete" />
                 </div>
                 <div className="form-actions form-actions--split">
