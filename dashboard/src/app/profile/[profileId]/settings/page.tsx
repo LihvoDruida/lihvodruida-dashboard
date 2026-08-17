@@ -1,4 +1,5 @@
 import DashboardIdentity from "@/components/DashboardIdentity";
+import LogoutButton from "@/components/LogoutButton";
 import ProfileNameControls from "@/components/ProfileNameControls";
 import { buildPageMetadata } from "@/lib/seo";
 import { getSession } from "@/lib/auth";
@@ -628,19 +629,17 @@ export default async function ProfileSettingsPage({
         aria-label="Налаштування профілю Mistblossom Vanguard"
       >
         <DashboardIdentity user={session} activeSection="profile" />
+        {/* Та сама двоколонкова схема, що на сторінці профілю. */}
         <div className="profile-account-layout">
-          <aside
-            className="panel profile-account-sidebar"
-            aria-label="Коротка навігація профілю"
-          >
+          <aside className="panel profile-account-sidebar" aria-label="Навігація профілю">
             <div className="profile-account-sidebar__identity">
               {profile.avatarUrl ? (
                 <img
                   className="profile-account-sidebar__avatar"
                   src={profile.avatarUrl}
                   alt=""
-                  width={84}
-                  height={84}
+                  width={96}
+                  height={96}
                   loading="lazy"
                   referrerPolicy="no-referrer"
                 />
@@ -654,75 +653,70 @@ export default async function ProfileSettingsPage({
               )}
               <strong>{publicNamePreview}</strong>
               <span>{accountStatusLabel}</span>
-              <div
-                className="profile-account-sidebar__pills"
-                aria-label="Стан профілю"
-              >
-                <span>☘ {savedCharacterCount} перс.</span>
-                <span>
-                  ✓ {setupCompleteCount}/{setupStatus.steps.length}
-                </span>
-                <span>⚔ {wowRoleLabel(selectedRaidRole)}</span>
+              <div className="profile-account-sidebar__pills" aria-label="Стан профілю">
+                <span className="status-pill">{guildStatus}</span>
+                <span className="status-pill">⚔ {wowRoleLabel(selectedRaidRole)}</span>
               </div>
             </div>
-            <nav
-              className="profile-account-sidebar__nav"
-              aria-label="Розділи профілю"
-            >
-              <a
-                href={
-                  profileRulesReturnPath ||
-                  `/profile/${encodeURIComponent(profile.profileId)}`
-                }
-              >
-                <span aria-hidden="true">✦</span> Профіль
+
+            <dl className="profile-account-sidebar__facts">
+              <div>
+                <dt>Персонажів</dt>
+                <dd>{profile.characters.length}</dd>
+              </div>
+              <div>
+                <dt>Мейн</dt>
+                <dd>{mainCharacter?.name || "—"}</dd>
+              </div>
+              <div>
+                <dt>Звертання</dt>
+                <dd>{profile.grammaticalGender ? "Вибрано" : "Не вибрано"}</dd>
+              </div>
+              <div>
+                <dt>Battle.net</dt>
+                <dd>{profile.battlenet?.linked ? "Підключено" : "Немає"}</dd>
+              </div>
+            </dl>
+
+            <nav className="profile-account-sidebar__nav" aria-label="Розділи профілю">
+              <a href={`/profile/${encodeURIComponent(profile.profileId)}`}>
+                <span>Огляд</span>
               </a>
-              <a
-                href={
-                  settingsRulesReturnPath ||
-                  `/profile/${encodeURIComponent(profile.profileId)}/settings`
-                }
-                aria-current="page"
-              >
-                <span aria-hidden="true">⚙</span> Налаштування
+              <a href={`/profile/${encodeURIComponent(profile.profileId)}#profile-characters`}>
+                <span>Персонажі</span>
               </a>
-              <a href="#profile-name-settings">
-                <span aria-hidden="true">#</span> Імʼя
-              </a>
-              <a href="#profile-gender-settings">
-                <span aria-hidden="true">✦</span> Звертання
-              </a>
-              <a href="#profile-nickname-settings">
-                <span aria-hidden="true">◆</span> Discord-нік
-              </a>
-              <a href="#profile-role-settings">
-                <span aria-hidden="true">⚔</span> Роль
+              <a href="#profile-settings-overview" aria-current="page">
+                <span>Налаштування</span>
               </a>
             </nav>
+
+            <div className="profile-account-sidebar__footer">
+              <LogoutButton />
+            </div>
           </aside>
 
           <div className="profile-account-main">
-            <header
-              className="profile-account-header"
-              id="profile-settings-overview"
-            >
+            <header className="profile-account-header" id="profile-settings-overview">
               <div>
                 <span className="eyebrow">
-                  Mistblossom Vanguard •{" "}
-                  {isSetupEntry ? "Реєстрація" : "Налаштування"}
+                  Mistblossom Vanguard • {isSetupEntry ? "Реєстрація" : "Налаштування"}
                 </span>
                 <h1>{settingsPageTitle}</h1>
                 <p>
-                  Коротко налаштуй імʼя, звертання, Discord-нік, альтів для
-                  шаблону та роль для рейдів. Помилки й незаповнені поля видно
-                  у статусі нижче.
+                  Імʼя, звертання, Discord-нік, альти для шаблону та роль для рейдів.
+                  Помилки й незаповнені поля видно у статусі нижче.
                 </p>
               </div>
-              <span className="profile-account-header__badge">
-                {guildStatus}
-              </span>
+              <div className="profile-account-header__actions">
+                <a
+                  className="btn subtle btn-sm"
+                  href={`/profile/${encodeURIComponent(profile.profileId)}`}
+                >
+                  Відкрити профіль
+                </a>
+                <span className="profile-account-header__badge">{guildStatus}</span>
+              </div>
             </header>
-
             <section
               className="profile-account-overview profile-account-overview--clean"
               aria-label="Короткий стан налаштувань"

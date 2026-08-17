@@ -1680,3 +1680,276 @@
     display: none;
   }
 }
+
+/* =========================================================
+   12. КАРТКА ПЕРСОНАЖА — ВИПРАВЛЕННЯ НАПОВНЕННЯ
+
+   Три помилки, знайдені при звірці розмітки зі стилями:
+     - `.profile-character-meta` був лише кольором, тож три
+       інлайнові <span> зліплювались: «Guardian • ДруїдТанк»;
+     - значки гільдії малювались поверх арту без позиціювання;
+     - `.profile-character-stats-row` вкладався у сітку і давав
+       випадкову кількість колонок.
+   ========================================================= */
+
+/* Метадані — рядок із крапками-роздільниками */
+.profile-character-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3xs) var(--space-sm);
+  min-width: 0;
+}
+
+.profile-character-meta > span {
+  position: relative;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.profile-character-meta > span + span::before {
+  content: "·";
+  position: absolute;
+  left: calc(var(--space-sm) / -2);
+  transform: translateX(-50%);
+  color: var(--text-faint);
+}
+
+/* Арт із накладеним значком гільдії */
+.profile-character-artwork {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.profile-character-artwork img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-character-badges--art {
+  position: absolute;
+  inset: auto var(--space-3xs) var(--space-3xs) var(--space-3xs);
+  justify-content: center;
+}
+
+.profile-character-badges--art .profile-character-badge {
+  padding: 2px var(--space-2xs);
+  font-size: 0.6rem;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.profile-character-main-corner {
+  position: absolute;
+  top: var(--space-3xs);
+  right: var(--space-3xs);
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent-gradient);
+  color: #1c1208;
+}
+
+/* Показники: два рядки по дві пари з роздільником між ними */
+.profile-character-stats-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2xs);
+}
+
+.profile-character-stats-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-2xs) var(--space-sm);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+/* Пара всередині рядка більше не має власної рамки */
+.profile-character-stats-row .profile-character-stat {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.profile-character-stats-divider {
+  width: 1px;
+  height: 22px;
+  background: var(--border-subtle);
+}
+
+/* Дія «Зробити мейном» на всю ширину — вона головна в картці */
+.profile-character-actions__full {
+  display: grid;
+}
+
+.profile-character-actions__full > .profile-character-btn {
+  width: 100%;
+}
+
+@media (max-width: 520px) {
+  /* На вузькому екрані пари показників стають одна під одною:
+     чотири значення в два стовпці лишали по 60px на число. */
+  .profile-character-stats-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2xs);
+  }
+
+  .profile-character-stats-divider {
+    width: 100%;
+    height: 1px;
+  }
+}
+
+/* =========================================================
+   13. БІЧНА КОЛОНКА — ПОКРАЩЕНА ВЕРСІЯ СТАРОЇ СХЕМИ
+
+   Повернуто двоколонкову схему, але з трьома змінами проти
+   першої версії:
+     - короткий стан (персонажі, мейн, роль) прямо в колонці,
+       щоб не бігти по число в основний потік;
+     - активний пункт навігації видно;
+     - на телефоні колонка стає горизонтальною смугою, а не
+       високим блоком, який відсовував увесь вміст униз.
+   ========================================================= */
+
+.profile-account-sidebar__facts {
+  display: grid;
+  gap: var(--space-2xs);
+  width: 100%;
+  margin: 0;
+  padding: var(--space-sm) 0;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.profile-account-sidebar__facts > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.profile-account-sidebar__facts dt {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.profile-account-sidebar__facts dd {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+/* Активний пункт навігації */
+.profile-account-sidebar__nav a[aria-current="page"] {
+  border-color: var(--border-strong);
+  background: var(--accent-soft);
+  color: var(--c-accent-200);
+}
+
+.profile-account-sidebar__nav-count {
+  margin-left: auto;
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--space-3xs);
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  color: var(--text-faint);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.profile-account-sidebar__footer {
+  width: 100%;
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.profile-account-sidebar__footer > * {
+  width: 100%;
+}
+
+/* ---------- Мобільна поведінка колонки ---------- */
+@media (max-width: 1000px) {
+  .profile-account-sidebar {
+    /* Горизонтальна смуга: аватар та імʼя ліворуч, стан праворуч.
+       Вертикальний блок на 390px займав перший екран цілком. */
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-items: stretch;
+    text-align: left;
+    align-items: center;
+  }
+
+  .profile-account-sidebar__identity {
+    grid-column: 1 / -1;
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-items: start;
+    text-align: left;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  .profile-account-sidebar__avatar {
+    grid-row: span 3;
+    width: 64px;
+    height: 64px;
+  }
+
+  .profile-account-sidebar__facts {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
+    gap: var(--space-sm);
+  }
+
+  .profile-account-sidebar__facts > div {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+  }
+
+  .profile-account-sidebar__facts dd {
+    text-align: left;
+  }
+
+  .profile-account-sidebar__nav {
+    grid-column: 1 / -1;
+  }
+
+  .profile-account-sidebar__footer {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 520px) {
+  .profile-account-sidebar__identity {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    text-align: center;
+  }
+
+  .profile-account-sidebar__avatar {
+    grid-row: auto;
+  }
+
+  .profile-account-sidebar__pills {
+    justify-content: center;
+  }
+}

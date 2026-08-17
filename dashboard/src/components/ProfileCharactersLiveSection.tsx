@@ -117,12 +117,12 @@ function CharacterCard({ character, profileId, canManage, showMainBadge, returnT
   const rioUrl = character.raiderIo?.profileUrl || null;
   const realmLabel = character.realmName || character.realmSlug || "Реалм —";
   const guildBadge = character.verifiedGuild
-    ? { label: "Гільдійний", icon: "guild" as const, className: "is-guild" as const }
-    : { label: "Не гільдійний", icon: "other" as const, className: "is-other" as const };
+    ? { label: "Гільдійний", icon: "guild" as const, modifier: "guild" as const, state: "is-guild" as const }
+    : { label: "Поза гільдією", icon: "other" as const, modifier: "external" as const, state: "is-other" as const };
   const updatedLabel = formatStableUkCompactDate(character.lastSeenAt);
 
   return (
-    <article className={`profile-character-card${showMainBadge && character.isMain ? " is-main" : ""} ${guildBadge.className}`} aria-label={`${showMainBadge && character.isMain ? "Основний персонаж" : "Персонаж"}: ${character.name}`} data-character-profile-id={profileId}>
+    <article className={`profile-character-card${showMainBadge && character.isMain ? " is-main" : ""} ${guildBadge.state}`} aria-label={`${showMainBadge && character.isMain ? "Основний персонаж" : "Персонаж"}: ${character.name}`} data-character-profile-id={profileId}>
       <div className="profile-character-artwork">
         <CharacterArtwork character={character} />
         {showMainBadge && character.isMain ? (
@@ -131,7 +131,7 @@ function CharacterCard({ character, profileId, canManage, showMainBadge, returnT
           </span>
         ) : null}
         <div className="profile-character-badges profile-character-badges--art" aria-label="Статус гільдії персонажа">
-          <span className={`profile-character-badge profile-character-badge--${guildBadge.className}`}>
+          <span className={`profile-character-badge profile-character-badge--${guildBadge.modifier}`}>
             <CharacterInlineIcon kind={guildBadge.icon} />
             <span>{guildBadge.label}</span>
           </span>
@@ -148,7 +148,6 @@ function CharacterCard({ character, profileId, canManage, showMainBadge, returnT
         <div className="profile-character-meta" aria-label="Характеристики персонажа">
           <span>{specLabel}</span>
           <span>{roleLabel}</span>
-          <span>{realmLabel}</span>
         </div>
 
         <div className="profile-character-stats-grid" aria-label="Ключові показники персонажа">
