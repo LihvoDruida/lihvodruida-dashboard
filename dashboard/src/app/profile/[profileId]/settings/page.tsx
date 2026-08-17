@@ -678,15 +678,23 @@ export default async function ProfileSettingsPage({
               </div>
             </dl>
 
+            {/* Іконка + підпис: на телефоні підпис ховається, і рядок
+                стає смугою іконок — як у референсі. */}
             <nav className="profile-account-sidebar__nav" aria-label="Розділи профілю">
-              <a href={`/profile/${encodeURIComponent(profile.profileId)}`}>
-                <span>Огляд</span>
+              <a href={`/profile/${encodeURIComponent(profile.profileId)}`} title="Огляд">
+                <span className="profile-ui-icon profile-ui-icon--home" aria-hidden="true" />
+                <span className="profile-account-sidebar__nav-label">Огляд</span>
               </a>
-              <a href={`/profile/${encodeURIComponent(profile.profileId)}#profile-characters`}>
-                <span>Персонажі</span>
+              <a
+                href={`/profile/${encodeURIComponent(profile.profileId)}#profile-characters`}
+                title="Персонажі"
+              >
+                <span className="profile-ui-icon profile-ui-icon--swords" aria-hidden="true" />
+                <span className="profile-account-sidebar__nav-label">Персонажі</span>
               </a>
-              <a href="#profile-settings-overview" aria-current="page">
-                <span>Налаштування</span>
+              <a href="#profile-settings-overview" aria-current="page" title="Налаштування">
+                <span className="profile-ui-icon profile-ui-icon--gear" aria-hidden="true" />
+                <span className="profile-account-sidebar__nav-label">Налаштування</span>
               </a>
             </nav>
 

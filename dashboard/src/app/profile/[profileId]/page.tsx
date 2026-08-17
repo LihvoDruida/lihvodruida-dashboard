@@ -575,17 +575,17 @@ export default async function ProfilePage({
 
             <nav className="profile-account-sidebar__nav" aria-label="Розділи профілю">
               <a href={`/profile/${encodeURIComponent(profile.profileId)}`} aria-current="page">
-                <ProfileUiIcon kind="home" /> <span>Огляд</span>
+                <ProfileUiIcon kind="home" /> <span className="profile-account-sidebar__nav-label">Огляд</span>
               </a>
               <a href="#profile-characters">
-                <ProfileUiIcon kind="swords" /> <span>Персонажі</span>
+                <ProfileUiIcon kind="swords" /> <span className="profile-account-sidebar__nav-label">Персонажі</span>
                 {profile.characters.length ? (
                   <span className="profile-account-sidebar__nav-count">{profile.characters.length}</span>
                 ) : null}
               </a>
               {canViewPrivateProfileBlocks ? (
                 <a href="#profile-raids">
-                  <ProfileUiIcon kind="shield" /> <span>Рейди</span>
+                  <ProfileUiIcon kind="shield" /> <span className="profile-account-sidebar__nav-label">Рейди</span>
                 </a>
               ) : null}
               {isOwnProfile ? (
@@ -595,7 +595,7 @@ export default async function ProfilePage({
                     `/profile/${encodeURIComponent(profile.profileId)}/settings`
                   }
                 >
-                  <ProfileUiIcon kind="gear" /> <span>Налаштування</span>
+                  <ProfileUiIcon kind="gear" /> <span className="profile-account-sidebar__nav-label">Налаштування</span>
                 </a>
               ) : null}
             </nav>

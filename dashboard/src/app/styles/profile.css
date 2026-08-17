@@ -1953,3 +1953,613 @@
     justify-content: center;
   }
 }
+
+/* =========================================================
+   14. ПРОФІЛЬ ЗА ЗРАЗКОМ РЕФЕРЕНСУ
+
+   Схема з надісланих скріншотів, перекладена на наші токени:
+
+   ПК     — картка-колонка ліворуч (аватар у кільці, імʼя, пігулки,
+            вертикальна навігація з іконками, вихід унизу) і
+            основний потік праворуч: заголовок, ряд карток-показників,
+            далі панелі.
+
+   Телефон — та сама картка згори, але навігація стає смугою САМИХ
+            ІКОНОК: сім підписів у рядок не влазять, а перенесення в
+            три ряди з'їдало перший екран. Активна іконка підсвічена,
+            підпис лишається в `title` та для скрінрідерів.
+   ========================================================= */
+
+/* ---------- Картка-колонка ---------- */
+.profile-account-sidebar {
+  gap: var(--space-md);
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Верх картки — окремий блок із роздільником, як у зразку */
+.profile-account-sidebar__identity {
+  width: 100%;
+  padding: var(--space-lg) var(--space-md) var(--space-md);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Аватар у кольоровому кільці */
+.profile-account-sidebar__avatar {
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.profile-account-sidebar__identity strong {
+  font-size: 1rem;
+}
+
+.profile-account-sidebar__facts,
+.profile-account-sidebar__nav,
+.profile-account-sidebar__footer {
+  padding-inline: var(--space-md);
+}
+
+.profile-account-sidebar__facts {
+  border-top: 0;
+}
+
+.profile-account-sidebar__footer {
+  padding-bottom: var(--space-md);
+}
+
+/* ---------- Навігація ---------- */
+.profile-account-sidebar__nav a {
+  justify-content: flex-start;
+  gap: var(--space-sm);
+}
+
+.profile-account-sidebar__nav .profile-ui-icon {
+  flex: 0 0 auto;
+}
+
+/* ---------- Картки показників в основному потоці ---------- */
+.profile-account-overview-card {
+  gap: var(--space-md);
+  padding: var(--space-md);
+}
+
+.profile-account-overview-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  font-size: 1.05rem;
+}
+
+/* Підпис угорі, значення крупно під ним — порядок із зразка */
+.profile-account-overview-card > div,
+.profile-account-overview-card > span:not(:where([class$="__icon"])) {
+  gap: var(--space-3xs);
+}
+
+.profile-account-overview-card small {
+  order: -1;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.profile-account-overview-card strong {
+  font-size: 1.15rem;
+}
+
+/* Тонований варіант картки: рамка й фон у колір стану */
+.profile-account-overview-card--primary {
+  border-color: color-mix(in srgb, var(--c-accent-400) 30%, transparent);
+  background: color-mix(in srgb, var(--c-accent-400) 8%, var(--surface-sunken));
+}
+
+.profile-account-overview-card--primary .profile-account-overview-card__icon {
+  border-color: color-mix(in srgb, var(--c-accent-400) 34%, transparent);
+  background: color-mix(in srgb, var(--c-accent-400) 16%, transparent);
+  color: var(--c-accent-200);
+}
+
+.profile-account-overview-card--success {
+  border-color: color-mix(in srgb, var(--c-success) 30%, transparent);
+  background: color-mix(in srgb, var(--c-success) 8%, var(--surface-sunken));
+}
+
+.profile-account-overview-card--success .profile-account-overview-card__icon,
+.profile-account-overview-card--success strong {
+  color: var(--c-success);
+}
+
+.profile-account-overview-card--success .profile-account-overview-card__icon {
+  border-color: color-mix(in srgb, var(--c-success) 34%, transparent);
+  background: color-mix(in srgb, var(--c-success) 16%, transparent);
+}
+
+/* ---------- Телефон і планшет ---------- */
+@media (max-width: 1000px) {
+  .profile-account-sidebar {
+    grid-template-columns: minmax(0, 1fr);
+    text-align: center;
+  }
+
+  /* Верх картки центрований, як у зразку */
+  .profile-account-sidebar__identity {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    text-align: center;
+  }
+
+  .profile-account-sidebar__avatar {
+    grid-row: auto;
+    width: 72px;
+    height: 72px;
+  }
+
+  .profile-account-sidebar__pills {
+    justify-content: center;
+  }
+
+  /* Навігація — смуга самих іконок */
+  .profile-account-sidebar__nav {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: var(--space-2xs);
+    padding-block: var(--space-2xs);
+  }
+
+  .profile-account-sidebar__nav a {
+    justify-content: center;
+    min-height: 48px;
+    padding: 0;
+  }
+
+  .profile-account-sidebar__nav-label {
+    /* Прибираємо візуально, але лишаємо для скрінрідерів */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .profile-account-sidebar__nav-count {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    margin: 0;
+    min-width: 16px;
+    height: 16px;
+    font-size: 0.6rem;
+  }
+
+  .profile-account-sidebar__nav a {
+    position: relative;
+  }
+
+  /* Показники — у рядок, як пігулки під аватаром */
+  .profile-account-sidebar__facts {
+    grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr));
+    text-align: left;
+  }
+}
+
+@media (max-width: 520px) {
+  .profile-account-sidebar__facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Картка показника: іконка й текст лишаються в рядок,
+     але значення отримує повну ширину клітинки */
+  .profile-account-overview-card {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .profile-account-overview-card__icon {
+    width: 38px;
+    height: 38px;
+  }
+}
+
+/* =========================================================
+   14. ШАБЛОН ПРОФІЛЮ ЗА ЗРАЗКОМ
+
+   Схема з референсу, перекладена на наші токени:
+     - бічна картка: аватар, імʼя, пігулки, вертикальна навігація,
+       вихід окремо внизу;
+     - на телефоні навігація стискається в СМУГУ САМИХ ІКОНОК,
+       а не в стовпчик кнопок із підписами — так вона займає
+       один рядок замість половини екрана;
+     - показники: плитка іконки + дрібний підпис + велике значення;
+     - панелі: шапка з іконкою та рискою, всередині рядки
+       «опис ліворуч — дія праворуч».
+   ========================================================= */
+
+/* ---------- Бічна картка ---------- */
+.profile-account-sidebar {
+  gap: var(--space-md);
+  padding: var(--pad-card-compact);
+}
+
+.profile-account-sidebar__avatar {
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.profile-account-sidebar__identity strong {
+  font-family: var(--font-brand);
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+}
+
+/* ---------- Вертикальна навігація ---------- */
+.profile-account-sidebar__nav a {
+  position: relative;
+  justify-content: flex-start;
+  gap: var(--space-sm);
+  border-color: transparent;
+  background: transparent;
+}
+
+.profile-account-sidebar__nav a:hover {
+  background: var(--surface-hover);
+}
+
+/* Активний пункт: заливка + бурштинова риска зліва, як у зразку */
+.profile-account-sidebar__nav a[aria-current="page"] {
+  border-color: transparent;
+  background: var(--surface-hover);
+  color: var(--c-accent-200);
+}
+
+.profile-account-sidebar__nav a[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 20%;
+  bottom: 20%;
+  width: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-gradient);
+}
+
+.profile-account-sidebar__nav a svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  opacity: 0.75;
+}
+
+.profile-account-sidebar__nav a[aria-current="page"] svg {
+  opacity: 1;
+}
+
+/* ---------- Показники ---------- */
+.profile-account-overview-card {
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border-left-width: 1px;
+}
+
+.profile-account-overview-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  font-size: 1.1rem;
+}
+
+/* Підпис дрібний згори, значення велике знизу — порядок із зразка */
+.profile-account-overview-card small {
+  order: -1;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.profile-account-overview-card strong {
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+/* Тонований варіант: рамка й іконка беруть колір стану */
+.profile-account-overview-card--success {
+  border-color: color-mix(in srgb, var(--c-success) 28%, transparent);
+  background: color-mix(in srgb, var(--c-success) 7%, var(--surface-sunken));
+}
+
+.profile-account-overview-card--success .profile-account-overview-card__icon {
+  border-color: color-mix(in srgb, var(--c-success) 40%, transparent);
+  background: color-mix(in srgb, var(--c-success) 14%, transparent);
+  color: var(--c-success);
+}
+
+.profile-account-overview-card--primary {
+  border-color: var(--border-strong);
+  background: color-mix(in srgb, var(--c-accent-400) 8%, var(--surface-sunken));
+}
+
+.profile-account-overview-card--primary .profile-account-overview-card__icon {
+  border-color: var(--border-strong);
+  background: var(--accent-soft);
+  color: var(--c-accent-300);
+}
+
+/* ---------- Шапка панелі з іконкою ---------- */
+.profile-card-head {
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.profile-card-title-icon {
+  width: 30px;
+  height: 30px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--c-accent-300);
+}
+
+.profile-card-title-with-icon h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+/* ---------- Рядок «опис + дія» ---------- */
+.profile-setting-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.profile-setting-row__copy {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.profile-setting-row__copy strong {
+  font-size: 0.92rem;
+  color: var(--text-strong);
+}
+
+.profile-setting-row__copy small {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* =========================================================
+   15. МОБІЛЬНА СХЕМА ЗА ЗРАЗКОМ
+   ========================================================= */
+@media (max-width: 1000px) {
+  /* Навігація — смуга самих іконок в один рядок.
+     Підписи ховаються: сім пунктів із текстом на 390px
+     давали або перенос у три ряди, або обрізані слова. */
+  .profile-account-sidebar__nav {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: var(--space-3xs);
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--border-subtle);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .profile-account-sidebar__nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .profile-account-sidebar__nav a {
+    justify-content: center;
+    min-width: 48px;
+    padding: 0;
+    border-radius: var(--radius-md);
+  }
+
+  .profile-account-sidebar__nav a > span:not(:where(.profile-account-sidebar__nav-count)) {
+    /* Підпис лишається для скрінрідерів, але не займає місця */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .profile-account-sidebar__nav a[aria-current="page"] {
+    background: var(--accent-soft);
+  }
+
+  .profile-account-sidebar__nav a[aria-current="page"]::before {
+    display: none;
+  }
+
+  .profile-account-sidebar__nav-count {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 16px;
+    height: 16px;
+    margin: 0;
+    font-size: 0.6rem;
+  }
+
+  .profile-account-sidebar__nav a svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (max-width: 860px) {
+  .profile-setting-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-setting-row > .btn,
+  .profile-setting-row .status-pill {
+    justify-self: start;
+  }
+
+  .profile-account-overview-card strong {
+    font-size: 1.05rem;
+  }
+}
+
+/* =========================================================
+   16. КАРТКА ПЕРСОНАЖА ЗА ЗРАЗКОМ
+
+   У референсі це вертикальна картка-портрет: арт зверху на всю
+   ширину, під ним імʼя, гільдія, рівень і регіон, а внизу два
+   показники поруч через роздільник.
+
+   Горизонтальний варіант (арт ліворуч) лишався читабельним, але
+   різав арт до 92px — а саме арт тут головний носій впізнавання.
+   ========================================================= */
+.profile-character-list--single-flow {
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+  gap: var(--space-md);
+}
+
+.profile-character-card {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  border-left-width: 1px;
+  background: var(--surface);
+}
+
+.profile-character-card.is-main {
+  border-color: var(--border-strong);
+  box-shadow: 0 0 0 1px var(--accent-soft);
+}
+
+/* Арт-банер */
+.profile-character-artwork {
+  width: 100%;
+  height: 240px;
+  border-radius: 0;
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  background:
+    radial-gradient(80% 70% at 50% 20%, var(--accent-soft), transparent 70%),
+    var(--surface-sunken);
+}
+
+.profile-character-artwork__fallback {
+  font-size: 3rem;
+}
+
+/* Ромб-роздільник між артом і текстом, як у зразку */
+.profile-character-body {
+  position: relative;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+}
+
+.profile-character-body::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  transform: translateX(-50%) rotate(45deg);
+  background: var(--c-accent-400);
+}
+
+.profile-character-title-copy h3 {
+  margin: 0;
+  font-family: var(--font-brand);
+  font-size: 1.15rem;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+/* Гільдія курсивом і приглушено — це підпис, а не заголовок */
+.profile-character-title-copy p {
+  margin: 0;
+  color: var(--c-accent-300);
+  font-size: 0.82rem;
+  font-style: italic;
+}
+
+.is-other .profile-character-title-copy p {
+  color: var(--text-faint);
+}
+
+/* Два показники поруч із вертикальною рискою */
+.profile-character-stats-row {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  padding: var(--space-sm) 0 0;
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+  border-radius: 0;
+  background: none;
+}
+
+.profile-character-stat {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  text-align: center;
+  gap: var(--space-3xs);
+}
+
+.profile-character-stat__icon {
+  display: none;
+}
+
+.profile-character-stat__copy {
+  justify-items: center;
+}
+
+.profile-character-stat__copy strong {
+  font-family: var(--font-brand);
+  font-size: 1.25rem;
+  color: var(--text-strong);
+}
+
+.profile-character-stat__copy small {
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+}
+
+.profile-character-stats-divider {
+  height: 34px;
+}
+
+/* Дії притиснуті до низу картки */
+.profile-character-actions {
+  margin-top: auto;
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-subtle);
+}
+
+@media (max-width: 520px) {
+  .profile-character-artwork {
+    height: 200px;
+  }
+
+  /* Показники лишаються поруч навіть на вузькому екрані:
+     їх лише два, і так вони читаються як пара. */
+  .profile-character-stats-row {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+
+  .profile-character-stats-divider {
+    width: 1px;
+    height: 34px;
+  }
+}
