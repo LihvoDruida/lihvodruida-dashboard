@@ -602,7 +602,7 @@ export default async function ProfilePage({
 
             {isOwnProfile ? (
               <div className="profile-account-sidebar__footer">
-                <LogoutButton />
+                <LogoutButton className="btn subtle" errorClassName="profile-card-note" />
               </div>
             ) : null}
           </aside>

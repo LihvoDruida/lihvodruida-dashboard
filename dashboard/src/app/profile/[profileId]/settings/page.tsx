@@ -699,7 +699,7 @@ export default async function ProfileSettingsPage({
             </nav>
 
             <div className="profile-account-sidebar__footer">
-              <LogoutButton />
+              <LogoutButton className="btn subtle" errorClassName="profile-card-note" />
             </div>
           </aside>
 
