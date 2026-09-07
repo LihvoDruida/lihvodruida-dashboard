@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { dashboardErrorMessage, dispatchDashboardToast } from "@/lib/clientToasts";
+import { dispatchDashboardToast } from "@/lib/clientToasts";
 import RaidPollActions from "@/components/RaidPollActions";
 
 export type RaidPollCardModel = {

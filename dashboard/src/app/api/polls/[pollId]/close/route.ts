@@ -57,7 +57,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ po
   try {
     const poll = reopen
       ? await reopenRaidPoll(pollId, { minutes })
-      : await closeRaidPoll(pollId, "manual", { silentIfClosed: true });
+      : await closeRaidPoll(pollId, "manual");
 
     logDashboardEvent("info", reopen ? "raid_polls.reopened" : "raid_polls.closed", request, { pollId, actorId: user.id, status: poll.status });
     await recordAdminAudit(reopen ? "raid_polls.reopen" : "raid_polls.close", user, {

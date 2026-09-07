@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { handleRaidPollDiscordVote } from "@/lib/raidPolls";
+import { handleRaidPollDiscordVote, type RaidPollDiscordVoteKind } from "@/lib/raidPolls";
 import {
   assertRequestBodySize,
   checkRateLimit,
@@ -24,16 +24,16 @@ const INTERNAL_POLL_ACTION_TOKENS = [
   "INTERNAL_PROFILE_LOOKUP_TOKEN",
 ];
 
-function cleanKind(value: unknown): "days" | "time" | "schedule" | "schedule_page" | "character" | "character_prompt" | "role" | "submit" {
+function cleanKind(value: unknown): RaidPollDiscordVoteKind {
   const kind = String(value || "").trim().toLowerCase();
-  if (kind === "time") return "time";
   if (kind === "schedule") return "schedule";
   if (kind === "schedule_page") return "schedule_page";
-  if (kind === "character") return "character";
-  if (kind === "character_prompt") return "character_prompt";
+  if (kind === "quick") return "quick";
   if (kind === "role") return "role";
   if (kind === "submit") return "submit";
-  return "days";
+  // character / character_prompt лишились у старих Discord-повідомленнях
+  // і в клієнтах воркера — обидва означають «відкрий пульт голосування».
+  return "vote_prompt";
 }
 
 function cleanValues(value: unknown) {
@@ -42,7 +42,6 @@ function cleanValues(value: unknown) {
 
 function cleanScheduleGroup(value: unknown) {
   const group = String(value || "").trim().toLowerCase();
-  if (group === "a" || group === "b" || group === "c") return group;
   if (/^(mon|tue|wed|thu|fri|sat|sun)$/.test(group)) return group;
   if (/^page_?\d{1,2}$/.test(group)) return group.replace(/^page_?(\d+)$/, "page_$1");
   return "";

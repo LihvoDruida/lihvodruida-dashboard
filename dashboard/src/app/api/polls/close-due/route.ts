@@ -75,7 +75,7 @@ async function run(request: NextRequest) {
 
   try {
     guard.lastStartedAt = now;
-    const promise = closeDueRaidPolls({ force });
+    const promise = closeDueRaidPolls();
     guard.inFlight = promise;
     const result = await promise;
     guard.lastResult = result as Record<string, unknown>;

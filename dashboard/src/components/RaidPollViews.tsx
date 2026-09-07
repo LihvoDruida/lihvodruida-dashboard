@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import RaidPollCreateClientForm from "@/components/RaidPollCreateClientForm";
 import RaidPollRecalculateButton from "@/components/RaidPollRecalculateButton";
 import RaidPollActions from "@/components/RaidPollActions";
@@ -13,10 +13,10 @@ import {
   pollVoteCounts,
   pollVotersForDay,
   raidPollAvailabilityLabel,
-  raidPollClassColor,
   raidPollDayFullLabel,
   raidPollDifficultyLabel,
   raidPollRoleLabel,
+  raidPollRoleShortLabel,
   raidPollSlotSummary,
   raidPollUniqueDayRecommendations,
   raidPollStatusLabel,
@@ -44,10 +44,6 @@ function formatDateTime(isoOrMs: string | number | null | undefined) {
   } catch {
     return date.toISOString().slice(0, 16).replace("T", " ");
   }
-}
-
-function statusClass(poll: RaidPollItem) {
-  return poll.status === "closed" ? "closed" : "published";
 }
 
 export function RaidPollPageShell({
@@ -131,9 +127,9 @@ function roleBreakdown(poll: RaidPollItem) {
   let healers = 0;
   let dps = 0;
   for (const vote of poll.votes) {
-    if (vote.characterRole === "tank") tanks += 1;
-    else if (vote.characterRole === "healer") healers += 1;
-    else if (vote.characterRole === "dps") dps += 1;
+    if (vote.role === "tank") tanks += 1;
+    else if (vote.role === "healer") healers += 1;
+    else if (vote.role === "dps") dps += 1;
   }
   return { tanks, healers, dps };
 }
@@ -202,17 +198,16 @@ function bestTimeForDay(poll: RaidPollItem, day: RaidPollDay) {
   return best && best.count > 0 ? `${best.time} · ${best.count}` : "—";
 }
 
+/** Підпис голосу — гільдійний нік Discord. Персонажів у пулі більше немає. */
 function voteDisplayName(vote: RaidPollItem["votes"][number]) {
-  return vote.characterName || vote.discordName || "Гравець";
+  return vote.discordName || "Гравець";
 }
 
-function VoteCharacterBadge({ vote }: { vote: RaidPollItem["votes"][number] }) {
-  const classColor = raidPollClassColor(vote.characterClass);
-  const style = { "--raid-poll-class-color": classColor } as CSSProperties;
+function VoteIdentityBadge({ vote }: { vote: RaidPollItem["votes"][number] }) {
   return (
-    <span className="raid-poll-character-badge" style={style}>
+    <span className="poll-voter__identity">
       <strong>{voteDisplayName(vote)}</strong>
-      <small>{[vote.characterSpecName, vote.characterClass, vote.characterRole ? raidPollRoleLabel(vote.characterRole) : null].filter(Boolean).join(" • ") || vote.discordName}</small>
+      <span className={`poll-role-chip poll-role-chip--${vote.role || "unset"}`}>{raidPollRoleLabel(vote.role)}</span>
     </span>
   );
 }
@@ -296,8 +291,8 @@ export function RaidPollResults({ poll, canManage = false, relatedPolls = [poll]
             <strong>{raidPollSlotSummary(bestSlot)}</strong>
             <span>
               {bestSlot
-                ? `Танки ${bestSlot.tanks}/${bestSlot.requiredTanks} (ціль ${bestSlot.desiredTanks}) → хіли ${bestSlot.healers}/${bestSlot.requiredHealers} (ціль ${bestSlot.desiredHealers}) → ДД ${bestSlot.effectiveDps} (${bestSlot.melee}/${bestSlot.ranged}) → utility ${bestSlot.utilityScore}`
-                : "Потрібні голоси з персонажами, щоб зʼявився нормальний розрахунок."}
+                ? `Танки ${bestSlot.tanks}/${bestSlot.requiredTanks} (ціль ${bestSlot.desiredTanks}) → хіли ${bestSlot.healers}/${bestSlot.requiredHealers} (ціль ${bestSlot.desiredHealers}) → ДД ${bestSlot.effectiveDps}${bestSlot.unknown ? ` → без ролі ${bestSlot.unknown}` : ""}`
+                : "Потрібні голоси з вибраною роллю, щоб зʼявився нормальний розрахунок."}
             </span>
           </div>
 
@@ -318,8 +313,8 @@ export function RaidPollResults({ poll, canManage = false, relatedPolls = [poll]
           <p>
             Найраніший зручний час означає доступність і на всі пізніші слоти дня. Активні голосування
             розводяться по різних днях: один день не пропонується двом рейд-пулам. Порядок: валідне ядро
-            ролей → мінімум 1 танк і ціль 2 → хіли за формулою 1 на 4–5 ДД → максимум ДД → баланс
-            melee/ranged ~40/60 → utility checklist.
+            ролей → мінімум 1 танк і ціль 2 → хіли за формулою 1 на 4–5 ДД → максимум ДД → загальна
+            кількість голосів. Класи й спеки тут не враховуються: пул питає лише про час і роль.
           </p>
         </details>
       </section>
@@ -327,7 +322,7 @@ export function RaidPollResults({ poll, canManage = false, relatedPolls = [poll]
       <section className="panel poll-matrix" aria-label="Матриця день / час">
         <div className="poll-section-head">
           <h3>Матриця день / час</h3>
-          <p>Для кожного дня — доступні, відсутні, найсильніший час і конкретні персонажі.</p>
+          <p>Для кожного дня — доступні, відсутні, найсильніший час і хто саме може.</p>
         </div>
 
         <div className="poll-matrix__grid">
@@ -370,6 +365,8 @@ export function RaidPollResults({ poll, canManage = false, relatedPolls = [poll]
                         return (
                           <span key={vote.discordId}>
                             {voteDisplayName(vote)}
+                            <i className={`poll-role-dot poll-role-dot--${vote.role || "unset"}`} aria-hidden="true" />
+                            <em>{raidPollRoleShortLabel(vote.role)}</em>
                             <b>{raidPollAvailabilityLabel(schedule[day.value])}</b>
                           </span>
                         );
@@ -422,7 +419,7 @@ export function RaidPollResults({ poll, canManage = false, relatedPolls = [poll]
               const schedule = raidPollVoteSchedule(vote);
               return (
                 <article className="poll-voter" key={vote.discordId}>
-                  <VoteCharacterBadge vote={vote} />
+                  <VoteIdentityBadge vote={vote} />
                   <div className="poll-voter__schedule">
                     {activeDays.map((day) => (
                       <span
@@ -434,7 +431,7 @@ export function RaidPollResults({ poll, canManage = false, relatedPolls = [poll]
                       </span>
                     ))}
                   </div>
-                  <small className="poll-voter__meta">Discord: {vote.discordName} • {formatDateTime(vote.updatedAt)}</small>
+                  <small className="poll-voter__meta">Оновлено {formatDateTime(vote.updatedAt)}</small>
                 </article>
               );
             })}

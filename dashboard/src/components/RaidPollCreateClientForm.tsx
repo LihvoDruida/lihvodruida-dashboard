@@ -376,7 +376,11 @@ export default function RaidPollCreateClientForm({ channels, roles = [], default
         </div>
         <div>
           <strong>Час рейду</strong>
-          <span>Один вибір на день: з 19:00 / з 19:30 / з 20:00 / з 20:30 / з 21:00 / Не можу</span>
+          <span>Один вибір на день: з 20:00 / з 20:30 / з 21:00 / Не можу</span>
+        </div>
+        <div>
+          <strong>Хто може голосувати</strong>
+          <span>Будь-хто з Discord гільдії. Персонаж Battle.net не потрібен — у списку буде нік із сервера</span>
         </div>
         <div>
           <strong>Теги ролей</strong>

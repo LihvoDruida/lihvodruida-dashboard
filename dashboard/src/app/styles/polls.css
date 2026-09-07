@@ -104,7 +104,17 @@
 /* =========================================================
    3. СІТКА ДНІВ
    ========================================================= */
+/* Панель матриці — звичайний стек: заголовок зверху, сітка днів під ним.
+   Раніше grid-template-columns стояв на самій панелі, і на ПК заголовок
+   із сіткою ставали двома сусідніми колонками. */
 .poll-matrix {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-stack);
+  min-width: 0;
+}
+
+.poll-matrix__grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
   gap: var(--space-md);
@@ -444,7 +454,8 @@
    6. АДАПТИВ
    ========================================================= */
 @media (max-width: 860px) {
-  .poll-matrix,
+  .poll-matrix__grid,
+  .poll-metrics,
   .poll-sync__metrics {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -474,4 +485,489 @@
   .poll-tab {
     flex: 0 0 auto;
   }
+}
+
+/* =========================================================
+   7. ХЕРО ТА КЛЮЧОВІ ПОКАЗНИКИ
+
+   Базову панель хера дає layout.css через [class$="-hero"].
+   Тут — тільки те, чого немає в загальному шарі: стрічка метрик
+   і eyebrow. Жодних дублів рамки чи фону.
+   ========================================================= */
+.poll-hero__eyebrow {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-accent-300);
+}
+
+/* Суфікс __stats не покривається загальним шаром (там тільки -stats),
+   тому сітку задаємо явно. */
+.poll-hero__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+  gap: var(--space-sm);
+  margin: 0;
+  min-width: 0;
+}
+
+.poll-hero__stats > div,
+.poll-metrics > div {
+  display: grid;
+  gap: var(--space-3xs);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.poll-hero__stats dt,
+.poll-metrics > div > span {
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.poll-hero__stats dd,
+.poll-metrics > div > strong {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.poll-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.poll-metrics > div > small {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   8. ВКЛАДКИ Й ПОШУК У СПИСКУ
+   ========================================================= */
+.poll-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.poll-tab b {
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--space-3xs);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.poll-tab.is-active b {
+  background: rgba(28, 18, 8, 0.22);
+  color: inherit;
+}
+
+.poll-search {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.poll-search input {
+  width: 100%;
+}
+
+/* =========================================================
+   9. КАРТКА ПУЛУ У СПИСКУ
+
+   Сітка замість flex-переносу: смужка стану → чекбокс → зміст →
+   показники → дії. На вузьких екранах усе схлопується в стек,
+   а смужка стає горизонтальною лінією зверху.
+   ========================================================= */
+.poll-card {
+  display: grid;
+  grid-template-columns: 3px auto minmax(0, 1fr) minmax(0, 300px);
+  align-items: start;
+  gap: var(--space-sm) var(--space-md);
+  padding: var(--space-md);
+}
+
+/* Без чекбокса (немає прав на керування) колонка вибору не потрібна */
+.poll-card:not(:has(.poll-card__select)) {
+  grid-template-columns: 3px minmax(0, 1fr) minmax(0, 300px);
+}
+
+.poll-card__rail {
+  --tone: var(--c-ink-500);
+  grid-row: 1 / -1;
+  align-self: stretch;
+  min-height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--tone);
+}
+
+.poll-card--open .poll-card__rail {
+  --tone: var(--c-success);
+}
+
+.poll-card--paused .poll-card__rail {
+  --tone: var(--c-warning);
+}
+
+.poll-card.is-selected {
+  border-color: var(--border-strong);
+  background: var(--accent-soft);
+}
+
+.poll-card__select {
+  display: grid;
+  place-items: center;
+  padding-top: var(--space-3xs);
+}
+
+.poll-card__main {
+  display: grid;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.poll-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
+.poll-card__id {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-faint);
+}
+
+.poll-card__title {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.poll-card__title a {
+  color: var(--text-strong);
+}
+
+.poll-card__description {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+  /* Опис може бути на 900 символів — у списку показуємо два рядки */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.poll-card__note {
+  margin: 0;
+  color: #f4d79a;
+  font-size: 0.78rem;
+}
+
+.poll-card__days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.poll-card__days li {
+  padding: 2px var(--space-2xs);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--text-soft);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.poll-card__stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2xs);
+  margin: 0;
+  min-width: 0;
+}
+
+.poll-card__stats > div {
+  display: grid;
+  gap: var(--space-3xs);
+  padding: var(--space-2xs) var(--space-sm);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.poll-card__stats-wide {
+  grid-column: 1 / -1;
+}
+
+.poll-card__stats dt {
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.poll-card__stats dd {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.poll-card__stats dd small {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.poll-card__recommendation {
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--text-soft);
+  line-height: 1.45;
+}
+
+.poll-card__actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2xs);
+  padding-top: var(--space-2xs);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* =========================================================
+   10. ПАНЕЛЬ КЕРУВАННЯ НА СТОРІНЦІ ПУЛУ
+   ========================================================= */
+.poll-detail__bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-md);
+}
+
+.poll-detail__identity {
+  display: grid;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.poll-detail__identity h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.poll-detail__identity p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.poll-detail__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2xs);
+}
+
+/* =========================================================
+   11. РОЛЬ ГОЛОСУ
+
+   Пул більше не знає класів WoW, тому єдиний колірний код —
+   роль: танк / хіл / дд. Токени вже є в tokens.css.
+   ========================================================= */
+.poll-role-chip {
+  --tone: var(--c-ink-500);
+  display: inline-flex;
+  align-items: center;
+  padding: 1px var(--space-xs);
+  border: 1px solid color-mix(in srgb, var(--tone) 32%, transparent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--tone) 12%, transparent);
+  color: var(--tone);
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.poll-role-chip--tank,
+.poll-role-dot--tank {
+  --tone: var(--c-role-tank);
+}
+
+.poll-role-chip--healer,
+.poll-role-dot--healer {
+  --tone: var(--c-role-healer);
+}
+
+.poll-role-chip--dps,
+.poll-role-dot--dps {
+  --tone: var(--c-role-dps);
+}
+
+.poll-role-dot {
+  --tone: var(--c-ink-500);
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tone);
+  flex: 0 0 auto;
+}
+
+/* =========================================================
+   12. СПИСОК ГОЛОСІВ
+   ========================================================= */
+.poll-voter__identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.poll-voter__meta {
+  color: var(--text-faint);
+  font-size: 0.72rem;
+}
+
+.poll-voter__schedule > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  padding: 1px var(--space-2xs);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.poll-voter__schedule > span.is-ready {
+  border-color: color-mix(in srgb, var(--c-success) 30%, transparent);
+  color: var(--c-success);
+}
+
+.poll-voter__schedule > span.is-absent {
+  border-color: color-mix(in srgb, var(--c-danger) 30%, transparent);
+  color: var(--c-danger);
+}
+
+/* Учасник у клітинці дня: нік → крапка ролі → роль → час */
+.poll-day__voters > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+}
+
+.poll-day__voters > span em {
+  font-style: normal;
+  font-size: 0.68rem;
+  color: var(--text-faint);
+}
+
+.poll-day__voters > span b {
+  color: var(--c-accent-200);
+  font-size: 0.7rem;
+}
+
+/* =========================================================
+   13. АДАПТИВ ДЛЯ НОВИХ БЛОКІВ
+
+   Мобільний — не «стиснутий десктоп»: картка й панель керування
+   повністю перебудовуються в стек, смужка стану переїжджає нагору.
+   ========================================================= */
+@media (max-width: 900px) {
+  .poll-detail__bar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .poll-detail__actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 860px) {
+  .poll-card,
+  .poll-card:not(:has(.poll-card__select)) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-sm);
+  }
+
+  /* Вертикальна смужка стану на вузькому екрані читається погано —
+     робимо її горизонтальною лінією над карткою */
+  .poll-card__rail {
+    grid-row: auto;
+    height: 3px;
+    min-height: 0;
+  }
+
+  .poll-card__select {
+    justify-self: start;
+    padding-top: 0;
+  }
+
+  .poll-card__actions {
+    justify-content: stretch;
+  }
+
+  .poll-card__actions > * {
+    flex: 1 1 auto;
+  }
+
+  .poll-hero__stats {
+    grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .poll-card__stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .poll-metrics,
+  .poll-hero__stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Опис у списку на телефоні з'їдає весь екран — лишаємо один рядок */
+  .poll-card__description {
+    -webkit-line-clamp: 1;
+  }
+}
+
+/* Головна дія в картці списку виділяється серед іконкових кнопок */
+.poll-card__primary {
+  font-weight: 600;
 }

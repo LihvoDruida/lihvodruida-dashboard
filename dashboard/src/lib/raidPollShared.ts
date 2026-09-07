@@ -1,7 +1,14 @@
 export type RaidPollStatus = "open" | "paused" | "closed";
 export type RaidPollDifficulty = "normal" | "heroic" | "mythic";
 export type RaidPollDay = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
-export type RaidPollTime = "19:00" | "19:30" | "20:00" | "20:30" | "21:00";
+
+/**
+ * Час старту рейду. Раніші за 20:00 слоти прибрані: гільдія фізично не
+ * починає рейд до 20:00, а зайві опції лише роздували Discord-меню.
+ * Легасі-голоси з 19:00/19:30 нормалізуються у 20:00 (див. RAID_POLL_LEGACY_TIMES).
+ */
+export type RaidPollTime = "20:00" | "20:30" | "21:00";
+
 export const RAID_POLL_REPEAT_TIMES = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00"] as const;
 export type RaidPollRepeatTime = typeof RAID_POLL_REPEAT_TIMES[number];
 export type RaidPollAvailability = RaidPollTime | "absent";
@@ -9,24 +16,28 @@ export type RaidPollScheduleValue = RaidPollAvailability | RaidPollTime[];
 export type RaidPollSchedule = Partial<Record<RaidPollDay, RaidPollScheduleValue>>;
 export type RaidPollRole = "tank" | "healer" | "dps";
 
+/**
+ * Голос у рейд-пулі.
+ *
+ * Свідомо БЕЗ персонажа Battle.net. Пул відповідає на питання «коли зручно
+ * і в якій ролі», а не «яким чаром». Ідентичність — гільдійний нік Discord
+ * (interaction.member.nick), рівно як у записах на рейд. Це прибирає
+ * залежність від Battle.net-привʼязки, guild roster і Raider.IO:
+ * проголосувати може будь-хто, хто бачить повідомлення в Discord гільдії.
+ */
 export type RaidPollVote = {
   discordId: string;
+  /** Гільдійний нік на сервері (member.nick), а не глобальне імʼя Discord. */
   discordName: string;
   guildId: string;
   guildName: string;
-  /** Legacy fields kept for old Discord messages and already-saved documents. */
+  /** Роль у рейді, вибрана вручну: танк / хіл / дд. */
+  role: RaidPollRole | null;
+  /** Legacy-поля для старих документів і повідомлень Discord. */
   selectedDays: RaidPollDay[];
   selectedTime: RaidPollTime | null;
-  /** Smart per-day schedule. Each day stores one earliest available time or explicit absence. Arrays are accepted only as legacy data and normalized. */
+  /** Один найраніший доступний час на день або явна відсутність. */
   schedule: RaidPollSchedule;
-  characterKey?: string | null;
-  characterName?: string | null;
-  characterClass?: string | null;
-  characterSpecName?: string | null;
-  characterSpecId?: number | null;
-  characterRole?: RaidPollRole | null;
-  characterRealm?: string | null;
-  characterRegion?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -92,7 +103,7 @@ export type RaidPollCreateInput = {
 
 export type RaidPollUpdateInput = RaidPollCreateInput;
 
-export const RAID_POLL_DESCRIPTION = "Будь ласка, оберіть для кожного дня найраніший час, з якого ви готові бути в рейді, або позначте «Не можу». Якщо вказано 19:00, система рахує вас доступним/доступною і на всі пізніші слоти цього дня.";
+export const RAID_POLL_DESCRIPTION = "Оберіть роль у рейді та для кожного дня — найраніший час, з якого ви готові бути в рейді, або позначте «Не можу». Якщо вказано 20:00, система рахує вас доступним/доступною і на всі пізніші слоти цього дня. Персонаж не потрібен: у списку буде ваш нік із сервера.";
 
 export const RAID_POLL_DAYS: Array<{ value: RaidPollDay; label: string; fullLabel: string; emoji: string }> = [
   { value: "mon", label: "Пн", fullLabel: "Понеділок", emoji: "1️⃣" },
@@ -104,7 +115,21 @@ export const RAID_POLL_DAYS: Array<{ value: RaidPollDay; label: string; fullLabe
   { value: "sun", label: "Нд", fullLabel: "Неділя", emoji: "7️⃣" },
 ];
 
-export const RAID_POLL_TIMES: RaidPollTime[] = ["19:00", "19:30", "20:00", "20:30", "21:00"];
+export const RAID_POLL_TIMES: RaidPollTime[] = ["20:00", "20:30", "21:00"];
+
+/**
+ * Старі слоти, які більше не пропонуються, але зустрічаються в уже
+ * збережених голосах. Мапимо на найраніший актуальний час, бо «готовий з
+ * 19:00» логічно включає «готовий з 20:00» — сенс голосу не втрачається.
+ */
+export const RAID_POLL_LEGACY_TIMES: Record<string, RaidPollTime> = {
+  "18:00": "20:00",
+  "18:30": "20:00",
+  "19:00": "20:00",
+  "19:30": "20:00",
+  "21:30": "21:00",
+  "22:00": "21:00",
+};
 
 export const RAID_POLL_AVAILABILITY_OPTIONS: RaidPollAvailability[] = [...RAID_POLL_TIMES, "absent"];
 
@@ -121,35 +146,16 @@ export const RAID_POLL_CLOSE_OPTIONS: Array<{ minutes: number; label: string }> 
   { minutes: 2880, label: "48 годин" },
 ];
 
-export const RAID_POLL_SCHEDULE_GROUPS: Array<{ key: "a" | "b" | "c"; label: string; days: RaidPollDay[] }> = [
-  { key: "a", label: "Пн-Ср", days: ["mon", "tue", "wed"] },
-  { key: "b", label: "Чт-Пт", days: ["thu", "fri"] },
-  { key: "c", label: "Сб-Нд", days: ["sat", "sun"] },
+/**
+ * Швидкий вибір: одна дія замість семи. Заповнює весь тиждень пулу одним
+ * значенням, далі людина за потреби править окремі дні.
+ */
+export const RAID_POLL_QUICK_FILL_OPTIONS: Array<{ value: RaidPollAvailability; label: string; description: string; emoji: string }> = [
+  { value: "20:00", label: "Усі дні — з 20:00", description: "Можу щодня від 20:00 і пізніше", emoji: "🟢" },
+  { value: "20:30", label: "Усі дні — з 20:30", description: "Можу щодня від 20:30 і пізніше", emoji: "🟡" },
+  { value: "21:00", label: "Усі дні — з 21:00", description: "Можу щодня тільки з 21:00", emoji: "🟠" },
+  { value: "absent", label: "Не можу цього тижня", description: "Позначити всі дні як «Не можу»", emoji: "⛔" },
 ];
-
-export const RAID_POLL_CHARACTER_SELECTOR_OPTIONS = [
-  { value: "main", label: "Основний персонаж профілю", description: "Бере головного персонажа з dashboard-профілю" },
-  { value: "alt_1", label: "Альт #1 з профілю", description: "Перший персонаж після основного" },
-  { value: "alt_2", label: "Альт #2 з профілю", description: "Другий персонаж після основного" },
-  { value: "alt_3", label: "Альт #3 з профілю", description: "Третій персонаж після основного" },
-  { value: "alt_4", label: "Альт #4 з профілю", description: "Четвертий персонаж після основного" },
-];
-
-export const RAID_POLL_CLASS_COLORS: Record<string, string> = {
-  deathknight: "#C41E3A",
-  demonhunter: "#A330C9",
-  druid: "#FF7C0A",
-  evoker: "#33937F",
-  hunter: "#AAD372",
-  mage: "#3FC7EB",
-  monk: "#00FF98",
-  paladin: "#F48CBA",
-  priest: "#FFFFFF",
-  rogue: "#FFF468",
-  shaman: "#0070DE",
-  warlock: "#8788EE",
-  warrior: "#C69B6D",
-};
 
 export function raidPollDescription() {
   return RAID_POLL_DESCRIPTION;
@@ -198,10 +204,17 @@ export function raidPollRoleLabel(role: RaidPollRole | null | undefined) {
   if (role === "tank") return "Танк";
   if (role === "healer") return "Цілитель";
   if (role === "dps") return "ДД";
-  return "Роль не визначена";
+  return "Роль не вибрана";
 }
 
-export function raidPollClassColor(className: string | null | undefined) {
-  const key = String(className || "").toLowerCase().replace(/[^a-z]/g, "");
-  return RAID_POLL_CLASS_COLORS[key] || "#94a3b8";
+/** Компактний підпис для чипів і Discord-рядків. */
+export function raidPollRoleShortLabel(role: RaidPollRole | null | undefined) {
+  if (role === "tank") return "Танк";
+  if (role === "healer") return "Хіл";
+  if (role === "dps") return "ДД";
+  return "—";
+}
+
+export function raidPollRoleEmoji(role: RaidPollRole | null | undefined) {
+  return RAID_POLL_ROLE_OPTIONS.find((option) => option.value === role)?.emoji || "❔";
 }

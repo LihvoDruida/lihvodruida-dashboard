@@ -9,7 +9,7 @@ import {
 import { getMainCharacter, getProfileByDiscordUserId } from "@/lib/profiles";
 import { rulesAcceptUrlForDiscordUser } from "@/lib/rulesOnboarding";
 import { buildRaidManualSpecComponents, dashboardProfileUrl, dashboardRaidRulesUrl, decodeRaidAttendanceCustomId, decodeRaidCharacterSelectCustomId, decodeRaidManualClassCustomId, decodeRaidManualSpecCustomId, decodeRaidRoleSelectCustomId, decodeRaidSignupSubmitCustomId, handleRaidDiscordAction, raidActionHelpComponents, type RaidCharacterRole } from "@/lib/raids";
-import { handleRaidPollDiscordVote } from "@/lib/raidPolls";
+import { handleRaidPollDiscordVote, type RaidPollDiscordVoteKind } from "@/lib/raidPolls";
 import { decodeRosterCustomId, handleRosterFormationDiscordAction } from "@/lib/rosterFormation";
 import { logDashboardEvent, noStoreHeaders, safeErrorMessage } from "@/lib/security";
 
@@ -173,28 +173,34 @@ function cleanRaidSignupRole(value: unknown): RaidCharacterRole | null {
   return null;
 }
 
-type RaidPollDiscordKind = "days" | "time" | "schedule" | "schedule_page" | "character" | "character_prompt" | "role" | "submit";
-
-function decodeRaidPollCustomId(customId: string, values: unknown): { pollId: string; kind: RaidPollDiscordKind; group?: string | null; values: string[] } | null {
+/**
+ * Дії приватного пульта голосування.
+ *
+ * `character` / `character_prompt` — легасі з часів, коли голос вимагав
+ * персонажа Battle.net. Досі приймаємо їх, бо в Discord висять опубліковані
+ * embed-и зі старими custom_id: обидва просто відкривають новий пульт.
+ */
+function decodeRaidPollCustomId(customId: string, values: unknown): { pollId: string; kind: RaidPollDiscordVoteKind; group?: string | null; values: string[] } | null {
   const value = String(customId || "").trim();
-  const legacyMatch = value.match(/^mbv1:poll_(days|time):([A-Za-z0-9_-]{8,80})$/);
-  const smartMatch = value.match(/^mbv1:poll_(schedule_(?:[abc]|mon|tue|wed|thu|fri|sat|sun)|schedule_page_\d{1,2}|character|character_prompt|role|submit):([A-Za-z0-9_-]{8,80})$/);
-  const match = legacyMatch || smartMatch;
+  const match = value.match(/^mbv1:poll_(schedule_(?:mon|tue|wed|thu|fri|sat|sun)|schedule_page_\d{1,2}|vote_prompt|character_prompt|character|quick|role|submit):([A-Za-z0-9_-]{8,80})$/);
   if (!match) return null;
   const rawKind = match[1];
+  const isPrompt = rawKind === "vote_prompt" || rawKind === "character_prompt" || rawKind === "character";
   const selected = Array.isArray(values) ? values.map((item) => String(item || "").trim()).filter(Boolean).slice(0, 10) : [];
-  if (!selected.length && rawKind !== "character_prompt" && rawKind !== "submit" && !rawKind.startsWith("schedule_page_")) return null;
+  if (!selected.length && !isPrompt && rawKind !== "submit" && !rawKind.startsWith("schedule_page_")) return null;
   const group = rawKind.startsWith("schedule_page_")
     ? rawKind.replace("schedule_page_", "page_")
     : rawKind.startsWith("schedule_")
       ? rawKind.replace("schedule_", "")
       : null;
-  return {
-    pollId: match[2],
-    kind: rawKind.startsWith("schedule_page_") ? "schedule_page" : rawKind.startsWith("schedule_") ? "schedule" : (rawKind as RaidPollDiscordKind),
-    group,
-    values: selected,
-  };
+  const kind: RaidPollDiscordVoteKind = isPrompt
+    ? "vote_prompt"
+    : rawKind.startsWith("schedule_page_")
+      ? "schedule_page"
+      : rawKind.startsWith("schedule_")
+        ? "schedule"
+        : (rawKind as RaidPollDiscordVoteKind);
+  return { pollId: match[2], kind, group, values: selected };
 }
 
 
