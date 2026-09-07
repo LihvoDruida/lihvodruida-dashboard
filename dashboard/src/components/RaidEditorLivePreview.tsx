@@ -196,13 +196,6 @@ function raidDisplayCapacity(
   return compositionCapacity(raidAutoComposition(raid));
 }
 
-function isRaidRegistrationFull(
-  raid: Pick<RaidItem, "maxPlayers" | "signups">,
-) {
-  const limit = raidRegistrationLimit(raid);
-  return limit !== null && activeSignups(raid).length >= limit;
-}
-
 function cleanRegistrationLockMinutes(
   value: FormDataEntryValue | number | null | undefined,
 ) {
@@ -266,23 +259,6 @@ function previewRegistrationLockSummary(
       ? `Закрито з ${deadlineLabel}`
       : `Закриється ${deadlineLabel}`,
     detail: `Автоблокування за ${duration} до старту рейду.`,
-  };
-}
-
-function raidRosterCounts(raid: Pick<RaidItem, "signups">) {
-  const going = raid.signups.filter((item) => item.status === "going");
-  const tentative = raid.signups.filter((item) => item.status === "tentative");
-  const late = raid.signups.filter((item) => item.status === "late");
-  const active = [...going, ...tentative, ...late];
-  return {
-    going: going.length,
-    tentative: tentative.length,
-    late: late.length,
-    skipped: raid.signups.filter((item) => item.status === "skipped").length,
-    roster: active.length,
-    tanks: active.filter((item) => item.role === "tank").length,
-    healers: active.filter((item) => item.role === "healer").length,
-    dps: active.filter((item) => item.role === "dps").length,
   };
 }
 

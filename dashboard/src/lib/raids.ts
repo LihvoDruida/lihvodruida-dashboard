@@ -416,10 +416,6 @@ function cleanSignupStatus(value: unknown): RaidSignupStatus {
   return "going";
 }
 
-function cleanRole(value: unknown): RaidCharacterRole {
-  return cleanRoleStrict(value) || "dps";
-}
-
 function cleanRoleStrict(value: unknown): RaidCharacterRole | null {
   const key = cleanString(value, 30).toLowerCase();
   if (["tank", "танк"].some((item) => key.includes(item))) return "tank";
@@ -484,13 +480,6 @@ function raidDateTimeToUtcMs(
       "Europe/Kyiv",
   );
   return guess.getTime() - timezoneOffsetMs(guess, timeZone);
-}
-
-function isRaidDateTimeStarted(
-  input: Pick<RaidItem, "date" | "time"> | Record<string, unknown>,
-) {
-  const startsAt = raidDateTimeToUtcMs(input);
-  return startsAt !== null && Date.now() >= startsAt;
 }
 
 export function raidDiscordDeleteAfterStartHoursFromSettings(value: unknown) {
@@ -1228,10 +1217,6 @@ const RAID_PARTY_SIZE = RAID_ALGORITHM_PARTY_SIZE;
 const MAX_RAID_PARTIES = RAID_ALGORITHM_MAX_RAID_PARTIES;
 
 
-function compositionCapacity(composition: RaidComposition) {
-  return composition.tanks + composition.healers + composition.dps;
-}
-
 function activeRoleDemand(signups: RaidSignup[]): RaidComposition {
   const active = signups.filter(
     (item) => isActiveSignupStatus(item.status),
@@ -1408,15 +1393,6 @@ function raidRegistrationLockBlockMessage(
 
 function isActiveSignupStatus(status?: RaidSignupStatus | string | null) {
   return status === "going" || status === "late" || status === "tentative";
-}
-
-function hasActiveSignupForDiscord(
-  raid: Pick<RaidItem, "signups">,
-  discordId: string,
-) {
-  return raid.signups.some(
-    (item) => item.discordId === discordId && isActiveSignupStatus(item.status),
-  );
 }
 
 function nextRaidSignupNumber(signups: RaidSignup[]) {
@@ -2909,17 +2885,6 @@ function raidSignupNumberLabel(item?: Pick<RaidSignup, "signupNumber"> | null) {
   return number ? `#${number}` : null;
 }
 
-function signupName(item?: RaidSignup | null) {
-  if (!item) return "—";
-  const name = item.characterName || item.discordName || "Гравець";
-  const spec = item.activeSpecName ? ` • ${item.activeSpecName}` : "";
-  const ilvl = item.itemLevel ? ` • ${item.itemLevel} ilvl` : "";
-  const tentative = item.status === "tentative" ? " ❓" : "";
-  const late = item.status === "late" ? " 🕒" : "";
-  const number = raidSignupNumberLabel(item);
-  return `${number ? `${number} — ` : ""}${name}${spec}${ilvl}${tentative}${late}`;
-}
-
 function truncateDiscordField(value: string, max = 1024) {
   const text = value.trim();
   return text.length <= max
@@ -3452,23 +3417,6 @@ export function buildRaidParties(raid: RaidAutoInput): RaidParty[] {
 
 export function buildRaidBench(raid: RaidAutoInput): RaidBench {
   return buildRaidGroupLayout(raid).bench;
-}
-
-function compactSignupName(item?: RaidSignup | null, max = 42) {
-  if (!item) return "—";
-  const base = item.characterName || item.discordName || "Гравець";
-  const spec = item.activeSpecName ? ` ${item.activeSpecName}` : "";
-  const markers = [
-    item.status === "tentative" ? "❓" : null,
-    item.status === "late" ? "🕒" : null,
-    item.verifiedGuild === false ? "🤝" : null,
-  ].filter(Boolean);
-  const prefix = markers.length ? `${markers.join(" ")} ` : "";
-  const number = raidSignupNumberLabel(item);
-  const text = `${number ? `${number} — ` : ""}${prefix}${base}${spec}`.trim();
-  return text.length <= max
-    ? text
-    : `${text.slice(0, Math.max(0, max - 1)).trimEnd()}…`;
 }
 
 function isSignupBelowRaidMinimum(

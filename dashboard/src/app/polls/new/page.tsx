@@ -59,12 +59,13 @@ export default async function NewPollPage() {
             <h2>Сайт створює, Discord збирає голоси</h2>
           </div>
           <p>Команди Discord для створення немає. Ця сторінка створює пул, бот публікує embed і приймає вибір учасників.</p>
-          <div className="raid-poll-help-steps">
-            <span>1. Сайт створює Firebase-запис і Discord embed.</span>
-            <span>2. У Discord гравець обирає персонажа зі свого dashboard-профілю.</span>
-            <span>3. Для кожного дня можна вибрати окремий час або “Не можу”.</span>
-            <span>4. Кожна дія редагує попередній голос користувача, а сайт підтягує зміни через live sync.</span>
-          </div>
+          <ol className="raid-poll-help-steps">
+            <li>Сайт створює Firebase-запис і Discord embed.</li>
+            <li>Гравець тисне кнопку й обирає роль: танк, хіл або ДД.</li>
+            <li>Швидкий вибір ставить один час на всі дні; далі можна поправити окремі дні або позначити «Не можу».</li>
+            <li>Підпис береться з ніку на сервері — персонаж Battle.net не потрібен.</li>
+            <li>Кожна дія редагує попередній голос, а сайт підтягує зміни через live sync.</li>
+          </ol>
           <div className="raid-poll-help-actions">
             <a className="btn subtle" href="/discord">Discord Hub</a>
             <a className="btn subtle" href="/polls">Усі пули</a>

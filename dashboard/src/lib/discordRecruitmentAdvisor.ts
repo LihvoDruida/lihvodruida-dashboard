@@ -362,12 +362,6 @@ function contentHash(value: unknown) {
 function shortPreview(value: unknown, maxLength = 500) {
   return cleanText(value, maxLength);
 }
-function envFlag(name: string, fallback = false) {
-  const raw = process.env[name];
-  if (raw === undefined || raw === null || raw === "") return fallback;
-  return ["1", "true", "yes", "on"].includes(String(raw).trim().toLowerCase());
-}
-
 function envInteger(name: string, fallback: number, min: number, max: number) {
   const parsed = Number(process.env[name] || "");
   if (!Number.isFinite(parsed)) return fallback;
@@ -702,13 +696,6 @@ function detectRecruitmentIntent(content: unknown): RecruitmentIntent {
   };
 }
 
-function numberFormat(value: number, digits = 0) {
-  return new Intl.NumberFormat("uk-UA", {
-    maximumFractionDigits: digits,
-    minimumFractionDigits: 0,
-  }).format(value);
-}
-
 function percentile(values: number[], ratio: number) {
   const sorted = values
     .filter((value) => Number.isFinite(value) && value > 0)
@@ -725,13 +712,6 @@ function countBy<T extends string>(values: T[]) {
   const map = new Map<T, number>();
   for (const value of values) map.set(value, (map.get(value) || 0) + 1);
   return map;
-}
-
-function topMapEntries(map: Map<string, number>, limit: number) {
-  return Array.from(map.entries())
-    .sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0], "uk"))
-    .slice(0, limit)
-    .map(([name, count]) => `${name} (${count})`);
 }
 
 function activeGuildMembers(

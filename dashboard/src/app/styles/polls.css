@@ -971,3 +971,266 @@
 .poll-card__primary {
   font-weight: 600;
 }
+
+/* =========================================================
+   14. СТВОРЕННЯ / РЕДАГУВАННЯ ПУЛУ
+
+   Форма йде одним вертикальним потоком: назва → складність →
+   таймер → канал → дні → ролі → автоповтор → опис → підсумок.
+   Горизонтальні сітки в секціях форми навмисно не використовуємо —
+   вони змушують стрибати очима і ламаються на планшеті.
+   ========================================================= */
+.raid-poll-create-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-stack);
+  min-width: 0;
+}
+
+.raid-poll-create-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.raid-poll-create-head h2 {
+  margin: var(--space-3xs) 0 0;
+}
+
+.raid-poll-create-head p {
+  margin: var(--space-2xs) 0 0;
+  max-width: 62ch;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+/* Вертикальний потік замість auto-fit сітки із загального шару */
+.raid-poll-form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-lg);
+  min-width: 0;
+}
+
+.raid-poll-field > span,
+.raid-poll-field > legend {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.raid-poll-field > small {
+  color: var(--text-faint);
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+
+/* Складність і таймер — єдина пара, яку логічно тримати поруч:
+   два коротких select-и, що читаються як одне рішення */
+.raid-poll-field--pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: var(--space-md);
+}
+
+.raid-poll-days-field,
+.raid-poll-roles-field,
+.raid-poll-repeat-card,
+.raid-poll-muted-box {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--pad-card-compact);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.raid-poll-repeat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+  gap: var(--space-md);
+}
+
+/* Вимкнений автоповтор приглушується, але лишається читабельним */
+.raid-poll-repeat-grid[aria-disabled="true"] {
+  opacity: 0.55;
+}
+
+.raid-poll-muted-box strong {
+  font-size: 0.82rem;
+  color: var(--text-soft);
+}
+
+.raid-poll-create-preview {
+  border-left: 3px solid var(--c-accent-400);
+}
+
+.raid-poll-create-preview > div {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.raid-poll-create-preview strong {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.raid-poll-create-preview span {
+  color: var(--text-soft);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.raid-poll-create-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-xs);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.raid-poll-create-alert {
+  margin: 0;
+}
+
+/* Бічна довідка */
+.raid-poll-help-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  position: sticky;
+  top: calc(var(--nav-space) + var(--space-md));
+}
+
+.raid-poll-help-card h2 {
+  margin: var(--space-3xs) 0 0;
+  font-size: 1.05rem;
+}
+
+.raid-poll-help-card p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+.raid-poll-help-steps {
+  display: grid;
+  gap: var(--space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: poll-help;
+}
+
+.raid-poll-help-steps li {
+  counter-increment: poll-help;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-xs);
+  color: var(--text-soft);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.raid-poll-help-steps li::before {
+  content: counter(poll-help);
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface-raised);
+  color: var(--c-accent-200);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.raid-poll-help-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
+/* =========================================================
+   15. ЗВЕДЕННЯ РОЛЕЙ ТА СМУГИ ГОДИН
+   ========================================================= */
+.poll-role-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3xs);
+}
+
+/* Слот години: смуга-заливка під текстом, цифри лишаються зверху */
+.poll-day__times li {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.poll-day__times-fill {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  z-index: -1;
+  display: block;
+  background: var(--accent-soft);
+  transition: width var(--dur-base) var(--ease-out);
+}
+
+.poll-day__times li.has-votes .poll-day__times-fill {
+  background: linear-gradient(90deg, rgba(255, 155, 85, 0.28), rgba(255, 155, 85, 0.1));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .poll-day__times-fill {
+    transition: none;
+  }
+}
+
+@media (max-width: 1000px) {
+  .raid-poll-help-card {
+    position: static;
+  }
+}
+
+@media (max-width: 700px) {
+  .raid-poll-create-head {
+    flex-direction: column;
+  }
+
+  .raid-poll-create-actions {
+    justify-content: stretch;
+  }
+
+  .raid-poll-create-actions > * {
+    flex: 1 1 auto;
+    text-align: center;
+  }
+}
+
+/* Пресети днів: «увесь тиждень / будні / вихідні» замість семи кліків */
+.raid-poll-day-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
+.raid-poll-day-presets .btn {
+  min-height: 32px;
+  padding-inline: var(--space-sm);
+  font-size: 0.76rem;
+}

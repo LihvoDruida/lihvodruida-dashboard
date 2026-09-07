@@ -52,37 +52,6 @@ const ROLE_LABELS: Record<string, string> = {
   unknown: "Без ролі",
 };
 
-const ARMOR_LABELS = ["Тканина", "Шкіра", "Кольчуга", "Лати"] as const;
-type ArmorType = (typeof ARMOR_LABELS)[number];
-
-const ARMOR_BY_CLASS: Record<string, ArmorType> = {
-  mage: "Тканина",
-  маг: "Тканина",
-  priest: "Тканина",
-  жрець: "Тканина",
-  warlock: "Тканина",
-  чорнокнижник: "Тканина",
-  druid: "Шкіра",
-  друїд: "Шкіра",
-  monk: "Шкіра",
-  монах: "Шкіра",
-  rogue: "Шкіра",
-  розбійник: "Шкіра",
-  "demon hunter": "Шкіра",
-  "мисливець на демонів": "Шкіра",
-  hunter: "Кольчуга",
-  мисливець: "Кольчуга",
-  shaman: "Кольчуга",
-  шаман: "Кольчуга",
-  evoker: "Кольчуга",
-  пробуджувач: "Кольчуга",
-  warrior: "Лати",
-  воїн: "Лати",
-  paladin: "Лати",
-  паладин: "Лати",
-  "death knight": "Лати",
-  "лицар смерті": "Лати",
-};
 
 const CLASS_COLOR: Record<string, string> = {
   "death knight": "#c41e3a",
@@ -99,8 +68,6 @@ const CLASS_COLOR: Record<string, string> = {
   warlock: "#8788ee",
   warrior: "#c69b6d",
 };
-
-const ROLE_ORDER = ["tank", "healer", "dps", "unknown"];
 
 function formatNumber(value: number, digits = 0) {
   if (!Number.isFinite(value) || value <= 0) return "—";
@@ -124,10 +91,6 @@ function uniqueSorted(values: string[]) {
   ).sort((a, b) => stableTextCompare(a, b));
 }
 
-function getArmorType(member: GuildRosterMember): ArmorType {
-  return ARMOR_BY_CLASS[member.className.trim().toLowerCase()] || "Тканина";
-}
-
 function roleShort(role: string) {
   if (role === "tank") return "Танк";
   if (role === "healer") return "Хіл";
@@ -137,26 +100,6 @@ function roleShort(role: string) {
 
 function classColor(className: string) {
   return CLASS_COLOR[className.trim().toLowerCase()] || "#f6efe2";
-}
-
-function percent(value: number, total: number) {
-  if (!total) return 0;
-  return Math.round((value / total) * 1000) / 10;
-}
-
-function buildConicSegments(items: Array<{ value: number; color: string }>) {
-  const total = items.reduce((sum, item) => sum + Math.max(0, item.value), 0);
-  if (!total) return "rgba(255,255,255,0.08) 0 360deg";
-
-  let cursor = 0;
-  return items
-    .map((item) => {
-      const size = (Math.max(0, item.value) / total) * 360;
-      const start = cursor;
-      cursor += size;
-      return `${item.color} ${start}deg ${cursor}deg`;
-    })
-    .join(", ");
 }
 
 function FilterSelect({
@@ -352,84 +295,6 @@ function RangeFilter({
   );
 }
 
-function StatDonut({
-  title,
-  subtitle,
-  center,
-  caption,
-  segments,
-  legend,
-}: {
-  title: string;
-  subtitle: string;
-  center: string;
-  caption: string;
-  segments: Array<{ value: number; color: string }>;
-  legend: Array<{
-    label: string;
-    value: string;
-    detail: string;
-    color: string;
-  }>;
-}) {
-  return (
-    <article className="guild-stat-card panel dashboard-list-panel">
-      <div className="guild-stat-card__head">
-        <h2>{title}</h2>
-        <p>{subtitle}</p>
-      </div>
-      <div className="guild-donut-layout">
-        <div
-          className="guild-donut"
-          style={
-            { "--guild-donut": buildConicSegments(segments) } as CSSProperties
-          }
-        >
-          <div>
-            <strong>{center}</strong>
-            <span>{caption}</span>
-          </div>
-        </div>
-        <div className="guild-stat-legend">
-          {legend.map((item) => (
-            <div className="guild-stat-legend__item" key={item.label}>
-              <span
-                className="guild-stat-dot"
-                style={{ background: item.color }}
-              />
-              <div>
-                <strong>{item.label}</strong>
-                <small>{item.detail}</small>
-              </div>
-              <b>{item.value}</b>
-            </div>
-          ))}
-        </div>
-      </div>
-    </article>
-  );
-}
-
-function CharacterAvatar({ member }: { member: GuildRosterMember }) {
-  if (member.avatarUrl) {
-    return (
-      <img
-        className="guild-member-avatar"
-        src={member.avatarUrl}
-        alt=""
-        loading="lazy"
-        referrerPolicy="no-referrer"
-      />
-    );
-  }
-
-  return (
-    <span className="guild-member-avatar guild-member-avatar--empty">
-      {member.name.charAt(0).toUpperCase()}
-    </span>
-  );
-}
-
 function openProfileCard(event: MouseEvent<HTMLElement>, href?: string | null) {
   if (!href) return;
   const target = event.target as HTMLElement | null;
@@ -447,34 +312,6 @@ function openProfileCardWithKeyboard(
   if (target?.closest("a,button,input,select,textarea,label")) return;
   event.preventDefault();
   window.location.href = href;
-}
-
-function SegmentBadges({
-  member,
-  activeSegment,
-}: {
-  member: GuildRosterMember;
-  activeSegment: GuildScoreSegment;
-}) {
-  return (
-    <div className="guild-score-badges" aria-label="Raider.IO сегменти">
-      {(["all", "dps", "healer", "tank"] as GuildScoreSegment[]).map(
-        (segment) => {
-          const value = member.scores[segment];
-          if (!value && segment !== activeSegment) return null;
-          return (
-            <span
-              className={segment === activeSegment ? "is-active" : undefined}
-              key={segment}
-            >
-              <small>{SEGMENT_LABELS[segment]}</small>
-              <strong>{formatNumber(value, 1)}</strong>
-            </span>
-          );
-        },
-      )}
-    </div>
-  );
 }
 
 export default function GuildRosterExplorer({
@@ -663,42 +500,6 @@ export default function GuildRosterExplorer({
     itemLevelMax,
     sort,
   ]);
-
-  const statData = useMemo(() => {
-    const armorColors: Record<ArmorType, string> = {
-      Тканина: "#8a5cff",
-      Шкіра: "#ffad22",
-      Кольчуга: "#45c7f4",
-      Лати: "#ff4d59",
-    };
-    const armorCounts = ARMOR_LABELS.map((label) => ({
-      label,
-      count: liveMembers.filter((member) => getArmorType(member) === label)
-        .length,
-      color: armorColors[label],
-    }));
-
-    const roleColors: Record<string, string> = {
-      dps: "#ff737d",
-      healer: "#4eff63",
-      tank: "#65b7ff",
-      unknown: "#9aa3b2",
-    };
-    const roleCounts = ROLE_ORDER.map((role) => ({
-      role,
-      count: liveMembers.filter((member) => member.role === role).length,
-      averageRio: liveMembers
-        .filter((member) => member.role === role)
-        .reduce(
-          (sum, member, _, arr) =>
-            sum + member.scores.all / Math.max(1, arr.length),
-          0,
-        ),
-      color: roleColors[role],
-    })).filter((item) => item.count > 0 || item.role !== "unknown");
-
-    return { armorCounts, roleCounts };
-  }, [liveMembers]);
 
   const segmentCounts = useMemo(() => {
     return (["all", "dps", "healer", "tank"] as GuildScoreSegment[]).reduce(

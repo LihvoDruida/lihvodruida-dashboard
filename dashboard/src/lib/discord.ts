@@ -1,7 +1,6 @@
 import {
   ApplicationStatus,
   extractDiscordMessageRef,
-  getIssueStatusFromLabels,
   statusColor,
   statusEmoji,
   statusText,

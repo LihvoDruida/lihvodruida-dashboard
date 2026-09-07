@@ -233,21 +233,25 @@ export default function RaidPollCreateClientForm({ channels, roles = [], default
           </datalist>
         </label>
 
-        <label className="raid-poll-field" htmlFor="raid-poll-difficulty">
-          <span>Складність</span>
-          <select id="raid-poll-difficulty" value={difficulty} onChange={(event) => setDifficulty(event.target.value as RaidPollDifficulty)} disabled={pending || disabled} required>
-            {DIFFICULTIES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </select>
-          <small>{DIFFICULTIES.find((option) => option.value === difficulty)?.hint}</small>
-        </label>
+        {/* Єдина пара полів, яку тримаємо в один рядок: два короткі select-и,
+            що читаються як одне рішення «який рейд і доки збираємо». */}
+        <div className="raid-poll-field--pair">
+          <label className="raid-poll-field" htmlFor="raid-poll-difficulty">
+            <span>Складність</span>
+            <select id="raid-poll-difficulty" value={difficulty} onChange={(event) => setDifficulty(event.target.value as RaidPollDifficulty)} disabled={pending || disabled} required>
+              {DIFFICULTIES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+            <small>{DIFFICULTIES.find((option) => option.value === difficulty)?.hint}</small>
+          </label>
 
-        <label className="raid-poll-field" htmlFor="raid-poll-close-after">
-          <span>Таймер закриття</span>
-          <select id="raid-poll-close-after" value={closeAfterMinutes} onChange={(event) => setCloseAfterMinutes(Number(event.target.value))} disabled={pending || disabled} required>
-            {RAID_POLL_CLOSE_OPTIONS.map((option) => <option key={option.minutes} value={option.minutes}>{option.label}</option>)}
-          </select>
-          <small>Після дедлайну Discord-компоненти вимикаються.</small>
-        </label>
+          <label className="raid-poll-field" htmlFor="raid-poll-close-after">
+            <span>Таймер закриття</span>
+            <select id="raid-poll-close-after" value={closeAfterMinutes} onChange={(event) => setCloseAfterMinutes(Number(event.target.value))} disabled={pending || disabled} required>
+              {RAID_POLL_CLOSE_OPTIONS.map((option) => <option key={option.minutes} value={option.minutes}>{option.label}</option>)}
+            </select>
+            <small>Після дедлайну Discord-компоненти вимикаються.</small>
+          </label>
+        </div>
 
         <label className="raid-poll-field raid-poll-field--wide" htmlFor="raid-poll-channel-id">
           <span>Discord-канал публікації</span>
@@ -278,6 +282,12 @@ export default function RaidPollCreateClientForm({ channels, roles = [], default
 
         <fieldset className="raid-poll-field raid-poll-field--wide raid-poll-days-field">
           <legend>Дні рейд-тижня</legend>
+          <div className="raid-poll-day-presets">
+            <button type="button" className="btn subtle" onClick={() => setSelectedDays(RAID_POLL_DAYS.map((day) => day.value))} disabled={pending || disabled}>Увесь тиждень</button>
+            <button type="button" className="btn subtle" onClick={() => setSelectedDays(["mon", "tue", "wed", "thu", "fri"])} disabled={pending || disabled}>Будні</button>
+            <button type="button" className="btn subtle" onClick={() => setSelectedDays(["sat", "sun"])} disabled={pending || disabled}>Вихідні</button>
+            <button type="button" className="btn subtle" onClick={() => setSelectedDays([])} disabled={pending || disabled}>Очистити</button>
+          </div>
           <div className="raid-poll-day-toggle-grid">
             {RAID_POLL_DAYS.map((day) => (
               <button
@@ -293,7 +303,7 @@ export default function RaidPollCreateClientForm({ channels, roles = [], default
               </button>
             ))}
           </div>
-          <small>У Discord для кожного вибраного дня дозволено тільки один варіант: найраніший зручний час або «Не можу».</small>
+          <small>У Discord для кожного вибраного дня дозволено тільки один варіант: найраніший зручний час або «Не можу». Доступні години: 20:00, 20:30, 21:00.</small>
         </fieldset>
 
         {roles.length ? (

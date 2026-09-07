@@ -12,8 +12,6 @@ const SETTINGS_COLLECTION = "dashboardSettings";
 const ADMIN_AUDIT_LOG_POLICY_DOC_ID = "adminAuditLogPolicy";
 
 const POLICY_CACHE_TTL_MS = Math.max(60_000, Math.min(30 * 60_000, Number(process.env.ADMIN_AUDIT_POLICY_CACHE_TTL_MS || 10 * 60_000)));
-const POLICY_ERROR_LOG_TTL_MS = 5 * 60_000;
-
 declare global {
   // eslint-disable-next-line no-var
   var __mistblossomAdminAuditDiscordPolicyCache: { policy: AdminAuditDiscordPolicy; cachedAt: number } | undefined;
@@ -32,17 +30,6 @@ function setAuditPolicyCache(policy: AdminAuditDiscordPolicy) {
   globalThis.__mistblossomAdminAuditDiscordPolicyCache = { policy, cachedAt: Date.now() };
   return policy;
 }
-
-function logAuditPolicyReadFailureOnce(error: unknown) {
-  const now = Date.now();
-  const last = globalThis.__mistblossomAdminAuditDiscordPolicyErrorLoggedAt || 0;
-  if (now - last < POLICY_ERROR_LOG_TTL_MS) return;
-  globalThis.__mistblossomAdminAuditDiscordPolicyErrorLoggedAt = now;
-  logDashboardEvent("warn", "admin.audit.discord_policy_read_failed", undefined, {
-    message: error instanceof Error ? error.message : String(error || "unknown"),
-  });
-}
-
 
 export type AdminAuditStatus = "success" | "warning" | "error" | "info";
 export type AdminAuditDiscordMinStatus = "info" | "warning" | "error";

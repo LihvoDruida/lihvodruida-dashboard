@@ -6,7 +6,7 @@ import {
   getFirebaseAdminDb,
   hasFirebaseProfileConfig,
 } from "@/lib/firebaseAdmin";
-import { logDashboardEvent } from "@/lib/security";
+import {  } from "@/lib/security";
 import { resilientRead } from "@/lib/runtimeResilience";
 import { firebaseWrite } from "@/lib/firebaseAccess";
 
@@ -84,8 +84,6 @@ const SETTINGS_CACHE_TTL_MS = Math.max(
     Number(process.env.DASHBOARD_API_SETTINGS_CACHE_TTL_MS || 5 * 60_000),
   ),
 );
-const SETTINGS_ERROR_LOG_TTL_MS = 5 * 60_000;
-
 declare global {
   // eslint-disable-next-line no-var
   var __mistblossomDashboardApiSettingsCache:
@@ -106,16 +104,6 @@ function setSettingsCache(settings: DashboardApiSettings) {
     cachedAt: Date.now(),
   };
   return settings;
-}
-
-function logSettingsReadFailureOnce(event: string, error: unknown) {
-  const now = Date.now();
-  const last = globalThis.__mistblossomDashboardApiSettingsErrorLoggedAt || 0;
-  if (now - last < SETTINGS_ERROR_LOG_TTL_MS) return;
-  globalThis.__mistblossomDashboardApiSettingsErrorLoggedAt = now;
-  logDashboardEvent("warn", event, undefined, {
-    message: error instanceof Error ? error.message : String(error || "unknown"),
-  });
 }
 
 export type DashboardApiSettingsSource = "firestore" | "defaults";
@@ -221,10 +209,6 @@ function ecoFallback(normal: number, economy: number) {
 
 function ecoFlagFallback(normal: boolean, economy: boolean) {
   return firebaseEcoModeEnabled() ? economy : normal;
-}
-
-function truthyFormFlag(value: unknown) {
-  return booleanValue(value, false);
 }
 
 function timestampToIso(value: unknown) {

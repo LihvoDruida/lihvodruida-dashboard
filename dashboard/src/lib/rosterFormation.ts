@@ -17,7 +17,6 @@ import {
   WOW_CLASS_CATALOG,
   findWowClass,
   findWowSpec,
-  wowClassColorInt,
   wowClassCount,
   wowSpecFullName,
 } from "@/lib/wowClassCatalog";

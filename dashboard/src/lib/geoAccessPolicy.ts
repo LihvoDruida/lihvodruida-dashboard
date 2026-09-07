@@ -12,8 +12,6 @@ const SETTINGS_COLLECTION = "dashboardSettings";
 const GEO_ACCESS_DOC_ID = "geoAccessPolicy";
 
 const POLICY_CACHE_TTL_MS = Math.max(60_000, Math.min(30 * 60_000, Number(process.env.GEO_ACCESS_POLICY_CACHE_TTL_MS || 10 * 60_000)));
-const POLICY_ERROR_LOG_TTL_MS = 5 * 60_000;
-
 declare global {
   // eslint-disable-next-line no-var
   var __mistblossomGeoAccessPolicyCache: { policy: GeoAccessPolicy; cachedAt: number } | undefined;
@@ -29,14 +27,6 @@ function geoPolicyCacheFresh() {
 function setGeoPolicyCache(policy: GeoAccessPolicy) {
   globalThis.__mistblossomGeoAccessPolicyCache = { policy, cachedAt: Date.now() };
   return policy;
-}
-
-function logGeoPolicyReadFailureOnce(error: unknown) {
-  const now = Date.now();
-  const last = globalThis.__mistblossomGeoAccessPolicyErrorLoggedAt || 0;
-  if (now - last < POLICY_ERROR_LOG_TTL_MS) return;
-  globalThis.__mistblossomGeoAccessPolicyErrorLoggedAt = now;
-  logDashboardEvent("warn", "geo_access.policy_read_failed", undefined, { message: error instanceof Error ? error.message : String(error || "unknown") });
 }
 
 const DEFAULT_BLOCKED_COUNTRIES = ["RU", "BY"];

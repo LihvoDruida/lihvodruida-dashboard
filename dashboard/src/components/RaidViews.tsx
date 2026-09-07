@@ -624,12 +624,6 @@ export function RaidAttendanceActions({
   hasMainCharacter?: boolean | null;
 }) {
   const closed = isRaidClosed(raid) || raid.status !== "published";
-  const attendanceLayout = buildRaidGroupLayout(raid);
-  const attendanceCounts = raidGroupLayoutSlotCounts(attendanceLayout);
-  const attendanceCapacity = attendanceLayout.targetSize || raidDisplayCapacity(raid);
-  const mainRosterFull = Boolean(
-    raidRegistrationLimit(raid) && attendanceCounts.roster >= attendanceCapacity,
-  );
   const newSignupWouldStartOnBench = isRaidRegistrationFull(raid);
   const registrationLocked = isRaidRegistrationLocked(raid);
   const registrationLock = raidRegistrationLockSummary(raid);

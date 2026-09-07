@@ -3,7 +3,7 @@ import "server-only";
 import { FieldValue } from "firebase-admin/firestore";
 import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
 import type { DashboardSession } from "@/lib/auth";
-import { logDashboardEvent } from "@/lib/security";
+import {  } from "@/lib/security";
 import { resilientRead } from "@/lib/runtimeResilience";
 import { firebaseWrite } from "@/lib/firebaseAccess";
 
@@ -11,8 +11,6 @@ const SETTINGS_COLLECTION = "dashboardSettings";
 const AUTH_ACCESS_DOC_ID = "authAccessPolicy";
 
 const POLICY_CACHE_TTL_MS = Math.max(60_000, Math.min(30 * 60_000, Number(process.env.AUTH_ACCESS_POLICY_CACHE_TTL_MS || 10 * 60_000)));
-const POLICY_ERROR_LOG_TTL_MS = 5 * 60_000;
-
 declare global {
   // eslint-disable-next-line no-var
   var __mistblossomAuthAccessPolicyCache: { policy: AuthAccessPolicy; cachedAt: number } | undefined;
@@ -29,15 +27,6 @@ function setAuthPolicyCache(policy: AuthAccessPolicy) {
   globalThis.__mistblossomAuthAccessPolicyCache = { policy, cachedAt: Date.now() };
   return policy;
 }
-
-function logAuthPolicyReadFailureOnce(error: unknown) {
-  const now = Date.now();
-  const last = globalThis.__mistblossomAuthAccessPolicyErrorLoggedAt || 0;
-  if (now - last < POLICY_ERROR_LOG_TTL_MS) return;
-  globalThis.__mistblossomAuthAccessPolicyErrorLoggedAt = now;
-  logDashboardEvent("warn", "auth_access.policy_read_failed", undefined, { message: error instanceof Error ? error.message : String(error || "unknown") });
-}
-
 
 export type AuthAccessPolicy = {
   enabled: boolean;

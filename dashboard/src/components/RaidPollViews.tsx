@@ -25,7 +25,6 @@ import {
   raidPollTitle,
   raidPollRepeatScheduleLabel,
   raidPollVoteSchedule,
-  type RaidPollDay,
   type RaidPollItem,
 } from "@/lib/raidPolls";
 
@@ -190,8 +189,12 @@ function pollDays(poll: RaidPollItem) {
   return RAID_POLL_DAYS.filter((day) => active.includes(day.value));
 }
 
-function bestTimeForDay(poll: RaidPollItem, day: RaidPollDay) {
-  const counts = pollVoteCounts(poll).dayTimes[day];
+/**
+ * Приймає вже пораховані counts. Раніше функція викликала pollVoteCounts()
+ * усередині й запускалась для кожного з 7 днів — сім повних перерахунків
+ * матриці голосів на один рендер сторінки.
+ */
+function bestTimeForDay(counts: Record<string, number>) {
   const best = RAID_POLL_TIMES
     .map((time) => ({ time, count: counts[time] || 0 }))
     .sort((a, b) => b.count - a.count || RAID_POLL_TIMES.indexOf(a.time) - RAID_POLL_TIMES.indexOf(b.time))[0];
@@ -220,6 +223,9 @@ export function RaidPollResults({ poll, canManage = false, relatedPolls = [poll]
   const state = raidPollStateKey(poll);
   const roles = roleBreakdown(poll);
   const maxDayVotes = Math.max(1, ...activeDays.map((day) => counts.days[day.value]));
+  // Спільний масштаб для смуг годин: інакше день із двома голосами виглядав би
+  // так само «повним», як день із двадцятьма.
+  const maxSlotVotes = Math.max(1, ...activeDays.flatMap((day) => RAID_POLL_TIMES.map((time) => counts.dayTimes[day.value][time])));
 
   return (
     <div className={`poll-detail poll-detail--${state}`}>
@@ -261,7 +267,11 @@ export function RaidPollResults({ poll, canManage = false, relatedPolls = [poll]
         <div>
           <span>Проголосували</span>
           <strong>{counts.total}</strong>
-          <small>{roles.tanks} танк · {roles.healers} хіл · {roles.dps} дд</small>
+          <div className="poll-role-summary">
+            <span className="poll-role-chip poll-role-chip--tank">🛡️ {roles.tanks}</span>
+            <span className="poll-role-chip poll-role-chip--healer">💚 {roles.healers}</span>
+            <span className="poll-role-chip poll-role-chip--dps">⚔️ {roles.dps}</span>
+          </div>
         </div>
         <div>
           <span>{state === "closed" ? "Завершено" : state === "paused" ? "Заморожено" : "До закриття"}</span>
@@ -334,7 +344,7 @@ export function RaidPollResults({ poll, canManage = false, relatedPolls = [poll]
               <article className="poll-day" key={day.value}>
                 <header className="poll-day__head">
                   <strong>{raidPollDayFullLabel(day.value)}</strong>
-                  <small>Найкращий час: {bestTimeForDay(poll, day.value)}</small>
+                  <small>Найкращий час: {bestTimeForDay(counts.dayTimes[day.value])}</small>
                 </header>
 
                 <div className="poll-day__bar" aria-hidden="true">
@@ -346,11 +356,15 @@ export function RaidPollResults({ poll, canManage = false, relatedPolls = [poll]
                   <span className="is-absent"><b>{counts.absent[day.value]}</b> не можуть</span>
                 </div>
 
+                {/* Смуга всередині слота дає побачити розподіл по годинах
+                    без читання цифр — головне, за чим сюди заходять. */}
                 <ul className="poll-day__times">
                   {RAID_POLL_TIMES.map((time) => {
                     const value = counts.dayTimes[day.value][time];
+                    const fill = maxSlotVotes ? Math.round((value / maxSlotVotes) * 100) : 0;
                     return (
                       <li key={time} className={value ? "has-votes" : undefined}>
+                        <i className="poll-day__times-fill" style={{ width: `${fill}%` }} aria-hidden="true" />
                         <span>{time}</span>
                         <b>{value}</b>
                       </li>

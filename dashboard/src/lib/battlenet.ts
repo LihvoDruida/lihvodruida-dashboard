@@ -127,18 +127,6 @@ function getBattleNetRetryCount() {
   return readIntegerEnv("BATTLENET_REQUEST_RETRIES", 2, 0, 5);
 }
 
-function getBattleNetRetryDelayMs(attempt: number, retryAfterHeader?: string | null) {
-  const retryAfter = Number(retryAfterHeader || 0);
-  if (Number.isFinite(retryAfter) && retryAfter > 0) {
-    return Math.min(15_000, Math.max(500, retryAfter * 1000));
-  }
-  return Math.min(8_000, 450 * Math.pow(2, Math.max(0, attempt)));
-}
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 function getBattleNetScanConcurrency(total: number) {
   return getAdaptiveConcurrency(total, {
     profile: "external-api",

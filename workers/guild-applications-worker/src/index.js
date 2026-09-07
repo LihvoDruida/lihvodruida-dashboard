@@ -3822,16 +3822,36 @@ function decodeRaidSignupSubmitCustomId(customId) {
   };
 }
 
+/**
+ * Дії рейд-пулу.
+ *
+ * `vote_prompt` — відкрити приватний пульт із публічного повідомлення.
+ * `character_prompt` / `character` — легасі того самого сенсу: у Discord
+ * лишаються опубліковані embed-и зі старими custom_id, і після переходу
+ * на голосування без персонажів вони мають далі відкривати пульт.
+ *
+ * ВАЖЛИВО: цей regex мусить збігатися з decodeRaidPollCustomId у
+ * dashboard/src/app/api/discord/interactions/route.ts. Якщо тут забути
+ * новий kind, кнопка мовчки перестає працювати — воркер поверне null
+ * ще до того, як запит дійде до панелі.
+ */
+const RAID_POLL_PROMPT_KINDS = new Set(["vote_prompt", "character_prompt", "character"]);
+
 function decodeRaidPollCustomId(customId, values) {
   const value = String(customId || "").trim();
-  const legacyMatch = value.match(/^mbv1:poll_(days|time):([A-Za-z0-9_-]{8,80})$/);
-  const smartMatch = value.match(/^mbv1:poll_(schedule_(?:[abc]|mon|tue|wed|thu|fri|sat|sun)|schedule_page_\d{1,2}|character|character_prompt|role|submit):([A-Za-z0-9_-]{8,80})$/);
-  const match = legacyMatch || smartMatch;
+  const match = value.match(/^mbv1:poll_(schedule_(?:mon|tue|wed|thu|fri|sat|sun)|schedule_page_\d{1,2}|vote_prompt|character_prompt|character|quick|role|submit):([A-Za-z0-9_-]{8,80})$/);
   if (!match) return null;
   const rawKind = match[1];
+  const isPrompt = RAID_POLL_PROMPT_KINDS.has(rawKind);
   const selected = Array.isArray(values) ? values.map((item) => String(item || "").trim()).filter(Boolean).slice(0, 25) : [];
-  if (!selected.length && rawKind !== "character_prompt" && rawKind !== "submit" && !rawKind.startsWith("schedule_page_")) return null;
-  const kind = rawKind.startsWith("schedule_page_") ? "schedule_page" : rawKind.startsWith("schedule_") ? "schedule" : rawKind;
+  if (!selected.length && !isPrompt && rawKind !== "submit" && !rawKind.startsWith("schedule_page_")) return null;
+  const kind = isPrompt
+    ? "vote_prompt"
+    : rawKind.startsWith("schedule_page_")
+      ? "schedule_page"
+      : rawKind.startsWith("schedule_")
+        ? "schedule"
+        : rawKind;
   const group = rawKind.startsWith("schedule_page_")
     ? rawKind.replace("schedule_page_", "page_")
     : rawKind.startsWith("schedule_")
@@ -3921,7 +3941,10 @@ async function handleRaidPollInteraction(interaction, env, pollAction, ctx) {
   // тому не можна покладатися лише на message.flags. Інакше кожен клік створює
   // нове приватне повідомлення замість оновлення поточного, а старий пульт стає
   // схожим на "непрацюючий".
-  const updatePrivatePanel = isEphemeralMessageInteraction(interaction) || pollAction.kind !== "character_prompt";
+  // Пульт відкривається з ПУБЛІЧНОГО повідомлення, тому для нього потрібна нова
+  // ефемерна відповідь. Якщо тут помилитися і піти шляхом update, воркер
+  // перезапише публічний embed пулу приватним пультом голосування.
+  const updatePrivatePanel = isEphemeralMessageInteraction(interaction) || pollAction.kind !== "vote_prompt";
   const fallbackContent = "❌ Не вдалося обробити голос. Спробуй ще раз або звернись до офіцера.";
   const task = raidPollProxyContent(interaction, env, pollAction);
 

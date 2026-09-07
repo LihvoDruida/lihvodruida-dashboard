@@ -1405,22 +1405,6 @@ function isFresh(cache: CachedRoster | null, ttlMs = cacheTtlMs()) {
   return Number.isFinite(cachedAt) && Date.now() - cachedAt < ttlMs;
 }
 
-function shardedCacheEnabled(
-  memberCount: number,
-  settings?: Pick<
-    GuildRosterRuntimeSettings,
-    "shardedCacheEnabled" | "shardedCacheThreshold"
-  > | null,
-) {
-  if (settings) {
-    return (
-      Boolean(settings.shardedCacheEnabled) &&
-      memberCount >= Math.max(1, Math.min(1000, settings.shardedCacheThreshold))
-    );
-  }
-  return memberCount >= 150;
-}
-
 function guildRosterCacheWriteBatchSize(
   settings?: Pick<GuildRosterRuntimeSettings, "cacheWriteBatchSize"> | null,
 ) {

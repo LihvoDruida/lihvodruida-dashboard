@@ -270,10 +270,6 @@ function impliedScheduleTimes(value: RaidPollScheduleValue | null | undefined): 
   return index >= 0 ? RAID_POLL_TIMES.slice(index) : [];
 }
 
-function scheduleHasTime(schedule: RaidPollSchedule, day: RaidPollDay, time: RaidPollTime) {
-  return impliedScheduleTimes(schedule[day]).includes(time);
-}
-
 function cleanPollScheduleValue(value: unknown): RaidPollScheduleValue | null {
   if (Array.isArray(value)) return compactScheduleValue(value);
   const availability = cleanPollAvailability(value);
@@ -716,7 +712,7 @@ export type RaidPollUniqueDayRecommendation = RaidPollSlotRecommendation & {
   pollTitle: string;
 };
 
-export type RaidPollRecommendationContext = Pick<RaidPollItem, "id" | "title" | "days" | "votes"> & Partial<Pick<RaidPollItem, "difficulty" | "status" | "createdAt" | "closesAtMs" | "channelId" | "messageId">>;
+export type RaidPollRecommendationContext = Pick<RaidPollItem, "id" | "title" | "days" | "votes"> & Partial<Pick<RaidPollItem, "difficulty" | "status" | "createdAt" | "updatedAt" | "closesAtMs" | "channelId" | "messageId">>;
 
 const RAID_POLL_MAX_SLOT_RECOMMENDATIONS = RAID_POLL_DAYS.length * RAID_POLL_TIMES.length;
 const RAID_POLL_WEEKEND_DAYS = new Set<RaidPollDay>(["sat", "sun"]);
@@ -738,7 +734,7 @@ function compareRaidPollSlotRecommendations(a: RaidPollSlotRecommendation, b: Ra
     RAID_POLL_TIMES.indexOf(a.time) - RAID_POLL_TIMES.indexOf(b.time);
 }
 
-function roleBucket(role: RaidPollRole | null | undefined) {
+function roleBucket(role: RaidPollRole | null | undefined): "tanks" | "healers" | "dps" | "unknown" {
   if (role === "tank") return "tanks";
   if (role === "healer") return "healers";
   if (role === "dps") return "dps";
@@ -763,44 +759,62 @@ function raidPollSlotFormation(item: Pick<RaidPollSlotRecommendation, "tanks" | 
   });
 }
 
+/**
+ * Розрахунок слотів день × час.
+ *
+ * Раніше для кожної з 21 комбінації робився повний filter по всіх голосах —
+ * 21×V перевірок і 21 проміжний масив. Тепер один прохід по голосах: для дня
+ * беремо найраніший доступний час і одразу розкладаємо голос по всіх пізніших
+ * слотах цього дня. Складність падає з O(днів × годин × голосів) до
+ * O(голосів × днів), а `raidPollVoteSchedule` викликається один раз на голос,
+ * а не 21.
+ */
 export function raidPollSlotRecommendations(poll: Pick<RaidPollItem, "days" | "votes"> & Partial<Pick<RaidPollItem, "difficulty">>, limit = 6): RaidPollSlotRecommendation[] {
-  const active = poll.days?.length ? poll.days : RAID_POLL_DAYS.map((day) => day.value);
-  const activeSet = new Set(active);
-  const rows: RaidPollSlotRecommendation[] = [];
+  const activeDays = (poll.days?.length ? poll.days : RAID_POLL_DAYS.map((day) => day.value))
+    .filter((day, index, list) => list.indexOf(day) === index);
+  if (!activeDays.length || !poll.votes.length) return [];
 
-  for (const day of RAID_POLL_DAYS) {
-    if (!activeSet.has(day.value)) continue;
-    for (const time of RAID_POLL_TIMES) {
-      const voters = poll.votes.filter((vote) => scheduleHasTime(raidPollVoteSchedule(vote), day.value, time));
-      let tanks = 0;
-      let healers = 0;
-      let dps = 0;
-      let unknown = 0;
-      for (const vote of voters) {
-        const bucket = roleBucket(vote.role);
-        if (bucket === "tanks") tanks += 1;
-        else if (bucket === "healers") healers += 1;
-        else if (bucket === "dps") dps += 1;
-        else unknown += 1;
+  type Bucket = { tanks: number; healers: number; dps: number; unknown: number; voters: RaidPollVote[] };
+  const buckets = new Map<string, Bucket>();
+  const slotKey = (day: RaidPollDay, time: RaidPollTime) => `${day}|${time}`;
+
+  for (const vote of poll.votes) {
+    const schedule = raidPollVoteSchedule(vote);
+    const bucketName = roleBucket(vote.role);
+    for (const day of activeDays) {
+      const [earliest] = scheduleTimes(schedule[day]);
+      if (!earliest) continue;
+      const startIndex = RAID_POLL_TIMES.indexOf(earliest);
+      if (startIndex < 0) continue;
+      // Найраніший час означає доступність і на всі пізніші слоти цього дня.
+      for (let index = startIndex; index < RAID_POLL_TIMES.length; index += 1) {
+        const key = slotKey(day, RAID_POLL_TIMES[index]);
+        let bucket = buckets.get(key);
+        if (!bucket) {
+          bucket = { tanks: 0, healers: 0, dps: 0, unknown: 0, voters: [] };
+          buckets.set(key, bucket);
+        }
+        bucket[bucketName] += 1;
+        bucket.voters.push(vote);
       }
-      const total = voters.length;
-      const formation = raidPollSlotFormation({ tanks, healers, dps, unknown, total, voters, difficulty: poll.difficulty || "heroic" });
-      rows.push({
-        day: day.value,
-        time,
-        total,
-        tanks,
-        healers,
-        dps,
-        unknown,
-        ...formation,
-        voters,
-      });
+    }
+  }
+
+  if (!buckets.size) return [];
+
+  const rows: RaidPollSlotRecommendation[] = [];
+  for (const day of RAID_POLL_DAYS) {
+    if (!activeDays.includes(day.value)) continue;
+    for (const time of RAID_POLL_TIMES) {
+      const bucket = buckets.get(slotKey(day.value, time));
+      if (!bucket) continue;
+      const total = bucket.voters.length;
+      const formation = raidPollSlotFormation({ ...bucket, total, difficulty: poll.difficulty || "heroic" });
+      rows.push({ day: day.value, time, total, tanks: bucket.tanks, healers: bucket.healers, dps: bucket.dps, unknown: bucket.unknown, ...formation, voters: bucket.voters });
     }
   }
 
   return rows
-    .filter((item) => item.total > 0)
     .sort(compareRaidPollSlotRecommendations)
     .slice(0, Math.max(1, Math.min(RAID_POLL_MAX_SLOT_RECOMMENDATIONS, Math.floor(limit))));
 }
@@ -878,7 +892,45 @@ function assignPollRecommendationCandidate(
   return true;
 }
 
+/**
+ * Кеш плану рекомендацій.
+ *
+ * План рахується для НАБОРУ пулів одразу, але викликається по одному разу на
+ * кожен пул: у списку, на головній та під час recalculate. Без кешу це
+ * O(N²) — 120 опублікованих пулів давали 120 повних перерахунків того самого
+ * плану на кожен рендер. Ключ — підпис набору (id + к-сть голосів + updatedAt),
+ * тож будь-яка зміна голосу інвалідовує кеш сама собою.
+ */
+const RAID_POLL_PLAN_CACHE_LIMIT = 4;
+const raidPollPlanCache = new Map<string, Record<string, RaidPollUniqueDayRecommendation[]>>();
+
+function raidPollPlanCacheKey(polls: RaidPollRecommendationContext[], limitPerPoll: number) {
+  const parts = polls
+    .map((poll) => `${cleanString(poll.id, 80)}:${poll.votes?.length || 0}:${poll.updatedAt || ""}:${poll.days?.join("") || ""}:${poll.difficulty || ""}`)
+    .sort();
+  return `${limitPerPoll}|${parts.join(";")}`;
+}
+
 export function raidPollUniqueDayRecommendationPlan(polls: RaidPollRecommendationContext[], limitPerPoll = 2): Record<string, RaidPollUniqueDayRecommendation[]> {
+  const cacheKey = raidPollPlanCacheKey(polls, limitPerPoll);
+  const cached = raidPollPlanCache.get(cacheKey);
+  if (cached) {
+    // Map зберігає порядок вставки: перечитуємо ключ, щоб свіжий план
+    // не витіснився першим при переповненні.
+    raidPollPlanCache.delete(cacheKey);
+    raidPollPlanCache.set(cacheKey, cached);
+    return cached;
+  }
+  const plan = computeRaidPollUniqueDayRecommendationPlan(polls, limitPerPoll);
+  raidPollPlanCache.set(cacheKey, plan);
+  if (raidPollPlanCache.size > RAID_POLL_PLAN_CACHE_LIMIT) {
+    const oldest = raidPollPlanCache.keys().next().value;
+    if (oldest !== undefined) raidPollPlanCache.delete(oldest);
+  }
+  return plan;
+}
+
+function computeRaidPollUniqueDayRecommendationPlan(polls: RaidPollRecommendationContext[], limitPerPoll = 2): Record<string, RaidPollUniqueDayRecommendation[]> {
   const normalized = polls.map(normalizePollRecommendationContext);
   const perPollLimit = Math.max(1, Math.min(RAID_POLL_DAYS.length, Math.floor(limitPerPoll)));
   const plan: Record<string, RaidPollUniqueDayRecommendation[]> = {};

@@ -78,12 +78,13 @@ export default async function EditPollPage({ params }: { params: Promise<{ pollI
             <h2>Один запис — один Discord embed</h2>
           </div>
           <p>Якщо канал змінено, сайт створить нове повідомлення у вибраному каналі й спробує прибрати старе. Якщо канал той самий — буде PATCH існуючого повідомлення.</p>
-          <div className="raid-poll-help-steps">
-            <span>1. Firebase оновлює дані рейд-пулу.</span>
-            <span>2. Discord embed редагується або переноситься в інший канал.</span>
-            <span>3. Голоси зберігаються за Discord ID і не дублюються.</span>
-            <span>4. Закритий пул лишається закритим, але фінальний embed можна поправити.</span>
-          </div>
+          <ol className="raid-poll-help-steps">
+            <li>Firebase оновлює дані рейд-пулу.</li>
+            <li>Discord embed редагується або переноситься в інший канал.</li>
+            <li>Голоси зберігаються за Discord ID і не дублюються.</li>
+            <li>Зміна днів прибирає з голосів ті дні, яких більше немає в пулі.</li>
+            <li>Закритий пул лишається закритим, але фінальний embed можна поправити.</li>
+          </ol>
           <div className="raid-poll-help-actions">
             <a className="btn subtle" href={`/polls/${encodeURIComponent(poll.id)}`}>До результатів</a>
             {poll.messageUrl ? <a className="btn subtle" href={poll.messageUrl} target="_blank" rel="noreferrer">Discord</a> : null}

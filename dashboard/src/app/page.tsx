@@ -38,8 +38,6 @@ export const revalidate = 0;
 
 const RAID_TIME_ZONE = process.env.RAID_TIME_ZONE || process.env.NEXT_PUBLIC_RAID_TIME_ZONE || "Europe/Kyiv";
 const DATE_TIME_LABEL = new Intl.DateTimeFormat("uk-UA", { dateStyle: "medium", timeStyle: "short", timeZone: RAID_TIME_ZONE });
-const DATE_LABEL = new Intl.DateTimeFormat("uk-UA", { weekday: "short", day: "2-digit", month: "short", timeZone: RAID_TIME_ZONE });
-
 const KD_REGION = "eu";
 const RAID_DURATION_MS = 4 * 60 * 60 * 1000;
 

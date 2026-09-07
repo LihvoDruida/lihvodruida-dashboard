@@ -612,16 +612,11 @@ export default async function ProfileSettingsPage({
   const isSetupEntry =
     String(Array.isArray(query.setup) ? query.setup[0] : query.setup || "") ===
       "1" || setupStatus.missing.length > 0;
-  const setupCompleteCount = setupStatus.steps.filter(
-    (step) => step.complete,
-  ).length;
   const settingsPageTitle = isSetupEntry
     ? "Реєстрація профілю"
     : "Налаштування профілю";
   const guildStatus = guildStatusLabel(profile.role);
   const accountStatusLabel = guildStatus;
-  const savedCharacterCount = profile.characters.length;
-
   return (
     <main className="container profile-page-container">
       <section
