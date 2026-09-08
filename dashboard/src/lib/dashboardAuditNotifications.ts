@@ -7,6 +7,7 @@ import { resilientRead } from "@/lib/runtimeResilience";
 import { firebaseWrite } from "@/lib/firebaseAccess";
 import { discordApi } from "@/lib/discordAdmin";
 import type { DashboardSession } from "@/lib/auth";
+import { timestampToIso } from "@/lib/values";
 
 const SETTINGS_COLLECTION = "dashboardSettings";
 const ADMIN_AUDIT_LOG_POLICY_DOC_ID = "adminAuditLogPolicy";
@@ -205,16 +206,6 @@ function cleanMinStatus(value: unknown): AdminAuditDiscordMinStatus {
   const status = String(value || "").trim().toLowerCase();
   return status === "error" || status === "warning" || status === "info" ? status : "warning";
 }
-
-function timestampToIso(value: unknown) {
-  if (!value) return null;
-  if (typeof value === "string") return value;
-  const maybeTimestamp = value as { toDate?: () => Date } | null;
-  if (maybeTimestamp && typeof maybeTimestamp.toDate === "function") return maybeTimestamp.toDate().toISOString();
-  if (value instanceof Date) return value.toISOString();
-  return null;
-}
-
 function defaultPolicy(): AdminAuditDiscordPolicy {
   return {
     enabled: false,

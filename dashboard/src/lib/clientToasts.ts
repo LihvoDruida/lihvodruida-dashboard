@@ -32,3 +32,14 @@ export function dispatchDashboardToast({ tone = "info", title, message, ttl }: D
 export function dashboardErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message.trim() ? error.message.trim() : fallback;
 }
+
+/**
+ * Витягує текст помилки з JSON-відповіді API.
+ * Був скопійований у чотирьох компонентах кнопок рейд-пулу.
+ */
+export function errorFromPayload(data: unknown, fallback: string) {
+  if (!data || typeof data !== "object") return fallback;
+  const record = data as Record<string, unknown>;
+  const message = record.error || record.message || record.warning;
+  return typeof message === "string" && message.trim() ? message.trim() : fallback;
+}

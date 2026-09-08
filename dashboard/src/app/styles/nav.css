@@ -341,11 +341,6 @@
   opacity: 1;
 }
 
-.nav-account__menu a.is-discord:hover {
-  background: color-mix(in srgb, var(--c-discord) 18%, transparent);
-  color: #d6daff;
-}
-
 .nav-account__menu a[aria-current="page"] {
   background: var(--accent-soft);
   color: var(--text-strong);
@@ -365,7 +360,7 @@
 
 .nav-account__logout button:hover {
   background: color-mix(in srgb, var(--c-danger) 16%, transparent);
-  color: #ffbdb1;
+  color: var(--text-on-danger);
 }
 
 .nav-account__logout-error {
@@ -525,10 +520,6 @@
 .nav-sheet__link[aria-current="page"] svg {
   opacity: 1;
   color: var(--nav-accent);
-}
-
-.nav-sheet__link.is-discord svg {
-  opacity: 0.75;
 }
 
 /* Вихід у мобільній панелі — той самий рядок, але червоний */

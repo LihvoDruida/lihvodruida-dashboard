@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { closeDueRaidPolls } from "@/lib/raidPolls";
 import { logDashboardEvent, noStoreHeaders, safeErrorMessage, verifyInternalBearerToken } from "@/lib/security";
+import { envFlag } from "@/lib/apiRoute";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,15 +18,6 @@ type PollCloseDueRouteGuard = {
 declare global {
   // eslint-disable-next-line no-var
   var __mistblossomRaidPollCloseDueRouteGuard: PollCloseDueRouteGuard | undefined;
-}
-
-function envFlag(names: string[], fallback = false) {
-  for (const name of names) {
-    const raw = process.env[name];
-    if (raw === undefined || raw === null || raw === "") continue;
-    return ["1", "true", "yes", "on"].includes(String(raw).trim().toLowerCase());
-  }
-  return fallback;
 }
 
 function pollCloseDueGuard() {

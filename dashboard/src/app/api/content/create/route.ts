@@ -1,31 +1,24 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
 import { recordAdminAudit } from "@/lib/accessGroups";
 import { canManageSiteContent } from "@/lib/permissions";
 import { resolveAuthorIdentity } from "@/lib/authorIdentity";
 import { createSiteContent, isContentKind } from "@/lib/content";
+import { redirectTo } from "@/lib/apiRoute";
 import {
   assertRequestBodySize,
   checkRateLimit,
   forbiddenResponse,
   getClientIp,
   logDashboardEvent,
-  noStoreHeaders,
   safeErrorMessage,
   unauthorizedResponse,
-  verifyTrustedOrigin,
-} from "@/lib/security";
+  verifyTrustedOrigin } from "@/lib/security";
 
 export const runtime = "nodejs";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-function redirectTo(request: NextRequest, path: string) {
-  const response = NextResponse.redirect(new URL(path, request.url), 303);
-  for (const [key, value] of Object.entries(noStoreHeaders())) response.headers.set(key, value);
-  return response;
-}
 
 export async function POST(request: NextRequest) {
   if (!verifyTrustedOrigin(request)) {
@@ -69,8 +62,7 @@ export async function POST(request: NextRequest) {
       slug: String(form.get("slug") || ""),
       image: imageValue instanceof File ? imageValue : null,
       author: String(form.get("author") || (await resolveAuthorIdentity(session)).primaryName || session.name),
-      user: session,
-    });
+      user: session });
 
     logDashboardEvent("info", "content.create.success", request, { path: result.path, userId: session.id });
     await recordAdminAudit("content.create", session, {
@@ -78,8 +70,7 @@ export async function POST(request: NextRequest) {
       summary: `Контент створено: ${result.path}.`,
       path: result.path,
       kind,
-      title: String(form.get("title") || "").slice(0, 140),
-    }).catch((auditError) => {
+      title: String(form.get("title") || "").slice(0, 140) }).catch((auditError) => {
       logDashboardEvent("warn", "content.create.audit_failed", request, { path: result.path, message: auditError instanceof Error ? auditError.message : String(auditError || "unknown") });
     });
     return redirectTo(request, `/content?published=${encodeURIComponent(result.path)}`);
@@ -92,8 +83,7 @@ export async function POST(request: NextRequest) {
       kind,
       path: String(form.get("path") || ""),
       title: String(form.get("title") || "").slice(0, 140),
-      error: error instanceof Error ? error.message : String(error || ""),
-    }).catch(() => false);
+      error: error instanceof Error ? error.message : String(error || "") }).catch(() => false);
     return redirectTo(request, `/content?error=${encodeURIComponent(message)}`);
   }
 }

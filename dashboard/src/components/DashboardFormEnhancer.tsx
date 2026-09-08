@@ -522,7 +522,6 @@ export default function DashboardFormEnhancer() {
       submitter: HTMLButtonElement | null,
       buttons: HTMLButtonElement[],
       action: string,
-      label: string,
     ) {
       let keepLocked = false;
 
@@ -683,7 +682,7 @@ export default function DashboardFormEnhancer() {
       pushToast(copy.title, copy.message);
 
       if (liveSubmit) {
-        void submitLiveForm(form, submitter, buttons, submitAction, copy.label);
+        void submitLiveForm(form, submitter, buttons, submitAction);
       }
     }
 

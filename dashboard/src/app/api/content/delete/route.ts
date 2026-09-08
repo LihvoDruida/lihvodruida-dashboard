@@ -1,30 +1,23 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
 import { recordAdminAudit } from "@/lib/accessGroups";
 import { canManageSiteContent } from "@/lib/permissions";
 import { deleteRepoFile, isManagedContentPath } from "@/lib/content";
+import { redirectTo } from "@/lib/apiRoute";
 import {
   assertRequestBodySize,
   checkRateLimit,
   forbiddenResponse,
   getClientIp,
   logDashboardEvent,
-  noStoreHeaders,
   safeErrorMessage,
   unauthorizedResponse,
-  verifyTrustedOrigin,
-} from "@/lib/security";
+  verifyTrustedOrigin } from "@/lib/security";
 
 export const runtime = "nodejs";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-function redirectTo(request: NextRequest, path: string) {
-  const response = NextResponse.redirect(new URL(path, request.url), 303);
-  for (const [key, value] of Object.entries(noStoreHeaders())) response.headers.set(key, value);
-  return response;
-}
 
 export async function POST(request: NextRequest) {
   if (!verifyTrustedOrigin(request)) {
@@ -63,8 +56,7 @@ export async function POST(request: NextRequest) {
       status: "success",
       summary: `Контент видалено: ${path}.`,
       path,
-      changed: 1,
-    }).catch((auditError) => {
+      changed: 1 }).catch((auditError) => {
       logDashboardEvent("warn", "content.delete.audit_failed", request, { path, message: auditError instanceof Error ? auditError.message : String(auditError || "unknown") });
     });
     return redirectTo(request, `/content?deleted=${encodeURIComponent(path)}`);
@@ -75,8 +67,7 @@ export async function POST(request: NextRequest) {
       status: "error",
       summary: `Контент не видалено: ${message}`,
       path,
-      error: error instanceof Error ? error.message : String(error || ""),
-    }).catch(() => false);
+      error: error instanceof Error ? error.message : String(error || "") }).catch(() => false);
     return redirectTo(request, `/content?error=${encodeURIComponent(message)}`);
   }
 }

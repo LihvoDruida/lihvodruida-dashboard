@@ -19,7 +19,6 @@
   min-width: 0;
 }
 
-
 /* =========================================================
    2. СПИСОК РЕЙДІВ
    ========================================================= */
@@ -412,16 +411,16 @@
 
 .raid-ilvl-notice.is-warning {
   border-left-color: var(--c-warning);
-  border-color: rgba(232, 179, 74, 0.28);
-  background: rgba(232, 179, 74, 0.08);
-  color: #f4d79a;
+  border-color: var(--tint-warning-border);
+  background: var(--tint-warning-bg);
+  color: var(--text-on-warning);
 }
 
 .raid-ilvl-notice.is-blocked {
   border-left-color: var(--c-danger);
-  border-color: rgba(224, 112, 95, 0.28);
-  background: rgba(224, 112, 95, 0.08);
-  color: #ffbdb1;
+  border-color: var(--tint-danger-border);
+  background: var(--tint-danger-bg);
+  color: var(--text-on-danger);
 }
 
 /* ---------- Кнопки відповіді ---------- */
@@ -506,8 +505,8 @@
   border: 1px solid var(--border-subtle);
   border-left: 3px solid var(--c-warning);
   border-radius: var(--radius-md);
-  background: rgba(232, 179, 74, 0.08);
-  color: #f4d79a;
+  background: var(--tint-warning-bg);
+  color: var(--text-on-warning);
   font-size: 0.86rem;
 }
 
@@ -633,7 +632,7 @@
 }
 
 .raid-party-row.is-undergeared {
-  background: rgba(232, 179, 74, 0.08);
+  background: var(--tint-warning-bg);
 }
 
 .raid-party-row.is-blocked {
@@ -805,7 +804,7 @@
 }
 
 .raid-roster-member.is-undergeared {
-  background: rgba(232, 179, 74, 0.08);
+  background: var(--tint-warning-bg);
 }
 
 .raid-roster-member.is-non-guild {
@@ -1068,12 +1067,12 @@
   display: grid;
   gap: var(--space-xs);
   justify-items: start;
-  border-color: rgba(224, 112, 95, 0.28);
+  border-color: var(--tint-danger-border);
   border-left: 3px solid var(--c-danger);
 }
 
 .raid-form-danger-zone strong {
-  color: #ffbdb1;
+  color: var(--text-on-danger);
   font-size: 0.95rem;
 }
 
@@ -1088,7 +1087,7 @@
 /* =========================================================
    5. АДАПТИВ
    ========================================================= */
-@media (max-width: 1080px) {
+@media (max-width: 1000px) {
   .raid-member-layout {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1099,7 +1098,7 @@
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 860px) {
   .raid-party-columns {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1223,8 +1222,7 @@
   color: var(--text-strong);
 }
 
-.raid-live-sync__dot,
-.raid-poll-live-sync__dot {
+.raid-live-sync__dot {
   width: 7px;
   height: 7px;
   flex: 0 0 auto;
@@ -1239,8 +1237,7 @@
 
 /* Пульсація лише під час перевірки — постійний блимаючий
    індикатор відволікає від самого рейду. */
-.raid-live-sync--checking .raid-live-sync__dot,
-.raid-poll-live-sync--checking .raid-poll-live-sync__dot {
+.raid-live-sync--checking .raid-live-sync__dot {
   animation: raid-live-pulse 1.4s var(--ease-in-out) infinite;
 }
 
@@ -1267,8 +1264,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .raid-live-sync--checking .raid-live-sync__dot,
-  .raid-poll-live-sync--checking .raid-poll-live-sync__dot {
+  .raid-live-sync--checking .raid-live-sync__dot {
     animation: none;
   }
 }
@@ -1533,7 +1529,7 @@
 
 .raid-poll-day-toggle.is-selected strong,
 .raid-poll-day-toggle.is-selected span {
-  color: #1c1208;
+  color: var(--text-on-accent);
 }
 
 .raid-poll-day-toggle:disabled {

@@ -346,14 +346,6 @@
   border-left-color: var(--c-accent-400);
 }
 
-.content-row--draft {
-  border-left-color: var(--c-warning);
-}
-
-.content-row--published {
-  border-left-color: var(--c-success);
-}
-
 .content-row-main {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;

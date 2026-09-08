@@ -7,16 +7,11 @@ import {
   unauthorizedResponse,
   verifyInternalBearerToken,
 } from "@/lib/security";
+import { cleanSnowflake } from "@/lib/values";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const revalidate = 0;
-
-function cleanSnowflake(value: unknown) {
-  const text = String(value || "").trim();
-  return /^\d{16,25}$/.test(text) ? text : "";
-}
-
 function normalizeGatewayMessage(payload: any): DiscordMessage | null {
   const raw = payload?.message && typeof payload.message === "object" ? payload.message : payload;
   const id = cleanSnowflake(raw?.id);

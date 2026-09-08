@@ -6,7 +6,7 @@ import {
   OAUTH_STATE_COOKIE,
   SESSION_COOKIE,
 } from "@/lib/session";
-import { logDashboardEvent, noStoreHeaders } from "@/lib/security";
+import { logDashboardEvent, noStoreHeaders, applyNoStoreHeaders } from "@/lib/security";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,8 +52,7 @@ function expireAuthCookies(response: NextResponse) {
 
 function logoutRedirect(target: string) {
   const response = NextResponse.redirect(target, 303);
-  for (const [key, value] of Object.entries(noStoreHeaders()))
-    response.headers.set(key, value);
+  applyNoStoreHeaders(response);
   response.headers.set("Clear-Site-Data", '"cache"');
   response.headers.set("X-Dashboard-Session", "cleared");
   expireAuthCookies(response);

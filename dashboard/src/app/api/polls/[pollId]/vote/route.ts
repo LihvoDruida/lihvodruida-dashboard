@@ -13,6 +13,7 @@ import {
   idempotencyHeader,
   runIdempotentAction,
 } from "@/lib/idempotency";
+import { cleanSnowflake } from "@/lib/values";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,12 +47,6 @@ function cleanScheduleGroup(value: unknown) {
   if (/^page_?\d{1,2}$/.test(group)) return group.replace(/^page_?(\d+)$/, "page_$1");
   return "";
 }
-
-function cleanSnowflake(value: unknown) {
-  const id = String(value || "").trim();
-  return /^\d{16,25}$/.test(id) ? id : "";
-}
-
 export async function POST(request: NextRequest, context: { params: Promise<{ pollId: string }> }) {
   const tooLarge = assertRequestBodySize(request, 16 * 1024);
   if (tooLarge) return tooLarge;

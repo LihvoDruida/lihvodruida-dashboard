@@ -24,12 +24,7 @@ import { buildBattleNetCharacterKey, normalizeBattleNetNameSlug, normalizeBattle
 import { removeRaidSignupsForAccounts } from "@/lib/raids";
 import { removeRosterPicksForAccounts } from "@/lib/rosterFormation";
 import { removeRaidPollVotesForAccounts } from "@/lib/raidPolls";
-
-function snowflake(value: unknown) {
-  const text = String(value || "").trim();
-  return /^\d{16,25}$/.test(text) ? text : "";
-}
-
+import { cleanSnowflake } from "@/lib/values";
 function cleanNickname(value: unknown) {
   return Array.from(String(value || "")
     .normalize("NFC")
@@ -42,7 +37,7 @@ function cleanNickname(value: unknown) {
 
 function cleanRoleIds(values: unknown) {
   const items = Array.isArray(values) ? values : String(values || "").split(/[\s,;]+/g);
-  return Array.from(new Set(items.map(snowflake).filter(Boolean))).slice(0, 10);
+  return Array.from(new Set(items.map(cleanSnowflake).filter(Boolean))).slice(0, 10);
 }
 
 type ManageableRoleForSelection = {
@@ -314,7 +309,7 @@ async function applyDiscordRoleDelta(params: {
 
 export async function updateDiscordMemberNickname(input: { userId: unknown; nickname: unknown; reason?: string }) {
   const guildId = getDiscordGuildId();
-  const userId = snowflake(input.userId);
+  const userId = cleanSnowflake(input.userId);
   const nickname = cleanNickname(input.nickname);
   if (!guildId) throw new Error("Discord-сервер не підключений.");
   if (!userId) throw new Error("Вкажи коректний Discord user ID.");
@@ -352,7 +347,7 @@ export async function updateDiscordMemberNickname(input: { userId: unknown; nick
 
 export async function addDiscordMemberRoles(input: { userId: unknown; roleIds: unknown; reason?: string }) {
   const guildId = getDiscordGuildId();
-  const userId = snowflake(input.userId);
+  const userId = cleanSnowflake(input.userId);
   const roleIds = cleanRoleIds(input.roleIds);
   if (!guildId) throw new Error("Discord-сервер не підключений.");
   if (!userId) throw new Error("Вкажи коректний Discord user ID.");
@@ -401,7 +396,7 @@ export async function addDiscordMemberRoles(input: { userId: unknown; roleIds: u
 
 export async function removeDiscordMemberRoles(input: { userId: unknown; roleIds: unknown; reason?: string }) {
   const guildId = getDiscordGuildId();
-  const userId = snowflake(input.userId);
+  const userId = cleanSnowflake(input.userId);
   const roleIds = cleanRoleIds(input.roleIds);
   if (!guildId) throw new Error("Discord-сервер не підключений.");
   if (!userId) throw new Error("Вкажи коректний Discord user ID.");
@@ -1302,7 +1297,7 @@ export async function cleanupDashboardProfilesDiscordMembership(input: {
 
 
 function profileDiscordId(profile: DashboardProfile) {
-  const direct = snowflake(profile.providerUserId);
+  const direct = cleanSnowflake(profile.providerUserId);
   return direct || "";
 }
 

@@ -25,10 +25,8 @@ import {
   forbiddenResponse,
   getClientIp,
   logDashboardEvent,
-  noStoreHeaders,
   safeErrorMessage,
-  verifyTrustedOrigin,
-} from "@/lib/security";
+  verifyTrustedOrigin, applyNoStoreHeaders } from "@/lib/security";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,8 +37,7 @@ function redirectToToken(request: NextRequest, token: string, status: string) {
   if (token) url.searchParams.set("rt", token);
   url.searchParams.set("status", status);
   const response = NextResponse.redirect(url, 303);
-  for (const [key, value] of Object.entries(noStoreHeaders()))
-    response.headers.set(key, value);
+  applyNoStoreHeaders(response);
   return response;
 }
 

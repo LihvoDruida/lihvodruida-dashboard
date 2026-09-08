@@ -42,18 +42,13 @@ import {
   type RaidSignup,
   raidManualClassOptions,
 } from "@/lib/raids";
+import { RoleMarkerStack, formatRaidDateTime, raidPartyRoleLabel, signupSpecLabel, todayIso } from "@/components/RaidSignupPresentation";
+
+// Реекспорт для сумісності: раніше ці помічники жили тут.
+export { formatRaidDateTime, todayIso } from "@/components/RaidSignupPresentation";
 
 export type RaidChannelOption = { id: string; name: string };
 export type RaidRoleOption = DiscordRoleOption;
-
-export function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-export function formatRaidDateTime(date?: string | null, time?: string | null) {
-  if (!date && !time) return "Дата уточнюється";
-  return [date || "Дата уточнюється", time || ""].filter(Boolean).join(", ");
-}
 
 export function attendanceStatusLabel(action?: string) {
   if (action === "skipped") return "Позначено, що ти пропускаєш рейд.";
@@ -119,15 +114,6 @@ function shouldShowBenchPriorityMarker(
   );
 }
 
-function signupSpecLabel(item?: RaidSignup | null) {
-  if (!item) return "";
-  const spec = item.activeSpecName
-    ? `${item.activeSpecName}${item.className ? ` • ${item.className}` : ""}`
-    : item.className || "";
-  const guildLabel = item.verifiedGuild === false ? "Інший персонаж" : "";
-  return [spec, guildLabel].filter(Boolean).join(" • ");
-}
-
 function signupExtraLabel(item?: RaidSignup | null) {
   if (!item) return "";
   // Ручний запис не має ані рівня, ані раси — офіцеру важливо бачити,
@@ -186,48 +172,6 @@ function SignupAvatar({ item }: { item?: RaidSignup | null }) {
   );
 }
 
-function SignupNumberBadge({
-  item,
-}: {
-  item?: Pick<RaidSignup, "signupNumber"> | null;
-}) {
-  const number = Number(item?.signupNumber || 0);
-  const hasNumber = Number.isFinite(number) && number > 0;
-  const label = hasNumber ? `${Math.floor(number)}` : "";
-  const title = hasNumber
-    ? `Порядковий номер запису: ${Math.floor(number)}`
-    : "Місце ще не зайняте";
-  return (
-    <span
-      className={`raid-signup-order${label ? "" : " raid-signup-order--empty"}`}
-      title={title}
-    >
-      {label}
-    </span>
-  );
-}
-
-
-
-function RoleMarkerStack({
-  item,
-  role,
-  iconClassName = "raid-role-icon",
-}: {
-  item?: Pick<RaidSignup, "signupNumber"> | null;
-  role: RaidCharacterRole;
-  iconClassName?: string;
-}) {
-  return (
-    <span className="raid-signup-side" aria-hidden="true">
-      <SignupNumberBadge item={item} />
-      <span className={iconClassName}>
-        {role === "tank" ? "🛡" : role === "healer" ? "✚" : "⚔"}
-      </span>
-    </span>
-  );
-}
-
 function raidStatusLabel(raid: RaidItem) {
   if (isRaidClosed(raid)) return "Закрито";
   return raid.status === "published" ? "Опубліковано" : "Чернетка";
@@ -236,12 +180,6 @@ function raidStatusLabel(raid: RaidItem) {
 function raidStatusClass(raid: RaidItem) {
   if (isRaidClosed(raid)) return "closed";
   return raid.status;
-}
-
-function raidPartyRoleLabel(role: RaidCharacterRole) {
-  if (role === "tank") return "Танк";
-  if (role === "healer") return "Хіл";
-  return "ДД";
 }
 
 function RoleRow({
@@ -616,12 +554,10 @@ export function RaidAttendanceActions({
   raid,
   user,
   profile = null,
-  hasMainCharacter = null,
 }: {
   raid: RaidItem;
   user?: DashboardSession | null;
   profile?: DashboardProfile | null;
-  hasMainCharacter?: boolean | null;
 }) {
   const closed = isRaidClosed(raid) || raid.status !== "published";
   const newSignupWouldStartOnBench = isRaidRegistrationFull(raid);

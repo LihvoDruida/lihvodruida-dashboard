@@ -25,6 +25,7 @@ import {
   raidAlgorithmAutoCompositionForSize,
   raidAlgorithmDpsRangeType,
 } from "@/lib/raidCompositionAlgorithm";
+import { cleanSnowflake, cleanSnowflakeIds } from "@/lib/values";
 
 /* ==========================================================================
    Система «Формування складу».
@@ -120,17 +121,6 @@ function cleanSeason(value: unknown): RosterSeason {
 function cleanText(value: unknown, max: number) {
   return String(value ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 }
-
-function cleanSnowflake(value: unknown) {
-  const raw = String(value ?? "").trim();
-  return /^\d{16,25}$/.test(raw) ? raw : "";
-}
-
-function cleanSnowflakeIds(values: unknown) {
-  const list = Array.isArray(values) ? values : values == null ? [] : [values];
-  return Array.from(new Set(list.map((item) => cleanSnowflake(item)).filter(Boolean))).slice(0, 20);
-}
-
 function newRosterId() {
   return `rf_${randomUUID().replace(/-/g, "").slice(0, 20)}`;
 }
@@ -187,7 +177,7 @@ export function normalizeRosterFormation(id: string, data: Record<string, unknow
     channelId: cleanSnowflake(data.channelId),
     messageId: cleanSnowflake(data.messageId),
     messageUrl: typeof data.messageUrl === "string" ? data.messageUrl : "",
-    mentionRoleIds: cleanSnowflakeIds(data.mentionRoleIds),
+    mentionRoleIds: cleanSnowflakeIds(data.mentionRoleIds, 20),
     authorId: cleanSnowflake(data.authorId),
     authorName: cleanText(data.authorName, 80),
     status: data.status === "closed" ? "closed" : "open",
@@ -561,7 +551,7 @@ export function buildRosterDiscordPayload(roster: RosterFormation) {
       : "🧭 **Формування складу відкрито. Натисни кнопку, обери клас і спеку — твій нік автоматично зафіксується.**",
     embed,
     components: buildRosterDiscordComponents(roster),
-    mentionRoleIds: cleanSnowflakeIds(roster.mentionRoleIds),
+    mentionRoleIds: cleanSnowflakeIds(roster.mentionRoleIds, 20),
   };
 }
 
@@ -827,7 +817,7 @@ export async function saveRosterFormationFromInput(
   const season = cleanSeason(input.season);
   const description = cleanText(input.description, 1500);
   const channelId = cleanSnowflake(input.channelId) || getDiscordDefaultChannelId();
-  const mentionRoleIds = cleanSnowflakeIds(input.mentionRoleIds);
+  const mentionRoleIds = cleanSnowflakeIds(input.mentionRoleIds, 20);
   if (!channelId) throw new Error("Discord-канал для складу не вибрано.");
 
   const now = new Date().toISOString();

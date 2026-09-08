@@ -401,6 +401,25 @@ function rangeBalanceScore(members: RaidAlgorithmMember[]) {
   return { melee, ranged, score: Math.max(0, 100 - diff * 20) };
 }
 
+/**
+ * Оцінка слота день × час у рейд-пулі.
+ *
+ * Пул не знає класів і спеків — тільки роль, яку людина вибрала руками.
+ * Тому utility/melee-ranged метрики тут завжди нульові, а рішення будується
+ * на трьох речах, у строгому порядку пріоритету:
+ *
+ *   1. Ядро зібралось (мінімум 1 танк, 1 хіл, 3 ДД).
+ *   2. Два танки. Це головна ціль: рейд без другого танка не стартує.
+ *   3. Хіли. Спершу до потрібної кількості, далі бонус за запасних (до +2).
+ *   4. Загальна кількість гравців. Вага реальна, а не символічна: між двома
+ *      днями з однаковим ядром завжди виграє той, де людей більше.
+ *   5. ДД і штраф за голоси без вибраної ролі.
+ *
+ * Ваги підібрані так, щоб нижній рівень не міг перебити верхній у реальних
+ * діапазонах: максимум 40 гравців × 40 000 = 1.6M, що менше за один щабель
+ * хілів (10M). Тобто це фактично лексикографічний порядок, але виражений
+ * одним числом — його зручно сортувати й логувати.
+ */
 export function raidAlgorithmAnalyzePollSlot<T extends RaidAlgorithmMember>(input: RaidAlgorithmPollSlotInput<T>): RaidAlgorithmPollSlotAnalysis {
   const tanks = Math.max(0, Math.floor(input.tanks || 0));
   const healers = Math.max(0, Math.floor(input.healers || 0));
@@ -411,10 +430,16 @@ export function raidAlgorithmAnalyzePollSlot<T extends RaidAlgorithmMember>(inpu
   const knownTotal = Math.max(0, tanks + healers + dps);
   const slotSize = Math.max(knownTotal, total);
   const parties = Math.max(1, Math.ceil(Math.max(1, slotSize) / RAID_ALGORITHM_PARTY_SIZE));
-  const desiredTanks = slotSize >= 10 ? 2 : 1;
+
+  // Два танки — ціль завжди, а не тільки для складу від 10 людей: саме
+  // наявність другого танка вирішує, чи вийде рейд у цей день.
+  const desiredTanks = 2;
   const requiredTanks = 1;
   const desiredHealers = Math.max(1, Math.min(RAID_ALGORITHM_MAX_HEALERS, Math.ceil(Math.max(1, slotSize - desiredTanks) / 5)));
-  const requiredHealers = majorityRequired(desiredHealers);
+  // Поки зібралось менше десяти людей, вимагати «більшість від потрібних
+  // хілів» безглуздо: день із 7 охочими і 1 хілом позначався як непридатний
+  // і провалювався в самий низ, хоча це найкращий день тижня.
+  const requiredHealers = slotSize >= 10 ? majorityRequired(desiredHealers) : 1;
   const minimumDps = slotSize >= RAID_ALGORITHM_PARTY_SIZE ? 3 : 1;
   const utility = raidAlgorithmUtilityChecklist(members);
   const range = rangeBalanceScore(members);
@@ -424,17 +449,18 @@ export function raidAlgorithmAnalyzePollSlot<T extends RaidAlgorithmMember>(inpu
   const utilityScore = utility.score;
   const rangeScore = range.score;
 
-  const score = (coreReady ? 100_000_000 : 0)
-    + Math.min(tanks, requiredTanks) * 20_000_000
-    + Math.min(healers, requiredHealers) * 5_000_000
-    + Math.min(tanks, desiredTanks) * 800_000
-    + Math.min(healers, desiredHealers) * 500_000
-    + Math.min(utilityScore, 120) * 20_000
-    + rangeScore * 2_000
-    + effectiveDps * 12_000
-    + effectiveRaidSize * 1_000
-    + total * 10
-    - unknown * 500;
+  // Запасні хіли понад потрібну кількість: корисно, але з різко спадною
+  // віддачею, інакше день із п'ятьма хілами і трьома ДД виглядав би найкращим.
+  const spareHealers = Math.min(2, Math.max(0, healers - desiredHealers));
+
+  const score = (coreReady ? 1_000_000_000 : 0)
+    + Math.min(tanks, desiredTanks) * 100_000_000
+    + Math.min(healers, desiredHealers) * 10_000_000
+    + spareHealers * 2_000_000
+    + total * 40_000
+    + effectiveDps * 4_000
+    + effectiveRaidSize * 500
+    - unknown * 2_000;
 
   return {
     parties,

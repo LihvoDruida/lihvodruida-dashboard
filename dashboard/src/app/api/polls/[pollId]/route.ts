@@ -4,20 +4,11 @@ import { recordAdminAudit } from "@/lib/accessGroups";
 import { canManageRaids, canViewRaidDirectory } from "@/lib/permissions";
 import { deleteRaidPoll, getRaidPoll, raidPollLiveRevision, updateRaidPollFromForm, updateRaidPollFromInput, type RaidPollUpdateInput } from "@/lib/raidPolls";
 import { assertRequestBodySize, logDashboardEvent, noStoreHeaders, safeErrorMessage } from "@/lib/security";
+import { jsonError, wantsJson } from "@/lib/apiRoute";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-function wantsJson(request: NextRequest) {
-  const accept = request.headers.get("accept") || "";
-  const contentType = request.headers.get("content-type") || "";
-  return accept.includes("application/json") || contentType.includes("application/json");
-}
-
-function jsonError(message: string, status = 400) {
-  return NextResponse.json({ ok: false, error: message }, { status, headers: noStoreHeaders() });
-}
 
 async function readUpdateInput(request: NextRequest): Promise<{ input?: RaidPollUpdateInput; form?: FormData }> {
   const contentType = request.headers.get("content-type") || "";

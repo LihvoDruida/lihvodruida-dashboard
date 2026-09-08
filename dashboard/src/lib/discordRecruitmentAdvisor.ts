@@ -24,6 +24,7 @@ import {
   getRecruitmentAdvisorSettings,
   type DiscordRecruitmentAdvisorSettings,
 } from "@/lib/discordRecruitmentAdvisorSettings";
+import { cleanSnowflake, timestampToIso } from "@/lib/values";
 
 const REPLIES_COLLECTION = "discordRecruitmentAdviceReplies";
 const DEFAULT_LOOKBACK_HOURS = 48;
@@ -367,12 +368,6 @@ function envInteger(name: string, fallback: number, min: number, max: number) {
   if (!Number.isFinite(parsed)) return fallback;
   return Math.max(min, Math.min(Math.floor(parsed), max));
 }
-
-function snowflake(value: unknown) {
-  const text = String(value || "").trim();
-  return /^\d{16,25}$/.test(text) ? text : "";
-}
-
 function maxChannelsPerRun(settings?: DiscordRecruitmentAdvisorSettings) {
   return (
     settings?.maxChannels ||
@@ -389,7 +384,7 @@ function normalizeChannelCandidate(
   channel: DiscordTextChannel,
   source: DiscordChannelCandidate["source"],
 ): DiscordChannelCandidate | null {
-  const id = snowflake(channel.id);
+  const id = cleanSnowflake(channel.id);
   if (!id) return null;
   return {
     id,
@@ -404,7 +399,7 @@ function normalizeChannelCandidate(
 function normalizeThreadCandidate(
   channel: DiscordThreadChannel,
 ): DiscordChannelCandidate | null {
-  const id = snowflake(channel?.id);
+  const id = cleanSnowflake(channel?.id);
   if (!id) return null;
   const type = Number(channel.type || 0);
   // Public/private/news threads. Scanning active threads lets the bot answer inside forum posts too.
@@ -420,7 +415,7 @@ function normalizeThreadCandidate(
 }
 
 async function fetchActiveThreadChannels(): Promise<DiscordChannelCandidate[]> {
-  const guildId = snowflake(getDiscordGuildId());
+  const guildId = cleanSnowflake(getDiscordGuildId());
   if (!guildId) return [];
   const data = await discordApi<{ threads?: DiscordThreadChannel[] }>(
     `/guilds/${guildId}/threads/active`,
@@ -955,7 +950,7 @@ function buildRecruitmentAdviceMessage(params: {
   guildName: string;
   rosterUpdatedAt: string | null;
 }) {
-  const authorId = snowflake(params.originalMessage.author?.id);
+  const authorId = cleanSnowflake(params.originalMessage.author?.id);
   const mentioned = params.intent.mentionedClasses;
   const profile = params.intent.profile;
   const recommendations = params.analysis.recommendations.slice(0, 4);
@@ -1117,7 +1112,7 @@ async function tryClaimMessage(
   channelId: string,
   options: { force?: boolean } = {},
 ): Promise<RecruitmentClaimResult> {
-  const messageId = snowflake(message.id);
+  const messageId = cleanSnowflake(message.id);
   if (!messageId) return { claimed: false, reason: "missing_message_id" };
 
   if (!hasFirebaseProfileConfig()) {
@@ -1140,8 +1135,8 @@ async function tryClaimMessage(
       const basePatch = {
         messageId,
         channelId,
-        guildId: snowflake(message.guild_id) || null,
-        authorId: snowflake(message.author?.id) || null,
+        guildId: cleanSnowflake(message.guild_id) || null,
+        authorId: cleanSnowflake(message.author?.id) || null,
         contentHash: contentHash(message.content),
         status: "processing",
         source: message.source || "gateway-message-create",
@@ -1229,7 +1224,7 @@ async function markClaimResult(
   messageId: string,
   patch: Record<string, unknown>,
 ) {
-  if (!hasFirebaseProfileConfig() || !snowflake(messageId)) return;
+  if (!hasFirebaseProfileConfig() || !cleanSnowflake(messageId)) return;
   await getFirebaseAdminDb()
     .collection(REPLIES_COLLECTION)
     .doc(messageId)
@@ -1249,8 +1244,8 @@ async function replyToDiscordMessage(
   message: DiscordMessage,
   content: string,
 ) {
-  const messageId = snowflake(message.id);
-  const authorId = snowflake(message.author?.id);
+  const messageId = cleanSnowflake(message.id);
+  const authorId = cleanSnowflake(message.author?.id);
   const payload: Record<string, unknown> = {
     content,
     allowed_mentions: {
@@ -1277,7 +1272,7 @@ async function replyToDiscordMessage(
 type IgnoreMessageDecision = { ignored: boolean; reason?: string };
 
 function shouldIgnoreMessage(message: DiscordMessage): IgnoreMessageDecision {
-  if (!snowflake(message.id)) return { ignored: true, reason: "missing_message_id" };
+  if (!cleanSnowflake(message.id)) return { ignored: true, reason: "missing_message_id" };
   if (message.author?.bot) return { ignored: true, reason: "author_bot" };
   if (message.webhook_id) return { ignored: true, reason: "webhook_message" };
   if (message.type !== undefined) {
@@ -1309,13 +1304,13 @@ async function recordMessageDecision(
   message: DiscordMessage,
   patch: Record<string, unknown>,
 ) {
-  const messageId = snowflake(message.id);
+  const messageId = cleanSnowflake(message.id);
   if (!messageId) return;
   await markClaimResult(messageId, {
     messageId,
-    channelId: snowflake(message.channel_id) || null,
-    guildId: snowflake(message.guild_id) || null,
-    authorId: snowflake(message.author?.id) || null,
+    channelId: cleanSnowflake(message.channel_id) || null,
+    guildId: cleanSnowflake(message.guild_id) || null,
+    authorId: cleanSnowflake(message.author?.id) || null,
     contentHash: contentHash(message.content),
     sourceTimestamp: cleanText(message.timestamp, 80) || null,
     receivedAt: cleanText(message.receivedAt, 80) || null,
@@ -1338,10 +1333,10 @@ export async function handleDiscordRecruitmentAdviceMessage(
   const enabled = settings.enabled || Boolean(options.force);
   const dryRun = Boolean(options.dryRun || settings.dryRun);
   const channelId =
-    snowflake(message.channel_id) || snowflake(options.channelId);
-  const guildId = snowflake(message.guild_id);
-  const messageId = snowflake(message.id);
-  const authorId = snowflake(message.author?.id);
+    cleanSnowflake(message.channel_id) || cleanSnowflake(options.channelId);
+  const guildId = cleanSnowflake(message.guild_id);
+  const messageId = cleanSnowflake(message.id);
+  const authorId = cleanSnowflake(message.author?.id);
   const base: RecruitmentAdviceMessageResult = {
     ok: true,
     enabled,
@@ -1476,7 +1471,7 @@ export async function handleDiscordRecruitmentAdviceMessage(
       { ...message, channel_id: channelId, guild_id: guildId },
       response,
     );
-    const replyMessageId = snowflake(reply?.id) || null;
+    const replyMessageId = cleanSnowflake(reply?.id) || null;
     await recordMessageDecision(
       { ...message, channel_id: channelId, guild_id: guildId },
       {
@@ -1635,7 +1630,7 @@ export async function scanDiscordRecruitmentAdvice(
       }
 
       const handled = await handleDiscordRecruitmentAdviceMessage(
-        { ...message, channel_id: snowflake(message.channel_id) || channelId },
+        { ...message, channel_id: cleanSnowflake(message.channel_id) || channelId },
         { dryRun, force: options.force, channelId },
       );
 
@@ -1681,17 +1676,6 @@ export type RecruitmentAdviceEntry = {
   createdAt: string | null;
   updatedAt: string | null;
 };
-
-function timestampToIso(value: unknown) {
-  if (!value) return null;
-  if (typeof value === "string") return value;
-  const maybeTimestamp = value as { toDate?: () => Date } | null;
-  if (maybeTimestamp && typeof maybeTimestamp.toDate === "function") {
-    return maybeTimestamp.toDate().toISOString();
-  }
-  return null;
-}
-
 function stringList(value: unknown, limit = 8) {
   if (!Array.isArray(value)) return [] as string[];
   return value

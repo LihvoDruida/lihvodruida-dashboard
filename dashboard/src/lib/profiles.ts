@@ -49,6 +49,7 @@ import { listAccessGroups } from "@/lib/accessGroups";
 import type { AccessGroup } from "@/lib/accessGroupSchema";
 import { resilientRead, resilientWrite, getRuntimeCachedValue, clearRuntimeCachedValue, clearRuntimeCachedValuesByPrefix } from "@/lib/runtimeResilience";
 import { firebaseWrite, firebaseUnavailableMessage } from "@/lib/firebaseAccess";
+import { timestampToIso } from "@/lib/values";
 
 export {
   deleteDashboardProfileById,
@@ -129,17 +130,6 @@ export type DashboardProfile = {
   updatedAt?: string | null;
   lastLoginAt?: string | null;
 };
-
-function timestampToIso(value: unknown) {
-  if (!value) return null;
-  if (typeof value === "string") return value;
-  const maybeTimestamp = value as { toDate?: () => Date } | null;
-  if (maybeTimestamp && typeof maybeTimestamp.toDate === "function") {
-    return maybeTimestamp.toDate().toISOString();
-  }
-  return null;
-}
-
 function cleanRole(value: unknown): DashboardRole {
   return value === "admin" ||
     value === "moderator" ||

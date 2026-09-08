@@ -3,15 +3,12 @@ import { getSession } from "@/lib/auth";
 import { handleRaidSessionAction, raidLiveRevision, syncRaidDiscordSignupUpdate, type RaidSignupStatus } from "@/lib/raids";
 import { assertRequestBodySize, noStoreHeaders, safeErrorMessage } from "@/lib/security";
 import { dashboardToastCookie } from "@/lib/serverToasts";
+import { appBaseUrl, wantsJson } from "@/lib/apiRoute";
 
 export const revalidate = 0;
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-function appBaseUrl() {
-  return process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL || process.env.ADMIN_DASHBOARD_URL || process.env.NEXT_PUBLIC_ADMIN_DASHBOARD_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
-}
 
 function raidPath(raidId: string) {
   return `/raids/${encodeURIComponent(raidId)}`;
@@ -22,11 +19,6 @@ function redirectToRaid(raidId: string, toast?: { tone?: "info" | "success" | "w
   const response = NextResponse.redirect(url, { status: 303, headers: noStoreHeaders() });
   if (toast) response.headers.append("Set-Cookie", dashboardToastCookie(toast));
   return response;
-}
-
-
-function wantsJson(request: NextRequest) {
-  return request.headers.get("x-dashboard-action") === "live" || (request.headers.get("accept") || "").includes("application/json");
 }
 
 function jsonToast(payload: { ok: boolean; status?: number; tone?: "info" | "success" | "warning" | "error"; title: string; message?: string; raid?: { id: string } | null; loginUrl?: string; revision?: string | null }) {

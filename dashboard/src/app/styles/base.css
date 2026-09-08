@@ -86,23 +86,6 @@ body {
   padding-bottom: 0;
 }
 
-/* ---------- Зоряне поле (той самий скрипт, що на сайті) ---------- */
-body.has-starfield {
-  background: var(--site-bg-0);
-}
-
-body.has-starfield::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 18% 4%, rgba(200, 155, 60, 0.18), transparent 34rem),
-    radial-gradient(circle at 80% 10%, rgba(255, 122, 47, 0.12), transparent 30rem),
-    linear-gradient(180deg, rgba(14, 11, 8, 0.7), rgba(20, 14, 10, 0.74));
-}
-
 #site-starfield {
   position: fixed;
   inset: 0;
@@ -212,7 +195,6 @@ pre code {
   scroll-margin-top: calc(var(--nav-space) + var(--space-sm));
 }
 
-.visually-hidden,
 .sr-only {
   position: absolute;
   width: 1px;

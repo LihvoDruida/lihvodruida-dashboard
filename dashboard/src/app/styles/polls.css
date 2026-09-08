@@ -64,7 +64,7 @@
 .poll-tab.is-active {
   border-color: transparent;
   background: var(--accent-gradient);
-  color: #1c1208;
+  color: var(--text-on-accent);
 }
 
 .poll-bulk {
@@ -93,11 +93,11 @@
 /* Призупинений пул приглушений, як закритий рейд */
 .poll-detail__paused {
   padding: var(--space-sm) var(--space-md);
-  border: 1px solid rgba(232, 179, 74, 0.28);
+  border: 1px solid var(--tint-warning-border);
   border-left: 3px solid var(--c-warning);
   border-radius: var(--radius-md);
-  background: rgba(232, 179, 74, 0.08);
-  color: #f4d79a;
+  background: var(--tint-warning-bg);
+  color: var(--text-on-warning);
   font-size: 0.85rem;
 }
 
@@ -210,7 +210,10 @@
   list-style: none;
 }
 
+/* Слот години: смуга-заливка лежить під текстом (z-index: -1 у власному
+   стековому контексті), тому цифри лишаються поверх неї. */
 .poll-day__times li {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -221,6 +224,8 @@
   background: var(--surface);
   color: var(--text-muted);
   font-size: 0.8rem;
+  overflow: hidden;
+  isolation: isolate;
 }
 
 /* Час, за який хтось проголосував, підсвічений */
@@ -238,7 +243,11 @@
   min-width: 0;
 }
 
+/* Учасник у клітинці дня: нік → крапка ролі → роль → час */
 .poll-day__voters > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
   padding: 2px var(--space-2xs);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
@@ -320,13 +329,14 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  counter-reset: poll-slot;
 }
 
+/* Номер приходить з розмітки (<b>), а не з CSS-лічильника. Раніше було
+   і те, й інше: у рядку опинялось три елементи замість двох, текст
+   зривався на другий рядок, а поруч із кружечком висіла гола цифра. */
 .poll-recommendation__list li {
-  counter-increment: poll-slot;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: 24px minmax(0, 1fr);
   align-items: center;
   gap: var(--space-sm);
   padding: var(--space-xs) var(--space-md);
@@ -339,8 +349,7 @@
   overflow-wrap: anywhere;
 }
 
-.poll-recommendation__list li::before {
-  content: counter(poll-slot);
+.poll-recommendation__list li > b {
   display: grid;
   place-items: center;
   width: 24px;
@@ -352,14 +361,20 @@
   font-weight: 700;
 }
 
+/* Порожній стан не має номера — текст займає весь рядок */
+.poll-recommendation__list li.is-empty {
+  grid-template-columns: minmax(0, 1fr);
+  color: var(--text-faint);
+}
+
 .poll-recommendation__list li.is-best {
   border-color: var(--border-strong);
   background: var(--accent-soft);
 }
 
-.poll-recommendation__list li.is-best::before {
+.poll-recommendation__list li.is-best > b {
   background: var(--accent-gradient);
-  color: #1c1208;
+  color: var(--text-on-accent);
 }
 
 .poll-recommendation__how {
@@ -577,7 +592,7 @@
 }
 
 .poll-tab.is-active b {
-  background: rgba(28, 18, 8, 0.22);
+  background: color-mix(in srgb, var(--text-on-accent) 22%, transparent);
   color: inherit;
 }
 
@@ -682,7 +697,7 @@
 
 .poll-card__note {
   margin: 0;
-  color: #f4d79a;
+  color: var(--text-on-warning);
   font-size: 0.78rem;
 }
 
@@ -884,13 +899,6 @@
   color: var(--c-danger);
 }
 
-/* Учасник у клітинці дня: нік → крапка ролі → роль → час */
-.poll-day__voters > span {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-3xs);
-}
-
 .poll-day__voters > span em {
   font-style: normal;
   font-size: 0.68rem;
@@ -908,7 +916,7 @@
    Мобільний — не «стиснутий десктоп»: картка й панель керування
    повністю перебудовуються в стек, смужка стану переїжджає нагору.
    ========================================================= */
-@media (max-width: 900px) {
+@media (max-width: 860px) {
   .poll-detail__bar {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -951,7 +959,7 @@
   }
 }
 
-@media (max-width: 560px) {
+@media (max-width: 520px) {
   .poll-card__stats {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1174,13 +1182,6 @@
   gap: var(--space-3xs);
 }
 
-/* Слот години: смуга-заливка під текстом, цифри лишаються зверху */
-.poll-day__times li {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-}
-
 .poll-day__times-fill {
   position: absolute;
   inset-block: 0;
@@ -1192,7 +1193,11 @@
 }
 
 .poll-day__times li.has-votes .poll-day__times-fill {
-  background: linear-gradient(90deg, rgba(255, 155, 85, 0.28), rgba(255, 155, 85, 0.1));
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--c-accent-400) 28%, transparent),
+    color-mix(in srgb, var(--c-accent-400) 10%, transparent)
+  );
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1207,7 +1212,7 @@
   }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 640px) {
   .raid-poll-create-head {
     flex-direction: column;
   }

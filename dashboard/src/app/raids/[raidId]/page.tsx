@@ -1,6 +1,6 @@
 import { getSession } from "@/lib/auth";
 import { canManageRaids, canViewRaidRoster } from "@/lib/permissions";
-import { getMainCharacter, getProfileByDiscordUserId, getProfileById } from "@/lib/profiles";
+import { getProfileByDiscordUserId, getProfileById } from "@/lib/profiles";
 import { getRaid, hasRaidStorage, raidLiveRevision } from "@/lib/raids";
 import RaidLiveSync from "@/components/RaidLiveSync";
 import { RaidAnnouncementPreview, RaidAttendanceActions, RaidManageActions, RaidPageShell, RaidUnavailableState, RosterSideList, StatusNotice } from "@/components/RaidViews";
@@ -37,7 +37,6 @@ export default async function RaidDetailsPage({
     : userDiscordId
       ? await getProfileByDiscordUserId(userDiscordId).catch(() => null)
       : null;
-  const hasMainCharacter = user ? Boolean(profile && getMainCharacter(profile)) : null;
 
   return (
     <RaidPageShell
@@ -54,7 +53,7 @@ export default async function RaidDetailsPage({
           <div className="raid-preview-column">
             <RaidAnnouncementPreview
               raid={visibleRaid}
-              actions={<RaidAttendanceActions raid={visibleRaid} user={user} profile={profile} hasMainCharacter={hasMainCharacter} />}
+              actions={<RaidAttendanceActions raid={visibleRaid} user={user} profile={profile} />}
               manageActions={canManage ? <RaidManageActions raid={visibleRaid} /> : null}
               showRosterDetails={true}
               showMemberItemLevels={canManage}

@@ -34,6 +34,7 @@ main .dashboard-shell {
   padding-block: 0;
   max-width: none;
 }
+
 /* ---------- Вертикальний стек секцій ---------- */
 .dashboard-shell,
 .content-shell,
@@ -50,6 +51,7 @@ main .dashboard-shell {
 .page-section {
   scroll-margin-top: calc(var(--nav-space) + var(--space-md));
 }
+
 /* ---------- Шапка секції ---------- */
 .section-header,
 .dashboard-list-head,
@@ -85,9 +87,9 @@ main .dashboard-shell {
   font-size: 0.9rem;
   line-height: 1.58;
 }
+
 /* ---------- Надзаголовок (section-tag сайту) ---------- */
 .eyebrow,
-.section-tag,
 .app-state-eyebrow,
 .home-kicker,
 [class$="__eyebrow"],
@@ -111,6 +113,7 @@ main .dashboard-shell {
   text-transform: uppercase;
   line-height: 1.6;
 }
+
 /* ---------- Лід-абзац і приглушений текст ---------- */
 .lead,
 [class$="__lead"],
@@ -122,6 +125,7 @@ main .dashboard-shell {
   font-size: 0.95rem;
   line-height: 1.6;
 }
+
 .subtle:not(:where(.btn)),
 .muted,
 .hint,
@@ -139,10 +143,10 @@ main .dashboard-shell {
   line-height: 1.55;
 }
 
-.hero-accent,
-.accent-text {
+.hero-accent {
   color: var(--c-accent-300);
 }
+
 /* =========================================================
    HERO — велика картка-заголовок сторінки
    Візуально це .page-hero сайту: панель із блиском зверху.
@@ -166,6 +170,7 @@ main .dashboard-shell {
   box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
+
 .hero::before,
 .dashboard-hero::before,
 .admin-hero::before,
@@ -194,20 +199,22 @@ main .dashboard-shell {
   z-index: 1;
   min-width: 0;
 }
+
 .hero-copy,
 .dashboard-hero__copy,
 .guild-hero__copy,
-.page-hero-copy,
 [class$="-hero__copy"],
 [class*="-hero__copy "] {
   min-width: 0;
 }
+
 .hero-copy h1,
 .dashboard-hero__copy h1,
 [class$="-hero__copy"] h1,
 [class*="-hero__copy "] h1 {
   margin-bottom: var(--space-xs);
 }
+
 .hero-copy p,
 .dashboard-hero__copy p,
 [class$="-hero__copy"] p,
@@ -216,8 +223,8 @@ main .dashboard-shell {
   color: var(--text-soft);
   line-height: 1.58;
 }
+
 .hero-actions,
-.hero-chip-row,
 [class$="-hero__actions"],
 [class*="-hero__actions "],
 [class$="__actions"],
@@ -233,8 +240,8 @@ main .dashboard-shell {
   align-items: center;
   gap: var(--space-sm);
 }
+
 .hero-actions,
-.hero-chip-row,
 [class$="-hero__actions"],
 [class*="-hero__actions "] {
   margin-top: var(--space-md);
@@ -244,7 +251,7 @@ main .dashboard-shell {
   justify-content: space-between;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 860px) {
 .hero,
 .dashboard-hero,
 .admin-hero,
@@ -301,6 +308,7 @@ main .dashboard-shell {
   justify-content: center;
   margin-top: var(--space-sm);
 }
+
 /* =========================================================
    СІТКИ
    Один патерн auto-fit: не треба описувати кожну сітку окремо.
@@ -313,7 +321,6 @@ main .dashboard-shell {
 [class*="-grid "],
 [class$="__grid"],
 [class*="__grid "],
-.ui-blocks,
 .access-form-grid,
 .home-kd-grid,
 .home-polls-grid {
@@ -321,22 +328,20 @@ main .dashboard-shell {
   grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
   gap: var(--gap-grid);
 }
+
 /* Дрібніші плитки: статистика,
 лічильники */
 [class*="-stats-grid"],
 [class*="-metrics"],
 [class$="-stat-grid"],
-[class*="-stat-grid "],
-.stat-grid {
+[class*="-stat-grid "] {
   grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
   gap: var(--space-sm);
 }
 
 /* Форма у дві колонки */
 .form-row,
-.access-form-grid,
-.content-form-grid,
-.raid-poll-grid {
+.access-form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   gap: var(--space-md);
@@ -345,6 +350,7 @@ main .dashboard-shell {
 .two {
   grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
 }
+
 /* Поле на всю ширину сітки */
 .content-field--wide,
 .raid-poll-field--wide,
@@ -354,9 +360,9 @@ main .dashboard-shell {
 [class*="--full "] {
   grid-column: 1 / -1;
 }
+
 /* ---------- Головна: контент + бічний стек ---------- */
 .home-layout,
-.page-layout,
 [class$="-layout"]:not(:where(.access-groups-layout)),
 [class*="-layout "]:not(:where(.access-groups-layout)) {
   display: grid;
@@ -376,7 +382,6 @@ main .dashboard-shell {
 
 @media (max-width: 1000px) {
 .home-layout,
-.page-layout,
 [class$="-layout"]:not(:where(.access-groups-layout)),
 [class*="-layout "]:not(:where(.access-groups-layout)) {
     grid-template-columns: minmax(0, 1fr);
@@ -537,10 +542,6 @@ main .dashboard-shell {
   margin-top: var(--space-md);
   font-size: 0.85rem;
   color: var(--text-muted);
-}
-
-.app-loading-steps .is-done {
-  color: var(--c-success);
 }
 
 .app-loading-steps .is-active {

@@ -4,41 +4,12 @@ import { recordAdminAudit } from "@/lib/accessGroups";
 import { canManageRaids, canViewRaidDirectory } from "@/lib/permissions";
 import { listRaidPolls, raidPollLiveRevision, saveRaidPollFromForm, saveRaidPollFromInput, type RaidPollCreateInput } from "@/lib/raidPolls";
 import { assertRequestBodySize, logDashboardEvent, noStoreHeaders, safeErrorMessage } from "@/lib/security";
-import { dashboardToastCookie } from "@/lib/serverToasts";
+import {  } from "@/lib/serverToasts";
+import {  jsonError, redirectWithToast, wantsJson } from "@/lib/apiRoute";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-type ToastInput = { tone?: "info" | "success" | "warning" | "error"; title: string; message?: string; ttl?: number };
-
-function appBaseUrl() {
-  const configured = String(process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL || process.env.ADMIN_DASHBOARD_URL || process.env.NEXT_PUBLIC_ADMIN_DASHBOARD_URL || process.env.NEXTAUTH_URL || "https://dashboard.lihvodruida.pp.ua").trim();
-  try {
-    const url = new URL(configured || "https://dashboard.lihvodruida.pp.ua");
-    if (url.hostname.endsWith(".vercel.app")) return "https://dashboard.lihvodruida.pp.ua";
-    return url.origin;
-  } catch {
-    return "https://dashboard.lihvodruida.pp.ua";
-  }
-}
-
-function redirectWithToast(path: string, toast?: ToastInput) {
-  const url = new URL(path, appBaseUrl());
-  const response = NextResponse.redirect(url, { status: 303, headers: noStoreHeaders() });
-  if (toast) response.headers.append("Set-Cookie", dashboardToastCookie(toast));
-  return response;
-}
-
-function wantsJson(request: NextRequest) {
-  const accept = request.headers.get("accept") || "";
-  const contentType = request.headers.get("content-type") || "";
-  return accept.includes("application/json") || contentType.includes("application/json");
-}
-
-function jsonError(message: string, status = 400) {
-  return NextResponse.json({ ok: false, error: message }, { status, headers: noStoreHeaders() });
-}
 
 async function readCreateInput(request: NextRequest): Promise<{ input?: RaidPollCreateInput; form?: FormData }> {
   const contentType = request.headers.get("content-type") || "";

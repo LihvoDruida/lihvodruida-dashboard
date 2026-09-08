@@ -39,6 +39,7 @@
 .card {
   padding: var(--pad-card);
 }
+
 [class$="-card"]:not(:where([class*="nav"])),
 [class*="-card "]:not(:where([class*="nav"])),
 [class$="__card"],
@@ -61,6 +62,7 @@
   flex-direction: column;
   gap: var(--gap-stack);
 }
+
 /* Панель усередині панелі не подвоює рамку */
 .panel .panel,
 .panel [class$="-card"],
@@ -70,6 +72,7 @@
   background: var(--surface-raised);
   box-shadow: none;
 }
+
 /* Клікабельна картка */
 a.card,
 a[class$="-card"],
@@ -84,6 +87,7 @@ a[class*="__card "],
     border-color var(--dur-fast) var(--ease-out),
     box-shadow var(--dur-fast) var(--ease-out);
 }
+
 a.card:hover,
 a[class$="-card"]:hover,
 a[class*="-card "]:hover,
@@ -94,20 +98,19 @@ a[class*="__card "]:hover {
   box-shadow: var(--shadow-lg);
   color: inherit;
 }
-/* Виділена картка — смуга акценту зліва,
-як .card.featured на сайті */
+
+/* Виділена картка — смуга акценту зліва */
 .is-active[class$="-card"],
 .is-active[class*="-card "],
 .is-selected[class$="-card"],
-.is-selected[class*="-card "],
-.card.featured {
+.is-selected[class*="-card "] {
   border-color: var(--border-strong);
 }
+
 .is-active[class$="-card"]::after,
 .is-active[class*="-card "]::after,
 .is-selected[class$="-card"]::after,
-.is-selected[class*="-card "]::after,
-.card.featured::after {
+.is-selected[class*="-card "]::after {
   content: "";
   position: absolute;
   inset: var(--space-sm) auto var(--space-sm) 0;
@@ -116,6 +119,7 @@ a[class*="__card "]:hover {
   background: var(--accent-gradient);
   pointer-events: none;
 }
+
 /* Шапка картки: заголовок ліворуч,
 дії праворуч */
 .profile-card-head,
@@ -133,6 +137,7 @@ a[class*="__card "]:hover {
   gap: var(--space-sm);
   min-width: 0;
 }
+
 .profile-card-head--inline,
 [class$="__head"] > div,
 [class*="__head "] > div,
@@ -140,12 +145,14 @@ a[class*="__card "]:hover {
 [class*="-head "] > div {
   min-width: 0;
 }
+
 [class$="__head"] strong,
 [class*="__head "] strong,
 [class$="-head"] strong,
 [class*="-head "] strong {
   color: var(--text-strong);
 }
+
 [class$="__head"] small,
 [class*="__head "] small,
 [class$="-head"] small,
@@ -153,6 +160,7 @@ a[class*="__card "]:hover {
   display: block;
   color: var(--text-muted);
 }
+
 .profile-card-lead,
 [class$="__lead"],
 [class*="__lead "] {
@@ -160,12 +168,13 @@ a[class*="__card "]:hover {
   font-size: 0.9rem;
   line-height: 1.58;
 }
+
 /* Іконка-плитка в шапці */
-[class$="__icon"]:not(:where(.dashboard-nav__icon)),
+[class$="__icon"],
 /* Іконка-плитка в шапці */
-[class*="__icon "]:not(:where(.dashboard-nav__icon)),
-[class$="-icon"]:not(:where(.social-icon)):not(:where(.dashboard-nav__icon)),
-[class*="-icon "]:not(:where(.social-icon)):not(:where(.dashboard-nav__icon)) {
+[class*="__icon "],
+[class$="-icon"],
+[class*="-icon "] {
   display: inline-grid;
   place-items: center;
   flex: 0 0 auto;
@@ -230,12 +239,12 @@ a[class*="__card "]:hover {
 .btn-primary {
   border-color: transparent;
   background: var(--accent-gradient);
-  color: #1c1208;
+  color: var(--text-on-accent);
 }
 
 .btn.primary:hover,
 .btn-primary:hover {
-  color: #1c1208;
+  color: var(--text-on-accent);
   box-shadow: 0 12px 26px -14px var(--accent-ring);
 }
 
@@ -305,23 +314,17 @@ a[class*="__card "]:hover {
   font-size: 0.78rem;
 }
 
-.btn-lg {
-  min-height: 52px;
-  padding: 0 var(--space-xl);
-  font-size: 0.95rem;
-}
-
 .btn svg {
   width: 1.1em;
   height: 1.1em;
   flex: 0 0 auto;
 }
+
 /* =========================================================
    3. ФОРМИ — геометрія з apply.css сайту
    ========================================================= */
 .content-field,
 .field,
-.form-field,
 .raid-poll-field,
 .application-filter-field,
 .admin-policy-toggle,
@@ -333,8 +336,8 @@ a[class*="__card "]:hover {
   gap: var(--space-xs);
   min-width: 0;
 }
+
 .content-field > span,
-.form-field > span,
 .raid-poll-field > span,
 [class$="-field"] > span:first-child,
 [class*="-field "] > span:first-child,
@@ -352,9 +355,9 @@ label > span:first-child {
   flex-wrap: wrap;
   gap: var(--space-xs);
 }
+
 /* Підказка під полем */
 .content-field small,
-.form-field small,
 [class$="-field"] small,
 [class*="-field "] small {
   font-size: 0.75rem;
@@ -500,6 +503,7 @@ input[type="radio"] {
   border-radius: var(--radius-md);
   background: var(--surface-raised);
 }
+
 /* Секція форми */
 .content-form-section,
 .raid-form-section,
@@ -531,6 +535,7 @@ legend {
 form {
   min-width: 0;
 }
+
 /* =========================================================
    4. ПОВІДОМЛЕННЯ — нейтральне, помилка,
 попередження
@@ -562,34 +567,32 @@ form {
   border-left-width: 3px;
   box-shadow: none;
 }
+
 .error-note,
 .login-alert,
-.notice.danger,
-[class$="-alert"].is-error,
-[class*="-alert "].is-error {
-  border-color: rgba(224, 112, 95, 0.28);
+.notice.danger {
+  border-color: var(--tint-danger-border);
   border-left-color: var(--c-danger);
-  background: rgba(224, 112, 95, 0.08);
-  color: #ffbdb1;
+  background: var(--tint-danger-bg);
+  color: var(--text-on-danger);
 }
 
 .warning-note,
 .profile-storage-warning,
 .notice.warning,
 .notice.is-warning {
-  border-color: rgba(232, 179, 74, 0.28);
+  border-color: var(--tint-warning-border);
   border-left-color: var(--c-warning);
-  background: rgba(232, 179, 74, 0.08);
-  color: #f4d79a;
+  background: var(--tint-warning-bg);
+  color: var(--text-on-warning);
 }
+
 .notice.success,
-.notice.is-ok,
-[class$="-alert"].is-success,
-[class*="-alert "].is-success {
-  border-color: rgba(124, 196, 143, 0.28);
+.notice.is-ok {
+  border-color: var(--tint-success-border);
   border-left-color: var(--c-success);
-  background: rgba(124, 196, 143, 0.08);
-  color: #b6e2c3;
+  background: var(--tint-success-bg);
+  color: var(--text-on-success);
 }
 
 .notice.info,
@@ -598,6 +601,7 @@ form {
   background: var(--accent-soft);
   color: var(--c-accent-100);
 }
+
 /* =========================================================
    5. ПІГУЛКИ ТА ЧІПИ
    ========================================================= */
@@ -609,16 +613,14 @@ form {
 .dashboard-table-pill,
 .profile-count-pill,
 .content-mode-pill,
-.member-chip,
-.score-tag,
 [class$="-pill"],
 [class*="-pill "],
 [class$="-chip"],
 [class*="-chip "],
 [class$="-badge"],
 [class*="-badge "],
-[class$="-tag"]:not(:where(.section-tag)),
-[class*="-tag "]:not(:where(.section-tag)) {
+[class$="-tag"],
+[class*="-tag "] {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2xs);
@@ -633,6 +635,7 @@ form {
   line-height: 1.6;
   white-space: nowrap;
 }
+
 /* Тони пігулок — один набір станів на весь дашборд */
 .is-ok,
 .is-ready,
@@ -649,6 +652,7 @@ form {
 [class*="--success "] {
   --tone: var(--c-success);
 }
+
 .is-warning,
 .is-pending,
 .is-paused,
@@ -657,6 +661,7 @@ form {
 [class*="--warning "] {
   --tone: var(--c-warning);
 }
+
 .is-problem,
 .is-missing,
 .is-blocked,
@@ -671,6 +676,7 @@ form {
 [class*="--error "] {
   --tone: var(--c-danger);
 }
+
 .is-selected,
 .is-open,
 .is-next,
@@ -680,11 +686,11 @@ form {
 [class*="--accent "] {
   --tone: var(--c-accent-400);
 }
+
 .is-closed,
 .is-empty,
 .is-absent,
 .is-off,
-.is-muted,
 .subtle,
 [class$="--muted"],
 [class*="--muted "],
@@ -692,6 +698,7 @@ form {
 [class*="--ghost "] {
   --tone: var(--c-ink-400);
 }
+
 .status-pill,
 .poll-chip,
 .status-chip,
@@ -710,9 +717,9 @@ form {
   background: color-mix(in srgb, var(--tone, var(--c-ink-400)) 12%, transparent);
   color: var(--tone, var(--text-soft));
 }
+
 /* Кнопка-фільтр у шапці таблиці */
 .dashboard-table-filter,
-.application-filter-chip,
 [class$="-filter"]:not(:where([class*="field"])),
 [class*="-filter "]:not(:where([class*="field"])) {
   display: inline-flex;
@@ -738,7 +745,7 @@ form {
 .dashboard-table-filter.is-active {
   border-color: transparent;
   background: var(--accent-gradient);
-  color: #1c1208;
+  color: var(--text-on-accent);
 }
 
 .dashboard-table-filter--danger {
@@ -746,30 +753,32 @@ form {
   background: rgba(224, 112, 95, 0.1);
   color: var(--c-danger);
 }
-/* Ролі та складності WoW */
-.is-tank,
+
 [class$="--tank"],
 [class*="--tank "] {
   --tone: var(--c-role-tank);
 }
-.is-healer,
+
 [class$="--healer"],
 [class*="--healer "] {
   --tone: var(--c-role-healer);
 }
-.is-dps,
+
 [class$="--dps"],
 [class*="--dps "] {
   --tone: var(--c-role-dps);
 }
+
 [class$="--mythic"],
 [class*="--mythic "] {
   --tone: var(--c-diff-mythic);
 }
+
 [class$="--heroic"],
 [class*="--heroic "] {
   --tone: var(--c-diff-heroic);
 }
+
 [class$="--normal"],
 [class*="--normal "] {
   --tone: var(--c-diff-normal);
@@ -784,6 +793,7 @@ form {
   flex-direction: column;
   gap: var(--gap-stack);
 }
+
 .dashboard-list,
 .dashboard-table,
 [class$="-list"]:not(:where(.dashboard-nav-more__menu-list)):not(:where(.discord-preview-list)),
@@ -878,6 +888,7 @@ a.dashboard-list-row:hover {
   color: var(--text-muted);
   overflow-wrap: break-word;
 }
+
 .dashboard-list-row > [role="cell"] > [class$="-pill"],
 .dashboard-list-row > [role="cell"] > [class*="-pill "],
 .dashboard-table-row > [role="cell"] > [class$="-pill"],
@@ -895,8 +906,8 @@ a.dashboard-list-row:hover {
   font-weight: 600;
   font-size: 0.82rem;
 }
+
 .dashboard-table-empty,
-.dashboard-list-empty,
 .empty-state,
 .raid-empty,
 .poll-empty,
@@ -912,12 +923,14 @@ a.dashboard-list-row:hover {
   text-align: center;
   color: var(--text-muted);
 }
+
 .empty-state strong,
 [class$="-empty"]:not(:where([class*="--empty"])) strong,
 [class*="-empty "]:not(:where([class*="--empty"])) strong {
   color: var(--text-soft);
   font-size: 0.95rem;
 }
+
 /* Смуга показників над таблицею */
 .dashboard-table-stats,
 .guild-hero-stats,
@@ -1136,9 +1149,9 @@ details > *:not(:where(summary)) {
   margin-top: var(--space-xs);
   max-height: 320px;
 }
+
 /* Смуга вкладок */
 .admin-tabs,
-.content-tabs,
 [class$="-tabs"],
 [class*="-tabs "] {
   display: flex;
@@ -1148,10 +1161,12 @@ details > *:not(:where(summary)) {
   padding-bottom: var(--space-2xs);
   scrollbar-width: none;
 }
+
 [class$="-tabs"]::-webkit-scrollbar,
 [class*="-tabs "]::-webkit-scrollbar {
   display: none;
 }
+
 [class$="-tabs"] > a,
 [class*="-tabs "] > a,
 [class$="-tabs"] > button,
@@ -1172,22 +1187,24 @@ details > *:not(:where(summary)) {
   cursor: pointer;
   transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
+
 [class$="-tabs"] > a.is-active,
 [class*="-tabs "] > a.is-active,
 [class$="-tabs"] > button.is-active,
 [class*="-tabs "] > button.is-active {
   border-color: transparent;
   background: var(--accent-gradient);
-  color: #1c1208;
+  color: var(--text-on-accent);
 }
+
 /* =========================================================
    8. АВАТАРИ ТА МЕДІА
    ========================================================= */
-[class$="-avatar"]:not(:where(.discord-avatar)),
+[class$="-avatar"],
 /* =========================================================
    8. АВАТАРИ ТА МЕДІА
    ========================================================= */
-[class*="-avatar "]:not(:where(.discord-avatar)),
+[class*="-avatar "],
 [class$="__avatar"],
 [class*="__avatar "] {
   width: 40px;
@@ -1198,6 +1215,7 @@ details > *:not(:where(summary)) {
   border: 1px solid var(--border);
   background: var(--surface-raised);
 }
+
 .raid-signup-avatar--empty,
 [class$="-avatar--empty"],
 [class*="-avatar--empty "] {
@@ -1334,7 +1352,7 @@ input[type="checkbox"]:checked::after {
   top: 2px;
   width: 5px;
   height: 10px;
-  border: solid #1c1208;
+  border: solid var(--text-on-accent);
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
@@ -1344,7 +1362,7 @@ input[type="radio"]:checked::after {
   position: absolute;
   inset: 5px;
   border-radius: 50%;
-  background: #1c1208;
+  background: var(--text-on-accent);
 }
 
 input[type="checkbox"]:focus-visible,
@@ -1369,25 +1387,6 @@ label:has(> input[type="radio"]) {
 label:has(> input[type="radio"]:checked),
 label:has(> input[type="checkbox"]:checked) {
   border-color: var(--border-strong);
-}
-
-/* ---------- Поле з кнопкою в один рядок ---------- */
-.input-with-action {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-  align-items: center;
-  min-width: 0;
-}
-
-.input-with-action > .input,
-.input-with-action > input {
-  flex: 1 1 200px;
-  min-width: 0;
-}
-
-.input-with-action > .btn {
-  flex: 0 0 auto;
 }
 
 /* =========================================================

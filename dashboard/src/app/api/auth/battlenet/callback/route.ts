@@ -19,9 +19,7 @@ import {
   checkRateLimit,
   getClientIp,
   logDashboardEvent,
-  noStoreHeaders,
-  safeErrorMessage,
-} from "@/lib/security";
+  safeErrorMessage, applyNoStoreHeaders } from "@/lib/security";
 import { checkGeoAccess } from "@/lib/geoAccessPolicy";
 import { safeDashboardReturnPath } from "@/lib/dashboardRedirects";
 
@@ -62,8 +60,7 @@ function redirectToProfile(profileId: string, status: string, nextPath = "") {
     : new URL(`${getDashboardUrl()}/profile/${profileId}`);
   target.searchParams.set("characterStatus", status);
   const response = NextResponse.redirect(target.toString(), 303);
-  for (const [key, value] of Object.entries(noStoreHeaders()))
-    response.headers.set(key, value);
+  applyNoStoreHeaders(response);
   return response;
 }
 

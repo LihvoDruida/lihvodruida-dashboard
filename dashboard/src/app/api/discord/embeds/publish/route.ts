@@ -10,8 +10,7 @@ import {
   logDashboardEvent,
   noStoreHeaders,
   safeErrorMessage,
-  verifyTrustedOrigin,
-} from "@/lib/security";
+  verifyTrustedOrigin, applyNoStoreHeaders } from "@/lib/security";
 import {
   createDiscordEmbedMessage,
   discordMessageUrl,
@@ -125,7 +124,7 @@ function redirectTo(request: NextRequest, params: Record<string, string>, return
     if (value) url.searchParams.set(key, value);
   }
   const response = NextResponse.redirect(url, 303);
-  for (const [key, value] of Object.entries(noStoreHeaders())) response.headers.set(key, value);
+  applyNoStoreHeaders(response);
   return response;
 }
 

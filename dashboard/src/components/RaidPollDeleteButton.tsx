@@ -2,14 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { dashboardErrorMessage, dispatchDashboardToast } from "@/lib/clientToasts";
-
-function errorFromPayload(data: unknown, fallback: string) {
-  if (!data || typeof data !== "object") return fallback;
-  const record = data as Record<string, unknown>;
-  const message = record.error || record.message || record.warning;
-  return typeof message === "string" && message.trim() ? message.trim() : fallback;
-}
+import { dashboardErrorMessage, dispatchDashboardToast, errorFromPayload } from "@/lib/clientToasts";
 
 export default function RaidPollDeleteButton({ pollId, pollTitle }: { pollId: string; pollTitle: string }) {
   const router = useRouter();

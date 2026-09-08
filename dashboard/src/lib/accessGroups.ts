@@ -17,6 +17,7 @@ import {
   type AccessGroup,
   type DashboardPermissionKey,
 } from "@/lib/accessGroupSchema";
+import { timestampToIso } from "@/lib/values";
 
 const DEFAULT_GROUPS: AccessGroup[] = [
   {
@@ -480,15 +481,6 @@ async function mirrorAuditLogToDiscord(item: AdminAuditLogItem) {
     });
   }
 }
-
-function timestampToIso(value: any): string | null {
-  if (!value) return null;
-  if (typeof value === "string") return value;
-  if (typeof value.toDate === "function") return value.toDate().toISOString();
-  if (value instanceof Date) return value.toISOString();
-  return null;
-}
-
 function auditStatus(value: unknown): AdminAuditLogItem["status"] {
   return value === "success" || value === "warning" || value === "error" || value === "info" ? value : "info";
 }

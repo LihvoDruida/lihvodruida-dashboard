@@ -4,6 +4,7 @@ import { getDashboardUrl } from "@/lib/oauth";
 import { getAdaptiveConcurrency, mapConcurrent, readIntegerEnv } from "@/lib/concurrency";
 import { buildBattleNetCharacterKey, normalizeBattleNetNameSlug, normalizeBattleNetRealmSlug } from "@/lib/wowCharacters";
 import { resolveWowCharacterRole, type WowCharacterRole } from "@/lib/wowRoles";
+import { envFlag } from "@/lib/values";
 
 export type BattleNetRegion = "us" | "eu" | "kr" | "tw";
 
@@ -112,13 +113,6 @@ function cleanText(value: unknown, maxLength = 160) {
     .slice(0, Math.max(0, maxLength))
     .join("");
 }
-
-function envFlag(name: string, fallback = false) {
-  const raw = process.env[name];
-  if (raw === undefined || raw === null || raw === "") return fallback;
-  return ["1", "true", "yes", "on"].includes(String(raw).toLowerCase());
-}
-
 function getBattleNetRequestTimeoutMs() {
   return readIntegerEnv("BATTLENET_REQUEST_TIMEOUT_MS", 10_000, 2_500, 30_000);
 }

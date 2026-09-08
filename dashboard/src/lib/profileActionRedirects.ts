@@ -1,7 +1,7 @@
 import "server-only";
 
 import { NextRequest, NextResponse } from "next/server";
-import { noStoreHeaders } from "@/lib/security";
+import {  applyNoStoreHeaders } from "@/lib/security";
 import { safeDashboardReturnPath } from "@/lib/dashboardRedirects";
 
 function cleanProfileId(value: unknown) {
@@ -42,7 +42,6 @@ export function redirectToProfileAction(
   const url = new URL(targetPath, request.url);
   if (statusKey && status) url.searchParams.set(statusKey, status);
   const response = NextResponse.redirect(url, 303);
-  for (const [key, value] of Object.entries(noStoreHeaders()))
-    response.headers.set(key, value);
+  applyNoStoreHeaders(response);
   return response;
 }

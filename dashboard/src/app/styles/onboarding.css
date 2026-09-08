@@ -408,23 +408,23 @@
 .rules-onboarding-notice--warning,
 .rules-onboarding-data-warning {
   border-left-color: var(--c-warning);
-  border-color: rgba(232, 179, 74, 0.28);
-  background: rgba(232, 179, 74, 0.08);
-  color: #f4d79a;
+  border-color: var(--tint-warning-border);
+  background: var(--tint-warning-bg);
+  color: var(--text-on-warning);
 }
 
 .rules-onboarding-notice--success,
 .rules-onboarding-notice--ok {
   border-left-color: var(--c-success);
-  background: rgba(124, 196, 143, 0.08);
-  color: #b6e2c3;
+  background: var(--tint-success-bg);
+  color: var(--text-on-success);
 }
 
 .rules-onboarding-notice--error {
   border-left-color: var(--c-danger);
-  border-color: rgba(224, 112, 95, 0.28);
-  background: rgba(224, 112, 95, 0.08);
-  color: #ffbdb1;
+  border-color: var(--tint-danger-border);
+  background: var(--tint-danger-bg);
+  color: var(--text-on-danger);
 }
 
 .rules-onboarding-notice strong,
@@ -1159,41 +1159,16 @@
   min-width: 0;
 }
 
-/* Підсумок проблемних місць — список, а не плитка */
-.rules-onboarding-issues {
+/* Підсумок проблемних місць — список {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-xs);
-}
-
-.rules-onboarding-issue {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid rgba(232, 179, 74, 0.28);
-  border-left: 3px solid var(--c-warning);
-  border-radius: var(--radius-md);
-  background: rgba(232, 179, 74, 0.07);
-  min-width: 0;
 }
 
 .rules-onboarding-issue > span:not(:where([class$="__icon"])) {
   display: grid;
   gap: var(--space-3xs);
   min-width: 0;
-}
-
-.rules-onboarding-issue strong {
-  font-size: 0.88rem;
-  color: #f4d79a;
-}
-
-.rules-onboarding-issue small {
-  font-size: 0.78rem;
-  line-height: 1.5;
-  color: var(--text-muted);
 }
 
 /* Текстова колонка замкненої картки — вертикальна пара */
@@ -1218,7 +1193,7 @@
   flex: 0 0 auto;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 860px) {
   .rules-registration-locked-card {
     grid-template-columns: auto minmax(0, 1fr);
   }

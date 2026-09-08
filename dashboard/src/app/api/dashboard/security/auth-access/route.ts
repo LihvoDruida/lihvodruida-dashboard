@@ -14,17 +14,12 @@ import {
   verifyTrustedOrigin,
 } from "@/lib/security";
 import { dashboardToastCookie } from "@/lib/serverToasts";
+import { wantsJsonResponse } from "@/lib/apiRoute";
 
 export const revalidate = 0;
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-function wantsJsonResponse(request: NextRequest) {
-  const dashboardAction = String(request.headers.get("x-dashboard-action") || "").toLowerCase();
-  const accept = String(request.headers.get("accept") || "").toLowerCase();
-  return dashboardAction === "live" || accept.includes("application/json");
-}
 
 function safeAdminRedirectUrl(request: NextRequest) {
   const fallback = new URL("/dashboard", request.url);

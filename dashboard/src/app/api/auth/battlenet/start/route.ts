@@ -12,7 +12,7 @@ import {
   checkRateLimit,
   getClientIp,
   logDashboardEvent,
-  noStoreHeaders,
+  applyNoStoreHeaders,
 } from "@/lib/security";
 import { checkGeoAccess } from "@/lib/geoAccessPolicy";
 import { safeDashboardReturnPath } from "@/lib/dashboardRedirects";
@@ -27,8 +27,7 @@ function encodeNextPath(path: string) {
 
 function redirectWithNoStore(target: string) {
   const response = NextResponse.redirect(target, 303);
-  for (const [key, value] of Object.entries(noStoreHeaders()))
-    response.headers.set(key, value);
+  applyNoStoreHeaders(response);
   return response;
 }
 

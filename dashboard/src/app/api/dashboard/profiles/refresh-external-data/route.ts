@@ -16,16 +16,11 @@ import {
   verifyInternalBearerToken,
   verifyTrustedOrigin,
 } from "@/lib/security";
+import { integerParam } from "@/lib/apiRoute";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const revalidate = 0;
-
-function integerParam(value: string | null, fallback: number, min: number, max: number) {
-  const number = Number(value);
-  if (!Number.isFinite(number)) return fallback;
-  return Math.max(min, Math.min(Math.floor(number), max));
-}
 
 async function runRefresh(request: NextRequest, reason: "manual" | "cron") {
   const url = new URL(request.url);

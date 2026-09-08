@@ -10,6 +10,7 @@ import {
   runtimeCircuitOpen,
   safeErrorText,
 } from "@/lib/runtimeResilience";
+import { envFlag } from "@/lib/values";
 
 export type FirebaseArea =
   | "settings"
@@ -52,16 +53,6 @@ function cleanArea(area: FirebaseArea | string | undefined): FirebaseArea {
     ? value
     : "generic";
 }
-
-function envFlag(names: string[], fallback = false) {
-  for (const name of names) {
-    const raw = process.env[name];
-    if (raw === undefined || raw === null || raw === "") continue;
-    return ["1", "true", "yes", "on"].includes(String(raw).trim().toLowerCase());
-  }
-  return fallback;
-}
-
 function firebaseReadsDisabled() {
   return envFlag(["FIREBASE_READS_DISABLED", "FIRESTORE_READS_DISABLED"], false);
 }

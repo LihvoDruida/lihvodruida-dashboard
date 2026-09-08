@@ -74,7 +74,6 @@
   .profile-account-layout {
     grid-template-columns: minmax(0, 1fr);
   }
-
 }
 
 .profile-character-candidate__kind {
@@ -1137,11 +1136,11 @@
 
 .discord-json-error {
   padding: var(--space-xs) var(--space-md);
-  border: 1px solid rgba(224, 112, 95, 0.28);
+  border: 1px solid var(--tint-danger-border);
   border-left: 3px solid var(--c-danger);
   border-radius: var(--radius-md);
-  background: rgba(224, 112, 95, 0.08);
-  color: #ffbdb1;
+  background: var(--tint-danger-bg);
+  color: var(--text-on-danger);
   font-family: var(--font-mono);
   font-size: 0.78rem;
   overflow-wrap: anywhere;

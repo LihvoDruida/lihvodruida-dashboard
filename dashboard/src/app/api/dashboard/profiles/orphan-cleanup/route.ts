@@ -7,6 +7,7 @@ import {
   unauthorizedResponse,
   verifyInternalBearerToken,
 } from "@/lib/security";
+import { envFlag } from "@/lib/apiRoute";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,12 +36,6 @@ function accountCleanupGuard() {
   const guard = globalThis.__mistblossomAccountCleanupRouteGuard || { lastStartedAt: 0 };
   globalThis.__mistblossomAccountCleanupRouteGuard = guard;
   return guard;
-}
-
-function envFlag(name: string, fallback = false) {
-  const raw = process.env[name];
-  if (raw === undefined || raw === null || raw === "") return fallback;
-  return ["1", "true", "yes", "on"].includes(String(raw).trim().toLowerCase());
 }
 
 function minIntervalMs() {

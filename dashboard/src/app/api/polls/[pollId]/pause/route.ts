@@ -4,27 +4,12 @@ import { recordAdminAudit } from "@/lib/accessGroups";
 import { canManageRaids } from "@/lib/permissions";
 import { pauseRaidPoll, raidPollLiveRevision, resumeRaidPoll } from "@/lib/raidPolls";
 import { assertRequestBodySize, logDashboardEvent, noStoreHeaders, safeErrorMessage } from "@/lib/security";
-import { dashboardToastCookie } from "@/lib/serverToasts";
+import {  } from "@/lib/serverToasts";
+import {  redirectWithToast, wantsJson } from "@/lib/apiRoute";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-function appBaseUrl() {
-  return process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL || process.env.ADMIN_DASHBOARD_URL || process.env.NEXT_PUBLIC_ADMIN_DASHBOARD_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
-}
-
-function wantsJson(request: NextRequest) {
-  const accept = request.headers.get("accept") || "";
-  const contentType = request.headers.get("content-type") || "";
-  return accept.includes("application/json") || contentType.includes("application/json");
-}
-
-function redirectWithToast(path: string, toast: { tone?: "success" | "error" | "warning"; title: string; message?: string; ttl?: number }) {
-  const response = NextResponse.redirect(new URL(path, appBaseUrl()), { status: 303, headers: noStoreHeaders() });
-  response.headers.append("Set-Cookie", dashboardToastCookie(toast));
-  return response;
-}
 
 type PauseAction = "pause" | "resume";
 

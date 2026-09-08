@@ -4,6 +4,7 @@ import { recordAdminAudit } from "@/lib/accessGroups";
 import { canManageDiscordMembers } from "@/lib/permissions";
 import { assertRequestBodySize, checkRateLimit, getClientIp, logDashboardEvent, noStoreHeaders, safeErrorMessage, verifyTrustedOrigin } from "@/lib/security";
 import { dashboardToastCookie } from "@/lib/serverToasts";
+import { wantsJsonResponse } from "@/lib/apiRoute";
 
 export async function requireDiscordAdmin(request: NextRequest, action: string, bodyLimit = 16 * 1024) {
   if (!verifyTrustedOrigin(request)) {
@@ -52,14 +53,6 @@ function adminDiscordPayload(input: AdminDiscordResultInput) {
       ttl: input.ttl || (input.ok ? 5200 : 8200),
     },
   };
-}
-
-function wantsJsonResponse(request: NextRequest) {
-  // Admin forms should never dump raw JSON into the browser on normal navigation.
-  // JSON is returned for DashboardFormEnhancer live-submit requests and direct API fetches.
-  const dashboardAction = String(request.headers.get("x-dashboard-action") || "").toLowerCase();
-  const accept = String(request.headers.get("accept") || "").toLowerCase();
-  return dashboardAction === "live" || accept.includes("application/json");
 }
 
 function safeAdminRedirectUrl(request: NextRequest) {

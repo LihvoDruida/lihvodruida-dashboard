@@ -301,7 +301,7 @@ export function RaidPollResults({ poll, canManage = false, relatedPolls = [poll]
             <strong>{raidPollSlotSummary(bestSlot)}</strong>
             <span>
               {bestSlot
-                ? `Танки ${bestSlot.tanks}/${bestSlot.requiredTanks} (ціль ${bestSlot.desiredTanks}) → хіли ${bestSlot.healers}/${bestSlot.requiredHealers} (ціль ${bestSlot.desiredHealers}) → ДД ${bestSlot.effectiveDps}${bestSlot.unknown ? ` → без ролі ${bestSlot.unknown}` : ""}`
+                ? `Танки ${bestSlot.tanks}/${bestSlot.desiredTanks} → хіли ${bestSlot.healers}/${bestSlot.desiredHealers} → всього ${bestSlot.total} → ДД ${bestSlot.effectiveDps}${bestSlot.unknown ? ` → без ролі ${bestSlot.unknown}` : ""}`
                 : "Потрібні голоси з вибраною роллю, щоб зʼявився нормальний розрахунок."}
             </span>
           </div>
@@ -322,9 +322,14 @@ export function RaidPollResults({ poll, canManage = false, relatedPolls = [poll]
           <summary>Як рахується пріоритет</summary>
           <p>
             Найраніший зручний час означає доступність і на всі пізніші слоти дня. Активні голосування
-            розводяться по різних днях: один день не пропонується двом рейд-пулам. Порядок: валідне ядро
-            ролей → мінімум 1 танк і ціль 2 → хіли за формулою 1 на 4–5 ДД → максимум ДД → загальна
-            кількість голосів. Класи й спеки тут не враховуються: пул питає лише про час і роль.
+            розводяться по різних днях: один день не пропонується двом рейд-пулам.
+          </p>
+          <p>
+            Порядок пріоритету, зверху вниз: <b>зібране ядро</b> (1 танк, 1 хіл, 3 ДД) → <b>два танки</b> →
+            <b> хіли</b> до потрібної кількості, далі бонус за запасних (максимум +2) → <b>загальна кількість
+            гравців</b> → ДД → штраф за голоси без вибраної ролі. Кожен рівень важливіший за всі нижчі
+            разом: день із двома танками виграє в дня з одним, а між двома рівноцінними днями завжди
+            перемагає той, де людей більше. Класи й спеки не враховуються — пул питає лише про час і роль.
           </p>
         </details>
       </section>

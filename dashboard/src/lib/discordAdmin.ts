@@ -1,6 +1,7 @@
 import { mapConcurrent } from "@/lib/concurrency";
 import { parseRulesRoleIdsFromUrl } from "@/lib/rulesOnboarding";
 import { logDashboardEvent } from "@/lib/security";
+import { cleanSnowflake } from "@/lib/values";
 
 const DISCORD_API_BASE = "https://discord.com/api/v10";
 const DASHBOARD_CUSTOM_ID_PREFIX = "mbv1";
@@ -471,7 +472,7 @@ export function getDiscordPublicKey() {
 }
 
 export function getDiscordDefaultChannelId() {
-  return snowflake(process.env.DISCORD_CHANNEL_ID || "");
+  return cleanSnowflake(process.env.DISCORD_CHANNEL_ID || "");
 }
 
 function workerRelayToken() {
@@ -719,12 +720,6 @@ function tryParseJson(value: string) {
     return null;
   }
 }
-
-function snowflake(value: unknown) {
-  const text = String(value || "").trim();
-  return /^\d{16,25}$/.test(text) ? text : "";
-}
-
 function cleanText(value: unknown, max: number) {
   return Array.from(String(value || "")
     .normalize("NFC")
@@ -736,7 +731,7 @@ function cleanText(value: unknown, max: number) {
 
 function cleanRoleIds(values: unknown) {
   if (!Array.isArray(values)) return [] as string[];
-  return Array.from(new Set(values.map(snowflake).filter(Boolean))).slice(0, 100);
+  return Array.from(new Set(values.map(cleanSnowflake).filter(Boolean))).slice(0, 100);
 }
 
 function roleMentionLine(roleIds: string[]) {
@@ -897,7 +892,7 @@ export async function fetchDiscordGuildSnapshot(): Promise<DiscordGuildSnapshot>
 }
 
 function fallbackDiscordTextChannels(fallbackChannelId = "", guild: DiscordGuildSnapshot | null = null, warning?: string | null): DiscordTextChannelsSnapshot {
-  const fallback = snowflake(fallbackChannelId);
+  const fallback = cleanSnowflake(fallbackChannelId);
   return {
     guild,
     channels: fallback ? [{ id: fallback, name: "канал за замовчуванням", type: 0, position: 0, parent_id: null }] : [],
@@ -1007,7 +1002,7 @@ function normalizeDiscordTextChannels(
       position: Number(channel.position || 0),
       parent_id: channel.parent_id ? String(channel.parent_id) : null,
     }))
-    .filter((channel) => snowflake(channel.id))
+    .filter((channel) => cleanSnowflake(channel.id))
     .sort((a, b) => a.position - b.position || a.name.localeCompare(b.name, "uk"));
 
   const rulesByGuild = guild?.rules_channel_id
@@ -1019,8 +1014,8 @@ function normalizeDiscordTextChannels(
     return name.includes("rules") || name.includes("rule") || name.includes("правил") || name.includes("pravyl") || name.includes("правила");
   });
 
-  const raidById = snowflake(suggestedRaidChannelId)
-    ? textChannels.find((channel) => channel.id === snowflake(suggestedRaidChannelId))
+  const raidById = cleanSnowflake(suggestedRaidChannelId)
+    ? textChannels.find((channel) => channel.id === cleanSnowflake(suggestedRaidChannelId))
     : undefined;
   const raidByName = textChannels.find((channel) => {
     const name = channel.name.toLowerCase();
@@ -1032,7 +1027,7 @@ function normalizeDiscordTextChannels(
       name.includes("оголош")
     );
   });
-  const fallback = snowflake(fallbackChannelId);
+  const fallback = cleanSnowflake(fallbackChannelId);
   const fallbackById = fallback
     ? textChannels.find((channel) => channel.id === fallback)
     : undefined;
@@ -1071,7 +1066,7 @@ function discordRoleSort(a: Pick<DiscordRoleOption, "id" | "name" | "position">,
 }
 
 function normalizeDiscordRole(role: any): DiscordRoleOption & { permissionsRaw?: bigint } | null {
-  const id = snowflake(role?.id);
+  const id = cleanSnowflake(role?.id);
   if (!id) return null;
   return {
     id,
@@ -1092,7 +1087,7 @@ async function fetchDiscordRawRoles(guildId: string) {
 
 async function fetchDiscordCurrentBotUser() {
   const user = await discordApi<any>("/users/@me");
-  const id = snowflake(user?.id);
+  const id = cleanSnowflake(user?.id);
   if (!id) throw new Error("Discord bot token не повернув ID бота.");
   return {
     id,
@@ -1161,7 +1156,7 @@ export async function fetchDiscordRoleControlSnapshot(): Promise<DiscordBotRoleC
 
     const botMember = await discordApi<any>(`/guilds/${guildId}/members/${bot.id}`);
     const botRoleIds = Array.isArray(botMember?.roles)
-      ? botMember.roles.map((roleId: unknown) => snowflake(roleId)).filter(Boolean)
+      ? botMember.roles.map((roleId: unknown) => cleanSnowflake(roleId)).filter(Boolean)
       : [];
     const sortedRoles = rawRoles.sort(discordRoleSort);
     const botTopRole = highestRoleForMember(botRoleIds, sortedRoles);
@@ -1208,7 +1203,7 @@ export async function fetchDiscordRoleControlSnapshot(): Promise<DiscordBotRoleC
 }
 
 export async function assertDiscordRolesManageable(roleIdsInput: unknown[]) {
-  const requested = Array.from(new Set(roleIdsInput.map(snowflake).filter(Boolean)));
+  const requested = Array.from(new Set(roleIdsInput.map(cleanSnowflake).filter(Boolean)));
   if (!requested.length) throw new Error("Вибери хоча б одну Discord-роль.");
   const snapshot = await fetchDiscordRoleControlSnapshot();
   if (snapshot.error) throw new Error(snapshot.error);
@@ -1272,7 +1267,7 @@ function base36ToSnowflake(value: string) {
 }
 
 function encodedRoleIds(roleIds: string[]) {
-  const cleaned = Array.from(new Set(roleIds.map(snowflake).filter(Boolean)));
+  const cleaned = Array.from(new Set(roleIds.map(cleanSnowflake).filter(Boolean)));
   if (cleaned.length === 0) throw new Error("Для кнопки “Прийняти” потрібно вибрати хоча б одну роль.");
   return cleaned.map(snowflakeToBase36).join(".");
 }
@@ -1420,7 +1415,7 @@ export async function createDiscordEmbedMessage(params: {
   components?: unknown[];
   auditReason?: string;
 }) {
-  const channelId = snowflake(params.channelId);
+  const channelId = cleanSnowflake(params.channelId);
   if (!channelId) throw new Error("Канал Discord не вибрано або ID невалідний.");
 
   const body: Record<string, unknown> = {
@@ -1620,8 +1615,8 @@ export type DiscordEditableMessage = {
 };
 
 export function normalizeDiscordMessageForEditor(message: Record<string, unknown>, channelIdFallback?: string): DiscordEditableMessage {
-  const id = snowflake(message.id) || "";
-  const channelId = snowflake(message.channel_id) || snowflake(channelIdFallback) || "";
+  const id = cleanSnowflake(message.id) || "";
+  const channelId = cleanSnowflake(message.channel_id) || cleanSnowflake(channelIdFallback) || "";
   const embed = firstEmbed(message);
   const title = cleanText(embed?.title, 256) || cleanText(embed?.description, 64) || "Discord-повідомлення";
   const rulesRoleIds = extractRulesRoleIdsFromMessage(message);
@@ -1656,7 +1651,7 @@ export async function fetchDiscordEditableMessage(ref: DiscordMessageRef) {
 }
 
 export async function listRulesEmbedMessages(channelId: string, limit = 50) {
-  const cleanChannelId = snowflake(channelId);
+  const cleanChannelId = cleanSnowflake(channelId);
   if (!cleanChannelId) return [] as DiscordEditableMessage[];
 
   const safeLimit = Math.max(1, Math.min(100, Math.floor(limit)));
@@ -1675,9 +1670,9 @@ export async function addGuildMemberRoles(params: {
   concurrency?: number;
   maxConcurrency?: number;
 }) {
-  const guildId = snowflake(params.guildId);
-  const userId = snowflake(params.userId);
-  const roleIds = Array.from(new Set(params.roleIds.map(snowflake).filter(Boolean)));
+  const guildId = cleanSnowflake(params.guildId);
+  const userId = cleanSnowflake(params.userId);
+  const roleIds = Array.from(new Set(params.roleIds.map(cleanSnowflake).filter(Boolean)));
 
   if (!guildId || !userId || roleIds.length === 0) throw new Error("Не вистачає guild/user/role ID для видачі ролі.");
 
@@ -1701,8 +1696,8 @@ export async function addGuildMemberRoles(params: {
 }
 
 export async function fetchDiscordGuildMemberSnapshot(userIdInput: string, guildIdInput = getDiscordGuildId()): Promise<DiscordGuildMemberSnapshot> {
-  const guildId = snowflake(guildIdInput);
-  const userId = snowflake(userIdInput);
+  const guildId = cleanSnowflake(guildIdInput);
+  const userId = cleanSnowflake(userIdInput);
   if (!guildId || !userId) throw new Error("Не вистачає guild/user ID для читання Discord-імені.");
 
   const member = await discordApi<any>(`/guilds/${guildId}/members/${userId}`);
@@ -1711,7 +1706,7 @@ export async function fetchDiscordGuildMemberSnapshot(userIdInput: string, guild
   const globalName = cleanText(user.global_name, 32) || null;
   const username = cleanText(user.username, 32) || null;
   const roleIds = Array.isArray(member?.roles)
-    ? member.roles.map((roleId: unknown) => snowflake(roleId)).filter(Boolean).slice(0, 100)
+    ? member.roles.map((roleId: unknown) => cleanSnowflake(roleId)).filter(Boolean).slice(0, 100)
     : [];
 
   return {
@@ -1725,8 +1720,8 @@ export async function fetchDiscordGuildMemberSnapshot(userIdInput: string, guild
 }
 
 export async function fetchDiscordGuildBanSnapshot(userIdInput: string, guildIdInput = getDiscordGuildId()): Promise<DiscordGuildBanSnapshot | null> {
-  const guildId = snowflake(guildIdInput);
-  const userId = snowflake(userIdInput);
+  const guildId = cleanSnowflake(guildIdInput);
+  const userId = cleanSnowflake(userIdInput);
   if (!guildId || !userId) throw new Error("Не вистачає guild/user ID для перевірки Discord-бану.");
 
   let ban: any;
@@ -1754,7 +1749,7 @@ export async function fetchDiscordGuildBanSnapshot(userIdInput: string, guildIdI
 }
 
 export async function fetchDiscordGuildBans(limitInput: unknown = 50_000): Promise<DiscordGuildBanSnapshot[]> {
-  const guildId = snowflake(getDiscordGuildId());
+  const guildId = cleanSnowflake(getDiscordGuildId());
   if (!guildId) throw new Error("Discord-сервер не підключений до панелі.");
 
   const parsedLimit = Number(limitInput);
@@ -1771,7 +1766,7 @@ export async function fetchDiscordGuildBans(limitInput: unknown = 50_000): Promi
 
     for (const ban of bans) {
       const user = ban?.user && typeof ban.user === "object" ? ban.user : {};
-      const userId = snowflake(user.id || ban?.user_id || ban?.id);
+      const userId = cleanSnowflake(user.id || ban?.user_id || ban?.id);
       if (!userId) continue;
       result.push({
         userId,
@@ -1797,9 +1792,9 @@ export async function replaceGuildMemberRoles(params: {
   roleIds: string[];
   reason?: string;
 }) {
-  const guildId = snowflake(params.guildId);
-  const userId = snowflake(params.userId);
-  const roleIds = Array.from(new Set(params.roleIds.map(snowflake).filter(Boolean))).slice(0, 100);
+  const guildId = cleanSnowflake(params.guildId);
+  const userId = cleanSnowflake(params.userId);
+  const roleIds = Array.from(new Set(params.roleIds.map(cleanSnowflake).filter(Boolean))).slice(0, 100);
 
   if (!guildId || !userId) throw new Error("Не вистачає guild/user ID для оновлення ролей.");
 
@@ -1816,8 +1811,8 @@ export async function updateGuildMemberNickname(params: {
   nickname: string;
   reason?: string;
 }) {
-  const guildId = snowflake(params.guildId);
-  const userId = snowflake(params.userId);
+  const guildId = cleanSnowflake(params.guildId);
+  const userId = cleanSnowflake(params.userId);
   const nickname = cleanText(params.nickname, 32);
   if (!guildId || !userId) throw new Error("Не вистачає guild/user ID для зміни імені.");
   if (!nickname) throw new Error("Discord-імʼя порожнє.");
@@ -1833,8 +1828,8 @@ export async function kickGuildMember(params: {
   userId: string;
   reason?: string;
 }) {
-  const guildId = snowflake(params.guildId);
-  const userId = snowflake(params.userId);
+  const guildId = cleanSnowflake(params.guildId);
+  const userId = cleanSnowflake(params.userId);
   if (!guildId || !userId) throw new Error("Не вистачає guild/user ID для кіку.");
 
   await discordApi<void>(`/guilds/${guildId}/members/${userId}`, {
@@ -1896,13 +1891,13 @@ export type DiscordGuildMemberModerationItem = {
 function normalizeGuildMemberForModeration(member: any): DiscordGuildMemberModerationItem | null {
   if (!member || typeof member !== "object") return null;
   const user = member.user && typeof member.user === "object" ? member.user : {};
-  const userId = snowflake(user.id || member.user_id || member.id);
+  const userId = cleanSnowflake(user.id || member.user_id || member.id);
   if (!userId || Boolean(user.bot)) return null;
   const nick = cleanText(member.nick, 32) || null;
   const username = cleanText(user.username, 32) || null;
   const globalName = cleanText(user.global_name, 32) || null;
   const roleIds = Array.isArray(member.roles)
-    ? member.roles.map((roleId: unknown) => snowflake(roleId)).filter(Boolean).slice(0, 100)
+    ? member.roles.map((roleId: unknown) => cleanSnowflake(roleId)).filter(Boolean).slice(0, 100)
     : [];
   return {
     userId,
@@ -1949,9 +1944,9 @@ export async function removeGuildMemberRoles(params: {
   concurrency?: number;
   maxConcurrency?: number;
 }) {
-  const guildId = snowflake(params.guildId);
-  const userId = snowflake(params.userId);
-  const roleIds = Array.from(new Set(params.roleIds.map(snowflake).filter(Boolean)));
+  const guildId = cleanSnowflake(params.guildId);
+  const userId = cleanSnowflake(params.userId);
+  const roleIds = Array.from(new Set(params.roleIds.map(cleanSnowflake).filter(Boolean)));
 
   if (!guildId || !userId || roleIds.length === 0) throw new Error("Не вистачає guild/user/role ID для зняття ролі.");
 

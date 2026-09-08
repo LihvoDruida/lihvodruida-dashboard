@@ -318,8 +318,7 @@
   white-space: nowrap;
 }
 
-.admin-policy-status.is-on,
-.admin-policy-status.is-enabled {
+.admin-policy-status.is-on {
   --tone: var(--c-success);
 }
 
@@ -473,18 +472,18 @@
 
 .admin-log-highlight--success {
   background: color-mix(in srgb, var(--c-success) 16%, transparent);
-  color: #b6e2c3;
+  color: var(--text-on-success);
 }
 
 .admin-log-highlight--error {
   background: color-mix(in srgb, var(--c-danger) 16%, transparent);
-  color: #ffbdb1;
+  color: var(--text-on-danger);
 }
 
 /* =========================================================
    7. АДАПТИВ
    ========================================================= */
-@media (max-width: 1100px) {
+@media (max-width: 1000px) {
   .discord-management-layout {
     grid-template-columns: minmax(0, 1fr);
   }

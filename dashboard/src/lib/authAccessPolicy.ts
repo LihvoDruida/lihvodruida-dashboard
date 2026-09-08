@@ -3,9 +3,9 @@ import "server-only";
 import { FieldValue } from "firebase-admin/firestore";
 import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
 import type { DashboardSession } from "@/lib/auth";
-import {  } from "@/lib/security";
 import { resilientRead } from "@/lib/runtimeResilience";
 import { firebaseWrite } from "@/lib/firebaseAccess";
+import { envFlag, timestampToIso } from "@/lib/values";
 
 const SETTINGS_COLLECTION = "dashboardSettings";
 const AUTH_ACCESS_DOC_ID = "authAccessPolicy";
@@ -44,21 +44,6 @@ export type AuthAccessDecision = {
   requiredRoleIds: string[];
   matchedRoleIds: string[];
 };
-
-function envFlag(name: string, fallback: boolean) {
-  const raw = process.env[name];
-  if (raw === undefined || raw === null || raw === "") return fallback;
-  return /^(1|true|yes|on)$/i.test(String(raw).trim());
-}
-
-function timestampToIso(value: unknown) {
-  if (!value) return null;
-  if (typeof value === "string") return value;
-  const maybeTimestamp = value as { toDate?: () => Date } | null;
-  if (maybeTimestamp && typeof maybeTimestamp.toDate === "function") return maybeTimestamp.toDate().toISOString();
-  return null;
-}
-
 export function cleanDiscordRoleIds(value: unknown) {
   const items = Array.isArray(value) ? value : String(value || "").split(/[\s,;]+/g);
   return Array.from(

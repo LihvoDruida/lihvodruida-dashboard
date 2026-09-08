@@ -15,23 +15,21 @@ import type {
 } from "@/lib/raids";
 import {
   RAID_ALGORITHM_MAX_RAID_PARTIES,
-  RAID_ALGORITHM_PARTY_SIZE,
   RAID_ALGORITHM_UTILITY_RULES,
-  raidAlgorithmAutoCompositionForSize,
-  raidAlgorithmClassToken,
-  raidAlgorithmDpsRangeType,
-  raidAlgorithmDpsSecondaryScore,
   raidAlgorithmMemberUtilityWeight,
   raidAlgorithmRuleMatches,
-  raidAlgorithmUtilityChecklist,
 } from "@/lib/raidCompositionAlgorithm";
+import { MAX_RAID_PLAYERS, RAID_PARTY_SIZE, dpsRangeType, dpsTierTwoScore, missingCriticalBuffs, partyCapacity, partyFlexRoleCount, partyMembersCount, pickParty, raidMinimumItemLevel, raidRegistrationLimit, roleSortWeight, signupClassKey } from "@/lib/raidPartyShared";
+import { RoleMarkerStack, formatRaidDateTime, raidPartyRoleLabel, signupSpecLabel, todayIso } from "@/components/RaidSignupPresentation";
+import {  raidAutoComposition, raidAutoCompositionLabel } from "@/lib/raidPartyShared";
+
+/* Затримка перед перебудовою прев'ю під час набору тексту. */
+const PREVIEW_INPUT_DEBOUNCE_MS = 120;
 
 const DEFAULT_RAID_TITLE = "Войдспайр";
 const DEFAULT_RAID_TIME = "20:00";
 const DEFAULT_RAID_DESCRIPTION =
   "Глибоко в серці темної цитаделі нас чекають давні таємниці та смертельні вороги.\n\nБудьте готові до суворого випробування!";
-const RAID_PARTY_SIZE = RAID_ALGORITHM_PARTY_SIZE;
-const MAX_RAID_PLAYERS = 80;
 const MAX_RAID_PARTIES = RAID_ALGORITHM_MAX_RAID_PARTIES;
 
 const DIFFICULTY_LABELS: Record<RaidDifficulty, string> = {
@@ -52,14 +50,9 @@ const LOOT_LABELS: Record<RaidLootMode, string> = {
   "loot-council": "Loot Council",
 };
 
-
 type RaidEditorLivePreviewProps = {
   initialRaid: RaidItem;
 };
-
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function cleanText(
   value: FormDataEntryValue | null | undefined,
@@ -119,11 +112,6 @@ function raidTitle(raid: Pick<RaidItem, "title" | "difficulty">) {
   return `${raid.title || DEFAULT_RAID_TITLE} — ${DIFFICULTY_LABELS[raid.difficulty]}`;
 }
 
-function formatRaidDateTime(date?: string | null, time?: string | null) {
-  if (!date && !time) return "Дата уточнюється";
-  return [date || "Дата уточнюється", time || ""].filter(Boolean).join(", ");
-}
-
 function raidStatusLabel(raid: Pick<RaidItem, "status">) {
   if (raid.status === "closed") return "Закрито";
   return raid.status === "published" ? "Опубліковано" : "Чернетка";
@@ -135,57 +123,14 @@ function activeSignups(raid: Pick<RaidItem, "signups">) {
   );
 }
 
-function activeRoleDemand(signups: RaidSignup[]): RaidComposition {
-  const active = signups.filter(
-    (item) => item.status === "going" || item.status === "late" || item.status === "tentative",
-  );
-  return {
-    tanks: active.filter((item) => item.role === "tank").length,
-    healers: active.filter((item) => item.role === "healer").length,
-    dps: active.filter((item) => item.role === "dps").length,
-  };
-}
-
 function compositionCapacity(composition: RaidComposition) {
   return composition.tanks + composition.healers + composition.dps;
-}
-
-function autoRaidCompositionForSize(
-  size: number,
-  difficulty: RaidDifficulty,
-  roleDemand?: RaidComposition | null,
-): RaidComposition {
-  return raidAlgorithmAutoCompositionForSize(size, difficulty, roleDemand);
-}
-
-function raidRegistrationLimit(raid: Pick<RaidItem, "maxPlayers">) {
-  const limit = Number(raid.maxPlayers || 0);
-  return Number.isFinite(limit) && limit > 0
-    ? Math.max(1, Math.min(MAX_RAID_PLAYERS, Math.floor(limit)))
-    : null;
 }
 
 function raidCompositionTargetSize(
   raid: Pick<RaidItem, "maxPlayers" | "signups">,
 ) {
   return raidRegistrationLimit(raid) ?? activeSignups(raid).length;
-}
-
-function raidAutoComposition(
-  raid: Pick<RaidItem, "difficulty" | "maxPlayers" | "signups">,
-) {
-  return autoRaidCompositionForSize(
-    raidCompositionTargetSize(raid),
-    raid.difficulty,
-    activeRoleDemand(raid.signups),
-  );
-}
-
-function raidAutoCompositionLabel(
-  raid: Pick<RaidItem, "difficulty" | "maxPlayers" | "signups">,
-) {
-  const composition = raidAutoComposition(raid);
-  return `${composition.tanks} / ${composition.healers} / ${composition.dps}`;
 }
 
 function raidDisplayCapacity(
@@ -306,15 +251,6 @@ function signupDisplayName(
   return markers ? `${markers} ${value}` : value;
 }
 
-function signupSpecLabel(item?: RaidSignup | null) {
-  if (!item) return "";
-  const spec = item.activeSpecName
-    ? `${item.activeSpecName}${item.className ? ` • ${item.className}` : ""}`
-    : item.className || "";
-  const guildLabel = item.verifiedGuild === false ? "Інший персонаж" : "";
-  return [spec, guildLabel].filter(Boolean).join(" • ");
-}
-
 function signupExtraLabel(item?: RaidSignup | null) {
   if (!item) return "";
   return [
@@ -362,57 +298,6 @@ function SignupAvatar({ item }: { item?: RaidSignup | null }) {
   );
 }
 
-function SignupNumberBadge({
-  item,
-}: {
-  item?: Pick<RaidSignup, "signupNumber"> | null;
-}) {
-  const number = Number(item?.signupNumber || 0);
-  const hasNumber = Number.isFinite(number) && number > 0;
-  const label = hasNumber ? `${Math.floor(number)}` : "";
-  const title = hasNumber
-    ? `Порядковий номер запису: ${Math.floor(number)}`
-    : "Місце ще не зайняте";
-  return (
-    <span
-      className={`raid-signup-order${label ? "" : " raid-signup-order--empty"}`}
-      title={title}
-    >
-      {label}
-    </span>
-  );
-}
-
-function RoleMarkerStack({
-  item,
-  role,
-  iconClassName = "raid-role-icon",
-}: {
-  item?: Pick<RaidSignup, "signupNumber"> | null;
-  role: RaidCharacterRole;
-  iconClassName?: string;
-}) {
-  return (
-    <span className="raid-signup-side" aria-hidden="true">
-      <SignupNumberBadge item={item} />
-      <span className={iconClassName}>
-        {role === "tank" ? "🛡" : role === "healer" ? "✚" : "⚔"}
-      </span>
-    </span>
-  );
-}
-
-function raidPartyRoleLabel(role: RaidCharacterRole) {
-  if (role === "tank") return "Танк";
-  if (role === "healer") return "Хіл";
-  return "ДД";
-}
-
-function raidMinimumItemLevel(raid: Pick<RaidItem, "minItemLevel">) {
-  const minimum = Number(raid.minItemLevel || 0);
-  return Number.isFinite(minimum) && minimum > 0 ? Math.floor(minimum) : 0;
-}
-
 function signupItemLevelIssue(
   raid: Pick<RaidItem, "minItemLevel" | "minItemLevelRequired">,
   item?: RaidSignup | null,
@@ -430,12 +315,6 @@ function signupItemLevelIssue(
   return raid.minItemLevelRequired
     ? `⛔ ${Math.floor(current)} ilvl нижче мінімуму ${minimum}`
     : `⚠️ ${Math.floor(current)} ilvl нижче мінімуму ${minimum}`;
-}
-
-function roleSortWeight(item: RaidSignup) {
-  if (item.role === "tank") return 0;
-  if (item.role === "healer") return 1;
-  return 2;
 }
 
 function cleanSignupNumber(value?: number | null) {
@@ -482,10 +361,6 @@ function signupRosterOrder(a: RaidSignup, b: RaidSignup) {
   );
 }
 
-function signupClassKey(item?: RaidSignup | null) {
-  return raidAlgorithmClassToken(item);
-}
-
 function selectTanksForComposition(tanks: RaidSignup[], limit: number) {
   return takeClassBalanced(tanks, limit);
 }
@@ -495,16 +370,6 @@ function selectHealersForComposition(healers: RaidSignup[], limit: number) {
 }
 
 type DpsRangeType = "melee" | "ranged";
-
-function dpsRangeType(item: RaidSignup): DpsRangeType {
-  return raidAlgorithmDpsRangeType(item);
-}
-
-
-function dpsTierTwoScore(item: RaidSignup) {
-  return raidAlgorithmDpsSecondaryScore(item);
-}
-
 
 const RAID_CRITICAL_BUFFS: Array<{
   label: string;
@@ -579,10 +444,6 @@ function selectDpsForComposition(dps: RaidSignup[], limit: number) {
   return selected.slice(0, limit);
 }
 
-function missingCriticalBuffs(members: RaidSignup[]) {
-  return raidAlgorithmUtilityChecklist(members).missingRequired;
-}
-
 function takeClassBalanced(candidates: RaidSignup[], limit: number) {
   const pool = [...candidates].sort(signupRosterOrder);
   const selected: RaidSignup[] = [];
@@ -602,33 +463,6 @@ function takeClassBalanced(candidates: RaidSignup[], limit: number) {
   }
 
   return selected;
-}
-
-function partyMembersCount(party: RaidParty) {
-  return (party.tank ? 1 : 0) + (party.healer ? 1 : 0) + party.dps.length;
-}
-
-function partyCapacity(party: RaidParty) {
-  return RAID_PARTY_SIZE - partyMembersCount(party);
-}
-
-function pickParty(
-  parties: RaidParty[],
-  predicate: (party: RaidParty) => boolean,
-) {
-  const candidates = parties.filter(
-    (party) => partyCapacity(party) > 0 && predicate(party),
-  );
-  return (
-    candidates.sort(
-      (a, b) =>
-        partyMembersCount(a) - partyMembersCount(b) || a.index - b.index,
-    )[0] || null
-  );
-}
-
-function partyFlexRoleCount(party: RaidParty, role: RaidCharacterRole) {
-  return party.dps.filter((item) => item.role === role).length;
 }
 
 function placeFlexMember(parties: RaidParty[], member: RaidSignup) {
@@ -1011,25 +845,49 @@ export default function RaidEditorLivePreview({
     if (!form) return;
 
     let pendingSync: number | null = null;
-    const syncPreview = () => setRaid(readRaidFromForm(initialRaid, form));
+    let lastSignature = "";
+
+    // Кожен setRaid створює новий обʼєкт, тож useMemo нижче інвалідується
+    // безумовно і перебудовує весь склад рейду. Тому спершу звіряємо
+    // підпис: набір символів у полі опису не змінює прев'ю складу,
+    // і перебудовувати його на кожну літеру немає сенсу.
+    const syncPreview = () => {
+      const next = readRaidFromForm(initialRaid, form);
+      const signature = JSON.stringify(next);
+      if (signature === lastSignature) return;
+      lastSignature = signature;
+      setRaid(next);
+    };
+
+    // input — потік подій під час набору тексту, його гасимо затримкою.
+    // change і click дискретні (вибір у select, кнопка), там затримка
+    // виглядала б як залипання інтерфейсу.
     const scheduleSync = () => {
       if (pendingSync !== null) window.clearTimeout(pendingSync);
       pendingSync = window.setTimeout(() => {
         pendingSync = null;
         syncPreview();
-      }, 0);
+      }, PREVIEW_INPUT_DEBOUNCE_MS);
+    };
+
+    const syncNow = () => {
+      if (pendingSync !== null) {
+        window.clearTimeout(pendingSync);
+        pendingSync = null;
+      }
+      syncPreview();
     };
 
     syncPreview();
     form.addEventListener("input", scheduleSync);
-    form.addEventListener("change", scheduleSync);
-    form.addEventListener("click", scheduleSync);
+    form.addEventListener("change", syncNow);
+    form.addEventListener("click", syncNow);
 
     return () => {
       if (pendingSync !== null) window.clearTimeout(pendingSync);
       form.removeEventListener("input", scheduleSync);
-      form.removeEventListener("change", scheduleSync);
-      form.removeEventListener("click", scheduleSync);
+      form.removeEventListener("change", syncNow);
+      form.removeEventListener("click", syncNow);
     };
   }, [initialRaid]);
 

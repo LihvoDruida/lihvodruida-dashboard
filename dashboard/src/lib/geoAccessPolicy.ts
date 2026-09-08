@@ -4,9 +4,10 @@ import { FieldValue } from "firebase-admin/firestore";
 import { NextRequest, NextResponse } from "next/server";
 import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
 import type { DashboardSession } from "@/lib/auth";
-import { logDashboardEvent, noStoreHeaders } from "@/lib/security";
+import { logDashboardEvent, noStoreHeaders, applyNoStoreHeaders } from "@/lib/security";
 import { resilientRead } from "@/lib/runtimeResilience";
 import { firebaseWrite } from "@/lib/firebaseAccess";
+import { envFlag, timestampToIso } from "@/lib/values";
 
 const SETTINGS_COLLECTION = "dashboardSettings";
 const GEO_ACCESS_DOC_ID = "geoAccessPolicy";
@@ -74,21 +75,6 @@ export type GeoAccessDecision = {
   reason: "disabled" | "target_disabled" | "blocked_country" | "unknown_country" | "allowed";
   policy: GeoAccessPolicy;
 };
-
-function envFlag(name: string, fallback: boolean) {
-  const raw = process.env[name];
-  if (raw === undefined || raw === null || raw === "") return fallback;
-  return /^(1|true|yes|on)$/i.test(String(raw).trim());
-}
-
-function timestampToIso(value: unknown) {
-  if (!value) return null;
-  if (typeof value === "string") return value;
-  const maybeTimestamp = value as { toDate?: () => Date } | null;
-  if (maybeTimestamp && typeof maybeTimestamp.toDate === "function") return maybeTimestamp.toDate().toISOString();
-  return null;
-}
-
 function splitCountryTokens(value: unknown) {
   if (Array.isArray(value)) return value.map((item) => String(item || "").trim()).filter(Boolean);
   return String(value || "").split(/[\s,;|]+/g).map((item) => item.trim()).filter(Boolean);
@@ -290,6 +276,6 @@ export function geoAccessDeniedResponse(request: NextRequest, decision: GeoAcces
   }
 
   const response = NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(error)}`, url.origin), 303);
-  for (const [key, value] of Object.entries(noStoreHeaders())) response.headers.set(key, value);
+  applyNoStoreHeaders(response);
   return response;
 }

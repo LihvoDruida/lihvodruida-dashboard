@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
 import { recordAdminAudit } from "@/lib/accessGroups";
 import { canManageRaids } from "@/lib/permissions";
@@ -7,33 +7,14 @@ import { saveRaidBenchPrioritySettingsFromForm } from "@/lib/raids";
 import {
   assertRequestBodySize,
   logDashboardEvent,
-  noStoreHeaders,
   safeErrorMessage,
 } from "@/lib/security";
-import { dashboardToastCookie } from "@/lib/serverToasts";
+import {  } from "@/lib/serverToasts";
+import {  redirectWithToast } from "@/lib/apiRoute";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-type ToastInput = {
-  tone?: "info" | "success" | "warning" | "error";
-  title: string;
-  message?: string;
-  ttl?: number;
-};
-
-function appBaseUrl() {
-  return (
-    process.env.DASHBOARD_URL ||
-    process.env.NEXT_PUBLIC_DASHBOARD_URL ||
-    process.env.ADMIN_DASHBOARD_URL ||
-    process.env.NEXT_PUBLIC_ADMIN_DASHBOARD_URL ||
-    process.env.NEXTAUTH_URL ||
-    "http://localhost:3000"
-  );
-}
-
 
 function benchPriorityAuditKey(userId: string, settings: {
   enabled: boolean;
@@ -50,16 +31,6 @@ function benchPriorityAuditKey(userId: string, settings: {
     .slice(0, 24);
   const actor = String(userId || "user").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 32) || "user";
   return `raids:bench-priority:${actor}:${hash}`;
-}
-
-function redirectWithToast(path: string, toast?: ToastInput) {
-  const url = new URL(path, appBaseUrl());
-  const response = NextResponse.redirect(url, {
-    status: 303,
-    headers: noStoreHeaders(),
-  });
-  if (toast) response.headers.append("Set-Cookie", dashboardToastCookie(toast));
-  return response;
 }
 
 export async function POST(request: NextRequest) {

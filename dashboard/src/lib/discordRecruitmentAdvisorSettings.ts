@@ -8,6 +8,7 @@ import {
   hasFirebaseProfileConfig,
 } from "@/lib/firebaseAdmin";
 import { resilientRead } from "@/lib/runtimeResilience";
+import { envFlag, timestampToIso } from "@/lib/values";
 
 const SETTINGS_COLLECTION = "dashboardSettings";
 const SETTINGS_DOC_ID = "discordRecruitmentAdvisor";
@@ -41,13 +42,6 @@ declare global {
     | { settings: DiscordRecruitmentAdvisorSettings; cachedAt: number }
     | undefined;
 }
-
-function envFlag(name: string, fallback = false) {
-  const raw = process.env[name];
-  if (raw === undefined || raw === null || raw === "") return fallback;
-  return ["1", "true", "yes", "on"].includes(String(raw).trim().toLowerCase());
-}
-
 function cleanInteger(
   value: unknown,
   fallback: number,
@@ -59,16 +53,6 @@ function cleanInteger(
   if (!Number.isFinite(number)) return fallback;
   return Math.max(min, Math.min(max, Math.floor(number)));
 }
-
-function timestampToIso(value: unknown) {
-  if (!value) return null;
-  if (typeof value === "string") return value;
-  const maybeTimestamp = value as { toDate?: () => Date } | null;
-  if (maybeTimestamp && typeof maybeTimestamp.toDate === "function")
-    return maybeTimestamp.toDate().toISOString();
-  return null;
-}
-
 export function defaultRecruitmentAdvisorSettings(): DiscordRecruitmentAdvisorSettings {
   return {
     enabled: envFlag("DISCORD_RECRUITMENT_ADVICE_ENABLED", false),

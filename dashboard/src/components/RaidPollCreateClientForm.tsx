@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { dashboardErrorMessage, dispatchDashboardToast } from "@/lib/clientToasts";
+import { dashboardErrorMessage, dispatchDashboardToast, errorFromPayload } from "@/lib/clientToasts";
 import { RolePicker, type DiscordRoleOption } from "@/components/DiscordEmbedEditor";
 import {
   RAID_POLL_CLOSE_OPTIONS,
@@ -49,12 +49,6 @@ function clean(value: string) {
 
 function looksLikeDiscordChannelId(value: string) {
   return /^\d{16,25}$/.test(value.trim());
-}
-
-function errorFromPayload(data: unknown, fallback: string) {
-  if (!data || typeof data !== "object") return fallback;
-  const message = (data as Record<string, unknown>).error || (data as Record<string, unknown>).message;
-  return typeof message === "string" && message.trim() ? message.trim() : fallback;
 }
 
 export default function RaidPollCreateClientForm({ channels, roles = [], defaultChannelId = "", disabled = false, poll = null }: RaidPollCreateClientFormProps) {
@@ -117,7 +111,6 @@ export default function RaidPollCreateClientForm({ channels, roles = [], default
     if (normalizedDescription.length > 900) return "Опис занадто довгий. Максимум — 900 символів.";
     return "";
   }
-
 
   function toggleDay(day: RaidPollDay) {
     setSelectedDays((current) => {

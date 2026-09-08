@@ -6,9 +6,9 @@ import {
   getFirebaseAdminDb,
   hasFirebaseProfileConfig,
 } from "@/lib/firebaseAdmin";
-import {  } from "@/lib/security";
 import { resilientRead } from "@/lib/runtimeResilience";
 import { firebaseWrite } from "@/lib/firebaseAccess";
+import { timestampToIso } from "@/lib/values";
 
 const SETTINGS_COLLECTION = "dashboardSettings";
 const DASHBOARD_API_SETTINGS_DOC_ID = "backgroundApiPolicy";
@@ -210,18 +210,6 @@ function ecoFallback(normal: number, economy: number) {
 function ecoFlagFallback(normal: boolean, economy: boolean) {
   return firebaseEcoModeEnabled() ? economy : normal;
 }
-
-function timestampToIso(value: unknown) {
-  if (!value) return null;
-  if (typeof value === "string") return value;
-  const maybeTimestamp = value as { toDate?: () => Date } | null;
-  if (maybeTimestamp && typeof maybeTimestamp.toDate === "function") {
-    return maybeTimestamp.toDate().toISOString();
-  }
-  if (value instanceof Date) return value.toISOString();
-  return null;
-}
-
 function envDashboardApiDebugAuditLogs() {
   const raw = cleanText(process.env.DASHBOARD_API_DEBUG_AUDIT_LOGS, 20);
   if (!raw) return DEFAULT_DASHBOARD_API_DEBUG_AUDIT_LOGS;

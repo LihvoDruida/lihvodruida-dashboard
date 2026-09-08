@@ -559,29 +559,6 @@
   color: var(--text-muted);
 }
 
-/* =========================================================
-   5. ВІДЖЕТИ СКЛАДУ
-   ========================================================= */
-
-/* Аватар персонажа */
-.guild-member-avatar {
-  width: 36px;
-  height: 36px;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 1px solid var(--border-subtle);
-  background: var(--surface-sunken);
-}
-
-.guild-member-avatar--empty {
-  display: grid;
-  place-items: center;
-  color: var(--c-accent-300);
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
 /* Клас + спек однією коміркою з кольоровою міткою класу */
 .dashboard-list-row > .guild-class-cell,
 .dashboard-table-row > .guild-class-cell,
@@ -623,34 +600,11 @@
   color: var(--text-muted);
 }
 
-/* Сегменти Raider.IO: активний виділений, решта приглушені */
-.guild-score-badges {
+/* Сегменти Raider.IO: активний виділений {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2xs);
   min-width: 0;
-}
-
-.guild-score-badges > span {
-  display: grid;
-  gap: 1px;
-  padding: 2px var(--space-2xs);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  background: var(--surface-sunken);
-  text-align: center;
-}
-
-.guild-score-badges > span > small {
-  font-size: 0.6rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
-
-.guild-score-badges > span > strong {
-  font-size: 0.78rem;
-  color: var(--text-soft);
 }
 
 .guild-score-badges > span.is-active {
@@ -662,111 +616,12 @@
   color: var(--c-accent-200);
 }
 
-/* ---------- Кільцева діаграма ---------- */
-.guild-stat-card {
-  gap: var(--gap-stack);
-}
-
-.guild-stat-card__head {
-  display: grid;
-  gap: var(--space-2xs);
-}
-
-.guild-stat-card__head h2 {
-  margin: 0;
-}
-
-.guild-stat-card__head p {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.84rem;
-}
-
-.guild-donut-layout {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: var(--space-lg);
-  min-width: 0;
-}
-
-.guild-donut {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 148px;
-  height: 148px;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  background: conic-gradient(var(--guild-donut, var(--c-ink-500) 0 100%));
-}
-
-/* Внутрішній отвір — окремий шар, щоб conic-gradient лишався цілим */
-.guild-donut::after {
+/* Внутрішній отвір — окремий шар {
   content: "";
   position: absolute;
   inset: 26px;
   border-radius: 50%;
   background: var(--surface);
-}
-
-.guild-donut > div {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  gap: 1px;
-  justify-items: center;
-  text-align: center;
-}
-
-.guild-donut > div > strong {
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: var(--text-strong);
-}
-
-.guild-donut > div > span {
-  font-size: 0.66rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
-
-.guild-stat-legend {
-  display: grid;
-  gap: var(--space-xs);
-  min-width: 0;
-}
-
-.guild-stat-legend__item {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: var(--space-sm);
-  min-width: 0;
-}
-
-.guild-stat-legend__item > div {
-  display: grid;
-  gap: 1px;
-  min-width: 0;
-}
-
-.guild-stat-legend__item strong {
-  font-size: 0.84rem;
-  color: var(--text-soft);
-}
-
-.guild-stat-legend__item small {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-}
-
-.guild-stat-dot {
-  width: 10px;
-  height: 10px;
-  flex: 0 0 auto;
-  border-radius: 50%;
 }
 
 .guild-roster-cache-sync {
@@ -781,18 +636,6 @@
    (рядок → картка з підписами колонок). Тут лише те, що
    стосується довідника: hero, фільтри й віджети.
    ========================================================= */
-@media (max-width: 1080px) {
-  .guild-donut-layout {
-    grid-template-columns: minmax(0, 1fr);
-    justify-items: center;
-    gap: var(--space-md);
-  }
-
-  .guild-stat-legend {
-    width: 100%;
-  }
-}
-
 @media (max-width: 860px) {
   .guild-range-group--inline {
     grid-column: span 1;
@@ -830,15 +673,6 @@
   .guild-class-cell {
     align-items: center;
   }
-
-  .guild-donut {
-    width: 128px;
-    height: 128px;
-  }
-
-  .guild-donut::after {
-    inset: 22px;
-  }
 }
 
 @media (max-width: 520px) {
@@ -875,11 +709,6 @@
   .guild-range-group--inline .guild-dual-range {
     order: 4;
   }
-
-  .guild-score-badges > span {
-    flex: 1 1 auto;
-  }
-
   .guild-summary-card__icon {
     width: 38px;
     height: 38px;

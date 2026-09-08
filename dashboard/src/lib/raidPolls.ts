@@ -88,6 +88,7 @@ import {
   type RaidPollVote,
   type RaidPollVoteResult,
 } from "@/lib/raidPollShared";
+import { cleanSnowflake, cleanSnowflakeIds, envFlag, timestampToIso, timezoneOffsetMs } from "@/lib/values";
 
 const RAID_POLL_COLLECTION = "dashboardRaidPolls";
 const RAID_POLL_ACTION_PREFIX = "mbv1:poll";
@@ -97,16 +98,6 @@ const RAID_POLL_DEFAULT_GET_CACHE_TTL_MS = 60_000;
 const RAID_POLL_GET_CACHE_PREFIX = "raid-poll:";
 const RAID_POLL_DISCORD_SIGNATURE_PREFIX = "raid-poll:discord-signature:";
 const RAID_POLL_DISCORD_SIGNATURE_TTL_MS = 6 * 60 * 60_000;
-
-function envFlag(names: string[], fallback = false) {
-  for (const name of names) {
-    const raw = process.env[name];
-    if (raw === undefined || raw === null || raw === "") continue;
-    return ["1", "true", "yes", "on"].includes(String(raw).trim().toLowerCase());
-  }
-  return fallback;
-}
-
 function raidPollEcoModeEnabled() {
   return envFlag(["FIREBASE_ECO_MODE", "FIRESTORE_ECO_MODE", "DASHBOARD_ECO_MODE"], false);
 }
@@ -172,17 +163,6 @@ function cleanPollDescription(value: unknown) {
   const description = cleanString(value, 900);
   return description.length >= 20 ? description : RAID_POLL_DESCRIPTION;
 }
-
-function cleanSnowflake(value: unknown) {
-  const text = cleanString(value, 32);
-  return /^\d{16,25}$/.test(text) ? text : "";
-}
-
-function cleanSnowflakeIds(values: unknown) {
-  const list = Array.isArray(values) ? values : typeof values === "string" ? values.split(/[\s,]+/) : [];
-  return Array.from(new Set(list.map(cleanSnowflake).filter(Boolean))).slice(0, 25);
-}
-
 function cleanBoolean(value: unknown) {
   if (value === true) return true;
   if (typeof value === "number") return value === 1;
@@ -349,15 +329,6 @@ function cleanVoteRole(value: unknown): RaidPollRole | null {
   if (text === "dps" || text === "dd" || text === "дд") return "dps";
   return null;
 }
-
-function timestampToIso(value: unknown) {
-  if (!value) return null;
-  if (typeof value === "string") return value;
-  const maybeTimestamp = value as { toDate?: () => Date } | null;
-  if (maybeTimestamp && typeof maybeTimestamp.toDate === "function") return maybeTimestamp.toDate().toISOString();
-  return null;
-}
-
 function safeIso(value: unknown, fallback = new Date().toISOString()) {
   const text = timestampToIso(value) || cleanString(value, 40);
   if (!text) return fallback;
@@ -425,34 +396,6 @@ export function dashboardPollUrl(pollId: string) {
 function raidPollTimeZone() {
   return String(process.env.RAID_POLL_TIME_ZONE || process.env.RAID_TIME_ZONE || process.env.NEXT_PUBLIC_RAID_TIME_ZONE || "Europe/Kyiv");
 }
-
-function timezoneOffsetMs(date: Date, timeZone: string) {
-  try {
-    const parts = new Intl.DateTimeFormat("en-US", {
-      timeZone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    }).formatToParts(date);
-    const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-    const asUtc = Date.UTC(
-      Number(values.year),
-      Number(values.month) - 1,
-      Number(values.day),
-      Number(values.hour === "24" ? "0" : values.hour),
-      Number(values.minute),
-      Number(values.second),
-    );
-    return asUtc - date.getTime();
-  } catch {
-    return 0;
-  }
-}
-
 function zonedDateTimeToUtcMs(year: number, month: number, day: number, hour: number, minute: number, timeZone = raidPollTimeZone()) {
   const guess = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
   return guess.getTime() - timezoneOffsetMs(guess, timeZone);
@@ -721,15 +664,19 @@ function raidPollDayIndex(day: RaidPollDay) {
   return RAID_POLL_DAYS.findIndex((item) => item.value === day);
 }
 
+/**
+ * Порядок той самий, що й у score, але явний — на випадок ідентичних оцінок.
+ * Utility і melee/ranged тут навмисно відсутні: у пулі немає класів, тож ці
+ * поля завжди нульові й лише створювали ілюзію додаткового критерію.
+ */
 function compareRaidPollSlotRecommendations(a: RaidPollSlotRecommendation, b: RaidPollSlotRecommendation) {
   return b.score - a.score ||
     Number(b.coreReady) - Number(a.coreReady) ||
-    Math.min(b.tanks, b.requiredTanks) - Math.min(a.tanks, a.requiredTanks) ||
-    Math.min(b.healers, b.requiredHealers) - Math.min(a.healers, a.requiredHealers) ||
+    Math.min(b.tanks, b.desiredTanks) - Math.min(a.tanks, a.desiredTanks) ||
+    Math.min(b.healers, b.desiredHealers) - Math.min(a.healers, a.desiredHealers) ||
+    b.total - a.total ||
     b.effectiveDps - a.effectiveDps ||
-    b.utilityScore - a.utilityScore ||
-    b.rangeBalanceScore - a.rangeBalanceScore ||
-    b.effectiveRaidSize - a.effectiveRaidSize ||
+    a.unknown - b.unknown ||
     raidPollDayIndex(a.day) - raidPollDayIndex(b.day) ||
     RAID_POLL_TIMES.indexOf(a.time) - RAID_POLL_TIMES.indexOf(b.time);
 }
@@ -1019,9 +966,8 @@ export function raidPollBestSlot(poll: Pick<RaidPollItem, "days" | "votes"> & Pa
 export function raidPollSlotSummary(slot: RaidPollSlotRecommendation | null | undefined) {
   if (!slot) return "Ще немає достатніх голосів.";
   const core = slot.coreReady ? "ядро готове" : "ядро не готове";
-  const tankTarget = slot.desiredTanks > slot.requiredTanks ? `, ціль ${slot.desiredTanks}` : "";
   const unknown = slot.unknown ? ` • без ролі ${slot.unknown}` : "";
-  return `${dayLabel(slot.day)} ${slot.time} — танки ${slot.tanks}/${slot.requiredTanks}${tankTarget} • хіли ${slot.healers}/${slot.requiredHealers} (ціль ${slot.desiredHealers}) • ДД ${slot.dps}${unknown} • ${core} • всього ${slot.total}`;
+  return `${dayLabel(slot.day)} ${slot.time} — всього ${slot.total} • танки ${slot.tanks}/${slot.desiredTanks} • хіли ${slot.healers}/${slot.desiredHealers} • ДД ${slot.dps}${unknown} • ${core}`;
 }
 
 
@@ -1477,9 +1423,15 @@ function buildRaidPollVoteDraftComponents(
   const previousPage = schedulePage <= 0 ? pageCount - 1 : schedulePage - 1;
   const nextPage = schedulePage >= pageCount - 1 ? 0 : schedulePage + 1;
   const footerButtons: Array<Record<string, unknown>> = [];
-  // Сторінки закільцьовані: з останньої «▶» веде на першу. Раніше кнопки
-  // просто гасли на краях, і це читалось як зламаний інтерфейс.
-  if (pageCount > 1) {
+
+  // Сторінки закільцьовані. КРИТИЧНО: custom_id містить номер цільової
+  // сторінки, тому при рівно двох сторінках «◀» і «▶» ведуть на ту саму
+  // сторінку і дають ОДНАКОВИЙ custom_id. Discord відхиляє повідомлення з
+  // дублем custom_id помилкою 400 — саме через це весь приватний пульт
+  // приходив без кнопок і меню. Тому при previousPage === nextPage
+  // лишаємо тільки одну кнопку-перемикач.
+  const showBackButton = pageCount > 1 && previousPage !== nextPage;
+  if (showBackButton) {
     footerButtons.push({
       type: 2,
       style: 2,
@@ -1500,13 +1452,24 @@ function buildRaidPollVoteDraftComponents(
       type: 2,
       style: 2,
       custom_id: `${RAID_POLL_ACTION_PREFIX}_schedule_page_${nextPage}:${poll.id}`,
-      label: `Дні ▶ ${schedulePage + 1}/${pageCount}`,
+      label: showBackButton ? `Дні ▶ ${schedulePage + 1}/${pageCount}` : `Інші дні ▶ ${schedulePage + 1}/${pageCount}`,
       disabled,
     });
   }
   footerButtons.push({ type: 2, style: 5, label: "Деталі на сайті", url: dashboardPollUrl(poll.id) });
 
-  rows.push({ type: 1, components: footerButtons.slice(0, 5) });
+  // Остання лінія оборони: якщо в майбутньому зʼявиться ще одна кнопка з
+  // обчислюваним custom_id, дубль не має доїхати до Discord.
+  const seenCustomIds = new Set<string>();
+  const uniqueFooterButtons = footerButtons.filter((button) => {
+    const customId = typeof button.custom_id === "string" ? button.custom_id : "";
+    if (!customId) return true;
+    if (seenCustomIds.has(customId)) return false;
+    seenCustomIds.add(customId);
+    return true;
+  });
+
+  rows.push({ type: 1, components: uniqueFooterButtons.slice(0, 5) });
 
   // Не обрізаємо останній рядок із submit-кнопкою. Якщо через майбутні зміни
   // рядків стане більше 5, прибираємо зайві day-select-и, а не кнопку голосування.

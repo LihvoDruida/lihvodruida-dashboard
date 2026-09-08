@@ -5,6 +5,7 @@ import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmi
 import { resilientRead } from "@/lib/runtimeResilience";
 import { firebaseWrite } from "@/lib/firebaseAccess";
 import type { DashboardSession } from "@/lib/auth";
+import { timestampToIso } from "@/lib/values";
 
 export const DEFAULT_NICKNAME_TEMPLATE = "{name} [{main}, {alt}, {alt}]";
 export const DEFAULT_ROLE_REMOVE_CONCURRENCY = 0;
@@ -43,15 +44,6 @@ export type GuildNicknamePolicy = {
   updatedAt?: string | null;
   updatedBy?: string | null;
 };
-
-function timestampToIso(value: unknown) {
-  if (!value) return null;
-  if (typeof value === "string") return value;
-  const maybeTimestamp = value as { toDate?: () => Date } | null;
-  if (maybeTimestamp && typeof maybeTimestamp.toDate === "function") return maybeTimestamp.toDate().toISOString();
-  return null;
-}
-
 function sliceCodePoints(value: string, maxLength: number) {
   return Array.from(value || "").slice(0, Math.max(0, maxLength)).join("");
 }

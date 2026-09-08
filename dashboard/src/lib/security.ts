@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDashboardUrl } from "@/lib/oauth";
+import { envFlag } from "@/lib/values";
 
 const DEFAULT_MAX_BODY_BYTES = 8 * 1024 * 1024;
 const inMemoryBuckets = new Map<string, { count: number; resetAt: number }>();
@@ -100,13 +101,6 @@ export function splitCsv(value?: string | null) {
     .map((item) => item.trim())
     .filter(Boolean);
 }
-
-function envFlag(name: string, fallback = false) {
-  const raw = process.env[name];
-  if (raw === undefined || raw === null || raw === "") return fallback;
-  return ["1", "true", "yes", "on"].includes(String(raw).toLowerCase());
-}
-
 export function getAllowedDashboardHosts() {
   const configured = splitCsv(process.env.DASHBOARD_ALLOWED_HOSTS);
   const explicitDashboardUrl = process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL || process.env.NEXTAUTH_URL;
@@ -426,11 +420,34 @@ export function safeErrorMessage(error: unknown, fallback = "Операція н
   return userFriendlyErrorMessage(redacted, fallback).slice(0, 240);
 }
 
-export function noStoreHeaders(extra?: HeadersInit) {
+/**
+ * Заголовки «нічого не кешувати».
+ *
+ * `extra` був типізований як `HeadersInit`, тобто міг бути й обʼєктом
+ * `Headers`. Спред такого значення підмішував у тип результату всі методи
+ * Headers (`get`, `set`, `append`…), і `Object.entries(noStoreHeaders())`
+ * віддавав значення типу «рядок або функція». Через це кожен із пʼятнадцяти
+ * викликів `response.headers.set(key, value)` не проходив перевірку типів.
+ * Звужуємо до простого словника рядків — це єдиний спосіб, яким його
+ * реально використовують.
+ */
+export function noStoreHeaders(extra?: Record<string, string>): Record<string, string> {
   return {
     "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
     Pragma: "no-cache",
     Expires: "0",
     ...extra,
   };
+}
+
+/**
+ * Проставляє ці заголовки на готову відповідь.
+ * Замінює однаковий цикл `for (const [key, value] of Object.entries(...))`,
+ * який був скопійований у пʼятнадцяти місцях.
+ */
+export function applyNoStoreHeaders<T extends { headers: Headers }>(response: T, extra?: Record<string, string>): T {
+  for (const [key, value] of Object.entries(noStoreHeaders(extra))) {
+    response.headers.set(key, value);
+  }
+  return response;
 }

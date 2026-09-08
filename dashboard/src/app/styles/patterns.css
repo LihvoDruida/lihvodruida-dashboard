@@ -43,6 +43,7 @@
   gap: var(--space-xs);
   min-width: 0;
 }
+
 /* ---------- Вертикальні стеки ---------- */
 [class$="-stack"],
 /* ---------- Вертикальні стеки ---------- */
@@ -91,6 +92,7 @@
   gap: var(--space-xs);
   min-width: 0;
 }
+
 /* ---------- Сторінкові контейнери ---------- */
 [class$="-page"],
 /* ---------- Сторінкові контейнери ---------- */
@@ -101,6 +103,7 @@
 [class*="-shell "]:not(:where(.discord-builder-shell)) {
   min-width: 0;
 }
+
 /* ---------- Форми ---------- */
 [class$="-form"]:not(:where(.roster-inline-form)),
 /* ---------- Форми ---------- */
@@ -111,6 +114,7 @@
   gap: var(--space-sm);
   min-width: 0;
 }
+
 /* Форма-обгортка навколо однієї кнопки не має розтягуватись */
 [class$="-action-form"],
 /* Форма-обгортка навколо однієї кнопки не має розтягуватись */
@@ -122,6 +126,7 @@
   display: inline-grid;
   gap: var(--space-2xs);
 }
+
 /* ---------- Дрібний службовий текст ---------- */
 [class$="-meta"],
 /* ---------- Дрібний службовий текст ---------- */
@@ -134,8 +139,8 @@
 [class*="__hint "],
 [class$="-status"],
 [class*="-status "],
-[class$="__status"]:not(:where(.dashboard-user__status)),
-[class*="__status "]:not(:where(.dashboard-user__status)),
+[class$="__status"],
+[class*="__status "],
 [class$="-caption"],
 [class*="-caption "],
 [class$="-placeholder"],
@@ -150,6 +155,7 @@
   font-size: 0.78rem;
   line-height: 1.5;
 }
+
 /* ---------- Заголовки блоків ---------- */
 .section-title,
 [class$="-title"]:not(:where(.discord-preview-title)),
@@ -164,6 +170,7 @@
   font-weight: 700;
   min-width: 0;
 }
+
 [class$="-label"]:not(:where(.field-label)),
 [class*="-label "]:not(:where(.field-label)),
 [class$="__label"],
@@ -171,6 +178,7 @@
   font-size: 0.8rem;
   letter-spacing: 0.02em;
 }
+
 [class$="-header"]:not(:where(.section-header)),
 [class*="-header "]:not(:where(.section-header)),
 [class$="__header"],
@@ -182,6 +190,7 @@
   gap: var(--space-sm);
   min-width: 0;
 }
+
 /* ---------- Виділені врізки ---------- */
 [class$="-callout"],
 /* ---------- Виділені врізки ---------- */
@@ -199,6 +208,7 @@
   font-size: 0.85rem;
   line-height: 1.55;
 }
+
 /* ---------- Варіанти вибору: радіо-картки ---------- */
 [class$="-option"]:not(:where(option)),
 /* ---------- Варіанти вибору: радіо-картки ---------- */
@@ -218,6 +228,7 @@
   cursor: pointer;
   transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
 }
+
 [class$="-option"]:hover,
 [class*="-option "]:hover,
 [class$="__option"]:hover,
@@ -225,6 +236,7 @@
   border-color: var(--border-strong);
   background: var(--surface-hover);
 }
+
 [class$="-option"].is-selected,
 [class*="-option "].is-selected,
 [class$="-option"].is-active,
@@ -235,6 +247,7 @@
   background: var(--accent-soft);
   color: var(--c-accent-200);
 }
+
 /* ---------- Дії та кнопки без класу .btn ---------- */
 [class$="-action"]:not(:where(.raid-action)):not(:where([class*="raid-action--"])),
 /* ---------- Дії та кнопки без класу .btn ---------- */
@@ -247,12 +260,13 @@
 [class*="__button "] {
   min-width: 0;
 }
+
 /* ---------- Роздільники ---------- */
 [class$="-divider"],
 /* ---------- Роздільники ---------- */
 [class*="-divider "],
-[class$="__divider"]:not(:where(.nav-capsule__divider)),
-[class*="__divider "]:not(:where(.nav-capsule__divider)),
+[class$="__divider"],
+[class*="__divider "],
 [class$="-separator"]:not(:where(.app-footer__separator)):not(:where(.app-footer__link-separator)):not(:where(.discord-preview-footer-separator)),
 [class*="-separator "]:not(:where(.app-footer__separator)):not(:where(.app-footer__link-separator)):not(:where(.discord-preview-footer-separator)) {
   width: 100%;
@@ -260,6 +274,7 @@
   border: 0;
   background: var(--border-subtle);
 }
+
 /* ---------- Крапка-індикатор ---------- */
 [class$="-dot"]:not(:where(.discord-role-dot)),
 /* ---------- Крапка-індикатор ---------- */
@@ -271,12 +286,14 @@
   border-radius: 50%;
   background: var(--tone, var(--c-ink-400));
 }
+
 /* ---------- Посилання всередині блоків ---------- */
 [class$="-link"]:not(:where(.discord-preview-link)):not(:where(.dashboard-table-link)),
 /* ---------- Посилання всередині блоків ---------- */
 [class*="-link "]:not(:where(.discord-preview-link)):not(:where(.dashboard-table-link)) {
   color: var(--c-accent-300);
 }
+
 /* ---------- Підвал блоку ---------- */
 [class$="-footer"]:not(:where(.app-footer)),
 /* ---------- Підвал блоку ---------- */
@@ -292,6 +309,7 @@
   color: var(--text-muted);
   font-size: 0.78rem;
 }
+
 /* ---------- Пошук ---------- */
 [class$="-search"],
 /* ---------- Пошук ---------- */
@@ -301,6 +319,7 @@
   display: block;
   min-width: 0;
 }
+
 /* ---------- Секції всередині сторінки ---------- */
 [class$="-section"]:not(:where([class*="form-section"])),
 /* ---------- Секції всередині сторінки ---------- */
@@ -311,6 +330,7 @@
   gap: var(--gap-stack);
   min-width: 0;
 }
+
 /* ---------- Елементи списків ---------- */
 [class$="-item"]:not(:where(.dashboard-list-row)):not(:where(.raid-list-item)),
 /* ---------- Елементи списків ---------- */

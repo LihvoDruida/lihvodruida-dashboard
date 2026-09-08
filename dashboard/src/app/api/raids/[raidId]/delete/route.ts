@@ -1,28 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
 import { recordAdminAudit } from "@/lib/accessGroups";
 import { canManageRaids } from "@/lib/permissions";
 import { deleteRaid } from "@/lib/raids";
-import { assertRequestBodySize, logDashboardEvent, noStoreHeaders, safeErrorMessage } from "@/lib/security";
-import { dashboardToastCookie } from "@/lib/serverToasts";
+import { assertRequestBodySize, logDashboardEvent, safeErrorMessage } from "@/lib/security";
+import {  } from "@/lib/serverToasts";
+import {  redirectWithToast } from "@/lib/apiRoute";
 
 export const revalidate = 0;
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-type ToastInput = { tone?: "info" | "success" | "warning" | "error"; title: string; message?: string; ttl?: number };
-
-function appBaseUrl() {
-  return process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL || process.env.ADMIN_DASHBOARD_URL || process.env.NEXT_PUBLIC_ADMIN_DASHBOARD_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
-}
-
-function redirectWithToast(path: string, toast?: ToastInput) {
-  const url = new URL(path, appBaseUrl());
-  const response = NextResponse.redirect(url, { status: 303, headers: noStoreHeaders() });
-  if (toast) response.headers.append("Set-Cookie", dashboardToastCookie(toast));
-  return response;
-}
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ raidId: string }> }) {
   const tooLarge = assertRequestBodySize(request, 64 * 1024);

@@ -5,6 +5,7 @@ import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmi
 import { firebaseWrite } from "@/lib/firebaseAccess";
 import { resilientRead } from "@/lib/runtimeResilience";
 import type { DashboardSession } from "@/lib/auth";
+import { timestampToIso } from "@/lib/values";
 
 const SETTINGS_COLLECTION = "dashboardSettings";
 const SETTINGS_DOC_ID = "rulesAcceptanceSettings";
@@ -20,15 +21,6 @@ export type RulesAcceptanceSettings = {
   updatedAt?: string | null;
   updatedBy?: string | null;
 };
-
-function timestampToIso(value: unknown) {
-  if (!value) return null;
-  if (typeof value === "string") return value;
-  const maybeTimestamp = value as { toDate?: () => Date } | null;
-  if (maybeTimestamp && typeof maybeTimestamp.toDate === "function") return maybeTimestamp.toDate().toISOString();
-  return null;
-}
-
 function cleanBoolean(value: unknown, fallback = false) {
   if (typeof value === "boolean") return value;
   if (value === null || value === undefined) return fallback;

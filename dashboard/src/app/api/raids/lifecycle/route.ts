@@ -7,16 +7,11 @@ import {
   unauthorizedResponse,
   verifyInternalBearerToken,
 } from "@/lib/security";
+import { envFlag, integerParam } from "@/lib/apiRoute";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const revalidate = 0;
-
-function integerParam(value: string | null, fallback: number, min: number, max: number) {
-  const number = Number(value);
-  if (!Number.isFinite(number)) return fallback;
-  return Math.max(min, Math.min(Math.floor(number), max));
-}
 
 declare global {
   // eslint-disable-next-line no-var
@@ -29,15 +24,6 @@ function lifecycleGuard() {
   const guard = globalThis.__mistblossomRaidLifecycleRouteGuard || { lastStartedAt: 0 };
   globalThis.__mistblossomRaidLifecycleRouteGuard = guard;
   return guard;
-}
-
-function envFlag(names: string[], fallback = false) {
-  for (const name of names) {
-    const raw = process.env[name];
-    if (raw === undefined || raw === null || raw === "") continue;
-    return ["1", "true", "yes", "on"].includes(String(raw).trim().toLowerCase());
-  }
-  return fallback;
 }
 
 function lifecycleMinIntervalMs() {
