@@ -7,7 +7,7 @@
 Потік даних:
 
 1. Офіцер відкриває `/discord` або `/polls/new`. Основна форма створення інтегрована в Discord Hub як блок `Створення рейд-голосування`.
-2. Сайт створює документ у Firestore `dashboardRaidPolls`.
+2. Сайт створює документ у колекції `dashboardRaidPolls`.
 3. Сайт публікує Discord embed через наявний Discord Admin/Worker relay.
 4. Учасники голосують у Discord через приватний (ephemeral) пульт. Публічне повідомлення має єдину кнопку `mbv1:poll_vote_prompt:{pollId}`, яка відкриває пульт із рядками:
    - `mbv1:poll_role:{pollId}` — роль у рейді: танк / хіл / дд.
@@ -18,10 +18,10 @@
 
    Легасі `mbv1:poll_character_prompt:` і `mbv1:poll_character:` досі приймаються і трактуються як «відкрий пульт»: у Discord лишаються опубліковані embed-и зі старими `custom_id`.
 5. Сервіс бота приймає Discord interaction, перевіряє підпис і прокидає його в API панелі.
-6. Dashboard API записує голос у Firestore транзакцією та оновлює Discord-повідомлення.
+6. API панелі записує голос транзакцією і оновлює Discord-повідомлення.
 7. Після дедлайну `/api/polls/close-due` або будь-яке читання/клік закриває прострочений пул і вимикає components.
 
-## Firestore schema
+## Схема документа
 
 Колекція: `dashboardRaidPolls`
 
@@ -70,7 +70,7 @@
 
 ### `POST /api/polls`
 
-Site-only endpoint. Creates Firestore document and publishes Discord message. Supports both legacy `FormData` submits from `/polls/new` and JSON submits from `/discord`.
+Site-only endpoint. Створює документ і публікує повідомлення в Discord. Supports both legacy `FormData` submits from `/polls/new` and JSON submits from `/discord`.
 
 Fields/body:
 

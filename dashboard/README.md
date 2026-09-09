@@ -53,7 +53,7 @@ npm run start
 
 `npm run verify` runs TypeScript typecheck and ESLint through the modern ESLint CLI.
 
-Production is built into a Docker image (`output: "standalone"`) and started with `docker compose`. Step by step: [`docs/en/SELF_HOSTING.md`](docs/en/SELF_HOSTING.md).
+Production is built into a Docker image (`output: "standalone"`) and started with `docker compose`. Step by step: [`../docs/DEPLOYMENT.md`](../docs/DEPLOYMENT.md).
 
 ## Main environment variables
 
@@ -61,9 +61,9 @@ A production deployment usually needs:
 
 ```env
 SESSION_SECRET=
-DASHBOARD_URL=https://dashboard.lihvodruida.pp.ua
-NEXT_PUBLIC_DASHBOARD_URL=https://dashboard.lihvodruida.pp.ua
-DASHBOARD_ALLOWED_HOSTS=dashboard.lihvodruida.pp.ua
+DASHBOARD_URL=https://guild.lihvodruida.pp.ua
+NEXT_PUBLIC_DASHBOARD_URL=https://guild.lihvodruida.pp.ua
+DASHBOARD_ALLOWED_HOSTS=guild.lihvodruida.pp.ua
 
 DISCORD_OAUTH_CLIENT_ID=
 DISCORD_OAUTH_CLIENT_SECRET=
@@ -100,11 +100,12 @@ See the full environment documentation for all variables and Worker sharing note
 
 ## Documentation
 
-- [Functionality overview](docs/en/FUNCTIONALITY.md)
-- [API documentation](docs/en/API.md)
-- [Environment variables](docs/en/ENVIRONMENT_VARIABLES.md)
-- [Deployment guide](docs/en/DEPLOYMENT.md)
-- [Admin to dashboard domain and GitHub move](docs/ua/DASHBOARD_DOMAIN_AND_GITHUB_MOVE.md)
+- [Functionality overview](../docs/reference/FUNCTIONALITY.md)
+- [API documentation](../docs/reference/API.md)
+- [Configuration](../docs/CONFIGURATION.md)
+- [Deployment](../docs/DEPLOYMENT.md)
+- [Operations](../docs/OPERATIONS.md)
+
 - [Український README](README.uk.md)
 
 ## Access roles

@@ -3,7 +3,7 @@
 Базовий URL у production зазвичай:
 
 ```text
-https://dashboard.lihvodruida.pp.ua
+https://guild.lihvodruida.pp.ua
 ```
 
 У локальному середовищі:
@@ -123,7 +123,7 @@ Emergency login через `ADMIN_DASHBOARD_TOKEN`.
 
 ### `GET /api/applications`
 
-Повертає список заявок із Firebase Firestore.
+Повертає список заявок із GitHub Issues.
 
 **Доступ:** officer/dashboard для повних даних і дій, включно з BattleTag; наставник новачків для read-only перегляду без BattleTag і посилань на джерело заявки.
 
@@ -167,7 +167,7 @@ Emergency login через `ADMIN_DASHBOARD_TOKEN`.
 
 **Що робить:**
 
-- оновлює статус заявки у Firebase Firestore;
+- оновлює статус заявки в базі;
 - прибирає старі/legacy status labels;
 - додає модераційний коментар;
 - може закрити issue залежно від логіки moderation module.
@@ -207,7 +207,7 @@ Emergency login через `ADMIN_DASHBOARD_TOKEN`.
 - отримує актуальний guild roster з Battle.net;
 - для кожного персонажа оновлює Raider.IO M+ `ALL`, `DPS`, `HEALER`, `TANK`;
 - перераховує середній RIO, середній item level, max RIO/max item level;
-- записує кеш у Firebase або in-memory runtime cache.
+- записує кеш у базу та в кеш процесу.
 
 **Response:**
 
@@ -276,7 +276,7 @@ Emergency login через `ADMIN_DASHBOARD_TOKEN`.
 
 ### `POST /api/profile/characters/add`
 
-Додає одного персонажа з тимчасового списку Battle.net-кандидатів у Firebase-профілі.
+Додає одного персонажа з тимчасового списку Battle.net-кандидатів у профілі.
 
 **Доступ:** власник профілю.
 
@@ -290,7 +290,7 @@ Emergency login через `ADMIN_DASHBOARD_TOKEN`.
 
 ### `POST /api/profile/characters/bulk-add`
 
-Додає кілька персонажів із тимчасового списку Battle.net-кандидатів у Firebase-профілі.
+Додає кілька персонажів із тимчасового списку Battle.net-кандидатів у профілі.
 
 **Доступ:** власник профілю.
 

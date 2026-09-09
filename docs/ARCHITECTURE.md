@@ -39,7 +39,7 @@ Discord дає рівно **3 секунди** на підтвердження �
 
 ```
 Discord
-  │  POST https://dashboard.example.com/discord/interactions
+  │  POST https://guild.lihvodruida.pp.ua/discord/interactions
   ▼
 nginx ──────────────────────────────► bot:8080
                                         │ 1. перевіряє підпис Ed25519

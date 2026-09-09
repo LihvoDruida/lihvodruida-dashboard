@@ -5,7 +5,7 @@ export const DASHBOARD_TITLE = "Панель Mistblossom Vanguard";
 export const DEFAULT_SEO_DESCRIPTION =
   "Особиста панель гільдії Mistblossom Vanguard: заявки, профілі, рейди, склад гільдії та Discord-повідомлення в одному чистому просторі.";
 
-const DEFAULT_DASHBOARD_URL = "https://dashboard.lihvodruida.pp.ua";
+const DEFAULT_DASHBOARD_URL = "https://guild.lihvodruida.pp.ua";
 const DEFAULT_IMAGE = "/og-image.png";
 
 export function dashboardBaseUrl() {

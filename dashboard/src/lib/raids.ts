@@ -272,7 +272,7 @@ function dashboardBaseUrl() {
       process.env.ADMIN_DASHBOARD_URL ||
       process.env.NEXT_PUBLIC_ADMIN_DASHBOARD_URL ||
       process.env.NEXTAUTH_URL ||
-      "https://dashboard.lihvodruida.pp.ua",
+      "https://guild.lihvodruida.pp.ua",
   ).replace(/\/$/, "");
 }
 

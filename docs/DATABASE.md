@@ -1,7 +1,7 @@
 # Переїзд з Firestore на власний PostgreSQL
 
 Цей документ описує перенесення даних панелі з Firestore у власну базу на
-твоєму сервері. Розгортання самого сервера — у [SELF_HOSTING.md](./SELF_HOSTING.md);
+твоєму сервері. Розгортання самого сервера — у [DEPLOYMENT.md](./DEPLOYMENT.md);
 тут тільки про базу.
 
 Переїзд спроєктований так, щоб **відкат займав одну змінну оточення**. Поки
@@ -126,7 +126,7 @@ echo 'DATABASE_URL=postgresql://mistblossom:<пароль>@postgres:5432/mistblo
 
 # 4. Піднімаємо
 cd .. && docker compose up -d
-curl -fsS https://dashboard.example.com/api/health
+curl -fsS https://guild.lihvodruida.pp.ua/api/health
 ```
 
 > У `.env.production` хост — `postgres` (імʼя сервісу в docker-мережі), а не

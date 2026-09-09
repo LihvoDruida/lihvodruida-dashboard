@@ -110,7 +110,7 @@ export function timezoneOffsetMs(date: Date, timeZone: string) {
  * `DASHBOARD_PUBLIC_URL` — основна змінна. Решта імен лишені для
  * сумісності зі старими конфігами.
  */
-export function dashboardPublicOrigin(fallback = "https://dashboard.lihvodruida.pp.ua") {
+export function dashboardPublicOrigin(fallback = "https://guild.lihvodruida.pp.ua") {
   const configured = String(
     process.env.DASHBOARD_PUBLIC_URL
       || process.env.DASHBOARD_URL

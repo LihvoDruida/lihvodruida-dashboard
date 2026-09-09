@@ -1,79 +1,73 @@
-# Lihvo Druida Dashboard
+# Mistblossom Vanguard
 
-Production dashboard and integration workspace for **Lihvo Druida / Mistblossom Vanguard**.
+Панель управління гільдією World of Warcraft: профілі, рейди, рейд-пули,
+заявки, склад гільдії, інструменти Discord.
 
-Canonical dashboard domain:
+**Продакшн:** https://guild.lihvodruida.pp.ua
 
-```text
-https://dashboard.lihvodruida.pp.ua
-```
+Уся система працює на власному сервері. Зовнішніх сервісів для роботи немає:
+дані — у власному PostgreSQL, Discord-взаємодії приймає власний бот, планові
+задачі виконує власний контейнер.
 
-The old `admin` route naming is kept only as legacy redirect compatibility. New code, environment variables, OAuth callbacks, Worker endpoints and documentation should use `dashboard` naming and `dashboard.lihvodruida.pp.ua`.
+---
 
-## Repository structure
+## Структура
 
-| Path | Purpose |
-|---|---|
-| [`dashboard/`](dashboard/) | Next.js dashboard panel: profiles, raids, applications, Discord tools, logs, rules, content and guild roster. |
-| [`bot/`](bot/) | Discord bot service: signature verification, instant ACK, routing interactions to the dashboard. Runs on our own server. |
-| [`shared/`](shared/) | `@mistblossom/discord-contract`: shared `custom_id` parsing and component validation used by both the dashboard and the bot. |
-| [`dashboard/docs/`](dashboard/docs/) | Internal dashboard documentation: functionality, API, environment variables and deployment. |
-| [`deploy/`](deploy/) | Self-hosting artifacts: nginx, systemd units, cron and database backup scripts. |
+| Каталог | Призначення |
+|---------|-------------|
+| [`dashboard/`](dashboard/) | Next.js: бізнес-логіка, база, сторінки, API |
+| [`bot/`](bot/) | Discord-бот: перевірка підпису, миттєвий ACK, маршрутизація в панель |
+| [`shared/`](shared/) | `@mistblossom/discord-contract` — спільний розбір `custom_id` |
+| [`deploy/`](deploy/) | nginx, systemd, cron, скрипти бекапу |
+| [`docs/`](docs/) | документація |
 
-## Main documents
+---
 
-### Dashboard
+## Документація
 
-- [`dashboard/README.uk.md`](dashboard/README.uk.md) — Ukrainian dashboard overview, quick start and production variables.
-- [`dashboard/README.md`](dashboard/README.md) — English dashboard overview.
-- [`dashboard/docs/ua/FUNCTIONALITY.md`](dashboard/docs/ua/FUNCTIONALITY.md) — what the dashboard does and how the main modules behave.
-- [`dashboard/docs/ua/API.md`](dashboard/docs/ua/API.md) — dashboard API routes and contracts.
-- [`dashboard/docs/ua/ENVIRONMENT_VARIABLES.md`](dashboard/docs/ua/ENVIRONMENT_VARIABLES.md) — dashboard environment variables for local development and `.env.production`.
-- [`dashboard/docs/ua/DEPLOYMENT.md`](dashboard/docs/ua/DEPLOYMENT.md) — service setup, OAuth callbacks and production checks.
-- [`dashboard/docs/ua/SELF_HOSTING.md`](dashboard/docs/ua/SELF_HOSTING.md) — full self-hosting guide: Docker stack, Nginx, TLS, scheduled jobs, backups and rollback.
-- [`dashboard/docs/ua/DASHBOARD_DOMAIN_AND_GITHUB_MOVE.md`](dashboard/docs/ua/DASHBOARD_DOMAIN_AND_GITHUB_MOVE.md) — changing the canonical domain: DNS, Nginx, TLS, env, OAuth and Worker endpoints.
+Точка входу — [`docs/README.md`](docs/README.md).
 
-### Worker
+| Документ | Про що |
+|----------|--------|
+| [Архітектура](docs/ARCHITECTURE.md) | сервіси й межі відповідальності |
+| [Розгортання](docs/DEPLOYMENT.md) | з нуля: сервер, Cloudflare, TLS, запуск |
+| [Налаштування](docs/CONFIGURATION.md) | усі змінні оточення |
+| [Експлуатація](docs/OPERATIONS.md) | контроль, оновлення, бекапи, інциденти |
+| [База даних](docs/DATABASE.md) | PostgreSQL, перенесення, обслуговування |
 
-## Local dashboard start
+---
+
+## Локальний запуск
+
+**Панель:**
 
 ```bash
 cd dashboard
 npm install
 cp .env.example .env.local
-npm run dev
+npm run dev          # http://localhost:3000
 ```
 
-Open:
-
-```text
-http://localhost:3000
-```
-
-## Local bot development
+**Бот:**
 
 ```bash
 cd bot
-cp .env.example .env
 npm install
-npm start          # http://localhost:8080
-npm test           # signature + contract tests
+cp .env.example .env
+npm start            # http://localhost:8080
+npm test             # перевірка підпису + контракт
 ```
 
-Do not commit real secrets from `.env.local`, `.env.production` or `bot/.env`.
+Не комітьте реальні секрети з `.env.local`, `.env.production`, `bot/.env`.
 
-## Required production direction
+---
 
-Use these names for new deployment settings:
+## Продакшн
 
-```env
-DASHBOARD_URL=https://dashboard.lihvodruida.pp.ua
-NEXT_PUBLIC_DASHBOARD_URL=https://dashboard.lihvodruida.pp.ua
-DASHBOARD_ALLOWED_HOSTS=dashboard.lihvodruida.pp.ua
+```bash
+cd /srv/mistblossom
+docker compose up -d
+curl -fsS https://guild.lihvodruida.pp.ua/api/health
 ```
 
-Legacy `ADMIN_DASHBOARD_URL` aliases may remain only while old deployments still read them. They must point to the same `https://dashboard.lihvodruida.pp.ua` value.
-
-## License
-
-This project is proprietary. See [`LICENSE`](LICENSE).
+Покроково — [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).

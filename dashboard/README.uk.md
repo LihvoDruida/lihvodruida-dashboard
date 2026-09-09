@@ -53,7 +53,7 @@ npm run start
 
 `npm run verify` запускає TypeScript typecheck і ESLint через сучасний ESLint CLI.
 
-Продакшн збирається в Docker-образ (`output: "standalone"`) і піднімається через `docker compose`. Покроково — [`docs/ua/SELF_HOSTING.md`](docs/ua/SELF_HOSTING.md).
+Продакшн збирається в Docker-образ (`output: "standalone"`) і піднімається через `docker compose`. Покроково — [`../docs/DEPLOYMENT.md`](../docs/DEPLOYMENT.md).
 
 ## Основні env variables
 
@@ -61,9 +61,9 @@ npm run start
 
 ```env
 SESSION_SECRET=
-DASHBOARD_URL=https://dashboard.lihvodruida.pp.ua
-NEXT_PUBLIC_DASHBOARD_URL=https://dashboard.lihvodruida.pp.ua
-DASHBOARD_ALLOWED_HOSTS=dashboard.lihvodruida.pp.ua
+DASHBOARD_URL=https://guild.lihvodruida.pp.ua
+NEXT_PUBLIC_DASHBOARD_URL=https://guild.lihvodruida.pp.ua
+DASHBOARD_ALLOWED_HOSTS=guild.lihvodruida.pp.ua
 
 DISCORD_OAUTH_CLIENT_ID=
 DISCORD_OAUTH_CLIENT_SECRET=
@@ -100,11 +100,12 @@ NEXT_PUBLIC_RAID_TIME_ZONE=Europe/Kyiv
 
 ## Документація
 
-- [Опис функціоналу](docs/ua/FUNCTIONALITY.md)
-- [API документація](docs/ua/API.md)
-- [Змінні середовища](docs/ua/ENVIRONMENT_VARIABLES.md)
-- [Інструкція розгортання](docs/ua/DEPLOYMENT.md)
-- [Перехід admin → dashboard і новий GitHub](docs/ua/DASHBOARD_DOMAIN_AND_GITHUB_MOVE.md)
+- [Опис функціоналу](../docs/reference/FUNCTIONALITY.md)
+- [API документація](../docs/reference/API.md)
+- [Змінні середовища](../docs/CONFIGURATION.md)
+- [Розгортання](../docs/DEPLOYMENT.md)
+- [Експлуатація](../docs/OPERATIONS.md)
+
 - [English README](README.md)
 
 ## Ролі доступу

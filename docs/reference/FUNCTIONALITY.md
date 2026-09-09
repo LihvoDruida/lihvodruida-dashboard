@@ -66,7 +66,7 @@ Dashboard — це приватна панель керування для гі�
 - блоки “Тип броні” та “Середній RIO гільдії”;
 - фільтри за RIO, item level, класом, спеком, роллю, фракцією та пошуком.
 
-Оновлення працює через runtime endpoint `/api/guild/refresh`. Результат кешується у Firebase Firestore або в in-memory cache, якщо Firebase не налаштований. Привʼязки персонажів до профілів кешуються через `PROFILE_CHARACTER_LINK_CACHE_SECONDS` і не створюються, якщо один персонаж знайдений у кількох профілях.
+Оновлення працює через runtime endpoint `/api/guild/refresh`. Результат кешується у власному PostgreSQL і в кеші процесу. Привʼязки персонажів до профілів кешуються через `PROFILE_CHARACTER_LINK_CACHE_SECONDS` і не створюються, якщо один персонаж знайдений у кількох профілях.
 
 ## 3. Авторизація
 
@@ -78,9 +78,9 @@ Dashboard — це приватна панель керування для гі�
 
 1. перевіряє Discord user id;
 2. отримує ролі користувача на сервері;
-3. визначає доступ через Firebase-групи, налаштовані на `/dashboard/groups`; Discord role ID зберігається в групах, а не в env;
+3. визначає доступ через групи доступу, налаштовані на `/dashboard/groups`; Discord role ID зберігається в групах, а не в env;
 4. створює підписану server-side session cookie;
-5. створює або оновлює профіль у Firebase.
+5. створює або оновлює профіль у базі.
 
 ### Emergency token login
 
@@ -153,7 +153,7 @@ Battle.net OAuth використовується для отримання пе
 3. Після callback система отримує profile/account дані.
 4. Сканує персонажів.
 5. Фільтрує персонажів, які належать до гільдії `WOW_GUILD_NAME`.
-6. Кандидати тимчасово зберігаються у Firebase-профілі з TTL `BATTLENET_CANDIDATE_TTL_MINUTES`.
+6. Кандидати тимчасово зберігаються у профілі з TTL `BATTLENET_CANDIDATE_TTL_MINUTES`.
 7. Учасник додає потрібних персонажів у профіль.
 
 ### Збережені персонажі
@@ -281,7 +281,7 @@ Battle.net OAuth використовується для отримання пе
 
 ## 8. Заявки до гільдії
 
-Заявки читаються з Firebase Firestore.
+Заявки читаються з GitHub Issues.
 
 ### Що підтримується
 
@@ -292,12 +292,12 @@ Battle.net OAuth використовується для отримання пе
 - debounce пошуку;
 - query params у URL;
 - масова зміна статусів;
-- модераційну подію в Firestore;
+- модераційну подію в PostgreSQL;
 - синхронізація статусних labels.
 
 ### Джерело даних
 
-Firebase-заявки зберігаються у колекції `FIREBASE_APPLICATIONS_COLLECTION`, за замовчуванням `guildApplications`.
+Заявки зберігаються у колекції документів `guildApplications`.
 
 Статуси зберігаються через labels:
 
@@ -357,8 +357,8 @@ Firebase-заявки зберігаються у колекції `FIREBASE_APP
 
 - Discord;
 - Battle.net;
-- Firebase Firestore;
-- Firebase.
+- PostgreSQL;
+- власний PostgreSQL.
 
 Статус оновлюється вручну або автоматично приблизно раз на хвилину.
 
