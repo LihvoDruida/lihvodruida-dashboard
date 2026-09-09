@@ -26,8 +26,8 @@
 - GitHub REST API;
 - Discord OAuth + Bot API;
 - Battle.net OAuth + WoW Profile API;
-- Vercel;
-- Cloudflare Worker, якщо interactions винесені з dashboard.
+- Docker + Nginx на власному сервері;
+- Сервіс бота (`bot/`) — приймає Discord-взаємодії; панель їх з інтернету не приймає.
 
 ## Швидкий старт
 
@@ -53,7 +53,7 @@ npm run start
 
 `npm run verify` запускає TypeScript typecheck і ESLint через сучасний ESLint CLI.
 
-Для Vercel достатньо стандартного Next.js deploy. Output directory вручну не задавати.
+Продакшн збирається в Docker-образ (`output: "standalone"`) і піднімається через `docker compose`. Покроково — [`docs/ua/SELF_HOSTING.md`](docs/ua/SELF_HOSTING.md).
 
 ## Основні env variables
 
@@ -122,7 +122,7 @@ NEXT_PUBLIC_RAID_TIME_ZONE=Europe/Kyiv
 - Для зміни nickname роль бота має бути вище ролі користувача.
 - Якщо Discord interactions обробляє Worker, Interaction Endpoint у Discord Developer Portal має вести на Worker.
 - Якщо Worker викликає dashboard, shared tokens мають збігатися.
-- `FIREBASE_PRIVATE_KEY` у Vercel краще зберігати з escaped `\n`.
+- `FIREBASE_PRIVATE_KEY` у `.env.production` зберігай одним рядком з escaped `\n` — код сам перетворить їх у переноси.
 
 ## Склад гільдії `/guild`
 

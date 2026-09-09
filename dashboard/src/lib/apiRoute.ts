@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { applyNoStoreHeaders, noStoreHeaders } from "@/lib/security";
 import { dashboardToastCookie } from "@/lib/serverToasts";
-import { cleanSnowflake, envFlag } from "@/lib/values";
+import { cleanSnowflake, dashboardPublicOrigin, envFlag } from "@/lib/values";
 
 /** Ре-експорт для роутів, які вже імпортують envFlag саме звідси. */
 export { cleanSnowflake, envFlag };
@@ -22,34 +22,14 @@ export type DashboardToastInput = {
   ttl?: number;
 };
 
-const FALLBACK_BASE_URL = "https://dashboard.lihvodruida.pp.ua";
-
 /**
  * Базовий URL панелі для редіректів.
  *
- * Існувало дві версії. Полегшена (сім роутів) повертала сирий рядок із env і
- * підставляла `http://localhost:3000`, якщо жодна змінна не задана, — на
- * продакшені це означало редірект у нікуди. Вона ж не відсікала
- * `*.vercel.app`: превʼю-домен потрапляв у Set-Cookie і сесія губилась.
- * Лишаємо посилену версію як єдину.
+ * Реалізація живе у `@/lib/values`, щоб її бачили і роути, і серверні
+ * бібліотеки без залежності від `next/server`.
  */
 export function appBaseUrl() {
-  const configured = String(
-    process.env.DASHBOARD_URL
-      || process.env.NEXT_PUBLIC_DASHBOARD_URL
-      || process.env.ADMIN_DASHBOARD_URL
-      || process.env.NEXT_PUBLIC_ADMIN_DASHBOARD_URL
-      || process.env.NEXTAUTH_URL
-      || FALLBACK_BASE_URL,
-  ).trim();
-
-  try {
-    const url = new URL(configured || FALLBACK_BASE_URL);
-    if (url.hostname.endsWith(".vercel.app")) return FALLBACK_BASE_URL;
-    return url.origin;
-  } catch {
-    return FALLBACK_BASE_URL;
-  }
+  return dashboardPublicOrigin();
 }
 
 /** Редірект 303 із необовʼязковим тостом у cookie. */

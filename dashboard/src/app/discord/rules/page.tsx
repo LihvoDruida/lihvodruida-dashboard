@@ -67,16 +67,9 @@ function formatUpdatedAt(value: string | null) {
 
 function sourceLabel(source: string) {
   switch (source) {
-    case "kv":
+    case "database":
       return "Дані є";
-    case "worker":
-      return "Дані є";
-    case "missing-kv-binding":
-      return "Недоступно";
-    case "invalid-binding":
-      return "Недоступно";
     case "unconfigured":
-      return "Недоступно";
     case "error":
       return "Недоступно";
     default:

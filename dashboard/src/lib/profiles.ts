@@ -1,4 +1,4 @@
-import { FieldPath, FieldValue, Timestamp } from "firebase-admin/firestore";
+import { FieldPath, FieldValue, Timestamp } from "@/lib/db/firestoreCompat";
 import type { DashboardRole, DashboardSession } from "@/lib/auth";
 import { createStableProfileId } from "@/lib/profileIds";
 import {

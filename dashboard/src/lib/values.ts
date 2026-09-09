@@ -96,3 +96,34 @@ export function timezoneOffsetMs(date: Date, timeZone: string) {
     return 0;
   }
 }
+
+/**
+ * Публічний origin панелі — єдине джерело правди для редіректів,
+ * посилань у Discord-повідомленнях і cookie.
+ *
+ * Раніше цю функцію мали три файли, і всі три містили гілку
+ * `if (hostname.endsWith(".vercel.app")) return <хардкод>`. Це був
+ * милиця під превʼю-домени Vercel: деплой отримував тимчасовий хост,
+ * cookie ставився на нього і сесія губилась. На власному сервері
+ * тимчасових доменів немає — гілка прибрана.
+ *
+ * `DASHBOARD_PUBLIC_URL` — основна змінна. Решта імен лишені для
+ * сумісності зі старими конфігами.
+ */
+export function dashboardPublicOrigin(fallback = "https://dashboard.lihvodruida.pp.ua") {
+  const configured = String(
+    process.env.DASHBOARD_PUBLIC_URL
+      || process.env.DASHBOARD_URL
+      || process.env.NEXT_PUBLIC_DASHBOARD_URL
+      || process.env.ADMIN_DASHBOARD_URL
+      || process.env.NEXT_PUBLIC_ADMIN_DASHBOARD_URL
+      || process.env.NEXTAUTH_URL
+      || fallback,
+  ).trim();
+
+  try {
+    return new URL(configured || fallback).origin;
+  } catch {
+    return fallback;
+  }
+}

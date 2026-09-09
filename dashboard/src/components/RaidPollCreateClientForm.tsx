@@ -315,7 +315,7 @@ export default function RaidPollCreateClientForm({ channels, roles = [], default
         ) : (
           <div className="raid-poll-field raid-poll-field--wide raid-poll-muted-box">
             <strong>Тег ролей у Discord</strong>
-            <small>Список ролей не завантажився. Пул можна створити без тегів або перевірити Discord API / worker relay.</small>
+            <small>Список ролей не завантажився. Пул можна створити без тегів або перевірити DISCORD_BOT_TOKEN у панелі.</small>
           </div>
         )}
 

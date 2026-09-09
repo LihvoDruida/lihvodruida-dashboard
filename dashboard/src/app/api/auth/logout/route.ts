@@ -61,7 +61,7 @@ function logoutRedirect(target: string) {
 
 export async function POST(request: NextRequest) {
   // Logout is intentionally tolerant: the worst CSRF outcome is ending the current
-  // session, and strict origin checks were breaking legitimate Vercel/Cloudflare
+  // session, and strict origin checks were breaking legitimate reverse-proxy/Cloudflare
   // same-origin button submits.
   logDashboardEvent("info", "auth.logout.post", request);
   await clearSession();

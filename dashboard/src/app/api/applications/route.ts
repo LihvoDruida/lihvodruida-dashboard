@@ -9,45 +9,6 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function workerApplicationsEndpoint() {
-  const raw = String(
-    process.env.GUILD_APPLICATIONS_WORKER_URL ||
-    process.env.NEXT_PUBLIC_GUILD_APPLICATIONS_WORKER_URL ||
-    process.env.DISCORD_INTERACTIONS_ENDPOINT ||
-    "",
-  ).trim();
-  if (!raw) return "";
-  try {
-    const url = new URL(raw);
-    url.pathname = "/api/guild-applications";
-    url.search = "";
-    url.hash = "";
-    return url.toString();
-  } catch {
-    return "";
-  }
-}
-
-function workerApplicationsHeaders(): HeadersInit {
-  const token = String(process.env.PUBLIC_API_CACHE_TOKEN || process.env.DISCORD_RULES_STATS_TOKEN || process.env.WORKER_STATS_TOKEN || process.env.INTERNAL_PROFILE_LOOKUP_TOKEN || "").trim();
-  return {
-    accept: "application/json",
-    ...(token ? { authorization: `Bearer ${token}`, "x-worker-stats-token": token } : {}),
-  };
-}
-
-async function listApplicationsFromWorker(searchParams: URLSearchParams) {
-  const endpoint = workerApplicationsEndpoint();
-  if (!endpoint) return null;
-  const url = new URL(endpoint);
-  for (const [key, value] of searchParams.entries()) url.searchParams.set(key, value);
-  if (!url.searchParams.has("limit")) url.searchParams.set("limit", "100");
-  const response = await fetch(url.toString(), { headers: workerApplicationsHeaders(), cache: "no-store" });
-  const payload = await response.json().catch(() => null) as { items?: unknown[] } | null;
-  if (!response.ok || !Array.isArray(payload?.items)) return null;
-  return payload.items as Awaited<ReturnType<typeof listApplications>>;
-}
-
 export async function GET(request: NextRequest) {
   const session = await getSession();
   if (!canViewApplications(session)) {
@@ -60,10 +21,15 @@ export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const canSeeSensitiveFields = canViewApplicationBattleTag(session);
-    const workerItems = canSeeSensitiveFields ? null : await listApplicationsFromWorker(url.searchParams).catch(() => null);
-    const [rawItems, filterOptions] = workerItems
-      ? [workerItems, { classes: Array.from(new Set(workerItems.map((item) => String(item.class_name || "").trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, "uk")), total: workerItems.length }]
-      : await Promise.all([listApplications(url.searchParams), listApplicationFilterOptions()]);
+    // Раніше для менторів (без доступу до чутливих полів) заявки бралися
+    // з Cloudflare Worker, який ходив у GitHub і кешував відповідь. Тепер
+    // панель читає GitHub напряму: зайвий стрибок і кеш прибрані, а
+    // приховування чутливих полів робить sanitizeApplicationsForMentorViewer
+    // нижче — тобто відповідь для ментора та сама, тільки без посередника.
+    const [rawItems, filterOptions] = await Promise.all([
+      listApplications(url.searchParams),
+      listApplicationFilterOptions(),
+    ]);
     const items = canSeeSensitiveFields ? rawItems : sanitizeApplicationsForMentorViewer(rawItems);
     const counts = {
       all: items.length,

@@ -1,4 +1,4 @@
-# Перехід з `admin` на `dashboard` без повного переїзду Vercel
+# Зміна канонічного домену панелі
 
 ## Ціль
 
@@ -19,38 +19,39 @@ https://dashboard.lihvodruida.pp.ua
   - `/admin/<path>` → `/dashboard/<path>`;
   - `/api/admin/<path>` → `/api/dashboard/<path>` з HTTP `307`, щоб не губити метод POST/PUT/PATCH/DELETE.
 - Canonical URL замінено на `https://dashboard.lihvodruida.pp.ua`.
-- `vercel.json` cron перенесено на `/api/dashboard/profiles/orphan-cleanup/apply`.
+- планова чистка акаунтів ходить на `/api/dashboard/profiles/orphan-cleanup/apply` (розклад — у `deploy/cron/run-cron.sh`).
 - `DASHBOARD_URL` і `NEXT_PUBLIC_DASHBOARD_URL` тепер мають пріоритет над legacy alias `ADMIN_DASHBOARD_URL`.
 
-## Vercel: замінити домен без нового проєкту
+## DNS, Nginx і сертифікат
 
-1. Відкрий Vercel → потрібний project.
-2. Перейди в **Settings → Domains**.
-3. Додай:
+1. У DNS-реєстратора (або Cloudflare) додай запис на IP сервера:
 
 ```text
-dashboard.lihvodruida.pp.ua
+Type: A       Name: dashboard    Value: <IP сервера>
+Type: AAAA    Name: dashboard    Value: <IPv6, якщо є>
 ```
 
-4. Для піддомену у DNS реєстратора треба CNAME. Vercel у Domains покаже точне значення, на яке має дивитися CNAME.
-5. Після підтвердження нового домену прибери або залиш попередній піддомен тільки як redirect. Якщо залишаєш старий домен у Vercel, він буде вести на цей самий project, а код переведе старі `/admin/*` на `/dashboard/*`.
+2. У `deploy/nginx/dashboard.conf` заміни домен у трьох місцях: `server_name`
+   в обох блоках і шляхи до сертифікатів.
 
-## NIC.ua / DNS
+3. Випусти сертифікат на новий домен:
 
-У DNS-зоні `lihvodruida.pp.ua` створи або зміни запис:
-
-```text
-Type: CNAME
-Host: dashboard
-Value: <значення, яке показує Vercel для цього домену>
-TTL: Auto або 300
+```bash
+cd /srv/mistblossom
+docker compose run --rm certbot certonly \
+  --webroot -w /var/www/certbot \
+  -d dashboard.lihvodruida.pp.ua
+docker compose exec nginx nginx -s reload
 ```
 
-Не копіюй CNAME навмання з чужого проєкту. Правильне target-значення бере саме Vercel у Settings → Domains для твого project.
+4. Старий піддомен можна лишити в DNS і додати окремий `server`-блок із
+   `return 301 https://dashboard.lihvodruida.pp.ua$request_uri;`. Код усе одно
+   переводить старі `/admin/*` на `/dashboard/*`, але зовнішній redirect
+   економить один зайвий перехід.
 
-## Vercel Environment Variables
+## Змінні середовища
 
-У Vercel → Project → **Settings → Environment Variables** онови production, preview і development, якщо вони використовуються:
+У `dashboard/.env.production` на сервері онови:
 
 ```env
 DASHBOARD_URL=https://dashboard.lihvodruida.pp.ua
@@ -58,7 +59,7 @@ NEXT_PUBLIC_DASHBOARD_URL=https://dashboard.lihvodruida.pp.ua
 DASHBOARD_ALLOWED_HOSTS=dashboard.lihvodruida.pp.ua
 ```
 
-Якщо в Vercel ще є старі змінні:
+Якщо у файлі ще лишились старі змінні:
 
 ```env
 ADMIN_DASHBOARD_URL=https://dashboard.lihvodruida.pp.ua
@@ -89,7 +90,7 @@ https://dashboard.lihvodruida.pp.ua/api/auth/discord/callback
 https://dashboard.lihvodruida.pp.ua/api/discord/interactions
 ```
 
-Якщо interactions йдуть через Cloudflare Worker, endpoint у Discord не змінюється, але Worker env має знати новий dashboard URL.
+Взаємодії приймає сервіс бота; endpoint у Discord не змінюється, але `bot/.env.production` має знати новий адрес панелі.
 
 ## Battle.net Developer Portal
 
@@ -120,20 +121,10 @@ NEXT_PUBLIC_DASHBOARD_URL=https://dashboard.lihvodruida.pp.ua
 
 Якщо у Worker лишився hardcoded URL старої панелі, заміни його на `https://dashboard.lihvodruida.pp.ua`.
 
-## Перенесення на новий GitHub без повного переїзду Vercel
+## Перенесення на новий GitHub
 
-Правильний варіант — не створювати новий Vercel project, а перепідключити Git repository в існуючому project.
-
-1. Створи новий GitHub repository.
-2. Завантаж поточний код у новий repository:
-
-```bash
-git remote -v
-git remote set-url origin https://github.com/<owner>/<new-repo>.git
-git push -u origin main
-```
-
-Якщо хочеш зберегти старий remote:
+Панель більше не привʼязана до Git-провайдера: деплой робить `deploy.sh` на
+сервері, а не хук платформи. Тому переїзд репозиторію — це просто зміна remote.
 
 ```bash
 git remote rename origin old-origin
@@ -141,14 +132,18 @@ git remote add origin https://github.com/<owner>/<new-repo>.git
 git push -u origin main
 ```
 
-3. У Vercel відкрий існуючий project → **Settings → Git**.
-4. У Connected Git Repository від’єднай старий repo або зміни підключений repository на новий.
-5. Перевір production branch: `main`.
-6. Зроби тестовий commit у новий repo. Vercel має створити preview/production deploy із цього repo.
+На сервері:
+
+```bash
+cd /srv/mistblossom
+git remote set-url origin https://github.com/<owner>/<new-repo>.git
+git pull
+./deploy/scripts/deploy.sh
+```
 
 ## GitHub env для контенту сайту
 
-Це не Vercel Git integration, а змінні для роботи dashboard із GitHub API. Якщо переносиш сайт/контент у новий GitHub repo, онови:
+Це змінні для роботи панелі з GitHub API (контент сайту), не для деплою. Якщо переносиш сайт/контент у новий GitHub repo, онови:
 
 ```env
 GITHUB_OWNER=<новий owner>
@@ -170,7 +165,7 @@ GITHUB_TOKEN=<token із доступом до нового repo>
    - Discord login callback;
    - Battle.net callback;
    - rules accept flow.
-7. Перевірити cron у Vercel: `/api/dashboard/profiles/orphan-cleanup/apply`.
+7. Перевірити планові задачі: `docker compose logs -f cron` — у логах мають бути рядки `OK /api/...`.
 
 ## Коміт
 
@@ -181,6 +176,6 @@ refactor(dashboard): move admin routes to dashboard domain
 - move management API routes from /api/admin to /api/dashboard
 - add legacy redirects for old /admin and /api/admin links
 - switch canonical dashboard domain to dashboard.lihvodruida.pp.ua
-- update Vercel cron, docs and env examples for the new dashboard domain
+- update cron schedule, docs and env examples for the new dashboard domain
 - keep admin as an access role name, not as the panel URL
 ```

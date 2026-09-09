@@ -1,6 +1,6 @@
 import "server-only";
 
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue } from "@/lib/db/firestoreCompat";
 import type { DashboardSession } from "@/lib/auth";
 import { firebaseWrite } from "@/lib/firebaseAccess";
 import {

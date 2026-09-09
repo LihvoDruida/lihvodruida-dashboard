@@ -7,7 +7,7 @@
 ```text
 Discord MESSAGE_CREATE
         ↓
-Cloudflare Worker Durable Object
+Сервіс бота (постійне зʼєднання з Discord Gateway)
         ↓
 POST /api/discord/recruitment-advice/message
         ↓
@@ -16,7 +16,7 @@ POST /api/discord/recruitment-advice/message
 відповідь у той самий Discord channel_id/thread_id
 ```
 
-Vercel cron більше не використовується для цієї функції. На Vercel Hobby погодинний cron недоступний, тому слухач повідомлень перенесено у Cloudflare Worker.
+Планувальник панелі для цієї функції не використовується: слухач повідомлень живе у сервісі бота, який тримає постійне зʼєднання з Discord Gateway. Кронові тіки для цього не підходять — зʼєднання має бути живим, а не прокидатись раз на хвилину.
 
 ## Dashboard endpoint
 
@@ -35,29 +35,21 @@ DISCORD_RECRUITMENT_ADVICE_ENABLED=true
 DISCORD_RECRUITMENT_ADVICE_SECRET=long-random-secret
 ```
 
-`DISCORD_RECRUITMENT_ADVICE_SECRET` має збігатися з Cloudflare Worker secret.
+`DISCORD_RECRUITMENT_ADVICE_SECRET` має збігатися зі значенням у боті.
 
-## Env на Cloudflare Worker
+## Env сервісу бота
 
-У `workers/guild-applications-worker`:
+Змінні задаються у `bot/.env.production` (шаблон — `bot/.env.example`):
 
 ```bash
-wrangler secret put DISCORD_BOT_TOKEN
-wrangler secret put DISCORD_GUILD_ID
-wrangler secret put DISCORD_RECRUITMENT_ADVICE_SECRET
+DISCORD_BOT_TOKEN=...
+DISCORD_GUILD_ID=...
+DISCORD_RECRUITMENT_ADVICE_SECRET=...
 ```
 
-У `wrangler.toml` додано Durable Object:
-
-```toml
-[[durable_objects.bindings]]
-name = "DISCORD_RECRUITMENT_GATEWAY"
-class_name = "DiscordRecruitmentGateway"
-
-[[migrations]]
-tag = "v1-discord-recruitment-gateway"
-new_sqlite_classes = ["DiscordRecruitmentGateway"]
-```
+Постійне зʼєднання до Discord Gateway тримає сам процес бота. Раніше цю роль
+виконував Durable Object у Cloudflare; тепер зовнішній стан не потрібен —
+контейнер живе постійно, а стан gateway тримається в памʼяті процесу.
 
 ## Поведінка відповіді
 
@@ -78,14 +70,14 @@ new_sqlite_classes = ["DiscordRecruitmentGateway"]
 
 ```bash
 curl -H "Authorization: Bearer $WORKER_STATS_TOKEN" \
-  "https://guild-applications-worker.<account>.workers.dev/api/discord-recruitment-gateway?action=status"
+  "http://bot:8080/discord/recruitment-gateway?action=status"
 ```
 
 Ручний старт:
 
 ```bash
 curl -X POST -H "Authorization: Bearer $WORKER_STATS_TOKEN" \
-  "https://guild-applications-worker.<account>.workers.dev/api/discord-recruitment-gateway?action=start"
+  "http://bot:8080/discord/recruitment-gateway?action=start"
 ```
 
 Тест dashboard endpoint без реального Discord Gateway:
@@ -119,7 +111,7 @@ Discord Gateway надсилає тільки нові `MESSAGE_CREATE` поді
 
 - `Тест без відправки` — dry-run сканування старих повідомлень;
 - `Перевірити і відповісти` — ручна перевірка за заданий період;
-- `Worker backfill` — ручний виклик Cloudflare Worker `action=backfill`;
+- `Backfill` — ручний виклик бота з `action=backfill`;
 - `start/reconnect/stop/status` для Durable Object Gateway.
 
 Повторних відповідей не буде: dashboard зберігає успішні відповіді у `discordRecruitmentAdviceReplies` за Discord `message.id`. Якщо відповідь уже має статус `replied` або `replyMessageId`, навіть ручна перевірка не дублює її.

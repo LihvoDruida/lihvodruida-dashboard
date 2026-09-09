@@ -1,0 +1,16 @@
+# Поновлення TLS-сертифіката.
+#
+# certbot сам нічого не робить, якщо до закінчення понад 30 днів, тому
+# запускати двічі на добу безпечно і рекомендовано самим Let's Encrypt.
+
+[Unit]
+Description=Renew Let's Encrypt certificate for Mistblossom dashboard
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/srv/mistblossom
+ExecStart=/usr/bin/docker compose run --rm certbot renew --webroot --webroot-path=/var/www/certbot --quiet
+# nginx треба перечитати конфіг, інакше він і далі віддає старий сертифікат.
+ExecStartPost=/usr/bin/docker compose exec -T nginx nginx -s reload

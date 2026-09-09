@@ -436,7 +436,7 @@ Authorization: Bearer <INTERNAL_PROFILE_LOOKUP_TOKEN>
 
 ### `POST /api/raids/[raidId]/discord-action`
 
-Private endpoint для Cloudflare Worker або Discord interaction handler, який записує користувача на рейд із Discord кнопки.
+Приватний endpoint для сервісу бота, який записує користувача на рейд із Discord-кнопки.
 
 **Доступ:** Bearer token.
 
@@ -553,7 +553,7 @@ Discord interaction endpoint для кнопок.
 - підтвердження підпису на правила рейду;
 - кнопки запису на рейд `mbv1:raid:<raidId>:going|late|skipped`.
 
-Якщо interactions обробляє Cloudflare Worker, цей endpoint можна залишити як fallback.
+Взаємодії обробляє сервіс бота; цей endpoint — внутрішня точка входу для нього.
 
 ## Контент
 

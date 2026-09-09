@@ -4,7 +4,7 @@
 
 The Dashboard is a private administration panel for the **Mistblossom Vanguard** guild. It combines member profiles, Battle.net characters, Discord server names, guild applications, raid announcements, Discord embeds, rules, and website content management.
 
-The project uses **Next.js App Router** as a server-side application. Profiles and raids are stored in **Firebase Firestore**, guild applications are read and moderated through **Firebase Firestore**, and Discord actions are performed through Discord Bot API or a Cloudflare Worker.
+The project uses **Next.js App Router** as a server-side application. Profiles, raids and guild applications are stored in our own **PostgreSQL**, and Discord actions are performed directly through the Discord Bot API.
 
 ## 2. Roles
 

@@ -68,7 +68,7 @@ export default async function EditPollPage({ params }: { params: Promise<{ pollI
       eyebrow="Mistblossom Vanguard • Редагування"
     >
       {!hasRaidPollStorage() ? <div className="notice panel error-note raid-notice">Firebase для рейд-пулів не налаштований.</div> : null}
-      {!discordEnabled ? <div className="notice panel error-note raid-notice">Discord-публікація недоступна: перевір bot token або worker relay.</div> : null}
+      {!discordEnabled ? <div className="notice panel error-note raid-notice">Discord-публікація недоступна: не налаштований DISCORD_BOT_TOKEN.</div> : null}
       {channelResult?.warning ? <div className="notice panel warning-note raid-notice">Список каналів прочитано з попередженням: {channelResult.warning}</div> : null}
       <section className="raid-poll-create-layout" aria-label="Редагування рейд-пулу">
         <RaidPollEditForm poll={poll} channels={channels} roles={roles} discordEnabled={discordEnabled && hasRaidPollStorage()} />

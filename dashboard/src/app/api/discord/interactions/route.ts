@@ -9,7 +9,10 @@ import {
 import { getMainCharacter, getProfileByDiscordUserId } from "@/lib/profiles";
 import { rulesAcceptUrlForDiscordUser } from "@/lib/rulesOnboarding";
 import { buildRaidManualSpecComponents, dashboardProfileUrl, dashboardRaidRulesUrl, decodeRaidAttendanceCustomId, decodeRaidCharacterSelectCustomId, decodeRaidManualClassCustomId, decodeRaidManualSpecCustomId, decodeRaidRoleSelectCustomId, decodeRaidSignupSubmitCustomId, handleRaidDiscordAction, raidActionHelpComponents, type RaidCharacterRole } from "@/lib/raids";
-import { handleRaidPollDiscordVote, type RaidPollDiscordVoteKind } from "@/lib/raidPolls";
+import { handleRaidPollDiscordVote } from "@/lib/raidPolls";
+// Розбір custom_id — зі спільного пакета: бот користується тим самим кодом,
+// тому нова дія не може «загубитись» на одній зі сторін.
+import { decodeRaidPollCustomId } from "@mistblossom/discord-contract";
 import { decodeRosterCustomId, handleRosterFormationDiscordAction } from "@/lib/rosterFormation";
 import { logDashboardEvent, noStoreHeaders, safeErrorMessage } from "@/lib/security";
 
@@ -153,7 +156,6 @@ function rulesPublicLinkComponents(acceptUrl: string) {
   ];
 }
 
-
 function getInteractionMessageRef(interaction: any) {
   // Ephemeral interaction messages are private follow-ups/select menus, not the public raid embed.
   // Never use them as the target for raid embed synchronization.
@@ -164,7 +166,6 @@ function getInteractionMessageRef(interaction: any) {
   return channelId && messageId ? { channelId, messageId } : null;
 }
 
-
 function cleanRaidSignupRole(value: unknown): RaidCharacterRole | null {
   const role = String(value || "").trim().toLowerCase();
   if (role === "tank") return "tank";
@@ -172,37 +173,6 @@ function cleanRaidSignupRole(value: unknown): RaidCharacterRole | null {
   if (role === "dps") return "dps";
   return null;
 }
-
-/**
- * Дії приватного пульта голосування.
- *
- * `character` / `character_prompt` — легасі з часів, коли голос вимагав
- * персонажа Battle.net. Досі приймаємо їх, бо в Discord висять опубліковані
- * embed-и зі старими custom_id: обидва просто відкривають новий пульт.
- */
-function decodeRaidPollCustomId(customId: string, values: unknown): { pollId: string; kind: RaidPollDiscordVoteKind; group?: string | null; values: string[] } | null {
-  const value = String(customId || "").trim();
-  const match = value.match(/^mbv1:poll_(schedule_(?:mon|tue|wed|thu|fri|sat|sun)|schedule_page_\d{1,2}|vote_prompt|character_prompt|character|quick|role|submit):([A-Za-z0-9_-]{8,80})$/);
-  if (!match) return null;
-  const rawKind = match[1];
-  const isPrompt = rawKind === "vote_prompt" || rawKind === "character_prompt" || rawKind === "character";
-  const selected = Array.isArray(values) ? values.map((item) => String(item || "").trim()).filter(Boolean).slice(0, 10) : [];
-  if (!selected.length && !isPrompt && rawKind !== "submit" && !rawKind.startsWith("schedule_page_")) return null;
-  const group = rawKind.startsWith("schedule_page_")
-    ? rawKind.replace("schedule_page_", "page_")
-    : rawKind.startsWith("schedule_")
-      ? rawKind.replace("schedule_", "")
-      : null;
-  const kind: RaidPollDiscordVoteKind = isPrompt
-    ? "vote_prompt"
-    : rawKind.startsWith("schedule_page_")
-      ? "schedule_page"
-      : rawKind.startsWith("schedule_")
-        ? "schedule"
-        : (rawKind as RaidPollDiscordVoteKind);
-  return { pollId: match[2], kind, group, values: selected };
-}
-
 
 function mainCharacterLabel(character: any) {
   const name = String(character?.name || "").trim();

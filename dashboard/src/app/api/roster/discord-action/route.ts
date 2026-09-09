@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 /**
- * Discord-інтеракції обробляє окремий Cloudflare-воркер (guild-applications-worker):
+ * Discord-інтеракції обробляє окремий сервіс бота (контейнер `bot`):
  * він перевіряє підпис Discord, робить швидкий ACK і ПРОКСУЄ дію сюди. Уся логіка
  * складу живе в панелі (rosterFormation.ts), тому воркеру не треба знати Firestore —
  * він лише пересилає {rosterId, kind, classKey, values, userId, userName} і показує
@@ -25,8 +25,6 @@ export const revalidate = 0;
  */
 
 const INTERNAL_ROSTER_ACTION_TOKENS = [
-  "DISCORD_RULES_STATS_TOKEN",
-  "WORKER_STATS_TOKEN",
   "INTERNAL_PROFILE_LOOKUP_TOKEN",
 ];
 

@@ -49,7 +49,7 @@ export default async function NewPollPage() {
       description="Заповни назву, складність і час закриття. Після збереження сайт створить запис у Firebase та опублікує Discord-повідомлення."
     >
       {!hasRaidPollStorage() ? <div className="notice panel error-note raid-notice">Firebase для рейд-пулів не налаштований.</div> : null}
-      {!discordEnabled ? <div className="notice panel error-note raid-notice">Discord-публікація недоступна: перевір bot token або worker relay.</div> : null}
+      {!discordEnabled ? <div className="notice panel error-note raid-notice">Discord-публікація недоступна: не налаштований DISCORD_BOT_TOKEN.</div> : null}
       {channelResult?.warning ? <div className="notice panel warning-note raid-notice">Список каналів прочитано з попередженням: {channelResult.warning}</div> : null}
       <section className="raid-poll-create-layout" aria-label="Створення рейд-пулу">
         <RaidPollCreateForm channels={channels} roles={roles} discordEnabled={discordEnabled && hasRaidPollStorage()} />

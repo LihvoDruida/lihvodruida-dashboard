@@ -134,8 +134,9 @@ export function normalizeHost(value?: string | null) {
 }
 
 export function getRequestHost(request: Request | NextRequest) {
-  // Prefer the public Host header. On Vercel behind Cloudflare, x-forwarded-host can
-  // sometimes contain an internal deployment host, which breaks same-origin checks.
+  // Беремо публічний Host. За зворотним проксі (Nginx, Cloudflare)
+  // x-forwarded-host може містити внутрішній хост апстріму, і тоді
+  // перевірка same-origin ламається — тому він лише запасний варіант.
   return normalizeHost(request.headers.get("host") || request.headers.get("x-forwarded-host") || "");
 }
 
@@ -329,7 +330,7 @@ export function verifyTrustedOrigin(request: Request | NextRequest) {
   const referer = trustedHeaderUrl(refererHeader);
 
   // Explicitly bad Origin/Referer headers are blocked. Missing browser metadata is
-  // handled below, because Cloudflare/Vercel/privacy tools may strip some headers.
+  // handled below, because Cloudflare/proxies/privacy tools may strip some headers.
   if (originHeader && !origin.trusted) {
     return reject(`origin_${origin.reason}`, { originHost: origin.host, host, fetchSite });
   }

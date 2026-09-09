@@ -1,0 +1,16 @@
+{
+  "name": "@mistblossom/discord-contract",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Спільний контракт Discord custom_id між панеллю та ботом.",
+  "main": "./index.mjs",
+  "types": "./index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./index.d.mts",
+      "default": "./index.mjs"
+    }
+  },
+  "files": ["index.mjs", "index.d.mts"]
+}

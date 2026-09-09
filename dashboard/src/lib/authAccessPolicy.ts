@@ -1,6 +1,6 @@
 import "server-only";
 
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue } from "@/lib/db/firestoreCompat";
 import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
 import type { DashboardSession } from "@/lib/auth";
 import { resilientRead } from "@/lib/runtimeResilience";

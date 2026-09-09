@@ -1,0 +1,28 @@
+# Запуск усього стека як системного сервісу.
+#
+# Compose сам тримає контейнери живими (restart: unless-stopped), а цей
+# юніт потрібен тільки щоб стек піднімався після перезавантаження сервера
+# і щоб `systemctl status mistblossom` показував стан у звичному місці.
+#
+# Встановлення:
+#   sudo cp deploy/systemd/mistblossom.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now mistblossom
+
+[Unit]
+Description=Mistblossom Vanguard dashboard stack
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/srv/mistblossom
+ExecStart=/usr/bin/docker compose up -d --remove-orphans
+ExecStop=/usr/bin/docker compose down
+ExecReload=/usr/bin/docker compose up -d --build --remove-orphans
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target

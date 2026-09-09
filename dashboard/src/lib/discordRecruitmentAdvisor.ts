@@ -3,7 +3,7 @@ import {
   FieldValue,
   type QueryDocumentSnapshot,
   type Transaction,
-} from "firebase-admin/firestore";
+} from "@/lib/db/firestoreCompat";
 import {
   discordApi,
   fetchDiscordTextChannels,

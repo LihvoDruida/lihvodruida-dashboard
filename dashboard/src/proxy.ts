@@ -35,6 +35,9 @@ function isProtectedPagePath(pathname: string) {
 
 function isPublicApiPath(pathname: string) {
   return (
+    // Liveness для healthcheck контейнера і upstream-перевірки Nginx.
+    // Має бути публічним: kubelet/docker/systemd не мають сесії.
+    pathname === "/api/health" ||
     pathname.startsWith("/api/auth/") ||
     pathname === "/api/client-errors" ||
     pathname === "/api/background/settings" ||
@@ -116,7 +119,7 @@ function contentSecurityPolicy(nonce: string) {
     `style-src ${styleSrc}`,
     "img-src 'self' data: blob: https://cdn.discordapp.com https://media.discordapp.net https://render.worldofwarcraft.com https://cdnassets.raider.io https://raider.io",
     "font-src 'self' data:",
-    "connect-src 'self' https://discord.com https://discordapp.com https://cdn.discordapp.com https://media.discordapp.net https://api.github.com https://raider.io https://*.raider.io https://render.worldofwarcraft.com https://*.workers.dev",
+    "connect-src 'self' https://discord.com https://discordapp.com https://cdn.discordapp.com https://media.discordapp.net https://api.github.com https://raider.io https://*.raider.io https://render.worldofwarcraft.com",
     "worker-src 'self' blob:",
     "manifest-src 'self'",
     "media-src 'self' https:",
@@ -137,7 +140,7 @@ function getCloudflareProxyMode(host: string): CloudflareProxyMode {
     .toLowerCase();
 
   // Backward compatibility: older deployments used SECURITY_REQUIRE_CLOUDFLARE=true
-  // as a hard gate. In practice Vercel/Cloudflare/domain transitions can temporarily
+  // as a hard gate. In practice reverse-proxy/Cloudflare/domain transitions can temporarily
   // strip CF headers from legitimate custom-domain requests and lock admins out.
   // Use SECURITY_REQUIRE_CLOUDFLARE=strict only after the DNS/proxy chain is verified.
   if (["strict", "enforce", "block"].includes(raw)) return "strict";

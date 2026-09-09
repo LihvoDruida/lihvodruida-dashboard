@@ -6,7 +6,7 @@ All secrets must remain server-side. Values with `NEXT_PUBLIC_*` are exposed to 
 
 A full production deployment usually needs: `SESSION_SECRET`, `DASHBOARD_URL`, `NEXT_PUBLIC_DASHBOARD_URL`, `DASHBOARD_ALLOWED_HOSTS`, `DISCORD_OAUTH_CLIENT_ID`, `DISCORD_OAUTH_CLIENT_SECRET`, `DISCORD_GUILD_ID`, `DISCORD_BOT_TOKEN`, `GITHUB_OWNER`, `GITHUB_REPO`, `GITHUB_TOKEN`, `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `FIREBASE_APPLICATIONS_COLLECTION`, `BATTLENET_CLIENT_ID`, `BATTLENET_CLIENT_SECRET`, `WOW_GUILD_NAME`, `RAID_RULES_URL`, `RAID_TIME_ZONE`, `NEXT_PUBLIC_RAID_TIME_ZONE`.
 
-## Shared with Cloudflare Worker
+## Shared with the bot service
 
 Put values into Worker only when Worker actually owns the corresponding responsibility. If Worker handles Discord interactions, rules buttons, or raid buttons, some values must match between the dashboard and Worker.
 
@@ -173,11 +173,11 @@ Put values into Worker only when Worker actually owns the corresponding responsi
 
 ## Practical rules
 
-1. Add secrets only to Vercel/Worker environment variables. Do not commit them.
+1. Secrets live only in `dashboard/.env.production` on the server (mode `600`, owned by the deploy user) and in the Worker environment. Never commit anything but `.env.example`.
 2. Generate `DISCORD_RULES_STATS_TOKEN`, `WORKER_STATS_TOKEN`, and `INTERNAL_PROFILE_LOOKUP_TOKEN` separately. Do not reuse OAuth secrets.
-3. If Worker handles interactions, the Discord Developer Portal Interaction Endpoint should point to Worker, not Vercel.
-4. If Vercel route `/api/discord/interactions` is used as fallback, Vercel must have `DISCORD_PUBLIC_KEY`.
-5. For Firebase private key in Vercel, keep escaped `\\n`; the code converts them to real newlines.
+3. If the Worker handles interactions, the Discord Developer Portal Interaction Endpoint should point at the Worker, not at the dashboard domain.
+4. If the dashboard route `/api/discord/interactions` is used as a fallback, `.env.production` must contain `DISCORD_PUBLIC_KEY`.
+5. Keep the Firebase private key in `.env.production` on one line with escaped `\\n`; the code converts them to real newlines.
 
 > Access role IDs are no longer configured in env. Manage dashboard groups, a single Discord role ID and permissions in Firebase from `/dashboard/groups`.
 

@@ -18,7 +18,6 @@ const ACCOUNT_CLEANUP_TOKENS = [
   "CRON_SECRET",
   "INTERNAL_API_TOKEN",
   "RAID_LIFECYCLE_SECRET",
-  "WORKER_STATS_TOKEN",
 ];
 
 type AccountCleanupRouteGuard = {

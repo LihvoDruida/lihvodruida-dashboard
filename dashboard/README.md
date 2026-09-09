@@ -26,8 +26,8 @@ Private dashboard panel for the **Mistblossom Vanguard** guild: applications, pr
 - GitHub REST API;
 - Discord OAuth + Bot API;
 - Battle.net OAuth + WoW Profile API;
-- Vercel;
-- Cloudflare Worker if interactions are moved outside the dashboard.
+- Docker + Nginx on your own server;
+- Bot service (`bot/`) — receives Discord interactions; the dashboard never accepts them from the internet.
 
 ## Quick start
 
@@ -53,7 +53,7 @@ npm run start
 
 `npm run verify` runs TypeScript typecheck and ESLint through the modern ESLint CLI.
 
-For Vercel, use the standard Next.js deployment. Do not set a manual output directory.
+Production is built into a Docker image (`output: "standalone"`) and started with `docker compose`. Step by step: [`docs/en/SELF_HOSTING.md`](docs/en/SELF_HOSTING.md).
 
 ## Main environment variables
 
@@ -122,7 +122,7 @@ See the full environment documentation for all variables and Worker sharing note
 - To change a nickname, the bot role must be higher than the user's highest role.
 - If Discord interactions are handled by Worker, the Discord Developer Portal Interaction Endpoint must point to Worker.
 - If Worker calls the dashboard, shared tokens must match.
-- In Vercel, `FIREBASE_PRIVATE_KEY` is usually stored with escaped `\n`.
+- In `.env.production`, keep `FIREBASE_PRIVATE_KEY` on one line with escaped `\n`; the code converts them to real newlines.
 
 ## Guild roster `/guild`
 

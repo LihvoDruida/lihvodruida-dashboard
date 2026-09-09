@@ -20,8 +20,6 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const INTERNAL_RAID_ACTION_TOKENS = [
-  "DISCORD_RULES_STATS_TOKEN",
-  "WORKER_STATS_TOKEN",
   "INTERNAL_PROFILE_LOOKUP_TOKEN",
 ];
 

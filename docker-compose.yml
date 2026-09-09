@@ -1,0 +1,224 @@
+name: mistblossom
+
+# ---------------------------------------------------------------------------
+# Продакшн-стек Mistblossom Vanguard на власному сервері.
+#
+#   postgres  — власна база даних (замість Firestore)
+#   nginx     — TLS, gzip, статика, зворотний проксі на dashboard і bot
+#   dashboard — Next.js standalone, слухає тільки внутрішню мережу
+#   bot       — Discord-бот: підпис + маршрутизація взаємодій у панель
+#   cron      — планові задачі (раніше це були Vercel Cron Jobs)
+#
+# Бот винесений окремо навмисно: у Discord рівно 3 секунди на підтвердження
+# взаємодії, і перезапуск панелі не повинен їх зʼїдати. Бот при цьому не має
+# ні бази, ні токена бота для запису — уся логіка лишається в панелі.
+#
+# Порт 3000 навмисно НЕ публікується назовні: єдиний вхід — 80/443 через
+# nginx. Інакше можна було б обійти rate limit і TLS, стукнувши в апстрім.
+# ---------------------------------------------------------------------------
+
+services:
+  # Власна база. Порт 5432 назовні НЕ публікується: до бази ходить лише
+  # панель внутрішньою мережею. Якщо потрібен доступ ззовні для psql —
+  # робіть це через SSH-тунель, а не публікацією порту.
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-mistblossom}
+      POSTGRES_USER: ${POSTGRES_USER:-mistblossom}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?треба задати POSTGRES_PASSWORD}
+      TZ: Europe/Kyiv
+      # Дані ініціалізуються один раз при створенні тому; локаль фіксуємо,
+      # інакше сортування текстів залежатиме від образу.
+      LANG: C.UTF-8
+    command:
+      - postgres
+      - -c
+      - max_connections=100
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - work_mem=8MB
+      # Логуємо все, що виконується довше секунди: перший інструмент,
+      # коли панель почне гальмувати.
+      - -c
+      - log_min_duration_statement=1000
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mistblossom} -d ${POSTGRES_DB:-mistblossom}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  dashboard:
+    build:
+      context: ./dashboard
+      args:
+        NEXT_PUBLIC_DASHBOARD_URL: ${DASHBOARD_PUBLIC_URL:?треба задати DASHBOARD_PUBLIC_URL}
+    image: mistblossom/dashboard:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file:
+      - ./dashboard/.env.production
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+      TZ: Europe/Kyiv
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "3000"
+    networks:
+      - edge
+      - data
+    # Панель нічого не пише на диск: стан у PostgreSQL, кеш у памʼяті.
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      dashboard:
+        condition: service_healthy
+      bot:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deploy/nginx/dashboard.conf:/etc/nginx/conf.d/dashboard.conf:ro
+      - ./deploy/nginx/proxy-params.inc:/etc/nginx/conf.d/proxy-params.inc:ro
+      - certbot-webroot:/var/www/certbot:ro
+      - letsencrypt:/etc/letsencrypt:ro
+    networks:
+      - edge
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  # Discord-бот. Приймає взаємодії від Discord, перевіряє підпис Ed25519 і
+  # пересилає їх у панель внутрішньою мережею. Назовні видно тільки через
+  # nginx за шляхом /discord/interactions.
+  bot:
+    build:
+      context: .
+      dockerfile: bot/Dockerfile
+    image: mistblossom/bot:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "8080"
+      HOST: "0.0.0.0"
+      TZ: Europe/Kyiv
+      LOG_LEVEL: ${BOT_LOG_LEVEL:-info}
+      # Публічний ключ застосунку Discord — єдиний секрет, потрібний боту.
+      DISCORD_PUBLIC_KEY: ${DISCORD_PUBLIC_KEY:?треба задати DISCORD_PUBLIC_KEY}
+      # Панель доступна ботові тільки внутрішньою мережею — жодних
+      # публічних URL між нашими ж сервісами.
+      DASHBOARD_URL: http://dashboard:3000
+      DASHBOARD_INTERNAL_URL: http://dashboard:3000
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?треба задати INTERNAL_API_TOKEN}
+      # Планувальник замість Cloudflare Cron Triggers: той самий інтервал,
+      # що стояв у wrangler.toml.
+      BOT_CRON_ENABLED: ${BOT_CRON_ENABLED:-1}
+      BOT_CRON_INTERVAL_MS: "600000"
+    env_file:
+      - ./bot/.env.production
+    depends_on:
+      dashboard:
+        condition: service_healthy
+    expose:
+      - "8080"
+    networks:
+      - edge
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    # Перевірка локальна: бот має вважатись здоровим навіть коли Discord
+    # лежить, інакше їхній збій перезапускав би наш контейнер по колу.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  # Планові задачі. На Vercel це були Cron Jobs у vercel.json; тут —
+  # звичайний cron у контейнері, який стукає у ті самі HTTP-ендпоїнти
+  # внутрішньою мережею з bearer-токеном.
+  cron:
+    image: curlimages/curl:8.11.1
+    restart: unless-stopped
+    depends_on:
+      dashboard:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "/opt/cron/run-cron.sh"]
+    environment:
+      DASHBOARD_INTERNAL_URL: http://dashboard:3000
+      INTERNAL_CRON_TOKEN: ${CRON_SECRET:?треба задати CRON_SECRET}
+      TZ: Europe/Kyiv
+    volumes:
+      - ./deploy/cron/run-cron.sh:/opt/cron/run-cron.sh:ro
+    networks:
+      - edge
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  # Оновлення сертифіката. Запускається вручну або systemd-таймером:
+  #   docker compose run --rm certbot renew
+  certbot:
+    image: certbot/certbot:latest
+    profiles: ["certbot"]
+    volumes:
+      - certbot-webroot:/var/www/certbot
+      - letsencrypt:/etc/letsencrypt
+    networks:
+      - edge
+
+networks:
+  edge:
+    driver: bridge
+  # Окрема мережа для бази: nginx і cron до неї не мають доступу взагалі.
+  data:
+    driver: bridge
+    internal: true
+
+volumes:
+  certbot-webroot:
+  letsencrypt:
+  pgdata:

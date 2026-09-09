@@ -1,18 +1,11 @@
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue } from "@/lib/db/firestoreCompat";
 import {
   cleanRaidImageUrl,
   defaultRaidThumbnailPath,
   normalizeRaidThumbnailDifficulty,
 } from "@/lib/raidThumbnailAssets";
-import { logDashboardEvent } from "@/lib/security";
+import {  } from "@/lib/security";
 import { mapConcurrentSettled } from "@/lib/concurrency";
-import {
-  invalidatePublicCacheBatch,
-  invalidatePublicCachePrefix,
-  publicCacheKey,
-  readPublicCache,
-  writePublicCache,
-} from "@/lib/cloudflarePublicCache";
 import {
   getRuntimeCachedValue,
   setRuntimeCachedValue,
@@ -790,11 +783,6 @@ function raidRegistrationAvailableSlots(
   return Math.max(0, limit - activeCount + replaceableCount);
 }
 
-function stripRaidBenchPriorityForCache(raid: RaidItem): RaidItem {
-  const { benchPriority: _benchPriority, ...cacheValue } = raid;
-  return cacheValue as RaidItem;
-}
-
 export async function getRaidBenchPrioritySettings(
   options: { bypassCache?: boolean } = {},
 ): Promise<RaidBenchPrioritySettings> {
@@ -884,7 +872,6 @@ export async function saveRaidBenchPrioritySettingsFromForm(
       clearRuntimeCachedValue(RAID_BENCH_PRIORITY_CACHE_KEY);
       clearRuntimeCachedValuesByPrefix("raid:");
       clearRuntimeCachedValuesByPrefix("raids:list:");
-      await invalidateRaidPublicCaches(null).catch(() => null);
       const snapshot = await ref.get();
       const savedSettings = normalizeRaidBenchPrioritySettings(snapshot.data() || {});
       setRuntimeCachedValue(RAID_BENCH_PRIORITY_CACHE_KEY, savedSettings);
@@ -1522,98 +1509,10 @@ export function hasRaidStorage() {
   return hasFirebaseProfileConfig();
 }
 
-function raidListPublicCacheKey(limit: number) {
-  return publicCacheKey(["dashboard", "raids", "list", String(limit)]);
-}
-
-function raidItemPublicCacheKey(raidId: string) {
-  return publicCacheKey(["dashboard", "raids", "item", cleanRaidId(raidId)]);
-}
-
-async function writeRaidListPublicCache(limit: number, raids: RaidItem[]) {
-  const cacheRaids = raids.map(stripRaidBenchPriorityForCache);
-  return writePublicCache(raidListPublicCacheKey(limit), cacheRaids, {
-    ttlSeconds: Math.max(
-      30,
-      Math.min(
-        900,
-        Number(
-          process.env.PUBLIC_API_RAIDS_CACHE_SECONDS ||
-            process.env.RAID_LIST_CACHE_TTL_SECONDS ||
-            60,
-        ),
-      ),
-    ),
-    tags: ["raids", "firebase-offload"],
-  });
-}
-
-async function writeRaidItemPublicCache(raid: RaidItem | null) {
-  if (!raid?.id) return { ok: false, skipped: true };
-  return writePublicCache(
-    raidItemPublicCacheKey(raid.id),
-    stripRaidBenchPriorityForCache(raid),
-    {
-    ttlSeconds: Math.max(
-      30,
-      Math.min(
-        900,
-        Number(
-          process.env.PUBLIC_API_RAIDS_CACHE_SECONDS ||
-            process.env.RAID_ITEM_CACHE_TTL_MS ||
-            60_000,
-        ) / 1000 || 60,
-      ),
-    ),
-    tags: ["raids", `raid:${raid.id}`, "firebase-offload"],
-    },
-  );
-}
-
-async function readRaidListPublicCache(limit: number) {
-  const cached = await readPublicCache<RaidItem[]>(
-    raidListPublicCacheKey(limit),
-    { timeoutMs: 900 },
-  );
-  return cached.hit && Array.isArray(cached.value)
-    ? cached.value.map((item) => normalizeRaid(item.id, item))
-    : null;
-}
-
-async function readRaidItemPublicCache(raidId: string) {
-  const cached = await readPublicCache<RaidItem>(
-    raidItemPublicCacheKey(raidId),
-    { timeoutMs: 900 },
-  );
-  return cached.hit && cached.value
-    ? normalizeRaid(cached.value.id || raidId, cached.value)
-    : null;
-}
-
-async function invalidateRaidPublicCaches(raidId?: string | null) {
-  const id = cleanRaidId(raidId);
-  await invalidatePublicCacheBatch({
-    prefixes: [publicCacheKey(["dashboard", "raids", "list"])],
-    keys: id ? [raidItemPublicCacheKey(id)] : [],
-  }).catch((error) => {
-    logDashboardEvent(
-      "warn",
-      "raids.public_cache_invalidate_failed",
-      undefined,
-      {
-        raidId: id || null,
-        message:
-          error instanceof Error ? error.message : String(error || "unknown"),
-      },
-    );
-  });
-}
-
 function clearRaidRuntimeCaches(raidId?: string | null) {
   const id = cleanRaidId(raidId);
   if (id) clearRuntimeCachedValue(`raid:${id}`);
   clearRuntimeCachedValuesByPrefix("raids:list:");
-  void invalidateRaidPublicCaches(id).catch(() => null);
 }
 
 const raidLifecycleSyncInFlight = new Set<string>();
@@ -1683,15 +1582,15 @@ function raidWriteErrorMessage(error: unknown) {
   return message || "Запис на рейд тимчасово недоступний. Спробуй пізніше.";
 }
 
+/**
+ * Раніше тут стояв ще один шар кешу — список рейдів у Cloudflare KV поверх
+ * кешу `firebaseRead` нижче. Він мав сенс, поки KV був спільним для всіх
+ * екземплярів і жив за межами процесу. Після переїзду на власний сервер це
+ * перетворилось на другий кеш тих самих даних у тій самій памʼяті: користі
+ * нуль, а ризик показати застарілий склад рейду — цілком реальний.
+ */
 export async function listRaids(limit = 60): Promise<RaidItem[]> {
   const safeLimit = Math.max(1, Math.min(100, limit));
-  const edgeCached = await readRaidListPublicCache(safeLimit).catch(() => null);
-  if (edgeCached) {
-    edgeCached.forEach((raid) =>
-      scheduleRaidAutoCloseSync(raid, "public-list-cache"),
-    );
-    return attachRaidBenchPrioritySettingsToList(edgeCached);
-  }
   if (!hasRaidStorage()) return [];
   const raids = await firebaseRead<RaidItem[]>(
     "raid",
@@ -1726,7 +1625,6 @@ export async function listRaids(limit = 60): Promise<RaidItem[]> {
       sorted.forEach((raid) =>
         scheduleRaidAutoCloseSync(raid, "firebase-list-read"),
       );
-      await writeRaidListPublicCache(safeLimit, sorted).catch(() => null);
       return sorted;
     },
     {
@@ -1758,11 +1656,6 @@ export async function listRaids(limit = 60): Promise<RaidItem[]> {
 export async function getRaid(raidId: string): Promise<RaidItem | null> {
   const id = cleanRaidId(raidId);
   if (!id) return null;
-  const edgeCached = await readRaidItemPublicCache(id).catch(() => null);
-  if (edgeCached) {
-    scheduleRaidAutoCloseSync(edgeCached, "public-item-cache");
-    return attachRaidBenchPrioritySettings(edgeCached);
-  }
   if (!hasRaidStorage()) return null;
   const raid = await firebaseRead(
     "raid",
@@ -1775,7 +1668,6 @@ export async function getRaid(raidId: string): Promise<RaidItem | null> {
       if (!snapshot.exists) return null;
       const raid = normalizeRaid(snapshot.id, snapshot.data() || {});
       scheduleRaidAutoCloseSync(raid, "firebase-item-read");
-      await writeRaidItemPublicCache(raid).catch(() => null);
       return raid;
     },
     {
@@ -4748,13 +4640,8 @@ export async function recordRaidSignup(raidId: string, signup: RaidSignup) {
     { timeoutMs: 5_000, logEvent: "raids.signup_write_failed" },
   );
 
-  await invalidateRaidPublicCaches(id);
   const updated = await getRaid(id);
   if (!updated) throw new Error("Рейд не знайдено після оновлення.");
-  await writeRaidItemPublicCache(updated).catch(() => null);
-  await invalidatePublicCachePrefix(
-    publicCacheKey(["dashboard", "raids", "list"]),
-  ).catch(() => null);
   return updated;
 }
 

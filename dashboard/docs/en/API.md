@@ -436,7 +436,7 @@ Updates the current user's raid attendance.
 
 ### `POST /api/raids/[raidId]/discord-action`
 
-Private endpoint for a Cloudflare Worker or Discord interaction handler that signs a user up from a Discord button.
+Private endpoint for the bot service that signs a user up from a Discord button.
 
 **Access:** Bearer token.
 
@@ -553,7 +553,7 @@ Discord interaction endpoint for buttons.
 - raid rules signup confirmation;
 - raid attendance buttons `mbv1:raid:<raidId>:going|late|skipped`.
 
-If a Cloudflare Worker handles interactions, this endpoint can remain as fallback.
+Interactions are handled by the bot service; this endpoint remains the internal entry point.
 
 ## Content
 

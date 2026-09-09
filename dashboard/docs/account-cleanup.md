@@ -18,13 +18,15 @@
 
 ## Автоматичний запуск
 
-Додано `vercel.json` з daily cron:
+Запускає контейнер `cron` зі стека `docker-compose.yml` — щодня о 04:00 за Києвом:
 
-```json
-{"path":"/api/dashboard/profiles/orphan-cleanup/apply","schedule":"0 4 * * *"}
+```sh
+POST /api/dashboard/profiles/orphan-cleanup/apply
+Authorization: Bearer $CRON_SECRET
 ```
 
-Для роботи потрібен `CRON_SECRET` або `ACCOUNT_CLEANUP_SECRET`.
+Розклад описаний у `deploy/cron/run-cron.sh`. Для роботи потрібен `CRON_SECRET`
+або `ACCOUNT_CLEANUP_SECRET` у `dashboard/.env.production`.
 
 ## Internal cron endpoint
 

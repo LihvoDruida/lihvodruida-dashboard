@@ -23,8 +23,8 @@ Mistblossom Vanguard Dashboard is a private guild administration panel. It handl
 - GitHub REST API;
 - Discord OAuth + Bot API;
 - Battle.net OAuth + WoW Profile API;
-- Vercel for the dashboard;
-- optional Cloudflare Worker for Discord interactions.
+- your own Docker host (Nginx + Next.js standalone) for the dashboard;
+- bot service container for Discord interactions.
 
 ## 3. Service preparation
 
@@ -134,33 +134,61 @@ For local testing, keep this disabled:
 SECURITY_REQUIRE_CLOUDFLARE=false
 ```
 
-## 5. Production deploy on Vercel
+## 5. Production deploy on your own server
 
-1. Import the repo into Vercel.
-2. Framework preset: Next.js or Auto-detect.
-3. Node.js version in Vercel Project Settings: `24.x`. The repo no longer contains `engines`, `.nvmrc`, `.node-version`, or `packageManager`, so it does not fight the settings Vercel automatically provides.
-4. Install Command: leave empty / Auto. Vercel will detect npm from `package-lock.json`.
-5. Build Command: leave empty / Auto. Vercel will use the standard `npm run build`, and `prebuild` will run the legacy middleware cleanup automatically.
-6. Do not set a manual output directory for Next.js.
-7. Add production environment variables.
-8. Add domain:
+Full step-by-step guide: [`SELF_HOSTING.md`](SELF_HOSTING.md). Short version for
+an already prepared server:
 
-```text
-dashboard.lihvodruida.pp.ua
+```bash
+cd /srv/mistblossom
+git pull
+cp dashboard/.env.example dashboard/.env.production   # once, then just edit
+nano dashboard/.env.production
+./deploy/scripts/deploy.sh
 ```
 
-9. Check `DASHBOARD_ALLOWED_HOSTS`:
+`deploy.sh` builds the image, brings the stack up and waits for `/api/health`.
+If the new image fails to come up, the script rolls back to the previous one, so
+a bad deploy does not leave the dashboard down.
 
-```env
-DASHBOARD_ALLOWED_HOSTS=dashboard.lihvodruida.pp.ua
-```
+### Required environment
 
-10. Check canonical URLs:
+`.env.production` is read by the container at start. The exception is
+`NEXT_PUBLIC_DASHBOARD_URL`: Next bakes it into the client bundle at build time,
+so it is passed as a build arg via `DASHBOARD_PUBLIC_URL` in the `.env` file next
+to `docker-compose.yml`.
 
 ```env
 DASHBOARD_URL=https://dashboard.lihvodruida.pp.ua
 NEXT_PUBLIC_DASHBOARD_URL=https://dashboard.lihvodruida.pp.ua
+DASHBOARD_ALLOWED_HOSTS=dashboard.lihvodruida.pp.ua
 ```
+
+The domain must match in all three. `DASHBOARD_ALLOWED_HOSTS` validates the
+`Host` header of every POST: with a foreign domain there, every dashboard form
+starts returning 403.
+
+### Domain and TLS
+
+An A record (and AAAA if you have IPv6) pointing at the server. The Let's Encrypt
+certificate is issued by the `certbot` service from the same compose stack, and
+Nginx serves the ACME challenge from `/.well-known/acme-challenge/`. Renewal runs
+from the `mistblossom-certbot.timer` systemd timer.
+
+### Scheduled jobs
+
+Instead of managed cron jobs there is a `cron` container in the stack. It calls
+the same endpoints over the internal network with
+`Authorization: Bearer $CRON_SECRET`:
+
+| Schedule | Endpoint | Purpose |
+|----------|----------|---------|
+| `*/10 * * * *` | `/api/raids/lifecycle` | publish and close raids |
+| `*/5 * * * *` | `/api/polls/close-due` | auto-close raid polls |
+| `0 4 * * *` (Kyiv) | `/api/dashboard/profiles/orphan-cleanup/apply` | account cleanup |
+
+`CRON_SECRET` must match the value in `.env.production`; it is verified by
+`verifyInternalBearerToken`.
 
 ## 6. Cloudflare Access / Zero Trust
 
@@ -179,11 +207,11 @@ If all production traffic definitely goes through Cloudflare, you can enable:
 SECURITY_REQUIRE_CLOUDFLARE=strict
 ```
 
-Do not enable it for Vercel Preview.
+Do not enable it on a staging host without Cloudflare: the dashboard will start rejecting every request.
 
 ## 7. Worker deploy
 
-Worker is needed if Discord interactions, rules buttons, or raid buttons are handled outside Vercel.
+The Worker handles Discord interactions, rules buttons and raid buttons. It stays on Cloudflare: it sits in front of Discord, it is free, and moving it to your own server buys nothing.
 
 Worker should have matching shared secrets:
 
@@ -221,7 +249,7 @@ npm run verify
 npm run build:ci
 ```
 
-Vercel deploy intentionally skips `typecheck` and `lint`, so production deployment does not spend minutes on duplicated checks.
+The image build intentionally skips `typecheck` and `lint` (`ignoreBuildErrors: true` in `next.config.mjs`), so a deploy does not spend minutes on checks CI already ran. The strict gate is `npm run build:ci`.
 
 ## 9. Post-deploy checklist
 
@@ -315,7 +343,7 @@ Check:
 
 ### Firebase private key error
 
-In Vercel the private key should use escaped newlines:
+In `.env.production` the private key must be a single line with escaped newlines (the code converts `\\n` back to real ones):
 
 ```env
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"

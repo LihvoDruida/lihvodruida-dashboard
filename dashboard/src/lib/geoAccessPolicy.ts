@@ -1,6 +1,6 @@
 import "server-only";
 
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue } from "@/lib/db/firestoreCompat";
 import { NextRequest, NextResponse } from "next/server";
 import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
 import type { DashboardSession } from "@/lib/auth";
@@ -209,9 +209,13 @@ export async function setGeoAccessPolicy(input: {
 }
 
 export function getRequestCountryCode(request: Request | NextRequest) {
+  // Порядок: Cloudflare (він перед нашим Nginx), далі заголовок, який
+  // ставить сам Nginx із модулем GeoIP2, далі загальновживані варіанти
+  // від інших проксі. Заголовок Vercel прибрано разом із платформою.
   const headerCountry =
     request.headers.get("cf-ipcountry") ||
-    request.headers.get("x-vercel-ip-country") ||
+    request.headers.get("x-geoip-country") ||
+    request.headers.get("x-country-code") ||
     request.headers.get("cloudfront-viewer-country") ||
     "";
   const country = normalizeCountryCode(headerCountry);

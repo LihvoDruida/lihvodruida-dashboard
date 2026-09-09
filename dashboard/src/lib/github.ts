@@ -1,4 +1,4 @@
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue } from "@/lib/db/firestoreCompat";
 import { mapConcurrent } from "@/lib/concurrency";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 

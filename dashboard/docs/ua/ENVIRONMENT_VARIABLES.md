@@ -6,7 +6,7 @@
 
 Для повного production потрібні: `SESSION_SECRET`, `DASHBOARD_URL`, `NEXT_PUBLIC_DASHBOARD_URL`, `DASHBOARD_ALLOWED_HOSTS`, `DISCORD_OAUTH_CLIENT_ID`, `DISCORD_OAUTH_CLIENT_SECRET`, `DISCORD_GUILD_ID`, `DISCORD_BOT_TOKEN`, `GITHUB_OWNER`, `GITHUB_REPO`, `GITHUB_TOKEN`, `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `FIREBASE_APPLICATIONS_COLLECTION`, `BATTLENET_CLIENT_ID`, `BATTLENET_CLIENT_SECRET`, `WOW_GUILD_NAME`, `RAID_RULES_URL`, `RAID_TIME_ZONE`, `NEXT_PUBLIC_RAID_TIME_ZONE`.
 
-## Спільні з Cloudflare Worker
+## Спільні з сервісом бота
 
 Передавай у Worker тільки те, що Worker реально виконує. Якщо Worker обробляє Discord interactions, rules buttons або raid buttons, тоді частина значень має бути однакова в dashboard і Worker.
 
@@ -173,11 +173,11 @@
 
 ## Практичні правила
 
-1. Усі secrets додавати тільки у Vercel/Worker env, не комітити в репозиторій.
+1. Усі secrets жити тільки в `dashboard/.env.production` на сервері (права `600`, власник — користувач деплою) та в Worker env. У репозиторій не комітити нічого, крім `.env.example`.
 2. Значення `DISCORD_RULES_STATS_TOKEN`, `WORKER_STATS_TOKEN`, `INTERNAL_PROFILE_LOOKUP_TOKEN` генерувати окремо, не використовувати OAuth secrets.
-3. Якщо Worker обробляє interactions, у Discord Developer Portal Interaction Endpoint має вести на Worker, а не на Vercel.
-4. Якщо Vercel route `/api/discord/interactions` використовується як fallback, у Vercel має бути `DISCORD_PUBLIC_KEY`.
-5. Для Firebase private key залишай `\\n` у Vercel env, код сам перетворить їх у переноси рядків.
+3. Якщо Worker обробляє interactions, у Discord Developer Portal Interaction Endpoint має вести на Worker, а не на домен панелі.
+4. Якщо роут панелі `/api/discord/interactions` використовується як fallback, у `.env.production` має бути `DISCORD_PUBLIC_KEY`.
+5. Firebase private key у `.env.production` пиши одним рядком з `\\n` — код сам перетворить їх у переноси.
 
 > ID ролей доступу більше не налаштовуються в env. Групи dashboard, Discord role ID та права керуються у Firebase на `/dashboard/groups`.
 

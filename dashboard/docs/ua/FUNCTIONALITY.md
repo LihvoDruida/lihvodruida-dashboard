@@ -4,7 +4,7 @@
 
 Dashboard — це приватна панель керування для гільдії **Mistblossom Vanguard**. Вона об’єднує профілі учасників, Battle.net персонажів, Discord-імена, заявки до гільдії, рейди, Discord-embed повідомлення, правила та контент сайту.
 
-Проєкт побудований на **Next.js App Router**, працює як серверний застосунок і зберігає профілі/рейди у **Firebase Firestore**, заявки — у **Firebase Firestore**, а Discord-дії виконує через Discord Bot API або через Cloudflare Worker.
+Проєкт побудований на **Next.js App Router**, працює як серверний застосунок і зберігає профілі, рейди й заявки у власному **PostgreSQL**, а Discord-дії виконує напряму через Discord Bot API.
 
 ## 2. Основні ролі
 

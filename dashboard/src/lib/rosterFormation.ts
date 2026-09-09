@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { FieldValue, type QueryDocumentSnapshot, type Transaction } from "firebase-admin/firestore";
+import { FieldValue, type QueryDocumentSnapshot, type Transaction } from "@/lib/db/firestoreCompat";
 import type { DashboardSession } from "@/lib/auth";
 import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
 import { firebaseRead, firebaseUnavailableMessage, firebaseWrite } from "@/lib/firebaseAccess";

@@ -2,16 +2,33 @@ const hstsValue =
   process.env.SECURITY_HSTS_HEADER ||
   "max-age=31536000; includeSubDomains";
 
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+// Корінь монорепозиторію. Спільний пакет `shared/` лежить поруч із
+// `dashboard/`, тому і трасування файлів, і резолвер Turbopack мають
+// бачити рівень вище — інакше локальна залежність
+// `@mistblossom/discord-contract` не резолвиться.
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  outputFileTracingRoot: repoRoot,
+  turbopack: {
+    root: repoRoot,
+  },
+  // Збірка в самодостатній пакет: `.next/standalone` містить server.js і рівно
+  // ті node_modules, які реально потрібні. Саме це кладеться в образ, тому
+  // на сервері не треба ні `npm ci`, ні всього дерева залежностей.
+  output: "standalone",
   poweredByHeader: false,
   reactStrictMode: true,
   experimental: {
-    cpus: 2,
+    cpus: Number(process.env.NEXT_BUILD_CPUS || 2),
   },
   typescript: {
-    // Vercel deploy intentionally skips the expensive TypeScript worker.
-    // Use `npm run verify` or `npm run build:ci` before merging when a strict gate is needed.
+    // Збірка не запускає окремий TypeScript-воркер, щоб деплой не витрачав
+    // хвилини на перевірку, яку вже зробив CI. Строгий шлюз — `npm run build:ci`.
     ignoreBuildErrors: true,
   },
   images: {

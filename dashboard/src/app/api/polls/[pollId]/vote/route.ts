@@ -20,8 +20,6 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const INTERNAL_POLL_ACTION_TOKENS = [
-  "DISCORD_RULES_STATS_TOKEN",
-  "WORKER_STATS_TOKEN",
   "INTERNAL_PROFILE_LOOKUP_TOKEN",
 ];
 

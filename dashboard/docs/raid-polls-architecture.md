@@ -17,7 +17,7 @@
    - `mbv1:poll_submit:{pollId}` — зарахування голосу.
 
    Легасі `mbv1:poll_character_prompt:` і `mbv1:poll_character:` досі приймаються і трактуються як «відкрий пульт»: у Discord лишаються опубліковані embed-и зі старими `custom_id`.
-5. Cloudflare Worker приймає Discord interaction і прокидає його в dashboard API.
+5. Сервіс бота приймає Discord interaction, перевіряє підпис і прокидає його в API панелі.
 6. Dashboard API записує голос у Firestore транзакцією та оновлює Discord-повідомлення.
 7. Після дедлайну `/api/polls/close-due` або будь-яке читання/клік закриває прострочений пул і вимикає components.
 
@@ -92,7 +92,7 @@ Returns one poll with normalized votes.
 
 ### `POST /api/polls/[pollId]/vote`
 
-Internal endpoint for Cloudflare Worker only. Requires internal bearer token.
+Internal endpoint for the bot service only. Requires internal bearer token.
 
 Body:
 

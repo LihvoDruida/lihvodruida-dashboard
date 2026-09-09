@@ -52,11 +52,19 @@ function cleanBaseUrl(value: string) {
   return trimmed;
 }
 
-function deriveWorkerBaseUrl() {
+/**
+ * Базова адреса сервісу бота.
+ *
+ * Раніше тут був Cloudflare Worker; тепер рекрутинговий gateway живе в
+ * нашому контейнері `bot`, тож за замовчуванням ходимо туди внутрішньою
+ * мережею. Публічний URL між нашими ж сервісами не потрібен: трафік не має
+ * виходити назовні й повертатись через nginx.
+ */
+function deriveBotBaseUrl() {
   const explicit = cleanBaseUrl(
-    process.env.GUILD_APPLICATIONS_WORKER_URL ||
-      process.env.NEXT_PUBLIC_GUILD_APPLICATIONS_WORKER_URL ||
-      "",
+    process.env.BOT_INTERNAL_URL
+      || process.env.DISCORD_BOT_SERVICE_URL
+      || "",
   );
   if (explicit) return explicit;
 
@@ -68,11 +76,11 @@ function deriveWorkerBaseUrl() {
       const url = new URL(interactionEndpoint);
       return `${url.protocol}//${url.host}`;
     } catch {
-      // ignore malformed fallback
+      // некоректний URL у налаштуваннях — падаємо на типове імʼя сервісу
     }
   }
 
-  return "https://guild-applications.melles-android.workers.dev";
+  return "http://bot:8080";
 }
 
 export function recruitmentGatewayControlEndpoint() {
@@ -80,14 +88,13 @@ export function recruitmentGatewayControlEndpoint() {
     process.env.DISCORD_RECRUITMENT_GATEWAY_ENDPOINT || "",
   ).trim();
   if (explicit) return explicit;
-  return `${deriveWorkerBaseUrl()}/api/discord-recruitment-gateway`;
+  return `${deriveBotBaseUrl()}/discord/recruitment-gateway`;
 }
 
 export function recruitmentGatewayControlToken() {
   return String(
     process.env.DISCORD_RECRUITMENT_ADVICE_SECRET ||
-      process.env.WORKER_STATS_TOKEN ||
-      process.env.DISCORD_RULES_STATS_TOKEN ||
+      process.env.INTERNAL_API_TOKEN ||
       process.env.INTERNAL_PROFILE_LOOKUP_TOKEN ||
       process.env.CRON_SECRET ||
       "",
@@ -102,7 +109,7 @@ export async function callRecruitmentGatewayControl(
     return {
       ok: false,
       error:
-        "Немає DISCORD_RECRUITMENT_ADVICE_SECRET / WORKER_STATS_TOKEN для виклику Worker.",
+        "Немає DISCORD_RECRUITMENT_ADVICE_SECRET / INTERNAL_API_TOKEN для виклику бота.",
     };
 
   const url = new URL(recruitmentGatewayControlEndpoint());

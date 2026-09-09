@@ -150,9 +150,9 @@ export async function POST(request: NextRequest) {
         result.ok && !result.error && !result.lastError ? "success" : "warning",
       title:
         action === "manual-scan"
-          ? "Worker manual-scan виконано"
+          ? "Ручне сканування бота виконано"
           : action === "test-relay"
-            ? "Worker test-relay виконано"
+            ? "Тестове реле бота виконано"
             : "Команду Gateway виконано",
       message: resultSummary(result),
       ttl: 12000,

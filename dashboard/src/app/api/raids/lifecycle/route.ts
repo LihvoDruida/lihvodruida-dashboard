@@ -49,8 +49,6 @@ export async function GET(request: NextRequest) {
     "CRON_SECRET",
     "INTERNAL_API_TOKEN",
     "INTERNAL_PROFILE_LOOKUP_TOKEN",
-    "DISCORD_RULES_STATS_TOKEN",
-    "WORKER_STATS_TOKEN",
   ], { minLength: 24 });
   if (!token.ok) {
     logDashboardEvent("warn", "raids.lifecycle.forbidden", request, { reason: token.reason, envName: token.envName || null });

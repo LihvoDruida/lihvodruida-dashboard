@@ -2,6 +2,7 @@ import { mapConcurrent } from "@/lib/concurrency";
 import { parseRulesRoleIdsFromUrl } from "@/lib/rulesOnboarding";
 import { logDashboardEvent } from "@/lib/security";
 import { cleanSnowflake } from "@/lib/values";
+import { readGuildRulesStats, readRaidRulesRecords } from "@/lib/discordRulesStats";
 
 const DISCORD_API_BASE = "https://discord.com/api/v10";
 const DASHBOARD_CUSTOM_ID_PREFIX = "mbv1";
@@ -14,7 +15,7 @@ export type DiscordRulesStats = {
   total: number;
   updatedAt: string | null;
   configured: boolean;
-  source: "kv" | "worker" | "missing-kv-binding" | "invalid-binding" | "unconfigured" | "error";
+  source: "database" | "unconfigured" | "error";
   error?: string;
 };
 
@@ -24,7 +25,7 @@ export type DiscordRaidRulesStats = {
   total: number;
   updatedAt: string | null;
   configured: boolean;
-  source: "kv" | "worker" | "missing-kv-binding" | "invalid-binding" | "unconfigured" | "error";
+  source: "database" | "unconfigured" | "error";
   error?: string;
 };
 
@@ -54,134 +55,44 @@ export type DiscordRaidRulesSignupsResponse = {
   configured: boolean;
   total: number;
   updatedAt: string | null;
-  source: "kv" | "worker" | "missing-kv-binding" | "invalid-binding" | "unconfigured" | "error";
+  source: "database" | "unconfigured" | "error";
   signups: DiscordRaidRulesSignup[];
   error?: string;
 };
 
-const DEFAULT_WORKER_ENDPOINT = "https://guild-applications.melles-android.workers.dev/api/discord-interactions";
-
-function workerApiEndpoint(path: string, explicitEnvKey: string) {
-  const explicit = String(process.env[explicitEnvKey] || "").trim();
-  if (explicit) return explicit;
-
-  const interactions = String(process.env.DISCORD_INTERACTIONS_ENDPOINT || DEFAULT_WORKER_ENDPOINT).trim();
-  if (!interactions) return "";
-
-  if (/\/api\/discord-interactions\/?$/i.test(interactions)) {
-    return interactions.replace(/\/api\/discord-interactions\/?$/i, path);
-  }
-
-  try {
-    const url = new URL(interactions);
-    url.pathname = path;
-    url.search = "";
-    url.hash = "";
-    return url.toString();
-  } catch {
-    return "";
-  }
-}
-
-function rulesStatsEndpoint() {
-  return workerApiEndpoint("/api/discord-rules-stats", "DISCORD_RULES_STATS_ENDPOINT");
-}
-
-function workerStatsToken() {
-  return String(process.env.DISCORD_RULES_STATS_TOKEN || process.env.WORKER_STATS_TOKEN || "").trim();
-}
-
-function workerStatsHeaders(): HeadersInit {
-  const token = workerStatsToken();
-  return {
-    accept: "application/json",
-    ...(token
-      ? {
-          authorization: `Bearer ${token}`,
-          "x-worker-stats-token": token,
-        }
-      : {}),
-  };
-}
-
-function raidRulesStatsEndpoint() {
-  return workerApiEndpoint("/api/discord-raid-rules-stats", "DISCORD_RAID_RULES_STATS_ENDPOINT");
-}
-
-function raidRulesSignupsEndpoint() {
-  return workerApiEndpoint("/api/discord-raid-rules-signups", "DISCORD_RAID_RULES_SIGNUPS_ENDPOINT");
-}
-
+/** Невідʼємне ціле або нуль. */
 function safeNumber(value: unknown) {
   const num = Number(value);
   return Number.isFinite(num) && num >= 0 ? Math.floor(num) : 0;
 }
 
+/**
+ * Статистика правил рахується локально, з нашої ж бази.
+ *
+ * Раніше ці три функції ходили HTTP-запитом у Cloudflare Worker, який читав
+ * лічильники з Cloudflare KV. Тепер записи лежать у колекції
+ * `discordRulesRecords` (див. `src/lib/discordRulesStats.ts`), тож зайвий
+ * мережевий стрибок і зовнішнє сховище прибрані: менше точок відмови і
+ * жодних даних гільдії за межами нашого сервера.
+ */
+function statsSource(records: unknown): DiscordRulesStats["source"] {
+  return records === null ? "unconfigured" : "database";
+}
+
 export async function fetchDiscordRulesStats(): Promise<DiscordRulesStats> {
-  const endpoint = rulesStatsEndpoint();
-  if (!endpoint) {
-    return { rulesType: "guild", accepted: 0, declined: 0, total: 0, updatedAt: null, configured: false, source: "unconfigured" };
-  }
-
   try {
-    const statsUrl = new URL(endpoint);
-    const guildId = getDiscordGuildId();
-    if (guildId && !statsUrl.searchParams.has("guild_id")) {
-      statsUrl.searchParams.set("guild_id", guildId);
+    const stats = await readGuildRulesStats(getDiscordGuildId());
+    if (!stats) {
+      return { rulesType: "guild", accepted: 0, declined: 0, total: 0, updatedAt: null, configured: false, source: "unconfigured" };
     }
-    if (!statsUrl.searchParams.has("type") && !statsUrl.searchParams.has("rules_type")) {
-      statsUrl.searchParams.set("type", "guild");
-    }
-
-    const response = await fetch(statsUrl.toString(), {
-      headers: workerStatsHeaders(),
-      cache: "no-store",
-    });
-
-    const raw = await response.text().catch(() => "");
-    const data = raw ? tryParseJson(raw) : null;
-
-    if (!response.ok || !data || typeof data !== "object") {
-      return {
-        rulesType: "guild",
-        accepted: 0,
-        declined: 0,
-        total: 0,
-        updatedAt: null,
-        configured: false,
-        source: "error",
-        error: typeof data?.error === "string" ? data.error : "Статистика звичайних правил тимчасово недоступна.",
-      };
-    }
-
-    const returnedType = String(data.rules_type || data.rulesType || "guild").toLowerCase();
-    if (returnedType && !["guild", "rules"].includes(returnedType)) {
-      return {
-        rulesType: "guild",
-        accepted: 0,
-        declined: 0,
-        total: 0,
-        updatedAt: null,
-        configured: false,
-        source: "error",
-        error: `Статистика звичайних правил тимчасово недоступна.`,
-      };
-    }
-
-    const accepted = safeNumber(data.accepted);
-    const declined = safeNumber(data.declined);
-
-    const source = typeof data.source === "string" ? data.source : "worker";
-
     return {
       rulesType: "guild",
-      accepted,
-      declined,
-      total: safeNumber(data.total) || accepted + declined,
-      updatedAt: typeof data.updated_at === "string" ? data.updated_at : typeof data.updatedAt === "string" ? data.updatedAt : null,
-      configured: Boolean(data.configured ?? true),
-      source: ["kv", "missing-kv-binding", "invalid-binding", "worker", "error"].includes(source) ? source as DiscordRulesStats["source"] : "worker",
-      error: typeof data.error === "string" ? data.error : typeof data.message === "string" ? data.message : undefined,
+      accepted: safeNumber(stats.accepted),
+      declined: safeNumber(stats.declined),
+      total: safeNumber(stats.total),
+      updatedAt: stats.updatedAt,
+      configured: true,
+      source: statsSource(stats),
     };
   } catch (error) {
     return {
@@ -192,68 +103,24 @@ export async function fetchDiscordRulesStats(): Promise<DiscordRulesStats> {
       updatedAt: null,
       configured: false,
       source: "error",
-      error: "Статистика правил тимчасово недоступна.",
+      error: error instanceof Error ? error.message : "Статистика звичайних правил тимчасово недоступна.",
     };
   }
 }
 
 export async function fetchDiscordRaidRulesStats(): Promise<DiscordRaidRulesStats> {
-  const endpoint = raidRulesStatsEndpoint();
-  if (!endpoint) {
-    return { rulesType: "raid", signed: 0, total: 0, updatedAt: null, configured: false, source: "unconfigured" };
-  }
-
   try {
-    const statsUrl = new URL(endpoint);
-    const guildId = getDiscordGuildId();
-    if (guildId && !statsUrl.searchParams.has("guild_id")) {
-      statsUrl.searchParams.set("guild_id", guildId);
+    const result = await readRaidRulesRecords(getDiscordGuildId());
+    if (!result) {
+      return { rulesType: "raid", signed: 0, total: 0, updatedAt: null, configured: false, source: "unconfigured" };
     }
-
-    const response = await fetch(statsUrl.toString(), {
-      headers: workerStatsHeaders(),
-      cache: "no-store",
-    });
-
-    const raw = await response.text().catch(() => "");
-    const data = raw ? tryParseJson(raw) : null;
-
-    if (!response.ok || !data || typeof data !== "object") {
-      return {
-        rulesType: "raid",
-        signed: 0,
-        total: 0,
-        updatedAt: null,
-        configured: false,
-        source: "error",
-        error: typeof data?.error === "string" ? data.error : "Статистика рейдових правил тимчасово недоступна.",
-      };
-    }
-
-    const returnedType = String(data.rules_type || data.rulesType || "raid").toLowerCase();
-    if (returnedType && !["raid", "raid-rules"].includes(returnedType)) {
-      return {
-        rulesType: "raid",
-        signed: 0,
-        total: 0,
-        updatedAt: null,
-        configured: false,
-        source: "error",
-        error: `Статистика рейдових правил тимчасово недоступна.`,
-      };
-    }
-
-    const signed = safeNumber(data.signed ?? data.stats?.signed ?? data.total);
-    const source = typeof data.source === "string" ? data.source : "worker";
-
     return {
       rulesType: "raid",
-      signed,
-      total: safeNumber(data.total) || signed,
-      updatedAt: typeof data.updated_at === "string" ? data.updated_at : typeof data.updatedAt === "string" ? data.updatedAt : null,
-      configured: Boolean(data.configured ?? true),
-      source: ["kv", "missing-kv-binding", "invalid-binding", "worker", "error"].includes(source) ? source as DiscordRaidRulesStats["source"] : "worker",
-      error: typeof data.error === "string" ? data.error : typeof data.message === "string" ? data.message : undefined,
+      signed: result.signed.length,
+      total: result.signed.length,
+      updatedAt: result.updatedAt,
+      configured: true,
+      source: "database",
     };
   } catch (error) {
     return {
@@ -263,76 +130,29 @@ export async function fetchDiscordRaidRulesStats(): Promise<DiscordRaidRulesStat
       updatedAt: null,
       configured: false,
       source: "error",
-      error: "Статистика рейдових правил тимчасово недоступна.",
+      error: error instanceof Error ? error.message : "Статистика рейдових правил тимчасово недоступна.",
     };
   }
 }
 
 export async function fetchDiscordRaidRulesSignups(): Promise<DiscordRaidRulesSignupsResponse> {
-  const endpoint = raidRulesSignupsEndpoint();
-  if (!endpoint) {
-    return { rulesType: "raid", configured: false, total: 0, updatedAt: null, source: "unconfigured", signups: [] };
-  }
-
   try {
-    const signupsUrl = new URL(endpoint);
-    const guildId = getDiscordGuildId();
-    if (guildId && !signupsUrl.searchParams.has("guild_id")) {
-      signupsUrl.searchParams.set("guild_id", guildId);
+    const result = await readRaidRulesRecords(getDiscordGuildId());
+    if (!result) {
+      return { rulesType: "raid", configured: false, total: 0, updatedAt: null, source: "unconfigured", signups: [] };
     }
-
-    const response = await fetch(signupsUrl.toString(), {
-      headers: workerStatsHeaders(),
-      cache: "no-store",
-    });
-
-    const raw = await response.text().catch(() => "");
-    const data = raw ? tryParseJson(raw) : null;
-
-    if (!response.ok || !data || typeof data !== "object") {
-      return {
-        rulesType: "raid",
-        configured: false,
-        total: 0,
-        updatedAt: null,
-        source: "error",
-        signups: [],
-        error: typeof data?.error === "string" ? data.error : "Список підписантів тимчасово недоступний.",
-      };
-    }
-
-    const returnedType = String(data.rules_type || data.rulesType || "raid").toLowerCase();
-    if (returnedType && !["raid", "raid-rules"].includes(returnedType)) {
-      return {
-        rulesType: "raid",
-        configured: false,
-        total: 0,
-        updatedAt: null,
-        source: "error",
-        signups: [],
-        error: `Список підписантів тимчасово недоступний.`,
-      };
-    }
-
-    const source = typeof data.source === "string" ? data.source : "worker";
-    const signups = Array.isArray(data.signups)
-      ? data.signups.map((item: any) => ({
-          discordId: String(item?.discordId || item?.discord_id || ""),
-          discordName: String(item?.discordName || item?.discord_name || "Discord user"),
-          signedAt: String(item?.signedAt || item?.signed_at || ""),
-          profileId: item?.profileId || item?.profile_id || null,
-          mainCharacter: item?.mainCharacter || item?.main_character || null,
-        })).filter((item: DiscordRaidRulesSignup) => item.discordId)
-      : [];
-
     return {
       rulesType: "raid",
-      configured: Boolean(data.configured ?? true),
-      total: safeNumber(data.total) || safeNumber(data.stats?.signed) || signups.length,
-      updatedAt: typeof data.updated_at === "string" ? data.updated_at : typeof data.updatedAt === "string" ? data.updatedAt : null,
-      source: ["kv", "missing-kv-binding", "invalid-binding", "worker", "error"].includes(source) ? source as DiscordRaidRulesSignupsResponse["source"] : "worker",
-      signups,
-      error: typeof data.error === "string" ? data.error : typeof data.message === "string" ? data.message : undefined,
+      configured: true,
+      total: result.signed.length,
+      updatedAt: result.updatedAt,
+      source: "database",
+      signups: result.signed.map((record) => ({
+        discordId: record.discordId,
+        discordName: record.discordName,
+        signedAt: record.updatedAt,
+        profileId: record.profileId,
+      })),
     };
   } catch (error) {
     return {
@@ -342,7 +162,7 @@ export async function fetchDiscordRaidRulesSignups(): Promise<DiscordRaidRulesSi
       updatedAt: null,
       source: "error",
       signups: [],
-      error: error instanceof Error ? error.message : "Список підписантів тимчасово недоступний",
+      error: error instanceof Error ? error.message : "Підписи рейдових правил тимчасово недоступні.",
     };
   }
 }
@@ -475,74 +295,27 @@ export function getDiscordDefaultChannelId() {
   return cleanSnowflake(process.env.DISCORD_CHANNEL_ID || "");
 }
 
-function workerRelayToken() {
-  return String(
-    process.env.DISCORD_RULES_STATS_TOKEN ||
-    process.env.WORKER_STATS_TOKEN ||
-    process.env.INTERNAL_PROFILE_LOOKUP_TOKEN ||
-    ""
-  ).trim();
-}
-
-function workerRelayHeaders(): HeadersInit {
-  const token = workerRelayToken();
-  return {
-    accept: "application/json",
-    ...(token
-      ? {
-          authorization: `Bearer ${token}`,
-          "x-worker-stats-token": token,
-        }
-      : {}),
-  };
-}
-
 export function hasDiscordEmbedConfig() {
-  return Boolean(getBotToken() || (raidDiscordMessageEndpoint() && workerRelayToken()));
+  // Реле через Cloudflare Worker прибране: панель ходить у Discord напряму
+  // своїм токеном, тож єдина умова доступності — наявність цього токена.
+  return Boolean(getBotToken());
 }
 
 function hasDirectDiscordBotConfig() {
   return Boolean(getBotToken());
 }
 
-function raidDiscordMessageEndpoint() {
-  return workerApiEndpoint("/api/discord-raid-message", "DISCORD_RAID_MESSAGE_ENDPOINT");
-}
-
-function discordGuildChannelsEndpoint() {
-  return workerApiEndpoint("/api/discord-guild-channels", "DISCORD_GUILD_CHANNELS_ENDPOINT");
-}
-
-function raidDiscordRelayToken() {
-  return workerRelayToken();
-}
-
-async function discordRaidMessageRelay<T = any>(payload: Record<string, unknown>): Promise<T> {
-  const endpoint = raidDiscordMessageEndpoint();
-  const token = raidDiscordRelayToken();
-  if (!endpoint || !token) {
-    throw new Error("Публікація рейдів у Discord тимчасово недоступна. Спробуй пізніше або звернись до гільдмайстра.");
-  }
-
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      accept: "application/json",
-      authorization: `Bearer ${token}`,
-      "content-type": "application/json; charset=utf-8",
-      "x-worker-stats-token": token,
-    },
-    body: JSON.stringify(payload),
-    cache: "no-store",
-  });
-
-  const raw = await response.text().catch(() => "");
-  const data = raw ? tryParseJson(raw) : null;
-  if (!response.ok || !data || typeof data !== "object") {
-    const message = typeof data?.error === "string" ? data.error : raw || `Worker relay ${response.status}`;
-    throw new Error(`Discord relay ${response.status}: ${String(message).slice(0, 220)}`);
-  }
-  return data as T;
+/**
+ * Раніше тут було реле в Cloudflare Worker для випадку, коли в панелі немає
+ * токена бота. Зовнішнього сервісу більше немає, тож єдиний шлях у Discord —
+ * прямий виклик API. Функція лишена як явна точка відмови: мовчазний фолбек
+ * у неіснуючий воркер дав би «рейд опубліковано», якого насправді немає.
+ */
+async function discordRaidMessageRelay<T = never>(_payload: Record<string, unknown>): Promise<T> {
+  void _payload;
+  throw new Error(
+    "Публікація рейдів у Discord недоступна: не налаштований DISCORD_BOT_TOKEN у панелі.",
+  );
 }
 
 function encodeAuditReason(reason?: string) {
@@ -903,7 +676,7 @@ function fallbackDiscordTextChannels(fallbackChannelId = "", guild: DiscordGuild
 }
 
 function discordChannelsCacheKey(guildId: string, fallbackChannelId: string) {
-  const source = discordGuildChannelsEndpoint() && workerRelayToken() ? "worker" : getBotToken() ? "bot" : "fallback";
+  const source = getBotToken() ? "bot" : "fallback";
   return `${source}:${guildId || "no-guild"}:${fallbackChannelId || "no-default"}`;
 }
 
@@ -920,9 +693,7 @@ export async function fetchDiscordTextChannels(): Promise<DiscordTextChannelsSna
   try {
     let snapshot: DiscordTextChannelsSnapshot;
 
-    if (discordGuildChannelsEndpoint() && workerRelayToken()) {
-      snapshot = await fetchDiscordTextChannelsViaWorker(fallbackChannelId);
-    } else if (!getBotToken()) {
+    if (!getBotToken()) {
       if (!fallbackChannelId) throw new Error("Публікація в Discord тимчасово недоступна. Спробуй пізніше або звернись до гільдмайстра.");
       snapshot = fallbackDiscordTextChannels(fallbackChannelId);
     } else if (!guildId) {
@@ -947,44 +718,6 @@ export async function fetchDiscordTextChannels(): Promise<DiscordTextChannelsSna
     if (fallback.channels.length) return fallback;
     throw error;
   }
-}
-
-async function fetchDiscordTextChannelsViaWorker(fallbackChannelId = ""): Promise<DiscordTextChannelsSnapshot> {
-  const endpoint = discordGuildChannelsEndpoint();
-  if (!endpoint) throw new Error("Список Discord-каналів тимчасово недоступний. Спробуй пізніше або звернись до гільдмайстра.");
-
-  const url = new URL(endpoint);
-  const guildId = getDiscordGuildId();
-  if (guildId && !url.searchParams.has("guild_id")) url.searchParams.set("guild_id", guildId);
-
-  const response = await fetch(url.toString(), {
-    method: "GET",
-    headers: workerRelayHeaders(),
-    cache: "no-store",
-  });
-  const raw = await response.text().catch(() => "");
-  const data = raw ? tryParseJson(raw) : null;
-  if (!response.ok || !data || typeof data !== "object") {
-    const message = typeof data?.error === "string" ? data.error : raw || `Worker channels ${response.status}`;
-    throw new Error(`Discord channels relay ${response.status}: ${String(message).slice(0, 220)}`);
-  }
-
-  const guildRaw = data.guild && typeof data.guild === "object" ? data.guild as Record<string, unknown> : null;
-  const guild: DiscordGuildSnapshot | null = guildRaw ? {
-    id: String(guildRaw.id || ""),
-    name: String(guildRaw.name || "Discord guild"),
-    ownerId: guildRaw.owner_id ? String(guildRaw.owner_id) : guildRaw.ownerId ? String(guildRaw.ownerId) : null,
-    rules_channel_id: guildRaw.rules_channel_id ? String(guildRaw.rules_channel_id) : null,
-  } : null;
-
-  const snapshot = normalizeDiscordTextChannels(
-    Array.isArray(data.channels) ? data.channels : [],
-    guild,
-    String(data.suggestedRulesChannelId || fallbackChannelId || ""),
-    String(data.suggestedChannelId || fallbackChannelId || ""),
-  );
-  const warning = typeof data.warning === "string" && data.warning.trim() ? data.warning.trim().slice(0, 240) : null;
-  return warning ? { ...snapshot, warning } : snapshot;
 }
 
 function normalizeDiscordTextChannels(

@@ -1,0 +1,11 @@
+[Unit]
+Description=Twice-daily certificate renewal for Mistblossom dashboard
+
+[Timer]
+OnCalendar=*-*-* 03,15:17:00
+# Розкид, щоб тисячі серверів не били в Let's Encrypt однієї секунди.
+RandomizedDelaySec=1h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

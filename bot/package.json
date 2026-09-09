@@ -1,0 +1,19 @@
+{
+  "name": "@mistblossom/bot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Discord-бот Mistblossom Vanguard: перевірка підпису, миттєвий ACK, передача роботи в панель.",
+  "main": "src/server.mjs",
+  "scripts": {
+    "start": "node src/server.mjs",
+    "dev": "node --watch src/server.mjs",
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "dependencies": {
+    "@mistblossom/discord-contract": "file:../shared"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

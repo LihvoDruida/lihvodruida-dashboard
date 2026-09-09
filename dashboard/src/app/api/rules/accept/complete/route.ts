@@ -19,6 +19,7 @@ import {
 } from "@/lib/rulesOnboarding";
 import { getGuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
 import { checkGeoAccess } from "@/lib/geoAccessPolicy";
+import { recordRulesDecision } from "@/lib/discordRulesStats";
 import {
   assertRequestBodySize,
   checkRateLimit,
@@ -137,6 +138,24 @@ async function completeAuthenticatedRulesOnboarding(params: {
     await markRulesOnboardingCompleted(profile.profileId, {
       roleIds,
       nickname: nicknameSynced ? nickname : null,
+    });
+
+    // Запис для статистики правил. Раніше лічильник жив у Cloudflare KV і
+    // його вів воркер; тепер це запис у нашій базі, який робить та сама
+    // дія, що видає ролі, — тож статистика не може розійтись із фактом.
+    // Помилка запису не має зривати онбординг: ролі вже видані.
+    await recordRulesDecision({
+      guildId,
+      discordId: profile.providerUserId,
+      discordName: profile.displayName || profile.providerUserId,
+      scope: "guild",
+      action: "accepted",
+      profileId: profile.profileId,
+    }).catch((error) => {
+      logDashboardEvent("warn", "rules.stats.record_failed", request, {
+        profileId: profile.profileId,
+        message: safeErrorMessage(error),
+      });
     });
 
     logDashboardEvent("info", "rules.onboarding.completed", request, {

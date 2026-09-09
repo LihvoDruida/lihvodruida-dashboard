@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue } from "@/lib/db/firestoreCompat";
 import { ApiHttpError, apiFetchJson } from "@/lib/apiHttp";
 import {
   fetchBattleNetApplicationData,
@@ -18,7 +18,6 @@ import {
 } from "@/lib/concurrency";
 import { getGuildRosterSyncSettings } from "@/lib/dashboardApiSettings";
 import { recordDashboardSystemLog } from "@/lib/dashboardSystemLogs";
-import { publicCacheKey, readPublicCache, writePublicCache } from "@/lib/cloudflarePublicCache";
 import {
   clearRuntimeCachedValue,
   getRuntimeCachedValue,
@@ -170,8 +169,6 @@ const GUILD_RECORDS_CHUNKS_COLLECTION = "memberChunks";
 const GUILD_RECORDS_CHUNK_FORMAT_VERSION = 2;
 const GUILD_RECORDS_MAX_CHUNKS = 80;
 const SYNC_JOB_DOCUMENT = "guildRosterSyncJob";
-const LIVE_SOURCE = "guild-roster-live-sync";
-
 const CLASS_ID_FALLBACK: Record<number, string> = {
   1: "Warrior",
   2: "Paladin",
@@ -590,7 +587,7 @@ function updatedSince(value: string | null | undefined, since?: string | null) {
   const valueTime = Date.parse(value || "");
   const sinceTime = Date.parse(since || "");
   if (!Number.isFinite(valueTime) || !Number.isFinite(sinceTime)) return false;
-  // Allow a small clock/write skew between Vercel, Firebase and the browser.
+  // Допускаємо невеликий розбіг годинника між сервером, Firebase і браузером.
   return valueTime + 2_000 >= sinceTime;
 }
 
@@ -1827,35 +1824,6 @@ async function writeGuildRosterRecords(
   return true;
 }
 
-function guildRosterPublicCacheKey(settings?: Pick<GuildRosterRuntimeSettings, "region" | "realm" | "guildName"> | null) {
-  const region = cleanText(settings?.region || getDefaultBattleNetRegion() || "eu").toLowerCase();
-  const realm = cleanText(settings?.realm || DEFAULT_GUILD_REALM).toLowerCase();
-  const guild = cleanText(settings?.guildName || DEFAULT_GUILD_NAME).toLowerCase();
-  return publicCacheKey(["dashboard", "guild-roster", region, realm, guild]);
-}
-
-async function readCloudflareCachedRoster(settings?: Pick<GuildRosterRuntimeSettings, "region" | "realm" | "guildName"> | null): Promise<CachedRoster | null> {
-  const cached = await readPublicCache<CachedRoster>(guildRosterPublicCacheKey(settings), { timeoutMs: 1200 });
-  if (!cached.hit || !isAuthoritativeGuildRosterCache(cached.value)) return null;
-  const value = stripUndefined({
-    ...cached.value,
-    source: cached.value.source?.includes("Cloudflare KV") ? cached.value.source : `${cached.value.source || LIVE_SOURCE} • Cloudflare KV`,
-  } satisfies CachedRoster);
-  globalThis.__mistblossomGuildRosterCache = value;
-  return value;
-}
-
-async function writeCloudflareCachedRoster(
-  cache: CachedRoster,
-  settings?: Pick<GuildRosterRuntimeSettings, "region" | "realm" | "guildName" | "cacheTtlSeconds"> | null,
-) {
-  const ttlSeconds = Math.max(300, Math.min(Number(settings?.cacheTtlSeconds || process.env.GUILD_ROSTER_CACHE_TTL_SECONDS || 1800), 24 * 60 * 60));
-  return writePublicCache(guildRosterPublicCacheKey(settings), cache, {
-    ttlSeconds,
-    tags: ["guild-roster", "firebase-offload"],
-  });
-}
-
 async function readCachedRoster(
   settings?: Pick<GuildRosterRuntimeSettings, "region" | "realm" | "guildName" | "cacheTtlSeconds" | "cacheReadTtlMs" | "readLegacyMemberDocs"> | null,
   options: { bypassCache?: boolean } = {},
@@ -1872,13 +1840,12 @@ async function readCachedRoster(
   const records = await readGuildRosterRecords(settings, { bypassCache: options.bypassCache }).catch(() => null);
   if (records) {
     const linkedRecords = await hydrateCachedRosterProfileLinks(records);
-    void writeCloudflareCachedRoster(linkedRecords || records, settings).catch(() => null);
     return linkedRecords || records;
   }
 
-  const cloudflare = options.bypassCache ? null : await readCloudflareCachedRoster(settings).catch(() => null);
-  if (cloudflare) return hydrateCachedRosterProfileLinks(cloudflare);
-
+  // Проміжний шар кешу складу (колись Cloudflare KV) прибраний: після
+  // переїзду він став другою копією того самого в тій самій памʼяті, що вже
+  // тримає __mistblossomGuildRosterCache нижче.
   if (isAuthoritativeGuildRosterCache(globalThis.__mistblossomGuildRosterCache))
     return hydrateCachedRosterProfileLinks(globalThis.__mistblossomGuildRosterCache);
   // Deprecated guildRuntimeCache/members is intentionally not read anymore.
@@ -1926,7 +1893,6 @@ async function writeCachedRoster(
 
   globalThis.__mistblossomGuildRosterCache = cache;
   clearRuntimeCachedValue(guildRosterRecordsRuntimeCacheKey(options.settings));
-  await writeCloudflareCachedRoster(cache, options.settings).catch(() => null);
 
   if (hasFirebaseProfileConfig()) {
     await resilientWrite(

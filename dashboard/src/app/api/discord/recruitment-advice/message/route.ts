@@ -44,7 +44,6 @@ export async function POST(request: NextRequest) {
     "DISCORD_RECRUITMENT_ADVICE_SECRET",
     "CRON_SECRET",
     "INTERNAL_API_TOKEN",
-    "WORKER_STATS_TOKEN",
   ], { minLength: 24 });
 
   if (!token.ok) {

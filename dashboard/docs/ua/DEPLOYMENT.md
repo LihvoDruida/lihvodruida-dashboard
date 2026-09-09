@@ -23,8 +23,8 @@ Mistblossom Vanguard Dashboard — приватна панель керуван�
 - GitHub REST API;
 - Discord OAuth + Bot API;
 - Battle.net OAuth + WoW Profile API;
-- Vercel для dashboard;
-- Cloudflare Worker опціонально для Discord interactions.
+- власний сервер під Docker (Nginx + Next.js standalone) для dashboard;
+- контейнер `bot` для Discord-взаємодій.
 
 ## 3. Підготовка сервісів
 
@@ -134,33 +134,60 @@ http://localhost:3000
 SECURITY_REQUIRE_CLOUDFLARE=false
 ```
 
-## 5. Production deploy на Vercel
+## 5. Production deploy на власному сервері
 
-1. Імпортуй repo у Vercel.
-2. Framework preset: Next.js або Auto-detect.
-3. Node.js version у Vercel Project Settings: `24.x`. У repo більше немає `engines`, `.nvmrc`, `.node-version` або `packageManager`, щоб не конфліктувати з тим, що автоматично пропонує Vercel.
-4. Install Command: залишити порожнім / Auto. Vercel сам визначить npm за `package-lock.json`.
-5. Build Command: залишити порожнім / Auto. Vercel використає стандартний `npm run build`, а `prebuild` сам запустить cleanup старого middleware.
-6. Output directory не задавати вручну для Next.js.
-7. Додай production env variables.
-8. Додай domain:
+Повний покроковий гайд — [`SELF_HOSTING.md`](SELF_HOSTING.md). Тут — стисла
+версія для тих, у кого сервер уже підготовлений.
 
-```text
-dashboard.lihvodruida.pp.ua
+```bash
+cd /srv/mistblossom
+git pull
+cp dashboard/.env.example dashboard/.env.production   # один раз, далі — правити
+nano dashboard/.env.production
+./deploy/scripts/deploy.sh
 ```
 
-9. Перевір `DASHBOARD_ALLOWED_HOSTS`:
+`deploy.sh` збирає образ, піднімає стек і чекає, поки `/api/health` відповість.
+Якщо новий образ не піднявся, скрипт повертає попередній — панель не лишається
+лежати через невдалий деплой.
 
-```env
-DASHBOARD_ALLOWED_HOSTS=dashboard.lihvodruida.pp.ua
-```
+### Що має бути в оточенні
 
-10. Перевір canonical URLs:
+`.env.production` читає контейнер під час старту. Виняток —
+`NEXT_PUBLIC_DASHBOARD_URL`: Next вшиває його в клієнтський бандл ще на збірці,
+тому він передається як build-arg через `DASHBOARD_PUBLIC_URL` у `.env` поруч
+із `docker-compose.yml`.
 
 ```env
 DASHBOARD_URL=https://dashboard.lihvodruida.pp.ua
 NEXT_PUBLIC_DASHBOARD_URL=https://dashboard.lihvodruida.pp.ua
+DASHBOARD_ALLOWED_HOSTS=dashboard.lihvodruida.pp.ua
 ```
+
+Домен має збігатися в усіх трьох місцях. `DASHBOARD_ALLOWED_HOSTS` перевіряє
+`Host` кожного POST-запиту: якщо там чужий домен, усі форми панелі почнуть
+відповідати 403.
+
+### Домен і TLS
+
+A-запис (і AAAA за наявності) на IP сервера. Сертифікат Let's Encrypt видає
+`certbot` із того самого compose-стека, Nginx віддає ACME-виклик із
+`/.well-known/acme-challenge/`. Продовження — systemd-таймер
+`mistblossom-certbot.timer`.
+
+### Планові задачі
+
+Замість Cron Jobs — контейнер `cron` у стеку. Він стукає в ті самі ендпоїнти
+внутрішньою мережею з `Authorization: Bearer $CRON_SECRET`:
+
+| Розклад | Ендпоїнт | Що робить |
+|---------|----------|-----------|
+| `*/10 * * * *` | `/api/raids/lifecycle` | публікація й закриття рейдів |
+| `*/5 * * * *` | `/api/polls/close-due` | автозакриття рейд-пулів |
+| `0 4 * * *` (Київ) | `/api/dashboard/profiles/orphan-cleanup/apply` | чистка акаунтів |
+
+`CRON_SECRET` має збігатися зі значенням у `.env.production` — його перевіряє
+`verifyInternalBearerToken`.
 
 ## 6. Cloudflare Access / Zero Trust
 
@@ -179,11 +206,11 @@ Cloudflare Access можна використовувати як додатко�
 SECURITY_REQUIRE_CLOUDFLARE=strict
 ```
 
-Для Vercel Preview це не вмикати.
+На стейджингу без Cloudflare це не вмикати: панель почне відхиляти всі запити.
 
 ## 7. Worker deploy
 
-Worker потрібен, якщо Discord interactions, rules buttons або raid buttons обробляються поза Vercel.
+Worker приймає Discord interactions, кнопки правил і рейдів. Він лишається на Cloudflare: стоїть перед Discord, безкоштовний, і його переїзд на власний сервер нічого не дає.
 
 У Worker мають бути ті самі shared secrets:
 
@@ -221,7 +248,7 @@ npm run verify
 npm run build:ci
 ```
 
-Vercel deploy навмисно не запускає `typecheck` і `lint`, щоб production deployment не витрачав хвилини на дубльовані перевірки.
+Збірка образу навмисно не запускає `typecheck` і `lint` (`ignoreBuildErrors: true` у `next.config.mjs`), щоб деплой не витрачав хвилини на перевірки, які вже зробив CI. Строгий шлюз — `npm run build:ci`.
 
 ## 9. Post-deploy checklist
 
@@ -315,7 +342,7 @@ npm run lint       # lint, якщо next lint доступний у версії
 
 ### Firebase помилка private key
 
-У Vercel private key має бути з escaped newlines:
+У `.env.production` private key має бути одним рядком з escaped newlines (код сам перетворює `\\n` на справжні переноси):
 
 ```env
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"

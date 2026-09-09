@@ -3,7 +3,7 @@ import {
   FieldValue,
   type QueryDocumentSnapshot,
   type Transaction,
-} from "firebase-admin/firestore";
+} from "@/lib/db/firestoreCompat";
 import type { DashboardSession } from "@/lib/auth";
 import { firebaseRead, firebaseWrite, firebaseUnavailableMessage } from "@/lib/firebaseAccess";
 import { clearRuntimeCachedValue, clearRuntimeCachedValuesByPrefix, getRuntimeCachedValue, setRuntimeCachedValue } from "@/lib/runtimeResilience";
@@ -88,7 +88,7 @@ import {
   type RaidPollVote,
   type RaidPollVoteResult,
 } from "@/lib/raidPollShared";
-import { cleanSnowflake, cleanSnowflakeIds, envFlag, timestampToIso, timezoneOffsetMs } from "@/lib/values";
+import { cleanSnowflake, cleanSnowflakeIds, envFlag, timestampToIso, timezoneOffsetMs, dashboardPublicOrigin } from "@/lib/values";
 
 const RAID_POLL_COLLECTION = "dashboardRaidPolls";
 const RAID_POLL_ACTION_PREFIX = "mbv1:poll";
@@ -378,19 +378,8 @@ export function raidPollRemainingLabel(poll: Pick<RaidPollItem, "status" | "clos
   return `${Math.max(1, minutes)} хв`;
 }
 
-function dashboardBaseUrl() {
-  const configured = String(process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL || process.env.ADMIN_DASHBOARD_URL || process.env.NEXT_PUBLIC_ADMIN_DASHBOARD_URL || process.env.NEXTAUTH_URL || "https://dashboard.lihvodruida.pp.ua").trim();
-  try {
-    const url = new URL(configured || "https://dashboard.lihvodruida.pp.ua");
-    if (url.hostname.endsWith(".vercel.app")) return "https://dashboard.lihvodruida.pp.ua";
-    return url.origin;
-  } catch {
-    return "https://dashboard.lihvodruida.pp.ua";
-  }
-}
-
 export function dashboardPollUrl(pollId: string) {
-  return `${dashboardBaseUrl()}/polls/${encodeURIComponent(pollId)}`;
+  return `${dashboardPublicOrigin()}/polls/${encodeURIComponent(pollId)}`;
 }
 
 function raidPollTimeZone() {

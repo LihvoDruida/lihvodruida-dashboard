@@ -15,9 +15,10 @@ The old `admin` route naming is kept only as legacy redirect compatibility. New 
 | Path | Purpose |
 |---|---|
 | [`dashboard/`](dashboard/) | Next.js dashboard panel: profiles, raids, applications, Discord tools, logs, rules, content and guild roster. |
-| [`workers/guild-applications-worker/`](workers/guild-applications-worker/) | Cloudflare Worker for guild applications, Discord interactions, raid/rules buttons, stats, Worker-side cache and scheduled raid lifecycle calls. |
+| [`bot/`](bot/) | Discord bot service: signature verification, instant ACK, routing interactions to the dashboard. Runs on our own server. |
+| [`shared/`](shared/) | `@mistblossom/discord-contract`: shared `custom_id` parsing and component validation used by both the dashboard and the bot. |
 | [`dashboard/docs/`](dashboard/docs/) | Internal dashboard documentation: functionality, API, environment variables and deployment. |
-| [`workers/guild-applications-worker/docs/`](workers/guild-applications-worker/docs/) | Internal Worker documentation: endpoints, variables, bindings, dashboard contracts and deployment. |
+| [`deploy/`](deploy/) | Self-hosting artifacts: nginx, systemd units, cron and database backup scripts. |
 
 ## Main documents
 
@@ -27,19 +28,12 @@ The old `admin` route naming is kept only as legacy redirect compatibility. New 
 - [`dashboard/README.md`](dashboard/README.md) — English dashboard overview.
 - [`dashboard/docs/ua/FUNCTIONALITY.md`](dashboard/docs/ua/FUNCTIONALITY.md) — what the dashboard does and how the main modules behave.
 - [`dashboard/docs/ua/API.md`](dashboard/docs/ua/API.md) — dashboard API routes and contracts.
-- [`dashboard/docs/ua/ENVIRONMENT_VARIABLES.md`](dashboard/docs/ua/ENVIRONMENT_VARIABLES.md) — dashboard environment variables for Vercel/local development.
-- [`dashboard/docs/ua/DEPLOYMENT.md`](dashboard/docs/ua/DEPLOYMENT.md) — deployment checklist for Vercel, OAuth callbacks and production checks.
-- [`dashboard/docs/ua/DASHBOARD_DOMAIN_AND_GITHUB_MOVE.md`](dashboard/docs/ua/DASHBOARD_DOMAIN_AND_GITHUB_MOVE.md) — migration guide for `admin` → `dashboard` naming, DNS, Vercel domains and reconnecting a new GitHub repository without creating a new Vercel project.
+- [`dashboard/docs/ua/ENVIRONMENT_VARIABLES.md`](dashboard/docs/ua/ENVIRONMENT_VARIABLES.md) — dashboard environment variables for local development and `.env.production`.
+- [`dashboard/docs/ua/DEPLOYMENT.md`](dashboard/docs/ua/DEPLOYMENT.md) — service setup, OAuth callbacks and production checks.
+- [`dashboard/docs/ua/SELF_HOSTING.md`](dashboard/docs/ua/SELF_HOSTING.md) — full self-hosting guide: Docker stack, Nginx, TLS, scheduled jobs, backups and rollback.
+- [`dashboard/docs/ua/DASHBOARD_DOMAIN_AND_GITHUB_MOVE.md`](dashboard/docs/ua/DASHBOARD_DOMAIN_AND_GITHUB_MOVE.md) — changing the canonical domain: DNS, Nginx, TLS, env, OAuth and Worker endpoints.
 
 ### Worker
-
-- [`workers/guild-applications-worker/README.ua.md`](workers/guild-applications-worker/README.ua.md) — Ukrainian Worker overview and quick deployment notes.
-- [`workers/guild-applications-worker/README.md`](workers/guild-applications-worker/README.md) — English Worker overview.
-- [`workers/guild-applications-worker/docs/ua/FUNCTIONALITY.md`](workers/guild-applications-worker/docs/ua/FUNCTIONALITY.md) — Worker feature map and processing flows.
-- [`workers/guild-applications-worker/docs/ua/API.md`](workers/guild-applications-worker/docs/ua/API.md) — Worker routes and request/response behavior.
-- [`workers/guild-applications-worker/docs/ua/VARIABLES.md`](workers/guild-applications-worker/docs/ua/VARIABLES.md) — Cloudflare Worker variables, secrets and KV bindings.
-- [`workers/guild-applications-worker/docs/ua/DASHBOARD_SHARED_VARIABLES.md`](workers/guild-applications-worker/docs/ua/DASHBOARD_SHARED_VARIABLES.md) — exact values and endpoint contracts that must match between Dashboard and Worker.
-- [`workers/guild-applications-worker/docs/ua/DEPLOYMENT.md`](workers/guild-applications-worker/docs/ua/DEPLOYMENT.md) — Worker deployment checklist.
 
 ## Local dashboard start
 
@@ -56,15 +50,17 @@ Open:
 http://localhost:3000
 ```
 
-## Local Worker development
+## Local bot development
 
 ```bash
-cd workers/guild-applications-worker
-cp .dev.vars.example .dev.vars
-wrangler dev
+cd bot
+cp .env.example .env
+npm install
+npm start          # http://localhost:8080
+npm test           # signature + contract tests
 ```
 
-Do not commit real secrets from `.env.local`, `.dev.vars`, Vercel, Cloudflare or Discord.
+Do not commit real secrets from `.env.local`, `.env.production` or `bot/.env`.
 
 ## Required production direction
 

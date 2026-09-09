@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createHmac, timingSafeEqual } from "crypto";
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue } from "@/lib/db/firestoreCompat";
 import { getDashboardUrl } from "@/lib/oauth";
 import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
 import { firebaseWrite } from "@/lib/firebaseAccess";
@@ -43,8 +43,6 @@ function rulesTokenSecretCandidates() {
       [
         process.env.DASHBOARD_RULES_TOKEN_SECRET,
         process.env.RULES_TOKEN_SECRET,
-        process.env.DASHBOARD_WORKER_SHARED_SECRET,
-        process.env.WORKER_SHARED_SECRET,
         process.env.DISCORD_INTERACTIONS_SHARED_SECRET,
         process.env.DISCORD_INTERACTION_SECRET,
         process.env.DISCORD_BOT_TOKEN,
