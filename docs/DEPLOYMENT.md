@@ -316,14 +316,9 @@ Nginx не стартує без файлів сертифіката, а certbot
 ```bash
 cd /srv/mistblossom
 
-# 1. Тимчасовий самопідписаний — щоб nginx узагалі піднявся
-./deploy/scripts/cert.sh --self
-
-# 2. Піднімаємо стек
-./deploy/scripts/start.sh --build
-
-# 3. Справжній сертифікат
-./deploy/scripts/cert.sh
+make cert-self    # 1. заглушка, щоб nginx узагалі піднявся
+make up           # 2. перевірки + збірка + послідовний запуск
+make cert         # 3. справжній сертифікат
 ```
 
 Домен і email скрипт бере з `.env` (`DASHBOARD_PUBLIC_URL`,
@@ -364,10 +359,17 @@ systemctl list-timers mistblossom-certbot
 
 ```bash
 cd /srv/mistblossom
-./deploy/scripts/start.sh --build
+make up
 ```
 
-Скрипт замінює `docker compose up -d` і робить те, чого Compose не робить.
+> **`Permission denied` на скрипті?** Біт виконання губиться при перенесенні
+> файлів через Windows, SFTP або при розпакуванні деякими архіваторами. Саме
+> тому основний спосіб запуску — `make`: він від цього біта не залежить і
+> відновлює права сам. Разовий ручний варіант:
+> `chmod +x deploy/scripts/*.sh` або `bash ./deploy/scripts/start.sh`.
+
+`make up` викликає `deploy/scripts/start.sh --build`, який замінює
+`docker compose up -d` і робить те, чого Compose не робить.
 
 **Перевірки до запуску.** Docker і плагін compose; наявність і права всіх
 трьох файлів конфігурації; обовʼязкові змінні; **звірка значень, які мусять
@@ -390,12 +392,16 @@ URL — ззовні.
 
 Режими:
 
-```bash
-./deploy/scripts/start.sh            звичайний запуск
-./deploy/scripts/start.sh --build    зі збіркою образів
-./deploy/scripts/start.sh --check    тільки перевірки, нічого не запускати
-./deploy/scripts/start.sh --restart  повний перезапуск (down + up)
-```
+| Команда | Еквівалент | Що робить |
+|---------|------------|-----------|
+| `make start` | `start.sh` | звичайний запуск |
+| `make up` | `start.sh --build` | зі збіркою образів |
+| `make check` | `start.sh --check` | тільки перевірки |
+| `make restart` | `start.sh --build --restart` | повний перезапуск |
+| `make stop` | `stop.sh` | зупинка |
+| `make ps` / `make logs` | — | стан і логи |
+
+Повний перелік — `make help`.
 
 `--check` корисний перед оновленням: якщо в новій версії зʼявилась
 обовʼязкова змінна, дізнатись про це краще до зупинки робочої версії.
@@ -403,7 +409,7 @@ URL — ззовні.
 Зупинка:
 
 ```bash
-./deploy/scripts/stop.sh             зупинити все
+make stop                            зупинити все
 ./deploy/scripts/stop.sh --keep-db   зупинити все, крім бази
 ```
 
@@ -494,6 +500,10 @@ Dockerfile має бути `CMD ["node", "dashboard/server.js"]`, а `public` т
 **Збірка тягне сотні мегабайт контексту.** Немає `.dockerignore` у корені.
 Без нього в демон їде все дерево разом із `node_modules` і `.next`.
 
+**`./deploy/scripts/start.sh: Permission denied`.** Загублений біт виконання.
+Використовуйте `make up` — він від цього не залежить. Або разово:
+`chmod +x deploy/scripts/*.sh`.
+
 **`container mistblossom-dashboard-1 is unhealthy`, процес при цьому живий
 (`Up 13 minutes (unhealthy)`).** Healthcheck ходить на
 `http://127.0.0.1:3000/api/health`, тобто з `Host: 127.0.0.1:3000`. У
@@ -557,6 +567,7 @@ deploy/nginx/nginx.conf             базовий конфіг: логи, gzip,
 deploy/nginx/dashboard.conf         віртуальний хост, TLS, маршрути на dashboard і bot
 deploy/nginx/proxy-params.inc       спільні proxy-заголовки
 deploy/cron/run-cron.sh             планові задачі
+Makefile                            зручні команди: make up / stop / cert / backup
 deploy/scripts/start.sh             перевірки + послідовний запуск стека
 deploy/scripts/stop.sh              коректна зупинка (зворотний порядок)
 deploy/scripts/cert.sh              випуск і поновлення сертифіката
