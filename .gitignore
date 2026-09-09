@@ -1,1 +1,41 @@
+# Залежності й збірки — для всіх сервісів разом.
+# Раніше правила жили тільки в dashboard/.gitignore, тому node_modules бота
+# і shared/ нічим не прикривались.
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# Секрети. .env.example навпаки треба комітити — це шаблони.
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Кеші TypeScript
+*.tsbuildinfo
+tsconfig.tmp.json
+
+# Резервні копії бази лежать поруч зі стеком, але в репозиторій не йдуть
+backups/
+
+# Сертифікати й інші локальні артефакти
+*.pem
+*.key
+
+# Логи
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# ОС і редактори
+.DS_Store
+.vscode/
+.idea/
+
+# Архіви
 dashboard.zip
+*.tar.gz

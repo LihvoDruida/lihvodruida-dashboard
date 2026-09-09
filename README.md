@@ -37,6 +37,27 @@
 
 ---
 
+## Швидкий старт на сервері
+
+```bash
+cd /srv/mistblossom
+./deploy/scripts/cert.sh --self      # тимчасовий сертифікат, щоб піднявся nginx
+./deploy/scripts/start.sh --build    # перевірки + послідовний запуск
+./deploy/scripts/cert.sh             # справжній сертифікат
+```
+
+| Скрипт | Що робить |
+|--------|-----------|
+| `deploy/scripts/start.sh` | перевіряє конфігурацію і піднімає стек по черзі |
+| `deploy/scripts/stop.sh` | коректна зупинка у зворотному порядку |
+| `deploy/scripts/cert.sh` | випуск і поновлення сертифіката |
+| `deploy/scripts/deploy.sh` | оновлення версії з автоматичним відкотом |
+| `deploy/scripts/db-backup.sh` | бекап бази з перевіркою цілісності |
+
+Автостарт після перезавантаження сервера — `systemctl enable --now mistblossom`.
+
+---
+
 ## Локальний запуск
 
 **Панель:**

@@ -1,16 +1,31 @@
-# Запуск усього стека як системного сервісу.
+# Стек Mistblossom Vanguard як системний сервіс.
 #
-# Compose сам тримає контейнери живими (restart: unless-stopped), а цей
-# юніт потрібен тільки щоб стек піднімався після перезавантаження сервера
-# і щоб `systemctl status mistblossom` показував стан у звичному місці.
+# Compose сам тримає контейнери живими (restart: unless-stopped). Цей юніт
+# потрібен, щоб стек піднімався після перезавантаження сервера і щоб
+# `systemctl status mistblossom` показував стан у звичному місці.
+#
+# Запуск іде через deploy/scripts/start.sh, а не через `docker compose up`
+# напряму. Причина: після перезавантаження сервера порядок важливий саме
+# тоді, коли все стартує одночасно і повільно — панель встигає піднятись
+# раніше за базу, впасти й піти в цикл перезапусків. Скрипт піднімає сервіси
+# по черзі й дочікується готовності кожного.
 #
 # Встановлення:
 #   sudo cp deploy/systemd/mistblossom.service /etc/systemd/system/
 #   sudo systemctl daemon-reload
 #   sudo systemctl enable --now mistblossom
+#
+# Керування:
+#   sudo systemctl start mistblossom      запуск
+#   sudo systemctl stop mistblossom       зупинка
+#   sudo systemctl restart mistblossom    перезапуск
+#   sudo systemctl reload mistblossom     перезбірка образів і перезапуск
+#   systemctl status mistblossom          стан
+#   journalctl -u mistblossom -f          логи запуску
 
 [Unit]
-Description=Mistblossom Vanguard dashboard stack
+Description=Mistblossom Vanguard stack (postgres, dashboard, bot, nginx, cron)
+Documentation=file:///srv/mistblossom/docs/DEPLOYMENT.md
 Requires=docker.service
 After=docker.service network-online.target
 Wants=network-online.target
@@ -19,10 +34,28 @@ Wants=network-online.target
 Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=/srv/mistblossom
-ExecStart=/usr/bin/docker compose up -d --remove-orphans
-ExecStop=/usr/bin/docker compose down
-ExecReload=/usr/bin/docker compose up -d --build --remove-orphans
+
+# Після ребуту мережа й Docker піднімаються не миттєво. Скрипт має свої
+# очікування, але коротка пауза прибирає гонитву за docker.sock на старті.
+ExecStartPre=/bin/sleep 5
+
+ExecStart=/srv/mistblossom/deploy/scripts/start.sh
+ExecStop=/usr/bin/docker compose down --remove-orphans
+ExecReload=/srv/mistblossom/deploy/scripts/start.sh --build --restart
+
+# Скрипт піднімає п'ять сервісів і чекає healthcheck кожного; на холодному
+# старті це кілька хвилин. Обмеження часу тут дало б хибне «failed» на
+# цілком робочому запуску.
 TimeoutStartSec=0
+TimeoutStopSec=120
+
+# Якщо запуск не вдався (наприклад, база ще не готова після відновлення
+# з бекапу) — пробуємо ще раз, а не лишаємо сервер без панелі.
+Restart=on-failure
+RestartSec=30
+
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target

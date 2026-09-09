@@ -302,63 +302,48 @@ curl -fsS https://guild.lihvodruida.pp.ua/api/health
 
 ## 5. Сертифікат
 
-> **Спершу переконайтесь, що стек піднявся** (розділ 6 — його можна виконати
-> до цього кроку, Nginx стартує на тимчасовому самопідписаному сертифікаті).
-> Certbot перевіряє
-> домен HTTP-запитом на ваш сервер: якщо Nginx не працює, перевірка впаде.
-> За увімкненого проксі Cloudflare помилка виглядатиме як
-> `Invalid response ...: 521` — це код Cloudflare «origin недоступний», а не
-> проблема самого certbot.
-
 > **Проксі Cloudflare має бути вимкнено** на час першого випуску: DNS →
-> запис `guild` → **DNS only** (сіра хмара). Інакше запит ACME піде через
-> Cloudflare, а той без валідного сертифіката на origin у режимі Full (strict)
-> до сервера не достукається. Після випуску проксі повертається.
+> записи `guild` (**і A, і AAAA**) → **DNS only** (сіра хмара). Інакше запит
+> ACME піде через Cloudflare, а той у режимі Full (strict) без валідного
+> сертифіката на origin до сервера не достукається — побачите `521`.
 >
-> Якщо в DNS є **AAAA**-запис, зніміть проксі і з нього теж. Let's Encrypt
-> віддає перевагу IPv6, і залишений під проксі AAAA дає ту саму 521, навіть
-> коли з A-записом усе гаразд — саме так виглядає найчастіша невдача на
-> цьому кроці.
+> Let's Encrypt віддає перевагу IPv6, тому залишений під проксі AAAA ламає
+> перевірку навіть коли з A все гаразд. Це найчастіша невдача тут.
 
-Nginx не стартує без сертифіката, а certbot не видасть сертифікат без
-працюючого Nginx. Розриваємо коло тимчасовим самопідписаним:
+Nginx не стартує без файлів сертифіката, а certbot не пройде перевірку без
+працюючого Nginx. Розриваємо коло заглушкою:
 
 ```bash
-DOMAIN=guild.lihvodruida.pp.ua
+cd /srv/mistblossom
 
-docker volume create mistblossom_letsencrypt
-docker run --rm -v mistblossom_letsencrypt:/etc/letsencrypt alpine sh -c "
-  apk add --no-cache openssl >/dev/null &&
-  mkdir -p /etc/letsencrypt/live/$DOMAIN &&
-  openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
-    -keyout /etc/letsencrypt/live/$DOMAIN/privkey.pem \
-    -out /etc/letsencrypt/live/$DOMAIN/fullchain.pem \
-    -subj '/CN=$DOMAIN'"
+# 1. Тимчасовий самопідписаний — щоб nginx узагалі піднявся
+./deploy/scripts/cert.sh --self
 
-# Піднімаємо стек із заглушкою
-docker compose up -d
+# 2. Піднімаємо стек
+./deploy/scripts/start.sh --build
 
-# Отримуємо справжній сертифікат
-docker compose run --rm certbot certonly \
-  --webroot --webroot-path=/var/www/certbot \
-  -d "$DOMAIN" --agree-tos --no-eff-email -m admin@example.com
-
-docker compose exec nginx nginx -s reload
+# 3. Справжній сертифікат
+./deploy/scripts/cert.sh
 ```
 
-Перевірка перед тим, як повертати проксі:
+Домен і email скрипт бере з `.env` (`DASHBOARD_PUBLIC_URL`,
+`LETSENCRYPT_EMAIL`) — руками їх вводити не треба. Це навмисно: порожня
+змінна `$DOMAIN` у командному рядку дає помилку certbot
+`Requested domain is not a FQDN because it contains an empty label`, і
+причину потім довго шукають у DNS.
+
+Перед випуском `cert.sh` сам перевіряє, що челендж доступний ззовні, і
+розрізняє коди відповіді: `404` — усе гаразд, маршрут працює;
+`521` — Cloudflare не бачить origin, зніміть проксі; `000` — домен не
+відповідає, проблема в DNS.
+
+Стан сертифіката будь-коли:
 
 ```bash
-curl -sI http://guild.lihvodruida.pp.ua/.well-known/acme-challenge/test
-# 404 від нашого Nginx — добре: маршрут працює, просто файлу немає.
-# 521 або сторінка Cloudflare — проксі ще увімкнено або origin лежить.
-
-echo | openssl s_client -connect guild.lihvodruida.pp.ua:443 -servername guild.lihvodruida.pp.ua 2>/dev/null \
-  | openssl x509 -noout -issuer -dates
-# Issuer має бути Let's Encrypt, а не самопідписаний CN=guild...
+./deploy/scripts/cert.sh --status
 ```
 
-Тільки після цього повертайте **Proxied** у Cloudflare.
+**Після успішного випуску повертайте Proxied** у Cloudflare на обидва записи.
 
 Автопоновлення — systemd-таймер:
 
@@ -379,14 +364,53 @@ systemctl list-timers mistblossom-certbot
 
 ```bash
 cd /srv/mistblossom
-docker compose up -d --build
-docker compose ps
-curl -fsS https://guild.lihvodruida.pp.ua/api/health
+./deploy/scripts/start.sh --build
 ```
 
-Очікувана відповідь: `{"ok":true,"service":"mistblossom-dashboard",...}`.
+Скрипт замінює `docker compose up -d` і робить те, чого Compose не робить.
 
-Автостарт після перезавантаження сервера:
+**Перевірки до запуску.** Docker і плагін compose; наявність і права всіх
+трьох файлів конфігурації; обовʼязкові змінні; **звірка значень, які мусять
+збігатися між панеллю й ботом** (`DISCORD_PUBLIC_KEY`, `INTERNAL_API_TOKEN`,
+`DISCORD_GUILD_ID`, `DISCORD_BOT_TOKEN`); хост у `DATABASE_URL`; наявність
+сертифіката; місце на диску; валідність `docker-compose.yml`.
+
+Звірка ключів тут не зайва обережність: розбіжність не дає помилки при
+старті — обидва сервіси піднімуться, а Discord мовчки відповідатиме «Дія не
+вдалася». Знайти це потім коштує години.
+
+**Послідовний запуск.** База → схема → панель → бот → nginx → cron. Після
+кожного сервісу скрипт дочікується стану `healthy`, а не просто «контейнер
+створено». Різниця принципова: без очікування панель стартує раніше за базу,
+падає на першому запиті й іде в цикл перезапусків, а `docker compose up -d`
+показує при цьому зелений вивід.
+
+**Перевірка після запуску.** Панель і бот опитуються зсередини, публічний
+URL — ззовні.
+
+Режими:
+
+```bash
+./deploy/scripts/start.sh            звичайний запуск
+./deploy/scripts/start.sh --build    зі збіркою образів
+./deploy/scripts/start.sh --check    тільки перевірки, нічого не запускати
+./deploy/scripts/start.sh --restart  повний перезапуск (down + up)
+```
+
+`--check` корисний перед оновленням: якщо в новій версії зʼявилась
+обовʼязкова змінна, дізнатись про це краще до зупинки робочої версії.
+
+Зупинка:
+
+```bash
+./deploy/scripts/stop.sh             зупинити все
+./deploy/scripts/stop.sh --keep-db   зупинити все, крім бази
+```
+
+`--keep-db` потрібен для обслуговування: записи зупинені, але база доступна
+для `psql`, дампа чи відновлення.
+
+### Автостарт після перезавантаження сервера
 
 ```bash
 sudo cp deploy/systemd/mistblossom.service /etc/systemd/system/
@@ -394,15 +418,16 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now mistblossom
 ```
 
-### Структура стека
+Юніт запускає той самий `start.sh`, а не `docker compose up` напряму. Саме
+після ребуту порядок і має значення: усе стартує одночасно й повільно, і без
+очікування готовності панель гарантовано випереджає базу.
 
-| Сервіс | Що робить | Порти |
-|--------|-----------|-------|
-| `postgres` | база даних | 5432 (тільки внутрішня мережа) |
-| `nginx` | TLS, gzip, кеш статики, обмеження частоти | 80, 443 |
-| `dashboard` | Next.js standalone | 3000 (внутрішній) |
-| `cron` | планові задачі | — |
-| `certbot` | поновлення сертифіката (профіль, не працює постійно) | — |
+```bash
+sudo systemctl status mistblossom     стан
+sudo systemctl restart mistblossom    перезапуск
+sudo systemctl reload mistblossom     перезбірка образів і перезапуск
+journalctl -u mistblossom -f          логи запуску
+```
 
 ---
 
@@ -469,6 +494,18 @@ Dockerfile має бути `CMD ["node", "dashboard/server.js"]`, а `public` т
 **Збірка тягне сотні мегабайт контексту.** Немає `.dockerignore` у корені.
 Без нього в демон їде все дерево разом із `node_modules` і `.next`.
 
+**`container mistblossom-dashboard-1 is unhealthy`, процес при цьому живий
+(`Up 13 minutes (unhealthy)`).** Healthcheck ходить на
+`http://127.0.0.1:3000/api/health`, тобто з `Host: 127.0.0.1:3000`. У
+продакшені перевірка хоста навмисно відхиляє localhost і віддає редірект 308
+на канонічний домен; `fetch` за редіректом не йде і бачить не-2xx. Контейнер
+лишається `unhealthy` назавжди, а разом із ним не стартує nginx, у якого
+`depends_on: service_healthy`.
+
+Виправлено в `src/proxy.ts`: шлях `/api/health` із loopback-хоста не
+проходить перевірку. Якщо симптом повернувся — перевірте, що ваша версія
+містить `HOST_CHECK_EXEMPT_PATHS`.
+
 ---
 
 ## 9. Збірка на слабкому сервері
@@ -520,7 +557,10 @@ deploy/nginx/nginx.conf             базовий конфіг: логи, gzip,
 deploy/nginx/dashboard.conf         віртуальний хост, TLS, маршрути на dashboard і bot
 deploy/nginx/proxy-params.inc       спільні proxy-заголовки
 deploy/cron/run-cron.sh             планові задачі
-deploy/scripts/deploy.sh            деплой з очікуванням healthcheck і відкотом
+deploy/scripts/start.sh             перевірки + послідовний запуск стека
+deploy/scripts/stop.sh              коректна зупинка (зворотний порядок)
+deploy/scripts/cert.sh              випуск і поновлення сертифіката
+deploy/scripts/deploy.sh            оновлення версії з відкотом
 deploy/scripts/db-backup.sh         бекап бази з перевіркою цілісності
 deploy/scripts/db-restore.sh        відновлення з дампа
 deploy/systemd/mistblossom.service  автостарт стека після перезавантаження

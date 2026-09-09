@@ -156,8 +156,35 @@ function hasCloudflareSignal(request: NextRequest) {
   );
 }
 
+/**
+ * Шляхи, які не проходять перевірку хоста.
+ *
+ * Healthcheck контейнера ходить на `http://127.0.0.1:3000/api/health`, тож
+ * Host у нього — `127.0.0.1:3000`. У продакшені `isAllowedHost` навмисно
+ * відхиляє localhost, і GET-запит отримував редірект 308 на канонічний
+ * домен. `fetch` у healthcheck за редіректом не йшов і бачив не-2xx, тому
+ * контейнер назавжди лишався `unhealthy` — а разом із ним не стартував
+ * nginx, у якого `depends_on: service_healthy`.
+ *
+ * Роут нічого не читає й нічого не віддає, крім часу роботи процесу, тому
+ * виняток для нього безпечний. Ззовні він усе одно недосяжний: у nginx
+ * `/api/health` проксується лише з внутрішньої мережі.
+ */
+const HOST_CHECK_EXEMPT_PATHS = new Set(["/api/health"]);
+
+function isLoopbackHost(host: string) {
+  return host.startsWith("127.0.0.1") || host.startsWith("localhost") || host.startsWith("[::1]");
+}
+
 export function proxy(request: NextRequest) {
   const host = getRequestHost(request);
+
+  if (
+    HOST_CHECK_EXEMPT_PATHS.has(request.nextUrl.pathname)
+    && isLoopbackHost(host)
+  ) {
+    return NextResponse.next();
+  }
 
   if (!isAllowedHost(host)) {
     const isSafeRedirect = request.method === "GET" || request.method === "HEAD";

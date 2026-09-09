@@ -14,6 +14,7 @@
 
 ```bash
 cd /srv/mistblossom
+./deploy/scripts/start.sh --check                  # конфігурація ціла?
 docker compose ps                                  # усі healthy?
 curl -fsS https://guild.lihvodruida.pp.ua/api/health
 docker compose exec bot node -e "fetch('http://127.0.0.1:8080/healthz').then(r=>r.text()).then(console.log)"
@@ -185,10 +186,13 @@ git checkout <попередній-коміт>
 ### Повний рестарт стека
 
 ```bash
-docker compose down
-docker compose up -d
-docker compose ps
+./deploy/scripts/start.sh --restart
 ```
+
+Скрипт зупиняє стек і піднімає його заново по черзі, дочікуючись готовності
+кожного сервісу. `docker compose down && up -d` теж працює, але не чекає
+нічого: після нього перші хвилини панель може бути в циклі перезапусків, і
+це не буде видно у виводі.
 
 Дані не втрачаються: база лежить у томі `pgdata`, а не в контейнері.
 

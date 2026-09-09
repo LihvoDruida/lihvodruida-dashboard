@@ -1,170 +1,39 @@
-# Mistblossom Vanguard Dashboard
+# dashboard
 
-Private dashboard panel for the **Mistblossom Vanguard** guild: applications, profiles, Battle.net characters, raids, Discord messages, rules, website content, and integration status.
+Next.js-панель Mistblossom Vanguard: бізнес-логіка, база, сторінки, API.
 
-## Features
+Документація проєкту централізована в [`../docs/`](../docs/) — тут лише те,
+що стосується цього пакета.
 
-- Discord login with role-based access: member, newcomer mentor, officer, guildmaster.
-- Member profiles with Battle.net characters.
-- Main character and raid role preference.
-- Discord server nickname standardization: `Name [Main, Alt1, Alt2]`.
-- Character data auto-refresh before raid signup.
-- Raid announcements with Discord signup buttons.
-- Live raid page updates without manual refresh.
-- Guild applications through Firebase Firestore.
-- Dynamic application filters without full page reload.
-- Discord embed/rules editor with live preview, limits, and mobile/desktop preview.
-- Content management for website news and guides.
-- Compact status panel for Discord, Battle.net, GitHub, and Firebase.
-
-## Stack
-
-- Next.js 15 App Router;
-- React 19;
-- TypeScript;
-- Firebase Admin SDK / Firestore;
-- GitHub REST API;
-- Discord OAuth + Bot API;
-- Battle.net OAuth + WoW Profile API;
-- Docker + Nginx on your own server;
-- Bot service (`bot/`) — receives Discord interactions; the dashboard never accepts them from the internet.
-
-## Quick start
+## Локальний запуск
 
 ```bash
 npm install
 cp .env.example .env.local
-npm run dev
+npm run dev          # http://localhost:3000
 ```
 
-Open:
+Панелі потрібен сусідній пакет `../shared` (`@mistblossom/discord-contract`),
+на який `package.json` посилається як `file:../shared`. Тому репозиторій
+клонується цілком, а не одним каталогом.
 
-```text
-http://localhost:3000
-```
+## Команди
 
-## Production
+| Команда | Що робить |
+|---------|-----------|
+| `npm run dev` | режим розробки |
+| `npm run build` | продакшн-збірка (`output: standalone`) |
+| `npm run typecheck` | перевірка типів |
+| `npm run lint` | ESLint |
+| `npm run verify` | typecheck + lint + перевірки CI |
+| `npm run db:init` | застосувати схему бази |
+| `npm run db:migrate-dry-run` | пробне перенесення з Firestore |
 
-```bash
-npm run verify
-npm run build
-npm run start
-```
+## Документація
 
-`npm run verify` runs TypeScript typecheck and ESLint through the modern ESLint CLI.
-
-Production is built into a Docker image (`output: "standalone"`) and started with `docker compose`. Step by step: [`../docs/DEPLOYMENT.md`](../docs/DEPLOYMENT.md).
-
-## Main environment variables
-
-A production deployment usually needs:
-
-```env
-SESSION_SECRET=
-DASHBOARD_URL=https://guild.lihvodruida.pp.ua
-NEXT_PUBLIC_DASHBOARD_URL=https://guild.lihvodruida.pp.ua
-DASHBOARD_ALLOWED_HOSTS=guild.lihvodruida.pp.ua
-
-DISCORD_OAUTH_CLIENT_ID=
-DISCORD_OAUTH_CLIENT_SECRET=
-DISCORD_GUILD_ID=
-# Access groups are configured in Firebase from /dashboard/groups.
-# System group IDs: admin=1, moderator=2, mentor=3, member=99. Only 1, 2 and 99 have fixed IDs.
-DISCORD_LIVE_ACCESS_SYNC_SECONDS=90
-DISCORD_ROLES_CACHE_SECONDS=300
-DISCORD_BOT_TOKEN=
-
-GITHUB_OWNER=LihvoDruida
-GITHUB_REPO=lihvodruida.github.io
-GITHUB_TOKEN=
-GUILD_APPLICATIONS_LABEL=guild-application
-
-FIREBASE_PROJECT_ID=
-FIREBASE_CLIENT_EMAIL=
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-
-BATTLENET_CLIENT_ID=
-BATTLENET_CLIENT_SECRET=
-BATTLENET_ENABLED_REGIONS=eu
-WOW_GUILD_NAME=Mistblossom Vanguard
-
-RAID_RULES_URL=
-RAID_IMAGES_BRANCH=live
-RAID_IMAGES_DIRECTORY=assets/img/raids-img
-RAID_IMAGES_PUBLIC_BASE_URL=https://lihvodruida.pp.ua
-RAID_TIME_ZONE=Europe/Kyiv
-NEXT_PUBLIC_RAID_TIME_ZONE=Europe/Kyiv
-```
-
-See the full environment documentation for all variables and Worker sharing notes.
-
-## Documentation
-
-- [Functionality overview](../docs/reference/FUNCTIONALITY.md)
-- [API documentation](../docs/reference/API.md)
-- [Configuration](../docs/CONFIGURATION.md)
-- [Deployment](../docs/DEPLOYMENT.md)
-- [Operations](../docs/OPERATIONS.md)
-
-- [Український README](README.uk.md)
-
-## Access roles
-
-- **Member:** profile, characters, raids, signup, rules.
-- **Newcomer mentor:** all member rights plus read-only applications without BattleTag/source links. Admins and moderators keep full application data, including BattleTag.
-- Live role sync requires `DISCORD_BOT_TOKEN` and `DISCORD_GUILD_ID`; if Discord is temporarily unavailable, admin/moderator/mentor sessions are downgraded to member until the next successful check.
-- Discord auth now checks guild membership, server bans, and duplicate character ownership before allowing login. Live session refresh also removes the Firebase profile when the user has left the server. The bot needs access to read guild bans.
-- **Officer:** applications, profiles, raids, rosters, moderation, Discord embeds.
-- **Guildmaster:** full access, rules, content, system status.
-
-## Important notes
-
-- The bot cannot change the Discord server owner's nickname.
-- To change a nickname, the bot role must be higher than the user's highest role.
-- If Discord interactions are handled by Worker, the Discord Developer Portal Interaction Endpoint must point to Worker.
-- If Worker calls the dashboard, shared tokens must match.
-- In `.env.production`, keep `FIREBASE_PRIVATE_KEY` on one line with escaped `\n`; the code converts them to real newlines.
-
-## Guild roster `/guild`
-
-The `/guild` page is available to every authenticated dashboard role: member, newcomer mentor, moderator, and admin. Character cards link to the owner profile only when the character is uniquely associated with one profile; duplicate ownership is intentionally left unlinked.
-It displays a live guild roster from the Battle.net Guild Roster API and Raider.IO: `ALL`, `DPS`, `HEALER`, `TANK` RIO, item level, class, spec, role, faction, and Raider.IO profile links.
-
-The dashboard no longer depends on `scripts/update_guild.py` or generated files for this page. Runtime code fetches the roster server-side, stores the result in Firebase cache, and falls back to short in-memory cache when Firebase is not configured.
-
-Main variables:
-
-```env
-GUILD_ROSTER_REGION=eu
-GUILD_ROSTER_REALM=terokkar
-GUILD_ROSTER_NAME=Mistblossom Vanguard
-GUILD_ROSTER_CACHE_TTL_SECONDS=1800
-PROFILE_CHARACTER_LINK_CACHE_SECONDS=120
-GUILD_ROSTER_REFRESH_CONCURRENCY=6
-GUILD_ROSTER_MEMBER_LIMIT=500
-RAIDERIO_ACCESS_KEY=
-```
-
-`BLIZZARD_CLIENT_ID` / `BLIZZARD_CLIENT_SECRET` or `BATTLENET_CLIENT_ID` / `BATTLENET_CLIENT_SECRET` are required for the Battle.net application token. The “Refresh roster” button calls `/api/guild/refresh` and rebuilds the cache from Battle.net + Raider.IO.
-
-## Discord role gate for auth and rules registration
-
-`/dashboard` → `Management` has an **Authorization and registration** card. Select the Discord role required to sign in to the dashboard or complete rules registration.
-
-The policy is stored in Firebase:
-
-```text
-/dashboardSettings/authAccessPolicy
-```
-
-Env fallback:
-
-```env
-AUTH_ACCESS_RESTRICTIONS_ENABLED=true
-AUTH_ACCESS_REQUIRE_CONFIGURED_ROLE=true
-AUTH_ACCESS_ALLOW_SERVER_OWNER=true
-AUTH_ACCESS_ALLOW_EMERGENCY_TOKEN_LOGIN=false
-AUTH_ACCESS_REQUIRED_ROLE_IDS=
-```
-
-The safe default is strict mode: `AUTH_ACCESS_REQUIRE_CONFIGURED_ROLE=true`. If no role is selected, only the Discord server owner can pass OAuth when owner bypass is enabled. `AUTH_ACCESS_ALLOW_EMERGENCY_TOKEN_LOGIN=false` keeps the legacy token login from bypassing Discord membership and role checks.
+- [Архітектура](../docs/ARCHITECTURE.md)
+- [Розгортання](../docs/DEPLOYMENT.md)
+- [Налаштування](../docs/CONFIGURATION.md)
+- [Експлуатація](../docs/OPERATIONS.md)
+- [База даних](../docs/DATABASE.md)
+- [Довідник API](../docs/reference/API.md)
