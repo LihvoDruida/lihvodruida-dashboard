@@ -64,17 +64,34 @@ RUN groupadd --system --gid 1001 nodejs \
   && useradd --system --uid 1001 --gid nodejs nextjs
 
 # public і .next/static standalone-збірка не копіює — їх треба покласти руками.
-# Через outputFileTracingRoot = корінь репозиторію standalone складається
-# у .next/standalone/dashboard, а спільний пакет — у .next/standalone/shared.
-COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/public ./public
+#
+# Через outputFileTracingRoot = корінь репозиторію дерево standalone має
+# зайвий рівень: усе лежить у .next/standalone/dashboard/, а не в корені
+# standalone. Тому після копіювання структура в образі така:
+#
+#   /app/dashboard/server.js      ← точка входу
+#   /app/dashboard/node_modules
+#   /app/dashboard/.next
+#   /app/dashboard/public         ← сервер шукає статику ПОРУЧ із server.js
+#   /app/dashboard/.next/static
+#
+# Пакет shared/ окремо копіювати не треба: контракт інлайниться у серверний
+# бандл на етапі збірки. У стадії deps він потрібен лише для npm ci, бо
+# package.json посилається на нього як file:../shared.
+#
+# Саме тому public кладеться в ./dashboard/public, а не в ./public: у корінь
+# сервер не заглядає, і всі зображення й іконки віддавали б 404.
 COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/.next/standalone/ ./
+COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/public ./dashboard/public
 COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/.next/static ./dashboard/.next/static
 
 USER nextjs
 EXPOSE 3000
 
-# Перевірка живості: цей роут не ходить у Firebase і не потребує сесії.
+# Перевірка живості: цей роут не ходить у базу і не потребує сесії.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=25s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-CMD ["node", "server.js"]
+# Точка входу — dashboard/server.js, а не server.js: див. пояснення про
+# зайвий рівень у дереві standalone вище.
+CMD ["node", "dashboard/server.js"]

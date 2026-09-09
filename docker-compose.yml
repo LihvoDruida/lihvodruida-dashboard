@@ -64,7 +64,12 @@ services:
 
   dashboard:
     build:
-      context: ./dashboard
+      # Контекст — КОРІНЬ репозиторію, а не ./dashboard: образу потрібен
+      # спільний пакет shared/ (@mistblossom/discord-contract), на який
+      # package.json посилається як file:../shared. З контекстом ./dashboard
+      # усі COPY на shared/ і dashboard/* не знаходять шляхів.
+      context: .
+      dockerfile: dashboard/Dockerfile
       args:
         NEXT_PUBLIC_DASHBOARD_URL: ${DASHBOARD_PUBLIC_URL:?треба задати DASHBOARD_PUBLIC_URL}
     image: mistblossom/dashboard:${IMAGE_TAG:-latest}

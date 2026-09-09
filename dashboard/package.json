@@ -7,7 +7,7 @@
     "dev": "next dev",
     "prebuild": "node scripts/remove-legacy-middleware.cjs",
     "build": "node scripts/next-build.cjs",
-    "start": "node .next/standalone/server.js",
+    "start": "node .next/standalone/dashboard/server.js",
     "typecheck": "node scripts/typecheck.cjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

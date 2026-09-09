@@ -203,13 +203,18 @@ dig +short guild.lihvodruida.pp.ua
 ### 4.3. Отримання сертифіката за проксі
 
 Let's Encrypt перевіряє домен по HTTP-запиту на `/.well-known/acme-challenge/`.
-Через проксі Cloudflare це працює, але при першому випуску простіше зняти
-проксі:
+За проксі Cloudflare із режимом Full (strict) це **не спрацює**, поки на
+origin немає валідного сертифіката: Cloudflare не зможе достукатись до
+сервера і поверне 521. Порядок такий:
 
-1. DNS → запис `guild` → перемкнути на **DNS only** (сіра хмара)
+1. DNS → записи `guild` (**і A, і AAAA**) → перемкнути на **DNS only**
+   (сіра хмара)
 2. Дочекатись пари хвилин
-3. Випустити сертифікат (розділ 5)
-4. Повернути **Proxied** (помаранчева хмара)
+3. Підняти стек і випустити сертифікат (розділи 5–6)
+4. Повернути **Proxied** (помаранчева хмара) на обидва записи
+
+Якщо AAAA лишити під проксі, а A зняти — перевірка все одно впаде: Let's
+Encrypt віддає перевагу IPv6.
 
 Поновлення потім працює і за проксі — у Nginx уже є `location` для
 `/.well-known/acme-challenge/`, який віддається без редіректу на HTTPS.
@@ -297,6 +302,24 @@ curl -fsS https://guild.lihvodruida.pp.ua/api/health
 
 ## 5. Сертифікат
 
+> **Спершу переконайтесь, що стек піднявся** (розділ 6 — його можна виконати
+> до цього кроку, Nginx стартує на тимчасовому самопідписаному сертифікаті).
+> Certbot перевіряє
+> домен HTTP-запитом на ваш сервер: якщо Nginx не працює, перевірка впаде.
+> За увімкненого проксі Cloudflare помилка виглядатиме як
+> `Invalid response ...: 521` — це код Cloudflare «origin недоступний», а не
+> проблема самого certbot.
+
+> **Проксі Cloudflare має бути вимкнено** на час першого випуску: DNS →
+> запис `guild` → **DNS only** (сіра хмара). Інакше запит ACME піде через
+> Cloudflare, а той без валідного сертифіката на origin у режимі Full (strict)
+> до сервера не достукається. Після випуску проксі повертається.
+>
+> Якщо в DNS є **AAAA**-запис, зніміть проксі і з нього теж. Let's Encrypt
+> віддає перевагу IPv6, і залишений під проксі AAAA дає ту саму 521, навіть
+> коли з A-записом усе гаразд — саме так виглядає найчастіша невдача на
+> цьому кроці.
+
 Nginx не стартує без сертифіката, а certbot не видасть сертифікат без
 працюючого Nginx. Розриваємо коло тимчасовим самопідписаним:
 
@@ -322,6 +345,20 @@ docker compose run --rm certbot certonly \
 
 docker compose exec nginx nginx -s reload
 ```
+
+Перевірка перед тим, як повертати проксі:
+
+```bash
+curl -sI http://guild.lihvodruida.pp.ua/.well-known/acme-challenge/test
+# 404 від нашого Nginx — добре: маршрут працює, просто файлу немає.
+# 521 або сторінка Cloudflare — проксі ще увімкнено або origin лежить.
+
+echo | openssl s_client -connect guild.lihvodruida.pp.ua:443 -servername guild.lihvodruida.pp.ua 2>/dev/null \
+  | openssl x509 -noout -issuer -dates
+# Issuer має бути Let's Encrypt, а не самопідписаний CN=guild...
+```
+
+Тільки після цього повертайте **Proxied** у Cloudflare.
 
 Автопоновлення — systemd-таймер:
 
@@ -401,7 +438,40 @@ docker compose exec dashboard node -e "
 
 ---
 
-## 8. Збірка на слабкому сервері
+## 8. Помилки збірки
+
+**`"/dashboard/vendor": not found`, `COPY shared: not found`, у логах
+`transferring context: 2B`.** Контекст збірки вказаний неправильно. Обидва
+образи збираються з **кореня репозиторію**, а не з підкаталогів: панелі
+потрібен `shared/` (вона посилається на нього як `file:../shared`), боту —
+теж. У `docker-compose.yml` має бути:
+
+```yaml
+  dashboard:
+    build:
+      context: .
+      dockerfile: dashboard/Dockerfile
+  bot:
+    build:
+      context: .
+      dockerfile: bot/Dockerfile
+```
+
+Ознака саме цієї помилки — `transferring context: 2B` у виводі: BuildKit не
+знайшов жодного шляху з `COPY` і не передав нічого.
+
+**`Cannot find module '/app/server.js'` після успішної збірки.** Через
+`outputFileTracingRoot = корінь репозиторію` дерево standalone має зайвий
+рівень: точка входу лежить у `.next/standalone/dashboard/server.js`. У
+Dockerfile має бути `CMD ["node", "dashboard/server.js"]`, а `public` треба
+класти в `./dashboard/public` — у корені `/app` сервер статику не шукає.
+
+**Збірка тягне сотні мегабайт контексту.** Немає `.dockerignore` у корені.
+Без нього в демон їде все дерево разом із `node_modules` і `.next`.
+
+---
+
+## 9. Збірка на слабкому сервері
 
 Якщо на машині 1–2 ГБ RAM, збірка Next.js впаде з OOM. Варіанти:
 
@@ -431,7 +501,7 @@ docker compose up -d --no-build
 
 ---
 
-## 9. Мапа файлів розгортання
+## 10. Мапа файлів розгортання
 
 ```
 docker-compose.yml                  стек: postgres + dashboard + bot + nginx + cron + certbot
@@ -459,7 +529,7 @@ deploy/systemd/mistblossom-certbot.{service,timer}   поновлення сер
 
 ---
 
-## 10. Після розгортання
+## 11. Після розгортання
 
 1. Discord Developer Portal → **Interactions Endpoint URL**:
    `https://guild.lihvodruida.pp.ua/discord/interactions`.
