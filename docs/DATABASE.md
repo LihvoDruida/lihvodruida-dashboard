@@ -63,19 +63,33 @@ openssl rand -base64 32
 
 Підніми базу й застосуй схему:
 
+Схему накочує `make up` автоматично на кожному запуску — окремо робити нічого
+не треба. Вручну, якщо потрібно:
+
 ```bash
 docker compose up -d postgres
 docker compose exec postgres pg_isready -U mistblossom
 
-# схема застосовується з машини, де є код
-DATABASE_URL='postgresql://mistblossom:<пароль>@localhost:5432/mistblossom' \
-  npm --prefix dashboard run db:init
+# найпростіший спосіб: psql уже є в образі бази
+docker compose exec -T postgres psql -U mistblossom -d mistblossom \
+  < dashboard/src/lib/db/schema.sql
 ```
 
-Очікуваний вивід: `✓ Схему застосовано. Індексів на documents: 6`.
+Перевірка:
 
-Скрипт ідемпотентний (`IF NOT EXISTS` / `OR REPLACE`), тож його безпечно
-запускати на кожному деплої.
+```bash
+docker compose exec -T postgres psql -tAq -U mistblossom -d mistblossom \
+  -c "SELECT count(*) FROM pg_indexes WHERE tablename = 'documents'"
+# очікується 6
+```
+
+Файл ідемпотентний (`IF NOT EXISTS` / `OR REPLACE`), тож його безпечно
+застосовувати скільки завгодно разів.
+
+> Раніше тут радився `npm --prefix dashboard run db:init`. Він теж працює —
+> але з машини, де є чекаут репозиторію і встановлені залежності. Всередині
+> контейнера панелі його немає сенсу викликати: runner-стадія містить лише
+> standalone-збірку.
 
 ---
 

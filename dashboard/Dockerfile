@@ -85,6 +85,13 @@ COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/.next/standalone/ ./
 COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/public ./dashboard/public
 COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/.next/static ./dashboard/.next/static
 
+# Обслуговчі скрипти й схема бази. Standalone-збірка їх не тягне (вони не
+# імпортуються з застосунку), а без них `docker compose exec dashboard node
+# dashboard/scripts/db-init.mjs` падає з MODULE_NOT_FOUND. Кілька кілобайт,
+# але позбавляє потреби мати чекаут репозиторію поруч із контейнером.
+COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/scripts ./dashboard/scripts
+COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/src/lib/db/schema.sql ./dashboard/src/lib/db/schema.sql
+
 USER nextjs
 EXPOSE 3000
 

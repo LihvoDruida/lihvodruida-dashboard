@@ -272,15 +272,29 @@ $COMPOSE up $UP_ARGS postgres
 wait_healthy postgres 90
 
 step "Схема бази"
-# db-init ідемпотентний (IF NOT EXISTS / OR REPLACE), тому виконується на
+# Схема застосовується через psql у контейнері бази, а не скриптом у образі
+# панелі. Причина: runner-стадія образу містить лише standalone-збірку, і
+# каталогу scripts/ там немає — `node scripts/db-init.mjs` падав із
+# MODULE_NOT_FOUND. Крім того, psql уже є в образі postgres, тож цей крок не
+# залежить від того, чи зібралась панель: схему можна накотити навіть коли
+# збірка щойно впала.
+#
+# Сам файл ідемпотентний (IF NOT EXISTS / OR REPLACE), тому виконується на
 # кожному запуску: це дешевше, ніж памʼятати про нього після оновлення.
-if $COMPOSE run --rm --no-deps \
-     -e DATABASE_URL="$DB_URL" \
-     dashboard node scripts/db-init.mjs 2>/dev/null; then
-  ok "схему застосовано"
+SCHEMA_FILE="dashboard/src/lib/db/schema.sql"
+PG_USER="$(env_get .env POSTGRES_USER || true)"; PG_USER="${PG_USER:-mistblossom}"
+PG_DB="$(env_get .env POSTGRES_DB || true)";     PG_DB="${PG_DB:-mistblossom}"
+
+if [ ! -f "$SCHEMA_FILE" ]; then
+  warn "немає $SCHEMA_FILE — крок пропущено"
+elif $COMPOSE exec -T postgres \
+       psql -v ON_ERROR_STOP=1 -q -U "$PG_USER" -d "$PG_DB" < "$SCHEMA_FILE" >/dev/null 2>&1; then
+  INDEXES="$($COMPOSE exec -T postgres psql -tAq -U "$PG_USER" -d "$PG_DB" \
+    -c "SELECT count(*) FROM pg_indexes WHERE tablename = 'documents'" 2>/dev/null | tr -d '[:space:]')"
+  ok "схему застосовано (індексів на documents: ${INDEXES:-?})"
 else
-  warn "не вдалося застосувати схему автоматично — виконайте вручну:"
-  warn "  DATABASE_URL='...' npm --prefix dashboard run db:init"
+  problem "не вдалося застосувати схему. Спробуйте вручну:"
+  warn "  docker compose exec -T postgres psql -U $PG_USER -d $PG_DB < $SCHEMA_FILE"
 fi
 
 step "2/5 Панель"
