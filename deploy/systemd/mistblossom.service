@@ -30,6 +30,13 @@ Requires=docker.service
 After=docker.service network-online.target
 Wants=network-online.target
 
+# Не намагатись вічно. Помилка конфігурації (зламаний nginx.conf, неправильна
+# змінна) не полагодиться сама, і нескінченні спроби лише засмічують журнал.
+# П'ять спроб за десять хвилин — далі сервіс лишається у стані failed, і це
+# видно в `systemctl status`.
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
 [Service]
 Type=oneshot
 RemainAfterExit=yes
@@ -40,7 +47,9 @@ WorkingDirectory=/srv/mistblossom
 ExecStartPre=/bin/sleep 5
 
 ExecStart=/srv/mistblossom/deploy/scripts/start.sh
-ExecStop=/usr/bin/docker compose down --remove-orphans
+# Зупинка через скрипт: зворотний порядок (спершу вхідний трафік,
+# база останньою), щоб панель не отримала обрив зʼєднання посеред транзакції.
+ExecStop=/srv/mistblossom/deploy/scripts/stop.sh
 ExecReload=/srv/mistblossom/deploy/scripts/start.sh --build --restart
 
 # Скрипт піднімає п'ять сервісів і чекає healthcheck кожного; на холодному

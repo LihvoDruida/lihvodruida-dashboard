@@ -213,6 +213,37 @@ step "Перевіряю docker-compose.yml"
 $COMPOSE config --quiet || fail "docker-compose.yml некоректний (див. вивід вище)"
 ok "конфігурація валідна"
 
+# --- Конфігурація nginx -----------------------------------------------------
+# Nginx перевіряє конфіг лише при старті й на помилці просто не піднімається.
+# У compose він при цьому нескінченно перезапускається, а причина видно лише
+# в логах контейнера — назовні це виглядає як «стек не піднявся за 60 с».
+# Дешевше прогнати `nginx -t` окремим контейнером ДО запуску.
+step "Перевіряю конфігурацію nginx"
+NGINX_IMAGE="$(sed -n 's/^[[:space:]]*image:[[:space:]]*\(nginx:[^[:space:]]*\).*/\1/p' docker-compose.yml | head -n1)"
+NGINX_IMAGE="${NGINX_IMAGE:-nginx:1.27-alpine}"
+
+NGINX_TEST_OUTPUT="$(docker run --rm \
+  -v "$PWD/deploy/nginx/nginx.conf:/etc/nginx/nginx.conf:ro" \
+  -v "$PWD/deploy/nginx/dashboard.conf:/etc/nginx/conf.d/dashboard.conf:ro" \
+  -v "$PWD/deploy/nginx/proxy-params.inc:/etc/nginx/conf.d/proxy-params.inc:ro" \
+  -v "$PWD/deploy/nginx/proxy-params-fast.inc:/etc/nginx/conf.d/proxy-params-fast.inc:ro" \
+  "$NGINX_IMAGE" nginx -t 2>&1 || true)"
+
+case "$NGINX_TEST_OUTPUT" in
+  *"syntax is ok"*|*"test is successful"*)
+    ok "nginx -t пройшов"
+    ;;
+  *"host not found in upstream"*|*"cannot load certificate"*|*"No such file or directory"*)
+    # Апстріми й сертифікати живуть у мережі та томах compose, яких у
+    # одноразовому контейнері немає. Це не помилка конфігурації.
+    ok "nginx -t: синтаксис коректний (апстріми й сертифікати перевіряються вже в стеку)"
+    ;;
+  *)
+    printf '%s\n' "$NGINX_TEST_OUTPUT" | sed 's/^/    /'
+    problem "конфігурація nginx некоректна — виправте до запуску"
+    ;;
+esac
+
 if [ "$PROBLEMS" -gt 0 ]; then
   fail "Знайдено проблем: $PROBLEMS. Запуск скасовано."
 fi

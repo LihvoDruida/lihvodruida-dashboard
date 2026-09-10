@@ -335,10 +335,61 @@ make cert         # 3. справжній сертифікат
 Стан сертифіката будь-коли:
 
 ```bash
-./deploy/scripts/cert.sh --status
+make cert-status
 ```
 
+Якщо там заглушка, скрипт скаже про це прямо: заглушку видно за тим, що
+issuer збігається з subject.
+
 **Після успішного випуску повертайте Proxied** у Cloudflare на обидва записи.
+
+### 5.1. Помилка 526 у браузера
+
+`Invalid SSL certificate, Error code 526` означає, що nginx працює і
+Cloudflare до нього достукався, але **сертифікат origin не пройшов
+перевірку**. Практично завжди причина одна: на сервері досі лежить
+самопідписана заглушка від `--self`, а режим SSL/TLS стоїть Full (strict).
+
+Два виходи.
+
+**Варіант A — Let's Encrypt (як описано вище).** Зняти проксі з A і AAAA,
+`make cert`, повернути Proxied. Мінус: кожні 90 днів поновлення має пройти
+через проксі, і при зміні налаштувань Cloudflare це інколи ламається.
+
+**Варіант B — Cloudflare Origin Certificate.** Для сайту за проксі це
+простіший і надійніший шлях: сертифікат видає сам Cloudflare на 15 років,
+він дійсний **тільки** для ділянки Cloudflare → origin, і знімати проксі не
+треба ніколи.
+
+1. Cloudflare → **SSL/TLS → Origin Server → Create Certificate**
+2. Hostnames: `guild.lihvodruida.pp.ua` (можна додати `*.lihvodruida.pp.ua`)
+3. Формат **PEM**, строк 15 років
+4. Зберегти обидва блоки у файли — **приватний ключ показується один раз**:
+
+```bash
+nano origin.pem    # Origin Certificate
+nano origin.key    # Private Key
+chmod 600 origin.key
+```
+
+5. Встановити:
+
+```bash
+make cert-origin CERT=origin.pem KEY=origin.key
+```
+
+6. Переконатись, що SSL/TLS → Overview стоїть **Full (strict)**.
+
+Браузер цього сертифіката не бачить: відвідувачу TLS завершує Cloudflare
+своїм. Тому вимога одна — щоб проксі був **увімкнений завжди**. Якщо його
+зняти, відвідувачі побачать помилку сертифіката, бо Origin Certificate не
+визнається публічними центрами сертифікації.
+
+Після встановлення видаліть локальні копії ключа з сервера — у томі він уже є:
+
+```bash
+shred -u origin.key origin.pem
+```
 
 Автопоновлення — systemd-таймер:
 

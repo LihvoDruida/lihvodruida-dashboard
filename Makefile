@@ -5,7 +5,9 @@
 #   make restart      повний перезапуск
 #   make stop         зупинка
 #   make check        тільки перевірки, нічого не запускати
-#   make cert         випуск або поновлення сертифіката
+#   make cert         випуск або поновлення сертифіката (Let's Encrypt)
+#   make cert-origin  встановити Cloudflare Origin Certificate
+#                     CERT=origin.pem KEY=origin.key
 #   make backup       резервна копія бази
 #   make logs         логи всіх сервісів
 #   make ps           стан контейнерів
@@ -18,11 +20,11 @@
 SHELL := /bin/bash
 SCRIPTS := deploy/scripts
 
-.PHONY: help start up restart stop check cert cert-self cert-status \
+.PHONY: help start up restart stop check cert cert-self cert-status cert-origin \
         backup restore deploy logs ps fix-perms
 
 help:
-	@sed -n '3,12p' Makefile | sed 's/^# \?//'
+	@sed -n '3,14p' Makefile | sed 's/^# \?//'
 
 # Права відновлюються перед кожним викликом: дешевше, ніж діагностувати
 # Permission denied на середині запуску.
@@ -52,6 +54,10 @@ cert-self: fix-perms
 
 cert-status: fix-perms
 	@$(SCRIPTS)/cert.sh --status
+
+# Cloudflare Origin Certificate: make cert-origin CERT=origin.pem KEY=origin.key
+cert-origin: fix-perms
+	@$(SCRIPTS)/cert.sh --origin $(CERT) $(KEY)
 
 backup: fix-perms
 	@$(SCRIPTS)/db-backup.sh

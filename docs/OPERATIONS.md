@@ -156,6 +156,14 @@ General Information → Public Key.
 підключіть модуль GeoIP2 до Nginx і розкоментуйте рядок `X-GeoIP-Country` у
 `deploy/nginx/proxy-params.inc`.
 
+**Сайт віддає 526 (Invalid SSL certificate).** nginx працює і Cloudflare до
+нього достукався, але сертифікат origin не пройшов перевірку — майже завжди
+це самопідписана заглушка від `cert.sh --self` при режимі Full (strict).
+Перевірка: `make cert-status`. Виправлення — DEPLOYMENT.md, розділ 5.1.
+
+**Сайт віддає 521/522.** Протилежна ситуація: до origin узагалі не
+достукатись. Перевірте `docker compose ps nginx` і чи слухає сервер 443.
+
 **У логах Nginx усі запити з одного IP.** Список мереж Cloudflare у
 `nginx.conf` застарів, і `real_ip` не працює. Оновіть його зі
 `https://www.cloudflare.com/ips-v4`.

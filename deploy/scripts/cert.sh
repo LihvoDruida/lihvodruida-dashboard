@@ -2,9 +2,10 @@
 # ---------------------------------------------------------------------------
 # Сертифікат для домену панелі.
 #
-#   ./deploy/scripts/cert.sh            випустити або поновити
-#   ./deploy/scripts/cert.sh --self     тимчасовий самопідписаний
-#   ./deploy/scripts/cert.sh --status   що зараз лежить у томі
+#   ./deploy/scripts/cert.sh                     випустити або поновити (Let's Encrypt)
+#   ./deploy/scripts/cert.sh --self              тимчасовий самопідписаний
+#   ./deploy/scripts/cert.sh --origin cert key   встановити Cloudflare Origin Certificate
+#   ./deploy/scripts/cert.sh --status            що зараз лежить у томі
 #
 # Домен НЕ передається аргументом і не береться зі змінної оточення: він
 # читається з .env (DASHBOARD_PUBLIC_URL). Порожня змінна $DOMAIN у
@@ -44,16 +45,63 @@ cert_info() {
   docker run --rm -v "$VOLUME:/etc/letsencrypt" alpine sh -c "
     if [ -f $LIVE/fullchain.pem ]; then
       apk add --no-cache openssl >/dev/null 2>&1
-      openssl x509 -in $LIVE/fullchain.pem -noout -issuer -enddate
+      openssl x509 -in $LIVE/fullchain.pem -noout -issuer -subject -enddate
     else
       echo 'НЕМАЄ'
     fi" 2>/dev/null
+}
+
+# Самопідписана заглушка від справжнього сертифіката відрізняється тим, що
+# issuer збігається з subject. Це важливо розрізняти: Cloudflare у режимі
+# Full (strict) заглушку не приймає й віддає відвідувачам помилку 526.
+cert_is_self_signed() {
+  docker run --rm -v "$VOLUME:/etc/letsencrypt" alpine sh -c "
+    [ -f $LIVE/fullchain.pem ] || exit 1
+    apk add --no-cache openssl >/dev/null 2>&1
+    issuer=\$(openssl x509 -in $LIVE/fullchain.pem -noout -issuer)
+    subject=\$(openssl x509 -in $LIVE/fullchain.pem -noout -subject)
+    [ \"\${issuer#issuer=}\" = \"\${subject#subject=}\" ]" 2>/dev/null
 }
 
 case "${1:-}" in
   --status)
     step "Сертифікат для $DOMAIN"
     cert_info
+    if cert_is_self_signed; then
+      printf '\n'
+      warn "це самопідписана заглушка, а не робочий сертифікат"
+      warn "Cloudflare у режимі Full (strict) віддає на неї помилку 526"
+      warn "випустіть робочий: ./deploy/scripts/cert.sh"
+    fi
+    exit 0
+    ;;
+
+  --origin)
+    # Cloudflare Origin Certificate. Видається самим Cloudflare на 15 років і
+    # дійсний ТІЛЬКИ для ділянки Cloudflare → origin. Браузер його не бачить:
+    # відвідувачу TLS завершує Cloudflare своїм сертифікатом.
+    #
+    # Головна перевага перед Let's Encrypt у цій схемі: не треба щоразу
+    # знімати проксі заради ACME-перевірки, і немає поновлення раз на 90 днів.
+    CERT_FILE="${2:-}"; KEY_FILE="${3:-}"
+    [ -f "$CERT_FILE" ] && [ -f "$KEY_FILE" ] || fail "вкажіть файли: ./deploy/scripts/cert.sh --origin origin.pem origin.key
+     Створити їх: Cloudflare → SSL/TLS → Origin Server → Create Certificate
+     (Hostnames: $DOMAIN, формат PEM). Приватний ключ показується один раз."
+
+    step "Встановлюю Cloudflare Origin Certificate для $DOMAIN"
+    docker volume create "$VOLUME" >/dev/null
+    docker run --rm -i -v "$VOLUME:/etc/letsencrypt" alpine sh -c "mkdir -p $LIVE && cat > $LIVE/fullchain.pem" < "$CERT_FILE"
+    docker run --rm -i -v "$VOLUME:/etc/letsencrypt" alpine sh -c "cat > $LIVE/privkey.pem && chmod 600 $LIVE/privkey.pem" < "$KEY_FILE"
+    ok "файли покладені у том"
+
+    step "Перезавантажую nginx"
+    docker compose exec nginx nginx -s reload
+    ok "конфігурацію перечитано"
+
+    step "Результат"
+    cert_info
+    printf '\n%s✓%s Готово. Проксі Cloudflare можна лишати увімкненим постійно.\n' "$GREEN" "$RESET"
+    printf '   Режим SSL/TLS має бути %sFull (strict)%s.\n\n' "$BOLD" "$RESET"
     exit 0
     ;;
 
@@ -96,6 +144,16 @@ PROBE="$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 \
 case "$PROBE" in
   404)
     ok "маршрут працює (404 — файлу немає, це очікувано)"
+    ;;
+  526)
+    fail "Cloudflare повертає 526: origin відповідає, але його сертифікат не проходить перевірку.
+     Зараз там, найімовірніше, самопідписана заглушка від --self.
+     Два виходи:
+       1) Зняти проксі з A і AAAA (DNS only), запустити цей скрипт ще раз,
+          після випуску повернути Proxied.
+       2) Поставити Cloudflare Origin Certificate і не знімати проксі взагалі:
+          ./deploy/scripts/cert.sh --origin origin.pem origin.key
+     Детально: docs/DEPLOYMENT.md, розділ 5."
     ;;
   521|522|523|525)
     fail "Cloudflare повертає $PROBE: до сервера не достукатись.
