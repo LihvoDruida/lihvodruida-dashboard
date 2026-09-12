@@ -717,7 +717,7 @@
   }
 
   .server-summary-grid,
-  .server-detail-grid {
+.server-detail-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -1138,7 +1138,7 @@
   }
 
   .server-graphs-grid,
-  .server-docker-grid {
+.server-docker-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -1399,7 +1399,7 @@
 
 @media (max-width: 760px) {
   .access-group-summary,
-  .access-form-grid {
+.access-form-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -2064,8 +2064,8 @@
 
 @media (max-width: 1180px) {
   .admin-overview-top-grid,
-  .admin-policy-layout--auth,
-  .admin-policy-layout--geo {
+.admin-policy-layout--auth,
+.admin-policy-layout--geo {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -2084,8 +2084,8 @@
   }
 
   .integration-status-grid,
-  .auth-access-role-list,
-  .admin-policy-current-state {
+.auth-access-role-list,
+.admin-policy-current-state {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -2111,8 +2111,8 @@
   }
 
   .integration-status-panel.admin-overview-status-card,
-  .admin-nickname-summary-card,
-  .admin-policy-card {
+.admin-nickname-summary-card,
+.admin-policy-card {
     padding: 12px;
   }
 
@@ -2126,14 +2126,14 @@
   }
 
   .integration-status-grid,
-  .auth-access-role-list,
-  .admin-policy-current-state {
+.auth-access-role-list,
+.admin-policy-current-state {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .integration-status-item,
-  .auth-access-role-option,
-  .admin-policy-toggle {
+.auth-access-role-option,
+.admin-policy-toggle {
     min-height: 54px;
   }
 
@@ -2161,7 +2161,7 @@
   }
 
   .admin-policy-toggle,
-  .auth-access-role-option {
+.auth-access-role-option {
     padding: 10px;
   }
 }
@@ -2573,7 +2573,7 @@
 
 @media (max-width: 1240px) {
   .discord-management-health-grid,
-  .discord-settings-card {
+.discord-settings-card {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -2610,8 +2610,8 @@
   }
 
   .discord-member-actions-grid,
-  .discord-automation-grid,
-  .discord-profile-maintenance-grid {
+.discord-automation-grid,
+.discord-profile-maintenance-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -2626,7 +2626,7 @@
   }
 
   .discord-management-health-grid,
-  .discord-management-zone {
+.discord-management-zone {
     scroll-margin-top: 84px;
   }
 
@@ -2635,13 +2635,13 @@
   }
 
   .discord-settings-grid,
-  .discord-cleanup-role-grid,
-  .discord-management-blocked-roles {
+.discord-cleanup-role-grid,
+.discord-management-blocked-roles {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .discord-role-checkboxes,
-  .discord-role-checkboxes--compact {
+.discord-role-checkboxes--compact {
     grid-template-columns: minmax(0, 1fr);
     max-height: none;
     overflow: visible;
@@ -2652,13 +2652,13 @@
   }
 
   .discord-settings-card__limits > .btn,
-  .discord-management-card .form-actions .btn {
+.discord-management-card .form-actions .btn {
     width: 100%;
     min-width: 0;
   }
 
   .discord-management-user-field,
-  .discord-management-limit-field {
+.discord-management-limit-field {
     width: 100%;
     max-width: none;
   }
@@ -2863,12 +2863,12 @@
 
 @media (max-width: 900px) {
   .account-cleanup-toggle-grid,
-  .account-cleanup-settings-grid {
+.account-cleanup-settings-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .account-cleanup-settings-actions,
-  .account-cleanup-subhead {
+.account-cleanup-subhead {
     align-items: stretch;
     flex-direction: column;
   }
@@ -2896,7 +2896,7 @@
   }
 
   .account-cleanup-settings,
-  .account-cleanup-manual {
+.account-cleanup-manual {
     padding: 10px;
   }
 }

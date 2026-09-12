@@ -604,8 +604,8 @@
   }
 
   .nav-burger__bars,
-  .nav-burger__bars::before,
-  .nav-burger__bars::after {
+.nav-burger__bars::before,
+.nav-burger__bars::after {
     display: block;
     width: 18px;
     height: 2px;
@@ -619,7 +619,7 @@
   }
 
   .nav-burger__bars::before,
-  .nav-burger__bars::after {
+.nav-burger__bars::after {
     content: "";
     position: absolute;
     left: 0;
@@ -738,7 +738,7 @@
   }
 
   .nav-sheet__link,
-  .nav-sheet__logout button {
+.nav-sheet__logout button {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -762,8 +762,8 @@
   }
 
   .nav-sheet__link:hover,
-  .nav-sheet__link:focus-visible,
-  .nav-sheet__logout button:hover {
+.nav-sheet__link:focus-visible,
+.nav-sheet__logout button:hover {
     background: var(--surface-hover);
     color: var(--text-strong);
   }
@@ -778,7 +778,7 @@
   }
 
   .nav-sheet__logout,
-  .nav-sheet__logout-error {
+.nav-sheet__logout-error {
     display: grid;
     gap: 4px;
   }

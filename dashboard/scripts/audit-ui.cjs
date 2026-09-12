@@ -59,7 +59,6 @@ const semanticControlTokens = [
   'global-toast__close',
   'raid-image-picker__item',
   'nav-burger',
-  'dashboard-table-filter',
   'poll-tab',
   'raid-poll-day-toggle',
   'author-suggestion-chip',

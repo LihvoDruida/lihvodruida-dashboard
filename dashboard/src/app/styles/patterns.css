@@ -288,9 +288,9 @@
 }
 
 /* ---------- Посилання всередині блоків ---------- */
-[class$="-link"]:not(:where(.discord-preview-link)):not(:where(.dashboard-table-link)),
+[class$="-link"]:not(:where(.discord-preview-link)),
 /* ---------- Посилання всередині блоків ---------- */
-[class*="-link "]:not(:where(.discord-preview-link)):not(:where(.dashboard-table-link)) {
+[class*="-link "]:not(:where(.discord-preview-link)) {
   color: var(--c-accent-300);
 }
 

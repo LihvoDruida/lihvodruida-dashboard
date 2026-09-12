@@ -376,7 +376,7 @@
   }
 
   .roster-coverage-grid,
-  .roster-party-grid {
+.roster-party-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 

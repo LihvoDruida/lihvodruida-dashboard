@@ -1462,7 +1462,7 @@
   }
 
   .raid-form-section,
-  .raid-form-section--rules {
+.raid-form-section--rules {
     grid-template-columns: minmax(0, 1fr);
     padding: var(--space-md);
   }
@@ -1472,9 +1472,9 @@
   }
 
   .raid-field--wide,
-  .raid-form-section > .raid-image-picker,
-  .raid-form-section > .raid-discord-role-block,
-  .raid-form-section > .raid-auto-composition-note {
+.raid-form-section > .raid-image-picker,
+.raid-form-section > .raid-discord-role-block,
+.raid-form-section > .raid-auto-composition-note {
     grid-column: auto;
   }
 
@@ -1524,7 +1524,7 @@
   }
 
   .raid-form-section-heading,
-  .raid-publish-panel__copy {
+.raid-publish-panel__copy {
     grid-template-columns: minmax(0, 1fr);
   }
 

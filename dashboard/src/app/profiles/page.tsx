@@ -27,6 +27,13 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const PROFILE_PAGE_SIZE = 20;
+const VALID_LINK_FILTERS = new Set(["all", "linked", "unlinked"]);
+const VALID_ROLE_FILTERS = new Set(["all", "admin", "moderator", "mentor", "member"]);
+const VALID_SORTS = new Set(["activity", "name", "characters"]);
+
+type LinkFilter = "all" | "linked" | "unlinked";
+type RoleFilter = "all" | "admin" | "moderator" | "mentor" | "member";
+type ProfileSort = "activity" | "name" | "characters";
 
 function parseDate(value?: string | null) {
   if (!value) return null;
@@ -48,10 +55,8 @@ function formatDate(value?: string | null) {
 }
 
 function formatNumber(value: number) {
-  if (!Number.isFinite(value) || value <= 0) return "—";
-  return new Intl.NumberFormat("uk-UA", { maximumFractionDigits: 0 }).format(
-    value,
-  );
+  if (!Number.isFinite(value) || value < 0) return "—";
+  return new Intl.NumberFormat("uk-UA", { maximumFractionDigits: 0 }).format(value);
 }
 
 function parsePage(value?: string) {
@@ -59,9 +64,36 @@ function parsePage(value?: string) {
   return Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
 }
 
-function buildProfilesHref(query: string, page: number) {
+function parseLinkFilter(value?: string): LinkFilter {
+  return VALID_LINK_FILTERS.has(String(value || "")) ? (value as LinkFilter) : "all";
+}
+
+function parseRoleFilter(value?: string): RoleFilter {
+  return VALID_ROLE_FILTERS.has(String(value || "")) ? (value as RoleFilter) : "all";
+}
+
+function parseSort(value?: string): ProfileSort {
+  return VALID_SORTS.has(String(value || "")) ? (value as ProfileSort) : "activity";
+}
+
+function buildProfilesHref({
+  query,
+  link,
+  role,
+  sort,
+  page,
+}: {
+  query: string;
+  link: LinkFilter;
+  role: RoleFilter;
+  sort: ProfileSort;
+  page: number;
+}) {
   const params = new URLSearchParams();
   if (query) params.set("q", query);
+  if (link !== "all") params.set("link", link);
+  if (role !== "all") params.set("role", role);
+  if (sort !== "activity") params.set("sort", sort);
   if (page > 1) params.set("page", String(page));
   const suffix = params.toString();
   return suffix ? `/profiles?${suffix}` : "/profiles";
@@ -69,19 +101,30 @@ function buildProfilesHref(query: string, page: number) {
 
 function mainCharacterLabel(profile: DashboardProfile) {
   const main = getMainCharacter(profile);
-  if (!main) return { title: "Мейн не вибрано", subtitle: "—" };
+  if (!main) return { title: "Мейн не вибрано", subtitle: "Персонаж не призначений" };
   const title = `${main.name}${main.realmName ? ` • ${main.realmName}` : ""}`;
   const subtitle = [main.className, main.activeSpecName]
     .map((value) => String(value || "").trim())
     .filter(Boolean)
     .join(" / ");
-  return { title, subtitle: subtitle || "—" };
+  return { title, subtitle: subtitle || "Клас / спеціалізація не визначені" };
 }
 
 function battleNetStatus(profile: DashboardProfile) {
-  if (!profile.battlenet?.linked) return "Ні";
+  if (!profile.battlenet?.linked) return "Не підключено";
   const synced = profile.battlenet.lastSyncAt || profile.battlenet.lastConnectedAt;
-  return synced ? formatDate(synced) : "Так";
+  return synced ? `Синхр. ${formatDate(synced)}` : "Підключено";
+}
+
+function profileActivityTime(profile: DashboardProfile) {
+  return parseDate(profile.lastLoginAt || profile.updatedAt)?.getTime() || 0;
+}
+
+function roleLabel(role: DashboardProfile["role"]) {
+  if (role === "admin") return "Адмін";
+  if (role === "moderator") return "Офіцер";
+  if (role === "mentor") return "Наставник";
+  return "Учасник";
 }
 
 function ProfileRow({ profile }: { profile: DashboardProfile }) {
@@ -90,41 +133,61 @@ function ProfileRow({ profile }: { profile: DashboardProfile }) {
   const href = `/profile/${profile.profileId}`;
   const activityDate = profile.lastLoginAt || profile.updatedAt;
   const main = mainCharacterLabel(profile);
+  const identity = profile.login ? `@${profile.login}` : `Discord · ${profile.providerUserId}`;
 
   return (
     <a
-      className="dashboard-table-row dashboard-list-row dashboard-table-row--clickable profile-table-row"
+      className="profile-directory-row"
       href={href}
       role="row"
       aria-label={`Відкрити профіль: ${displayName}`}
     >
-      <div className="dashboard-table-primary" role="cell" data-label="Профіль">
-        <strong>{displayName}</strong>
-        <small>{profile.login || profile.providerUserId}</small>
+      <div className="profile-directory-user" role="cell" data-label="Користувач">
+        {profile.avatarUrl ? (
+          <img className="profile-directory-avatar" src={profile.avatarUrl} alt="" loading="lazy" />
+        ) : (
+          <span className="profile-directory-avatar profile-directory-avatar--fallback" aria-hidden="true">
+            {Array.from(displayName.trim())[0]?.toUpperCase() || "?"}
+          </span>
+        )}
+        <span className="profile-directory-user-copy">
+          <strong>{displayName}</strong>
+          <small title={profile.providerUserId}>{identity}</small>
+        </span>
       </div>
-      <div role="cell" data-label="Статус">
+
+      <div className="profile-directory-membership" role="cell" data-label="Група / роль">
         <strong>{guildStatus}</strong>
-        <small>{profile.role}</small>
+        <small>{roleLabel(profile.role)}</small>
       </div>
-      <div role="cell" data-label="Основа">
+
+      <div className="profile-directory-main" role="cell" data-label="Мейн">
         <strong>{main.title}</strong>
         <small>{main.subtitle}</small>
       </div>
-      <div role="cell" className="dashboard-table-score" data-label="Персонажі">
+
+      <div className="profile-directory-character-count" role="cell" data-label="Персонажі">
         <strong>{formatNumber(profile.characters.length)}</strong>
-        <small>персонажів</small>
+        <small>збережено</small>
       </div>
-      <div role="cell" data-label="Battle.net">
+
+      <div className="profile-directory-bnet" role="cell" data-label="Battle.net">
         <span
           className={`dashboard-table-pill ${profile.battlenet?.linked ? "dashboard-table-pill--ok" : "dashboard-table-pill--muted"}`}
         >
-          {profile.battlenet?.linked ? "Так" : "Ні"}
+          {profile.battlenet?.linked ? "Підключено" : "Немає"}
         </span>
         <small>{battleNetStatus(profile)}</small>
       </div>
-      <div role="cell" data-label="Активність">{formatDate(activityDate)}</div>
-      <div role="cell" data-label="Дія">
-        <span className="dashboard-table-link profile-table-link">Профіль</span>
+
+      <div className="profile-directory-activity" role="cell" data-label="Активність">
+        <strong>{formatDate(activityDate)}</strong>
+        <small>{profile.lastLoginAt ? "Останній вхід" : "Оновлення профілю"}</small>
+      </div>
+
+      <div className="profile-directory-open" role="cell" data-label="Дія">
+        <span>Відкрити</span>
+        <span aria-hidden="true">→</span>
       </div>
     </a>
   );
@@ -144,24 +207,45 @@ export default async function ProfilesPage({
 
   const params = await searchParams;
   const query = String(params.q || "").trim();
+  const linkFilter = parseLinkFilter(params.link);
+  const roleFilter = parseRoleFilter(params.role);
+  const sort = parseSort(params.sort);
   const requestedPage = parsePage(params.page);
-  const allProfiles = await listDashboardProfiles({
+
+  const matchedProfiles = await listDashboardProfiles({
     viewer: user,
     query,
     limit: 500,
   });
-  const pageCount = Math.max(1, Math.ceil(allProfiles.length / PROFILE_PAGE_SIZE));
+
+  const filteredProfiles = matchedProfiles.filter((profile) => {
+    if (linkFilter === "linked" && !profile.battlenet?.linked) return false;
+    if (linkFilter === "unlinked" && profile.battlenet?.linked) return false;
+    if (roleFilter !== "all" && profile.role !== roleFilter) return false;
+    return true;
+  });
+
+  filteredProfiles.sort((a, b) => {
+    if (sort === "name") {
+      return getProfilePublicName(a).localeCompare(getProfilePublicName(b), "uk", { sensitivity: "base" });
+    }
+    if (sort === "characters") {
+      return b.characters.length - a.characters.length || profileActivityTime(b) - profileActivityTime(a);
+    }
+    return profileActivityTime(b) - profileActivityTime(a);
+  });
+
+  const pageCount = Math.max(1, Math.ceil(filteredProfiles.length / PROFILE_PAGE_SIZE));
   const page = Math.min(requestedPage, pageCount);
   const pageStart = (page - 1) * PROFILE_PAGE_SIZE;
-  const profiles = allProfiles.slice(pageStart, pageStart + PROFILE_PAGE_SIZE);
-  const canRunManualCleanup = canManageDiscordMembers(user);
-  const linkedBattleNetCount = allProfiles.filter(
-    (profile) => profile.battlenet?.linked,
-  ).length;
-  const characterCount = allProfiles.reduce(
-    (sum, profile) => sum + profile.characters.length,
-    0,
-  );
+  const profiles = filteredProfiles.slice(pageStart, pageStart + PROFILE_PAGE_SIZE);
+  const pageEnd = Math.min(pageStart + profiles.length, filteredProfiles.length);
+  const canManageCleanup = canManageDiscordMembers(user);
+  const linkedBattleNetCount = filteredProfiles.filter((profile) => profile.battlenet?.linked).length;
+  const characterCount = filteredProfiles.reduce((sum, profile) => sum + profile.characters.length, 0);
+  const hasFilters = Boolean(query || linkFilter !== "all" || roleFilter !== "all" || sort !== "activity");
+
+  const paginationState = { query, link: linkFilter, role: roleFilter, sort };
 
   return (
     <main className="container app-page profile-directory-page profile-directory-page--modern">
@@ -174,182 +258,154 @@ export default async function ProfilesPage({
         <header className="hero panel dashboard-hero profile-directory-hero-modern app-page-hero profile-directory-hero-ref directory-hero">
           <div className="hero-copy dashboard-hero__copy profile-directory-hero-modern__copy">
             <div className="eyebrow">Mistblossom Vanguard • Профілі</div>
-            <h1>Профілі</h1>
+            <h1>Профілі учасників</h1>
             <p className="lead">
-              Єдиний список профілів учасників із мейнами, персонажами,
-              Battle.net-статусом і швидким доступом до керування без зайвої
-              висоти сторінки.
+              Мейни, персонажі, Battle.net і активність — в одному списку. Пошук і фільтри працюють разом,
+              а кожен рядок веде прямо до повного профілю.
             </p>
           </div>
 
-          <div className="guild-hero-side profile-directory-hero-side" aria-label="Огляд профілів">
-            <div className="guild-summary-card profile-summary-card">
-              <div className="guild-summary-card__head">
-                <div className="guild-summary-card__brand">
-                  <img
-                    className="guild-summary-card__icon"
-                    src="/mistblossom-icon.png"
-                    alt="Емблема Mistblossom Vanguard"
-                    loading="lazy"
-                  />
-                  <div className="guild-summary-card__brand-copy">
-                    <strong>Mistblossom Vanguard</strong>
-                    <p>{user.groupName || guildStatusLabel(user.role)}</p>
-                  </div>
-                </div>
-
-                <div className="guild-summary-card__count">
-                  <strong>{formatNumber(allProfiles.length)} профілів</strong>
-                  <p>Сторінка {page} / {pageCount}</p>
-                </div>
+          <div className="profile-directory-hero-overview" aria-label="Огляд профілів">
+            <div className="profile-directory-hero-brand">
+              <img src="/mistblossom-icon.png" alt="" loading="lazy" />
+              <div>
+                <strong>Mistblossom Vanguard</strong>
+                <span>{user.groupName || guildStatusLabel(user.role)}</span>
               </div>
-
-              <div className="guild-hero-stats guild-summary-card__stats" aria-label="Коротка статистика профілів">
-                <div className="guild-hero-stat-card">
-                  <span>ПЕРСОНАЖІ</span>
-                  <strong>{formatNumber(characterCount)}</strong>
-                </div>
-                <div className="guild-hero-stat-card">
-                  <span>BATTLE.NET</span>
-                  <strong>{formatNumber(linkedBattleNetCount)}</strong>
-                </div>
-                <div className="guild-hero-stat-card">
-                  <span>НА СТОРІНЦІ</span>
-                  <strong>{PROFILE_PAGE_SIZE}</strong>
-                </div>
-              </div>
+            </div>
+            <div className="profile-directory-hero-metrics">
+              <div><span>Знайдено</span><strong>{formatNumber(filteredProfiles.length)}</strong></div>
+              <div><span>Персонажі</span><strong>{formatNumber(characterCount)}</strong></div>
+              <div><span>Battle.net</span><strong>{formatNumber(linkedBattleNetCount)}</strong></div>
             </div>
           </div>
         </header>
 
-        <section
-          className="dashboard-table-card dashboard-list-panel dashboard-table-card--profiles panel"
-          aria-label="Компактний список профілів"
-        >
-          <div className="dashboard-table-titlebar dashboard-list-head">
-            <div>
-              <span className="eyebrow">Профілі</span>
-              <h2>Ростер профілів</h2>
+        <section className="profile-directory-panel panel" aria-label="Список профілів">
+          <div className="profile-directory-toolbar">
+            <div className="profile-directory-toolbar-copy">
+              <span className="eyebrow">Ростер профілів</span>
+              <h2>{hasFilters ? "Результати" : "Усі доступні профілі"}</h2>
+              <p>
+                {filteredProfiles.length
+                  ? `Показано ${pageStart + 1}–${pageEnd} із ${filteredProfiles.length}`
+                  : "Немає профілів, які відповідають поточним умовам."}
+              </p>
             </div>
-            <div className="dashboard-table-controls" aria-label="Пошук і ручні дії з профілями">
-              <form className="dashboard-table-search-form" action="/profiles" method="get">
-                <label className="dashboard-table-search" htmlFor="profile-directory-search">
-                  <span className="sr-only">Пошук користувача</span>
-                  <input
-                    id="profile-directory-search"
-                    name="q"
-                    placeholder="Пошук користувача..."
-                    defaultValue={query}
-                  />
-                </label>
-                <button className="dashboard-table-filter is-active" type="submit">
-                  Знайти
-                </button>
-                {query ? (
-                  <a className="dashboard-table-filter dashboard-table-filter--muted" href="/profiles">
-                    Скинути
-                  </a>
-                ) : null}
-              </form>
 
-              {canRunManualCleanup ? (
-                <form
-                  className="dashboard-table-action-form"
-                  action="/api/dashboard/discord/profiles/cleanup"
-                  method="post"
-                  data-dashboard-action-form="true"
-                  data-dashboard-live-submit="true"
-                >
-                  <input type="hidden" name="mode" value="apply" />
-                  <input type="hidden" name="limit" value="0" />
-                  <button
-                    className="dashboard-table-filter dashboard-table-filter--danger"
-                    type="submit"
-                    data-confirm-message="Запустити ручне глобальне очищення акаунтів? Перед видаленням система оновить склад гільдії в базі, перевірить Discord membership, прибере записи акаунтів з рейдів і видалить тільки тих, кого немає ні в roster, ні в Discord."
-                  >
-                    Очищення
-                  </button>
-                </form>
-              ) : null}
-            </div>
+            <form className="profile-directory-search" action="/profiles" method="get">
+              <label className="profile-directory-search-field" htmlFor="profile-directory-search">
+                <span>Пошук</span>
+                <input
+                  id="profile-directory-search"
+                  name="q"
+                  placeholder="Нік, персонаж або реалм"
+                  defaultValue={query}
+                />
+              </label>
+
+              <label className="profile-directory-filter-field">
+                <span>Battle.net</span>
+                <select name="link" defaultValue={linkFilter}>
+                  <option value="all">Усі</option>
+                  <option value="linked">Підключено</option>
+                  <option value="unlinked">Не підключено</option>
+                </select>
+              </label>
+
+              <label className="profile-directory-filter-field">
+                <span>Роль</span>
+                <select name="role" defaultValue={roleFilter}>
+                  <option value="all">Усі ролі</option>
+                  <option value="admin">Адмін</option>
+                  <option value="moderator">Офіцер</option>
+                  <option value="mentor">Наставник</option>
+                  <option value="member">Учасник</option>
+                </select>
+              </label>
+
+              <label className="profile-directory-filter-field">
+                <span>Сортування</span>
+                <select name="sort" defaultValue={sort}>
+                  <option value="activity">За активністю</option>
+                  <option value="name">За іменем</option>
+                  <option value="characters">За персонажами</option>
+                </select>
+              </label>
+
+              <div className="profile-directory-search-actions">
+                <button className="btn primary" type="submit">Застосувати</button>
+                {hasFilters ? <a className="btn subtle" href="/profiles">Скинути</a> : null}
+              </div>
+            </form>
           </div>
 
-          <div className="dashboard-table-stats" aria-label="Показники профілів">
-            <div>
-              <span>Профілів</span>
-              <strong>{formatNumber(allProfiles.length)}</strong>
-            </div>
-            <div>
-              <span>Показано</span>
-              <strong>{formatNumber(profiles.length)}</strong>
-            </div>
-            <div>
-              <span>Персонажів</span>
-              <strong>{formatNumber(characterCount)}</strong>
-            </div>
-            <div>
-              <span>Battle.net</span>
-              <strong>{formatNumber(linkedBattleNetCount)}</strong>
-            </div>
-            <div>
-              <span>Доступ</span>
-              <strong>{user.groupName || guildStatusLabel(user.role)}</strong>
-            </div>
-            <div>
-              <span>На сторінці</span>
-              <strong>{PROFILE_PAGE_SIZE}</strong>
-            </div>
+          <div className="profile-directory-context" aria-label="Поточний стан списку">
+            <div><span>Профілі</span><strong>{formatNumber(filteredProfiles.length)}</strong></div>
+            <div><span>На сторінці</span><strong>{formatNumber(profiles.length)}</strong></div>
+            <div><span>Сторінка</span><strong>{page} / {pageCount}</strong></div>
+            {canManageCleanup ? (
+              <a className="profile-directory-maintenance-link" href="/dashboard/discord#discord-profiles">
+                <span>Обслуговування профілів</span>
+                <strong>Імпорт та очищення →</strong>
+              </a>
+            ) : null}
           </div>
 
-          <div className="dashboard-table-scroll">
-            <div className="dashboard-table dashboard-list dashboard-table--profiles" role="table" aria-label="Список доступних профілів">
-              <div className="dashboard-table-head" role="row">
+          <div className="profile-directory-table-wrap">
+            <div className="profile-directory-table" role="table" aria-label="Список доступних профілів">
+              <div className="profile-directory-head" role="row">
                 <span role="columnheader">Користувач</span>
                 <span role="columnheader">Група / роль</span>
                 <span role="columnheader">Мейн</span>
                 <span role="columnheader">Персонажі</span>
                 <span role="columnheader">Battle.net</span>
                 <span role="columnheader">Активність</span>
-                <span role="columnheader">Дія</span>
+                <span role="columnheader" aria-label="Дія" />
               </div>
-              {profiles.length ? (
-                profiles.map((profile) => (
-                  <ProfileRow key={profile.profileId} profile={profile} />
-                ))
-              ) : (
-                <div className="dashboard-table-empty" role="row">
-                  <strong>{query ? "За цим пошуком профілів немає" : "Профілі ще не доступні"}</strong>
-                  <span>
-                    {query
-                      ? "Перевір Discord-нік, імʼя персонажа або реалм."
-                      : "Профіль зʼявиться після входу учасника через Discord."}
-                  </span>
-                </div>
-              )}
+
+              <div className="profile-directory-rows">
+                {profiles.length ? (
+                  profiles.map((profile) => <ProfileRow key={profile.profileId} profile={profile} />)
+                ) : (
+                  <div className="profile-directory-empty" role="row">
+                    <span className="profile-directory-empty-icon" aria-hidden="true">⌕</span>
+                    <strong>{hasFilters ? "Нічого не знайдено" : "Профілі ще не доступні"}</strong>
+                    <p>
+                      {hasFilters
+                        ? "Зміни пошук або фільтри. Можна шукати за Discord-ніком, персонажем чи реалмом."
+                        : "Профіль зʼявиться після входу учасника через Discord."}
+                    </p>
+                    {hasFilters ? <a className="btn subtle" href="/profiles">Очистити фільтри</a> : null}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="dashboard-table-footer">
-            <small>
-              Сторінка {page} / {pageCount} • {PROFILE_PAGE_SIZE} профілів на сторінку
-            </small>
-            <div className="dashboard-table-pagination" aria-label="Навігація сторінками профілів">
+          <footer className="profile-directory-footer">
+            <div>
+              <strong>{filteredProfiles.length ? `${pageStart + 1}–${pageEnd}` : "0"}</strong>
+              <span> із {filteredProfiles.length} профілів</span>
+            </div>
+            <nav className="dashboard-table-pagination" aria-label="Навігація сторінками профілів">
               <a
                 className={`btn subtle${page <= 1 ? " is-disabled" : ""}`}
                 aria-disabled={page <= 1}
-                href={page <= 1 ? buildProfilesHref(query, 1) : buildProfilesHref(query, page - 1)}
+                href={buildProfilesHref({ ...paginationState, page: page <= 1 ? 1 : page - 1 })}
               >
-                Назад
+                ← Назад
               </a>
+              <span className="profile-directory-page-indicator">{page} / {pageCount}</span>
               <a
                 className={`btn subtle${page >= pageCount ? " is-disabled" : ""}`}
                 aria-disabled={page >= pageCount}
-                href={page >= pageCount ? buildProfilesHref(query, pageCount) : buildProfilesHref(query, page + 1)}
+                href={buildProfilesHref({ ...paginationState, page: page >= pageCount ? pageCount : page + 1 })}
               >
-                Далі
+                Далі →
               </a>
-            </div>
-          </div>
+            </nav>
+          </footer>
         </section>
       </section>
     </main>

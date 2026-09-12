@@ -20,28 +20,23 @@
    щоб не повторювати в кожному блоці.
    ========================================================= */
 .rules-onboarding-summary > span,
-
 .rules-onboarding-progress__meta,
-
 .rules-onboarding-step__body,
-
-.profile-setup-progress-panel__head > span:not(:where([class])){
+.profile-setup-progress-panel__head > span:not(:where([class])) {
   display: grid;
   gap: var(--space-3xs);
   min-width: 0;
 }
 
 .rules-onboarding-summary > span > strong,
-
-.rules-onboarding-step__body > strong{
+.rules-onboarding-step__body > strong {
   font-size: 0.92rem;
   color: var(--text-strong);
   overflow-wrap: anywhere;
 }
 
 .rules-onboarding-summary > span > small,
-
-.rules-onboarding-step__body > small{
+.rules-onboarding-step__body > small {
   font-size: 0.76rem;
   line-height: 1.5;
   color: var(--text-muted);
@@ -102,11 +97,8 @@
 }
 
 .profile-setup-progress-panel__icon,
-
 .rules-onboarding-step__state,
-
 .profile-setup-callout__icon,
-
 .rules-registration-locked-card__icon {
   display: grid;
   place-items: center;
@@ -365,15 +357,10 @@
    6. ВРІЗКИ Й ПІДКАЗКИ
    ========================================================= */
 .rules-onboarding-notice,
-
 .profile-setup-callout,
-
 .rules-onboarding-data-warning,
-
 .rules-registration-block__note,
-
 #rules-complete-help,
-
 #rules-public-action-help {
   display: grid;
   gap: var(--space-2xs);
@@ -417,7 +404,6 @@
 }
 
 .rules-onboarding-notice strong,
-
 .profile-setup-callout strong {
   color: var(--text-strong);
 }
@@ -798,15 +784,15 @@
   }
 
   .profile-gender-box__head,
-  .profile-raid-role-box__head,
-  .profile-discord-standard__head {
+.profile-raid-role-box__head,
+.profile-discord-standard__head {
     grid-template-columns: auto minmax(0, 1fr);
   }
 
   /* Пігулка стану переїжджає під заголовок, щоб не тиснути текст */
   .profile-gender-box__head > *:nth-child(3),
-  .profile-raid-role-box__head > *:nth-child(3),
-  .profile-discord-standard__head > *:nth-child(3) {
+.profile-raid-role-box__head > *:nth-child(3),
+.profile-discord-standard__head > *:nth-child(3) {
     grid-column: 1 / -1;
     justify-self: start;
   }
@@ -1282,10 +1268,10 @@
   }
 
   .rules-onboarding-entry-grid,
-  .profile-gender-form,
-  .profile-raid-role-form,
-  .profile-nickname-character-list,
-  .rules-registration-bnet-action {
+.profile-gender-form,
+.profile-raid-role-form,
+.profile-nickname-character-list,
+.rules-registration-bnet-action {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -1300,23 +1286,23 @@
   }
 
   .rules-registration-block__head > .profile-count-pill,
-  .rules-registration-block__head > .profile-raid-role-pill,
-  .rules-registration-block__head > .profile-gender-pill {
+.rules-registration-block__head > .profile-raid-role-pill,
+.rules-registration-block__head > .profile-gender-pill {
     grid-column: 1 / -1;
     justify-self: start;
   }
 
   .rules-choice-save,
-  .rules-registration-bnet-action .profile-bnet-cta,
-  .profile-candidate-bulk-buttons .btn {
+.rules-registration-bnet-action .profile-bnet-cta,
+.profile-candidate-bulk-buttons .btn {
     width: 100%;
     min-width: 0;
     justify-self: stretch;
   }
 
   .profile-gender-option,
-  .profile-raid-role-option,
-  .profile-nickname-character-option {
+.profile-raid-role-option,
+.profile-nickname-character-option {
     min-height: 72px;
     padding: var(--space-sm);
   }
@@ -1326,9 +1312,9 @@
   }
 
   .rules-onboarding-role-box,
-  .rules-onboarding-final-action,
-  .rules-registration-block,
-  .profile-candidates-box {
+.rules-onboarding-final-action,
+.rules-registration-block,
+.profile-candidates-box {
     border-radius: var(--radius-md);
   }
 }
@@ -1343,7 +1329,7 @@
   }
 
   .rules-onboarding-context-card__icon,
-  .rules-onboarding-entry-card__step {
+.rules-onboarding-entry-card__step {
     width: 28px;
     height: 28px;
   }
@@ -1383,18 +1369,18 @@
 
 @media (hover: none) and (pointer: coarse) {
   .profile-gender-option:hover,
-  .profile-raid-role-option:hover,
-  .profile-nickname-character-option:hover {
+.profile-raid-role-option:hover,
+.profile-nickname-character-option:hover {
     border-color: var(--border-subtle);
     background: var(--surface-sunken);
   }
 
   .profile-gender-option.is-selected,
-  .profile-raid-role-option.is-selected,
-  .profile-nickname-character-option.is-selected,
-  .profile-gender-option:has(input:checked),
-  .profile-raid-role-option:has(input:checked),
-  .profile-nickname-character-option:has(input:checked) {
+.profile-raid-role-option.is-selected,
+.profile-nickname-character-option.is-selected,
+.profile-gender-option:has(input:checked),
+.profile-raid-role-option:has(input:checked),
+.profile-nickname-character-option:has(input:checked) {
     border-color: color-mix(in srgb, var(--c-accent-400) 58%, var(--border-strong));
     background: var(--accent-soft);
   }

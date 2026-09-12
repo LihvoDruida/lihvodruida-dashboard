@@ -495,18 +495,18 @@
    ========================================================= */
 @media (max-width: 860px) {
   .poll-matrix__grid,
-  .poll-metrics,
-  .poll-sync__metrics {
+.poll-metrics,
+.poll-sync__metrics {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .poll-browser__controls,
-  .poll-bulk {
+.poll-bulk {
     width: 100%;
   }
 
   .poll-browser__create,
-  .poll-bulk .btn {
+.poll-bulk .btn {
     flex: 1 1 auto;
   }
 
@@ -953,7 +953,7 @@
 
 @media (max-width: 860px) {
   .poll-card,
-  .poll-card:not(:has(.poll-card__select)) {
+.poll-card:not(:has(.poll-card__select)) {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--space-sm);
   }
@@ -990,7 +990,7 @@
   }
 
   .poll-metrics,
-  .poll-hero__stats {
+.poll-hero__stats {
     grid-template-columns: minmax(0, 1fr);
   }
 

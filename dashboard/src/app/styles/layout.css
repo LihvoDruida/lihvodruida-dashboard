@@ -37,13 +37,9 @@ main .dashboard-shell {
 
 /* ---------- Вертикальний стек секцій ---------- */
 .dashboard-shell,
-
 .content-shell,
-
 .app-page-stack,
-
 [class$="-shell"],
-
 [class*="-shell "] {
   display: flex;
   flex-direction: column;
@@ -57,15 +53,10 @@ main .dashboard-shell {
 
 /* ---------- Шапка секції ---------- */
 .section-header,
-
 .dashboard-list-head,
-
 [class$="__head"],
-
 [class*="__head "],
-
 [class$="-head"]:not(:where(.profile-card-head--inline)),
-
 [class*="-head "]:not(:where(.profile-card-head--inline)) {
   display: flex;
   flex-wrap: wrap;
@@ -75,8 +66,7 @@ main .dashboard-shell {
 }
 
 .section-header > div,
-
-.dashboard-list-head > div{
+.dashboard-list-head > div {
   min-width: 0;
 }
 
@@ -87,8 +77,7 @@ main .dashboard-shell {
 }
 
 .section-header p,
-
-.dashboard-list-head p{
+.dashboard-list-head p {
   max-width: 72ch;
   color: var(--text-soft);
   font-size: 0.9rem;
@@ -97,15 +86,10 @@ main .dashboard-shell {
 
 /* ---------- Надзаголовок (section-tag сайту) ---------- */
 .eyebrow,
-
 .app-state-eyebrow,
-
 [class$="__eyebrow"],
-
 [class*="__eyebrow "],
-
 [class$="-eyebrow"],
-
 [class*="-eyebrow "] {
   display: inline-block;
   /* У grid/flex-батьках inline-block блокифікується й розтягується
@@ -138,23 +122,14 @@ main .dashboard-shell {
 }
 
 .subtle:not(:where(.btn)),
-
 .hint,
-
 [class$="__hint"],
-
 [class*="__hint "],
-
 [class$="__meta"],
-
 [class*="__meta "],
-
 [class$="__desc"],
-
 [class*="__desc "],
-
 [class$="-note"]:not(:where(.error-note)):not(:where(.warning-note)),
-
 [class*="-note "]:not(:where(.error-note)):not(:where(.warning-note)) {
   color: var(--text-muted);
   font-size: 0.85rem;
@@ -170,13 +145,8 @@ main .dashboard-shell {
    Контекстна панель із м’яким верхнім блиском.
    ========================================================= */
 .hero,
-
 .dashboard-hero,
-
-
-
 [class$="-hero"]:not(:where([class*="landing"])),
-
 [class*="-hero "]:not(:where([class*="landing"])) {
   position: relative;
   display: grid;
@@ -192,12 +162,8 @@ main .dashboard-shell {
 }
 
 .hero::before,
-
 .dashboard-hero::before,
-
-
 [class$="-hero"]:not(:where([class*="landing"]))::before,
-
 [class*="-hero "]:not(:where([class*="landing"]))::before {
   content: "";
   position: absolute;
@@ -214,7 +180,6 @@ main .dashboard-shell {
 }
 
 .hero > *,
-
 .dashboard-hero > * {
   position: relative;
   z-index: 1;
@@ -246,23 +211,14 @@ main .dashboard-shell {
 }
 
 [class$="-hero__actions"],
-
 [class*="-hero__actions "],
-
 [class$="__actions"],
-
 [class*="__actions "],
-
 .action-bar,
-
 .action-row,
-
 .form-actions,
-
 .dashboard-list-actions,
-
 [class$="-actions"],
-
 [class*="-actions "] {
   display: flex;
   flex-wrap: wrap;
@@ -271,7 +227,6 @@ main .dashboard-shell {
 }
 
 [class$="-hero__actions"],
-
 [class*="-hero__actions "] {
   margin-top: var(--space-md);
 }
@@ -282,12 +237,8 @@ main .dashboard-shell {
 
 @media (max-width: 860px) {
 .hero,
-
 .dashboard-hero,
-
-
 [class$="-hero"]:not(:where([class*="landing"])),
-
 [class*="-hero "]:not(:where([class*="landing"])) {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -298,18 +249,14 @@ main .dashboard-shell {
    Один патерн auto-fit: не треба описувати кожну сітку окремо.
    ========================================================= */
 [class$="-grid"],
-
 /* =========================================================
    СІТКИ
    Один патерн auto-fit: не треба описувати кожну сітку окремо.
    ========================================================= */
 [class*="-grid "],
-
 [class$="__grid"],
-
 [class*="__grid "],
-
-.access-form-grid{
+.access-form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
   gap: var(--gap-grid);
@@ -350,7 +297,6 @@ main .dashboard-shell {
 /* ---------- Головна: контент + бічний стек ---------- */
 
 [class$="-layout"]:not(:where(.access-groups-layout)),
-
 [class*="-layout "]:not(:where(.access-groups-layout)) {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
@@ -361,7 +307,6 @@ main .dashboard-shell {
 @media (max-width: 1000px) {
 
 [class$="-layout"]:not(:where(.access-groups-layout)),
-
 [class*="-layout "]:not(:where(.access-groups-layout)) {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -552,7 +497,7 @@ main .dashboard-shell {
 
 @media (max-width: 420px) {
   .app-footer__meta,
-  .app-footer__versions {
+.app-footer__versions {
     width: 100%;
   }
 

@@ -107,7 +107,7 @@ warn(/"prebuild"\s*:\s*"node scripts\/remove-legacy-middleware\.cjs"/.test(packa
 warn(/"build"\s*:\s*"node scripts\/next-build\.cjs"/.test(packageJsonText), 'build should use scripts/next-build.cjs to disable telemetry consistently and keep Vercel builds deterministic.');
 warn(exists('scripts/next-build.cjs'), 'scripts/next-build.cjs should exist because package.json build points to it.');
 warn(!/"build:vercel"\s*:/.test(packageJsonText), 'build:vercel should be removed; Vercel should use the default npm run build script.');
-warn(/"build:ci"\s*:\s*"npm run cleanup:legacy && npm run typecheck && npm run check:actions && npm run check:site && npm run check:rules-accept && npm run check:login && npm run check:poll-scheduling && npm run check:admin-overview && npm run check:footer-version && npm run check:raid-editor && npm run check:discord-management && npm run check:account-cleanup && npm run check:imports && npm run audit:styles && npm run audit:ui && npm run inspect:ci && npm run build"/.test(packageJsonText), 'build:ci should clean stale overlay files before typecheck, API-action, site-navigation, rules-onboarding, login, poll-scheduling, admin-overview, footer-version, raid-editor, Discord-management, account-cleanup, import, style/UI, inspect-ci and build gates.');
+warn(/"build:ci"\s*:\s*"npm run cleanup:legacy && npm run typecheck && npm run check:actions && npm run check:site && npm run check:rules-accept && npm run check:login && npm run check:profiles-page && npm run check:poll-scheduling && npm run check:admin-overview && npm run check:footer-version && npm run check:raid-editor && npm run check:discord-management && npm run check:account-cleanup && npm run check:imports && npm run audit:styles && npm run audit:ui && npm run inspect:ci && npm run build"/.test(packageJsonText), 'build:ci should clean stale overlay files before typecheck, API-action, site-navigation, rules-onboarding, login, profiles-directory, poll-scheduling, admin-overview, footer-version, raid-editor, Discord-management, account-cleanup, import, style/UI, inspect-ci and build gates.');
 warn(/"typecheck"\s*:\s*"node scripts\/typecheck\.cjs"/.test(read('package.json')), 'Typecheck should use scripts/typecheck.cjs for progress and timeout diagnostics.');
 
 if (exists('src/proxy.ts')) {
@@ -161,7 +161,6 @@ const listUnifiedFiles = {
   'src/app/raids/page.tsx': ['dashboard-list-panel', 'dashboard-list-head', 'dashboard-list'],
   'src/app/content/page.tsx': ['dashboard-list-panel', 'dashboard-list-row', 'dashboard-list-actions'],
   'src/app/discord/rules/page.tsx': ['dashboard-list-panel', 'dashboard-list-row', 'dashboard-list-actions'],
-  'src/app/profiles/page.tsx': ['dashboard-list', 'dashboard-list-row'],
 };
 for (const [file, requiredClasses] of Object.entries(listUnifiedFiles)) {
   if (!exists(file)) continue;
@@ -199,9 +198,9 @@ if (exists('src/app/api/guild/sync/route.ts')) {
 
 if (exists('src/app/profiles/page.tsx')) {
   const profilesText = read('src/app/profiles/page.tsx');
-  assert(profilesText.includes('dashboard-table-card--profiles'), 'Profiles page must use the compact dashboard table layout.');
+  assert(profilesText.includes('profile-directory-panel') && profilesText.includes('profile-directory-row'), 'Profiles page must use the dedicated readable profile directory layout.');
   assert(/const PROFILE_PAGE_SIZE = 20/.test(profilesText), 'Profiles page must keep 20 profiles per page.');
-  assert(profilesText.includes('buildProfilesHref'), 'Profiles page must preserve pagination links with active search query.');
+  assert(profilesText.includes('buildProfilesHref') && profilesText.includes('paginationState'), 'Profiles page must preserve pagination links with active filters and search query.');
 }
 
 if (exists('src/components/RaidViews.tsx')) {

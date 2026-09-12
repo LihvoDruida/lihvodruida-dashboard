@@ -17,9 +17,9 @@
 
   /* ---------- Єдина ширина та відступ сторінок ---------- */
   main,
-  .container,
-  .app-page,
-  .admin-container {
+.container,
+.app-page,
+.admin-container {
     width: 100%;
     max-width: var(--page-max);
     margin-inline: auto;
@@ -27,33 +27,33 @@
   }
 
   .container .container,
-  .app-page .dashboard-shell,
-  .container .dashboard-shell,
-  main .dashboard-shell {
+.app-page .dashboard-shell,
+.container .dashboard-shell,
+main .dashboard-shell {
     max-width: none;
     padding: 0;
   }
 
   .dashboard-shell,
-  .content-shell,
-  .app-page-stack,
-  [class$="-shell"],
-  [class*="-shell "] {
+.content-shell,
+.app-page-stack,
+[class$="-shell"],
+[class*="-shell "] {
     gap: var(--page-gap);
   }
 
   .page-section,
-  .profile-card,
-  .content-form-section,
-  .raid-form-section,
-  .discord-management-section {
+.profile-card,
+.content-form-section,
+.raid-form-section,
+.discord-management-section {
     gap: var(--section-gap);
   }
 
   /* ---------- Поверхні: одна товщина, радіус і тінь ---------- */
   .panel,
-  .card,
-  .detail-box {
+.card,
+.detail-box {
     border-radius: var(--card-radius);
     border-color: rgba(255, 226, 196, 0.1);
     background: rgba(29, 23, 18, 0.76);
@@ -103,9 +103,9 @@
 
   /* ---------- Заголовок сторінки ---------- */
   .hero,
-  .dashboard-hero,
-  [class$="-hero"]:not(:where([class*="landing"])),
-  [class*="-hero "]:not(:where([class*="landing"])) {
+.dashboard-hero,
+[class$="-hero"]:not(:where([class*="landing"])),
+[class*="-hero "]:not(:where([class*="landing"])) {
     grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.7fr);
     gap: 24px;
     min-height: 0;
@@ -121,20 +121,20 @@
   }
 
   .hero-copy h1,
-  .dashboard-hero__copy h1,
-  [class$="-hero__copy"] h1,
-  [class*="-hero__copy "] h1 {
+.dashboard-hero__copy h1,
+[class$="-hero__copy"] h1,
+[class*="-hero__copy "] h1 {
     margin-bottom: 6px;
     font-size: clamp(1.55rem, 1.9vw, 2.1rem);
     line-height: 1.12;
   }
 
   .eyebrow,
-  .app-state-eyebrow,
-  [class$="__eyebrow"],
-  [class*="__eyebrow "],
-  [class$="-eyebrow"],
-  [class*="-eyebrow "] {
+.app-state-eyebrow,
+[class$="__eyebrow"],
+[class*="__eyebrow "],
+[class$="-eyebrow"],
+[class*="-eyebrow "] {
     padding: 3px 9px;
     margin-bottom: 6px;
     font-size: 9.5px;
@@ -142,34 +142,34 @@
   }
 
   .lead,
-  [class$="__lead"],
-  [class*="__lead "],
-  [class$="-lead"],
-  [class*="-lead "] {
+[class$="__lead"],
+[class*="__lead "],
+[class$="-lead"],
+[class*="-lead "] {
     font-size: 0.9rem;
     line-height: 1.58;
   }
 
   /* ---------- Заголовки секцій та action bars ---------- */
   .section-header,
-  .dashboard-list-head,
-  .profile-card-head,
-  .content-section-head,
-  .content-form-section-head {
+.dashboard-list-head,
+.profile-card-head,
+.content-section-head,
+.content-form-section-head {
     align-items: center;
     gap: 16px;
   }
 
   .section-header h2,
-  .dashboard-list-head h2,
-  .profile-card-head h2 {
+.dashboard-list-head h2,
+.profile-card-head h2 {
     font-size: 1.08rem;
     line-height: 1.25;
   }
 
   .action-bar,
-  .profile-account-header__actions,
-  .raid-greylist-mini-actions {
+.profile-account-header__actions,
+.raid-greylist-mini-actions {
     gap: 8px;
   }
 
@@ -195,13 +195,13 @@
   }
 
   input,
-  textarea,
-  select {
+textarea,
+select {
     font-size: 14px;
   }
 
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-  select {
+select {
     min-height: var(--control-height);
   }
 
@@ -227,7 +227,6 @@
   }
 
   /* ---------- Таблиці й списки ---------- */
-  .dashboard-table-card,
   .dashboard-list-panel {
     overflow: hidden;
     border: 1px solid rgba(255, 226, 196, 0.1);
@@ -236,35 +235,23 @@
     box-shadow: 0 14px 34px -27px rgba(0, 0, 0, 0.96);
   }
 
-  .dashboard-table-titlebar,
   .dashboard-list-head {
     padding: 16px 18px;
     border-bottom: 1px solid var(--border-subtle);
     background: rgba(255, 255, 255, 0.014);
   }
 
-  .dashboard-table-head {
-    background: rgba(12, 10, 7, 0.48);
-    color: var(--text-faint);
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
+  
 
-  .dashboard-table-row,
   .dashboard-list-row {
     border-color: rgba(255, 226, 196, 0.065);
   }
 
-  .dashboard-table-row:hover,
   .dashboard-list-row:hover {
     background: rgba(255, 155, 85, 0.035);
   }
 
-  .dashboard-table-footer {
-    border-top: 1px solid var(--border-subtle);
-    background: rgba(12, 10, 7, 0.24);
-  }
+  
 
   /* =======================================================
      PROFILE — виправлення проблем зі скріну
@@ -292,10 +279,10 @@
   }
 
   .profile-account-sidebar__nav,
-  .profile-account-sidebar__footer,
-  .profile-account-sidebar__footer > *,
-  .profile-account-logout,
-  .profile-account-logout > .btn {
+.profile-account-sidebar__footer,
+.profile-account-sidebar__footer > *,
+.profile-account-logout,
+.profile-account-logout > .btn {
     width: 100%;
   }
 
@@ -361,10 +348,10 @@
   }
 
   .profile-character-actions,
-  .profile-character-actions__full,
-  .profile-character-actions__full > *,
-  .profile-character-actions__row > *,
-  .profile-character-action {
+.profile-character-actions__full,
+.profile-character-actions__full > *,
+.profile-character-actions__row > *,
+.profile-character-action {
     width: 100%;
   }
 
@@ -378,7 +365,7 @@
 
   /* ---------- Адмінські екрани ---------- */
   .admin-tabs,
-  [class*="admin-tabs"] {
+[class*="admin-tabs"] {
     border-radius: 12px;
   }
 

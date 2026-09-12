@@ -237,7 +237,7 @@
    ========================================================= */
 @media (max-width: 860px) {
   .stats,
-  .metric-grid {
+.metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -261,7 +261,7 @@
   }
 
   .actions-panel .btn,
-  .actions-panel form {
+.actions-panel form {
     width: 100%;
   }
 
@@ -272,7 +272,7 @@
 
 @media (max-width: 520px) {
   .stats,
-  .metric-grid {
+.metric-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 

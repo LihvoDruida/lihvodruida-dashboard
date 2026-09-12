@@ -24,8 +24,8 @@ a:active {
 
 @media (prefers-reduced-motion: reduce) {
   *,
-  *::before,
-  *::after {
+*::before,
+*::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
@@ -36,8 +36,8 @@ a:active {
 /* Вимикаємо hover-підйоми на тач-пристроях */
 @media (hover: none) {
   .panel:hover,
-  .card:hover,
-  [class*="-card"]:hover {
+.card:hover,
+[class*="-card"]:hover {
     transform: none;
   }
 }

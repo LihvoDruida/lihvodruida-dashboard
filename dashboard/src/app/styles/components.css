@@ -128,8 +128,8 @@ a[class*="__card "]:hover {
 .content-form-section-head,
 [class$="__head"],
 [class*="__head "],
-[class$="-head"]:not(:where(.dashboard-table-head)),
-[class*="-head "]:not(:where(.dashboard-table-head)) {
+[class$="-head"],
+[class*="-head "] {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
@@ -346,8 +346,8 @@ a[class*="__card "]:hover {
 .raid-poll-field,
 .application-filter-field,
 .admin-policy-toggle,
-[class$="-field"]:not(:where(.dashboard-table-search)):not(:where([class*="filter-shell"])),
-[class*="-field "]:not(:where(.dashboard-table-search)):not(:where([class*="filter-shell"])),
+[class$="-field"]:not(:where([class*="filter-shell"])),
+[class*="-field "]:not(:where([class*="filter-shell"])),
 [class$="__field"],
 [class*="__field "] {
   display: grid;
@@ -736,7 +736,6 @@ form {
 }
 
 /* Кнопка-фільтр у шапці таблиці */
-.dashboard-table-filter,
 [class$="-filter"]:not(:where([class*="field"])),
 [class*="-filter "]:not(:where([class*="field"])) {
   display: inline-flex;
@@ -754,22 +753,11 @@ form {
   transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
 
-.dashboard-table-filter:hover {
-  color: var(--text-strong);
-  border-color: var(--border-strong);
-}
 
-.dashboard-table-filter.is-active {
-  border-color: transparent;
-  background: var(--accent-gradient);
-  color: var(--text-on-accent);
-}
 
-.dashboard-table-filter--danger {
-  border-color: rgba(224, 112, 95, 0.32);
-  background: rgba(224, 112, 95, 0.1);
-  color: var(--c-danger);
-}
+
+
+
 
 [class$="--tank"],
 [class*="--tank "] {
@@ -804,15 +792,13 @@ form {
 /* =========================================================
    6. СПИСКИ ТА ТАБЛИЦІ
    ========================================================= */
-.dashboard-list-panel,
-.dashboard-table-card {
+.dashboard-list-panel {
   display: flex;
   flex-direction: column;
   gap: var(--gap-stack);
 }
 
 .dashboard-list,
-.dashboard-table,
 [class$="-list"]:not(:where(.dashboard-nav-more__menu-list)):not(:where(.discord-preview-list)),
 [class*="-list "]:not(:where(.dashboard-nav-more__menu-list)):not(:where(.discord-preview-list)) {
   display: flex;
@@ -821,23 +807,9 @@ form {
   min-width: 0;
 }
 
-.dashboard-table-scroll {
-  overflow-x: auto;
-  margin-inline: calc(-1 * var(--space-2xs));
-  padding-inline: var(--space-2xs);
-}
 
-.dashboard-table-head {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr));
-  gap: var(--space-sm);
-  padding: var(--space-xs) var(--space-md);
-  color: var(--text-muted);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
+
+
 
 /* Складений рядок: зміст ліворуч, дії праворуч */
 .dashboard-list-row {
@@ -856,14 +828,9 @@ form {
 /* Табличний рядок: рівні колонки, шапка вирівнюється з ними.
    Оголошено після .dashboard-list-row, тож на рядках із обома
    класами виграє саме сітка. */
-.dashboard-table-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr));
-  align-items: center;
-}
 
-.dashboard-list-row,
-.dashboard-table-row {
+
+.dashboard-list-row {
   gap: var(--space-sm);
   padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--border-subtle);
@@ -877,7 +844,6 @@ form {
     transform var(--dur-fast) var(--ease-out);
 }
 
-.dashboard-table-row--clickable:hover,
 a.dashboard-list-row:hover {
   border-color: var(--border-strong);
   background: var(--surface-hover);
@@ -885,22 +851,19 @@ a.dashboard-list-row:hover {
   color: inherit;
 }
 
-.dashboard-list-row > [role="cell"],
-.dashboard-table-row > [role="cell"] {
+.dashboard-list-row > [role="cell"] {
   display: grid;
   gap: var(--space-3xs);
   min-width: 0;
 }
 
-.dashboard-list-row strong,
-.dashboard-table-row strong {
+.dashboard-list-row strong {
   font-size: 0.88rem;
   color: var(--text-strong);
   overflow-wrap: break-word;
 }
 
-.dashboard-list-row small,
-.dashboard-table-row small {
+.dashboard-list-row small {
   font-size: 0.74rem;
   color: var(--text-muted);
   overflow-wrap: break-word;
@@ -908,23 +871,13 @@ a.dashboard-list-row:hover {
 
 .dashboard-list-row > [role="cell"] > [class$="-pill"],
 .dashboard-list-row > [role="cell"] > [class*="-pill "],
-.dashboard-table-row > [role="cell"] > [class$="-pill"],
-.dashboard-table-row > [role="cell"] > [class*="-pill "],
 .dashboard-list-row > [role="cell"] > [class$="-chip"],
-.dashboard-list-row > [role="cell"] > [class*="-chip "],
-.dashboard-table-row > [role="cell"] > [class$="-chip"],
-.dashboard-table-row > [role="cell"] > [class*="-chip "],
-.dashboard-table-link {
+.dashboard-list-row > [role="cell"] > [class*="-chip "] {
   justify-self: start;
 }
 
-.dashboard-table-link {
-  color: var(--c-accent-300);
-  font-weight: 600;
-  font-size: 0.82rem;
-}
 
-.dashboard-table-empty,
+
 .empty-state,
 .raid-empty,
 .poll-empty,
@@ -949,7 +902,6 @@ a.dashboard-list-row:hover {
 }
 
 /* Смуга показників над таблицею */
-.dashboard-table-stats,
 .guild-hero-stats,
 .raid-list-summary,
 [class$="-stats"]:not(:where([class*="grid"])),
@@ -959,7 +911,6 @@ a.dashboard-list-row:hover {
   gap: var(--space-sm);
 }
 
-.dashboard-table-stats > div,
 .stat,
 .guild-hero-stat-card {
   display: grid;
@@ -970,7 +921,6 @@ a.dashboard-list-row:hover {
   background: var(--surface-sunken);
 }
 
-.dashboard-table-stats > div > span,
 .stat > span {
   font-size: 0.7rem;
   letter-spacing: 0.1em;
@@ -978,7 +928,6 @@ a.dashboard-list-row:hover {
   color: var(--text-muted);
 }
 
-.dashboard-table-stats > div > strong,
 .stat > strong {
   font-size: 1.15rem;
   font-weight: 700;
@@ -986,9 +935,7 @@ a.dashboard-list-row:hover {
 }
 
 /* Керування у шапці таблиці */
-.dashboard-table-controls,
-.content-toolbar-actions,
-.dashboard-table-search-form {
+.content-toolbar-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -996,22 +943,11 @@ a.dashboard-list-row:hover {
   min-width: 0;
 }
 
-.dashboard-table-controls {
-  flex: 1 1 340px;
-  justify-content: flex-end;
-}
 
-.dashboard-table-search-form {
-  flex: 1 1 260px;
-  justify-content: flex-end;
-}
 
-.dashboard-table-search {
-  display: block;
-  flex: 1 1 180px;
-  min-width: 0;
-  max-width: 280px;
-}
+
+
+
 
 /* Мобільний вигляд рядків: картка з підписами колонок */
 /* ---------- Мобільний вигляд списків ----------
@@ -1020,23 +956,15 @@ a.dashboard-list-row:hover {
    збоку тут не працює — довгі значення (ніки, спеки, дати) стискали
    праву колонку до 2-3 символів на 390px. */
 @media (max-width: 860px) {
-  .dashboard-table-head {
-    display: none;
-  }
+  
 
-  .dashboard-table-scroll {
-    overflow-x: visible;
-    margin-inline: 0;
-    padding-inline: 0;
-  }
+  
 
-  .dashboard-list,
-  .dashboard-table {
+  .dashboard-list {
     gap: var(--space-sm);
   }
 
-  .dashboard-list-row,
-  .dashboard-table-row {
+  .dashboard-list-row {
     grid-template-columns: minmax(0, 1fr);
     align-items: stretch;
     gap: var(--space-xs);
@@ -1044,15 +972,13 @@ a.dashboard-list-row:hover {
     border-radius: var(--radius-md);
   }
 
-  .dashboard-list-row > [role="cell"],
-  .dashboard-table-row > [role="cell"] {
+  .dashboard-list-row > [role="cell"] {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: var(--space-3xs);
   }
 
-  .dashboard-list-row > [role="cell"][data-label]::before,
-  .dashboard-table-row > [role="cell"][data-label]::before {
+  .dashboard-list-row > [role="cell"][data-label]::before {
     content: attr(data-label);
     font-size: 0.64rem;
     font-weight: 700;
@@ -1062,33 +988,18 @@ a.dashboard-list-row:hover {
   }
 
   /* Перша комірка — заголовок картки, підпис їй не потрібен */
-  .dashboard-table-row > [role="cell"]:first-child::before {
-    content: none;
-  }
+  
 
-  .dashboard-table-row > [role="cell"]:first-child {
-    padding-bottom: var(--space-xs);
-    border-bottom: 1px solid var(--border-subtle);
-  }
+  
 
-  .dashboard-table-row > [role="cell"]:first-child strong {
-    font-size: 1rem;
-  }
+  
 
   /* Решта комірок лягає у дві колонки — інакше картка стає вежею */
-  .dashboard-table-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  
 
-  .dashboard-table-row > [role="cell"]:first-child,
-  .dashboard-table-row > [role="cell"]:last-child {
-    grid-column: 1 / -1;
-  }
+  
 
-  .dashboard-table-row > [role="cell"]:last-child {
-    padding-top: var(--space-xs);
-    border-top: 1px solid var(--border-subtle);
-  }
+  
 
   .dashboard-list-row > *:first-child {
     flex: 1 1 100%;
@@ -1096,32 +1007,21 @@ a.dashboard-list-row:hover {
 
   /* Дії у складених рядках розтягуються на всю ширину картки */
   .dashboard-list-actions,
-  .dashboard-list-row [class$="-actions"] {
+.dashboard-list-row [class$="-actions"] {
     width: 100%;
   }
 
-  .dashboard-table-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  
 
-  .dashboard-table-controls,
-  .dashboard-table-search-form {
-    flex: 1 1 100%;
-    justify-content: flex-start;
-  }
+  
 
-  .dashboard-table-search {
-    max-width: none;
-    flex: 1 1 100%;
-  }
+  
 }
 
 @media (max-width: 520px) {
   /* Одна колонка: на вузькому екрані пара «підпис + значення»
      вже не влазить поруч із сусідньою. */
-  .dashboard-table-row {
-    grid-template-columns: minmax(0, 1fr);
-  }
+  
 }
 
 /* =========================================================
@@ -1416,16 +1316,15 @@ label:has(> input[type="checkbox"]:checked) {
    ========================================================= */
 @media (max-width: 860px) {
   .btn-sm,
-  .dashboard-table-filter,
-  .raid-list-icon-action,
-  .poll-tab,
-  .nav-sheet__link {
+.raid-list-icon-action,
+.poll-tab,
+.nav-sheet__link {
     min-height: 44px;
   }
 
   /* Іконкові кнопки лишаються квадратними, просто більшими */
   .raid-list-icon-action,
-  .profile-icon-action {
+.profile-icon-action {
     width: 44px;
     min-width: 44px;
     height: 44px;
@@ -1433,7 +1332,7 @@ label:has(> input[type="checkbox"]:checked) {
 
   /* Чекбокс і радіо: сам контрол більший, мітка клікабельна вся */
   input[type="checkbox"],
-  input[type="radio"] {
+input[type="radio"] {
     width: 24px;
     height: 24px;
   }
@@ -1450,7 +1349,7 @@ label:has(> input[type="checkbox"]:checked) {
   }
 
   .inline-check,
-  .roster-role-check {
+.roster-role-check {
     min-height: 44px;
   }
 }

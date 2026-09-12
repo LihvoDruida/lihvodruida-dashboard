@@ -1389,7 +1389,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .login-discord-button,
-  .login-discord-button::before {
+.login-discord-button::before {
     transition: none;
   }
 }
@@ -1612,14 +1612,11 @@
 }
 
 /* Таблиці з модифікатором домену — ті самі правила довідника */
-.dashboard-table--guild,
-.dashboard-table--profiles {
-  min-width: 0;
-}
+
 
 @media (max-width: 1000px) {
   .discord-rules-library-split,
-  .content-library-split {
+.content-library-split {
     grid-template-columns: minmax(0, 1fr);
   }
 }
