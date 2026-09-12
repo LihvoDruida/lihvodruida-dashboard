@@ -12,6 +12,7 @@ import {
   type RaidPollDay,
   type RaidPollDifficulty,
   type RaidPollItem,
+  type RaidPollPublishMode,
   type RaidPollRepeatTime,
 } from "@/lib/raidPollShared";
 
@@ -67,6 +68,7 @@ export default function RaidPollCreateClientForm({ channels, roles = [], default
   const [description, setDescription] = useState(poll?.description || defaultDescription);
   const [selectedDays, setSelectedDays] = useState<RaidPollDay[]>(poll?.days?.length ? poll.days : RAID_POLL_DAYS.map((day) => day.value));
   const [mentionRoleIds, setMentionRoleIds] = useState<string[]>(poll?.mentionRoleIds || []);
+  const [publishMode, setPublishMode] = useState<RaidPollPublishMode>(poll?.status === "scheduled" ? "scheduled" : "now");
   const [autoRepeatWeekly, setAutoRepeatWeekly] = useState(Boolean(poll?.autoRepeatWeekly));
   const [repeatWeeklyDay, setRepeatWeeklyDay] = useState<RaidPollDay>(poll?.repeatWeeklyDay || "mon");
   const [repeatWeeklyTime, setRepeatWeeklyTime] = useState<RaidPollRepeatTime>(poll?.repeatWeeklyTime || "12:00");
@@ -91,6 +93,7 @@ export default function RaidPollCreateClientForm({ channels, roles = [], default
     setDescription(poll?.description || defaultDescription);
     setSelectedDays(poll?.days?.length ? poll.days : RAID_POLL_DAYS.map((day) => day.value));
     setMentionRoleIds(poll?.mentionRoleIds || []);
+    setPublishMode(poll?.status === "scheduled" ? "scheduled" : "now");
     setAutoRepeatWeekly(Boolean(poll?.autoRepeatWeekly));
     setRepeatWeeklyDay(poll?.repeatWeeklyDay || "mon");
     setRepeatWeeklyTime(poll?.repeatWeeklyTime || "12:00");
@@ -123,6 +126,10 @@ export default function RaidPollCreateClientForm({ channels, roles = [], default
     ? "Пн • Вт • Ср • Чт • Пт • Сб • Нд"
     : RAID_POLL_DAYS.filter((day) => selectedDays.includes(day.value)).map((day) => day.label).join(" • ") || "Дні не вибрано";
 
+  const scheduleEnabled = publishMode === "scheduled" || autoRepeatWeekly;
+  const scheduleDayLabel = RAID_POLL_DAYS.find((day) => day.value === repeatWeeklyDay)?.fullLabel || "Понеділок";
+  const canChangeInitialPublication = !isEdit || poll?.status === "scheduled";
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (pending || disabled) return;
@@ -138,8 +145,14 @@ export default function RaidPollCreateClientForm({ channels, roles = [], default
     setFieldError("");
     dispatchDashboardToast({
       tone: "info",
-      title: isEdit ? "Оновлюємо рейд-пул" : "Створюємо рейд-пул",
-      message: isEdit ? "Зберігаємо зміни в базі даних і синхронізуємо Discord-повідомлення." : "Зберігаємо голосування в базі даних і публікуємо Discord-повідомлення.",
+      title: isEdit ? "Оновлюємо рейд-пул" : publishMode === "scheduled" ? "Плануємо рейд-пул" : "Створюємо рейд-пул",
+      message: isEdit
+        ? poll?.status === "scheduled" && publishMode === "scheduled"
+          ? "Оновлюємо запланований запис. Discord до часу публікації не чіпаємо."
+          : "Зберігаємо зміни в базі даних і синхронізуємо Discord-повідомлення."
+        : publishMode === "scheduled"
+          ? `Зберігаємо пул. Discord опублікує його у найближчий ${scheduleDayLabel.toLowerCase()} о ${repeatWeeklyTime}.`
+          : "Зберігаємо голосування в базі даних і публікуємо Discord-повідомлення.",
       ttl: 3600,
     });
 
@@ -161,6 +174,7 @@ export default function RaidPollCreateClientForm({ channels, roles = [], default
           closeAfterMinutes,
           days: selectedDays,
           mentionRoleIds,
+          publishMode,
           autoRepeatWeekly,
           repeatWeeklyDay,
           repeatWeeklyTime,
@@ -175,10 +189,17 @@ export default function RaidPollCreateClientForm({ channels, roles = [], default
       const pollId = typeof data?.pollId === "string" ? data.pollId : typeof data?.poll?.id === "string" ? data.poll.id : "";
       const redirectTo = typeof data?.redirectTo === "string" && data.redirectTo ? data.redirectTo : pollId ? `/polls/${encodeURIComponent(pollId)}` : "/polls";
 
+      const scheduled = data?.poll?.status === "scheduled";
       dispatchDashboardToast({
         tone: "success",
-        title: isEdit ? "Рейд-пул оновлено" : "Рейд-пул створено",
-        message: isEdit ? "Зміни збережено, Discord-повідомлення синхронізовано." : "Пул опубліковано в Discord. Учасники вже можуть голосувати.",
+        title: isEdit ? "Рейд-пул оновлено" : scheduled ? "Рейд-пул заплановано" : "Рейд-пул створено",
+        message: isEdit
+          ? scheduled
+            ? "Розклад збережено. Discord-публікація відбудеться автоматично у заданий час."
+            : "Зміни збережено, Discord-повідомлення синхронізовано."
+          : scheduled
+            ? `Пул збережено. Перша публікація — ${scheduleDayLabel} о ${repeatWeeklyTime}.`
+            : "Пул опубліковано в Discord. Учасники вже можуть голосувати.",
         ttl: 6200,
       });
       if (!isEdit) resetForm();
@@ -199,9 +220,9 @@ export default function RaidPollCreateClientForm({ channels, roles = [], default
         <div>
           <span className="eyebrow">{isEdit ? "Редагування рейд-пулу" : "Новий рейд-пул"}</span>
           <h2>{isEdit ? "Редагувати голосування" : "Створити голосування"}</h2>
-          <p>{isEdit ? "Зміни зберігаються в базі даних і одразу оновлюють або переносять Discord embed у вибраний канал." : "Сайт є джерелом правди: він створює запис у базі даних, публікує Discord embed і відкриває голосування через select-menu."}</p>
+          <p>{isEdit ? "Зміни зберігаються в базі даних. Для запланованого пулу Discord не чіпається до часу публікації." : "Можна опублікувати Discord embed одразу або зберегти пул як запланований і відкрити голосування автоматично у потрібний день та час."}</p>
         </div>
-        <span className="raid-status-pill published">{isEdit ? "DB ↔ Discord" : "Site → Discord"}</span>
+        <span className={`raid-status-pill ${publishMode === "scheduled" ? "warning" : "published"}`}>{publishMode === "scheduled" ? "Scheduled → Discord" : isEdit ? "DB ↔ Discord" : "Site → Discord"}</span>
       </div>
 
       {fieldError ? <div className="notice error-note raid-poll-create-alert">{fieldError}</div> : null}
@@ -245,6 +266,25 @@ export default function RaidPollCreateClientForm({ channels, roles = [], default
             <small>Після дедлайну Discord-компоненти вимикаються.</small>
           </label>
         </div>
+
+        <fieldset className="raid-poll-field raid-poll-field--wide raid-poll-publication-card">
+          <legend>Публікація голосування</legend>
+          {canChangeInitialPublication ? (
+            <div className="raid-poll-publication-options" role="radiogroup" aria-label="Коли опублікувати рейд-пул">
+              <label className={`raid-poll-publication-option ${publishMode === "now" ? "is-selected" : ""}`}>
+                <input type="radio" name="publishMode" value="now" checked={publishMode === "now"} onChange={() => setPublishMode("now")} disabled={pending || disabled} />
+                <span><strong>Опублікувати зараз</strong><small>Створити Discord embed одразу після збереження.</small></span>
+              </label>
+              <label className={`raid-poll-publication-option ${publishMode === "scheduled" ? "is-selected" : ""}`}>
+                <input type="radio" name="publishMode" value="scheduled" checked={publishMode === "scheduled"} onChange={() => setPublishMode("scheduled")} disabled={pending || disabled} />
+                <span><strong>Запланувати</strong><small>Зберегти в базі зараз, а Discord опублікувати за розкладом нижче.</small></span>
+              </label>
+            </div>
+          ) : (
+            <div className="raid-poll-publication-fixed"><strong>Уже опубліковано</strong><span>Початковий режим більше не змінюється. Розклад нижче керує лише автоповтором.</span></div>
+          )}
+          {publishMode === "scheduled" ? <small>До заданого часу повідомлення в Discord не буде, голосування не прийматиме голоси, а таймер закриття стартує тільки після фактичної публікації.</small> : null}
+        </fieldset>
 
         <label className="raid-poll-field raid-poll-field--wide" htmlFor="raid-poll-channel-id">
           <span>Discord-канал публікації</span>
@@ -320,7 +360,31 @@ export default function RaidPollCreateClientForm({ channels, roles = [], default
         )}
 
         <fieldset className="raid-poll-field raid-poll-field--wide raid-poll-repeat-card">
-          <legend>Автоповтор голосування</legend>
+          <legend>Розклад публікації та автоповтору</legend>
+          <div className="raid-poll-repeat-grid" aria-disabled={!scheduleEnabled}>
+            <label className="raid-poll-field" htmlFor="raid-poll-repeat-day">
+              <span>День публікації</span>
+              <select
+                id="raid-poll-repeat-day"
+                value={repeatWeeklyDay}
+                onChange={(event) => setRepeatWeeklyDay(event.target.value as RaidPollDay)}
+                disabled={pending || disabled || !scheduleEnabled}
+              >
+                {RAID_POLL_DAYS.map((day) => <option key={day.value} value={day.value}>{day.fullLabel}</option>)}
+              </select>
+            </label>
+            <label className="raid-poll-field" htmlFor="raid-poll-repeat-time">
+              <span>Час публікації</span>
+              <select
+                id="raid-poll-repeat-time"
+                value={repeatWeeklyTime}
+                onChange={(event) => setRepeatWeeklyTime(event.target.value as RaidPollRepeatTime)}
+                disabled={pending || disabled || !scheduleEnabled}
+              >
+                {RAID_POLL_REPEAT_TIMES.map((time) => <option key={time} value={time}>{time}</option>)}
+              </select>
+            </label>
+          </div>
           <label className="raid-checkbox-line raid-poll-repeat-toggle">
             <input
               type="checkbox"
@@ -328,33 +392,9 @@ export default function RaidPollCreateClientForm({ channels, roles = [], default
               onChange={(event) => setAutoRepeatWeekly(event.target.checked)}
               disabled={pending || disabled}
             />
-            <span>Щотижня створювати новий ідентичний пул, а попередній Discord-пул автоматично прибирати.</span>
+            <span>Після першої публікації щотижня створювати новий ідентичний пул у цей самий день і час, а попередній Discord-пул прибирати.</span>
           </label>
-          <div className="raid-poll-repeat-grid" aria-disabled={!autoRepeatWeekly}>
-            <label className="raid-poll-field" htmlFor="raid-poll-repeat-day">
-              <span>День повтору</span>
-              <select
-                id="raid-poll-repeat-day"
-                value={repeatWeeklyDay}
-                onChange={(event) => setRepeatWeeklyDay(event.target.value as RaidPollDay)}
-                disabled={pending || disabled || !autoRepeatWeekly}
-              >
-                {RAID_POLL_DAYS.map((day) => <option key={day.value} value={day.value}>{day.fullLabel}</option>)}
-              </select>
-            </label>
-            <label className="raid-poll-field" htmlFor="raid-poll-repeat-time">
-              <span>Час повтору</span>
-              <select
-                id="raid-poll-repeat-time"
-                value={repeatWeeklyTime}
-                onChange={(event) => setRepeatWeeklyTime(event.target.value as RaidPollRepeatTime)}
-                disabled={pending || disabled || !autoRepeatWeekly}
-              >
-                {RAID_POLL_REPEAT_TIMES.map((time) => <option key={time} value={time}>{time}</option>)}
-              </select>
-            </label>
-          </div>
-          <small>Час рахується у часовій зоні рейдів: Europe/Kyiv. Для старих пулів лишається fallback: понеділок 12:00.</small>
+          <small>Часова зона: Europe/Kyiv. {publishMode === "scheduled" ? `Перша публікація — найближчий ${scheduleDayLabel} о ${repeatWeeklyTime}.` : autoRepeatWeekly ? `Поточний пул публікується зараз, наступний — ${scheduleDayLabel} о ${repeatWeeklyTime}.` : "Розклад не використовується, доки не ввімкнено планування або автоповтор."}</small>
         </fieldset>
 
         <label className="raid-poll-field raid-poll-field--wide" htmlFor="raid-poll-description">
@@ -390,8 +430,12 @@ export default function RaidPollCreateClientForm({ channels, roles = [], default
           <span>{mentionRoleIds.length ? `${mentionRoleIds.length} рол.` : "Без тегів"}</span>
         </div>
         <div>
+          <strong>Публікація</strong>
+          <span>{publishMode === "scheduled" ? `Заплановано: найближчий ${scheduleDayLabel} о ${repeatWeeklyTime}` : "Одразу після збереження"}</span>
+        </div>
+        <div>
           <strong>Автоповтор</strong>
-          <span>{autoRepeatWeekly ? `${RAID_POLL_DAYS.find((day) => day.value === repeatWeeklyDay)?.fullLabel || "Понеділок"} о ${repeatWeeklyTime}` : "Вимкнено"}</span>
+          <span>{autoRepeatWeekly ? `${scheduleDayLabel} о ${repeatWeeklyTime}` : "Вимкнено"}</span>
         </div>
         <div>
           <strong>Закриття</strong>
@@ -402,7 +446,11 @@ export default function RaidPollCreateClientForm({ channels, roles = [], default
       <div className="raid-form-actions raid-poll-create-actions">
         <a className="btn subtle" href={isEdit && poll?.id ? `/polls/${encodeURIComponent(poll.id)}` : "/polls"}>{isEdit ? "Скасувати" : "До списку"}</a>
         <button className="btn primary" type="submit" disabled={pending || disabled} aria-busy={pending ? "true" : "false"}>
-          {pending ? (isEdit ? "Оновлюємо..." : "Створюємо...") : (isEdit ? "Зберегти й оновити Discord" : "Створити й опублікувати")}
+          {pending
+            ? (isEdit ? "Оновлюємо..." : publishMode === "scheduled" ? "Плануємо..." : "Створюємо...")
+            : isEdit
+              ? poll?.status === "scheduled" && publishMode === "scheduled" ? "Зберегти розклад" : "Зберегти й оновити Discord"
+              : publishMode === "scheduled" ? "Запланувати голосування" : "Створити й опублікувати"}
         </button>
       </div>
     </form>

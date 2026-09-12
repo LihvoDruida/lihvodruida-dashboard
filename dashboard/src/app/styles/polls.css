@@ -91,6 +91,31 @@
 }
 
 /* Призупинений пул приглушений, як закритий рейд */
+.poll-detail__scheduled {
+  margin: 12px 0 0;
+  padding: 11px 13px;
+  border: 1px solid color-mix(in srgb, var(--c-warning) 32%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--c-warning) 8%, transparent);
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+.poll-detail__scheduled b {
+  color: var(--text);
+}
+
+.poll-detail__schedule-error {
+  margin: 8px 0 0;
+  padding: 11px 13px;
+  border: 1px solid var(--tint-danger-border);
+  border-radius: 12px;
+  background: var(--tint-danger-bg);
+  color: var(--text-on-danger);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
 .poll-detail__paused {
   padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--tint-warning-border);
@@ -984,7 +1009,7 @@
    14. СТВОРЕННЯ / РЕДАГУВАННЯ ПУЛУ
 
    Форма йде одним вертикальним потоком: назва → складність →
-   таймер → канал → дні → ролі → автоповтор → опис → підсумок.
+   таймер → режим публікації → канал → дні → ролі → розклад/автоповтор → опис → підсумок.
    Горизонтальні сітки в секціях форми навмисно не використовуємо —
    вони змушують стрибати очима і ламаються на планшеті.
    ========================================================= */
@@ -1048,6 +1073,7 @@
 
 .raid-poll-days-field,
 .raid-poll-roles-field,
+.raid-poll-publication-card,
 .raid-poll-repeat-card,
 .raid-poll-muted-box {
   display: grid;
@@ -1063,6 +1089,70 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
   gap: var(--space-md);
+}
+
+.raid-poll-publication-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
+.raid-poll-publication-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: flex-start;
+  gap: var(--space-sm);
+  min-height: 92px;
+  padding: var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+
+.raid-poll-publication-option:hover {
+  border-color: var(--border-strong);
+}
+
+.raid-poll-publication-option.is-selected {
+  border-color: color-mix(in srgb, var(--c-accent-400) 72%, var(--border));
+  background: color-mix(in srgb, var(--c-accent-400) 11%, var(--surface-raised));
+}
+
+.raid-poll-publication-option input {
+  margin-top: 0.2rem;
+}
+
+.raid-poll-publication-option > span,
+.raid-poll-publication-fixed {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.raid-poll-publication-option strong,
+.raid-poll-publication-fixed strong {
+  color: var(--text-strong);
+  font-size: 0.86rem;
+}
+
+.raid-poll-publication-option small,
+.raid-poll-publication-fixed span {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.raid-poll-publication-fixed {
+  padding: var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+
+.poll-state--scheduled {
+  --tone: var(--c-warning);
 }
 
 /* Вимкнений автоповтор приглушується, але лишається читабельним */
@@ -1238,4 +1328,15 @@
   min-height: 32px;
   padding-inline: var(--space-sm);
   font-size: 0.76rem;
+}
+
+@media (max-width: 720px) {
+  .raid-poll-publication-options {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .raid-poll-publication-option {
+    min-height: 0;
+    padding: var(--space-sm);
+  }
 }

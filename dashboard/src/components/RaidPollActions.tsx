@@ -6,7 +6,7 @@ import { dashboardErrorMessage, dispatchDashboardToast, errorFromPayload } from 
 import { notifyDashboardDataChanged } from "@/lib/dashboardLiveRefresh";
 import RaidPollPauseButton from "@/components/RaidPollPauseButton";
 
-export type RaidPollActionState = "open" | "paused" | "closed";
+export type RaidPollActionState = "scheduled" | "open" | "paused" | "closed";
 
 type Kind = "close" | "reopen" | "sync" | "delete";
 
@@ -42,7 +42,12 @@ export default function RaidPollActions({
   async function run(kind: Kind) {
     if (pending) return;
 
-    if (kind === "close" && !window.confirm(`Закрити рейд-пул «${pollTitle}»?\n\nКнопки голосування в Discord стануть неактивними. Пул можна буде відкрити знову.`)) return;
+    if (kind === "close") {
+      const question = state === "scheduled"
+        ? `Скасувати заплановану публікацію «${pollTitle}»?\n\nDiscord-повідомлення не буде створено, а автоповтор для цього плану буде вимкнено.`
+        : `Закрити рейд-пул «${pollTitle}»?\n\nКнопки голосування в Discord стануть неактивними. Пул можна буде відкрити знову.`;
+      if (!window.confirm(question)) return;
+    }
     if (kind === "delete" && !window.confirm(`Видалити рейд-пул «${pollTitle}»?\n\nЗапис зникне з бази даних, Discord-повідомлення буде прибрано. Дію не можна скасувати.`)) return;
 
     setPending(kind);
@@ -72,12 +77,12 @@ export default function RaidPollActions({
       dispatchDashboardToast({
         tone: data?.discordDeleteFailed ? "warning" : "success",
         title:
-          kind === "close" ? "Рейд-пул закрито"
+          kind === "close" ? (state === "scheduled" ? "План публікації скасовано" : "Рейд-пул закрито")
             : kind === "reopen" ? "Рейд-пул відкрито"
               : kind === "sync" ? (data?.republished ? "Повідомлення опубліковано заново" : "Discord синхронізовано")
                 : "Рейд-пул видалено",
         message:
-          kind === "close" ? "Кнопки голосування в Discord вимкнено, фінальний результат оновлено."
+          kind === "close" ? (state === "scheduled" ? "Пул не буде автоматично опубліковано в Discord." : "Кнопки голосування в Discord вимкнено, фінальний результат оновлено.")
             : kind === "reopen" ? "Голосування знову приймає голоси."
               : kind === "sync" ? (data?.republished ? "Старе повідомлення не знайдено, тому створено нове." : "Embed і кнопки приведено у відповідність до стану на сайті.")
                 : data?.warning || "Запис і Discord-повідомлення прибрано.",
@@ -108,9 +113,9 @@ export default function RaidPollActions({
       {messageUrl ? <a className="btn subtle" href={messageUrl} target="_blank" rel="noreferrer">Discord</a> : null}
       {canManage && editHref ? <a className="btn subtle" href={editHref}>Редагувати</a> : null}
 
-      {canManage && state !== "closed" ? <RaidPollPauseButton pollId={pollId} paused={state === "paused"} /> : null}
+      {canManage && state !== "closed" && state !== "scheduled" ? <RaidPollPauseButton pollId={pollId} paused={state === "paused"} /> : null}
 
-      {canManage ? (
+      {canManage && state !== "scheduled" ? (
         <button className="btn subtle" type="button" onClick={() => run("sync")} disabled={pending !== null} aria-busy={pending === "sync"}>
           {pending === "sync" ? "Синхронізуємо…" : "Синхронізувати Discord"}
         </button>
@@ -118,7 +123,7 @@ export default function RaidPollActions({
 
       {canManage && state !== "closed" ? (
         <button className="btn danger" type="button" onClick={() => run("close")} disabled={pending !== null} aria-busy={pending === "close"}>
-          {pending === "close" ? "Закриваємо…" : "Закрити"}
+          {pending === "close" ? (state === "scheduled" ? "Скасовуємо…" : "Закриваємо…") : (state === "scheduled" ? "Скасувати план" : "Закрити")}
         </button>
       ) : null}
 

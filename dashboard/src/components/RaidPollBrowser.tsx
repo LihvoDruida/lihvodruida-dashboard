@@ -12,7 +12,7 @@ export type RaidPollCardModel = {
   description: string;
   difficulty: string;
   difficultyLabel: string;
-  state: "open" | "paused" | "closed";
+  state: "scheduled" | "open" | "paused" | "closed";
   statusLabel: string;
   dayLabels: string[];
   votes: number;
@@ -29,9 +29,10 @@ export type RaidPollCardModel = {
   messageUrl: string | null;
 };
 
-type TabKey = "open" | "paused" | "closed";
+type TabKey = "scheduled" | "open" | "paused" | "closed";
 
 const TABS: Array<{ key: TabKey; label: string }> = [
+  { key: "scheduled", label: "Заплановані" },
   { key: "open", label: "Активні" },
   { key: "paused", label: "На паузі" },
   { key: "closed", label: "Архів" },
@@ -131,6 +132,7 @@ export default function RaidPollBrowser({
 }) {
   const counts = useMemo(
     () => ({
+      scheduled: cards.filter((card) => card.state === "scheduled").length,
       open: cards.filter((card) => card.state === "open").length,
       paused: cards.filter((card) => card.state === "paused").length,
       closed: cards.filter((card) => card.state === "closed").length,
@@ -140,6 +142,7 @@ export default function RaidPollBrowser({
 
   // Стартова вкладка — перша непорожня, щоб не відкривати порожній екран.
   const [tab, setTab] = useState<TabKey>(() => {
+    if (counts.scheduled) return "scheduled";
     if (counts.open) return "open";
     if (counts.paused) return "paused";
     return counts.closed ? "closed" : "open";
@@ -161,7 +164,9 @@ export default function RaidPollBrowser({
   async function runBulk(kind: "close" | "delete") {
     if (bulkPending || !selected.length) return;
     const question = kind === "close"
-      ? `Закрити вибрані рейд-пули (${selected.length})?`
+      ? tab === "scheduled"
+        ? `Скасувати вибрані заплановані публікації (${selected.length})?`
+        : `Закрити вибрані рейд-пули (${selected.length})?`
       : `Видалити вибрані рейд-пули (${selected.length})? Дію не можна скасувати.`;
     if (!window.confirm(question)) return;
 
@@ -259,7 +264,7 @@ export default function RaidPollBrowser({
             Вибрати всі у вкладці
           </button>
           <button type="button" className="btn danger" onClick={() => runBulk("close")} disabled={bulkPending}>
-            {bulkPending ? "Обробляємо…" : "Закрити вибрані"}
+            {bulkPending ? "Обробляємо…" : tab === "scheduled" ? "Скасувати заплановані" : "Закрити вибрані"}
           </button>
           <button type="button" className="btn danger" onClick={() => runBulk("delete")} disabled={bulkPending}>
             {bulkPending ? "Обробляємо…" : "Видалити вибрані"}
@@ -282,11 +287,13 @@ export default function RaidPollBrowser({
           <p className="poll-empty">
             {query.trim()
               ? "Нічого не знайдено за цим запитом."
-              : tab === "open"
-                ? "Активних рейд-пулів немає."
-                : tab === "paused"
-                  ? "Немає пулів на паузі."
-                  : "Архів порожній."}
+              : tab === "scheduled"
+                ? "Запланованих публікацій немає."
+                : tab === "open"
+                  ? "Активних рейд-пулів немає."
+                  : tab === "paused"
+                    ? "Немає пулів на паузі."
+                    : "Архів порожній."}
           </p>
         )}
       </div>

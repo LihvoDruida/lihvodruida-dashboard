@@ -37,6 +37,7 @@ export {
   raidPollAcceptsVotes,
   raidPollIsClosed,
   raidPollIsPaused,
+  raidPollIsScheduled,
   raidPollStateKey,
   raidPollStateTone,
   raidPollVotingLocked,
@@ -48,6 +49,7 @@ export type {
   RaidPollDay,
   RaidPollDifficulty,
   RaidPollItem,
+  RaidPollPublishMode,
   RaidPollRepeatTime,
   RaidPollRole,
   RaidPollSchedule,
@@ -72,6 +74,7 @@ import {
   raidPollRoleShortLabel,
   raidPollAcceptsVotes,
   raidPollIsPaused,
+  raidPollIsScheduled,
   raidPollVotingLocked,
   type RaidPollAvailability,
   type RaidPollCreateInput,
@@ -80,6 +83,7 @@ import {
   type RaidPollRepeatTime,
   type RaidPollDifficulty,
   type RaidPollItem,
+  type RaidPollPublishMode,
   type RaidPollRole,
   type RaidPollSchedule,
   type RaidPollScheduleValue,
@@ -211,6 +215,10 @@ function cleanRepeatWeeklyDay(value: unknown): RaidPollDay {
 function cleanRepeatWeeklyTime(value: unknown): RaidPollRepeatTime {
   const text = cleanString(value, 8);
   return RAID_POLL_REPEAT_TIMES.includes(text as RaidPollRepeatTime) ? text as RaidPollRepeatTime : "12:00";
+}
+
+function cleanPublishMode(value: unknown): RaidPollPublishMode {
+  return cleanString(value, 20).toLowerCase() === "scheduled" ? "scheduled" : "now";
 }
 
 /**
@@ -369,18 +377,21 @@ export function raidPollTitle(poll: Pick<RaidPollItem, "title" | "difficulty">) 
 }
 
 export function raidPollStatusLabel(poll: Pick<RaidPollItem, "status" | "closesAtMs">) {
+  if (poll.status === "scheduled") return "Заплановано";
   if (poll.status === "closed") return "Закрито";
   if (poll.status === "paused") return "На паузі";
   return poll.closesAtMs <= Date.now() ? "Завершується" : "Відкрите";
 }
 
-/** Скільки лишилось до автозакриття у людському форматі. Для паузи — заморожений залишок. */
-export function raidPollRemainingLabel(poll: Pick<RaidPollItem, "status" | "closesAtMs" | "pausedRemainingMs">) {
+/** Скільки лишилось до публікації/автозакриття у людському форматі. Для паузи — заморожений залишок. */
+export function raidPollRemainingLabel(poll: Pick<RaidPollItem, "status" | "closesAtMs" | "pausedRemainingMs" | "scheduledPublishAtMs">) {
   if (poll.status === "closed") return "Завершено";
-  const remaining = poll.status === "paused"
-    ? Math.max(0, Number(poll.pausedRemainingMs) || 0)
-    : poll.closesAtMs - Date.now();
-  if (remaining <= 0) return poll.status === "paused" ? "Час вичерпано" : "Закривається";
+  const remaining = poll.status === "scheduled"
+    ? Math.max(0, Number(poll.scheduledPublishAtMs) || 0) - Date.now()
+    : poll.status === "paused"
+      ? Math.max(0, Number(poll.pausedRemainingMs) || 0)
+      : poll.closesAtMs - Date.now();
+  if (remaining <= 0) return poll.status === "scheduled" ? "Очікує публікації" : poll.status === "paused" ? "Час вичерпано" : "Закривається";
   const minutes = Math.floor(remaining / 60_000);
   const days = Math.floor(minutes / (60 * 24));
   const hours = Math.floor((minutes % (60 * 24)) / 60);
@@ -443,13 +454,20 @@ function nextWeeklyRepeatMs(fromMs = Date.now(), repeatDay: RaidPollDay = "mon",
     const day = localCandidateDate.getUTCDate();
     const candidateMs = zonedDateTimeToUtcMs(year, month, day, hour, minute, timeZone);
     const candidateLocal = localDateParts(new Date(candidateMs), timeZone);
-    if (candidateLocal.weekday === targetWeekday && candidateMs > fromMs + 60_000) return candidateMs;
+    if (candidateLocal.weekday === targetWeekday && candidateMs > fromMs) return candidateMs;
   }
   return fromMs + 7 * 24 * 60 * 60 * 1000;
 }
 
 export function raidPollRepeatScheduleLabel(poll: Pick<RaidPollItem, "autoRepeatWeekly" | "repeatWeeklyDay" | "repeatWeeklyTime">) {
   if (!poll.autoRepeatWeekly) return "Вимкнено";
+  const day = cleanRepeatWeeklyDay(poll.repeatWeeklyDay);
+  const time = cleanRepeatWeeklyTime(poll.repeatWeeklyTime);
+  return `${dayFullLabel(day)} о ${time}`;
+}
+
+export function raidPollPublishScheduleLabel(poll: Pick<RaidPollItem, "status" | "repeatWeeklyDay" | "repeatWeeklyTime">) {
+  if (poll.status !== "scheduled") return "Опубліковано";
   const day = cleanRepeatWeeklyDay(poll.repeatWeeklyDay);
   const time = cleanRepeatWeeklyTime(poll.repeatWeeklyTime);
   return `${dayFullLabel(day)} о ${time}`;
@@ -508,22 +526,50 @@ export function normalizeRaidPoll(id: string, data: Record<string, unknown>): Ra
   const now = new Date().toISOString();
   const closeAfterMinutes = cleanCloseAfterMinutes(data.closeAfterMinutes || data.close_after_minutes);
   const createdAt = safeIso(data.createdAt || data.created_at, now);
-  const closesAtMs = safeMs(data.closesAtMs || data.closes_at_ms, Date.parse(createdAt) + closeAfterMinutes * 60 * 1000);
   // Важливо: не закриваємо обʼєкт тільки під час normalize.
   // Інакше closeDueRaidPoll() бачить already closed і не PATCH-ить Discord,
   // через що публічна кнопка "Проголосувати" лишається активною у старому embed.
   const rawStatus = cleanString(data.status, 20).toLowerCase();
-  const status: RaidPollStatus = rawStatus === "closed" ? "closed" : rawStatus === "paused" ? "paused" : "open";
+  const status: RaidPollStatus = rawStatus === "scheduled"
+    ? "scheduled"
+    : rawStatus === "closed"
+      ? "closed"
+      : rawStatus === "paused"
+        ? "paused"
+        : "open";
+  const scheduleConfigured = status === "scheduled";
+  const autoRepeatWeekly = cleanBoolean(data.autoRepeatWeekly ?? data.auto_repeat_weekly ?? data.repeatWeekly ?? data.repeat_weekly);
+  const repeatWeeklyDay = autoRepeatWeekly || scheduleConfigured
+    ? cleanRepeatWeeklyDay(data.repeatWeeklyDay ?? data.repeat_weekly_day ?? data.repeatDay ?? data.repeat_day)
+    : null;
+  const repeatWeeklyTime = autoRepeatWeekly || scheduleConfigured
+    ? cleanRepeatWeeklyTime(data.repeatWeeklyTime ?? data.repeat_weekly_time ?? data.repeatTime ?? data.repeat_time)
+    : null;
+  const rawScheduledAt = timestampToIso(data.scheduledPublishAt || data.scheduled_publish_at);
+  const parsedScheduledAtMs = rawScheduledAt ? Date.parse(rawScheduledAt) : 0;
+  const scheduledPublishAtMs = status === "scheduled"
+    ? safeMs(
+        data.scheduledPublishAtMs ?? data.scheduled_publish_at_ms,
+        Number.isFinite(parsedScheduledAtMs) && parsedScheduledAtMs > 0
+          ? parsedScheduledAtMs
+          : nextWeeklyRepeatMs(Date.parse(createdAt) || Date.now(), repeatWeeklyDay || "mon", repeatWeeklyTime || "12:00"),
+      )
+    : null;
+  const scheduledPublishAt = scheduledPublishAtMs ? new Date(scheduledPublishAtMs).toISOString() : null;
+  const defaultCloseBaseMs = scheduledPublishAtMs || Date.parse(createdAt) || Date.now();
+  const closesAtMs = safeMs(data.closesAtMs || data.closes_at_ms, defaultCloseBaseMs + closeAfterMinutes * 60 * 1000);
   const pausedAt = status === "paused" ? timestampToIso(data.pausedAt || data.paused_at) : null;
   // Пауза морозить дедлайн. Якщо залишок не збережений (старий документ) — рахуємо від pausedAt.
   const pausedRemainingMs = status === "paused"
     ? Math.max(0, Math.floor(Number(data.pausedRemainingMs ?? data.paused_remaining_ms ?? (pausedAt ? closesAtMs - Date.parse(pausedAt) : 0)) || 0))
     : null;
-  const autoRepeatWeekly = cleanBoolean(data.autoRepeatWeekly ?? data.auto_repeat_weekly ?? data.repeatWeekly ?? data.repeat_weekly);
-  const repeatWeeklyDay = autoRepeatWeekly ? cleanRepeatWeeklyDay(data.repeatWeeklyDay ?? data.repeat_weekly_day ?? data.repeatDay ?? data.repeat_day) : null;
-  const repeatWeeklyTime = autoRepeatWeekly ? cleanRepeatWeeklyTime(data.repeatWeeklyTime ?? data.repeat_weekly_time ?? data.repeatTime ?? data.repeat_time) : null;
   const repeatNextAtMs = autoRepeatWeekly
-    ? safeMs(data.repeatNextAtMs ?? data.repeat_next_at_ms, nextWeeklyRepeatMs(Date.parse(createdAt) || Date.now(), repeatWeeklyDay || "mon", repeatWeeklyTime || "12:00"))
+    ? safeMs(
+        data.repeatNextAtMs ?? data.repeat_next_at_ms,
+        status === "scheduled" && scheduledPublishAtMs
+          ? nextWeeklyRepeatMs(scheduledPublishAtMs + 60_000, repeatWeeklyDay || "mon", repeatWeeklyTime || "12:00")
+          : nextWeeklyRepeatMs(Date.parse(createdAt) || Date.now(), repeatWeeklyDay || "mon", repeatWeeklyTime || "12:00"),
+      )
     : null;
 
   return {
@@ -532,6 +578,11 @@ export function normalizeRaidPoll(id: string, data: Record<string, unknown>): Ra
     difficulty: cleanDifficulty(data.difficulty),
     description: cleanString(data.description, 900) || RAID_POLL_DESCRIPTION,
     status,
+    scheduledPublishAt,
+    scheduledPublishAtMs,
+    publishedAt: timestampToIso(data.publishedAt || data.published_at),
+    scheduledPublishLastError: cleanString(data.scheduledPublishLastError ?? data.scheduled_publish_last_error, 400) || null,
+    scheduledPublishLastErrorAt: timestampToIso(data.scheduledPublishLastErrorAt || data.scheduled_publish_last_error_at),
     closeAfterMinutes,
     closesAt: new Date(closesAtMs).toISOString(),
     closesAtMs,
@@ -1179,6 +1230,7 @@ function votersDiscordValue(poll: RaidPollItem) {
 }
 
 function raidPollDiscordStatusValue(poll: RaidPollItem) {
+  if (poll.status === "scheduled") return `🗓️ **Публікацію заплановано**\nПублікація: ${poll.scheduledPublishAtMs ? formatDiscordTimestamp(poll.scheduledPublishAtMs) : raidPollPublishScheduleLabel(poll)}`;
   if (poll.status === "closed") return "🔒 **Голосування завершено**";
   if (poll.status === "paused") {
     const note = poll.pausedNote ? `\n📝 ${poll.pausedNote}` : "";
@@ -1190,6 +1242,7 @@ function raidPollDiscordStatusValue(poll: RaidPollItem) {
 
 export function buildRaidPollDiscordPayload(poll: RaidPollItem, relatedPolls: RaidPollRecommendationContext[] = [poll]) {
   const counts = pollVoteCounts(poll);
+  const scheduled = raidPollIsScheduled(poll);
   const closed = poll.status === "closed" || (poll.status === "open" && poll.closesAtMs <= Date.now());
   const paused = raidPollIsPaused(poll);
   const fields = [
@@ -1203,15 +1256,17 @@ export function buildRaidPollDiscordPayload(poll: RaidPollItem, relatedPolls: Ra
   ];
 
   const embed = normalizeDiscordEmbed({
-    title: `${closed ? "🔒" : paused ? "⏸️" : "🗳️"} ${raidPollTitle(poll)}`,
+    title: `${scheduled ? "🗓️" : closed ? "🔒" : paused ? "⏸️" : "🗳️"} ${raidPollTitle(poll)}`,
     description: poll.description,
-    color: closed ? 0x5865f2 : paused ? 0x9aa4b2 : DIFFICULTY_COLORS[poll.difficulty],
+    color: scheduled ? 0xf0a64a : closed ? 0x5865f2 : paused ? 0x9aa4b2 : DIFFICULTY_COLORS[poll.difficulty],
     url: dashboardPollUrl(poll.id),
     fields,
     footer: {
-      text: closed
-        ? "Mistblossom Vanguard • Рейд-пул завершено"
-        : paused
+      text: scheduled
+        ? "Mistblossom Vanguard • Запланована публікація"
+        : closed
+          ? "Mistblossom Vanguard • Рейд-пул завершено"
+          : paused
           ? "Mistblossom Vanguard • Пауза: голоси тимчасово не приймаються"
           : "Mistblossom Vanguard • Роль + дні за 10 секунд, персонаж не потрібен",
     },
@@ -1221,9 +1276,11 @@ export function buildRaidPollDiscordPayload(poll: RaidPollItem, relatedPolls: Ra
   });
 
   return {
-    content: closed
-      ? "🔒 **Голосування завершено. Фінальний результат нижче.**"
-      : paused
+    content: scheduled
+      ? "🗓️ **Цей рейд-пул ще не опубліковано.**"
+      : closed
+        ? "🔒 **Голосування завершено. Фінальний результат нижче.**"
+        : paused
         ? "⏸️ **Рейд-пул на паузі. Голоси тимчасово не приймаються — стежте за оновленням.**"
         : "🗳️ **Рейд-пул відкрито. Натисніть кнопку, оберіть роль і зручні дні — підпис візьмемо з вашого ніку на сервері.**",
     embed,
@@ -1731,14 +1788,29 @@ export async function saveRaidPollFromInput(input: RaidPollCreateInput, user: Da
   const activeDays = days.length ? days : RAID_POLL_DAYS.map((day) => day.value);
   const now = new Date();
   const nowIso = now.toISOString();
-  const closesAtMs = now.getTime() + closeAfterMinutes * 60 * 1000;
   const id = newPollId();
   const channelId = cleanSnowflake(input.channelId) || getDiscordDefaultChannelId();
+  if (!channelId) throw new Error("Discord-канал для рейд-пулу не вибрано.");
   const mentionRoleIds = cleanSnowflakeIds(input.mentionRoleIds);
+  const publishMode = cleanPublishMode(input.publishMode);
   const autoRepeatWeekly = cleanBoolean(input.autoRepeatWeekly);
-  const repeatWeeklyDay = autoRepeatWeekly ? cleanRepeatWeeklyDay(input.repeatWeeklyDay) : null;
-  const repeatWeeklyTime = autoRepeatWeekly ? cleanRepeatWeeklyTime(input.repeatWeeklyTime) : null;
-  const repeatNextAtMs = autoRepeatWeekly ? nextWeeklyRepeatMs(now.getTime(), repeatWeeklyDay || "mon", repeatWeeklyTime || "12:00") : null;
+  // День/час є спільною точкою розкладу: для відкладеної першої публікації
+  // та, за потреби, для подальшого щотижневого повтору.
+  const scheduleDay = cleanRepeatWeeklyDay(input.repeatWeeklyDay);
+  const scheduleTime = cleanRepeatWeeklyTime(input.repeatWeeklyTime);
+  const scheduledPublishAtMs = publishMode === "scheduled"
+    ? nextWeeklyRepeatMs(now.getTime(), scheduleDay, scheduleTime)
+    : null;
+  const scheduledPublishAt = scheduledPublishAtMs ? new Date(scheduledPublishAtMs).toISOString() : null;
+  const closeBaseMs = scheduledPublishAtMs || now.getTime();
+  const closesAtMs = closeBaseMs + closeAfterMinutes * 60 * 1000;
+  // Якщо перша публікація теж стоїть на понеділок 12:00, автоповтор має бути
+  // НЕ в той самий момент, а вже на наступному понеділку.
+  const repeatNextAtMs = autoRepeatWeekly
+    ? publishMode === "scheduled" && scheduledPublishAtMs
+      ? nextWeeklyRepeatMs(scheduledPublishAtMs + 60_000, scheduleDay, scheduleTime)
+      : nextWeeklyRepeatMs(now.getTime(), scheduleDay, scheduleTime)
+    : null;
   const repeatSeriesId = autoRepeatWeekly ? id : null;
 
   const basePoll: RaidPollItem = {
@@ -1746,7 +1818,10 @@ export async function saveRaidPollFromInput(input: RaidPollCreateInput, user: Da
     title,
     difficulty,
     description,
-    status: "open",
+    status: publishMode === "scheduled" ? "scheduled" : "open",
+    scheduledPublishAt,
+    scheduledPublishAtMs,
+    publishedAt: publishMode === "scheduled" ? null : nowIso,
     closeAfterMinutes,
     closesAt: new Date(closesAtMs).toISOString(),
     closesAtMs,
@@ -1759,8 +1834,8 @@ export async function saveRaidPollFromInput(input: RaidPollCreateInput, user: Da
     messageUrl: null,
     mentionRoleIds,
     autoRepeatWeekly,
-    repeatWeeklyDay,
-    repeatWeeklyTime,
+    repeatWeeklyDay: autoRepeatWeekly || publishMode === "scheduled" ? scheduleDay : null,
+    repeatWeeklyTime: autoRepeatWeekly || publishMode === "scheduled" ? scheduleTime : null,
     repeatNextAt: repeatNextAtMs ? new Date(repeatNextAtMs).toISOString() : null,
     repeatNextAtMs,
     repeatSeriesId,
@@ -1776,21 +1851,20 @@ export async function saveRaidPollFromInput(input: RaidPollCreateInput, user: Da
       ...basePoll,
       days: activeDays,
       mentionRoleIds,
-      autoRepeatWeekly,
-      repeatWeeklyDay,
-      repeatWeeklyTime,
-      repeatNextAt: repeatNextAtMs ? new Date(repeatNextAtMs).toISOString() : null,
-      repeatNextAtMs,
-      repeatSeriesId,
-      repeatedFromPollId: null,
       votes: [],
       votesByDiscordId: {},
+      voteDraftsByDiscordId: {},
       createdAtMs: now.getTime(),
       updatedAtMs: now.getTime(),
     });
     return true;
   }, { logEvent: "raid_polls.create_failed" });
   clearRaidPollRuntimeCaches(id);
+
+  // Запланований пул принципово НЕ торкається Discord під час створення.
+  // Cron опублікує його у persisted scheduledPublishAtMs, тому рестарт VPS
+  // не скидає таймер і не створює ранній embed.
+  if (publishMode === "scheduled") return basePoll;
 
   let published: { channelId: string; messageId: string; messageUrl: string } | null = null;
   try {
@@ -1824,6 +1898,7 @@ export async function saveRaidPollFromForm(form: FormData, user: DashboardSessio
     closeAfterMinutes: form.get("closeAfterMinutes"),
     days: form.getAll("days"),
     mentionRoleIds: form.getAll("mentionRoleIds"),
+    publishMode: form.get("publishMode"),
     autoRepeatWeekly: form.get("autoRepeatWeekly"),
     repeatWeeklyDay: form.get("repeatWeeklyDay"),
     repeatWeeklyTime: form.get("repeatWeeklyTime"),
@@ -1842,9 +1917,10 @@ export async function updateRaidPollFromInput(pollId: string, input: RaidPollUpd
   const activeDays = days.length ? days : RAID_POLL_DAYS.map((day) => day.value);
   const channelId = cleanSnowflake(input.channelId) || getDiscordDefaultChannelId();
   const mentionRoleIds = cleanSnowflakeIds(input.mentionRoleIds);
+  const requestedPublishMode = cleanPublishMode(input.publishMode);
   const autoRepeatWeekly = cleanBoolean(input.autoRepeatWeekly);
-  const repeatWeeklyDay = autoRepeatWeekly ? cleanRepeatWeeklyDay(input.repeatWeeklyDay) : null;
-  const repeatWeeklyTime = autoRepeatWeekly ? cleanRepeatWeeklyTime(input.repeatWeeklyTime) : null;
+  const scheduleDay = cleanRepeatWeeklyDay(input.repeatWeeklyDay);
+  const scheduleTime = cleanRepeatWeeklyTime(input.repeatWeeklyTime);
   if (!channelId) throw new Error("Discord-канал для рейд-пулу не вибрано.");
 
   const updatedAt = new Date().toISOString();
@@ -1853,23 +1929,78 @@ export async function updateRaidPollFromInput(pollId: string, input: RaidPollUpd
     return getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
       const snap = await tx.get(ref);
       if (!snap.exists) throw new Error("Рейд-пул не знайдено.");
-      const previous = normalizeRaidPoll(snap.id, snap.data() || {});
-      const createdAtMs = Date.parse(previous.createdAt);
-      const closesAtMs = previous.status === "closed"
-        ? previous.closesAtMs
-        : (Number.isFinite(createdAtMs) ? createdAtMs : Date.now()) + closeAfterMinutes * 60 * 1000;
-      const repeatConfigChanged = previous.repeatWeeklyDay !== repeatWeeklyDay || previous.repeatWeeklyTime !== repeatWeeklyTime || previous.autoRepeatWeekly !== autoRepeatWeekly;
-      const nextRepeatAtMs = autoRepeatWeekly
-        ? repeatConfigChanged || !previous.repeatNextAtMs
-          ? nextWeeklyRepeatMs(Date.now(), repeatWeeklyDay || "mon", repeatWeeklyTime || "12:00")
-          : previous.repeatNextAtMs
-        : null;
-      const nextRepeatAt = nextRepeatAtMs ? new Date(nextRepeatAtMs).toISOString() : null;
+      const raw = snap.data() || {};
+      const previous = normalizeRaidPoll(snap.id, raw);
+      const nowMs = Date.now();
+      const wasScheduled = previous.status === "scheduled";
+      const scheduledLockAtMs = safeMs((raw as Record<string, unknown>).scheduledPublishLockedAtMs, 0);
+      if (wasScheduled && scheduledLockAtMs && nowMs - scheduledLockAtMs < 5 * 60 * 1000) {
+        throw new Error("Публікація цього рейд-пулу вже почалася. Зачекай кілька секунд і онови сторінку.");
+      }
+      const keepScheduled = wasScheduled && requestedPublishMode === "scheduled";
+      const scheduleConfigChanged = previous.repeatWeeklyDay !== scheduleDay || previous.repeatWeeklyTime !== scheduleTime;
+
+      let status: RaidPollStatus = previous.status;
+      let scheduledPublishAtMs: number | null = previous.scheduledPublishAtMs || null;
+      let scheduledPublishAt: string | null = previous.scheduledPublishAt || null;
+      let publishedAt: string | null = previous.publishedAt || null;
+      let closesAtMs = previous.closesAtMs;
+      let repeatNextAtMs: number | null = null;
+
+      if (keepScheduled) {
+        // Якщо запланований час уже настав, але Discord тимчасово не відповів,
+        // звичайне редагування НЕ переносить публікацію на наступний тиждень.
+        // Прострочений timestamp лишається due, і lifecycle повторить спробу.
+        scheduledPublishAtMs = scheduleConfigChanged || !previous.scheduledPublishAtMs
+          ? nextWeeklyRepeatMs(nowMs, scheduleDay, scheduleTime)
+          : previous.scheduledPublishAtMs;
+        scheduledPublishAt = new Date(scheduledPublishAtMs).toISOString();
+        closesAtMs = scheduledPublishAtMs + closeAfterMinutes * 60 * 1000;
+        repeatNextAtMs = autoRepeatWeekly
+          ? scheduleConfigChanged || !previous.repeatNextAtMs
+            ? nextWeeklyRepeatMs(scheduledPublishAtMs + 60_000, scheduleDay, scheduleTime)
+            : previous.repeatNextAtMs
+          : null;
+      } else if (wasScheduled && requestedPublishMode === "now") {
+        status = "open";
+        scheduledPublishAtMs = null;
+        scheduledPublishAt = null;
+        publishedAt = updatedAt;
+        closesAtMs = nowMs + closeAfterMinutes * 60 * 1000;
+        repeatNextAtMs = autoRepeatWeekly ? nextWeeklyRepeatMs(nowMs, scheduleDay, scheduleTime) : null;
+      } else {
+        // Уже опублікований пул не можна непомітно повернути у planned-state через PATCH.
+        // Для нього publishMode ігнорується, а Discord лишається джерелом активної взаємодії.
+        const createdAtMs = Date.parse(previous.createdAt);
+        closesAtMs = previous.status === "closed"
+          ? previous.closesAtMs
+          : (Number.isFinite(createdAtMs) ? createdAtMs : nowMs) + closeAfterMinutes * 60 * 1000;
+        const repeatConfigChanged = previous.repeatWeeklyDay !== (autoRepeatWeekly ? scheduleDay : null)
+          || previous.repeatWeeklyTime !== (autoRepeatWeekly ? scheduleTime : null)
+          || previous.autoRepeatWeekly !== autoRepeatWeekly;
+        repeatNextAtMs = autoRepeatWeekly
+          ? repeatConfigChanged || !previous.repeatNextAtMs
+            ? nextWeeklyRepeatMs(nowMs, scheduleDay, scheduleTime)
+            : previous.repeatNextAtMs
+          : null;
+        scheduledPublishAtMs = null;
+        scheduledPublishAt = null;
+      }
+
+      const nextRepeatAt = repeatNextAtMs ? new Date(repeatNextAtMs).toISOString() : null;
+      const repeatWeeklyDay = autoRepeatWeekly || status === "scheduled" ? scheduleDay : null;
+      const repeatWeeklyTime = autoRepeatWeekly || status === "scheduled" ? scheduleTime : null;
       const next: RaidPollItem = {
         ...previous,
         title,
         difficulty,
         description,
+        status,
+        scheduledPublishAt,
+        scheduledPublishAtMs,
+        publishedAt,
+        scheduledPublishLastError: status === "scheduled" ? previous.scheduledPublishLastError || null : null,
+        scheduledPublishLastErrorAt: status === "scheduled" ? previous.scheduledPublishLastErrorAt || null : null,
         closeAfterMinutes,
         closesAt: new Date(closesAtMs).toISOString(),
         closesAtMs,
@@ -1879,7 +2010,7 @@ export async function updateRaidPollFromInput(pollId: string, input: RaidPollUpd
         repeatWeeklyDay,
         repeatWeeklyTime,
         repeatNextAt: nextRepeatAt,
-        repeatNextAtMs: nextRepeatAtMs,
+        repeatNextAtMs,
         repeatSeriesId: autoRepeatWeekly ? previous.repeatSeriesId || previous.id : null,
         days: activeDays,
         updatedAt,
@@ -1888,6 +2019,16 @@ export async function updateRaidPollFromInput(pollId: string, input: RaidPollUpd
         title,
         difficulty,
         description,
+        status,
+        scheduledPublishAt,
+        scheduledPublishAtMs,
+        publishedAt,
+        scheduledPublishLastError: status === "scheduled" ? previous.scheduledPublishLastError || null : null,
+        scheduledPublishLastErrorAt: status === "scheduled" ? previous.scheduledPublishLastErrorAt || null : null,
+        ...(wasScheduled && status !== "scheduled" ? {
+          scheduledPublishLockedAtMs: FieldValue.delete(),
+          scheduledPublishLockId: FieldValue.delete(),
+        } : {}),
         closeAfterMinutes,
         closesAt: next.closesAt,
         closesAtMs,
@@ -1897,17 +2038,20 @@ export async function updateRaidPollFromInput(pollId: string, input: RaidPollUpd
         repeatWeeklyDay,
         repeatWeeklyTime,
         repeatNextAt: nextRepeatAt,
-        repeatNextAtMs: nextRepeatAtMs,
+        repeatNextAtMs,
         repeatSeriesId: autoRepeatWeekly ? previous.repeatSeriesId || previous.id : null,
         days: activeDays,
         updatedAt,
-        updatedAtMs: Date.now(),
+        updatedAtMs: nowMs,
       });
       return next;
     });
   }, { logEvent: "raid_polls.update_failed" });
 
   clearRaidPollRuntimeCaches(updatedPoll.id);
+  // Редагування planned-пулу не має побічного ефекту «опублікувати зараз».
+  if (updatedPoll.status === "scheduled") return updatedPoll;
+
   const published = await publishOrUpdatePollDiscordMessage(updatedPoll, channelId);
   const discordUpdatedAt = await savePollDiscordRef(updatedPoll.id, published);
   const finalPoll = { ...updatedPoll, ...published, updatedAt: discordUpdatedAt };
@@ -1924,10 +2068,189 @@ export async function updateRaidPollFromForm(pollId: string, form: FormData) {
     closeAfterMinutes: form.get("closeAfterMinutes"),
     days: form.getAll("days"),
     mentionRoleIds: form.getAll("mentionRoleIds"),
+    publishMode: form.get("publishMode"),
     autoRepeatWeekly: form.get("autoRepeatWeekly"),
     repeatWeeklyDay: form.get("repeatWeeklyDay"),
     repeatWeeklyTime: form.get("repeatWeeklyTime"),
   });
+}
+
+async function markRaidPollPublishFailed(pollId: string, message: string) {
+  await firebaseWrite("raid", `raid-poll:publish-failed:${pollId}`, async () => {
+    const failedAt = new Date();
+    await pollRef(pollId).update({
+      scheduledPublishLockedAtMs: FieldValue.delete(),
+      scheduledPublishLockId: FieldValue.delete(),
+      scheduledPublishLastError: cleanString(message, 400),
+      scheduledPublishLastErrorAt: failedAt.toISOString(),
+      updatedAt: failedAt.toISOString(),
+      updatedAtMs: failedAt.getTime(),
+    });
+    return true;
+  }, { logEvent: "raid_polls.scheduled_publish_unlock_failed" }).catch(() => null);
+}
+
+async function claimScheduledRaidPoll(pollId: string, nowMs: number, lockId: string) {
+  return firebaseWrite<RaidPollItem | null>("raid", `raid-poll:publish-claim:${pollId}:${lockId}`, async () => {
+    const ref = pollRef(pollId);
+    return getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) return null;
+      const raw = snap.data() || {};
+      const poll = normalizeRaidPoll(snap.id, raw);
+      if (poll.status !== "scheduled" || !poll.scheduledPublishAtMs || poll.scheduledPublishAtMs > nowMs) return null;
+
+      const existingLockAt = safeMs((raw as Record<string, unknown>).scheduledPublishLockedAtMs, 0);
+      if (existingLockAt && nowMs - existingLockAt < 5 * 60 * 1000) return null;
+
+      tx.update(ref, {
+        scheduledPublishLockedAtMs: nowMs,
+        scheduledPublishLockId: lockId,
+        updatedAt: new Date(nowMs).toISOString(),
+        updatedAtMs: nowMs,
+      });
+      return poll;
+    });
+  }, { logEvent: "raid_polls.scheduled_publish_claim_failed" });
+}
+
+async function publishClaimedScheduledRaidPoll(template: RaidPollItem, lockId: string) {
+  const nowMs = Date.now();
+  const nowIso = new Date(nowMs).toISOString();
+  const closesAtMs = nowMs + template.closeAfterMinutes * 60 * 1000;
+  const scheduleDay = template.repeatWeeklyDay || "mon";
+  const scheduleTime = template.repeatWeeklyTime || "12:00";
+  const repeatNextAtMs = template.autoRepeatWeekly
+    ? !template.repeatNextAtMs || template.repeatNextAtMs <= nowMs
+      ? nextWeeklyRepeatMs(nowMs, scheduleDay, scheduleTime)
+      : template.repeatNextAtMs
+    : null;
+  const openPoll: RaidPollItem = {
+    ...template,
+    status: "open",
+    scheduledPublishAt: null,
+    scheduledPublishAtMs: null,
+    publishedAt: nowIso,
+    closesAtMs,
+    closesAt: new Date(closesAtMs).toISOString(),
+    repeatNextAtMs,
+    repeatNextAt: repeatNextAtMs ? new Date(repeatNextAtMs).toISOString() : null,
+    updatedAt: nowIso,
+  };
+
+  let published: { channelId: string; messageId: string; messageUrl: string } | null = null;
+  try {
+    published = await publishOrUpdatePollDiscordMessage(openPoll, openPoll.channelId);
+    await firebaseWrite("raid", `raid-poll:publish-commit:${template.id}:${lockId}`, async () => {
+      const ref = pollRef(template.id);
+      await getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists) throw new Error("Запланований рейд-пул більше не існує.");
+        const raw = snap.data() || {};
+        const current = normalizeRaidPoll(snap.id, raw);
+        const currentLockId = cleanString((raw as Record<string, unknown>).scheduledPublishLockId, 120);
+        if (current.status !== "scheduled" || currentLockId !== lockId) {
+          throw new Error("Публікацію рейд-пулу вже обробляє інший процес.");
+        }
+        tx.update(ref, {
+          status: "open",
+          scheduledPublishAt: null,
+          scheduledPublishAtMs: null,
+          publishedAt: nowIso,
+          closesAtMs,
+          closesAt: new Date(closesAtMs).toISOString(),
+          repeatNextAtMs,
+          repeatNextAt: repeatNextAtMs ? new Date(repeatNextAtMs).toISOString() : null,
+          channelId: published?.channelId || current.channelId,
+          messageId: published?.messageId || null,
+          messageUrl: published?.messageUrl || null,
+          scheduledPublishLockedAtMs: FieldValue.delete(),
+          scheduledPublishLockId: FieldValue.delete(),
+          scheduledPublishLastError: FieldValue.delete(),
+          scheduledPublishLastErrorAt: FieldValue.delete(),
+          updatedAt: nowIso,
+          updatedAtMs: nowMs,
+        });
+      });
+      return true;
+    }, { bypassCircuit: true, logEvent: "raid_polls.scheduled_publish_commit_failed" });
+    clearRaidPollRuntimeCaches(template.id);
+    clearRaidPollDiscordSignatureCache(template.id);
+    const finalPoll = { ...openPoll, ...published };
+    await recalculatePublishedRaidPollDiscordRecommendations(finalPoll).catch(() => null);
+    return finalPoll;
+  } catch (error) {
+    // Якщо Discord уже створив повідомлення, але commit у БД впав, прибираємо
+    // його. Інакше після зняття lock наступний cron створив би дубль.
+    if (published?.channelId && published?.messageId) {
+      await deleteDiscordRaidMessage({
+        ref: { channelId: published.channelId, messageId: published.messageId },
+        auditReason: `Rollback failed scheduled raid poll publish: ${template.id}`,
+      }).catch(() => null);
+    }
+    await markRaidPollPublishFailed(template.id, error instanceof Error ? error.message : String(error));
+    throw error;
+  }
+}
+
+export async function publishDueRaidPolls(options: { limit?: number } = {}) {
+  if (!hasRaidPollStorage()) return { checked: 0, published: 0, failed: 0 };
+  const nowMs = Date.now();
+  const limit = Math.max(1, Math.min(50, Math.floor(options.limit || (raidPollEcoModeEnabled() ? 10 : 25))));
+  let docs: QueryDocumentSnapshot[] = [];
+
+  try {
+    const snap = await getFirebaseAdminDb()
+      .collection(RAID_POLL_COLLECTION)
+      .where("status", "==", "scheduled")
+      .where("scheduledPublishAtMs", "<=", nowMs)
+      .orderBy("scheduledPublishAtMs", "asc")
+      .limit(limit)
+      .get();
+    docs = snap.docs;
+  } catch {
+    // Працює і без нового composite index; просто відфільтровуємо невелику
+    // порцію scheduled-документів у застосунку.
+    const snap = await getFirebaseAdminDb()
+      .collection(RAID_POLL_COLLECTION)
+      .where("status", "==", "scheduled")
+      .limit(Math.min(200, Math.max(limit * 8, 50)))
+      .get();
+    docs = snap.docs
+      .filter((doc: QueryDocumentSnapshot) => {
+        const poll = normalizeRaidPoll(doc.id, doc.data() || {});
+        return Boolean(poll.scheduledPublishAtMs && poll.scheduledPublishAtMs <= nowMs);
+      })
+      .sort((a: QueryDocumentSnapshot, b: QueryDocumentSnapshot) => {
+        const left = normalizeRaidPoll(a.id, a.data() || {}).scheduledPublishAtMs || Number.MAX_SAFE_INTEGER;
+        const right = normalizeRaidPoll(b.id, b.data() || {}).scheduledPublishAtMs || Number.MAX_SAFE_INTEGER;
+        return left - right;
+      })
+      .slice(0, limit);
+  }
+
+  let checked = 0;
+  let published = 0;
+  let failed = 0;
+  for (const doc of docs) {
+    const poll = normalizeRaidPoll(doc.id, doc.data() || {});
+    if (poll.status !== "scheduled" || !poll.scheduledPublishAtMs || poll.scheduledPublishAtMs > nowMs) continue;
+    checked += 1;
+    const lockId = randomUUID();
+    const claimed = await claimScheduledRaidPoll(doc.id, nowMs, lockId).catch((error) => {
+      failed += 1;
+      console.warn("[raidPolls] Failed to claim scheduled poll", { pollId: doc.id, message: error instanceof Error ? error.message : String(error) });
+      return null;
+    });
+    if (!claimed) continue;
+    await publishClaimedScheduledRaidPoll(claimed, lockId)
+      .then(() => { published += 1; })
+      .catch((error) => {
+        failed += 1;
+        console.warn("[raidPolls] Failed to publish scheduled poll", { pollId: claimed.id, message: error instanceof Error ? error.message : String(error) });
+      });
+  }
+  return { checked, published, failed };
 }
 
 async function markRaidPollRepeatFailed(pollId: string, message: string) {
@@ -1951,7 +2274,7 @@ async function claimRaidPollRepeat(pollId: string, nowMs: number, lockId: string
       if (!snap.exists) return null;
       const raw = snap.data() || {};
       const poll = normalizeRaidPoll(snap.id, raw);
-      if (!poll.autoRepeatWeekly || !poll.repeatNextAtMs || poll.repeatNextAtMs > nowMs) return null;
+      if (poll.status === "scheduled" || !poll.autoRepeatWeekly || !poll.repeatNextAtMs || poll.repeatNextAtMs > nowMs) return null;
 
       const existingLockAt = safeMs((raw as Record<string, unknown>).repeatLockedAtMs, 0);
       if (existingLockAt && nowMs - existingLockAt < 5 * 60 * 1000) return null;
@@ -1987,6 +2310,9 @@ async function createRepeatedRaidPoll(template: RaidPollItem) {
     days: template.days?.length ? template.days : RAID_POLL_DAYS.map((day) => day.value),
     closeAfterMinutes: template.closeAfterMinutes,
     status: "open",
+    scheduledPublishAt: null,
+    scheduledPublishAtMs: null,
+    publishedAt: nowIso,
     closesAt: new Date(closesAtMs).toISOString(),
     closesAtMs,
     closedAt: null,
@@ -2081,9 +2407,19 @@ export async function repeatDueRaidPolls(options: { limit?: number } = {}) {
     const snap = await getFirebaseAdminDb()
       .collection(RAID_POLL_COLLECTION)
       .where("autoRepeatWeekly", "==", true)
-      .limit(limit)
+      .limit(Math.min(200, Math.max(limit * 8, 50)))
       .get();
-    docs = snap.docs;
+    docs = snap.docs
+      .filter((doc: QueryDocumentSnapshot) => {
+        const poll = normalizeRaidPoll(doc.id, doc.data() || {});
+        return poll.status !== "scheduled" && Boolean(poll.repeatNextAtMs && poll.repeatNextAtMs <= nowMs);
+      })
+      .sort((a: QueryDocumentSnapshot, b: QueryDocumentSnapshot) => {
+        const left = normalizeRaidPoll(a.id, a.data() || {}).repeatNextAtMs || Number.MAX_SAFE_INTEGER;
+        const right = normalizeRaidPoll(b.id, b.data() || {}).repeatNextAtMs || Number.MAX_SAFE_INTEGER;
+        return left - right;
+      })
+      .slice(0, limit);
   }
 
   let checked = 0;
@@ -2093,7 +2429,7 @@ export async function repeatDueRaidPolls(options: { limit?: number } = {}) {
 
   for (const doc of docs) {
     const poll = normalizeRaidPoll(doc.id, doc.data() || {});
-    if (!poll.repeatNextAtMs || poll.repeatNextAtMs > nowMs) continue;
+    if (poll.status === "scheduled" || !poll.repeatNextAtMs || poll.repeatNextAtMs > nowMs) continue;
     // Пауза морозить і автоповтор: інакше cron перестворив би пул і видалив
     // Discord-повідомлення, повністю зруйнувавши сенс паузи.
     if (raidPollIsPaused(poll)) continue;
@@ -2123,7 +2459,7 @@ export async function repeatDueRaidPolls(options: { limit?: number } = {}) {
 }
 
 export async function closeDueRaidPoll(input: RaidPollItem) {
-  if (input.status === "closed" || input.closesAtMs > Date.now()) return input;
+  if (input.status === "scheduled" || input.status === "closed" || input.closesAtMs > Date.now()) return input;
   return closeRaidPoll(input.id, "auto");
 }
 
@@ -2151,13 +2487,23 @@ async function readDueRaidPolls(nowMs: number, limit: number) {
 }
 
 export async function closeDueRaidPolls() {
-  if (!hasRaidPollStorage()) return { checked: 0, scanned: 0, closed: 0, repeatedChecked: 0, repeated: 0, deleted: 0, voteCleanupChecked: 0, voteCleanupCleaned: 0, voteCleanupRemoved: 0, voteCleanupSkipped: true, voteCleanupReason: "storage_unavailable", failed: 0, errors: [] as string[] };
+  if (!hasRaidPollStorage()) return { scheduledChecked: 0, scheduledPublished: 0, checked: 0, scanned: 0, closed: 0, repeatedChecked: 0, repeated: 0, deleted: 0, voteCleanupChecked: 0, voteCleanupCleaned: 0, voteCleanupRemoved: 0, voteCleanupSkipped: true, voteCleanupReason: "storage_unavailable", failed: 0, errors: [] as string[] };
 
   const nowMs = Date.now();
   const limit = raidPollDueScanLimit();
   let duePolls: RaidPollItem[] = [];
   let failed = 0;
   const errors: string[] = [];
+
+  // Спочатку публікуємо planned-пули. Їхній таймер закриття стартує від
+  // фактичної успішної публікації, тому вони не можуть «закритися в черзі».
+  const scheduled = await publishDueRaidPolls({ limit: raidPollEcoModeEnabled() ? 10 : 25 }).catch((error) => {
+    failed += 1;
+    const message = error instanceof Error ? error.message : String(error || "unknown");
+    errors.push(`scheduled: ${message}`.slice(0, 220));
+    console.warn("[raidPolls] Failed to publish due scheduled polls", { message });
+    return { checked: 0, published: 0, failed: 0 };
+  });
 
   try {
     duePolls = (await readDueRaidPolls(nowMs, limit)).slice(0, Math.min(limit, 20));
@@ -2194,6 +2540,8 @@ export async function closeDueRaidPolls() {
   });
 
   return {
+    scheduledChecked: scheduled.checked,
+    scheduledPublished: scheduled.published,
     checked: duePolls.length,
     scanned: duePolls.length,
     closed,
@@ -2205,7 +2553,7 @@ export async function closeDueRaidPolls() {
     voteCleanupRemoved: voteCleanup.removed,
     voteCleanupSkipped: voteCleanup.skipped,
     voteCleanupReason: voteCleanup.reason,
-    failed: failed + repeated.failed,
+    failed: failed + scheduled.failed + repeated.failed,
     errors: errors.slice(0, 8),
   };
 }
@@ -2220,14 +2568,45 @@ export async function closeRaidPoll(pollId: string, reason: "manual" | "auto" = 
       if (!snap.exists) throw new Error("Рейд-пул не знайдено.");
       const poll = normalizeRaidPoll(snap.id, snap.data() || {});
       if (poll.status === "closed") return poll;
+      const cancelScheduled = poll.status === "scheduled";
       tx.update(ref, {
         status: "closed",
         closedAt,
         closedReason: reason,
+        ...(cancelScheduled ? {
+          scheduledPublishAt: null,
+          scheduledPublishAtMs: null,
+          autoRepeatWeekly: false,
+          repeatWeeklyDay: null,
+          repeatWeeklyTime: null,
+          repeatNextAt: null,
+          repeatNextAtMs: null,
+          scheduledPublishLockedAtMs: FieldValue.delete(),
+          scheduledPublishLockId: FieldValue.delete(),
+          scheduledPublishLastError: FieldValue.delete(),
+          scheduledPublishLastErrorAt: FieldValue.delete(),
+        } : {}),
         updatedAt: closedAt,
         updatedAtMs: Date.now(),
       });
-      return { ...poll, status: "closed", closedAt, closedReason: reason, updatedAt: closedAt };
+      return {
+        ...poll,
+        status: "closed",
+        closedAt,
+        closedReason: reason,
+        ...(cancelScheduled ? {
+          scheduledPublishAt: null,
+          scheduledPublishAtMs: null,
+          autoRepeatWeekly: false,
+          repeatWeeklyDay: null,
+          repeatWeeklyTime: null,
+          repeatNextAt: null,
+          repeatNextAtMs: null,
+          scheduledPublishLastError: null,
+          scheduledPublishLastErrorAt: null,
+        } : {}),
+        updatedAt: closedAt,
+      };
     });
   }, { logEvent: "raid_polls.close_failed" });
 
@@ -2260,6 +2639,7 @@ export async function pauseRaidPoll(pollId: string, options: { actorName?: strin
       const snap = await tx.get(ref);
       if (!snap.exists) throw new Error("Рейд-пул не знайдено.");
       const poll = normalizeRaidPoll(snap.id, snap.data() || {});
+      if (poll.status === "scheduled") throw new Error("Запланований рейд-пул ще не опубліковано. Його можна відредагувати або скасувати.");
       if (poll.status === "closed") throw new Error("Закритий рейд-пул не можна поставити на паузу. Спочатку створи новий.");
       if (poll.status === "paused") return poll;
 
@@ -2404,6 +2784,11 @@ export async function reopenRaidPoll(pollId: string, options: { minutes?: number
 
   clearRaidPollRuntimeCaches(updated.id);
   clearRaidPollDiscordSignatureCache(updated.id);
+  if (!updated.messageId) {
+    const published = await publishOrUpdatePollDiscordMessage(updated, updated.channelId);
+    const discordUpdatedAt = await savePollDiscordRef(updated.id, published);
+    return { ...updated, ...published, updatedAt: discordUpdatedAt };
+  }
   await syncRaidPollDiscordMessage(updated, { force: true }).catch(() => null);
   return updated;
 }
@@ -2416,6 +2801,7 @@ export async function resyncRaidPollDiscord(pollId: string) {
   if (!hasRaidPollStorage()) throw new Error(firebaseUnavailableMessage("raid", "write"));
   const poll = await getRaidPoll(pollId, { bypassCache: true });
   if (!poll) throw new Error("Рейд-пул не знайдено.");
+  if (poll.status === "scheduled") throw new Error("Пул заплановано на майбутнє. Discord не синхронізується до часу публікації.");
 
   clearRaidPollDiscordSignatureCache(poll.id);
 

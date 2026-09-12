@@ -49,16 +49,20 @@ export async function POST(request: NextRequest) {
   try {
     const { input, form } = await readCreateInput(request);
     const poll = input ? await saveRaidPollFromInput(input, user) : await saveRaidPollFromForm(form as FormData, user);
-    logDashboardEvent("info", "raid_polls.created", request, {
+    logDashboardEvent("info", poll.status === "scheduled" ? "raid_polls.scheduled" : "raid_polls.created", request, {
       pollId: poll.id,
       actorId: user.id,
+      status: poll.status,
+      scheduledPublishAt: poll.scheduledPublishAt || null,
       channelId: poll.channelId || "",
       messageId: poll.messageId || "",
     });
     await recordAdminAudit("raid_polls.create", user, {
       auditId: `raid_polls.create:${poll.id}`,
       status: "success",
-      summary: `Рейд-пул створено: ${poll.title}.`,
+      summary: poll.status === "scheduled"
+        ? `Рейд-пул заплановано: ${poll.title}. Публікація ${poll.scheduledPublishAt || "за розкладом"}.`
+        : `Рейд-пул створено: ${poll.title}.`,
       pollId: poll.id,
       title: poll.title,
       channelId: poll.channelId || null,
@@ -77,8 +81,10 @@ export async function POST(request: NextRequest) {
 
     return redirectWithToast(request, `/polls/${encodeURIComponent(poll.id)}`, {
       tone: "success",
-      title: "Рейд-пул створено",
-      message: "Повідомлення опубліковано в Discord, голосування відкрите.",
+      title: poll.status === "scheduled" ? "Рейд-пул заплановано" : "Рейд-пул створено",
+      message: poll.status === "scheduled"
+        ? "Запис збережено. Discord-повідомлення зʼявиться автоматично у встановлений день і час."
+        : "Повідомлення опубліковано в Discord, голосування відкрите.",
       ttl: 6200,
     });
   } catch (error) {

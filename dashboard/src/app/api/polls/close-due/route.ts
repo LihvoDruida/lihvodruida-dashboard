@@ -78,6 +78,8 @@ async function run(request: NextRequest) {
     logDashboardEvent("warn", "raid_polls.close_due_degraded", request, { message });
     const result = {
       degraded: true,
+      scheduledChecked: 0,
+      scheduledPublished: 0,
       checked: 0,
       scanned: 0,
       closed: 0,

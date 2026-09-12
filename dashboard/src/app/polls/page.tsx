@@ -30,6 +30,7 @@ export default async function PollsPage() {
   const canManage = canManageRaids(user);
   const polls = await listRaidPolls(120).catch(() => []);
   const publishedPolls = polls.filter((poll) => poll.channelId && poll.messageId);
+  const scheduledCount = polls.filter((poll) => raidPollStateKey(poll) === "scheduled").length;
   const openCount = polls.filter((poll) => raidPollStateKey(poll) === "open").length;
   const pausedCount = polls.filter((poll) => raidPollStateKey(poll) === "paused").length;
 
@@ -37,8 +38,9 @@ export default async function PollsPage() {
     <RaidPollPageShell
       user={user}
       title="Рейд-пули"
-      description="Голосування за дні й час рейду: створення через сайт, голоси — через Discord, результати рахуються автоматично."
+      description="Голосування можна опублікувати одразу або запланувати на потрібний день і час; голоси збирає Discord, результати рахуються автоматично."
       stats={[
+        { label: "Заплановані", value: scheduledCount },
         { label: "Активні", value: openCount },
         { label: "На паузі", value: pausedCount },
         { label: "Усього", value: polls.length },

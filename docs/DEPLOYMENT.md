@@ -500,7 +500,7 @@ journalctl -u mistblossom -f          логи запуску
 | Розклад | Ендпоїнт | Навіщо |
 |---------|----------|--------|
 | кожні 10 хв | `/api/raids/lifecycle` | публікація й закриття рейдів |
-| кожні 5 хв | `/api/polls/close-due` | автозакриття рейд-пулів і автоповтор |
+| кожні 5 хв | `/api/polls/close-due?force=1` | scheduled-публікація, автозакриття рейд-пулів і автоповтор; `force=1` не дає runtime cooldown пропустити точний cron-тик |
 | 04:00 Київ | `/api/dashboard/profiles/orphan-cleanup/apply` | чистка акаунтів, які вийшли з Discord |
 
 Логи:

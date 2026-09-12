@@ -7,9 +7,10 @@
 Потік даних:
 
 1. Офіцер відкриває `/discord` або `/polls/new`. Основна форма створення інтегрована в Discord Hub як блок `Створення рейд-голосування`.
-2. Сайт створює документ у колекції `dashboardRaidPolls`.
-3. Сайт публікує Discord embed через наявний Discord Admin REST API.
-4. Учасники голосують у Discord через приватний (ephemeral) пульт. Публічне повідомлення має єдину кнопку `mbv1:poll_vote_prompt:{pollId}`, яка відкриває пульт із рядками:
+2. Сайт створює документ у колекції `dashboardRaidPolls`. Пул можна створити у режимі `now` або `scheduled`.
+3. Для `now` Discord embed публікується одразу. Для `scheduled` документ зберігає абсолютний `scheduledPublishAtMs`, а `/api/polls/close-due` публікує embed лише після настання цього часу. Перезапуск VPS не скидає план.
+4. Таймер `closeAfterMinutes` для запланованого пулу стартує від фактичної успішної публікації, а не від моменту створення.
+5. Учасники голосують у Discord через приватний (ephemeral) пульт. Публічне повідомлення має єдину кнопку `mbv1:poll_vote_prompt:{pollId}`, яка відкриває пульт із рядками:
    - `mbv1:poll_role:{pollId}` — роль у рейді: танк / хіл / дд.
    - `mbv1:poll_quick:{pollId}` — швидке заповнення всіх днів одним значенням.
    - `mbv1:poll_schedule_{day}:{pollId}` — один варіант часу або «Не можу» для конкретного дня.
@@ -17,9 +18,9 @@
    - `mbv1:poll_submit:{pollId}` — зарахування голосу.
 
    Легасі `mbv1:poll_character_prompt:` і `mbv1:poll_character:` досі приймаються і трактуються як «відкрий пульт»: у Discord лишаються опубліковані embed-и зі старими `custom_id`.
-5. Сервіс бота приймає Discord interaction, перевіряє підпис і прокидає його в API панелі.
-6. API панелі записує голос транзакцією і оновлює Discord-повідомлення.
-7. Після дедлайну `/api/polls/close-due` або будь-яке читання/клік закриває прострочений пул і вимикає components.
+6. Сервіс бота приймає Discord interaction, перевіряє підпис і прокидає його в API панелі.
+7. API панелі записує голос транзакцією і оновлює Discord-повідомлення.
+8. Після дедлайну `/api/polls/close-due` або будь-яке читання/клік закриває прострочений пул і вимикає components. Той самий lifecycle-прохід спочатку публікує due `scheduled` пули, а вже потім виконує закриття та weekly-repeat.
 
 ## Схема документа
 
@@ -31,7 +32,10 @@
   title: string;
   difficulty: "normal" | "heroic" | "mythic";
   description: string;
-  status: "open" | "closed";
+  status: "scheduled" | "open" | "paused" | "closed";
+  scheduledPublishAt?: string | null;
+  scheduledPublishAtMs?: number | null;
+  publishedAt?: string | null;
   closeAfterMinutes: number;
   closesAt: string;
   closesAtMs: number;
@@ -70,7 +74,7 @@
 
 ### `POST /api/polls`
 
-Site-only endpoint. Створює документ і публікує повідомлення в Discord. Supports both legacy `FormData` submits from `/polls/new` and JSON submits from `/discord`.
+Site-only endpoint. Створює документ. `publishMode=now` одразу публікує повідомлення в Discord; `publishMode=scheduled` лише зберігає запис і чекає `repeatWeeklyDay` + `repeatWeeklyTime` для першої публікації. Supports both legacy `FormData` submits from `/polls/new` and JSON submits from `/discord`.
 
 Fields/body:
 
@@ -79,6 +83,9 @@ Fields/body:
 - `description`
 - `closeAfterMinutes`
 - `channelId`
+- `publishMode`: `now` | `scheduled`
+- `repeatWeeklyDay`, `repeatWeeklyTime`: день/час першої scheduled-публікації та, якщо увімкнено `autoRepeatWeekly`, наступних повторів
+- `autoRepeatWeekly`
 
 JSON response mode is selected by `Accept: application/json` or `Content-Type: application/json` and returns `{ ok, pollId, redirectTo, poll }`.
 
@@ -115,7 +122,7 @@ Manual close by raid manager.
 
 ### `POST /api/polls/close-due`
 
-Internal endpoint for cron/worker. Closes overdue polls and updates Discord messages.
+Internal endpoint for cron/worker. В одному idempotent lifecycle-проході: (1) публікує due scheduled-пули через transaction lock, (2) закриває overdue open-пули, (3) запускає due weekly-repeat. VPS cron викликає `?force=1` кожні 5 хвилин, щоб внутрішній cooldown не пропустив тік на заданій годині. Якщо Discord-повідомлення створене, але commit у БД впав, повідомлення видаляється, щоб наступний cron не створив дубль.
 
 ## Discord API limitation
 
@@ -143,5 +150,4 @@ Public message components are global for the message. They cannot render differe
 `20:00`, а `21:30`/`22:00` — на `21:00` (`RAID_POLL_LEGACY_TIMES` у
 `src/lib/raidPollShared.ts`), тому архів голосувань лишається валідним.
 
-`RAID_POLL_REPEAT_TIMES` (08:00–23:00) — це окреме поняття: година, коли cron
-**перестворює** пул, а не час рейду. Її діапазон не змінювався.
+`RAID_POLL_REPEAT_TIMES` (08:00–23:00) — це окреме поняття: година **публікації**. Для `publishMode=scheduled` це час першої публікації; при `autoRepeatWeekly=true` — також час наступних щотижневих пулів. Це не час старту рейду. Сервер зберігає першу scheduled-дату як абсолютний timestamp у `Europe/Kyiv`, тому зміна дня після створення не відбувається через рестарт процесу.

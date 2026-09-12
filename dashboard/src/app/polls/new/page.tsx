@@ -46,7 +46,7 @@ export default async function NewPollPage() {
     <RaidPollPageShell
       user={user}
       title="Створення рейд-пулу"
-      description="Заповни назву, складність і час закриття. Після збереження сайт створить запис у базі даних та опублікує Discord-повідомлення."
+      description="Заповни параметри голосування й обери: опублікувати Discord-повідомлення зараз або запланувати його на конкретний день і час."
     >
       {!hasRaidPollStorage() ? <div className="notice panel error-note raid-notice">Сховище рейд-пулів не налаштоване.</div> : null}
       {!discordEnabled ? <div className="notice panel error-note raid-notice">Discord-публікація недоступна: не налаштований DISCORD_BOT_TOKEN.</div> : null}
@@ -56,11 +56,12 @@ export default async function NewPollPage() {
         <aside className="panel raid-poll-help-card">
           <div className="raid-poll-help-card__head">
             <span className="eyebrow">Логіка роботи</span>
-            <h2>Сайт створює, Discord збирає голоси</h2>
+            <h2>Сайт планує, Discord збирає голоси</h2>
           </div>
-          <p>Команди Discord для створення немає. Ця сторінка створює пул, бот публікує embed і приймає вибір учасників.</p>
+          <p>Команди Discord для створення немає. Ця сторінка зберігає пул, а бот публікує embed одразу або автоматично в запланований час.</p>
           <ol className="raid-poll-help-steps">
-            <li>Сайт створює запис у базі даних і Discord embed.</li>
+            <li>Обери «Опублікувати зараз» або «Запланувати». У другому режимі до заданого часу Discord-повідомлення не створюється.</li>
+            <li>Після фактичної публікації стартує таймер закриття; перезапуск VPS не скидає заплановану дату.</li>
             <li>Гравець тисне кнопку й обирає роль: танк, хіл або ДД.</li>
             <li>Швидкий вибір ставить один час на всі дні; далі можна поправити окремі дні або позначити «Не можу».</li>
             <li>Підпис береться з ніку на сервері — персонаж Battle.net не потрібен.</li>

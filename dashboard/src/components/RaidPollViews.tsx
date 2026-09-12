@@ -111,6 +111,7 @@ function shortPollId(id: string) {
 }
 
 function pollCloseLabel(poll: RaidPollItem) {
+  if (poll.status === "scheduled") return formatDateTime(poll.scheduledPublishAtMs || poll.scheduledPublishAt);
   if (poll.status === "closed") return poll.closedAt ? formatDateTime(poll.closedAt) : "Завершено";
   return formatDateTime(poll.closesAtMs);
 }
@@ -157,10 +158,10 @@ export function buildRaidPollCardModel(poll: RaidPollItem, relatedPolls: RaidPol
     tanks: roles.tanks,
     healers: roles.healers,
     dps: roles.dps,
-    deadlineCaption: state === "closed" ? "Завершено" : state === "paused" ? "Заморожено" : "До закриття",
+    deadlineCaption: state === "scheduled" ? "Публікація" : state === "closed" ? "Завершено" : state === "paused" ? "Заморожено" : "До закриття",
     deadlineLabel: pollCloseLabel(poll),
     remainingLabel: state === "closed" ? "—" : raidPollRemainingLabel(poll),
-    recommendation: bestDaySummary(poll, relatedPolls),
+    recommendation: state === "scheduled" ? "Зʼявиться після початку голосування" : bestDaySummary(poll, relatedPolls),
     repeatLabel: raidPollRepeatScheduleLabel(poll),
     autoRepeat: Boolean(poll.autoRepeatWeekly),
     pausedNote: poll.pausedNote || null,
@@ -240,6 +241,18 @@ export function RaidPollResults({ poll, canManage = false, relatedPolls = [poll]
           </div>
           <h2>{raidPollTitle(poll)}</h2>
           <p>{poll.description}</p>
+          {state === "scheduled" ? (
+            <p className="poll-detail__scheduled">
+              🗓 Пул уже збережено, але Discord-повідомлення ще не створене. Автопублікація: <b>{formatDateTime(poll.scheduledPublishAtMs || poll.scheduledPublishAt)}</b>.
+              Таймер закриття почнеться тільки після успішної фактичної публікації.
+            </p>
+          ) : null}
+          {canManage && state === "scheduled" && poll.scheduledPublishLastError ? (
+            <p className="poll-detail__schedule-error">
+              ⚠ Остання спроба публікації не вдалася{poll.scheduledPublishLastErrorAt ? ` (${formatDateTime(poll.scheduledPublishLastErrorAt)})` : ""}: {poll.scheduledPublishLastError}
+              <br />Сервер спробує знову автоматично на наступному lifecycle-проході.
+            </p>
+          ) : null}
           {state === "paused" ? (
             <p className="poll-detail__paused">
               ⏸ Голосування призупинено{poll.pausedByName ? ` (${poll.pausedByName})` : ""}. Час до закриття заморожено: {raidPollRemainingLabel(poll)}.
@@ -274,7 +287,7 @@ export function RaidPollResults({ poll, canManage = false, relatedPolls = [poll]
           </div>
         </div>
         <div>
-          <span>{state === "closed" ? "Завершено" : state === "paused" ? "Заморожено" : "До закриття"}</span>
+          <span>{state === "scheduled" ? "До публікації" : state === "closed" ? "Завершено" : state === "paused" ? "Заморожено" : "До закриття"}</span>
           <strong>{state === "closed" ? "—" : raidPollRemainingLabel(poll)}</strong>
           <small>{pollCloseLabel(poll)}</small>
         </div>

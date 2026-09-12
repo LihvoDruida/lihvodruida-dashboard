@@ -64,7 +64,7 @@ export default async function EditPollPage({ params }: { params: Promise<{ pollI
     <RaidPollPageShell
       user={user}
       title="Редагування рейд-пулу"
-      description="Зміни назву, складність, дні, дедлайн або Discord-канал. Після збереження база даних і Discord embed синхронізуються."
+      description={poll.status === "scheduled" ? "Зміни запланований пул до публікації або перемкни його на негайну публікацію. Discord не буде створено раніше заданого часу." : "Зміни назву, складність, дні, дедлайн або Discord-канал. Після збереження база даних і Discord embed синхронізуються."}
       eyebrow="Mistblossom Vanguard • Редагування"
     >
       {!hasRaidPollStorage() ? <div className="notice panel error-note raid-notice">Сховище рейд-пулів не налаштоване.</div> : null}
@@ -75,16 +75,31 @@ export default async function EditPollPage({ params }: { params: Promise<{ pollI
         <aside className="panel raid-poll-help-card">
           <div className="raid-poll-help-card__head">
             <span className="eyebrow">Синхронізація</span>
-            <h2>Один запис — один Discord embed</h2>
+            <h2>{poll.status === "scheduled" ? "План можна змінити до публікації" : "Один запис — один Discord embed"}</h2>
           </div>
-          <p>Якщо канал змінено, сайт створить нове повідомлення у вибраному каналі й спробує прибрати старе. Якщо канал той самий — буде PATCH існуючого повідомлення.</p>
-          <ol className="raid-poll-help-steps">
-            <li>База даних оновлює дані рейд-пулу.</li>
-            <li>Discord embed редагується або переноситься в інший канал.</li>
-            <li>Голоси зберігаються за Discord ID і не дублюються.</li>
-            <li>Зміна днів прибирає з голосів ті дні, яких більше немає в пулі.</li>
-            <li>Закритий пул лишається закритим, але фінальний embed можна поправити.</li>
-          </ol>
+          {poll.status === "scheduled" ? (
+            <>
+              <p>Поки статус «Заплановано», редагується тільки запис у базі. Discord embed не створюється до дедлайну публікації.</p>
+              <ol className="raid-poll-help-steps">
+                <li>Можна змінити день, час, канал, ролі, назву та інші параметри до публікації.</li>
+                <li>«Зберегти розклад» залишає пул запланованим без повідомлення в Discord.</li>
+                <li>Перемикання на «Опублікувати зараз» відкриє голосування негайно.</li>
+                <li>«Скасувати план» у картці пулу закриває план і вимикає його автоповтор.</li>
+                <li>Таймер закриття почнеться лише після фактичної успішної публікації.</li>
+              </ol>
+            </>
+          ) : (
+            <>
+              <p>Якщо канал змінено, сайт створить нове повідомлення у вибраному каналі й спробує прибрати старе. Якщо канал той самий — буде PATCH існуючого повідомлення.</p>
+              <ol className="raid-poll-help-steps">
+                <li>База даних оновлює дані рейд-пулу.</li>
+                <li>Discord embed редагується або переноситься в інший канал.</li>
+                <li>Голоси зберігаються за Discord ID і не дублюються.</li>
+                <li>Зміна днів прибирає з голосів ті дні, яких більше немає в пулі.</li>
+                <li>Закритий пул лишається закритим, але фінальний embed можна поправити.</li>
+              </ol>
+            </>
+          )}
           <div className="raid-poll-help-actions">
             <a className="btn subtle" href={`/polls/${encodeURIComponent(poll.id)}`}>До результатів</a>
             {poll.messageUrl ? <a className="btn subtle" href={poll.messageUrl} target="_blank" rel="noreferrer">Discord</a> : null}

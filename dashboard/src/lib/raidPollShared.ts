@@ -1,4 +1,5 @@
-export type RaidPollStatus = "open" | "paused" | "closed";
+export type RaidPollStatus = "scheduled" | "open" | "paused" | "closed";
+export type RaidPollPublishMode = "now" | "scheduled";
 export type RaidPollDifficulty = "normal" | "heroic" | "mythic";
 export type RaidPollDay = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 
@@ -48,6 +49,14 @@ export type RaidPollItem = {
   difficulty: RaidPollDifficulty;
   description: string;
   status: RaidPollStatus;
+  /** Початкова публікація може бути відкладена до заданого дня/часу. */
+  scheduledPublishAt?: string | null;
+  scheduledPublishAtMs?: number | null;
+  /** Фактичний момент першої успішної публікації у Discord. */
+  publishedAt?: string | null;
+  /** Остання помилка автоматичної публікації; зберігається для діагностики і повторної спроби. */
+  scheduledPublishLastError?: string | null;
+  scheduledPublishLastErrorAt?: string | null;
   closeAfterMinutes: number;
   closesAt: string;
   closesAtMs: number;
@@ -96,6 +105,8 @@ export type RaidPollCreateInput = {
   closeAfterMinutes?: unknown;
   days?: unknown;
   mentionRoleIds?: unknown;
+  /** Публікувати одразу або зберегти як запланований пул. */
+  publishMode?: unknown;
   autoRepeatWeekly?: unknown;
   repeatWeeklyDay?: unknown;
   repeatWeeklyTime?: unknown;
@@ -161,7 +172,12 @@ export function raidPollDescription() {
   return RAID_POLL_DESCRIPTION;
 }
 
-export type RaidPollStateLike = Pick<RaidPollItem, "status" | "closesAtMs">;
+export type RaidPollStateLike = Pick<RaidPollItem, "status" | "closesAtMs" | "scheduledPublishAtMs">;
+
+/** Запланований пул уже збережений, але ще не опублікований у Discord. */
+export function raidPollIsScheduled(poll: Pick<RaidPollItem, "status">) {
+  return poll.status === "scheduled";
+}
 
 /** Пул на паузі: голоси не приймаються, але дедлайн заморожений і пул не архівується. */
 export function raidPollIsPaused(poll: Pick<RaidPollItem, "status">) {
@@ -182,7 +198,8 @@ export function raidPollVotingLocked(poll: RaidPollStateLike) {
   return !raidPollAcceptsVotes(poll);
 }
 
-export function raidPollStateKey(poll: RaidPollStateLike): "open" | "paused" | "closed" {
+export function raidPollStateKey(poll: RaidPollStateLike): "scheduled" | "open" | "paused" | "closed" {
+  if (poll.status === "scheduled") return "scheduled";
   if (poll.status === "paused") return "paused";
   return raidPollIsClosed(poll) ? "closed" : "open";
 }
@@ -190,7 +207,8 @@ export function raidPollStateKey(poll: RaidPollStateLike): "open" | "paused" | "
 export function raidPollStateTone(poll: RaidPollStateLike): "success" | "warning" | "muted" {
   const key = raidPollStateKey(poll);
   if (key === "open") return "success";
-  return key === "paused" ? "warning" : "muted";
+  if (key === "scheduled" || key === "paused") return "warning";
+  return "muted";
 }
 
 export function raidPollAvailabilityLabel(value: RaidPollScheduleValue | null | undefined) {

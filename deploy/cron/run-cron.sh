@@ -12,7 +12,7 @@
 # Задачі та розклад:
 #   */2  * * * *  /api/guild/sync             — Battle.net + Raider.IO + raid progress у БД
 #   */10 * * * *  /api/raids/lifecycle        — публікація й закриття рейдів
-#   */5  * * * *  /api/polls/close-due        — автозакриття рейд-пулів
+#   */5  * * * *  /api/polls/close-due?force=1 — scheduled-публікація + автозакриття/повтор
 #   */30 * * * *  /api/dashboard/logs/maintenance — retention/budget журналу
 #   0    4 * * *  /api/dashboard/profiles/orphan-cleanup/apply — чистка акаунтів
 # ---------------------------------------------------------------------------
@@ -58,7 +58,7 @@ while true; do
   # Endpoint сам застосовує TTL, короткі батчі та Raider.IO cooldown.
   [ $((minute % 2)) -eq 0 ] && call "/api/guild/sync"
   [ $((minute % 10)) -eq 0 ] && call "/api/raids/lifecycle"
-  [ $((minute % 5)) -eq 0 ] && call "/api/polls/close-due"
+  [ $((minute % 5)) -eq 0 ] && call "/api/polls/close-due?force=1"
   [ $((minute % 30)) -eq 0 ] && call "/api/dashboard/logs/maintenance"
 
   # 04:00 за Києвом. Контейнер живе в UTC, тому рахуємо від TZ явно.

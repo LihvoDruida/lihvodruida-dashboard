@@ -48,13 +48,19 @@ async function updatePoll(request: NextRequest, context: { params: Promise<{ pol
     logDashboardEvent("info", "raid_polls.updated", request, {
       pollId: poll.id,
       actorId: user.id,
+      status: poll.status,
+      scheduledPublishAt: poll.scheduledPublishAt || null,
       channelId: poll.channelId || "",
       messageId: poll.messageId || "",
     });
     await recordAdminAudit("raid_polls.update", user, {
       status: "success",
-      summary: `Рейд-пул оновлено: ${poll.title}.`,
+      summary: poll.status === "scheduled"
+        ? `Запланований рейд-пул оновлено: ${poll.title}.`
+        : `Рейд-пул оновлено: ${poll.title}.`,
       pollId: poll.id,
+      pollStatus: poll.status,
+      scheduledPublishAt: poll.scheduledPublishAt || null,
       title: poll.title,
       channelId: poll.channelId || null,
       messageId: poll.messageId || null,
