@@ -490,6 +490,9 @@ export default async function ProfilePage({
     hasFreshBattleNetSession,
   );
   const battleNetRefreshHref = `/api/auth/battlenet/start?region=${primaryBattleNetRegion}${profileRulesReturnPath ? `&next=${encodeURIComponent(profileRulesReturnPath)}` : ""}`;
+  const battleNetCharacterActionHref = hasAvailableBattleNetCandidates
+    ? "#profile-candidates"
+    : battleNetRefreshHref;
   const battleNetLastSyncAt =
     profile.battlenet?.lastProfileViewRefreshAt ||
     profile.battlenet?.lastCharacterRefreshAt ||
@@ -764,7 +767,7 @@ export default async function ProfilePage({
                         <strong>{profile.battlenet?.linked ? "Battle.net підключено" : battleNetAction.eyebrow}</strong>
                         <small>{profile.battlenet?.linked ? `Остання синхронізація: ${battleNetLastSyncLabel}` : battleNetAction.hint}</small>
                       </span>
-                      <a className="profile-bnet-status__action" href={battleNetRefreshHref}>
+                      <a className="profile-bnet-status__action" href={battleNetCharacterActionHref}>
                         <ProfileUiIcon kind={profile.battlenet?.linked ? "sync" : "link"} />
                         <span>{battleNetAction.title}</span>
                       </a>
@@ -808,7 +811,7 @@ export default async function ProfilePage({
                             : "Підключи Battle.net, щоб додати персонажів"}
                       </span>
                     </span>
-                    <a className="profile-character-add-button" href={battleNetRefreshHref}>
+                    <a className="profile-character-add-button" href={battleNetCharacterActionHref}>
                       <ProfileUiIcon kind="plus" />
                       <span>
                         {hasAvailableBattleNetCandidates
@@ -843,6 +846,7 @@ export default async function ProfilePage({
 
                 {canManageCharacters && hasAvailableBattleNetCandidates ? (
                   <div
+                    id="profile-candidates"
                     className="profile-candidates-box"
                     data-profile-candidates-box="true"
                   >
