@@ -4,7 +4,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const root = process.cwd();
+// Resolve from the script location, not the caller's cwd.
+const root = path.resolve(__dirname, '..');
 const failures = [];
 const warnings = [];
 
@@ -102,7 +103,7 @@ warn(/"prebuild"\s*:\s*"node scripts\/remove-legacy-middleware\.cjs"/.test(packa
 warn(/"build"\s*:\s*"node scripts\/next-build\.cjs"/.test(packageJsonText), 'build should use scripts/next-build.cjs to disable telemetry consistently and keep Vercel builds deterministic.');
 warn(exists('scripts/next-build.cjs'), 'scripts/next-build.cjs should exist because package.json build points to it.');
 warn(!/"build:vercel"\s*:/.test(packageJsonText), 'build:vercel should be removed; Vercel should use the default npm run build script.');
-warn(/"build:ci"\s*:\s*"npm run typecheck && npm run check:actions && npm run check:site && npm run check:imports && npm run audit:styles && npm run audit:ui && npm run inspect:ci && npm run build"/.test(packageJsonText), 'build:ci should keep typecheck, API-action, site-navigation, style/UI audits, inspect-ci and build gates.');
+warn(/"build:ci"\s*:\s*"npm run cleanup:legacy && npm run typecheck && npm run check:actions && npm run check:site && npm run check:imports && npm run audit:styles && npm run audit:ui && npm run inspect:ci && npm run build"/.test(packageJsonText), 'build:ci should clean stale overlay files before typecheck, API-action, site-navigation, style/UI audits, inspect-ci and build gates.');
 warn(/"typecheck"\s*:\s*"node scripts\/typecheck\.cjs"/.test(read('package.json')), 'Typecheck should use scripts/typecheck.cjs for progress and timeout diagnostics.');
 
 if (exists('src/proxy.ts')) {
