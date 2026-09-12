@@ -4,12 +4,15 @@ import ProfileCandidateBulkActions from "@/components/ProfileCandidateBulkAction
 import ProfileCandidateExpiryTimer from "@/components/ProfileCandidateExpiryTimer";
 import ProfileCharactersLiveSection from "@/components/ProfileCharactersLiveSection";
 import ProfileNameControls from "@/components/ProfileNameControls";
+import RulesChoiceEnhancer from "@/components/RulesChoiceEnhancer";
 import { getSession, type DashboardSession } from "@/lib/auth";
 import { getEnabledBattleNetRegions } from "@/lib/battlenet";
 import { getDashboardApiSettings } from "@/lib/dashboardApiSettings";
 import {
   fetchDiscordGuildMemberSnapshot,
+  fetchDiscordGuildSnapshot,
   fetchDiscordRoles,
+  getDiscordGuildId,
   hasDiscordEmbedConfig,
 } from "@/lib/discordAdmin";
 import { getGuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
@@ -112,6 +115,35 @@ function roleName(roleId: string, roles: Array<{ id: string; name: string }>) {
   );
 }
 
+type DiscordMemberLookup =
+  | {
+      state: "found";
+      member: Awaited<ReturnType<typeof fetchDiscordGuildMemberSnapshot>>;
+    }
+  | { state: "missing" | "unavailable"; member: null };
+
+function discordMemberMissingError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || "");
+  return /Discord API 404|Unknown Member|10007/i.test(message);
+}
+
+async function lookupDiscordMember(
+  userId: string,
+  guildId: string,
+): Promise<DiscordMemberLookup> {
+  try {
+    return {
+      state: "found",
+      member: await fetchDiscordGuildMemberSnapshot(userId, guildId),
+    };
+  } catch (error) {
+    return {
+      state: discordMemberMissingError(error) ? "missing" : "unavailable",
+      member: null,
+    };
+  }
+}
+
 function rulesReturnPath(token: string) {
   return token ? `/rules/accept?rt=${encodeURIComponent(token)}` : "/rules/accept";
 }
@@ -167,6 +199,21 @@ function statusNotice(status?: string | null) {
       tone: "warning",
       text: "Discord-користувача не знайдено на сервері гільдії. Роль не видано.",
     };
+  if (status === "discord_identity_mismatch")
+    return {
+      tone: "error",
+      text: "Персональне посилання Discord належить іншому акаунту. Роль не видано. Увійди тим Discord-акаунтом, для якого була натиснута кнопка правил, або відкрий нове персональне посилання.",
+    };
+  if (status === "discord_guild_mismatch")
+    return {
+      tone: "error",
+      text: "Це персональне посилання створене для іншого Discord-сервера або застаріло. Натисни актуальну кнопку правил у Discord ще раз.",
+    };
+  if (status === "discord_role_missing")
+    return {
+      tone: "error",
+      text: "Роль із цього посилання більше не існує в Discord. Потрібно відкрити оновлене повідомлення правил.",
+    };
   if (status === "geo_blocked")
     return {
       tone: "error",
@@ -192,6 +239,36 @@ function statusNotice(status?: string | null) {
 
 function profileActionNotice(status?: string | null) {
   if (!status) return null;
+  if (status === "profile_nickname_characters_too_many")
+    return {
+      tone: "warning",
+      text: "Для Discord-ніку можна вибрати максимум двох альтів. Зніми зайві позначки й збережи ще раз.",
+    };
+  if (status === "raid_role_main_missing")
+    return {
+      tone: "warning",
+      text: "Спочатку вибери мейн-персонажа. Після цього роль визначиться автоматично або її можна буде перевизначити вручну.",
+    };
+  if (status === "character_reauth_required")
+    return {
+      tone: "warning",
+      text: "Список Battle.net застарів. Підключи або онови Battle.net ще раз — уже збережені персонажі профілю не видаляються.",
+    };
+  if (status === "characters_bulk_empty")
+    return {
+      tone: "warning",
+      text: "Не вибрано жодного персонажа. Познач одну або кілька карток і натисни «Додати вибрані».",
+    };
+  if (status === "discord_nick_owner")
+    return {
+      tone: "warning",
+      text: "Discord не дозволяє боту змінювати нік власника сервера. Скопіюй готовий нік і встанови його вручну.",
+    };
+  if (status === "discord_nick_hierarchy")
+    return {
+      tone: "warning",
+      text: "Бот не може змінити цей Discord-нік через ієрархію ролей. Потрібно підняти роль бота вище або змінити нік вручну.",
+    };
   const ok = new Set([
     "profile_name_saved",
     "profile_name_mode_saved",
@@ -211,6 +288,7 @@ function profileActionNotice(status?: string | null) {
     "profile_name_invalid",
     "profile_gender_invalid",
     "profile_nickname_characters_failed",
+    "profile_nickname_characters_too_many",
     "raid_role_invalid",
     "raid_role_main_missing",
     "character_reauth_required",
@@ -393,12 +471,21 @@ function RegistrationGenderForm({
           <strong>Стать / звертання</strong>
           <small>Використовується для правильних форм у профілі, рейдах і Discord-повідомленнях.</small>
         </span>
-        <span className={`profile-gender-pill${selected ? " is-selected" : " is-missing"}`}>
+        <span
+          className={`profile-gender-pill${selected ? " is-selected" : " is-missing"}`}
+          data-rules-choice-status
+        >
           {profileGenderLabel(selected || "unspecified")}
         </span>
       </div>
 
-      <form className="profile-gender-form" action="/api/profile/gender" method="post">
+      <form
+        className="profile-gender-form"
+        action="/api/profile/gender"
+        method="post"
+        data-rules-choice-form="gender"
+        data-initial-value={selected || ""}
+      >
         <input type="hidden" name="returnTo" value={returnTo} />
         <div role="radiogroup" aria-label="Стать або звертання профілю" style={{ display: "contents" }}>
           {PROFILE_GENDER_OPTIONS.map((option) => {
@@ -411,6 +498,7 @@ function RegistrationGenderForm({
                   value={option.value}
                   defaultChecked={checked}
                   required
+                  data-choice-label={option.label}
                 />
                 <span>
                   <strong>{option.label}</strong>
@@ -421,7 +509,10 @@ function RegistrationGenderForm({
             );
           })}
         </div>
-        <button className="btn btn-primary btn-sm" type="submit">
+        <p className="rules-choice-feedback" data-rules-choice-feedback aria-live="polite">
+          {selected ? "Вибір збережено." : "Вибери один варіант."}
+        </p>
+        <button className="btn btn-primary btn-sm rules-choice-save" type="submit">
           Зберегти звертання
         </button>
       </form>
@@ -454,7 +545,10 @@ function RegistrationRaidRoleForm({
           <strong>Роль у рейді</strong>
           <small>{mainLabel}</small>
         </span>
-        <span className={`profile-raid-role-pill profile-raid-role-pill--${selectedRole}`}>
+        <span
+          className={`profile-raid-role-pill profile-raid-role-pill--${selectedRole}`}
+          data-rules-choice-status
+        >
           {wowRoleLabel(selectedRole)}
         </span>
       </div>
@@ -464,7 +558,13 @@ function RegistrationRaidRoleForm({
       </p>
 
       {mainCharacter ? (
-        <form className="profile-raid-role-form" action="/api/profile/raid-role" method="post">
+        <form
+          className="profile-raid-role-form"
+          action="/api/profile/raid-role"
+          method="post"
+          data-rules-choice-form="raid-role"
+          data-initial-value={manualRole || "auto"}
+        >
           <input type="hidden" name="returnTo" value={returnTo} />
           <div role="radiogroup" aria-label="Роль для запису на рейди" style={{ display: "contents" }}>
             {RAID_ROLE_OPTIONS.map((option) => {
@@ -478,6 +578,8 @@ function RegistrationRaidRoleForm({
                     name="raidRole"
                     value={option.value}
                     defaultChecked={checked}
+                    data-choice-label={label}
+                    data-choice-role={option.value === "auto" ? autoRole : option.value}
                   />
                   <span>
                     <strong>{label}</strong>
@@ -487,7 +589,10 @@ function RegistrationRaidRoleForm({
               );
             })}
           </div>
-          <button className="btn btn-primary btn-sm" type="submit">
+          <p className="rules-choice-feedback" data-rules-choice-feedback aria-live="polite">
+            Вибір збережено.
+          </p>
+          <button className="btn btn-primary btn-sm rules-choice-save" type="submit">
             Зберегти роль
           </button>
         </form>
@@ -533,7 +638,7 @@ function RegistrationNicknameCharactersForm({
           <strong>Discord-нік</strong>
           <small>Мейн береться автоматично. Нижче можна вибрати до двох альтів для шаблону.</small>
         </span>
-        <span className="profile-count-pill">{Math.min(2, selected.size)} / 2 альти</span>
+        <span className="profile-count-pill" data-rules-nickname-count>{Math.min(2, selected.size)} / 2 альти</span>
       </div>
 
       <div className="profile-nickname-preview is-synced">
@@ -543,7 +648,14 @@ function RegistrationNicknameCharactersForm({
       </div>
 
       {altCandidates.length ? (
-        <form className="profile-nickname-character-form" action="/api/profile/nickname-characters" method="post">
+        <form
+          className="profile-nickname-character-form"
+          action="/api/profile/nickname-characters"
+          method="post"
+          data-rules-nickname-form
+          data-max-selected="2"
+          data-initial-values={Array.from(selected).join("|")}
+        >
           <input type="hidden" name="returnTo" value={returnTo} />
           <div className="profile-nickname-character-list" role="group" aria-label="Альти для Discord-ніку">
             {altCandidates.map((character) => {
@@ -573,10 +685,10 @@ function RegistrationNicknameCharactersForm({
               );
             })}
           </div>
-          <p className="profile-nickname-hint">
-            Сервер збере нік із мейна та максимум двох альтів. Якщо альтів немає — це не блокує реєстрацію.
+          <p className="profile-nickname-hint rules-choice-feedback" data-rules-nickname-feedback aria-live="polite">
+            Мейн додається автоматично; альти необовʼязкові. Можна вибрати максимум двох.
           </p>
-          <button className="btn btn-primary btn-sm" type="submit">
+          <button className="btn btn-primary btn-sm rules-choice-save" type="submit">
             Зберегти альтів для ніку
           </button>
         </form>
@@ -810,6 +922,9 @@ function RegistrationEditPanel({
   primaryBattleNetRegion,
   refreshMinMs,
   canSyncDiscordNickname,
+  currentServerNickname,
+  serverNicknameChecked,
+  discordOwnerLocked,
 }: {
   profile: DashboardProfile;
   nicknameTemplate: string;
@@ -817,6 +932,9 @@ function RegistrationEditPanel({
   primaryBattleNetRegion: string;
   refreshMinMs: number;
   canSyncDiscordNickname: boolean;
+  currentServerNickname?: string | null;
+  serverNicknameChecked: boolean;
+  discordOwnerLocked: boolean;
 }) {
   const mainCharacter = getMainCharacter(profile);
   const raidRolePreference = profile.raidRolePreference || null;
@@ -868,11 +986,11 @@ function RegistrationEditPanel({
             nicknamePreview={discordNicknamePreview}
             lastSyncedNickname={profile.discordNickname?.value}
             lastSyncedAt={profile.discordNickname?.syncedAt || null}
-            currentServerNickname={null}
-            serverNicknameChecked={false}
+            currentServerNickname={currentServerNickname}
+            serverNicknameChecked={serverNicknameChecked}
             canManage={true}
             canSyncDiscord={canSyncDiscordNickname}
-            discordOwnerLocked={false}
+            discordOwnerLocked={discordOwnerLocked}
             returnTo={returnTo}
           />
         </article>
@@ -951,10 +1069,14 @@ function RegistrationLockedPanel({ loginHref }: { loginHref: string }) {
 function PublicRulesAction({
   token,
   canAcceptPublicly,
+  targetValid,
+  hasDiscordIdentity,
   loginHref,
 }: {
   token: string;
   canAcceptPublicly: boolean;
+  targetValid: boolean;
+  hasDiscordIdentity: boolean;
   loginHref: string;
 }) {
   return (
@@ -966,12 +1088,18 @@ function PublicRulesAction({
         <strong id="rules-public-action-title">
           {canAcceptPublicly
             ? "Можна прийняти правила без входу"
-            : "Потрібне Discord-підтвердження"}
+            : !targetValid
+              ? "Потрібне нове посилання правил"
+              : "Потрібне Discord-підтвердження"}
         </strong>
         <small id="rules-public-action-help">
           {canAcceptPublicly
             ? "Discord-кнопка вже передала сайту підписаний userId. Натисни кнопку — бот видасть ту ж роль без перевірок профільного редактора."
-            : "Відкрий цю сторінку з кнопки правил у Discord або увійди через Discord, інакше сайт не знає, кому видавати роль."}
+            : !targetValid
+              ? "Цей токен більше не можна безпечно використати для видачі ролі. Відкрий актуальну кнопку правил у Discord."
+              : hasDiscordIdentity
+                ? "Discord-користувача підтверджено, але завершення зараз недоступне. Онови сторінку або відкрий нове персональне посилання."
+                : "Увійди через Discord — роль із посилання збережеться, а сайт перевірить активний Discord-акаунт перед видачею."}
         </small>
       </span>
 
@@ -992,7 +1120,7 @@ function PublicRulesAction({
             Прийняти правила й отримати роль
           </button>
         </form>
-      ) : (
+      ) : targetValid ? (
         <a
           className="btn primary rules-onboarding-primary-action"
           href={loginHref}
@@ -1000,6 +1128,14 @@ function PublicRulesAction({
         >
           Увійти через Discord
         </a>
+      ) : (
+        <span
+          className="btn subtle rules-onboarding-primary-action is-disabled"
+          aria-disabled="true"
+          aria-describedby="rules-public-action-help"
+        >
+          Потрібне нове посилання
+        </span>
       )}
     </section>
   );
@@ -1045,16 +1181,65 @@ export default async function RulesAcceptPage({
   const status = rulesOnboardingStatus(profile, nicknamePolicy.template);
   const completedSteps = status.steps.filter((step) => step.complete).length;
   const nextMissingStep = status.missing[0] || null;
-  const roles = roleIds.length ? await fetchDiscordRoles().catch(() => []) : [];
+  const roleLookup = roleIds.length
+    ? await fetchDiscordRoles()
+        .then((items) => ({ ok: true as const, roles: items }))
+        .catch(() => ({ ok: false as const, roles: [] as Array<{ id: string; name: string }> }))
+    : { ok: true as const, roles: [] as Array<{ id: string; name: string }> };
+  const roles = roleLookup.roles;
+  const missingRoleIds = roleLookup.ok
+    ? roleIds.filter((roleId) => !roles.some((role) => role.id === roleId))
+    : [];
+  const configuredGuildId = getDiscordGuildId();
+  const discordConfigured = Boolean(configuredGuildId && hasDiscordEmbedConfig());
+  const tokenGuildMismatch = Boolean(
+    parsedToken.discordGuildId &&
+      configuredGuildId &&
+      parsedToken.discordGuildId !== configuredGuildId,
+  );
+  const tokenIdentityMismatch = Boolean(
+    isDiscordAuthorized &&
+      publicDiscordUserId &&
+      profile?.providerUserId &&
+      publicDiscordUserId !== profile.providerUserId,
+  );
+  const authenticatedDiscordUserId =
+    isDiscordAuthorized &&
+    profile?.provider === "discord" &&
+    /^\d{16,25}$/.test(profile.providerUserId)
+      ? profile.providerUserId
+      : null;
+  const targetDiscordUserId = authenticatedDiscordUserId || publicDiscordUserId;
+  const discordMemberLookup =
+    discordConfigured && targetDiscordUserId && configuredGuildId
+      ? await lookupDiscordMember(targetDiscordUserId, configuredGuildId)
+      : ({ state: "unavailable", member: null } as DiscordMemberLookup);
+  const discordGuild =
+    discordConfigured && authenticatedDiscordUserId
+      ? await fetchDiscordGuildSnapshot().catch(() => null)
+      : null;
+  const targetDiscordMemberMissing = discordMemberLookup.state === "missing";
+  const discordOwnerLocked = Boolean(
+    authenticatedDiscordUserId &&
+      discordGuild?.ownerId === authenticatedDiscordUserId,
+  );
+  const rulesTargetValid = Boolean(
+    roleIds.length &&
+      discordConfigured &&
+      !tokenGuildMismatch &&
+      !tokenIdentityMismatch &&
+      !targetDiscordMemberMissing &&
+      missingRoleIds.length === 0,
+  );
   const primaryRegion = getEnabledBattleNetRegions()[0] || "eu";
   const returnTo = rulesReturnPath(token);
   const loginHref = rulesLoginPath(token);
-  const publicDiscordMember =
-    !isDiscordAuthorized && publicDiscordUserId && hasDiscordEmbedConfig()
-      ? await fetchDiscordGuildMemberSnapshot(publicDiscordUserId).catch(
-          () => null,
-        )
-      : null;
+  const publicDiscordMember = !isDiscordAuthorized
+    ? discordMemberLookup.member
+    : null;
+  const authenticatedDiscordMember = isDiscordAuthorized
+    ? discordMemberLookup.member
+    : null;
   const tokenDiscordUser = parsedToken.discordUser;
   const publicDiscordLabel = publicDiscordMember?.displayName
     ? publicDiscordMember.displayName
@@ -1068,12 +1253,15 @@ export default async function RulesAcceptPage({
       ? "підписаний Discord token"
       : "немає підтверджених даних";
   const canAcceptPublicly = Boolean(
-    !isDiscordAuthorized && roleIds.length && publicDiscordUserId,
+    !isDiscordAuthorized &&
+      publicDiscordUserId &&
+      rulesTargetValid,
   );
   const canSyncDiscordNickname = Boolean(
     profile?.provider === "discord" &&
       /^\d{16,25}$/.test(profile.providerUserId) &&
-      hasDiscordEmbedConfig(),
+      discordConfigured &&
+      !targetDiscordMemberMissing,
   );
 
   return (
@@ -1090,6 +1278,7 @@ export default async function RulesAcceptPage({
           user={(session as DashboardSession | null) ?? null}
           activeSection="profile"
         />
+        <RulesChoiceEnhancer />
         <header className="hero panel dashboard-hero rules-onboarding-hero">
           <div className="hero-copy dashboard-hero__copy guild-hero__copy">
             <div className="eyebrow">Mistblossom Vanguard • Правила</div>
@@ -1165,93 +1354,201 @@ export default async function RulesAcceptPage({
             <>
               <div className="profile-card-head profile-card-head--inline">
                 <div>
-                  <span className="eyebrow">Без обовʼязкової авторизації</span>
-                  <h2>Швидке прийняття правил</h2>
+                  <span className="eyebrow">Discord-підтвердження</span>
+                  <h2>{canAcceptPublicly ? "Все готово до прийняття" : "Оберіть правильний шлях"}</h2>
                   <p className="profile-card-lead">
-                    Для неавторизованого користувача профільний редактор не
-                    використовується. Якщо Discord ID прийшов із підписаного
-                    токена кнопки, фінальна кнопка тільки видає вибрану роль.
+                    {canAcceptPublicly
+                      ? "Discord уже підтвердив користувача через персональну кнопку. Додаткова OAuth-авторизація для самої видачі ролі не потрібна."
+                      : "Без персонального Discord-підтвердження сайт не вгадує, кому видавати роль. Увійти через Discord можна окремо — для профілю, Battle.net і налаштування ніку."}
                   </p>
                 </div>
-                <span
-                  className={`profile-count-pill${canAcceptPublicly ? " is-ok" : " is-warning"}`}
-                >
-                  {canAcceptPublicly ? "Готово" : "Потрібен Discord"}
+                <span className={`profile-count-pill${canAcceptPublicly ? " is-ok" : " is-warning"}`}>
+                  {canAcceptPublicly ? "Підтверджено" : "Потрібна дія"}
                 </span>
               </div>
 
-              {!roleIds.length ? (
-                <div className="login-alert profile-storage-warning" role="status">
-                  Посилання правил не містить підтвердженої ролі. Натисни
-                  актуальну кнопку “Прийняти правила” в Discord або попроси
-                  офіцера оновити embed правил.
+              {!discordConfigured ? (
+                <div className="rules-onboarding-context-card is-error" role="alert">
+                  <span className="rules-onboarding-context-card__icon" aria-hidden="true">!</span>
+                  <span>
+                    <strong>Discord-видача ролей тимчасово недоступна</strong>
+                    <small>Профіль можна налаштувати через Discord-вхід, але фінальну роль сайт не видаватиме, доки bot/guild конфігурацію не буде відновлено.</small>
+                  </span>
                 </div>
               ) : null}
 
-              <div className="rules-onboarding-role-box">
-                <strong>Роль після прийняття</strong>
-                <span>
-                  {roleIds.length
-                    ? roleIds.map((roleId) => roleName(roleId, roles)).join(", ")
-                    : "Не задано"}
-                </span>
-                <small>
-                  Discord-користувач: {publicDiscordLabel}. Джерело: {publicDiscordSource}.
-                  Дані передаються з Discord interaction у підписаному токені та,
-                  коли доступно, доповнюються через bot API без прямої OAuth-авторизації.
-                </small>
-              </div>
+              {!roleIds.length ? (
+                <div className="rules-onboarding-context-card is-warning" role="status">
+                  <span className="rules-onboarding-context-card__icon" aria-hidden="true">1</span>
+                  <span>
+                    <strong>Для видачі ролі відкрий персональну кнопку в Discord</strong>
+                    <small>
+                      Поточна адреса не містить підписаної ролі. Це нормально для прямого переходу на сторінку: натисни «Прийняти правила» у Discord, а потім відкрий персональне посилання, яке надішле бот.
+                    </small>
+                  </span>
+                </div>
+              ) : null}
 
-              <PublicRulesAction
-                token={token}
-                canAcceptPublicly={canAcceptPublicly}
-                loginHref={loginHref}
-              />
+              {tokenGuildMismatch ? (
+                <div className="rules-onboarding-context-card is-error" role="alert">
+                  <span className="rules-onboarding-context-card__icon" aria-hidden="true">!</span>
+                  <span>
+                    <strong>Посилання створене для іншого Discord-сервера</strong>
+                    <small>Не використовуй його. Натисни актуальну кнопку правил у Discord ще раз.</small>
+                  </span>
+                </div>
+              ) : null}
 
-              <RegistrationLockedPanel loginHref={loginHref} />
+              {missingRoleIds.length ? (
+                <div className="rules-onboarding-context-card is-error" role="alert">
+                  <span className="rules-onboarding-context-card__icon" aria-hidden="true">!</span>
+                  <span>
+                    <strong>Роль із цього посилання більше не існує</strong>
+                    <small>Embed правил застарів. Офіцеру потрібно перевидати повідомлення правил із чинною роллю.</small>
+                  </span>
+                </div>
+              ) : null}
+
+              {targetDiscordMemberMissing ? (
+                <div className="rules-onboarding-context-card is-error" role="alert">
+                  <span className="rules-onboarding-context-card__icon" aria-hidden="true">!</span>
+                  <span>
+                    <strong>Discord-користувача немає на сервері гільдії</strong>
+                    <small>Роль неможливо видати, доки цей акаунт не приєднається до Discord-сервера. Після вступу відкрий персональну кнопку правил ще раз.</small>
+                  </span>
+                </div>
+              ) : null}
+
+              {roleIds.length ? (
+                <div className="rules-onboarding-role-box">
+                  <strong>Що буде видано</strong>
+                  <span>{roleIds.map((roleId) => roleName(roleId, roles)).join(", ")}</span>
+                  <small>
+                    Discord-користувач: {publicDiscordLabel}. Джерело: {publicDiscordSource}.
+                    {roleLookup.ok
+                      ? " Роль перевірена за поточним списком Discord."
+                      : " Перевірка списку ролей зараз недоступна; остаточну відповідь дасть Discord під час видачі."}
+                  </small>
+                </div>
+              ) : null}
+
+              {roleIds.length ? (
+                <PublicRulesAction
+                  token={token}
+                  canAcceptPublicly={canAcceptPublicly}
+                  targetValid={rulesTargetValid}
+                  hasDiscordIdentity={Boolean(publicDiscordUserId)}
+                  loginHref={loginHref}
+                />
+              ) : (
+                <section className="rules-onboarding-entry-grid" aria-label="Варіанти продовження">
+                  <article className="rules-onboarding-entry-card is-primary">
+                    <span className="rules-onboarding-entry-card__step">1</span>
+                    <span>
+                      <strong>Хочу прийняти правила</strong>
+                      <small>Повернись у Discord і натисни актуальну кнопку «Прийняти правила». Бот створить персональне підписане посилання.</small>
+                    </span>
+                  </article>
+                  <article className="rules-onboarding-entry-card">
+                    <span className="rules-onboarding-entry-card__step">2</span>
+                    <span>
+                      <strong>Хочу налаштувати профіль</strong>
+                      <small>Discord-вхід відкриє імʼя, Battle.net, мейна, роль у рейді та майбутній серверний нік.</small>
+                    </span>
+                    <a className="btn primary" href={loginHref}>Увійти через Discord</a>
+                  </article>
+                </section>
+              )}
+
+              {canAcceptPublicly ? <RegistrationLockedPanel loginHref={loginHref} /> : null}
             </>
-          ) : !roleIds.length ? (
-            <div className="login-alert profile-storage-warning" role="status">
-              Посилання правил не містить підтвердженої ролі. Натисни актуальну
-              кнопку “Прийняти правила” в Discord або попроси офіцера оновити
-              embed правил.
-            </div>
           ) : profile ? (
             <>
               <div className="profile-card-head profile-card-head--inline">
                 <div>
-                  <span className="eyebrow">Обовʼязково для повного профілю</span>
-                  <h2>
-                    {status.complete
-                      ? "Профіль готовий"
-                      : "Дані неповні або некоректні"}
-                  </h2>
+                  <span className="eyebrow">Профіль і привʼязки</span>
+                  <h2>{status.complete ? "Профіль готовий" : "Заверши обовʼязкові дані"}</h2>
+                  <p className="profile-card-lead">
+                    Усі зміни робляться тут. Вибраний стан завжди видно одразу, а збереження доступне тільки коли вибір реально змінився.
+                  </p>
                 </div>
-                <span
-                  className={`profile-count-pill${status.complete ? " is-ok" : " is-warning"}`}
-                >
+                <span className={`profile-count-pill${status.complete ? " is-ok" : " is-warning"}`}>
                   {completedSteps}/{status.steps.length}
                 </span>
               </div>
+
+              {tokenIdentityMismatch ? (
+                <div className="rules-onboarding-context-card is-error" role="alert">
+                  <span className="rules-onboarding-context-card__icon" aria-hidden="true">!</span>
+                  <span>
+                    <strong>Відкрито посилання іншого Discord-користувача</strong>
+                    <small>
+                      Профіль можна редагувати, але роль за цим персональним посиланням не буде видана цьому акаунту. Відкрий нове посилання зі своєї кнопки правил або переввійди правильним Discord-акаунтом.
+                    </small>
+                  </span>
+                  <a className="btn subtle" href={loginHref}>Переввійти Discord</a>
+                </div>
+              ) : null}
+
+              {!discordConfigured ? (
+                <div className="rules-onboarding-context-card is-error" role="alert">
+                  <span className="rules-onboarding-context-card__icon" aria-hidden="true">!</span>
+                  <span>
+                    <strong>Discord-інтеграція не готова до видачі ролей</strong>
+                    <small>Редагування профілю працює незалежно. Фінальне прийняття правил стане доступним після відновлення bot/guild конфігурації.</small>
+                  </span>
+                </div>
+              ) : null}
+
+              {!roleIds.length ? (
+                <div className="rules-onboarding-context-card is-warning" role="status">
+                  <span className="rules-onboarding-context-card__icon" aria-hidden="true">!</span>
+                  <span>
+                    <strong>Профіль доступний, але роль правил не привʼязана</strong>
+                    <small>
+                      Можеш повністю завершити профіль зараз. Для фінальної видачі ролі потім натисни «Прийняти правила» у Discord і повернись за персональним посиланням.
+                    </small>
+                  </span>
+                </div>
+              ) : null}
+
+              {tokenGuildMismatch ? (
+                <div className="rules-onboarding-context-card is-error" role="alert">
+                  <span className="rules-onboarding-context-card__icon" aria-hidden="true">!</span>
+                  <span><strong>Застаріле посилання сервера</strong><small>Профіль не блокується, але фінальна видача ролі за цим токеном вимкнена.</small></span>
+                </div>
+              ) : null}
+
+              {missingRoleIds.length ? (
+                <div className="rules-onboarding-context-card is-error" role="alert">
+                  <span className="rules-onboarding-context-card__icon" aria-hidden="true">!</span>
+                  <span><strong>Discord-роль із посилання видалена</strong><small>Потрібне нове повідомлення правил із чинною роллю. Профіль можна доробити без очікування.</small></span>
+                </div>
+              ) : null}
+
+              {targetDiscordMemberMissing ? (
+                <div className="rules-onboarding-context-card is-error" role="alert">
+                  <span className="rules-onboarding-context-card__icon" aria-hidden="true">!</span>
+                  <span>
+                    <strong>Активний Discord-акаунт не є учасником сервера</strong>
+                    <small>Профіль можна редагувати, але Discord-нік і роль не застосуються, доки акаунт не приєднається до сервера гільдії.</small>
+                  </span>
+                </div>
+              ) : null}
+
               <ProgressBar complete={completedSteps} total={status.steps.length} />
-              <ProfileSummary
-                profile={profile}
-                nicknameTemplate={nicknamePolicy.template}
-              />
+              <ProfileSummary profile={profile} nicknameTemplate={nicknamePolicy.template} />
+
               {!status.complete ? (
                 <div className="rules-onboarding-data-warning" role="status">
                   <strong>Реєстрація ще не готова</strong>
                   <small>
-                    Нижче показані тільки проблемні місця. Всі потрібні поля
-                    редагуються прямо на цій сторінці, без переходу в окремі
-                    налаштування профілю.
+                    Проблемні пункти показані окремо, а нижче лишаються доступними всі кроки — можна виправити будь-яке поле, навіть якщо воно вже заповнене.
                   </small>
                 </div>
               ) : null}
-              <ProblemList
-                profile={profile}
-                nicknameTemplate={nicknamePolicy.template}
-              />
+
+              <ProblemList profile={profile} nicknameTemplate={nicknamePolicy.template} />
 
               <RegistrationEditPanel
                 profile={profile}
@@ -1260,42 +1557,59 @@ export default async function RulesAcceptPage({
                 primaryBattleNetRegion={primaryRegion}
                 refreshMinMs={apiSettings.profileViewRefreshMinSeconds * 1000}
                 canSyncDiscordNickname={canSyncDiscordNickname}
+                currentServerNickname={authenticatedDiscordMember?.nick || null}
+                serverNicknameChecked={discordMemberLookup.state === "found"}
+                discordOwnerLocked={discordOwnerLocked}
               />
 
-              <div className="rules-onboarding-role-box">
-                <strong>Роль після завершення</strong>
-                <span>
-                  {roleIds.map((roleId) => roleName(roleId, roles)).join(", ")}
-                </span>
-                <small>
-                  <span id="rules-complete-help">
-                    Роль видається після одного фінального підтвердження. Нік
-                    формується за шаблоном: {nicknamePolicy.template}.
-                  </span>
-                </small>
-              </div>
+              {roleIds.length ? (
+                <div className="rules-onboarding-role-box">
+                  <strong>Роль після завершення</strong>
+                  <span>{roleIds.map((roleId) => roleName(roleId, roles)).join(", ")}</span>
+                  <small>
+                    <span id="rules-complete-help">
+                      Роль видається тільки цьому Discord-користувачу після фінального підтвердження. Нік формується за шаблоном: {nicknamePolicy.template}.
+                    </span>
+                  </small>
+                </div>
+              ) : null}
 
               <section
-                className={`rules-onboarding-final-action${status.complete ? " is-ready" : " is-pending"}`}
+                className={`rules-onboarding-final-action${status.complete && rulesTargetValid ? " is-ready" : " is-pending"}`}
                 aria-label="Фінальна дія реєстрації"
               >
                 <span className="rules-onboarding-final-action__copy">
                   <strong>
-                    {status.complete
-                      ? "Можна підтверджувати"
-                      : nextMissingStep
-                        ? `Проблемне місце: ${nextMissingStep.title}`
-                        : "Потрібно доповнити профіль"}
+                    {!status.complete
+                      ? nextMissingStep
+                        ? `Ще потрібно: ${nextMissingStep.title}`
+                        : "Потрібно доповнити профіль"
+                      : !roleIds.length
+                        ? "Профіль готовий — потрібне персональне посилання Discord"
+                        : tokenIdentityMismatch
+                          ? "Потрібен правильний Discord-акаунт"
+                          : targetDiscordMemberMissing
+                            ? "Потрібно приєднатися до Discord-сервера"
+                            : tokenGuildMismatch || missingRoleIds.length
+                              ? "Потрібне нове посилання правил"
+                              : "Можна підтверджувати"}
                   </strong>
                   <small>
-                    {status.complete
-                      ? "Залишилась одна дія: підтвердити правила, видати Discord-роль і прийняти зміни профілю."
-                      : nextMissingStep?.description ||
-                        "Заповни обовʼязкові дані прямо на цій сторінці, після цього тут зʼявиться фінальне підтвердження."}
+                    {!status.complete
+                      ? nextMissingStep?.description || "Заповни обовʼязкові дані вище."
+                      : !roleIds.length
+                        ? "Натисни кнопку правил у Discord. Вже заповнені дані профілю не загубляться."
+                        : tokenIdentityMismatch
+                          ? "Система навмисно блокує видачу ролі, якщо персональне посилання та активна Discord-сесія належать різним користувачам."
+                          : targetDiscordMemberMissing
+                            ? "Після вступу на сервер відкрий персональну кнопку правил у Discord ще раз. Дані профілю залишаться збереженими."
+                            : tokenGuildMismatch || missingRoleIds.length
+                              ? "Старий токен не використовується для видачі ролі."
+                              : "Залишилась одна дія: підтвердити правила, видати Discord-роль і застосувати серверний нік."}
                   </small>
                 </span>
 
-                {status.complete ? (
+                {status.complete && rulesTargetValid ? (
                   <form
                     action="/api/rules/accept/complete"
                     method="post"
@@ -1303,12 +1617,8 @@ export default async function RulesAcceptPage({
                     aria-describedby="rules-complete-help"
                   >
                     <input type="hidden" name="rt" value={token} />
-                    <button
-                      className="btn primary rules-onboarding-primary-action"
-                      type="submit"
-                      data-loading-label="Підтверджуємо..."
-                    >
-                      Підтвердити й прийняти зміни
+                    <button className="btn primary rules-onboarding-primary-action" type="submit" data-loading-label="Підтверджуємо...">
+                      Підтвердити й прийняти правила
                     </button>
                   </form>
                 ) : null}
@@ -1316,8 +1626,7 @@ export default async function RulesAcceptPage({
             </>
           ) : (
             <div className="login-alert profile-storage-warning" role="status">
-              Профіль ще створюється або тимчасово недоступний. Онови сторінку
-              через кілька секунд.
+              Профіль ще створюється або тимчасово недоступний. Онови сторінку через кілька секунд.
             </div>
           )}
         </section>

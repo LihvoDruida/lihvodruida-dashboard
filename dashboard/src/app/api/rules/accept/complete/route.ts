@@ -4,6 +4,7 @@ import {
   addGuildMemberRoles,
   fetchDiscordGuildMemberSnapshot,
   fetchDiscordGuildSnapshot,
+  fetchDiscordRoles,
   getDiscordGuildId,
   updateGuildMemberNickname,
 } from "@/lib/discordAdmin";
@@ -64,9 +65,10 @@ async function completeAuthenticatedRulesOnboarding(params: {
   token: string;
   profileId: string;
   roleIds: string[];
+  tokenDiscordUserId?: string | null;
   ip: string;
 }) {
-  const { request, token, profileId, roleIds, ip } = params;
+  const { request, token, profileId, roleIds, tokenDiscordUserId, ip } = params;
   const limit = checkRateLimit(
     `rules-accept-complete:${profileId}:${ip}`,
     10,
@@ -90,6 +92,18 @@ async function completeAuthenticatedRulesOnboarding(params: {
       !/^\d{16,25}$/.test(profile.providerUserId)
     ) {
       return redirectToToken(request, token, "not_discord_profile");
+    }
+
+    if (
+      tokenDiscordUserId &&
+      tokenDiscordUserId !== profile.providerUserId
+    ) {
+      logDashboardEvent("warn", "rules.onboarding.identity_mismatch", request, {
+        profileId,
+        tokenUserId: tokenDiscordUserId,
+        sessionUserId: profile.providerUserId,
+      });
+      return redirectToToken(request, token, "discord_identity_mismatch");
     }
 
     const guildId = getDiscordGuildId();
@@ -205,15 +219,19 @@ async function completePublicRulesAcceptance(params: {
   if (!guildId) return redirectToToken(request, token, "discord_not_configured");
 
   try {
-    const member = await fetchDiscordGuildMemberSnapshot(discordUserId, guildId).catch(
-      () => null,
-    );
-    if (!member) {
-      logDashboardEvent("warn", "rules.public.member_missing", request, {
-        userId: discordUserId,
-        roles: roleIds.length,
-      });
-      return redirectToToken(request, token, "discord_member_missing");
+    let member: Awaited<ReturnType<typeof fetchDiscordGuildMemberSnapshot>>;
+    try {
+      member = await fetchDiscordGuildMemberSnapshot(discordUserId, guildId);
+    } catch (error) {
+      const message = safeErrorMessage(error);
+      if (/Discord API 404|Unknown Member|10007/i.test(message)) {
+        logDashboardEvent("warn", "rules.public.member_missing", request, {
+          userId: discordUserId,
+          roles: roleIds.length,
+        });
+        return redirectToToken(request, token, "discord_member_missing");
+      }
+      throw error;
     }
 
     await addGuildMemberRoles({
@@ -265,6 +283,37 @@ export async function POST(request: NextRequest) {
 
   if (!roleIds.length) return redirectToToken(request, token, "missing_role_token");
 
+  const configuredGuildId = getDiscordGuildId();
+  if (
+    parsedToken.discordGuildId &&
+    configuredGuildId &&
+    parsedToken.discordGuildId !== configuredGuildId
+  ) {
+    logDashboardEvent("warn", "rules.onboarding.guild_mismatch", request, {
+      tokenGuildId: parsedToken.discordGuildId,
+      configuredGuildId,
+    });
+    return redirectToToken(request, token, "discord_guild_mismatch");
+  }
+
+  try {
+    const roles = await fetchDiscordRoles();
+    const availableRoleIds = new Set(roles.map((role) => role.id));
+    const missingRoleIds = roleIds.filter((roleId) => !availableRoleIds.has(roleId));
+    if (missingRoleIds.length) {
+      logDashboardEvent("warn", "rules.onboarding.role_missing", request, {
+        missingRoleIds,
+      });
+      return redirectToToken(request, token, "discord_role_missing");
+    }
+  } catch (error) {
+    // Discord itself remains the source of truth during PUT. A temporary role-list
+    // read failure should not block an otherwise valid acceptance attempt.
+    logDashboardEvent("warn", "rules.onboarding.role_preflight_failed", request, {
+      message: safeErrorMessage(error),
+    });
+  }
+
   const ip = getClientIp(request);
   const session = await getSession().catch(() => null);
   if (session?.profileId) {
@@ -273,6 +322,7 @@ export async function POST(request: NextRequest) {
       token,
       profileId: session.profileId,
       roleIds,
+      tokenDiscordUserId: parsedToken.discordUserId,
       ip,
     });
   }

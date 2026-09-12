@@ -14,7 +14,9 @@ function redirectToSettings(request: NextRequest, profileId: string, status: str
 }
 
 function cleanKeys(values: FormDataEntryValue[]) {
-  return Array.from(new Set(values.map((value) => normalizeCharacterKey(value)).filter(Boolean))).slice(0, 2);
+  return Array.from(
+    new Set(values.map((value) => normalizeCharacterKey(value)).filter(Boolean)),
+  );
 }
 
 export async function POST(request: NextRequest) {
@@ -33,6 +35,19 @@ export async function POST(request: NextRequest) {
   const form = await request.formData();
   const returnTo = profileActionReturnTo(form, session.profileId, `/profile/${session.profileId}/settings`);
   const selectedKeys = cleanKeys(form.getAll("nicknameCharacterKeys"));
+
+  if (selectedKeys.length > 2) {
+    logDashboardEvent("warn", "profile.nickname_characters.too_many", request, {
+      profileId: session.profileId,
+      selected: selectedKeys.length,
+    });
+    return redirectToSettings(
+      request,
+      session.profileId,
+      "profile_nickname_characters_too_many",
+      returnTo,
+    );
+  }
 
   try {
     const savedKeys = await setProfileNicknameCharacters(session.profileId, selectedKeys);

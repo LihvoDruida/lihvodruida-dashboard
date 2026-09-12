@@ -107,6 +107,37 @@ function withActiveStep(steps: LoadingStep[], activeIndex: number) {
 }
 
 function loadingCopyForPath(pathname: string): LoadingStateCopy {
+  if (pathname.startsWith("/rules/accept")) {
+    return {
+      eyebrow: "Правила гільдії",
+      title: "Готуємо прийняття правил",
+      message: "Перевіряємо Discord-підтвердження, актуальність ролі та стан профілю.",
+      activeLabel: "Зараз: звіряємо Discord і привʼязки",
+      steps: withActiveStep([
+        {
+          label: "Discord",
+          detail: "перевіряємо персональне підтвердження",
+          state: "done",
+        },
+        {
+          label: "Роль",
+          detail: "звіряємо сервер і актуальну роль",
+          state: "active",
+        },
+        {
+          label: "Профіль",
+          detail: "читаємо збережені привʼязки й персонажів",
+          state: "next",
+        },
+        {
+          label: "Сторінка",
+          detail: "готуємо доступні дії без зайвих блокувань",
+          state: "next",
+        },
+      ], 1),
+    };
+  }
+
   if (pathname.startsWith("/profile")) {
     return {
       eyebrow: "Профіль",
