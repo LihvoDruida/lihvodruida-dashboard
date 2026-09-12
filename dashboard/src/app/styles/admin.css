@@ -68,8 +68,17 @@
   min-width: 0;
 }
 
+/* Overview is a vertical workspace. Internal sections decide their own columns. */
 .admin-overview-grid--security {
-  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.admin-overview-top-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.75fr) minmax(300px, 0.75fr);
+  gap: var(--gap-grid);
+  align-items: stretch;
+  min-width: 0;
 }
 
 /* =========================================================
@@ -138,8 +147,7 @@
 }
 
 .discord-management-status__item,
-.admin-overview-status-card,
-.admin-system-summary-card {
+.admin-overview-status-card {
   display: grid;
   gap: var(--space-3xs);
   padding: var(--space-sm) var(--space-md);
@@ -150,16 +158,14 @@
 }
 
 .discord-management-status__item strong,
-.admin-overview-status-card strong,
-.admin-system-summary-card strong {
+.admin-overview-status-card strong {
   font-size: 0.95rem;
   color: var(--text-strong);
   overflow-wrap: anywhere;
 }
 
 .discord-management-status__item small,
-.admin-overview-status-card small,
-.admin-system-summary-card small {
+.admin-overview-status-card small {
   font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.1em;
@@ -274,27 +280,22 @@
   color: var(--text-strong);
 }
 
-.admin-policy-card__title small,
-.admin-policy-hint {
+.admin-policy-card__title small {
   color: var(--text-muted);
   font-size: 0.78rem;
   line-height: 1.55;
 }
 
-.admin-policy-hint--split {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-xs);
-}
 
 .admin-policy-fieldset--compact {
   gap: var(--space-xs);
 }
 
-.admin-policy-fieldset--roles {
-  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+.admin-policy-fieldset--roles,
+.admin-policy-fieldset--countries,
+.admin-policy-fieldset--mode {
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
 }
 
 /* Небезпечний перемикач видно з першого погляду */
@@ -307,7 +308,9 @@
   --tone: var(--c-ink-400);
   display: inline-flex;
   align-items: center;
-  padding: var(--space-3xs) var(--space-sm);
+  gap: 7px;
+  min-height: 32px;
+  padding: 5px 10px;
   border: 1px solid color-mix(in srgb, var(--tone) 32%, transparent);
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--tone) 12%, transparent);
@@ -317,13 +320,28 @@
   white-space: nowrap;
 }
 
-.admin-policy-status.is-on {
+.admin-policy-status[data-state="on"] {
   --tone: var(--c-success);
 }
 
-.admin-policy-status.is-off,
-.admin-policy-status.is-disabled {
+.admin-policy-status[data-state="off"] {
   --tone: var(--c-ink-400);
+}
+
+.admin-policy-status__dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.admin-policy-status > span:last-child {
+  padding-left: 7px;
+  border-left: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+  color: var(--text-muted);
+  font-weight: 600;
 }
 
 .admin-policy-empty {
@@ -1520,4 +1538,682 @@
   font-size: 0.68rem;
   font-style: normal;
   line-height: 1.35;
+}
+
+/* =========================================================
+   12. OVERVIEW — зрозуміла геометрія сторінки керування
+   ========================================================= */
+.admin-overview-top-grid > * {
+  min-width: 0;
+  height: 100%;
+}
+
+/* IntegrationStatusPanel раніше покладався лише на загальні suffix-стилі,
+   через що статуси склеювалися в один вузький стовпчик. */
+.integration-status-panel.admin-overview-status-card {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+
+.integration-status-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.integration-status-head > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.integration-status-head strong {
+  color: var(--text-strong);
+  font-size: 0.95rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.integration-status-head span,
+.integration-status-foot,
+.integration-status-item small {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.integration-status-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.integration-status-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 7px;
+  row-gap: 2px;
+  align-content: center;
+  min-width: 0;
+  min-height: 54px;
+  padding: 9px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--surface-sunken);
+}
+
+.integration-status-item strong {
+  min-width: 0;
+  color: var(--text-strong);
+  font-size: 0.78rem;
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
+
+.integration-status-item small {
+  grid-column: 2;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.integration-status-dot {
+  grid-row: 1 / span 2;
+  align-self: center;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c-ink-400);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-ink-400) 12%, transparent);
+}
+
+.integration-status-item[data-state="ok"] {
+  border-color: color-mix(in srgb, var(--c-success) 25%, var(--border-subtle));
+  background: color-mix(in srgb, var(--c-success) 5%, var(--surface-sunken));
+}
+
+.integration-status-item[data-state="ok"] .integration-status-dot {
+  background: var(--c-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-success) 13%, transparent);
+}
+
+.integration-status-item[data-state="warning"],
+.integration-status-item[data-state="unconfigured"] {
+  border-color: color-mix(in srgb, var(--c-warning) 28%, var(--border-subtle));
+}
+
+.integration-status-item[data-state="warning"] .integration-status-dot,
+.integration-status-item[data-state="unconfigured"] .integration-status-dot {
+  background: var(--c-warning);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-warning) 13%, transparent);
+}
+
+.integration-status-item[data-state="error"] {
+  border-color: color-mix(in srgb, var(--c-danger) 32%, var(--border-subtle));
+}
+
+.integration-status-item[data-state="error"] .integration-status-dot {
+  background: var(--c-danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-danger) 13%, transparent);
+}
+
+.integration-status-error {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--c-danger) 30%, var(--border-subtle));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--c-danger) 7%, var(--surface-sunken));
+  color: var(--text-soft);
+  font-size: 0.76rem;
+}
+
+.integration-status-foot {
+  padding-top: 2px;
+}
+
+.admin-nickname-summary-card {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+}
+
+.admin-nickname-summary-card__header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-nickname-summary-card__header > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-nickname-summary-card__header strong {
+  color: var(--text-strong);
+  font-size: 0.9rem;
+}
+
+.admin-nickname-summary-card__header small {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.admin-nickname-template {
+  display: block;
+  width: 100%;
+  padding: 10px 11px;
+  border: 1px solid color-mix(in srgb, var(--c-accent-400) 24%, var(--border-subtle));
+  border-radius: 9px;
+  background: var(--surface-sunken);
+  color: var(--c-accent-300);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.admin-nickname-example {
+  display: grid;
+  align-content: end;
+  gap: 3px;
+  min-width: 0;
+}
+
+.admin-nickname-example span {
+  color: var(--text-faint);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-nickname-example strong {
+  min-width: 0;
+  color: var(--text-soft);
+  font-size: 0.76rem;
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   13. SECURITY FORMS — секції, вибір ролей, зрозумілий стан
+   ========================================================= */
+.admin-policy-card {
+  gap: 16px;
+  padding: 18px;
+}
+
+.admin-policy-card__header {
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.admin-policy-card__icon {
+  width: 38px;
+  height: 38px;
+}
+
+.admin-policy-card__title strong {
+  font-size: 1rem;
+}
+
+.admin-policy-card__title small {
+  max-width: 820px;
+}
+
+.admin-policy-layout {
+  display: grid;
+  gap: 12px;
+  align-items: start;
+  min-width: 0;
+}
+
+.admin-policy-layout--auth {
+  grid-template-columns: minmax(330px, 0.82fr) minmax(0, 1.55fr);
+}
+
+.admin-policy-layout--geo {
+  grid-template-columns: minmax(330px, 0.9fr) minmax(0, 1.1fr);
+}
+
+.admin-policy-fieldset {
+  gap: 9px;
+  min-width: 0;
+  padding: 14px;
+  border-color: var(--border-subtle);
+  background: color-mix(in srgb, var(--surface-raised) 76%, transparent);
+}
+
+.admin-policy-fieldset legend {
+  margin-bottom: 2px;
+  padding: 0 4px;
+  color: var(--c-accent-300);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+}
+
+.admin-policy-section-intro {
+  margin: 0 0 2px;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.admin-policy-section-headline {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.admin-policy-section-headline .admin-policy-section-intro {
+  flex: 1 1 auto;
+}
+
+.admin-policy-selection-count {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-policy-toggle {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  min-width: 0;
+  min-height: 58px;
+  padding: 10px 11px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--surface-sunken);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.admin-policy-toggle:hover {
+  border-color: color-mix(in srgb, var(--c-accent-400) 32%, var(--border-subtle));
+  background: color-mix(in srgb, var(--c-accent-400) 4%, var(--surface-sunken));
+}
+
+.admin-policy-toggle:focus-within {
+  border-color: var(--border-strong);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.admin-policy-toggle:has(input:checked) {
+  border-color: color-mix(in srgb, var(--c-accent-400) 42%, var(--border-subtle));
+  background: color-mix(in srgb, var(--c-accent-400) 7%, var(--surface-sunken));
+}
+
+.admin-policy-toggle--danger:has(input:checked) {
+  border-color: color-mix(in srgb, var(--c-danger) 42%, var(--border-subtle));
+  background: color-mix(in srgb, var(--c-danger) 8%, var(--surface-sunken));
+}
+
+.admin-policy-toggle:has(input:disabled) {
+  cursor: default;
+  opacity: 0.62;
+}
+
+.admin-policy-toggle > input {
+  margin-top: 2px;
+}
+
+.admin-policy-toggle__copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.admin-policy-toggle__copy strong {
+  color: var(--text-strong);
+  font-size: 0.79rem;
+  line-height: 1.3;
+}
+
+.admin-policy-toggle__copy small {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+.auth-access-role-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  min-width: 0;
+}
+
+.auth-access-role-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  min-width: 0;
+  min-height: 58px;
+  padding: 9px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 9px;
+  background: var(--surface-sunken);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.auth-access-role-option:hover {
+  border-color: color-mix(in srgb, var(--c-accent-400) 34%, var(--border-subtle));
+}
+
+.auth-access-role-option:focus-within {
+  border-color: var(--border-strong);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.auth-access-role-option:has(input:checked) {
+  border-color: color-mix(in srgb, var(--c-accent-400) 48%, var(--border-subtle));
+  background: color-mix(in srgb, var(--c-accent-400) 8%, var(--surface-sunken));
+}
+
+.auth-access-role-option:has(input:disabled) {
+  cursor: default;
+  opacity: 0.62;
+}
+
+.auth-access-role-option input {
+  margin-top: 2px;
+}
+
+.auth-access-role-option__copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.auth-access-role-option__copy strong {
+  min-width: 0;
+  color: var(--text-strong);
+  font-size: 0.74rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.auth-access-role-option__copy small {
+  min-width: 0;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.admin-policy-input {
+  min-width: 0;
+}
+
+.admin-policy-input--manual-role {
+  margin-top: 2px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.admin-policy-current-state {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  min-width: 0;
+}
+
+.admin-policy-current-state > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 9px;
+  background: var(--surface-sunken);
+}
+
+.admin-policy-current-state span {
+  color: var(--text-faint);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.admin-policy-current-state strong {
+  min-width: 0;
+  color: var(--text-soft);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.admin-policy-current-state > div[data-tone="good"] {
+  border-color: color-mix(in srgb, var(--c-success) 24%, var(--border-subtle));
+}
+
+.admin-policy-current-state > div[data-tone="warning"] {
+  border-color: color-mix(in srgb, var(--c-warning) 30%, var(--border-subtle));
+  background: color-mix(in srgb, var(--c-warning) 5%, var(--surface-sunken));
+}
+
+.geo-country-summary {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  padding: 10px 11px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--surface-sunken);
+}
+
+.geo-country-summary > span {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.geo-country-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.geo-country-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  min-height: 30px;
+  padding: 5px 8px;
+  border: 1px solid color-mix(in srgb, var(--c-accent-400) 26%, var(--border-subtle));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--c-accent-400) 6%, var(--surface-raised));
+  color: var(--text-soft);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.geo-country-chip--muted {
+  min-width: 0;
+  color: var(--text-faint);
+  font-family: inherit;
+  font-weight: 600;
+}
+
+.admin-policy-country-source {
+  display: grid;
+  gap: 3px;
+  padding: 10px 11px;
+  border-left: 2px solid color-mix(in srgb, var(--c-info) 45%, var(--border-subtle));
+  border-radius: 0 8px 8px 0;
+  background: color-mix(in srgb, var(--c-info) 4%, transparent);
+}
+
+.admin-policy-country-source strong {
+  color: var(--text-soft);
+  font-size: 0.72rem;
+}
+
+.admin-policy-country-source small {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.admin-policy-footer {
+  gap: 14px;
+  padding-top: 14px;
+}
+
+.admin-policy-footer > small {
+  flex: 1 1 420px;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.admin-policy-footer .btn {
+  flex: 0 0 auto;
+  min-width: 220px;
+}
+
+@media (max-width: 1180px) {
+  .admin-overview-top-grid,
+  .admin-policy-layout--auth,
+  .admin-policy-layout--geo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .integration-status-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .auth-access-role-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .admin-policy-card {
+    padding: 14px;
+  }
+
+  .integration-status-grid,
+  .auth-access-role-list,
+  .admin-policy-current-state {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-policy-section-headline {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-policy-card__header > .admin-policy-status {
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  .admin-policy-footer .btn {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-overview-top-grid {
+    gap: 10px;
+  }
+
+  .integration-status-panel.admin-overview-status-card,
+  .admin-nickname-summary-card,
+  .admin-policy-card {
+    padding: 12px;
+  }
+
+  .integration-status-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .integration-status-head .btn {
+    width: 100%;
+  }
+
+  .integration-status-grid,
+  .auth-access-role-list,
+  .admin-policy-current-state {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .integration-status-item,
+  .auth-access-role-option,
+  .admin-policy-toggle {
+    min-height: 54px;
+  }
+
+  .admin-policy-card__header {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .admin-policy-card__header > .admin-policy-status {
+    grid-column: 1 / -1;
+  }
+
+  .admin-policy-status {
+    width: 100%;
+    justify-content: flex-start;
+    white-space: normal;
+  }
+
+  .admin-policy-status > span:last-child {
+    margin-left: auto;
+  }
+
+  .admin-policy-fieldset {
+    padding: 11px;
+  }
+
+  .admin-policy-toggle,
+  .auth-access-role-option {
+    padding: 10px;
+  }
 }

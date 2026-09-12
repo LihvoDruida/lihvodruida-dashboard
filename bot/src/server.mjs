@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import botPackage from "../package.json" with { type: "json" };
 import { verifyDiscordSignature } from "./signature.mjs";
 import { completeInteraction } from "./dashboardClient.mjs";
 import { logger } from "./logger.mjs";
@@ -201,6 +202,7 @@ const server = createServer(async (request, response) => {
     return json(response, 200, {
       ok: true,
       service: "mistblossom-bot",
+      version: String(botPackage.version || "unknown"),
       uptimeSeconds: Math.round(process.uptime()),
     });
   }

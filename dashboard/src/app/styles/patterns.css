@@ -267,8 +267,8 @@
 [class*="-divider "],
 [class$="__divider"],
 [class*="__divider "],
-[class$="-separator"]:not(:where(.app-footer__separator)):not(:where(.app-footer__link-separator)):not(:where(.discord-preview-footer-separator)),
-[class*="-separator "]:not(:where(.app-footer__separator)):not(:where(.app-footer__link-separator)):not(:where(.discord-preview-footer-separator)) {
+[class$="-separator"]:not(:where(.app-footer__link-separator)):not(:where(.discord-preview-footer-separator)),
+[class*="-separator "]:not(:where(.app-footer__link-separator)):not(:where(.discord-preview-footer-separator)) {
   width: 100%;
   height: 1px;
   border: 0;

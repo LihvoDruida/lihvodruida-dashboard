@@ -406,8 +406,13 @@ main .dashboard-shell {
 .app-footer__brand {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: var(--space-sm);
+  min-width: 0;
+}
+
+.app-footer__brand-copy {
+  display: grid;
+  gap: 3px;
   min-width: 0;
 }
 
@@ -459,7 +464,6 @@ main .dashboard-shell {
   color: var(--text-strong);
 }
 
-.app-footer__separator,
 .app-footer__link-separator {
   width: 1px;
   height: 16px;
@@ -470,6 +474,49 @@ main .dashboard-shell {
   max-width: 44ch;
   color: var(--text-faint);
   line-height: 1.5;
+}
+
+.app-footer__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-md);
+}
+
+.app-footer__versions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-footer__version {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  padding: 5px 9px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--surface-raised);
+  color: var(--text-soft);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.app-footer__version-label {
+  color: var(--text-faint);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.app-footer__version strong {
+  color: var(--text-strong);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .app-footer__links {
@@ -491,11 +538,42 @@ main .dashboard-shell {
 @media (max-width: 640px) {
   .app-footer__inner {
     flex-direction: column;
+    align-items: stretch;
+  }
+
+  .app-footer__brand {
     align-items: flex-start;
   }
 
-  .app-footer__separator {
-    display: none;
+  .app-footer__meta {
+    width: 100%;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--space-sm) var(--space-md);
+  }
+
+  .app-footer__versions {
+    flex: 1 1 auto;
+  }
+
+  .app-footer__version {
+    min-height: 32px;
+  }
+}
+
+@media (max-width: 420px) {
+  .app-footer__meta,
+  .app-footer__versions {
+    width: 100%;
+  }
+
+  .app-footer__version {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+
+  .app-footer__links {
+    width: 100%;
   }
 }
 

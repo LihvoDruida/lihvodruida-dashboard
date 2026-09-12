@@ -1,6 +1,12 @@
+import dashboardPackage from "../../package.json";
+import botPackage from "../../../bot/package.json";
+
+const siteVersion = String(dashboardPackage.version || "—");
+const botVersion = String(botPackage.version || "—");
+
 export default function AppFooter() {
   return (
-    <footer className="app-footer app-footer--site-wide" aria-label="Юридична інформація Mistblossom Vanguard">
+    <footer className="app-footer app-footer--site-wide" aria-label="Інформація Mistblossom Vanguard">
       <div className="app-footer__inner">
         <div className="app-footer__brand" aria-label="Mistblossom Vanguard">
           <span className="app-footer__crest" aria-hidden="true">
@@ -20,15 +26,30 @@ export default function AppFooter() {
             </svg>
             <span className="app-footer__crest-letter">M</span>
           </span>
-          <strong className="app-footer__title">Mistblossom Vanguard</strong>
-          <span className="app-footer__separator" aria-hidden="true" />
-          <span className="app-footer__tagline">Панель профілів, рейдів, правил і Discord-ролей.</span>
+          <div className="app-footer__brand-copy">
+            <strong className="app-footer__title">Mistblossom Vanguard</strong>
+            <span className="app-footer__tagline">Панель профілів, рейдів, правил і Discord-ролей.</span>
+          </div>
         </div>
-        <nav className="app-footer__links" aria-label="Юридичні сторінки">
-          <a href="/terms">Умови</a>
-          <span className="app-footer__link-separator" aria-hidden="true" />
-          <a href="/privacy">Приватність</a>
-        </nav>
+
+        <div className="app-footer__meta">
+          <div className="app-footer__versions" aria-label="Версії застосунків">
+            <span className="app-footer__version" title={`Версія сайту: ${siteVersion}`}>
+              <span className="app-footer__version-label">Сайт</span>
+              <strong>v{siteVersion}</strong>
+            </span>
+            <span className="app-footer__version" title={`Версія Discord-бота: ${botVersion}`}>
+              <span className="app-footer__version-label">Бот</span>
+              <strong>v{botVersion}</strong>
+            </span>
+          </div>
+
+          <nav className="app-footer__links" aria-label="Юридичні сторінки">
+            <a href="/terms">Умови</a>
+            <span className="app-footer__link-separator" aria-hidden="true" />
+            <a href="/privacy">Приватність</a>
+          </nav>
+        </div>
       </div>
     </footer>
   );
