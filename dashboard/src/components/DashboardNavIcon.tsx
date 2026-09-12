@@ -92,8 +92,8 @@ const PATHS: Record<DashboardNavSection, ReactNode> = {
   ),
 };
 
-export default function DashboardNavIcon({ section }: { section: string }) {
-  const icon = PATHS[section as DashboardNavSection] || PATHS.home;
+export default function DashboardNavIcon({ section }: { section: DashboardNavSection }) {
+  const icon = PATHS[section];
   // Розмір задає CSS навігації (.nav-item svg / .nav-sheet__link svg),
   // тому тут лишається тільки viewBox — як в іконках сайту.
   return (
