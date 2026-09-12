@@ -139,7 +139,7 @@ export default function RaidPollCreateClientForm({ channels, roles = [], default
     dispatchDashboardToast({
       tone: "info",
       title: isEdit ? "Оновлюємо рейд-пул" : "Створюємо рейд-пул",
-      message: isEdit ? "Зберігаємо зміни у Firebase і синхронізуємо Discord-повідомлення." : "Зберігаємо голосування у Firebase і публікуємо Discord-повідомлення.",
+      message: isEdit ? "Зберігаємо зміни в базі даних і синхронізуємо Discord-повідомлення." : "Зберігаємо голосування в базі даних і публікуємо Discord-повідомлення.",
       ttl: 3600,
     });
 
@@ -199,13 +199,13 @@ export default function RaidPollCreateClientForm({ channels, roles = [], default
         <div>
           <span className="eyebrow">{isEdit ? "Редагування рейд-пулу" : "Новий рейд-пул"}</span>
           <h2>{isEdit ? "Редагувати голосування" : "Створити голосування"}</h2>
-          <p>{isEdit ? "Зміни зберігаються у Firebase і одразу оновлюють або переносять Discord embed у вибраний канал." : "Сайт є джерелом правди: він створює запис у Firebase, публікує Discord embed і відкриває голосування через select-menu."}</p>
+          <p>{isEdit ? "Зміни зберігаються в базі даних і одразу оновлюють або переносять Discord embed у вибраний канал." : "Сайт є джерелом правди: він створює запис у базі даних, публікує Discord embed і відкриває голосування через select-menu."}</p>
         </div>
-        <span className="raid-status-pill published">{isEdit ? "Firebase ↔ Discord" : "Site → Discord"}</span>
+        <span className="raid-status-pill published">{isEdit ? "DB ↔ Discord" : "Site → Discord"}</span>
       </div>
 
       {fieldError ? <div className="notice error-note raid-poll-create-alert">{fieldError}</div> : null}
-      {disabled ? <div className="notice warning-note raid-poll-create-alert">Створення тимчасово недоступне: перевір Firebase або Discord API конфігурацію.</div> : null}
+      {disabled ? <div className="notice warning-note raid-poll-create-alert">Створення тимчасово недоступне: перевір конфігурацію бази даних або Discord API.</div> : null}
 
       <div className="raid-poll-form-grid">
         <label className="raid-poll-field raid-poll-field--wide" htmlFor="raid-poll-title">

@@ -18,7 +18,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const user = await getSession();
   if (!user || !canManageRaids(user)) {
-    return redirectWithToast("/raids", {
+    return redirectWithToast(request, "/raids", {
       tone: "error",
       title: "Доступ заборонено",
       message: "Твоя роль не має доступу до керування рейдами.",
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }).catch((auditError) => {
       logDashboardEvent("warn", "raids.delete.audit_failed", request, { raidId: result.id, message: auditError instanceof Error ? auditError.message : String(auditError || "unknown") });
     });
-    return redirectWithToast("/raids", {
+    return redirectWithToast(request, "/raids", {
       tone: result.discordDeleteFailed ? "warning" : "success",
       title: result.status === "draft" ? "Чернетку видалено" : "Рейд видалено",
       message: result.discordDeleteFailed
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       raidId,
       error: error instanceof Error ? error.message : String(error || ""),
     }).catch(() => false);
-    return redirectWithToast("/raids", {
+    return redirectWithToast(request, "/raids", {
       tone: "error",
       title: "Дію з рейдом не виконано",
       message: safeErrorMessage(error),

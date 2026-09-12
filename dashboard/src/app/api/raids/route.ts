@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
   const user = await getSession();
   if (!user || !canManageRaids(user)) {
-    return redirectWithToast("/raids", {
+    return redirectWithToast(request, "/raids", {
       tone: "error",
       title: "Доступ заборонено",
       message: "Твоя роль не має доступу до керування рейдами.",
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     failurePath = raidId ? `/raids/${encodeURIComponent(raidId)}/edit` : "/raids/new";
 
     if (action && action !== "save") {
-      return redirectWithToast(failurePath, {
+      return redirectWithToast(request, failurePath, {
         tone: "warning",
         title: "Дія не для цієї кнопки",
         message: "Ця кнопка тільки зберігає зміни в панелі. Для Discord використовуй кнопку “Опублікувати” або “Оновити Discord”.",
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     }).catch((auditError) => {
       logDashboardEvent("warn", "raids.save.audit_failed", request, { raidId: raid.id, message: auditError instanceof Error ? auditError.message : String(auditError || "unknown") });
     });
-    return redirectWithToast(`/raids/${encodeURIComponent(raid.id)}/edit`, {
+    return redirectWithToast(request, `/raids/${encodeURIComponent(raid.id)}/edit`, {
       tone: "success",
       title: raid.status === "draft" ? "Чернетку збережено" : "Зміни збережено",
       message: raid.status === "published" ? "Зміни збережено в панелі. Щоб показати їх у Discord, натисни “Оновити Discord”." : "Чернетку збережено. У Discord її ще не опубліковано.",
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       summary: `Рейд не збережено: ${message}`,
       error: error instanceof Error ? error.message : String(error || ""),
     }).catch(() => false);
-    return redirectWithToast(failurePath, {
+    return redirectWithToast(request, failurePath, {
       tone: "error",
       title: "Дію з рейдом не виконано",
       message: safeErrorMessage(error),

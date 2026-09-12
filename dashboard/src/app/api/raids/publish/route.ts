@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
   const user = await getSession();
   if (!user || !canManageRaids(user)) {
-    return redirectWithToast("/raids", {
+    return redirectWithToast(request, "/raids", {
       tone: "error",
       title: "Доступ заборонено",
       message: "Твоя роль не має доступу до керування рейдами.",
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       logDashboardEvent("warn", "raids.discord.publish.audit_failed", request, { raidId: result.raid.id, message: auditError instanceof Error ? auditError.message : String(auditError || "unknown") });
     });
 
-    return redirectWithToast(`/raids/${encodeURIComponent(result.raid.id)}/edit`, {
+    return redirectWithToast(request, `/raids/${encodeURIComponent(result.raid.id)}/edit`, {
       tone: "success",
       title: toastTitle,
       message: result.published || "Discord-повідомлення оброблено.",
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
       summary: `Discord-публікацію рейду не виконано: ${message}`,
       error: error instanceof Error ? error.message : String(error || ""),
     }).catch(() => false);
-    return redirectWithToast(failurePath, {
+    return redirectWithToast(request, failurePath, {
       tone: "error",
       title: "Discord-публікацію не виконано",
       message: safeErrorMessage(error),

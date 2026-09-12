@@ -64,10 +64,10 @@ export default async function EditPollPage({ params }: { params: Promise<{ pollI
     <RaidPollPageShell
       user={user}
       title="Редагування рейд-пулу"
-      description="Зміни назву, складність, дні, дедлайн або Discord-канал. Після збереження Firebase і Discord embed синхронізуються."
+      description="Зміни назву, складність, дні, дедлайн або Discord-канал. Після збереження база даних і Discord embed синхронізуються."
       eyebrow="Mistblossom Vanguard • Редагування"
     >
-      {!hasRaidPollStorage() ? <div className="notice panel error-note raid-notice">Firebase для рейд-пулів не налаштований.</div> : null}
+      {!hasRaidPollStorage() ? <div className="notice panel error-note raid-notice">Сховище рейд-пулів не налаштоване.</div> : null}
       {!discordEnabled ? <div className="notice panel error-note raid-notice">Discord-публікація недоступна: не налаштований DISCORD_BOT_TOKEN.</div> : null}
       {channelResult?.warning ? <div className="notice panel warning-note raid-notice">Список каналів прочитано з попередженням: {channelResult.warning}</div> : null}
       <section className="raid-poll-create-layout" aria-label="Редагування рейд-пулу">
@@ -79,7 +79,7 @@ export default async function EditPollPage({ params }: { params: Promise<{ pollI
           </div>
           <p>Якщо канал змінено, сайт створить нове повідомлення у вибраному каналі й спробує прибрати старе. Якщо канал той самий — буде PATCH існуючого повідомлення.</p>
           <ol className="raid-poll-help-steps">
-            <li>Firebase оновлює дані рейд-пулу.</li>
+            <li>База даних оновлює дані рейд-пулу.</li>
             <li>Discord embed редагується або переноситься в інший канал.</li>
             <li>Голоси зберігаються за Discord ID і не дублюються.</li>
             <li>Зміна днів прибирає з голосів ті дні, яких більше немає в пулі.</li>

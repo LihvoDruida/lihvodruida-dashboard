@@ -41,7 +41,7 @@ export default async function PollDetailsPage({ params }: { params: Promise<{ po
       description="Повний результат голосування: дні, час, список учасників і стан Discord-синхронізації."
       eyebrow="Mistblossom Vanguard • Результати"
     >
-      {!hasRaidPollStorage() ? <div className="notice panel error-note raid-notice">Рейд-пули тимчасово недоступні: Firebase не налаштований.</div> : null}
+      {!hasRaidPollStorage() ? <div className="notice panel error-note raid-notice">Рейд-пули тимчасово недоступні: сховище не налаштоване.</div> : null}
       {poll ? <>
         <RaidPollLiveSync pollId={poll.id} initialRevision={raidPollLiveRevision(poll)} />
         <RaidPollResults poll={poll} relatedPolls={relatedPolls} canManage={canManage} />

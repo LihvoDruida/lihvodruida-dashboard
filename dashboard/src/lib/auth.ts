@@ -51,6 +51,16 @@ export const SESSION_COOKIE = "__Host-mistblossom_dashboard_session";
 export const LEGACY_SESSION_COOKIE = "mistblossom_dashboard_session";
 export const OAUTH_STATE_COOKIE = "__Host-mistblossom_oauth_state";
 export const LEGACY_OAUTH_STATE_COOKIE = "mistblossom_oauth_state";
+
+/**
+ * `__Host-` + Secure cookies are mandatory in production. Plain HTTP
+ * development on 0.0.0.0 cannot reliably store them in browsers, so dev uses
+ * the existing legacy cookie names without Secure. Both names are always read
+ * and cleared, keeping upgrades/downgrades predictable.
+ */
+export function useSecureAuthCookies() {
+  return process.env.NODE_ENV === "production";
+}
 const SESSION_AUDIENCE = "mistblossom-dashboard";
 const OAUTH_STATE_AUDIENCE = "mistblossom-oauth-state";
 function getSessionMaxAgeSeconds() {
@@ -623,14 +633,25 @@ export async function getSession(
 
 export async function setSession(session: DashboardSession) {
   const store = await cookies();
-  store.set(SESSION_COOKIE, await createSessionToken(session), {
+  const token = await createSessionToken(session);
+  const secure = useSecureAuthCookies();
+  const cookieName = secure ? SESSION_COOKIE : LEGACY_SESSION_COOKIE;
+  const staleCookieName = secure ? LEGACY_SESSION_COOKIE : SESSION_COOKIE;
+
+  store.set(cookieName, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: true,
+    secure,
     path: "/",
     maxAge: SESSION_MAX_AGE_SECONDS,
   });
-  store.delete(LEGACY_SESSION_COOKIE);
+  store.set(staleCookieName, "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: !secure,
+    path: "/",
+    maxAge: 0,
+  });
 }
 
 export async function clearSession() {

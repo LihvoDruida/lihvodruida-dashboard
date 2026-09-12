@@ -298,7 +298,7 @@ export default async function RosterFormationPage() {
         ) : null}
         {discordEnabled && !storageReady ? (
           <div className="notice panel error-note">
-            Firebase не налаштований, тому вибори гравців нікуди не збережуться. Звернись до гільдмайстра.
+            Сховище не налаштоване, тому вибори гравців нікуди не збережуться. Звернись до гільдмайстра.
           </div>
         ) : null}
         {configWarning ? <div className="notice panel warning-note">{configWarning}</div> : null}

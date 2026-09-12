@@ -95,6 +95,7 @@ export type BattleNetCharacterCandidate = {
 };
 
 export const BNET_OAUTH_STATE_COOKIE = "__Host-mistblossom_bnet_state";
+export const LEGACY_BNET_OAUTH_STATE_COOKIE = "mistblossom_bnet_state";
 const DEFAULT_GUILD_NAME = "Mistblossom Vanguard";
 const DEFAULT_GUILD_REALM = "terokkar";
 const DEFAULT_LOCALE_BY_REGION: Record<BattleNetRegion, string> = {

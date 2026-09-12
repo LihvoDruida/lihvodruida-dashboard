@@ -14,8 +14,8 @@ function raidPath(raidId: string) {
   return `/raids/${encodeURIComponent(raidId)}`;
 }
 
-function redirectToRaid(raidId: string, toast?: { tone?: "info" | "success" | "warning" | "error"; title: string; message?: string; ttl?: number }) {
-  const url = new URL(raidPath(raidId), appBaseUrl());
+function redirectToRaid(request: NextRequest, raidId: string, toast?: { tone?: "info" | "success" | "warning" | "error"; title: string; message?: string; ttl?: number }) {
+  const url = new URL(raidPath(raidId), appBaseUrl(request));
   const response = NextResponse.redirect(url, { status: 303, headers: noStoreHeaders() });
   if (toast) response.headers.append("Set-Cookie", dashboardToastCookie(toast));
   return response;
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ra
   const jsonMode = wantsJson(request);
 
   if (!user) {
-    const loginUrl = new URL("/login", appBaseUrl());
+    const loginUrl = new URL("/login", appBaseUrl(request));
     loginUrl.searchParams.set("next", raidPath(raidId));
     loginUrl.searchParams.set("error", "session_required");
     if (jsonMode) {
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ra
 
     if (!result.ok) {
       if (jsonMode) return jsonToast({ ok: false, tone: "error", title: "Запис не оновлено", message: result.content || "Дію не виконано." });
-      return redirectToRaid(raidId, { tone: "error", title: "Запис не оновлено", message: result.content || "Дію не виконано.", ttl: 8200 });
+      return redirectToRaid(request, raidId, { tone: "error", title: "Запис не оновлено", message: result.content || "Дію не виконано.", ttl: 8200 });
     }
 
     if ("raid" in result && result.raid) {
@@ -117,9 +117,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ra
     if (jsonMode) {
       return jsonToast({ ok: true, tone, title: "Запис оновлено", message: successMessage, raid: { id: raidId },  revision: "raid" in result && result.raid ? raidLiveRevision(result.raid) : null });
     }
-    return redirectToRaid(raidId, { tone, title: "Запис оновлено", message: successMessage, ttl: successMessage.includes("⚠️") ? 9200 : 6200 });
+    return redirectToRaid(request, raidId, { tone, title: "Запис оновлено", message: successMessage, ttl: successMessage.includes("⚠️") ? 9200 : 6200 });
   } catch (error) {
     if (jsonMode) return jsonToast({ ok: false, tone: "error", title: "Запис не оновлено", message: safeErrorMessage(error) });
-    return redirectToRaid(raidId, { tone: "error", title: "Запис не оновлено", message: safeErrorMessage(error), ttl: 8200 });
+    return redirectToRaid(request, raidId, { tone: "error", title: "Запис не оновлено", message: safeErrorMessage(error), ttl: 8200 });
   }
 }

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { getSession } from "@/lib/auth";
+import { getSession, useSecureAuthCookies } from "@/lib/auth";
 import { randomState } from "@/lib/oauth";
 import {
   BNET_OAUTH_STATE_COOKIE,
+  LEGACY_BNET_OAUTH_STATE_COOKIE,
   buildBattleNetOAuthUrl,
   getEnabledBattleNetRegions,
   normalizeBattleNetRegion,
@@ -84,12 +85,22 @@ export async function GET(request: NextRequest) {
     : enabledRegions[0];
   const state = `${randomState()}.${region}.${session.profileId || session.id}${nextPath ? `.${encodeNextPath(nextPath)}` : ""}`;
   const store = await cookies();
-  store.set(BNET_OAUTH_STATE_COOKIE, state, {
+  const secureAuthCookies = useSecureAuthCookies();
+  const stateCookieName = secureAuthCookies ? BNET_OAUTH_STATE_COOKIE : LEGACY_BNET_OAUTH_STATE_COOKIE;
+  const staleCookieName = secureAuthCookies ? LEGACY_BNET_OAUTH_STATE_COOKIE : BNET_OAUTH_STATE_COOKIE;
+  store.set(stateCookieName, state, {
     httpOnly: true,
-    secure: true,
+    secure: secureAuthCookies,
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 10,
+  });
+  store.set(staleCookieName, "", {
+    httpOnly: true,
+    secure: !secureAuthCookies,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
   });
 
   return redirectWithNoStore(buildBattleNetOAuthUrl(state, region));

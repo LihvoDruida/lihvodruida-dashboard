@@ -48,7 +48,8 @@ COPY dashboard/ ./
 ARG NEXT_PUBLIC_DASHBOARD_URL
 ENV NEXT_PUBLIC_DASHBOARD_URL=${NEXT_PUBLIC_DASHBOARD_URL}
 
-RUN npm run build
+# Перед Next build проганяємо typecheck + перевірки API/page/button/import контрактів.
+RUN npm run build:ci
 
 # --- 3. Runtime --------------------------------------------------------------
 FROM node:${NODE_VERSION} AS runner

@@ -6,6 +6,7 @@ import {
   OAUTH_STATE_COOKIE,
   SESSION_COOKIE,
   createOAuthStateToken,
+  useSecureAuthCookies,
 } from "@/lib/auth";
 import { buildDiscordOAuthUrl } from "@/lib/oauth";
 import {
@@ -88,18 +89,20 @@ export async function GET(request: NextRequest) {
   );
   applyNoStoreHeaders(response);
 
+  const secureAuthCookies = useSecureAuthCookies();
+  const oauthCookieName = secureAuthCookies ? OAUTH_STATE_COOKIE : LEGACY_OAUTH_STATE_COOKIE;
   response.cookies.set(
-    OAUTH_STATE_COOKIE,
+    oauthCookieName,
     serializeRememberedOAuthNonces(nonces),
     {
       httpOnly: true,
-      secure: true,
+      secure: secureAuthCookies,
       sameSite: "lax",
       path: "/",
       maxAge: OAUTH_NONCE_COOKIE_MAX_AGE,
     },
   );
-  expireCookie(response, LEGACY_OAUTH_STATE_COOKIE, false);
+  expireCookie(response, secureAuthCookies ? LEGACY_OAUTH_STATE_COOKIE : OAUTH_STATE_COOKIE, secureAuthCookies ? false : true);
   expireCookie(response, LOGIN_NEXT_COOKIE, true);
 
   if (forceFreshLogin) {

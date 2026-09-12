@@ -24,7 +24,7 @@ export const revalidate = 0;
 
 export async function POST(request: NextRequest) {
   if (!verifyTrustedOrigin(request)) {
-    return redirectWithToast("/roster", {
+    return redirectWithToast(request, "/roster", {
       tone: "error",
       title: "Недовірене джерело запиту",
       message: "Спробуй ще раз зі сторінки формування складу.",
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
 
   const session = await getSession();
   if (!session || !canManageRaids(session)) {
-    return redirectWithToast("/roster", {
+    return redirectWithToast(request, "/roster", {
       tone: "error",
       title: "Доступ заборонено",
       message: "Публікувати й очищати склад може лише гільдмайстер або офіцер.",
@@ -46,10 +46,10 @@ export async function POST(request: NextRequest) {
   }
 
   if (!hasRosterStorage()) {
-    return redirectWithToast("/roster", {
+    return redirectWithToast(request, "/roster", {
       tone: "error",
       title: "Сховище недоступне",
-      message: "Firebase не налаштований, тому склад не збережеться. Звернись до гільдмайстра.",
+      message: "Сховище не налаштоване, тому склад не збережеться. Звернись до гільдмайстра.",
       ttl: 8600,
     });
   }
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
   const limit = checkRateLimit(`roster:${session.id}:${ip}`, 20, 10 * 60 * 1000);
   if (!limit.ok) {
-    return redirectWithToast("/roster", {
+    return redirectWithToast(request, "/roster", {
       tone: "error",
       title: "Забагато операцій",
       message: "Трохи зачекай і спробуй ще раз.",
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       if (!rosterId) throw new Error("Не вказано, який склад очищати.");
       await clearRosterFormation(rosterId);
       logDashboardEvent("info", "roster.clear", request, { rosterId, actorId: session.id, actorRole: session.role });
-      return redirectWithToast("/roster", {
+      return redirectWithToast(request, "/roster", {
         tone: "success",
         title: "Склад очищено",
         message: "Усі вибори гравців прибрано. Discord-повідомлення оновлено.",
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
         actorId: session.id,
         actorRole: session.role,
       });
-      return redirectWithToast("/roster", {
+      return redirectWithToast(request, "/roster", {
         tone: "success",
         title: status === "closed" ? "Набір закрито" : "Набір відкрито",
         message:
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
       if (!rosterId) throw new Error("Не вказано, який склад видаляти.");
       await deleteRosterFormation(rosterId);
       logDashboardEvent("info", "roster.delete", request, { rosterId, actorId: session.id, actorRole: session.role });
-      return redirectWithToast("/roster", {
+      return redirectWithToast(request, "/roster", {
         tone: "success",
         title: "Формування складу видалено",
         message: "Discord-повідомлення прибрано, запис у базі стерто.",
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
       actorRole: session.role,
     });
 
-    return redirectWithToast("/roster", {
+    return redirectWithToast(request, "/roster", {
       tone: "success",
       title: "Оголошення складу опубліковано",
       message: `${roster.title} відправлено в Discord. Гравці вже можуть обирати клас.`,
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
       actorId: session.id,
       message: safeErrorMessage(error),
     });
-    return redirectWithToast("/roster", {
+    return redirectWithToast(request, "/roster", {
       tone: "error",
       title: "Дію не виконано",
       message: safeErrorMessage(error, "Не вдалося виконати дію зі складом. Спробуй ще раз."),

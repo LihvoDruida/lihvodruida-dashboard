@@ -42,7 +42,7 @@ export default async function GuildRosterPage() {
         "page.guild.roster_read_failed",
         {
           summary:
-            "Сторінка складу відкрилась без Firebase-записів: читання roster не спрацювало.",
+            "Сторінка складу відкрилась без даних зі сховища: читання roster не спрацювало.",
           message:
             error instanceof Error ? error.message : String(error || "unknown"),
         },
@@ -64,7 +64,7 @@ export default async function GuildRosterPage() {
         },
         source: "fallback",
         error:
-          "Склад тимчасово недоступний. Сторінку відкрито без live-збору; синхронізація створить Firebase-записи покроково.",
+          "Склад тимчасово недоступний. Сторінку відкрито без live-збору; синхронізація відновить записи в базі даних покроково.",
       };
     }),
     getDashboardApiSettings().catch((error) => {
@@ -96,12 +96,12 @@ export default async function GuildRosterPage() {
         kind="quota"
         eyebrow="Склад гільдії"
         title="Склад тимчасово недоступний"
-        message="Firebase зараз недоступний або досяг ліміту читань. Сторінка не запускає додаткове масове читання складу, щоб не збільшувати навантаження."
+        message="База даних зараз недоступна або читання тимчасово обмежене. Сторінка не запускає додаткове масове читання складу, щоб не збільшувати навантаження."
         primaryLabel="Повторити"
         secondaryHref="/"
         secondaryLabel="До панелі"
         details={[
-          roster.error || "Синхронізація складу відновиться після доступу до Firebase.",
+          roster.error || "Синхронізація складу відновиться після відновлення доступу до бази даних.",
           "Адмінські дії, профілі та рейди не запускають зайвих читань цієї сторінки.",
         ]}
       />

@@ -145,7 +145,13 @@ export function getForwardedHost(request: Request | NextRequest) {
 }
 
 export function isLocalHost(host: string) {
-  return host.startsWith("localhost") || host.startsWith("127.0.0.1") || host.startsWith("[::1]");
+  const normalized = normalizeHost(host);
+  return (
+    normalized === "localhost" || normalized.startsWith("localhost:") ||
+    normalized === "127.0.0.1" || normalized.startsWith("127.0.0.1:") ||
+    normalized === "0.0.0.0" || normalized.startsWith("0.0.0.0:") ||
+    normalized === "[::1]" || normalized.startsWith("[::1]:")
+  );
 }
 
 export function isAllowedHost(host: string) {

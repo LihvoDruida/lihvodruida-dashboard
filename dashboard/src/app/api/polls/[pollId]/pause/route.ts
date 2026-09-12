@@ -43,7 +43,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ po
 
   if (!user || !canManageRaids(user)) {
     if (jsonMode) return NextResponse.json({ ok: false, error: "Твоя роль не може ставити рейд-пули на паузу." }, { status: 403, headers: noStoreHeaders() });
-    return redirectWithToast(`/polls/${encodeURIComponent(pollId)}`, { tone: "error", title: "Доступ заборонено", message: "Твоя роль не може керувати паузою рейд-пулів." });
+    return redirectWithToast(request, `/polls/${encodeURIComponent(pollId)}`, { tone: "error", title: "Доступ заборонено", message: "Твоя роль не може керувати паузою рейд-пулів." });
   }
 
   const { action, note, extendMinutes } = await readAction(request);
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ po
     if (jsonMode) {
       return NextResponse.json({ ok: true, pollId: poll.id, status: poll.status, poll, revision: raidPollLiveRevision(poll) }, { headers: noStoreHeaders() });
     }
-    return redirectWithToast(`/polls/${encodeURIComponent(poll.id)}`, {
+    return redirectWithToast(request, `/polls/${encodeURIComponent(poll.id)}`, {
       tone: "success",
       title: action === "pause" ? "Рейд-пул на паузі" : "Рейд-пул відновлено",
       message: action === "pause"
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ po
     const message = safeErrorMessage(error);
     logDashboardEvent("error", `raid_polls.${action}_failed`, request, { pollId, actorId: user.id, message });
     if (jsonMode) return NextResponse.json({ ok: false, error: message }, { status: 400, headers: noStoreHeaders() });
-    return redirectWithToast(`/polls/${encodeURIComponent(pollId)}`, {
+    return redirectWithToast(request, `/polls/${encodeURIComponent(pollId)}`, {
       tone: "error",
       title: action === "pause" ? "Не вдалося поставити на паузу" : "Не вдалося відновити",
       message,

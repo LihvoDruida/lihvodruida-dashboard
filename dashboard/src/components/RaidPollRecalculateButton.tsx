@@ -40,7 +40,7 @@ export default function RaidPollRecalculateButton() {
         tone: failed ? "warning" : "success",
         title: failed ? "Перерахунок частковий" : "Дні перераховано",
         message: failed
-          ? `Оновлено ${updated}, з помилкою ${failed}. Перевір логи Discord/Firebase.`
+          ? `Оновлено ${updated}, з помилкою ${failed}. Перевір логи Discord/бази даних.`
           : `Оновлено ${updated} Discord-повідомлень без перетину рекомендованих днів.`,
         ttl: 7200,
       });

@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
   const user = await getSession();
   if (!user || !canManageRaids(user)) {
     if (jsonMode) return jsonError("Твоя роль не має доступу до створення рейд-пулів.", 403);
-    return redirectWithToast("/polls", {
+    return redirectWithToast(request, "/polls", {
       tone: "error",
       title: "Доступ заборонено",
       message: "Твоя роль не має доступу до створення рейд-пулів.",
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       }, { status: 201, headers: noStoreHeaders() });
     }
 
-    return redirectWithToast(`/polls/${encodeURIComponent(poll.id)}`, {
+    return redirectWithToast(request, `/polls/${encodeURIComponent(poll.id)}`, {
       tone: "success",
       title: "Рейд-пул створено",
       message: "Повідомлення опубліковано в Discord, голосування відкрите.",
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
 
     if (jsonMode) return jsonError(message, 400);
 
-    return redirectWithToast("/polls/new", {
+    return redirectWithToast(request, "/polls/new", {
       tone: "error",
       title: "Рейд-пул не створено",
       message,

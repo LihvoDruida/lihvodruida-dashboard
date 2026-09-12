@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
 
   const user = await getSession();
   if (!user || !canManageRaids(user)) {
-    return redirectWithToast("/raids", {
+    return redirectWithToast(request, "/raids", {
       tone: "error",
       title: "Доступ заборонено",
       message: "Твоя роль не має доступу до налаштувань рейдів.",
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!result.changed) {
-      return redirectWithToast("/raids/bench-priority", {
+      return redirectWithToast(request, "/raids/bench-priority", {
         tone: "info",
         title: "Без змін",
         message: "Сірий список уже має такі самі налаштування, повторний запис не створювався.",
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       characterKeys: settings.characterKeys.length,
       manualNames: settings.manualNames.length,
     }).catch(() => false);
-    return redirectWithToast("/raids/bench-priority", {
+    return redirectWithToast(request, "/raids/bench-priority", {
       tone: "success",
       title: "Сірий список збережено",
       message:
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       summary: `Сірий список рейдів не збережено: ${message}`,
       error: error instanceof Error ? error.message : String(error || ""),
     }).catch(() => false);
-    return redirectWithToast("/raids/bench-priority", {
+    return redirectWithToast(request, "/raids/bench-priority", {
       tone: "error",
       title: "Сірий список не збережено",
       message,

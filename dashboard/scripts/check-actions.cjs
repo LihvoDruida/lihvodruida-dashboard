@@ -166,8 +166,33 @@ for (const file of sourceFiles) {
   }
 }
 
+// Catch API paths hidden behind local variables/ternaries. Method validation above
+// remains authoritative where the call site is direct; this fallback at least makes
+// sure a computed action cannot point at a route that does not exist.
+const alreadyReferenced = new Set(checked.map((item) => normalizeTarget(item.target)));
+for (const file of sourceFiles) {
+  if (file.includes(`${path.sep}app${path.sep}api${path.sep}`) || file.endsWith(`${path.sep}proxy.ts`)) continue;
+  const text = fs.readFileSync(file, 'utf8');
+  for (const match of text.matchAll(/(?:["'](\/api\/[^"']+)["']|`(\/api\/[^`]+)`)/g)) {
+    const target = match[1] || match[2] || '';
+    let normalized = normalizeTarget(target);
+    let route = matchRoute(normalized);
+    // Nested template expressions (for example `${query ? `?${query}` : ""}`)
+    // can defeat the simple normalizer. If everything before the expression is
+    // already a complete API route, validate that stable prefix.
+    if (!route && target.includes('${')) {
+      const prefix = target.split('${', 1)[0].replace(/\?.*$/, '');
+      if (prefix && matchRoute(prefix)) { normalized = prefix; route = matchRoute(prefix); }
+    }
+    if (!normalized.startsWith('/api/') || alreadyReferenced.has(normalized)) continue;
+    const line = text.slice(0, match.index).split('\n').length;
+    record(route ? normalized : target, 'UNKNOWN', file, line, 'api-ref');
+    alreadyReferenced.add(normalized);
+  }
+}
+
 if (failures.length) {
   for (const failure of failures) console.error(`[check-actions:error] ${failure}`);
   process.exit(1);
 }
-console.log(`[check-actions] OK — ${checked.length} site actions checked against ${routes.length} API routes.`);
+console.log(`[check-actions] OK — ${checked.length} site/API references checked against ${routes.length} API routes.`);

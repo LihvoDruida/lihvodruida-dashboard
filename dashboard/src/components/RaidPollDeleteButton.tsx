@@ -10,14 +10,14 @@ export default function RaidPollDeleteButton({ pollId, pollTitle }: { pollId: st
 
   async function deletePoll() {
     if (pending) return;
-    const confirmed = window.confirm(`Видалити рейд-пул “${pollTitle}”?\n\nЦе видалить запис із Firebase і спробує прибрати Discord-повідомлення. Дію не можна скасувати.`);
+    const confirmed = window.confirm(`Видалити рейд-пул “${pollTitle}”?\n\nЦе видалить запис із бази даних і спробує прибрати Discord-повідомлення. Дію не можна скасувати.`);
     if (!confirmed) return;
 
     setPending(true);
     dispatchDashboardToast({
       tone: "warning",
       title: "Видаляємо рейд-пул",
-      message: "Видаляю запис із Firebase і синхронізую Discord-повідомлення.",
+      message: "Видаляю запис із бази даних і синхронізую Discord-повідомлення.",
       ttl: 3600,
     });
 

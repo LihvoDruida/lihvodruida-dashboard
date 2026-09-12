@@ -121,7 +121,7 @@ export default function AccessGroupsManager({ groups, isServerOwner, currentGrou
                 <div>
                   <span className="eyebrow">{fixedLabel(group)}</span>
                   <h2><span className="access-group-title-icon" aria-hidden="true">{groupIcon(group)}</span>{group.name}</h2>
-                  <p>{reason || "Зміни збережуться у Firebase. Користувачі отримають нові права автоматично після оновлення сесії або повторного входу."}</p>
+                  <p>{reason || "Зміни збережуться в базі даних. Користувачі отримають нові права автоматично після оновлення сесії або повторного входу."}</p>
                 </div>
                 {isServerOwner ? (
                   <button className="btn subtle" formAction={impersonateAction} name="groupId" value={group.id} type="submit" formNoValidate data-dashboard-action="access-groups-impersonate" data-loading-label="Вмикаємо перегляд...">

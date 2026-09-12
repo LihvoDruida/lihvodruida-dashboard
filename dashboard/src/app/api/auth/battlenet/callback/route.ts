@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { getDashboardUrl } from "@/lib/oauth";
 import {
   BNET_OAUTH_STATE_COOKIE,
+  LEGACY_BNET_OAUTH_STATE_COOKIE,
   exchangeBattleNetCode,
   fetchBattleNetGuildCharacters,
   fetchBattleNetUserInfo,
@@ -111,8 +112,16 @@ export async function GET(request: NextRequest) {
   const state = url.searchParams.get("state") || "";
 
   const store = await cookies();
-  const expectedState = store.get(BNET_OAUTH_STATE_COOKIE)?.value || "";
-  store.delete(BNET_OAUTH_STATE_COOKIE);
+  const expectedState =
+    store.get(BNET_OAUTH_STATE_COOKIE)?.value ||
+    store.get(LEGACY_BNET_OAUTH_STATE_COOKIE)?.value ||
+    "";
+  store.set(BNET_OAUTH_STATE_COOKIE, "", {
+    httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 0,
+  });
+  store.set(LEGACY_BNET_OAUTH_STATE_COOKIE, "", {
+    httpOnly: true, secure: false, sameSite: "lax", path: "/", maxAge: 0,
+  });
 
   if (!code || !state || !expectedState || state !== expectedState) {
     logDashboardEvent(

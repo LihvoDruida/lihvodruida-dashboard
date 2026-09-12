@@ -18,7 +18,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const user = await getSession();
   if (!user || !canManageRaids(user)) {
-    return redirectWithToast("/raids", {
+    return redirectWithToast(request, "/raids", {
       tone: "error",
       title: "Доступ заборонено",
       message: "Твоя роль не має доступу до керування рейдами.",
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }).catch((auditError) => {
       logDashboardEvent("warn", "raids.close.audit_failed", request, { raidId: result.id, message: auditError instanceof Error ? auditError.message : String(auditError || "unknown") });
     });
-    return redirectWithToast(`/raids/${encodeURIComponent(result.id)}`, {
+    return redirectWithToast(request, `/raids/${encodeURIComponent(result.id)}`, {
       tone: "success",
       title: "Рейд закрито",
       message: result.discordSynced ? "Запис вимкнено, кнопки в Discord стали неактивними." : "Рейд закрито в панелі. Кнопки в Discord не оновилися автоматично — перевір канал і натисни “Оновити Discord”.",
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       raidId,
       error: error instanceof Error ? error.message : String(error || ""),
     }).catch(() => false);
-    return redirectWithToast("/raids", {
+    return redirectWithToast(request, "/raids", {
       tone: "error",
       title: "Дію з рейдом не виконано",
       message: safeErrorMessage(error),

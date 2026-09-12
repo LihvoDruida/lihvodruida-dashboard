@@ -130,7 +130,7 @@ export default function GuildRosterLiveHeroStats({
 
       {rosterResource.status === "checking" ? (
         <p className="guild-refresh-action__status guild-refresh-action__status--loading">
-          Зчитую актуальний Firebase-запис складу…
+          Зчитую актуальний запис складу з бази даних…
         </p>
       ) : null}
       {!liveMembers.length && (rosterResource.error || error) ? (

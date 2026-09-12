@@ -90,8 +90,8 @@ export default async function RaidBenchPriorityPage({
       <StatusNotice params={params} />
       {!hasRaidStorage() ? (
         <div className="notice panel error-note raid-notice">
-          Збереження сірого списку тимчасово недоступне: Firebase не відповідає
-          або не налаштований.
+          Збереження сірого списку тимчасово недоступне: база даних не відповідає
+          або не налаштована.
         </div>
       ) : null}
 

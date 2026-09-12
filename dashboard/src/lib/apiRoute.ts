@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { applyNoStoreHeaders, noStoreHeaders } from "@/lib/security";
+import { applyNoStoreHeaders, getRequestHost, isAllowedHost, noStoreHeaders } from "@/lib/security";
 import { dashboardToastCookie } from "@/lib/serverToasts";
 import { cleanSnowflake, dashboardPublicOrigin, envFlag } from "@/lib/values";
 
@@ -28,13 +28,30 @@ export type DashboardToastInput = {
  * Реалізація живе у `@/lib/values`, щоб її бачили і роути, і серверні
  * бібліотеки без залежності від `next/server`.
  */
-export function appBaseUrl() {
+export function appBaseUrl(request?: NextRequest) {
+  // У dev залишаємо користувача на тому локальному origin, з якого він
+  // реально відкрив панель (localhost / 127.0.0.1 / 0.0.0.0). Інакше
+  // DASHBOARD_PUBLIC_URL із production-конфіга перетягує локальні форми на
+  // бойовий домен після успішного POST.
+  if (request && process.env.NODE_ENV !== "production") {
+    const host = getRequestHost(request);
+    if (host && isAllowedHost(host)) {
+      try {
+        const requestUrl = new URL(request.url);
+        if (requestUrl.protocol === "http:" || requestUrl.protocol === "https:") {
+          return `${requestUrl.protocol}//${host}`;
+        }
+      } catch {
+        // Нижче використаємо канонічний public origin.
+      }
+    }
+  }
   return dashboardPublicOrigin();
 }
 
 /** Редірект 303 із необовʼязковим тостом у cookie. */
-export function redirectWithToast(path: string, toast?: DashboardToastInput) {
-  const url = new URL(path, appBaseUrl());
+export function redirectWithToast(request: NextRequest, path: string, toast?: DashboardToastInput) {
+  const url = new URL(path, appBaseUrl(request));
   const response = NextResponse.redirect(url, { status: 303, headers: noStoreHeaders() });
   if (toast) response.headers.append("Set-Cookie", dashboardToastCookie(toast));
   return response;
@@ -77,5 +94,5 @@ export function wantsJsonResponse(request: NextRequest) {
 
 /** Простий 303-редірект відносно поточного запиту, без кешування. */
 export function redirectTo(request: NextRequest, path: string) {
-  return applyNoStoreHeaders(NextResponse.redirect(new URL(path, request.url), 303));
+  return applyNoStoreHeaders(NextResponse.redirect(new URL(path, appBaseUrl(request)), 303));
 }

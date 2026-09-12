@@ -47,7 +47,7 @@ export default async function PollsPage() {
       actions={canManage ? <RaidPollRecalculateButton /> : null}
     >
       {!hasRaidPollStorage() ? (
-        <div className="notice panel error-note raid-notice">Рейд-пули тимчасово недоступні: Firebase не налаштований.</div>
+        <div className="notice panel error-note raid-notice">Рейд-пули тимчасово недоступні: сховище не налаштоване.</div>
       ) : null}
       {canManage && !hasDiscordEmbedConfig() ? (
         <div className="notice panel error-note raid-notice">Публікація рейд-пулів у Discord недоступна: не налаштовано bot token або worker relay.</div>

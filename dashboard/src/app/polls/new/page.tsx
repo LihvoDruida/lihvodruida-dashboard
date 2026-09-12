@@ -46,9 +46,9 @@ export default async function NewPollPage() {
     <RaidPollPageShell
       user={user}
       title="Створення рейд-пулу"
-      description="Заповни назву, складність і час закриття. Після збереження сайт створить запис у Firebase та опублікує Discord-повідомлення."
+      description="Заповни назву, складність і час закриття. Після збереження сайт створить запис у базі даних та опублікує Discord-повідомлення."
     >
-      {!hasRaidPollStorage() ? <div className="notice panel error-note raid-notice">Firebase для рейд-пулів не налаштований.</div> : null}
+      {!hasRaidPollStorage() ? <div className="notice panel error-note raid-notice">Сховище рейд-пулів не налаштоване.</div> : null}
       {!discordEnabled ? <div className="notice panel error-note raid-notice">Discord-публікація недоступна: не налаштований DISCORD_BOT_TOKEN.</div> : null}
       {channelResult?.warning ? <div className="notice panel warning-note raid-notice">Список каналів прочитано з попередженням: {channelResult.warning}</div> : null}
       <section className="raid-poll-create-layout" aria-label="Створення рейд-пулу">
@@ -60,7 +60,7 @@ export default async function NewPollPage() {
           </div>
           <p>Команди Discord для створення немає. Ця сторінка створює пул, бот публікує embed і приймає вибір учасників.</p>
           <ol className="raid-poll-help-steps">
-            <li>Сайт створює Firebase-запис і Discord embed.</li>
+            <li>Сайт створює запис у базі даних і Discord embed.</li>
             <li>Гравець тисне кнопку й обирає роль: танк, хіл або ДД.</li>
             <li>Швидкий вибір ставить один час на всі дні; далі можна поправити окремі дні або позначити «Не можу».</li>
             <li>Підпис береться з ніку на сервері — персонаж Battle.net не потрібен.</li>

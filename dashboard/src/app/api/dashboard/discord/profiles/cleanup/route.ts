@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       tone: apply
         ? result.failed || result.rosterSafetyBlocked || result.rosterRefresh?.failed ? "warning" : result.deletedProfilesTotal ? "success" : "info"
         : result.rosterSafetyBlocked || result.rosterRefresh?.failed || result.targetProfilesTotal ? "warning" : "success",
-      title: apply ? "Очищення Firebase-профілів завершено" : "Перевірку профілів завершено",
+      title: apply ? "Очищення профілів завершено" : "Перевірку профілів завершено",
       message: summary,
       ttl: apply ? 16000 : 11000,
       data: { ...compactProfileCleanupResult(result), refresh: apply },

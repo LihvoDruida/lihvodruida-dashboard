@@ -73,8 +73,10 @@ make cert         # справжній сертифікат
 cd dashboard
 npm install
 cp .env.example .env.local
-npm run dev          # http://localhost:3000
+npm run dev          # http://localhost:3000 або http://0.0.0.0:3000
 ```
+
+Для безпечної HTTP-перевірки вже запущеної локальної панелі: `npm run smoke:http`. Скрипт перевіряє health і всі статичні сторінки без POST/DELETE.
 
 **Бот:**
 
