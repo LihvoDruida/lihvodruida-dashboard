@@ -96,6 +96,7 @@ import {
   inferDifficultyFromTitle,
   interactionField,
   interactionMessageTimestamp,
+  interactionShowsEmptyPoll,
   isExplicitlyZero,
   stripDifficultySuffix,
 } from "@/lib/discordInteractionRecovery";
