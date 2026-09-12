@@ -102,7 +102,7 @@ warn(/"prebuild"\s*:\s*"node scripts\/remove-legacy-middleware\.cjs"/.test(packa
 warn(/"build"\s*:\s*"node scripts\/next-build\.cjs"/.test(packageJsonText), 'build should use scripts/next-build.cjs to disable telemetry consistently and keep Vercel builds deterministic.');
 warn(exists('scripts/next-build.cjs'), 'scripts/next-build.cjs should exist because package.json build points to it.');
 warn(!/"build:vercel"\s*:/.test(packageJsonText), 'build:vercel should be removed; Vercel should use the default npm run build script.');
-warn(/"build:ci"\s*:\s*"npm run typecheck && npm run check:actions && npm run check:site && npm run check:imports && npm run inspect:ci && npm run build"/.test(packageJsonText), 'build:ci should keep typecheck, API-action, site-navigation, inspect-ci and build gates.');
+warn(/"build:ci"\s*:\s*"npm run typecheck && npm run check:actions && npm run check:site && npm run check:imports && npm run audit:styles && npm run inspect:ci && npm run build"/.test(packageJsonText), 'build:ci should keep typecheck, API-action, site-navigation, style-audit, inspect-ci and build gates.');
 warn(/"typecheck"\s*:\s*"node scripts\/typecheck\.cjs"/.test(read('package.json')), 'Typecheck should use scripts/typecheck.cjs for progress and timeout diagnostics.');
 
 if (exists('src/proxy.ts')) {
@@ -126,27 +126,18 @@ if (exists('src/proxy.ts')) {
 
 
 
+if (exists('src/app/page.tsx')) {
+  const rootPageText = read('src/app/page.tsx');
+  assert(/redirect\(user \? "\/profile" : "\/login"\)/.test(rootPageText), 'Root route must remain a redirect-only entry point after removing the legacy home page.');
+  assert(!/Home(?:DashboardLiveSync|LocalTime|UpcomingRaidList)/.test(rootPageText), 'Root route must not reintroduce legacy home-page UI components.');
+}
+assert(!exists('src/components/HomeDashboardLiveSync.tsx'), 'Legacy HomeDashboardLiveSync component must stay removed.');
+assert(!exists('src/components/HomeLocalTime.tsx'), 'Legacy HomeLocalTime component must stay removed.');
+assert(!exists('src/components/HomeUpcomingRaidList.tsx'), 'Legacy HomeUpcomingRaidList component must stay removed.');
 if (exists('src/lib/raiderIo.ts')) {
   const raiderIoText = read('src/lib/raiderIo.ts');
-  assert(raiderIoText.includes('https://raider.io/api/v1/periods'), 'Raider.IO periods endpoint must stay wired for KD calendar data.');
-  assert(/fetchRaiderIoRegionPeriods\(region = "eu"\)/.test(raiderIoText), 'KD calendar must fetch EU Raider.IO periods by default.');
-  assert(/RAIDERIO_PERIODS_CACHE_TTL_MS/.test(raiderIoText), 'Raider.IO periods must be cached briefly to avoid wasteful repeated external calls.');
-}
-
-if (exists('src/app/page.tsx')) {
-  const homeText = read('src/app/page.tsx');
-  assert(homeText.includes('fetchRaiderIoRegionPeriods'), 'Home calendar must use Raider.IO periods for KD logic.');
-  assert(homeText.includes('КД') && homeText.includes('Raider.IO periods'), 'Home calendar must present raids as KD weeks backed by Raider.IO periods.');
-  assert(!homeText.includes('home-calendar-weekdays'), 'Home page should not use the old month-grid weekday calendar after KD calendar redesign.');
-  assert(/<HomeLocalTime value=\{period\.startIso\}/.test(homeText) && /<HomeLocalTime value=\{period\.endIso\}/.test(homeText), 'KD period start/end must render through HomeLocalTime so client timezone correction is preserved.');
-  assert(!homeText.includes('<code>{calendarFeedUrl}</code>'), 'Home page must not show the raw calendar feed URL as noisy UI text.');
-}
-
-if (exists('src/components/HomeUpcomingRaidList.tsx')) {
-  const upcomingText = read('src/components/HomeUpcomingRaidList.tsx');
-  assert(/const \[mounted, setMounted\] = useState\(false\)/.test(upcomingText), 'HomeUpcomingRaidList must render server-stable fallback date/time until hydration completes.');
-  assert(/mounted \? formatLocalDate\(startsAt, "time"\) : raid\.sourceTime/.test(upcomingText), 'HomeUpcomingRaidList time label must not use browser locale during the initial hydration render.');
-  assert(/mounted \? formatLocalDate\(startsAt, "date"\) : raid\.sourceDate/.test(upcomingText), 'HomeUpcomingRaidList date label must not use browser locale during the initial hydration render.');
+  assert(!raiderIoText.includes('https://raider.io/api/v1/periods'), 'Home-only Raider.IO periods integration must stay removed with the legacy home calendar.');
+  assert(!raiderIoText.includes('fetchRaiderIoRegionPeriods'), 'Home-only Raider.IO period fetcher must stay removed.');
 }
 
 

@@ -1,1003 +1,811 @@
 /* =========================================================
-   NAVIGATION — порт assets/css/nav.css із lihvodruida.github.io
-
-   Геометрія, класи й поведінка збігаються з сайтом один в один:
-   плаваюча пігулка згори, дропдаун акаунта, бургер і повноекранна
-   мобільна панель. Дашбордна специфіка — лише блок виходу
-   всередині меню та довший список розділів.
-
-   Токени (--nav-h, --nav-surface, ...) живуть у tokens.css.
-   Жодного !important.
+   NAVIGATION — app-style desktop workspace + mobile sheet
    ========================================================= */
 
-/* Обгортка <aside> не бере участі в лейауті */
 .sidebar {
   display: contents;
 }
 
-/* ---------- Оболонка ---------- */
-.site-nav {
+/* =========================================================
+   DESKTOP — стабільна верхня панель застосунку
+   ========================================================= */
+.dashboard-topbar {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 12px;
+  left: 50%;
   z-index: var(--z-navbar);
-  display: flex;
-  justify-content: center;
-  padding: calc(var(--nav-inset) + env(safe-area-inset-top)) var(--space-md) 0;
-  pointer-events: none;
-}
-
-.site-nav__shell {
-  pointer-events: auto;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--space-3xs);
-  height: var(--nav-h);
-  max-width: 100%;
-  padding: 0 var(--space-xs) 0 var(--space-lg);
-  border-radius: 999px;
-  background: var(--nav-surface);
-  border: 1px solid var(--nav-line);
-  box-shadow: var(--nav-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(18px) saturate(1.25);
-  -webkit-backdrop-filter: blur(18px) saturate(1.25);
-  transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  gap: 18px;
+  width: min(calc(100% - 32px), 1560px);
+  min-height: 64px;
+  padding: 8px 10px 8px 14px;
+  border: 1px solid rgba(255, 226, 196, 0.11);
+  border-radius: 18px;
+  background: rgba(18, 15, 12, 0.92);
+  box-shadow: 0 18px 50px -28px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(20px) saturate(1.15);
+  -webkit-backdrop-filter: blur(20px) saturate(1.15);
+  transform: translateX(-50%);
 }
 
-/* Щільніший фон під час скролу */
-.sidebar.is-scrolled .site-nav__shell {
-  background: var(--nav-surface-solid);
-  border-color: var(--border-strong);
-  box-shadow: 0 18px 40px -20px rgba(0, 0, 0, 0.9);
-}
-
-/* ---------- Бренд ---------- */
-.site-nav__brand {
+.dashboard-brand {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: 10px;
   min-width: 0;
-  min-height: 0;
-  padding-right: var(--space-3xs);
-  color: var(--nav-ink);
+  color: var(--text-strong);
   text-decoration: none;
-  white-space: nowrap;
-  transition: color 0.2s ease, opacity 0.2s ease;
 }
 
-.site-nav__brand-mark {
-  width: 26px;
-  height: 26px;
+.dashboard-brand:hover {
+  color: var(--text-strong);
+}
+
+.dashboard-brand__mark {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
   flex: 0 0 auto;
-  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  border-radius: 13px;
+  background: linear-gradient(145deg, rgba(255, 155, 85, 0.13), rgba(12, 10, 7, 0.76));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.dashboard-brand__mark img {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
   object-fit: cover;
-  border: 1px solid var(--border);
 }
 
-.site-nav__brand-text {
+.dashboard-brand__copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  line-height: 1.1;
+}
+
+.dashboard-brand__copy strong {
+  max-width: 210px;
+  overflow: hidden;
+  color: var(--text-strong);
   font-family: var(--font-brand);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.17em;
+  letter-spacing: 0.09em;
+  text-overflow: ellipsis;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
-.site-nav__brand:hover {
-  color: var(--c-accent-200);
-}
-
-/* ---------- Розділювач ---------- */
-.site-nav__rule {
-  flex: 0 0 auto;
-  width: 1px;
-  height: 22px;
-  margin: 0 var(--space-sm);
-  background: linear-gradient(180deg, transparent, var(--nav-line-soft) 25%, var(--nav-line-soft) 75%, transparent);
-}
-
-/* ---------- Пункти меню ---------- */
-.site-nav__links {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3xs);
-  min-width: 0;
-}
-
-.nav-item {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  height: 38px;
-  min-height: 38px;
-  min-width: 0;
-  padding: 0 var(--space-sm);
-  border-radius: 999px;
-  color: var(--nav-muted);
-  text-decoration: none;
-  font-size: 11.5px;
+.dashboard-brand__copy small {
+  color: var(--text-faint);
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.13em;
   text-transform: uppercase;
-  white-space: nowrap;
-  transition: color 0.2s ease, background-color 0.2s ease;
 }
 
-.nav-item svg {
-  flex: 0 0 auto;
-  width: 16px;
-  height: 16px;
-  opacity: 0.68;
-  transition: opacity 0.2s ease, transform 0.2s var(--nav-ease);
-}
-
-.nav-item:hover,
-.nav-item:focus-visible {
-  color: var(--nav-ink);
-  background: var(--surface-hover);
-}
-
-.nav-item:hover svg,
-.nav-item:focus-visible svg {
-  opacity: 1;
-  transform: translateY(-1px);
-}
-
-.nav-item[aria-current="page"] {
-  color: var(--text-strong);
-  background: var(--accent-soft);
-}
-
-.nav-item[aria-current="page"] svg {
-  opacity: 1;
-  color: var(--nav-accent);
-}
-
-.nav-item[aria-current="page"]::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: 3px;
-  width: 14px;
-  height: 2px;
-  border-radius: 2px;
-  transform: translateX(-50%);
-  background: var(--nav-accent);
-  box-shadow: 0 0 10px var(--accent-ring);
-}
-
-/* ---------- Блок акаунта (аватар + меню) ---------- */
-.nav-account {
+.dashboard-nav-rail {
   position: relative;
-  flex: 0 0 auto;
+  min-width: 0;
+  width: 100%;
 }
 
-.nav-account__btn {
+.dashboard-nav {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  justify-content: center;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+  padding: 4px;
+  border: 1px solid rgba(255, 226, 196, 0.075);
+  border-radius: 13px;
+  background: rgba(12, 10, 7, 0.34);
+}
+
+.dashboard-nav > a,
+.dashboard-nav-more__trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 42px;
   height: 42px;
-  min-height: 42px;
-  min-width: 0;
-  padding: 0 var(--space-2xs);
+  padding: 0 12px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.dashboard-nav > a svg,
+.dashboard-nav-more__trigger svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  opacity: 0.72;
+}
+
+.dashboard-nav > a:hover,
+.dashboard-nav > a:focus-visible,
+.dashboard-nav-more__trigger:hover,
+.dashboard-nav-more__trigger:focus-visible {
+  color: var(--text-strong);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.dashboard-nav > a.is-active,
+.dashboard-nav-more__trigger.is-active {
+  color: var(--c-accent-200);
+  background: rgba(255, 155, 85, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 178, 106, 0.12);
+}
+
+.dashboard-nav > a.is-active::after,
+.dashboard-nav-more__trigger.is-active::after {
+  content: "";
+  position: absolute;
+  left: 11px;
+  right: 11px;
+  bottom: 3px;
+  height: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--c-accent-400);
+  box-shadow: 0 0 10px rgba(255, 155, 85, 0.4);
+}
+
+.dashboard-nav > a.is-active svg,
+.dashboard-nav-more__trigger.is-active svg {
+  opacity: 1;
+}
+
+.dashboard-nav[data-compact="true"] > a,
+.dashboard-nav[data-compact="true"] .dashboard-nav-more__trigger {
+  width: 42px;
+  padding-inline: 0;
+}
+
+.dashboard-nav[data-compact="true"] .dashboard-nav__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.dashboard-nav-more {
+  position: relative;
+}
+
+.dashboard-nav-more__trigger-count {
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding-inline: 5px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 155, 85, 0.12);
+  color: var(--c-accent-200);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.dashboard-nav[data-compact="true"] .dashboard-nav-more__trigger-count {
+  position: absolute;
+  top: 3px;
+  right: 2px;
+  min-width: 15px;
+  height: 15px;
+  padding-inline: 3px;
+  font-size: 8px;
+}
+
+.dashboard-nav-more__menu {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  z-index: var(--z-dropdown);
+  width: min(360px, calc(100vw - 40px));
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgba(18, 15, 12, 0.985);
+  box-shadow: 0 26px 60px -22px rgba(0, 0, 0, 0.95);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px) scale(0.985);
+  transform-origin: top right;
+  transition: opacity 0.16s ease, transform 0.2s var(--ease-out), visibility 0.16s;
+}
+
+.dashboard-nav-more.is-open .dashboard-nav-more__menu {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+
+.dashboard-nav-more__menu-head {
+  display: grid;
+  gap: 2px;
+  padding: 6px 8px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.dashboard-nav-more__menu-head strong {
+  color: var(--text-strong);
+  font-size: 12px;
+}
+
+.dashboard-nav-more__menu-head span {
+  color: var(--text-faint);
+  font-size: 10px;
+}
+
+.dashboard-nav-more__menu-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding-top: 8px;
+}
+
+.dashboard-nav-more__menu-list a {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 2px 8px;
+  min-width: 0;
+  padding: 10px;
+  border-radius: 10px;
+  color: var(--text-soft);
+}
+
+.dashboard-nav-more__menu-list a:hover,
+.dashboard-nav-more__menu-list a.is-active {
+  background: var(--surface-hover);
+  color: var(--text-strong);
+}
+
+.dashboard-nav-more__menu-list svg {
+  grid-row: 1 / 3;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  color: var(--c-accent-300);
+}
+
+.dashboard-nav-more__menu-list strong {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-nav-more__menu-list small {
+  color: var(--text-faint);
+  font-size: 9px;
+}
+
+.dashboard-nav-measure {
+  position: fixed;
+  top: -10000px;
+  left: -10000px;
+  display: flex;
+  gap: 4px;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.dashboard-nav-measure__item,
+.dashboard-nav-measure__more {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 42px;
+  padding: 0 12px;
+  border: 0;
+  white-space: nowrap;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.dashboard-nav-measure__item svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+}
+
+.dashboard-nav-measure__item--compact {
+  width: 42px;
+  padding-inline: 0;
+  justify-content: center;
+}
+
+.dashboard-nav-measure__count {
+  display: inline-grid;
+  min-width: 18px;
+  height: 18px;
+}
+
+.dashboard-user {
+  position: relative;
+  min-width: 0;
+}
+
+.dashboard-user__button {
+  display: grid;
+  grid-template-columns: 36px minmax(0, auto) 16px;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  height: 48px;
+  padding: 4px 8px 4px 5px;
+  border: 1px solid transparent;
+  border-radius: 13px;
   background: transparent;
   color: inherit;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
 
-.nav-account__btn:hover,
-.nav-account.is-open .nav-account__btn {
-  background: var(--surface-hover);
+.dashboard-user__button:hover,
+.dashboard-user.is-open .dashboard-user__button {
+  border-color: var(--border-subtle);
+  background: rgba(255, 255, 255, 0.035);
 }
 
-.nav-account__avatar {
-  width: 32px;
-  height: 32px;
-  flex: 0 0 auto;
-  border-radius: 999px;
-  object-fit: cover;
-  background: var(--surface-raised);
-  border: 1px solid var(--border);
-  box-shadow: 0 0 0 3px var(--accent-soft);
-}
-
-/* Заглушка з ініціалом, коли аватара немає */
-.nav-account__avatar--fallback {
+.dashboard-user__avatar {
   display: grid;
   place-items: center;
-  font-weight: 700;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border-strong);
+  border-radius: 11px;
+  object-fit: cover;
+  background: var(--surface-raised);
+}
+
+.dashboard-user__avatar--fallback {
+  color: var(--c-accent-200);
   font-size: 13px;
-  color: var(--c-accent-300);
+  font-weight: 800;
   text-transform: uppercase;
 }
 
-.nav-account__meta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-3xs);
-  line-height: 1.1;
+.dashboard-user__meta {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  max-width: 150px;
   text-align: left;
+  line-height: 1.05;
 }
 
-.nav-account__name {
-  font-size: 12.5px;
-  font-weight: 700;
+.dashboard-user__meta strong {
+  overflow: hidden;
   color: var(--text-strong);
-  letter-spacing: 0.02em;
+  font-size: 12px;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.nav-account__sub {
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--nav-dim);
-  letter-spacing: 0.09em;
+.dashboard-user__meta small {
+  overflow: hidden;
+  color: var(--text-faint);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  text-overflow: ellipsis;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
-.nav-account__chev {
+.dashboard-user__chevron {
   display: inline-flex;
-  color: var(--nav-muted);
-  transition: transform 0.25s var(--nav-ease);
+  color: var(--text-faint);
+  transition: transform 0.2s var(--ease-out);
 }
 
-.nav-account__chev svg {
+.dashboard-user__chevron svg {
   width: 14px;
   height: 14px;
 }
 
-.nav-account.is-open .nav-account__chev {
+.dashboard-user.is-open .dashboard-user__chevron {
   transform: rotate(180deg);
 }
 
-/* Випадна панель */
-.nav-account__menu {
+.dashboard-user__menu {
   position: absolute;
-  top: calc(100% + 14px);
+  top: calc(100% + 12px);
   right: 0;
-  min-width: 248px;
-  max-height: min(70vh, 560px);
-  overflow-y: auto;
-  padding: var(--space-xs);
-  border-radius: 18px;
-  background: var(--nav-panel);
-  border: 1px solid var(--nav-line);
-  box-shadow: 0 28px 60px -22px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  z-index: var(--z-dropdown);
+  width: 250px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgba(18, 15, 12, 0.985);
+  box-shadow: 0 26px 60px -22px rgba(0, 0, 0, 0.95);
   opacity: 0;
   visibility: hidden;
-  transform: translateY(-8px) scale(0.97);
+  transform: translateY(-6px) scale(0.985);
   transform-origin: top right;
-  transition: opacity 0.18s ease, transform 0.25s var(--nav-ease), visibility 0.18s;
+  transition: opacity 0.16s ease, transform 0.2s var(--ease-out), visibility 0.16s;
 }
 
-/* backdrop-filter лише на відкритому меню — див. коментар у .nav-sheet */
-.nav-account.is-open .nav-account__menu {
+.dashboard-user.is-open .dashboard-user__menu {
   opacity: 1;
   visibility: visible;
   transform: none;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
 }
 
-.nav-account__group {
-  margin: 0;
-  padding: var(--space-xs) var(--space-sm) var(--space-2xs);
-  font-size: 9.5px;
-  font-weight: 600;
-  letter-spacing: 0.18em;
+.dashboard-user__menu-label {
+  padding: 7px 9px 4px;
+  color: var(--text-faint);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--nav-dim);
 }
 
-.nav-account__menu a,
-.nav-account__menu button {
-  position: relative;
+.dashboard-user__menu > a,
+.dashboard-user__logout button {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: 10px;
   width: 100%;
-  min-height: 0;
-  min-width: 0;
-  padding: var(--space-sm);
+  min-height: 40px;
+  padding: 8px 10px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 10px;
   background: transparent;
   color: var(--text-soft);
   text-align: left;
   text-decoration: none;
-  font-family: inherit;
-  font-size: 13.5px;
-  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s var(--nav-ease);
 }
 
-.nav-account__menu a svg,
-.nav-account__menu button svg {
-  flex: 0 0 auto;
+.dashboard-user__menu > a:hover,
+.dashboard-user__logout button:hover {
+  background: var(--surface-hover);
+  color: var(--text-strong);
+}
+
+.dashboard-user__menu > a[aria-current="page"] {
+  background: var(--accent-soft);
+  color: var(--c-accent-200);
+}
+
+.dashboard-user__menu > a svg {
   width: 17px;
   height: 17px;
-  opacity: 0.6;
-  transition: opacity 0.18s ease;
-}
-
-.nav-account__menu a:hover,
-.nav-account__menu a:focus-visible,
-.nav-account__menu button:hover,
-.nav-account__menu button:focus-visible {
-  background: var(--surface-hover);
-  color: var(--text-strong);
-  transform: translateX(3px);
-}
-
-.nav-account__menu a:hover svg,
-.nav-account__menu button:hover svg {
-  opacity: 1;
-}
-
-.nav-account__menu a[aria-current="page"] {
-  background: var(--accent-soft);
-  color: var(--text-strong);
-}
-
-/* Вихід — єдина деструктивна дія в меню */
-.nav-account__logout {
-  margin: 0;
-  display: grid;
-  gap: var(--space-3xs);
-}
-
-/* Кнопка виходу без іконки — вирівнюємо текст із рештою пунктів */
-.nav-account__logout button {
-  padding-left: calc(var(--space-sm) * 2 + 17px);
-}
-
-.nav-account__logout button:hover {
-  background: color-mix(in srgb, var(--c-danger) 16%, transparent);
-  color: var(--text-on-danger);
-}
-
-.nav-account__logout-error {
-  padding: 0 var(--space-sm) var(--space-2xs);
-  font-size: 11px;
-  color: var(--c-danger);
-}
-
-/* ---------- Бургер ---------- */
-.nav-burger {
-  display: none;
-  position: relative;
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  min-height: 40px;
   flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: background-color 0.2s ease;
 }
 
-.nav-burger:hover,
-.nav-burger.is-active {
-  background: var(--surface-hover);
+.dashboard-user__logout,
+.dashboard-user__logout-error {
+  display: grid;
+  gap: 4px;
 }
 
-.nav-burger__bars,
-.nav-burger__bars::before,
-.nav-burger__bars::after {
-  position: absolute;
-  width: 18px;
-  height: 1.8px;
-  border-radius: 2px;
-  background: var(--nav-ink);
-  transition: transform 0.35s var(--nav-ease), background-color 0.2s ease;
+.dashboard-user__logout-error {
+  padding: 0 10px 6px;
+  color: var(--c-danger);
+  font-size: 10px;
 }
 
-.nav-burger__bars::before,
-.nav-burger__bars::after {
-  content: "";
-  left: 0;
-}
-
-.nav-burger__bars::before {
-  transform: translateY(-6px);
-}
-
-.nav-burger__bars::after {
-  transform: translateY(6px);
-}
-
-.nav-burger.is-active .nav-burger__bars {
-  background: transparent;
-}
-
-.nav-burger.is-active .nav-burger__bars::before {
-  transform: rotate(45deg);
-}
-
-.nav-burger.is-active .nav-burger__bars::after {
-  transform: rotate(-45deg);
-}
-
-/* ---------- Мобільна панель ---------- */
+/* =========================================================
+   MOBILE — компактна шапка + повноекранний лист
+   ========================================================= */
+.dashboard-mobile-nav,
 .nav-sheet {
   display: none;
-  position: fixed;
-  inset: 0;
-  z-index: calc(var(--z-navbar) - 1);
-  padding: calc(var(--nav-space) + var(--space-xs)) var(--space-md) calc(var(--space-xl) + env(safe-area-inset-bottom));
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  background: rgba(14, 11, 8, 0.95);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-10px);
-  transition: opacity 0.28s ease, transform 0.32s var(--nav-ease), visibility 0.28s;
-}
-
-/* backdrop-filter вмикається ТІЛЬКИ на відкритій панелі.
-
-   Chrome на Android композитить backdrop-filter навіть при opacity: 0,
-   і при будь-якому перемальовуванні (тап по кнопці його викликає) цей
-   повноекранний шар встигає блимнути чорним прямокутником поверх сайту.
-   Поки панель закрита — фільтра просто немає, отже блимати нема чому. */
-.nav-sheet.is-open {
-  opacity: 1;
-  visibility: visible;
-  transform: none;
-  backdrop-filter: blur(22px) saturate(1.15);
-  -webkit-backdrop-filter: blur(22px) saturate(1.15);
-}
-
-.nav-sheet__inner {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  width: min(100%, 460px);
-  margin: 0 auto;
-}
-
-.nav-sheet__group {
-  margin: var(--space-md) 0 var(--space-2xs);
-  padding-left: var(--space-md);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--nav-dim);
-}
-
-.nav-sheet__group:first-child {
-  margin-top: 0;
-}
-
-.nav-sheet__link {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  min-height: 52px;
-  padding: 0 var(--space-md);
-  border-radius: 16px;
-  border: 1px solid var(--nav-line-soft);
-  background: var(--surface);
-  color: var(--text-soft);
-  text-decoration: none;
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
-}
-
-.nav-sheet__link svg {
-  flex: 0 0 auto;
-  width: 19px;
-  height: 19px;
-  opacity: 0.6;
-}
-
-.nav-sheet__link:active {
-  transform: scale(0.985);
-}
-
-.nav-sheet__link[aria-current="page"] {
-  color: var(--text-strong);
-  border-color: var(--border-strong);
-  background: var(--accent-soft);
-}
-
-.nav-sheet__link[aria-current="page"] svg {
-  opacity: 1;
-  color: var(--nav-accent);
-}
-
-/* Вихід у мобільній панелі — той самий рядок, але червоний */
-.nav-sheet__logout {
-  margin: 0;
-  display: grid;
-  gap: var(--space-2xs);
-}
-
-.nav-sheet__logout button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-sm);
-  width: 100%;
-  min-height: 52px;
-  padding: 0 var(--space-md);
-  border-radius: 16px;
-  border: 1px solid color-mix(in srgb, var(--c-danger) 32%, transparent);
-  background: color-mix(in srgb, var(--c-danger) 10%, transparent);
-  color: var(--c-danger);
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.nav-sheet__logout-error {
-  padding-left: var(--space-md);
-  font-size: 12px;
-  color: var(--c-danger);
-}
-
-/* Гість: кнопка входу замість акаунта */
-.nav-account__login {
-  min-height: 38px;
-  padding: 0 var(--space-md);
-  font-size: 12px;
-}
-
-/* Блокування скролу під час відкритого меню */
-body.nav-open {
-  overflow: hidden;
-  touch-action: none;
-  position: fixed;
-  left: 0;
-  right: 0;
-  width: 100%;
-}
-
-/* ---------- Адаптив ---------- */
-@media (max-width: 1240px) {
-  .site-nav__brand-text {
-    letter-spacing: 0.12em;
-  }
-
-  .site-nav__rule {
-    margin: 0 var(--space-xs);
-  }
-
-  .nav-item {
-    padding: 0 var(--space-xs);
-    gap: var(--space-xs);
-    letter-spacing: 0.1em;
-  }
-}
-
-@media (max-width: 1100px) {
-  .site-nav__brand-text {
-    font-size: 13px;
-    letter-spacing: 0.1em;
-  }
-
-  .site-nav__rule {
-    margin: 0 var(--space-xs);
-  }
-
-  .nav-item {
-    gap: var(--space-2xs);
-    padding: 0 var(--space-xs);
-    font-size: 11px;
-    letter-spacing: 0.08em;
-  }
-
-  .nav-item svg {
-    width: 15px;
-    height: 15px;
-  }
-
-  .nav-account__sub {
-    display: none;
-  }
-
-  .nav-account__avatar {
-    width: 28px;
-    height: 28px;
-  }
-
-  .nav-account__btn {
-    gap: var(--space-xs);
-  }
 }
 
 @media (max-width: 1000px) {
-  :root {
-    --nav-h: 52px;
-    --nav-inset: 12px;
+  .dashboard-topbar {
+    display: none;
+  }
+
+  .dashboard-mobile-nav {
+    display: contents;
   }
 
   .site-nav {
-    padding-left: var(--space-sm);
-    padding-right: var(--space-sm);
-  }
-
-  .site-nav__shell {
-    width: 100%;
-    gap: var(--space-xs);
-    padding: 0 var(--space-xs) 0 var(--space-lg);
-    border-radius: 20px;
-  }
-
-  /* Бренд — це посилання на головну, тобто повноцінна ціль дотику */
-  .site-nav__brand {
-    min-height: 44px;
-  }
-
-  .site-nav__links,
-  .site-nav__rule,
-  .nav-account__meta,
-  .nav-account__chev {
-    display: none;
-  }
-
-  .nav-account {
-    margin-left: auto;
-  }
-
-  .nav-account__btn {
-    padding: 0;
-    margin-right: var(--space-2xs);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: var(--z-navbar);
+    display: flex;
+    justify-content: center;
+    padding: calc(10px + env(safe-area-inset-top)) 12px 0;
     pointer-events: none;
   }
 
-  .nav-account__menu {
-    display: none;
+  .site-nav__shell {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: min(100%, 640px);
+    min-height: 52px;
+    padding: 6px 7px 6px 12px;
+    border: 1px solid var(--nav-line);
+    border-radius: 16px;
+    background: var(--nav-surface);
+    box-shadow: var(--nav-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(18px) saturate(1.2);
+    -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  }
+
+  .sidebar.is-scrolled .site-nav__shell {
+    background: var(--nav-surface-solid);
+    border-color: var(--border-strong);
+  }
+
+  .site-nav__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+    color: var(--text-strong);
+  }
+
+  .site-nav__brand-mark {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 auto;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    object-fit: cover;
+  }
+
+  .site-nav__brand-text {
+    overflow: hidden;
+    max-width: min(58vw, 310px);
+    font-family: var(--font-brand);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.11em;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
   }
 
   .nav-burger {
-    display: inline-flex;
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 auto;
+    border: 0;
+    border-radius: 11px;
+    background: rgba(255, 255, 255, 0.035);
+    color: var(--text-strong);
+    cursor: pointer;
+  }
+
+  .nav-burger__bars,
+  .nav-burger__bars::before,
+  .nav-burger__bars::after {
+    display: block;
+    width: 18px;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
+    transition: transform 0.2s var(--ease-out), opacity 0.2s ease;
+  }
+
+  .nav-burger__bars {
+    position: relative;
+  }
+
+  .nav-burger__bars::before,
+  .nav-burger__bars::after {
+    content: "";
+    position: absolute;
+    left: 0;
+  }
+
+  .nav-burger__bars::before {
+    top: -6px;
+  }
+
+  .nav-burger__bars::after {
+    top: 6px;
+  }
+
+  .nav-burger.is-active .nav-burger__bars {
+    background: transparent;
+  }
+
+  .nav-burger.is-active .nav-burger__bars::before {
+    top: 0;
+    transform: rotate(45deg);
+  }
+
+  .nav-burger.is-active .nav-burger__bars::after {
+    top: 0;
+    transform: rotate(-45deg);
+  }
+
+  .nav-account__login {
+    min-height: 40px;
+    padding-inline: 16px;
   }
 
   .nav-sheet {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--z-navbar) - 1);
     display: block;
+    padding: calc(78px + env(safe-area-inset-top)) 12px calc(18px + env(safe-area-inset-bottom));
+    background: rgba(8, 7, 6, 0.76);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.18s ease, visibility 0.18s;
+  }
+
+  .nav-sheet.is-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .nav-sheet__inner {
+    display: grid;
+    gap: 5px;
+    width: min(100%, 640px);
+    max-height: 100%;
+    margin-inline: auto;
+    padding: 14px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: rgba(18, 15, 12, 0.985);
+    box-shadow: 0 30px 70px -24px rgba(0, 0, 0, 0.96);
+  }
+
+  .nav-sheet__brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 6px 7px 13px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .nav-sheet__brand img {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 auto;
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    object-fit: cover;
+  }
+
+  .nav-sheet__brand div {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .nav-sheet__brand strong {
+    overflow: hidden;
+    color: var(--text-strong);
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .nav-sheet__brand span {
+    overflow: hidden;
+    color: var(--text-faint);
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .nav-sheet__group {
+    padding: 10px 10px 3px;
+    color: var(--text-faint);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .nav-sheet__link,
+  .nav-sheet__logout button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 44px;
+    padding: 9px 11px;
+    border: 0;
+    border-radius: 11px;
+    background: transparent;
+    color: var(--text-soft);
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .nav-sheet__link svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+    color: var(--text-muted);
+  }
+
+  .nav-sheet__link:hover,
+  .nav-sheet__link:focus-visible,
+  .nav-sheet__logout button:hover {
+    background: var(--surface-hover);
+    color: var(--text-strong);
+  }
+
+  .nav-sheet__link[aria-current="page"] {
+    background: var(--accent-soft);
+    color: var(--c-accent-200);
+  }
+
+  .nav-sheet__link[aria-current="page"] svg {
+    color: var(--c-accent-300);
+  }
+
+  .nav-sheet__logout,
+  .nav-sheet__logout-error {
+    display: grid;
+    gap: 4px;
+  }
+
+  .nav-sheet__logout-error {
+    padding: 0 11px 7px;
+    color: var(--c-danger);
+    font-size: 10px;
+  }
+
+  body.nav-open {
+    position: fixed;
+    left: 0;
+    right: 0;
+    width: 100%;
+    overflow: hidden;
   }
 }
 
 @media (max-width: 420px) {
-  .site-nav__shell {
-    padding-left: var(--space-md);
-  }
-
   .site-nav__brand-text {
-    font-size: 12.5px;
-    letter-spacing: 0.1em;
+    max-width: 52vw;
+    font-size: 11px;
+    letter-spacing: 0.08em;
   }
 
-  .nav-account__avatar {
-    width: 28px;
-    height: 28px;
-  }
-}
-
-/* ---------- Доступність ---------- */
-.site-nav :focus-visible,
-.nav-sheet :focus-visible {
-  outline: 2px solid var(--nav-accent);
-  outline-offset: 2px;
-}
-
-/* =========================================================
-   АНІМАЦІЇ НАВІГАЦІЇ
-   ========================================================= */
-
-@keyframes nav-drop-in {
-  from {
-    opacity: 0;
-    transform: translateY(-14px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-.site-nav__shell {
-  animation: nav-drop-in var(--dur-slow) var(--ease-spring) both;
-}
-
-@keyframes nav-item-in {
-  from {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-.site-nav__brand,
-.site-nav__rule,
-.site-nav__links .nav-item,
-.nav-account {
-  animation: nav-item-in var(--dur-base) var(--ease-out) both;
-}
-
-.site-nav__brand {
-  animation-delay: 0.1s;
-}
-
-.site-nav__rule {
-  animation-delay: 0.14s;
-}
-
-.nav-item:nth-child(1) {
-  animation-delay: 0.18s;
-}
-
-.nav-item:nth-child(2) {
-  animation-delay: 0.22s;
-}
-
-.nav-item:nth-child(3) {
-  animation-delay: 0.26s;
-}
-
-.nav-item:nth-child(4) {
-  animation-delay: 0.3s;
-}
-
-.nav-item:nth-child(5) {
-  animation-delay: 0.34s;
-}
-
-.nav-item:nth-child(6) {
-  animation-delay: 0.38s;
-}
-
-.nav-account {
-  animation-delay: 0.42s;
-}
-
-/* Підсвітка пункту виїжджає знизу, а не просто з'являється */
-.nav-item::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: var(--surface-hover);
-  opacity: 0;
-  transform: scale(0.85);
-  transition: opacity var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-spring);
-  pointer-events: none;
-  z-index: -1;
-}
-
-.nav-item:hover::before,
-.nav-item:focus-visible::before {
-  opacity: 1;
-  transform: none;
-}
-
-/* Фон уже малює ::before — прибираємо дубль, щоб не було двох шарів */
-.nav-item:hover,
-.nav-item:focus-visible {
-  background: transparent;
-}
-
-.nav-item > svg,
-.nav-item > span {
-  position: relative;
-  z-index: 1;
-}
-
-.nav-item[aria-current="page"]::after {
-  animation: nav-underline-grow var(--dur-base) var(--ease-spring) both;
-  animation-delay: 0.45s;
-}
-
-@keyframes nav-underline-grow {
-  from {
-    width: 0;
-    opacity: 0;
-  }
-  to {
-    width: 14px;
-    opacity: 1;
-  }
-}
-
-.nav-item:hover svg {
-  animation: nav-icon-pop var(--dur-base) var(--ease-spring);
-}
-
-@keyframes nav-icon-pop {
-  0% {
-    transform: translateY(0) scale(1);
-  }
-  45% {
-    transform: translateY(-3px) scale(1.12);
-  }
-  100% {
-    transform: translateY(-1px) scale(1);
-  }
-}
-
-/* Бренд: м'який бурштиновий відблиск на наведенні */
-.site-nav__brand-text {
-  background-image: linear-gradient(
-    100deg,
-    currentColor 0%,
-    currentColor 40%,
-    var(--c-accent-200) 50%,
-    currentColor 60%,
-    currentColor 100%
-  );
-  background-size: 250% 100%;
-  background-position: 150% 0;
-  -webkit-background-clip: text;
-  background-clip: text;
-}
-
-.site-nav__brand:hover .site-nav__brand-text {
-  animation: nav-brand-sheen 0.9s var(--ease-in-out);
-}
-
-@keyframes nav-brand-sheen {
-  from {
-    background-position: 150% 0;
-  }
-  to {
-    background-position: -50% 0;
-  }
-}
-
-.nav-account__avatar {
-  transition: transform var(--dur-base) var(--ease-spring), box-shadow var(--dur-fast) var(--ease-out);
-}
-
-.nav-account__btn:hover .nav-account__avatar {
-  transform: scale(1.07) rotate(-3deg);
-  box-shadow: 0 0 0 3px var(--accent-ring);
-}
-
-.nav-account.is-open .nav-account__menu a {
-  animation: nav-item-in var(--dur-fast) var(--ease-out) both;
-}
-
-.nav-account.is-open .nav-account__menu a:nth-of-type(1) {
-  animation-delay: 0.04s;
-}
-
-.nav-account.is-open .nav-account__menu a:nth-of-type(2) {
-  animation-delay: 0.08s;
-}
-
-.nav-account.is-open .nav-account__menu a:nth-of-type(3) {
-  animation-delay: 0.12s;
-}
-
-.nav-account.is-open .nav-account__menu a:nth-of-type(n + 4) {
-  animation-delay: 0.16s;
-}
-
-@keyframes nav-sheet-row-in {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-.nav-sheet.is-open .nav-sheet__link {
-  animation: nav-sheet-row-in var(--dur-base) var(--ease-out) both;
-}
-
-.nav-sheet.is-open .nav-sheet__link:nth-of-type(1) {
-  animation-delay: 0.05s;
-}
-
-.nav-sheet.is-open .nav-sheet__link:nth-of-type(2) {
-  animation-delay: 0.09s;
-}
-
-.nav-sheet.is-open .nav-sheet__link:nth-of-type(3) {
-  animation-delay: 0.13s;
-}
-
-.nav-sheet.is-open .nav-sheet__link:nth-of-type(4) {
-  animation-delay: 0.17s;
-}
-
-.nav-sheet.is-open .nav-sheet__link:nth-of-type(5) {
-  animation-delay: 0.21s;
-}
-
-.nav-sheet.is-open .nav-sheet__link:nth-of-type(6) {
-  animation-delay: 0.25s;
-}
-
-.nav-sheet.is-open .nav-sheet__link:nth-of-type(n + 7) {
-  animation-delay: 0.29s;
-}
-
-.nav-sheet.is-open .nav-sheet__group {
-  animation: nav-item-in var(--dur-fast) var(--ease-out) both;
-}
-
-.nav-burger__bars,
-.nav-burger__bars::before,
-.nav-burger__bars::after {
-  transition: transform var(--dur-base) var(--ease-spring), background-color var(--dur-fast) var(--ease-out),
-    width var(--dur-fast) var(--ease-out);
-}
-
-.nav-burger:hover .nav-burger__bars::before {
-  transform: translateY(-7px);
-}
-
-.nav-burger:hover .nav-burger__bars::after {
-  transform: translateY(7px);
-}
-
-.nav-burger.is-active:hover .nav-burger__bars::before {
-  transform: rotate(45deg);
-}
-
-.nav-burger.is-active:hover .nav-burger__bars::after {
-  transform: rotate(-45deg);
-}
-
-/* Хто просить менше руху — отримує статику, але не зламану верстку */
-@media (prefers-reduced-motion: reduce) {
-  .site-nav__shell,
-  .nav-item,
-  .nav-item svg,
-  .nav-account__menu,
-  .nav-account__chev,
-  .nav-sheet,
-  .nav-burger__bars,
-  .nav-burger__bars::before,
-  .nav-burger__bars::after {
-    transition: none;
-  }
-
-  .site-nav__shell,
-  .site-nav__brand,
-  .site-nav__rule,
-  .site-nav__links .nav-item,
-  .nav-account,
-  .nav-item[aria-current="page"]::after,
-  .nav-account.is-open .nav-account__menu a,
-  .nav-sheet.is-open .nav-sheet__link,
-  .nav-sheet.is-open .nav-sheet__group {
-    animation: none;
-    opacity: 1;
-    transform: none;
-  }
-
-  .nav-item[aria-current="page"]::after {
-    width: 14px;
-    transform: translateX(-50%);
-  }
-
-  .nav-account__btn:hover .nav-account__avatar {
-    transform: none;
+  .nav-sheet {
+    padding-inline: 8px;
   }
 }

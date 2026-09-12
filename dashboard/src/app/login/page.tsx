@@ -124,7 +124,7 @@ export default async function LoginPage({
       rulesNextPath && !rulesStatus?.complete
         ? normalizeRulesAcceptPath(rulesNextPath, "incomplete")
         : rulesNextPath;
-    redirect(rulesRedirectPath || setupPath || nextPath || "/");
+    redirect(rulesRedirectPath || setupPath || nextPath || "/profile");
   }
 
   const guild = await getGuildBranding();

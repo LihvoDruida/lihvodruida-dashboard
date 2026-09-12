@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
-import DashboardNavIcon from "@/components/DashboardNavIcon";
+import DashboardNavIcon, { type DashboardNavSection } from "@/components/DashboardNavIcon";
 
 type DashboardNavItem = {
   href: string;
-  section: string;
+  section: DashboardNavSection;
   label: string;
   desktopLabel: string;
 };
@@ -13,7 +13,7 @@ type DashboardNavItem = {
 const ITEM_GAP = 4;
 const NAV_PADDING = 96;
 const ACTIVE_VISIBILITY_FALLBACK = 1;
-/** Скільки пунктів лишається в капсулі навіть на найвужчому десктопі. */
+/** Мінімум пунктів, що лишається у desktop-рейці перед меню «Ще». */
 const MIN_VISIBLE_ITEMS = 3;
 
 function getMeasuredWidth(element: HTMLElement | null) {
@@ -41,7 +41,7 @@ export default function DashboardDesktopNav({
   activeSection,
 }: {
   items: DashboardNavItem[];
-  activeSection: string;
+  activeSection: DashboardNavSection;
 }) {
   const [open, setOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(items.length);
@@ -76,11 +76,9 @@ export default function DashboardDesktopNav({
     const recompute = () => {
       cancelAnimationFrame(frame);
       frame = window.requestAnimationFrame(() => {
-        // Капсула тепер обіймає вміст, тож міряти саму рейку не можна —
-        // вона залежала б від того, що всередині, і перехід «підписи → іконки»
-        // став би дверима в один бік. Тому рахуємо вільне місце від шапки:
-        // її ширина визначається вікном, а лого й профіль не змінюються
-        // від режиму навігації.
+        // Вільне місце рахуємо від усієї desktop-шапки, а не від самої
+        // рейки: так перемикання «підписи → іконки → Ще» не залежить від
+        // уже стисненого стану навігації.
         const header = nav.closest(".dashboard-topbar") as HTMLElement | null;
         const brand = header?.querySelector(".dashboard-brand") as HTMLElement | null;
         const profile = header?.querySelector(".dashboard-user") as HTMLElement | null;
@@ -203,8 +201,8 @@ export default function DashboardDesktopNav({
 
   return (
     <>
-      {/* Рейка на всю ширину колонки: саме вона вимірюється для згортання
-          пунктів у «Ще». Капсула всередині лишається завширшки з вміст. */}
+      {/* Рейка займає центральну колонку topbar і сама визначає,
+          скільки пунктів показати текстом, іконками або в меню «Ще». */}
       <div ref={railRef} className="dashboard-nav-rail">
         <nav
           className="dashboard-nav dashboard-nav--desktop"

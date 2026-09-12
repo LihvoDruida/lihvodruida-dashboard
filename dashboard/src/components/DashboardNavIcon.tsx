@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 
 export type DashboardNavSection =
-  | "home"
   | "admin"
   | "applications"
   | "content"
@@ -19,7 +18,6 @@ export type DashboardNavSection =
  * щоб не тягнути клієнтський бандл і не мати FOUC на першому рендері.
  */
 const PATHS: Record<DashboardNavSection, ReactNode> = {
-  home: <path d="M3 10.2 12 3.5l9 6.7V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />,
   applications: (
     <>
       <path d="M6 3h8l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />

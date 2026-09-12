@@ -1,21 +1,16 @@
 /* =========================================================
-   ДИЗАЙН-ТОКЕНИ — спільні з lihvodruida.github.io
+   ДИЗАЙН-ТОКЕНИ — Mistblossom Vanguard
 
-   Цей файл є дзеркалом assets/css/base/variables.css основного
-   сайту. Правити його можна ТІЛЬКИ синхронно з сайтом: обидва
-   проєкти в одній екосистемі й мають однакову палітру.
-
-   Знизу додано лише те, чого на сайті немає фізично —
-   геометрія навбару дашборду. Кольорів там немає.
+   Збережена тепла нічна палітра й бурштиновий акцент, але файл
+   очищено від legacy aliases: тут лишаються лише токени, які
+   реально споживає поточний dashboard.
    ========================================================= */
 
 :root {
   /* ---------- Основа: тепла нічна база ---------- */
   --c-base-900: #0c0a07; /* найглибший фон, підвал */
   --c-base-850: #100d0a;
-  --c-base-800: #120f0c; /* фон сторінки */
   --c-base-700: #1a1511; /* підняті поверхні */
-  --c-base-600: #221b15; /* картки */
   --c-base-500: #2c231b; /* ховер, активні поверхні */
   --c-base-400: #3a2e24; /* межі, розділювачі */
 
@@ -27,18 +22,12 @@
   --c-accent-500: #ff7a2f;
   --c-accent-600: #d86324;
 
-  /* ---------- Другорядний акцент: старе золото ---------- */
-  --c-gold-300: #ffd889;
-  --c-gold-400: #c89b3c;
-  --c-gold-500: #a67c2c;
-
   /* ---------- Текст ---------- */
   --c-ink-100: #fff6ec;
   --c-ink-200: #e6e1d8;
   --c-ink-300: #b8ada0;
   --c-ink-400: #9c948a;
   --c-ink-500: #756b5e;
-  --c-ink-600: #554d43;
 
   /* ---------- Статуси, зведені до теплої бази ---------- */
   --c-success: #7cc48f;
@@ -65,8 +54,8 @@
         640px — таблиці й рядки перебудовуються в картки
         520px — телефон: дії на всю ширину, компактна типографіка
 
-     Виняток — nav.css (1240 / 1100 / 420): навігація портована
-     дослівно з lihvodruida.github.io і має власну шкалу. */
+     Desktop workspace починається з 1001px; мобільна навігація
+     має окремий компактний режим до 1000px. */
 
   /* ---------- Текст на кольорових підкладках ----------
      Ці значення повторювались по 3–15 разів у кожному доменному
@@ -87,20 +76,12 @@
   --tint-success-border: rgba(124, 196, 143, 0.28);
   --tint-success-bg: rgba(124, 196, 143, 0.08);
 
-  /* ---------- Бренди (єдині чужі кольори, які лишаємо) ---------- */
+  /* ---------- Брендовий колір інтеграції ---------- */
   --c-discord: #5865f2;
-  --c-twitch: #9146ff;
-  --c-youtube: #ff0033;
-  --c-tiktok: #69c9d0;
-  --c-battlenet: #148eff;
-  --c-github: #e6e1d8;
 
   /* =======================================================
      СЕМАНТИЧНИЙ ШАР — ним і треба користуватися у стилях
      ======================================================= */
-
-  --bg-page: var(--c-base-800);
-  --bg-page-gradient: radial-gradient(circle at top, #241c14, var(--c-base-800));
 
   --surface: rgba(34, 27, 21, 0.72);
   --surface-raised: rgba(44, 35, 27, 0.85);
@@ -117,14 +98,12 @@
   --text-muted: var(--c-ink-400);
   --text-faint: var(--c-ink-500);
 
-  --accent: var(--c-accent-400);
   --accent-soft: rgba(255, 155, 85, 0.12);
   --accent-ring: rgba(255, 155, 85, 0.35);
   --accent-gradient: linear-gradient(135deg, var(--c-accent-300), var(--c-accent-600));
   --accent-glow: 0 0 24px rgba(255, 155, 85, 0.35);
 
   /* ---------- Тіні ---------- */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 12px 28px -14px rgba(0, 0, 0, 0.75);
   --shadow-lg: 0 24px 50px -24px rgba(0, 0, 0, 0.9);
 
@@ -140,7 +119,6 @@
   --space-3xl: 64px;
 
   /* ---------- Ритм сторінки ---------- */
-  --gap-inline: var(--space-sm);
   --gap-stack: var(--space-md);
   --gap-grid: var(--space-lg);
   --pad-card: var(--space-lg);
@@ -160,7 +138,6 @@
   --dur-instant: 0.12s;
   --dur-fast: 0.2s;
   --dur-base: 0.3s;
-  --dur-slow: 0.5s;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
@@ -171,30 +148,21 @@
   --font-brand: "Cinzel", "Playfair Display", Georgia, "Times New Roman", serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 
-  --z-base: 1;
-  --z-sticky: 500;
   --z-dropdown: 1000;
   --z-navbar: 9999;
   --z-toast: 10500;
 
-  /* ---------- Фон сторінки (з site-polish.css сайту) ---------- */
+  /* ---------- Фон сторінки ---------- */
   --site-bg-0: var(--c-base-900);
   --site-bg-1: var(--c-base-850);
   --site-bg-2: var(--c-base-700);
-  --panel-strong: rgba(18, 14, 11, 0.88);
-  --panel-glass: var(--surface);
-  --panel-glass-soft: var(--surface-raised);
-  --border-soft: var(--border-subtle);
-  --border-gold: rgba(200, 155, 60, 0.28);
-  --shadow-soft: var(--shadow-md);
 
   /* =======================================================
      ГЕОМЕТРІЯ НАВІГАЦІЇ ДАШБОРДУ
-     Єдине, чого немає на сайті: у дашборду капсула вища
-     (лого + розділи + профіль в одному рядку) і є нижня
-     мобільна панель. Значення — тільки розміри, не кольори.
+     Мобільна навігація використовує власну компактну шапку.
+     Desktop geometry живе у desktop.css/nav.css.
      ======================================================= */
-  /* Геометрія навігації — ті самі числа, що в assets/css/nav.css сайту */
+  /* Геометрія мобільної навігації */
   --nav-h: 54px;
   --nav-inset: 16px;
   --nav-space: calc(var(--nav-h) + var(--nav-inset) * 2);
@@ -203,38 +171,11 @@
   --nav-surface-solid: rgba(18, 15, 12, 0.95);
   --nav-panel: rgba(20, 16, 13, 0.97);
   --nav-line: var(--border);
-  --nav-line-soft: var(--border-subtle);
-  --nav-ink: var(--text-strong);
-  --nav-muted: var(--text-muted);
-  --nav-dim: var(--text-faint);
-  --nav-accent: var(--c-accent-300);
   --nav-shadow: var(--shadow-lg), 0 2px 12px rgba(0, 0, 0, 0.35);
-  --nav-ease: var(--ease-out);
 
   /* ---------- Ширина контенту ---------- */
   --page-max: 1200px;
-  --page-max-wide: 1440px;
 
-  /* =======================================================
-     СУМІСНІСТЬ — старі імена, які ще зустрічаються у стилях
-     ======================================================= */
-  --bg: var(--bg-page);
-  --panel: var(--surface);
-  --panel-soft: var(--surface-raised);
-  --primary: var(--c-accent-400);
-  --primary-light: var(--c-accent-300);
-  --primary-dark: var(--c-accent-600);
-  --green: var(--c-success);
-  --text: var(--text-body);
-  --text-primary: var(--text-strong);
-  --text-grey: var(--text-muted);
-  --muted: var(--text-muted);
-  --text-secondary: var(--text-soft);
-
-  --orange-light: var(--c-accent-300);
+  /* ---------- Короткий alias для фокусу/форм ---------- */
   --orange-main: var(--c-accent-400);
-  --orange-dark: var(--c-accent-500);
-
-  --transition-fast: all var(--dur-fast) var(--ease-out);
-  --transition-medium: all var(--dur-base) var(--ease-out);
 }

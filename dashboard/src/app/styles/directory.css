@@ -15,14 +15,15 @@
 /* =========================================================
    1. ОБОЛОНКА
    ========================================================= */
-.directory-page,
+
 .guild-page,
+
 .profile-directory-page {
   min-width: 0;
 }
 
-.directory-shell,
 .guild-shell,
+
 .profile-directory-shell {
   display: flex;
   flex-direction: column;
@@ -33,8 +34,9 @@
 /* =========================================================
    2. HERO
    ========================================================= */
-.directory-hero-side,
+
 .guild-hero-side,
+
 .profile-directory-hero-side {
   display: grid;
   gap: var(--space-md);
@@ -210,8 +212,7 @@
   align-items: center;
 }
 
-.directory-search,
-.guild-roster-search {
+#guild-roster-search {
   display: block;
   min-width: 0;
 }
@@ -600,34 +601,7 @@
   color: var(--text-muted);
 }
 
-/* Сегменти Raider.IO: активний виділений {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2xs);
-  min-width: 0;
-}
-
-.guild-score-badges > span.is-active {
-  border-color: var(--border-strong);
-  background: var(--accent-soft);
-}
-
-.guild-score-badges > span.is-active > strong {
-  color: var(--c-accent-200);
-}
-
-/* Внутрішній отвір — окремий шар {
-  content: "";
-  position: absolute;
-  inset: 26px;
-  border-radius: 50%;
-  background: var(--surface);
-}
-
-.guild-roster-cache-sync {
-  color: var(--text-faint);
-  font-size: 0.74rem;
-}
+/* Сегменти Raider.IO без окремого legacy-блоку: активний стан оформлює поточна таблиця. */
 
 /* =========================================================
    6. АДАПТИВ

@@ -193,7 +193,7 @@ a[class*="__card "]:hover {
 }
 
 /* =========================================================
-   2. КНОПКИ — той самий силует, що .btn-social / .donate a
+   2. КНОПКИ — єдиний силует інтерактивних дій
    ========================================================= */
 .btn {
   display: inline-flex;
@@ -324,7 +324,6 @@ a[class*="__card "]:hover {
    3. ФОРМИ — геометрія з apply.css сайту
    ========================================================= */
 .content-field,
-.field,
 .raid-poll-field,
 .application-filter-field,
 .admin-policy-toggle,
@@ -669,7 +668,6 @@ form {
 .is-disconnected,
 .is-invalid,
 .danger,
-.error,
 [class$="--danger"],
 [class*="--danger "],
 [class$="--error"],

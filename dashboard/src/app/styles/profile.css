@@ -308,7 +308,7 @@
 }
 
 /* Реальний серверний нік + кнопка копіювання */
-.profile-server-nick,
+
 .profile-server-nickname {
   display: grid;
   gap: var(--space-2xs);
@@ -866,9 +866,8 @@
   gap: var(--space-xs);
 }
 
-.profile-candidate-summary,
 .profile-candidate-counter,
-.profile-candidate-count,
+
 .profile-candidate-expiry {
   color: var(--text-muted);
   font-size: 0.78rem;

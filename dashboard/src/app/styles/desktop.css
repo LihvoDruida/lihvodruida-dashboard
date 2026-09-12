@@ -1,0 +1,275 @@
+/* =========================================================
+   DESKTOP WORKSPACE — перебудова ПК-версії без зміни палітри
+   Мобільні стилі навмисно не зачіпаються.
+   ========================================================= */
+
+@media (min-width: 1001px) {
+  :root {
+    --desktop-content-max: 1440px;
+    --desktop-page-gap: 20px;
+    --desktop-card-radius: 16px;
+    --desktop-control-height: 40px;
+  }
+
+  body {
+    padding-top: 94px;
+    background:
+      radial-gradient(circle at 12% -8%, rgba(200, 155, 60, 0.12), transparent 31rem),
+      radial-gradient(circle at 88% 2%, rgba(255, 122, 47, 0.065), transparent 29rem),
+      linear-gradient(180deg, #0d0b08 0%, var(--site-bg-1) 50%, #17120e 100%);
+  }
+
+  main,
+  .container,
+  .app-page,
+  .admin-container {
+    max-width: var(--desktop-content-max);
+    padding: 26px 28px 68px;
+  }
+
+  .dashboard-shell,
+
+  .content-shell,
+
+  .app-page-stack,
+
+  [class$="-shell"],
+
+  [class*="-shell "] {
+    gap: var(--desktop-page-gap);
+  }
+
+  .dashboard-shell,
+  .content-shell {
+    width: 100%;
+  }
+
+  /* Менше декоративної "хмари", більше чіткого робочого полотна. */
+  .panel,
+  .card,
+  .detail-box,
+  [class$="-card"]:not(:where([class*="nav"])),
+  [class*="-card "]:not(:where([class*="nav"])),
+  [class$="__card"],
+  [class*="__card "],
+  [class$="-panel"]:not(:where(.dashboard-list-panel)),
+  [class*="-panel "]:not(:where(.dashboard-list-panel)),
+  [class$="__panel"],
+  [class*="__panel "],
+  [class$="-box"],
+  [class*="-box "] {
+    border-radius: var(--desktop-card-radius);
+    border-color: rgba(255, 226, 196, 0.095);
+    background: rgba(29, 23, 18, 0.72);
+    box-shadow: 0 12px 32px -25px rgba(0, 0, 0, 0.92), inset 0 1px 0 rgba(255, 255, 255, 0.018);
+  }
+
+  .panel .panel,
+  .panel [class$="-card"],
+  .panel [class*="-card "],
+  .panel [class$="__card"],
+  .panel [class*="__card "] {
+    background: rgba(12, 10, 7, 0.28);
+    border-color: rgba(255, 226, 196, 0.07);
+  }
+
+  .panel:not(:where([class*="hero"])),
+  .card {
+    padding: 20px;
+  }
+
+  [class$="-card"]:not(:where([class*="nav"])),
+  [class*="-card "]:not(:where([class*="nav"])),
+  [class$="__card"],
+  [class*="__card "],
+  [class$="-panel"]:not(:where(.dashboard-list-panel)),
+  [class*="-panel "]:not(:where(.dashboard-list-panel)),
+  [class$="__panel"],
+  [class*="__panel "],
+  [class$="-box"],
+  [class*="-box "] {
+    padding: 18px;
+  }
+
+  /* Hero тепер працює як контекстна шапка сторінки, а не як лендинг. */
+  .hero,
+
+  .dashboard-hero,
+
+  .admin-hero,
+
+  .access-groups-hero,
+
+  [class$="-hero"]:not(:where([class*="landing"])),
+
+  [class*="-hero "]:not(:where([class*="landing"])) {
+    grid-template-columns: minmax(0, 1.75fr) minmax(300px, 0.75fr);
+    gap: 24px;
+    min-height: 0;
+    padding: 24px 26px;
+    border-radius: 18px;
+    border-color: rgba(255, 178, 106, 0.13);
+    background:
+      linear-gradient(105deg, rgba(255, 155, 85, 0.055), transparent 38%),
+      rgba(25, 20, 16, 0.79);
+    box-shadow: 0 16px 36px -29px rgba(0, 0, 0, 0.98), inset 0 1px 0 rgba(255, 255, 255, 0.025);
+  }
+
+  .hero::before,
+
+  .dashboard-hero::before,
+
+  .admin-hero::before,
+
+  [class$="-hero"]:not(:where([class*="landing"]))::before,
+
+  [class*="-hero "]:not(:where([class*="landing"]))::before {
+    background: linear-gradient(90deg, rgba(255, 155, 85, 0.035), transparent 36%, transparent);
+  }
+
+  .hero-copy h1,
+  .dashboard-hero__copy h1,
+  [class$="-hero__copy"] h1,
+  [class*="-hero__copy "] h1 {
+    margin-bottom: 6px;
+    font-size: clamp(1.55rem, 2vw, 2.2rem);
+    line-height: 1.12;
+  }
+
+  .eyebrow,
+  .app-state-eyebrow,
+  [class$="__eyebrow"],
+  [class*="__eyebrow "],
+  [class$="-eyebrow"],
+  [class*="-eyebrow "] {
+    padding: 3px 9px;
+    margin-bottom: 7px;
+    background: rgba(255, 155, 85, 0.085);
+    font-size: 9.5px;
+    letter-spacing: 0.12em;
+  }
+
+  .lead,
+  [class$="__lead"],
+  [class*="__lead "],
+  [class$="-lead"],
+  [class*="-lead "] {
+    font-size: 0.9rem;
+    line-height: 1.58;
+  }
+
+  .section-header,
+  .dashboard-list-head,
+  [class$="__head"],
+  [class*="__head "],
+  [class$="-head"]:not(:where(.profile-card-head--inline)),
+  [class*="-head "]:not(:where(.profile-card-head--inline)) {
+    gap: 16px;
+  }
+
+  .section-header h2,
+  .dashboard-list-head h2 {
+    font-size: 1.15rem;
+  }
+
+  /* Контроли щільніші на ПК, але не дрібні. */
+  .btn {
+    min-height: var(--desktop-control-height);
+    padding-inline: 16px;
+    border-radius: 10px;
+    font-size: 0.82rem;
+  }
+
+  input,
+  textarea,
+  select {
+    font-size: 14px;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select {
+    min-height: var(--desktop-control-height);
+  }
+
+  textarea {
+    min-height: 104px;
+  }
+
+  /* Робочі двоколонкові макети використовують місце монітора, а не картку телефона. */
+  [class$="-layout"]:not(:where(.access-groups-layout)),
+  [class*="-layout "]:not(:where(.access-groups-layout)) {
+    grid-template-columns: minmax(0, 1.9fr) minmax(300px, 0.72fr);
+    gap: 20px;
+  }
+
+  
+
+  [class$="-grid"],
+  [class*="-grid "],
+  [class$="__grid"],
+  [class*="__grid "] {
+    gap: 16px;
+  }
+
+  /* Табличні екрани: чіткий каркас та краща читабельність рядків. */
+  .dashboard-table-card,
+  .dashboard-list-panel {
+    overflow: hidden;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 226, 196, 0.095);
+    background: rgba(29, 23, 18, 0.72);
+    box-shadow: 0 12px 32px -25px rgba(0, 0, 0, 0.92);
+  }
+
+  .dashboard-table-titlebar,
+  .dashboard-list-head {
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: rgba(255, 255, 255, 0.015);
+  }
+
+  .dashboard-table-head {
+    background: rgba(12, 10, 7, 0.46);
+    color: var(--text-faint);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .dashboard-table-row,
+  .dashboard-list-row {
+    border-color: rgba(255, 226, 196, 0.065);
+  }
+
+  .dashboard-table-row:hover,
+  .dashboard-list-row:hover {
+    background: rgba(255, 155, 85, 0.035);
+  }
+
+  .dashboard-table-footer {
+    border-top: 1px solid var(--border-subtle);
+    background: rgba(12, 10, 7, 0.22);
+  }
+
+  /* Сторінки керування — вкладки читаються як частина програми. */
+  .admin-tabs,
+  [class*="admin-tabs"] {
+    border-radius: 14px;
+  }
+
+  .app-footer {
+    padding-top: 24px;
+    padding-bottom: 24px;
+    background: rgba(12, 10, 7, 0.42);
+  }
+
+  .app-footer__inner {
+    max-width: var(--desktop-content-max);
+  }
+}
+
+@media (min-width: 1280px) {
+  .dashboard-brand__copy strong {
+    max-width: 250px;
+  }
+}

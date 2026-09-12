@@ -19,7 +19,7 @@ export default function GlobalError({
         <AppProblemScreen
           error={error}
           reset={reset}
-          secondaryHref="/"
+          secondaryHref="/profile"
           secondaryLabel="До панелі"
           details={[
             "Це глобальний збій оболонки панелі.",

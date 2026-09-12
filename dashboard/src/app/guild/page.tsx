@@ -98,7 +98,7 @@ export default async function GuildRosterPage() {
         title="Склад тимчасово недоступний"
         message="База даних зараз недоступна або читання тимчасово обмежене. Сторінка не запускає додаткове масове читання складу, щоб не збільшувати навантаження."
         primaryLabel="Повторити"
-        secondaryHref="/"
+        secondaryHref="/profile"
         secondaryLabel="До панелі"
         details={[
           roster.error || "Синхронізація складу відновиться після відновлення доступу до бази даних.",

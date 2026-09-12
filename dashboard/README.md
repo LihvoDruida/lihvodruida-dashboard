@@ -51,3 +51,9 @@ Smoke перевіряє `/api/health` і всі статичні `page`-мар�
 - [Експлуатація](../docs/OPERATIONS.md)
 - [База даних](../docs/DATABASE.md)
 - [Довідник API](../docs/reference/API.md)
+
+## Owner-only server monitoring
+
+`/dashboard/server` is available only when the active dashboard session has `isServerOwner=true`.
+The matching `GET /api/dashboard/server-status` endpoint repeats the same owner check and returns live CPU/core, RAM, swap, filesystem and uptime metrics with `Cache-Control: no-store`.
+The browser keeps only a short in-memory chart history; metrics are not persisted to PostgreSQL. `SERVER_STATS_DISK_PATH` can override the filesystem path used for disk capacity metrics (default: `/`).

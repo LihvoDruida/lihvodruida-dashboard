@@ -20,30 +20,28 @@
    щоб не повторювати в кожному блоці.
    ========================================================= */
 .rules-onboarding-summary > span,
+
 .rules-onboarding-progress__meta,
+
 .rules-onboarding-step__body,
-.rules-row-main,
-.rules-metric,
-.profile-setup-progress-panel__head > span:not(:where([class])),
-.rules-data-panel > span {
+
+.profile-setup-progress-panel__head > span:not(:where([class])){
   display: grid;
   gap: var(--space-3xs);
   min-width: 0;
 }
 
 .rules-onboarding-summary > span > strong,
-.rules-onboarding-step__body > strong,
-.rules-row-main > strong,
-.rules-metric > strong {
+
+.rules-onboarding-step__body > strong{
   font-size: 0.92rem;
   color: var(--text-strong);
   overflow-wrap: anywhere;
 }
 
 .rules-onboarding-summary > span > small,
-.rules-onboarding-step__body > small,
-.rules-row-main > small,
-.rules-metric > small {
+
+.rules-onboarding-step__body > small{
   font-size: 0.76rem;
   line-height: 1.5;
   color: var(--text-muted);
@@ -67,21 +65,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--gap-stack);
-  min-width: 0;
-}
-
-.rules-section-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-md);
-  min-width: 0;
-}
-
-.rules-section-head > div {
-  display: grid;
-  gap: var(--space-2xs);
   min-width: 0;
 }
 
@@ -119,9 +102,11 @@
 }
 
 .profile-setup-progress-panel__icon,
+
 .rules-onboarding-step__state,
-.rules-row-icon,
+
 .profile-setup-callout__icon,
+
 .rules-registration-locked-card__icon {
   display: grid;
   place-items: center;
@@ -380,12 +365,16 @@
    6. ВРІЗКИ Й ПІДКАЗКИ
    ========================================================= */
 .rules-onboarding-notice,
-.rules-return-callout,
+
 .profile-setup-callout,
+
 .rules-onboarding-data-warning,
+
 .rules-registration-block__note,
-.rules-complete-help,
-.rules-public-action-help {
+
+#rules-complete-help,
+
+#rules-public-action-help {
   display: grid;
   gap: var(--space-2xs);
   padding: var(--space-sm) var(--space-md);
@@ -428,13 +417,11 @@
 }
 
 .rules-onboarding-notice strong,
-.rules-return-callout strong,
+
 .profile-setup-callout strong {
   color: var(--text-strong);
 }
 
-.rules-hint,
-.rules-data-note,
 .rules-onboarding-benefits {
   color: var(--text-muted);
   font-size: 0.8rem;
@@ -496,7 +483,7 @@
 }
 
 .rules-registration-bnet-action,
-.rules-profile-candidate-bulk-add {
+#rules-profile-candidate-bulk-add {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-xs);
@@ -541,7 +528,7 @@
   background: var(--surface-sunken);
 }
 
-.rules-profile-name {
+#rules-profile-name {
   font-family: var(--font-mono);
   color: var(--c-accent-200);
   overflow-wrap: anywhere;
@@ -550,184 +537,12 @@
 /* =========================================================
    8. ДАНІ ПРОФІЛЮ Й МЕТРИКИ
    ========================================================= */
-.rules-data-overview {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
-  gap: var(--space-md);
-  min-width: 0;
-}
-
-.rules-data-panel {
-  display: grid;
-  gap: var(--space-sm);
-  padding: var(--pad-card-compact);
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--c-ink-500);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  min-width: 0;
-}
-
-.rules-data-panel--guild {
-  border-left-color: var(--c-accent-400);
-}
-
-.rules-data-panel--raid {
-  border-left-color: var(--c-info);
-}
-
-.rules-data-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-xs);
-}
-
-.rules-data-head strong {
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--c-accent-300);
-}
-
-.rules-metric-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
-  gap: var(--space-sm);
-}
-
-.rules-metric {
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface);
-}
-
-.rules-metric > small {
-  order: -1;
-  font-size: 0.64rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
-
-.rules-metric {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3xs);
-}
 
 /* =========================================================
    9. СПИСОК ПРАВИЛ (бібліотека)
    ========================================================= */
-.rules-library-split {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
-  gap: var(--gap-grid);
-  align-items: start;
-}
 
-.rules-list-panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-stack);
-  min-width: 0;
-}
-
-.rules-list,
-.rules-table {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  min-width: 0;
-}
-
-.rules-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--c-ink-500);
-  border-radius: var(--radius-md);
-  background: var(--surface-raised);
-  min-width: 0;
-}
-
-.rules-row--raid {
-  border-left-color: var(--c-info);
-}
-
-.rules-row-title {
-  font-size: 0.9rem;
-  color: var(--text-strong);
-  overflow-wrap: anywhere;
-}
-
-.rules-row-meta,
-.rules-row-roles-label {
-  color: var(--text-muted);
-  font-size: 0.76rem;
-}
-
-.rules-row-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2xs);
-  flex: 0 0 auto;
-}
-
-.rules-row-state,
-.rules-status-pill,
-.rules-type-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2xs);
-  padding: var(--space-3xs) var(--space-sm);
-  border: 1px solid color-mix(in srgb, var(--tone, var(--c-ink-400)) 32%, transparent);
-  border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--tone, var(--c-ink-400)) 12%, transparent);
-  color: var(--tone, var(--text-soft));
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-}
-
-.rules-status-pill--error {
-  --tone: var(--c-danger);
-}
-
-.rules-type-chip--raid {
-  --tone: var(--c-info);
-}
-
-.rules-role-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2xs);
-}
-
-.rules-role-chip {
-  padding: var(--space-3xs) var(--space-xs);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-pill);
-  background: var(--surface-sunken);
-  color: var(--text-muted);
-  font-size: 0.7rem;
-  font-weight: 600;
-}
-
-.rules-role-empty {
-  color: var(--text-faint);
-  font-size: 0.76rem;
-}
-
-.rules-public-action-title {
+#rules-public-action-title {
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--text-strong);
@@ -756,19 +571,10 @@
     width: 100%;
   }
 
-  .rules-row {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
+  
 
-  .rules-row-actions {
-    grid-column: 1 / -1;
-    padding-top: var(--space-xs);
-    border-top: 1px solid var(--border-subtle);
-  }
+  
 
-  .rules-row-actions .btn {
-    flex: 1 1 auto;
-  }
 }
 
 @media (max-width: 520px) {
@@ -776,9 +582,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .rules-metric-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  
 }
 
 /* =========================================================
@@ -1010,7 +814,7 @@
 
 /* ---------- Дрібні модифікатори, які лишались без правил ---------- */
 .profile-account-page,
-.profile-gender-settings {
+#profile-gender-settings {
   min-width: 0;
 }
 
@@ -1156,18 +960,6 @@
 .rules-registration-block > .profile-gender-form {
   display: grid;
   gap: var(--space-sm);
-  min-width: 0;
-}
-
-/* Підсумок проблемних місць — список {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-xs);
-}
-
-.rules-onboarding-issue > span:not(:where([class$="__icon"])) {
-  display: grid;
-  gap: var(--space-3xs);
   min-width: 0;
 }
 

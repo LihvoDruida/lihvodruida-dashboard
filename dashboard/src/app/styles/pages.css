@@ -12,14 +12,6 @@
 /* =========================================================
    ГОЛОВНА
    ========================================================= */
-.home-kicker {
-  display: inline-block;
-}
-
-.home-empty-text {
-  color: var(--text-muted);
-  font-size: 0.88rem;
-}
 
 .hero-secure-note {
   display: inline-flex;
@@ -38,17 +30,6 @@
    ========================================================= */
 .poll-section-head {
   align-items: center;
-}
-
-.raid-poll-list-card {
-  display: grid;
-  gap: var(--space-sm);
-}
-
-.raid-poll-list-card__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
 }
 
 .poll-chip--ghost {
@@ -966,80 +947,6 @@
 /* =========================================================
    ГОЛОВНА: КАЛЕНДАР І НАЙБЛИЖЧІ ПОДІЇ
    ========================================================= */
-.home-upcoming-events,
-.home-calendar-events {
-  display: grid;
-  gap: var(--space-xs);
-  min-width: 0;
-}
-
-.home-upcoming-event,
-.home-calendar-event {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--c-accent-400);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  min-width: 0;
-}
-
-.home-upcoming-event--soon,
-.home-calendar-event--soon {
-  border-left-color: var(--c-success);
-}
-
-.home-upcoming-event--past,
-.home-calendar-event--past {
-  border-left-color: var(--c-ink-500);
-  opacity: 0.8;
-}
-
-.home-upcoming-event__main,
-.home-calendar-event__details {
-  display: grid;
-  gap: var(--space-3xs);
-  min-width: 0;
-}
-
-.home-calendar-event__title,
-.home-upcoming-event__main strong {
-  font-size: 0.88rem;
-  color: var(--text-strong);
-  overflow-wrap: anywhere;
-}
-
-.home-upcoming-event__meta,
-.home-calendar-event__time {
-  color: var(--text-muted);
-  font-size: 0.76rem;
-  white-space: nowrap;
-}
-
-.home-kd-progress {
-  display: block;
-  height: 6px;
-  border-radius: var(--radius-pill);
-  background: var(--surface-sunken);
-  border: 1px solid var(--border-subtle);
-  overflow: hidden;
-}
-
-.home-kd-progress > span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--accent-gradient);
-}
-
-.home-local-time-zone,
-.home-upcoming-timezone {
-  color: var(--text-faint);
-  font-size: 0.74rem;
-}
 
 /* =========================================================
    DISCORD: РЕДАКТОР, ДІАГНОСТИКА, ТАБЛИЦІ
@@ -1288,15 +1195,9 @@
 }
 
 @media (max-width: 860px) {
-  .home-upcoming-event,
-  .home-calendar-event {
-    grid-template-columns: minmax(0, 1fr);
-  }
+  
 
-  .home-upcoming-event__meta,
-  .home-calendar-event__time {
-    white-space: normal;
-  }
+  
 
   .discord-role-checkboxes {
     grid-template-columns: minmax(0, 1fr);

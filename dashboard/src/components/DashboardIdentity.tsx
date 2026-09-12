@@ -14,29 +14,17 @@ import {
   siteStatusLabel,
 } from "@/lib/permissions";
 import LogoutButton from "@/components/LogoutButton";
+import DashboardDesktopNav from "@/components/DashboardDesktopNav";
 import DashboardNavIcon, { type DashboardNavSection } from "@/components/DashboardNavIcon";
 import SiteNavBehaviour from "@/components/SiteNavBehaviour";
 import { getProfileById, getProfilePublicName } from "@/lib/profiles";
 import { getGuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
 
-/**
- * Навігація дашборду — та сама структура, що в _includes/sidebar.html
- * на lihvodruida.github.io: плаваюча пігулка .site-nav, дропдаун
- * .nav-account, бургер .nav-burger і повноекранна .nav-sheet.
- *
- * Єдина відмінність від сайту — розділів більше шести, тому в рейку
- * потрапляють головні, а решта живе в дропдауні (як «Заявки» на сайті).
- * На мобільному .nav-sheet показує геть усе.
- */
-
-/** Скільки розділів вміщується в рейку, поки вона не почне тіснити акаунт */
-const RAIL_LIMIT = 6;
-
 type NavEntry = {
   href: string;
   section: DashboardNavSection;
   label: string;
-  railLabel: string;
+  desktopLabel: string;
 };
 
 const CHEVRON = (
@@ -56,7 +44,7 @@ const CHEVRON = (
 
 export default async function DashboardIdentity({
   user,
-  activeSection = "home",
+  activeSection = "profile",
 }: {
   user: DashboardSession | null;
   activeSection?: DashboardNavSection;
@@ -65,6 +53,7 @@ export default async function DashboardIdentity({
     getGuildBranding(),
     getGuildNicknamePolicy().catch(() => ({ template: "{name} [{main}, {alt}, {alt}]" })),
   ]);
+
   const profile = user?.profileId ? await getProfileById(user.profileId).catch(() => null) : null;
   const displayName = profile
     ? getProfilePublicName(profile, nicknamePolicy.template)
@@ -84,69 +73,120 @@ export default async function DashboardIdentity({
   const navItems: NavEntry[] = user
     ? (
         [
-          { href: "/", section: "home", label: "Головна", railLabel: "Головна" },
-          canUseApplications
-            ? { href: "/applications", section: "applications", label: "Заявки", railLabel: "Заявки" }
-            : null,
           canUseRaids
             ? {
                 href: "/raids",
                 section: "raids",
                 label: canCreateRaids ? "Рейди" : "Мої рейди",
-                railLabel: "Рейди",
+                desktopLabel: canCreateRaids ? "Рейди" : "Мої рейди",
               }
             : null,
           canUseRaids
-            ? { href: "/polls", section: "polls", label: "Рейд-пули", railLabel: "Пули" }
+            ? { href: "/polls", section: "polls", label: "Рейд-пули", desktopLabel: "Рейд-пули" }
             : null,
           canCreateRaids
-            ? { href: "/roster", section: "roster", label: "Формування складу", railLabel: "Склад" }
+            ? { href: "/roster", section: "roster", label: "Формування складу", desktopLabel: "Склад" }
             : null,
           canUseGuildRoster
-            ? { href: "/guild", section: "guild", label: "Склад гільдії", railLabel: "Гільдія" }
+            ? { href: "/guild", section: "guild", label: "Склад гільдії", desktopLabel: "Гільдія" }
+            : null,
+          canUseApplications
+            ? { href: "/applications", section: "applications", label: "Заявки", desktopLabel: "Заявки" }
             : null,
           canUseDiscord
-            ? { href: "/discord", section: "discord", label: "Discord", railLabel: "Discord" }
+            ? { href: "/discord", section: "discord", label: "Discord", desktopLabel: "Discord" }
             : null,
           canUseProfiles
-            ? { href: "/profiles", section: "profiles", label: "Профілі", railLabel: "Профілі" }
+            ? { href: "/profiles", section: "profiles", label: "Профілі", desktopLabel: "Профілі" }
             : null,
           canUseContent
-            ? { href: "/content", section: "content", label: "Новини / гайди", railLabel: "Новини" }
+            ? { href: "/content", section: "content", label: "Новини / гайди", desktopLabel: "Контент" }
             : null,
           canUseAdmin
-            ? { href: "/dashboard", section: "admin", label: "Керування", railLabel: "Керування" }
+            ? { href: "/dashboard", section: "admin", label: "Керування", desktopLabel: "Керування" }
             : null,
         ] as Array<NavEntry | null>
       ).filter((item): item is NavEntry => Boolean(item))
     : [];
 
-  const railItems = navItems.slice(0, RAIL_LIMIT);
-  const overflowItems = navItems.slice(RAIL_LIMIT);
-
   const roleTitle = user ? user.groupName || hierarchyTitle(user.role) : "";
   const statusTitle = user ? (user.isServerOwner ? "Власник сервера" : siteStatusLabel(user.role)) : "";
   const accountSub =
     roleTitle && statusTitle && roleTitle !== statusTitle ? `${roleTitle} · ${statusTitle}` : roleTitle || statusTitle;
-
   const current = (section: DashboardNavSection) => (activeSection === section ? "page" : undefined);
 
   return (
     <>
       <SiteNavBehaviour />
 
-      {/* <aside> має display: contents — він потрібен лише як носій
-          класу .is-scrolled, точно як .sidebar на сайті. */}
-      <aside className="sidebar">
-        <header className="site-nav" aria-label="Головна навігація">
+      {user ? (
+        <header className="dashboard-topbar" aria-label="Навігація панелі Mistblossom Vanguard">
+          <a href={profileHref} className="dashboard-brand" aria-label={`${guild.name} — мій профіль`}>
+            <span className="dashboard-brand__mark">
+              <img src={guild.iconUrl} alt="" width={34} height={34} loading="eager" referrerPolicy="no-referrer" />
+            </span>
+            <span className="dashboard-brand__copy">
+              <strong>{guild.name}</strong>
+              <small>Guild workspace</small>
+            </span>
+          </a>
+
+          <DashboardDesktopNav items={navItems} activeSection={activeSection} />
+
+          <div className="dashboard-user nav-account">
+            <button
+              className="dashboard-user__button nav-account__btn"
+              type="button"
+              aria-expanded="false"
+              aria-controls="dashboard-user-menu"
+            >
+              {avatar ? (
+                <img
+                  className="dashboard-user__avatar"
+                  src={avatar}
+                  alt=""
+                  width={36}
+                  height={36}
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <span className="dashboard-user__avatar dashboard-user__avatar--fallback" aria-hidden="true">
+                  {(displayName || "A").charAt(0)}
+                </span>
+              )}
+              <span className="dashboard-user__meta">
+                <strong>{displayName}</strong>
+                {accountSub ? <small>{accountSub}</small> : null}
+              </span>
+              <span className="dashboard-user__chevron nav-account__chev">{CHEVRON}</span>
+            </button>
+
+            <nav className="dashboard-user__menu nav-account__menu" id="dashboard-user-menu" aria-label="Профіль і сесія">
+              <p className="dashboard-user__menu-label">Акаунт</p>
+              <a href={profileHref} aria-current={current("profile")}>
+                <DashboardNavIcon section="profile" />
+                <span>Мій профіль</span>
+              </a>
+              <p className="dashboard-user__menu-label">Сесія</p>
+              <LogoutButton className="dashboard-user__logout" errorClassName="dashboard-user__logout-error" />
+            </nav>
+          </div>
+        </header>
+      ) : null}
+
+      {/* Мобільна шапка лишається окремою: desktop-перебудова не робить
+          телефонну версію залежною від ширини робочої панелі. */}
+      <aside className="sidebar dashboard-mobile-nav">
+        <header className="site-nav" aria-label="Мобільна навігація">
           <div className="site-nav__shell">
-            <a href="/" className="site-nav__brand" aria-label={`${guild.name} — на головну`}>
+            <a href={profileHref} className="site-nav__brand" aria-label={`${guild.name} — мій профіль`}>
               <img
                 className="site-nav__brand-mark"
                 src={guild.iconUrl}
                 alt=""
-                width={26}
-                height={26}
+                width={28}
+                height={28}
                 loading="eager"
                 referrerPolicy="no-referrer"
               />
@@ -154,89 +194,17 @@ export default async function DashboardIdentity({
             </a>
 
             {user ? (
-              <>
-                <span className="site-nav__rule" aria-hidden="true" />
-
-                <nav className="site-nav__links" aria-label="Основна навігація">
-                  {railItems.map((item) => (
-                    <a key={item.href} className="nav-item" href={item.href} aria-current={current(item.section)}>
-                      <DashboardNavIcon section={item.section} />
-                      <span>{item.railLabel}</span>
-                    </a>
-                  ))}
-                </nav>
-
-                <span className="site-nav__rule" aria-hidden="true" />
-
-                <div className="nav-account">
-                  <button
-                    className="nav-account__btn"
-                    type="button"
-                    aria-expanded="false"
-                    aria-controls="nav-account-menu"
-                  >
-                    {avatar ? (
-                      <img
-                        className="nav-account__avatar"
-                        src={avatar}
-                        alt=""
-                        width={32}
-                        height={32}
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      <span className="nav-account__avatar nav-account__avatar--fallback" aria-hidden="true">
-                        {(displayName || "A").charAt(0)}
-                      </span>
-                    )}
-                    <span className="nav-account__meta">
-                      <span className="nav-account__name">{displayName}</span>
-                      {accountSub ? <span className="nav-account__sub">{accountSub}</span> : null}
-                    </span>
-                    <span className="nav-account__chev">{CHEVRON}</span>
-                  </button>
-
-                  <nav className="nav-account__menu" id="nav-account-menu" aria-label="Профіль і розділи">
-                    <p className="nav-account__group">Профіль</p>
-                    <a href={profileHref} aria-current={current("profile")}>
-                      <DashboardNavIcon section="profile" />
-                      <span>Мій профіль</span>
-                    </a>
-
-                    {overflowItems.length ? (
-                      <>
-                        <p className="nav-account__group">Розділи</p>
-                        {overflowItems.map((item) => (
-                          <a key={item.href} href={item.href} aria-current={current(item.section)}>
-                            <DashboardNavIcon section={item.section} />
-                            <span>{item.label}</span>
-                          </a>
-                        ))}
-                      </>
-                    ) : null}
-
-                    <p className="nav-account__group">Сесія</p>
-                    <LogoutButton className="nav-account__logout" errorClassName="nav-account__logout-error" />
-                  </nav>
-                </div>
-
-                <button
-                  className="nav-burger"
-                  type="button"
-                  aria-label="Відкрити меню"
-                  aria-expanded="false"
-                  aria-controls="nav-sheet"
-                >
-                  <span className="nav-burger__bars" aria-hidden="true" />
-                </button>
-              </>
+              <button
+                className="nav-burger"
+                type="button"
+                aria-label="Відкрити меню"
+                aria-expanded="false"
+                aria-controls="nav-sheet"
+              >
+                <span className="nav-burger__bars" aria-hidden="true" />
+              </button>
             ) : (
-              <div className="nav-account">
-                <a className="btn primary nav-account__login" href="/login">
-                  Увійти
-                </a>
-              </div>
+              <a className="btn primary nav-account__login" href="/login">Увійти</a>
             )}
           </div>
         </header>
@@ -245,14 +213,17 @@ export default async function DashboardIdentity({
       {user ? (
         <div className="nav-sheet" id="nav-sheet" aria-hidden="true">
           <nav className="nav-sheet__inner" aria-label="Мобільна навігація">
+            <div className="nav-sheet__brand">
+              <img src={guild.iconUrl} alt="" width={42} height={42} referrerPolicy="no-referrer" />
+              <div>
+                <strong>{guild.name}</strong>
+                <span>{displayName}</span>
+              </div>
+            </div>
+
             <p className="nav-sheet__group">Навігація</p>
             {navItems.map((item) => (
-              <a
-                key={item.href}
-                className="nav-sheet__link"
-                href={item.href}
-                aria-current={current(item.section)}
-              >
+              <a key={item.href} className="nav-sheet__link" href={item.href} aria-current={current(item.section)}>
                 <DashboardNavIcon section={item.section} />
                 <span>{item.label}</span>
               </a>

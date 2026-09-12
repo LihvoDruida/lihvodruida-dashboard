@@ -6,7 +6,7 @@ import {
 } from "@/lib/permissions";
 
 export type AdminTabKey =
-  "overview" | "groups" | "discord" | "recruitment" | "logs";
+  "overview" | "groups" | "discord" | "recruitment" | "logs" | "server";
 
 export default function AdminTabs({
   active,
@@ -53,6 +53,13 @@ export default function AdminTabs({
       label: "Логи",
       description: "результати дій",
       visible: canOpenLogs,
+    },
+    {
+      key: "server" as const,
+      href: "/dashboard/server",
+      label: "Сервер",
+      description: "CPU · RAM · диск",
+      visible: Boolean(user?.isServerOwner),
     },
   ].filter((tab) => tab.visible);
 

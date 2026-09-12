@@ -61,7 +61,7 @@ export default async function AccessDeniedPage({
         message={reasonText(params.reason)}
         primaryHref={profileHref}
         primaryLabel="До мого профілю"
-        secondaryHref="/"
+        secondaryHref="/profile"
         secondaryLabel="До доступних розділів"
         details={[
           "Права беруться з Discord-ролі та групи доступу в панелі.",

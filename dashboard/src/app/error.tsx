@@ -13,7 +13,7 @@ export default function AppError({
     <AppProblemScreen
       error={error}
       reset={reset}
-      secondaryHref="/"
+      secondaryHref="/profile"
       secondaryLabel="До панелі"
       details={[
         "Повторити — спробує відкрити цей розділ ще раз.",
