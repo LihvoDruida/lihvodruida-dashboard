@@ -58,6 +58,13 @@ COPY dashboard/ ./
 # script for build-time validation; it is not copied into the runtime image.
 COPY deploy/cron/run-cron.sh /repo/deploy/cron/run-cron.sh
 
+# The shared site footer shows the bot package version, and its CI invariant also
+# checks that the bot health endpoint exposes the same package version. These two
+# non-secret source files are therefore explicit build-time inputs of the dashboard.
+# They are used only by TypeScript/CI/Next build and are not copied to runner.
+COPY bot/package.json /repo/bot/package.json
+COPY bot/src/server.mjs /repo/bot/src/server.mjs
+
 # Змінні, які Next вшиває у клієнтський бандл на етапі збірки.
 # Решта конфігурації читається під час старту з оточення контейнера.
 ARG NEXT_PUBLIC_DASHBOARD_URL
