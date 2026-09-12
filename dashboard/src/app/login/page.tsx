@@ -14,6 +14,7 @@ import {
   rulesOnboardingStatus,
 } from "@/lib/rulesOnboarding";
 import { getAuthAccessPolicy } from "@/lib/authAccessPolicy";
+import { safeDashboardReturnPath } from "@/lib/dashboardRedirects";
 
 export const metadata = buildPageMetadata({
   title: "Вхід до панелі",
@@ -26,18 +27,6 @@ export const metadata = buildPageMetadata({
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function safeNextPath(value?: string) {
-  const path = String(value || "").trim();
-  if (!path || path.length > 220) return "";
-  if (!path.startsWith("/") || path.startsWith("//")) return "";
-  if (
-    path === "/" ||
-    /^\/(?:raids|profile|rules\/accept)(?:[/?#]|$)/.test(path)
-  )
-    return path;
-  return "";
-}
-
 function errorText(error?: string) {
   if (!error) return null;
 
@@ -49,6 +38,8 @@ function errorText(error?: string) {
       "Сесія входу застаріла або було відкрито кілька входів одночасно. Натисни вхід ще раз — тепер паралельні входи обробляються без блокування.",
     discord_required: "Для входу потрібен Discord.",
     discord_only: "GitHub вхід вимкнено. Використай Discord.",
+    session_required:
+      "Щоб продовжити, увійди через Discord. Після перевірки ролей повернемо тебе на потрібну сторінку.",
     token: "Резервний ключ неправильний.",
     rate_limit: "Забагато спроб. Зачекай кілька хвилин.",
     geo_blocked: "Доступ із цієї країни зараз обмежено правилами спільноти.",
@@ -93,7 +84,10 @@ export default async function LoginPage({
   }>;
 }) {
   const params = await searchParams;
-  const nextPath = safeNextPath(params.next);
+  const nextPath = safeDashboardReturnPath(params.next, {
+    scope: "discord-auth",
+    fallback: "",
+  });
   const loggedOut = isEnabled(params.loggedOut);
   const forceFreshLogin =
     isEnabled(params.force) ||
@@ -141,47 +135,66 @@ export default async function LoginPage({
     <main className="login-screen">
       <div className="login-screen__backdrop" aria-hidden="true">
         <span className="login-glow login-glow--gold" />
-        <span className="login-glow login-glow--violet" />
+        <span className="login-glow login-glow--ember" />
         <span className="login-grid" />
         <span className="login-ornament login-ornament--top" />
         <span className="login-ornament login-ornament--bottom" />
       </div>
 
       <section className="login-shell" aria-labelledby="login-title">
-        <div className="login-hero">
-          <div className="login-pill">Панель гільдії</div>
+        <span className="login-shell__corner login-shell__corner--tl" aria-hidden="true" />
+        <span className="login-shell__corner login-shell__corner--tr" aria-hidden="true" />
+        <span className="login-shell__corner login-shell__corner--bl" aria-hidden="true" />
+        <span className="login-shell__corner login-shell__corner--br" aria-hidden="true" />
 
-          <div className="login-brandmark">
-            <img
-              src={guild.iconUrl}
-              alt=""
-              width={64}
-              height={64}
-              loading="eager"
-              referrerPolicy="no-referrer"
-            />
+        <div className="login-hero">
+          <div className="login-pill">
+            <span aria-hidden="true" />
+            Панель гільдії
             <span aria-hidden="true" />
           </div>
 
-          <p className="login-eyebrow">{guild.name}</p>
-          <h1 id="login-title">
-            Вхід до панелі
-            <span>гільдії</span>
-          </h1>
+          <div className="login-brandmark">
+            <span className="login-brandmark__halo" aria-hidden="true" />
+            <img
+              src={guild.iconUrl}
+              alt=""
+              width={72}
+              height={72}
+              loading="eager"
+              referrerPolicy="no-referrer"
+            />
+            <span className="login-brandmark__frame" aria-hidden="true" />
+          </div>
+
+          <div className="login-title-block">
+            <p className="login-eyebrow">{guild.name}</p>
+            <h1 id="login-title">
+              Вхід до панелі
+              <span>гільдії</span>
+            </h1>
+            <div className="login-title-divider" aria-hidden="true">
+              <span />
+              <i />
+              <span />
+            </div>
+          </div>
+
           <p className="login-lead">
-            Увійди через Discord. Адміни й офіцери отримують керування,
-            наставники — перегляд заявок, учасники — особистий профіль.
+            Увійди через Discord. Доступ і можливості панелі визначаються
+            ролями на сервері Mistblossom Vanguard.
           </p>
 
           <div className="login-feature-list" aria-label="Можливості панелі">
-            <span>Discord ролі</span>
+            <span>Рейди</span>
+            <span>Discord-ролі</span>
             <span>Профілі</span>
-            <span>Заявки</span>
           </div>
 
           {loggedOut ? (
             <div className="notice success login-alert" role="status">
-              Сесію завершено. Можна безпечно закрити сторінку або увійти знову через Discord.
+              <strong>Сесію завершено.</strong> Можна безпечно закрити сторінку
+              або увійти знову через Discord.
             </div>
           ) : error ? (
             <div className="login-alert" role="alert">
@@ -205,7 +218,7 @@ export default async function LoginPage({
                 </span>
                 <span>
                   <strong>Увійти через Discord</strong>
-                  <small>Перевірка ролей автоматична</small>
+                  <small>Безпечна перевірка ролей і членства</small>
                 </span>
                 <span
                   className="login-discord-button__arrow"
@@ -221,9 +234,15 @@ export default async function LoginPage({
             )}
           </div>
 
+          <div className="login-trust-row" aria-label="Захист входу">
+            <span><b>Discord SSO</b><small>авторизація</small></span>
+            <span><b>Role Sync</b><small>права доступу</small></span>
+            <span><b>Secure</b><small>серверна сесія</small></span>
+          </div>
+
           {hasTokenFallback ? (
             <details className="login-token">
-              <summary>Резервний вхід</summary>
+              <summary>Аварійний вхід власника</summary>
               <form method="post" action="/api/auth/login">
                 <label htmlFor="token">Резервний ключ</label>
                 <div className="login-token__row">
@@ -241,9 +260,15 @@ export default async function LoginPage({
           ) : null}
 
           <p className="login-note">
-            Доступ визначається Discord-ролями. Учасники бачать тільки власний
-            профіль, а приватні дані не показуються в інтерфейсі.
+            Доступ визначається Discord-ролями. Учасники бачать лише дозволені
+            розділи, а серверні перевірки виконуються до створення сесії.
           </p>
+
+          <nav className="login-legal" aria-label="Юридична інформація">
+            <a href="/terms">Умови</a>
+            <span aria-hidden="true" />
+            <a href="/privacy">Приватність</a>
+          </nav>
         </div>
       </section>
     </main>

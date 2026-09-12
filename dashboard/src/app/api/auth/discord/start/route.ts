@@ -17,6 +17,7 @@ import {
 } from "@/lib/security";
 import { checkGeoAccess, geoAccessDeniedResponse } from "@/lib/geoAccessPolicy";
 import { safeDashboardReturnPath } from "@/lib/dashboardRedirects";
+import { appBaseUrl } from "@/lib/apiRoute";
 import { MAX_PARALLEL_OAUTH_FLOWS, parseRememberedOAuthNonces, serializeRememberedOAuthNonces } from "@/lib/oauthNonces";
 
 export const runtime = "nodejs";
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
       resetAt: limit.resetAt,
     });
     const response = NextResponse.redirect(
-      new URL("/login?error=rate_limit", request.url),
+      new URL("/login?error=rate_limit", appBaseUrl(request)),
       303,
     );
     applyNoStoreHeaders(response);

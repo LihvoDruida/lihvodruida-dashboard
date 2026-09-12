@@ -293,17 +293,6 @@ main .dashboard-shell {
   }
 }
 
-/* ---------- Лендинг-герой (сторінка входу) ---------- */
-
-.login-hero {
-  display: grid;
-  place-items: center;
-  gap: var(--space-lg);
-  min-height: min(60vh, 520px);
-  padding: var(--pad-section) var(--pad-page-inline);
-  text-align: center;
-}
-
 /* =========================================================
    СІТКИ
    Один патерн auto-fit: не треба описувати кожну сітку окремо.
