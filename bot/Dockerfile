@@ -27,7 +27,8 @@ COPY bot/src ./bot/src
 
 WORKDIR /app/bot
 # Єдина залежність — локальний пакет, тому це просто створення симлінка.
-RUN npm ci --omit=dev --no-audit --no-fund
+RUN --mount=type=cache,target=/root/.npm,sharing=locked \
+    npm ci --omit=dev --no-audit --no-fund
 
 # Не працюємо від root: у бота є вихідна мережа до Discord і до панелі,
 # зайвих прав йому мати не треба.
@@ -38,7 +39,7 @@ EXPOSE 8080
 # Перевірка живості локальна: контейнер має вважатись здоровим навіть тоді,
 # коли Discord недоступний — інакше збій на їхньому боці класифікується як
 # наш і перезапускає бота по колу.
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=6 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||8080)+'/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 CMD ["node", "src/server.mjs"]

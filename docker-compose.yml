@@ -35,11 +35,17 @@ services:
     command:
       - postgres
       - -c
-      - max_connections=100
+      - max_connections=50
       - -c
       - shared_buffers=256MB
       - -c
-      - work_mem=8MB
+      - work_mem=4MB
+      - -c
+      - maintenance_work_mem=64MB
+      - -c
+      - effective_cache_size=1GB
+      - -c
+      - jit=off
       # Логуємо все, що виконується довше секунди: перший інструмент,
       # коли панель почне гальмувати.
       - -c
@@ -50,10 +56,10 @@ services:
       - data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mistblossom} -d ${POSTGRES_DB:-mistblossom}"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-      start_period: 20s
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
     security_opt:
       - no-new-privileges:true
     logging:
@@ -72,6 +78,10 @@ services:
       dockerfile: dashboard/Dockerfile
       args:
         NEXT_PUBLIC_DASHBOARD_URL: ${DASHBOARD_PUBLIC_URL:?треба задати DASHBOARD_PUBLIC_URL}
+        # Preset for the production VPS (2 vCPU / 4 GB RAM). Can be overridden
+        # from `.env` without editing the Dockerfile.
+        NEXT_BUILD_CPUS: ${NEXT_BUILD_CPUS:-2}
+        NODE_BUILD_MEMORY_MB: ${NODE_BUILD_MEMORY_MB:-2560}
     image: mistblossom/dashboard:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file:
@@ -171,10 +181,10 @@ services:
     # лежить, інакше їхній збій перезапускав би наш контейнер по колу.
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 5s
     logging:
       driver: json-file
       options:

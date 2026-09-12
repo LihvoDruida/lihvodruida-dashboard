@@ -28,7 +28,8 @@ COPY dashboard/vendor ./vendor
 
 # npm ci відтворює lock-файл байт у байт. `--ignore-scripts` не ставимо:
 # sharp качає нативний бінарник саме в postinstall.
-RUN npm ci --no-audit --no-fund
+RUN --mount=type=cache,target=/root/.npm,sharing=locked \
+    npm ci --no-audit --no-fund
 
 # --- 2. Збірка ---------------------------------------------------------------
 FROM node:${NODE_VERSION} AS builder
@@ -36,6 +37,14 @@ WORKDIR /repo/dashboard
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+
+# Build preset for a 2-vCPU / 4-GB VPS.  The heap cap prevents a Next/Turbopack
+# build from pushing the host into heavy swap, which is much slower than a
+# slightly earlier GC cycle. Both values are overridable from compose/.env.
+ARG NEXT_BUILD_CPUS=2
+ARG NODE_BUILD_MEMORY_MB=2560
+ENV NEXT_BUILD_CPUS=${NEXT_BUILD_CPUS}
+ENV NODE_OPTIONS=--max-old-space-size=${NODE_BUILD_MEMORY_MB}
 
 # shared/ приїжджає першим: на нього вказує символьне посилання всередині
 # node_modules, і без нього резолвер Turbopack не знайде контракт.
@@ -49,7 +58,8 @@ ARG NEXT_PUBLIC_DASHBOARD_URL
 ENV NEXT_PUBLIC_DASHBOARD_URL=${NEXT_PUBLIC_DASHBOARD_URL}
 
 # Перед Next build проганяємо typecheck + перевірки API/page/button/import контрактів.
-RUN npm run build:ci
+RUN --mount=type=cache,target=/repo/dashboard/.next/cache,sharing=locked \
+    npm run build:ci
 
 # --- 3. Runtime --------------------------------------------------------------
 FROM node:${NODE_VERSION} AS runner
@@ -97,7 +107,7 @@ USER nextjs
 EXPOSE 3000
 
 # Перевірка живості: цей роут не ходить у базу і не потребує сесії.
-HEALTHCHECK --interval=30s --timeout=5s --start-period=25s --retries=3 \
+HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=6 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 # Точка входу — dashboard/server.js, а не server.js: див. пояснення про

@@ -203,7 +203,12 @@ if [ "$BUILD" -eq 1 ]; then
   SWAP_MB="$(awk '/SwapTotal/ {print int($2/1024)}' /proc/meminfo 2>/dev/null || echo 0)"
   if [ "$((TOTAL_MB + SWAP_MB))" -lt 2048 ]; then
     warn "RAM+swap = $((TOTAL_MB + SWAP_MB)) МБ. Збірка Next.js може впасти з OOM — див. docs/DEPLOYMENT.md, розділ 9."
+  elif [ "$TOTAL_MB" -le 4608 ] && [ "$SWAP_MB" -lt 1024 ]; then
+    warn "VPS має ~${TOTAL_MB} МБ RAM і лише ${SWAP_MB} МБ swap. Для 4 GB профілю рекомендовано 1–2 GB swap як OOM-страховку."
+  else
+    ok "RAM: ${TOTAL_MB} МБ, swap: ${SWAP_MB} МБ"
   fi
+  ok "build preset: ${NEXT_BUILD_CPUS:-2} CPU · Node heap ${NODE_BUILD_MEMORY_MB:-2560} МБ · Compose parallel ${COMPOSE_PARALLEL_LIMIT:-1}"
 fi
 
 # ---------------------------------------------------------------------------
@@ -290,17 +295,30 @@ if [ "$RESTART" -eq 1 ]; then
   ok "зупинено"
 fi
 
-UP_ARGS="-d --remove-orphans"
-[ "$BUILD" -eq 1 ] && UP_ARGS="$UP_ARGS --build"
+# На малому VPS не передаємо --build кожному `compose up`: так dashboard
+# і bot могли повторно проходити граф залежностей на наступних етапах.
+# Образи збираються рівно один раз, а запуск нижче завжди йде з --no-build.
+if [ "$BUILD" -eq 1 ]; then
+  step "Збираю образи (1 раз, BuildKit cache, без паралельної боротьби за RAM)"
+  export DOCKER_BUILDKIT="${DOCKER_BUILDKIT:-1}"
+  export COMPOSE_PARALLEL_LIMIT="${COMPOSE_PARALLEL_LIMIT:-1}"
+
+  BUILD_STARTED=$SECONDS
+  $COMPOSE build dashboard bot
+  ok "образи готові за $((SECONDS - BUILD_STARTED)) с"
+fi
+
+UP_ARGS="-d --remove-orphans --no-build --no-deps"
 
 # Порядок навмисний і відповідає залежностям даних:
 #   postgres → dashboard → bot → nginx → cron
-# Кожен наступний сервіс має сенс тільки коли попередній справді працює.
+# --no-deps тут безпечний, бо залежності ми запускаємо і перевіряємо вручну.
+# Заодно Compose не торкається вже здорових контейнерів повторно.
 
 step "1/5 База даних"
 # shellcheck disable=SC2086
 $COMPOSE up $UP_ARGS postgres
-wait_healthy postgres 90
+wait_healthy postgres 60
 
 step "Схема бази"
 # Схема застосовується через psql у контейнері бази, а не скриптом у образі
@@ -331,17 +349,17 @@ fi
 step "2/5 Панель"
 # shellcheck disable=SC2086
 $COMPOSE up $UP_ARGS dashboard
-wait_healthy dashboard 180
+wait_healthy dashboard 120
 
 step "3/5 Discord-бот"
 # shellcheck disable=SC2086
 $COMPOSE up $UP_ARGS bot
-wait_healthy bot 60
+wait_healthy bot 45
 
 step "4/5 Nginx"
 # shellcheck disable=SC2086
 $COMPOSE up $UP_ARGS nginx
-wait_healthy nginx 60
+wait_healthy nginx 30
 
 step "5/5 Планові задачі"
 # shellcheck disable=SC2086
