@@ -1026,14 +1026,6 @@
   overflow-wrap: anywhere;
 }
 
-/* Бічна колонка керування Discord */
-.discord-management-sidebar {
-  display: grid;
-  gap: var(--space-md);
-  align-content: start;
-  min-width: 0;
-}
-
 .discord-management-blocked-roles {
   display: flex;
   flex-wrap: wrap;

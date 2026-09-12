@@ -1512,7 +1512,7 @@ function buildProfileCharacterLinkDocuments(profile: DashboardProfile) {
   return docs;
 }
 
-async function syncCharacterProfileLinksForProfileId(profileId: string) {
+export async function syncCharacterProfileLinksForProfileId(profileId: string) {
   if (!/^id[a-f0-9]{16,40}$/.test(profileId) || !hasFirebaseProfileConfig()) return;
   const db = getFirebaseAdminDb();
   const profileRef = db.collection("dashboardProfiles").doc(profileId);
