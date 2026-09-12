@@ -157,6 +157,7 @@ services:
       HOST: "0.0.0.0"
       TZ: Europe/Kyiv
       LOG_LEVEL: ${BOT_LOG_LEVEL:-info}
+      BOT_LOG_SINK_LEVEL: ${BOT_LOG_SINK_LEVEL:-info}
       # Public Key перевіряє interaction-підпис. Bot token для Gateway/typing
       # береться з bot/.env.production.
       DISCORD_PUBLIC_KEY: ${DISCORD_PUBLIC_KEY:?треба задати DISCORD_PUBLIC_KEY}

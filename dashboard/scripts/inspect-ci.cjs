@@ -65,7 +65,7 @@ const runtimeCombined = [
   .join('\n');
 
 assert(!/Warcraft\s*Logs|warcraftLogs|WCL_|GUILD_ROSTER_WCL_|WARCRAFTLOGS_/i.test(runtimeCombined), 'Warcraft Logs/WCL reference detected in source/config after WCL removal.');
-assert(!/\.collection\((['"])dashboardAdminAudit\1\)/.test(combined), 'Firestore dashboardAdminAudit collection access detected. Audit logs must stay Discord-only.');
+assert(!/\.collection\((['"])dashboardAdminAudit\1\)/.test(combined), 'Legacy dashboardAdminAudit storage detected. Structured logs must use PostgreSQL system_logs.');
 assert(!/\.collection\((['"])dashboardProfiles\1\)\s*\.limit\(1000\)/.test(combined), 'Heavy dashboardProfiles LIMIT 1000 scan detected. Use dashboardProfileCharacterLinks or bounded fallback.');
 assert(!/guildRuntimeCache[\s\S]{0,300}\.collection\((['"])members\1\)/.test(combined), 'Deprecated guildRuntimeCache/*/members read/write detected. Use guildRosterRecords/memberChunks.');
 
@@ -115,6 +115,8 @@ if (exists('src/proxy.ts')) {
     '/api/dashboard/profiles/orphan-cleanup/apply',
     '/api/raids/lifecycle',
     '/api/polls/close-due',
+    '/api/dashboard/logs/maintenance',
+    '/api/dashboard/logs/ingest',
   ];
   for (const routePath of requiredInternalBearerPaths) {
     assert(proxyText.includes(routePath), `Proxy must allow internal Bearer access before session checks: ${routePath}.`);
@@ -152,7 +154,6 @@ const listUnifiedFiles = {
   'src/app/content/page.tsx': ['dashboard-list-panel', 'dashboard-list-row', 'dashboard-list-actions'],
   'src/app/discord/rules/page.tsx': ['dashboard-list-panel', 'dashboard-list-row', 'dashboard-list-actions'],
   'src/app/profiles/page.tsx': ['dashboard-list', 'dashboard-list-row'],
-  'src/app/dashboard/logs/page.tsx': ['dashboard-list', 'dashboard-list-row'],
 };
 for (const [file, requiredClasses] of Object.entries(listUnifiedFiles)) {
   if (!exists(file)) continue;
@@ -221,6 +222,26 @@ if (exists('src/app/theme.css')) {
 
 
 
+// Structured logging v3: PostgreSQL is the source of truth, retention is local,
+// and only Security is allowed to mirror to Discord.
+assert(exists('src/lib/structuredLogs.ts'), 'Structured PostgreSQL logger must exist.');
+assert(exists('src/lib/securityLogDiscord.ts'), 'Security-only Discord log mirror must exist.');
+assert(!exists('src/lib/dashboardAuditNotifications.ts'), 'Legacy Discord-as-log-storage module must stay removed.');
+if (exists('src/lib/db/schema.sql')) {
+  const schemaText = read('src/lib/db/schema.sql');
+  assert(schemaText.includes('CREATE TABLE IF NOT EXISTS system_logs'), 'PostgreSQL system_logs table must exist.');
+}
+if (exists('src/lib/structuredLogs.ts')) {
+  const structuredLogsText = read('src/lib/structuredLogs.ts');
+  assert(structuredLogsText.includes("interval '3 days'"), 'Structured logs must retain at most three days.');
+  assert(structuredLogsText.includes('maxStorageMb') && structuredLogsText.includes('maxRows'), 'Structured logs must enforce both storage and row budgets.');
+}
+if (exists('src/lib/securityLogDiscord.ts')) {
+  const securityMirrorText = read('src/lib/securityLogDiscord.ts');
+  assert(securityMirrorText.includes('SECURITY_MIRROR_DEDUPE_MS'), 'Security Discord mirror must retain anti-spam dedupe.');
+}
+assert(!/listAdminAuditLogsFromDiscord|publishAdminAuditToDiscord|ADMIN_AUDIT_(?:READ|DEDUPE|MAX|POLICY)/.test(runtimeCombined), 'Legacy Discord audit-storage code/config detected.');
+
 // Discord buttons are mutations and must not interpret a stale/null page cache as
 // "resource deleted". Keep their backing reads authoritative and preserve the
 // public Discord message reference so already-published messages can self-heal
@@ -241,6 +262,7 @@ if (exists('src/lib/discordInteractionStorage.ts')) {
   assert(discordStorageText.includes('legacy-message') && discordStorageText.includes('backfillLegacyDocument'), 'Discord resource resolver must retain legacy Firestore read-through/backfill support.');
   assert(discordStorageText.includes('resolveDiscordInteractionProfileDocument'), 'Discord interaction profile lookup must bypass the shared page-read circuit.');
   assert(discordStorageText.includes('scanStoreForResource') && discordStorageText.includes('discordMessageId'), 'Discord resource resolver must keep compatibility scan for legacy message-reference field names.');
+  assert(discordStorageText.includes('assertDiscordInteractionStore') && discordStorageText.includes('DISCORD_INTERACTION_REQUIRE_POSTGRES'), 'Production Discord interactions must reject old Firestore-only runtimes.');
 }
 if (exists('src/lib/raids.ts')) {
   const raidsText = read('src/lib/raids.ts');

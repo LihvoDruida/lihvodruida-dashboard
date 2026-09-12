@@ -2492,7 +2492,7 @@ async function recoverEmptyRaidPollFromDiscordMessage(
   // reconstruct. Auto-heal only the demonstrably empty case from the public
   // counters; populated orphan polls require migration/republish instead.
   const voterCount = interactionField(interactionMessage, /проголосували/i);
-  if (!isExplicitlyZero(voterCount)) return null;
+  if (!isExplicitlyZero(voterCount) && !interactionShowsEmptyPoll(interactionMessage)) return null;
 
   const statusText = interactionField(interactionMessage, /статус/i).toLowerCase();
   const status: RaidPollStatus = statusText.includes("заверш") || statusText.includes("закрит")
@@ -2592,9 +2592,12 @@ export async function handleRaidPollDiscordVote(params: {
       pollId: params.pollId,
       message: error instanceof Error ? error.message : String(error),
     });
+    const message = error instanceof Error ? error.message : String(error);
     return {
       ok: false,
-      content: "⚠️ Сховище рейд-пулів зараз не відповідає. Дані не видалені — спробуй ще раз за кілька секунд.",
+      content: message.includes("storage mismatch")
+        ? "❌ Discord interaction досі обробляє старий runtime без PostgreSQL. Interactions Endpoint URL має бути https://guild.lihvodruida.pp.ua/discord/interactions — старий Worker/Vercel endpoint потрібно вимкнути."
+        : "⚠️ Сховище рейд-пулів зараз не відповідає. Дані не видалені — спробуй ще раз за кілька секунд.",
     };
   }
   if (!resolvedDocument) {

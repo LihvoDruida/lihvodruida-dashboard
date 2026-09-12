@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDashboardUrl } from "@/lib/oauth";
 import { envFlag } from "@/lib/values";
+import type { StructuredLogCategory } from "@/lib/structuredLogs";
 
 const DEFAULT_MAX_BODY_BYTES = 8 * 1024 * 1024;
 const inMemoryBuckets = new Map<string, { count: number; resetAt: number }>();
@@ -215,7 +216,8 @@ export function logDashboardEvent(
   level: LogLevel,
   event: string,
   request?: Request | NextRequest,
-  details: Record<string, unknown> = {}
+  details: Record<string, unknown> = {},
+  options: { persist?: boolean; category?: string } = {},
 ) {
   if (level === "debug" && !envFlag("DASHBOARD_DEBUG_LOGS") && !envFlag("SECURITY_DEBUG_LOGS")) {
     return;
@@ -236,6 +238,34 @@ export function logDashboardEvent(
     console.warn(line);
   } else {
     console.log(line);
+  }
+
+  // Structured persistence is intentionally fire-and-forget: logging must never
+  // become part of the latency or availability path of an API request. The
+  // dynamic import also keeps the PostgreSQL logger out of code paths that only
+  // need the lightweight security helpers during request proxying.
+  if (options.persist !== false && (level !== "debug" || envFlag("DASHBOARD_DEBUG_LOGS") || envFlag("SECURITY_DEBUG_LOGS"))) {
+    const ctx = request ? requestContext(request) : null;
+    void import("@/lib/structuredLogs")
+      .then(({ inferStructuredLogCategory, recordStructuredLog }) => recordStructuredLog({
+        level: level === "warn" ? "warning" : level,
+        category: options.category && ["security", "api", "action", "auth", "discord", "database", "integration", "system"].includes(options.category)
+          ? options.category as StructuredLogCategory
+          : inferStructuredLogCategory(event, { ...(details || {}), ...(ctx || {}) }),
+        source: "dashboard",
+        event,
+        message: typeof details.message === "string" ? details.message : null,
+        requestId: typeof payload.requestId === "string" ? payload.requestId : null,
+        method: ctx?.method || null,
+        path: ctx?.path || null,
+        ip: ctx?.ip || null,
+        statusCode: typeof details.statusCode === "number" ? details.statusCode : null,
+        durationMs: typeof details.durationMs === "number" ? details.durationMs : null,
+        resourceType: typeof details.resourceType === "string" ? details.resourceType : null,
+        resourceId: typeof details.resourceId === "string" ? details.resourceId : null,
+        details,
+      }))
+      .catch(() => false);
   }
 }
 

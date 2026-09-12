@@ -13,6 +13,8 @@
 #   make rebuild-bot        зібрати/перезапустити тільки bot
 #   make resources    CPU/RAM/disk + docker stats
 #   make discord-check  діагностика Discord-кнопок і backing data
+#   make discord-endpoint-check  перевірити, куди Discord надсилає interaction
+#   make discord-endpoint-fix    переключити Discord Interactions Endpoint на VPS
 #   make guild-sync     вручну просунути фонову синхронізацію складу
 #   make clean-cache  обмежити BuildKit cache й оновити snapshot
 #   make docker-stats зняти Docker storage snapshot без очищення
@@ -43,7 +45,7 @@ export AUTO_PRUNE_BUILD_CACHE ?= 1
 .NOTPARALLEL:
 
 .PHONY: help start up restart stop check cert cert-self cert-status cert-origin \
-        backup restore deploy logs ps resources clean-cache docker-stats rebuild-dashboard rebuild-bot discord-check guild-sync fix-perms
+        backup restore deploy logs ps resources clean-cache docker-stats rebuild-dashboard rebuild-bot discord-check discord-endpoint-check discord-endpoint-fix guild-sync fix-perms
 
 help:
 	@sed -n '3,18p' Makefile | sed 's/^# \?//'
@@ -100,6 +102,7 @@ ps:
 # повний `make up`, коли правки були лише в dashboard або bot.
 rebuild-dashboard: fix-perms
 	@docker compose build dashboard
+	@docker compose exec -T postgres sh -lc 'psql -v ON_ERROR_STOP=1 -q -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"' < dashboard/src/lib/db/schema.sql
 	@BUILD_CACHE_KEEP_STORAGE=$(BUILD_CACHE_KEEP_STORAGE) BUILD_CACHE_MAX_AGE=$(BUILD_CACHE_MAX_AGE) $(SCRIPTS)/docker-cache-maintenance.sh
 	@docker compose up -d --no-deps --no-build dashboard
 	@$(SCRIPTS)/docker-stats-snapshot.sh || true
@@ -114,6 +117,12 @@ rebuild-bot: fix-perms
 
 discord-check: fix-perms
 	@$(SCRIPTS)/discord-check.sh
+
+discord-endpoint-check: fix-perms
+	@$(SCRIPTS)/discord-endpoint.sh
+
+discord-endpoint-fix: fix-perms
+	@$(SCRIPTS)/discord-endpoint.sh --fix
 
 # Один безпечний крок серверної синхронізації складу. Основний розклад усе
 # одно виконує cron-контейнер; ця команда потрібна лише для ручної перевірки.

@@ -33,6 +33,27 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function discordInteractionRequiresPostgres() {
+  const raw = String(process.env.DISCORD_INTERACTION_REQUIRE_POSTGRES || "").trim().toLowerCase();
+  if (["0", "false", "off", "no"].includes(raw)) return false;
+  if (["1", "true", "on", "yes"].includes(raw)) return true;
+  // This project is self-hosted in production. A production interaction that
+  // silently falls back to Firestore means Discord is hitting an old runtime
+  // and would mutate a different database than the website.
+  return process.env.NODE_ENV === "production";
+}
+
+export function assertDiscordInteractionStore() {
+  const mode = documentStoreMode();
+  if (discordInteractionRequiresPostgres() && mode !== "postgres") {
+    throw new Error(
+      `Discord interaction storage mismatch: expected PostgreSQL, active store is ${mode}. ` +
+      "Check the Discord Interactions Endpoint URL and DATABASE_URL in the runtime receiving the click.",
+    );
+  }
+  return mode;
+}
+
 /**
  * Discord interactions are user-triggered mutations, not background reads.
  * They must not inherit a stale/null result from the page cache or a broad
@@ -242,6 +263,7 @@ export async function resolveDiscordInteractionDocument(params: {
   const resourceId = cleanText(params.resourceId, 100);
   if (!collection || !resourceId) return null;
 
+  assertDiscordInteractionStore();
   const primary = getFirebaseAdminDb();
   const direct = await authoritativeGet(
     primary.collection(collection).doc(resourceId),

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
 import { recordAdminAudit } from "@/lib/accessGroups";
-import { setAdminAuditDiscordPolicy, summarizeAdminAuditDiscordPolicy } from "@/lib/dashboardAuditNotifications";
+import { updateStructuredLogSettings } from "@/lib/logSettings";
 import { canManageGroups } from "@/lib/permissions";
 import {
   assertRequestBodySize,
@@ -17,7 +17,6 @@ import { dashboardToastCookie } from "@/lib/serverToasts";
 import { wantsJsonResponse } from "@/lib/apiRoute";
 
 export const revalidate = 0;
-
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -37,15 +36,14 @@ function safeAdminRedirectUrl(request: NextRequest) {
   try {
     const url = new URL(ref);
     const current = new URL(request.url);
-    if (url.origin !== current.origin) return fallback;
-    if (!url.pathname.startsWith("/dashboard/logs")) return fallback;
+    if (url.origin !== current.origin || !url.pathname.startsWith("/dashboard/logs")) return fallback;
     return url;
   } catch {
     return fallback;
   }
 }
 
-function adminLogsResponse(request: NextRequest, input: ResponseInput) {
+function responseFor(request: NextRequest, input: ResponseInput) {
   const payload = {
     ok: input.ok,
     ...(input.data || {}),
@@ -56,11 +54,9 @@ function adminLogsResponse(request: NextRequest, input: ResponseInput) {
       ttl: input.ok ? 6200 : 9200,
     },
   };
-
   if (wantsJsonResponse(request)) {
     return NextResponse.json(payload, { status: input.status || (input.ok ? 200 : 400), headers: noStoreHeaders() });
   }
-
   const response = NextResponse.redirect(safeAdminRedirectUrl(request), 303);
   response.headers.set("Cache-Control", "no-store");
   response.headers.append("Set-Cookie", dashboardToastCookie(payload.toast));
@@ -69,63 +65,54 @@ function adminLogsResponse(request: NextRequest, input: ResponseInput) {
 
 export async function POST(request: NextRequest) {
   if (!verifyTrustedOrigin(request)) {
-    return adminLogsResponse(request, { ok: false, tone: "error", title: "Дію заблоковано", message: "Недовірене джерело запиту.", status: 403 });
+    return responseFor(request, { ok: false, title: "Дію заблоковано", message: "Недовірене джерело запиту.", status: 403 });
   }
-
   const tooLarge = assertRequestBodySize(request, 8 * 1024);
   if (tooLarge) return tooLarge;
 
   const session = await getSession();
-  if (!session) {
-    return adminLogsResponse(request, { ok: false, tone: "warning", title: "Потрібен вхід", message: "Сесія застаріла. Увійди в панель ще раз.", status: 401, data: { loginUrl: "/login" } });
-  }
-
+  if (!session) return responseFor(request, { ok: false, tone: "warning", title: "Потрібен вхід", status: 401 });
   if (!canManageGroups(session)) {
-    return adminLogsResponse(request, { ok: false, tone: "error", title: "Немає доступу", message: "Параметри журналу може змінювати тільки адміністратор із правом керування групами.", status: 403 });
+    return responseFor(request, { ok: false, title: "Немає доступу", message: "Налаштування журналу може змінювати тільки адміністратор.", status: 403 });
   }
 
   const ip = getClientIp(request);
-  const limit = checkRateLimit(`admin-logs-settings:${session.id}:${ip}`, 12, 10 * 60 * 1000);
-  if (!limit.ok) {
-    return adminLogsResponse(request, { ok: false, tone: "warning", title: "Забагато дій", message: "Зачекай кілька хвилин і повтори зміну.", status: 429 });
-  }
+  const rate = checkRateLimit(`structured-log-settings:${session.id}:${ip}`, 10, 10 * 60 * 1000);
+  if (!rate.ok) return responseFor(request, { ok: false, tone: "warning", title: "Забагато змін", status: 429 });
 
   try {
     const form = await request.formData();
-    const policy = await setAdminAuditDiscordPolicy({
-      enabled: form.get("enabled"),
-      channelId: form.get("channelId"),
-      minStatus: form.get("minStatus"),
-      includeSystemLogs: form.get("includeSystemLogs"),
+    const settings = await updateStructuredLogSettings({
+      securityDiscordEnabled: form.get("securityDiscordEnabled"),
+      securityDiscordChannelId: form.get("securityDiscordChannelId"),
+      securityDiscordMinLevel: form.get("securityDiscordMinLevel"),
+      maxStorageMb: form.get("maxStorageMb"),
+      maxRows: form.get("maxRows"),
+      queryLimit: form.get("queryLimit"),
     }, session);
-    const summary = summarizeAdminAuditDiscordPolicy(policy);
 
-    await recordAdminAudit("admin.logs.discord_settings.update", session, {
+    await recordAdminAudit("logging.settings.update", session, {
       status: "success",
-      summary,
-      discordMirrorEnabled: policy.enabled,
-      channelId: policy.channelId || null,
-      minStatus: policy.minStatus,
-      includeSystemLogs: policy.includeSystemLogs,
-      policySource: policy.source,
-    }).catch((error) => {
-      logDashboardEvent("warn", "admin.logs.settings_audit_failed", request, { message: error instanceof Error ? error.message : String(error || "unknown") });
+      summary: settings.securityDiscordEnabled
+        ? `Security-події дублюються в Discord від рівня ${settings.securityDiscordMinLevel}.`
+        : "Discord-дзеркало Security вимкнено.",
+      securityDiscordEnabled: settings.securityDiscordEnabled,
+      securityDiscordChannelId: settings.securityDiscordChannelId || null,
+      securityDiscordMinLevel: settings.securityDiscordMinLevel,
+      maxStorageMb: settings.maxStorageMb,
+      maxRows: settings.maxRows,
+      queryLimit: settings.queryLimit,
     });
 
-    return adminLogsResponse(request, {
+    return responseFor(request, {
       ok: true,
-      title: "Налаштування журналу збережено",
-      message: summary,
-      data: { policy, refresh: true },
+      title: "Журнал оновлено",
+      message: "У Discord дублюються тільки Security-події. API, дії, системні та інтеграційні логи залишаються лише на сервері.",
+      data: { settings, refresh: true },
     });
   } catch (error) {
     const message = safeErrorMessage(error, "Не вдалося зберегти налаштування журналу.");
-    logDashboardEvent("warn", "admin.logs.settings_failed", request, { message });
-    await recordAdminAudit("admin.logs.discord_settings.update_failed", session, {
-      status: "error",
-      summary: message,
-      error: error instanceof Error ? error.message : String(error || ""),
-    }).catch(() => false);
-    return adminLogsResponse(request, { ok: false, title: "Дію не виконано", message, status: 400 });
+    logDashboardEvent("warn", "logging.settings.update_failed", request, { message }, { category: "security" });
+    return responseFor(request, { ok: false, title: "Дію не виконано", message, status: 400 });
   }
 }

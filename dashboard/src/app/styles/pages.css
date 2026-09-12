@@ -1122,13 +1122,6 @@
   min-width: 0;
 }
 
-.admin-log-highlight {
-  padding: 0 var(--space-3xs);
-  border-radius: var(--radius-sm);
-  background: var(--accent-soft);
-  color: var(--c-accent-200);
-}
-
 .sync-message,
 .app-loading-current,
 .permission-check {

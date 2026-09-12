@@ -31,6 +31,7 @@ import {
   firstInteractionEmbed,
   fraction as discordFraction,
   interactionMessageTimestamp,
+  interactionShowsEmptyRoster,
   stripLeadingEmojiTitle,
 } from "@/lib/discordInteractionRecovery";
 
@@ -246,7 +247,8 @@ async function recoverEmptyRosterFromDiscordMessage(
     ? embed.fields.find((field) => /склад\s*\(/iu.test(String(field?.name || "")))
     : null;
   const total = discordFraction(String(rosterField?.name || ""));
-  if (!total || total.current !== 0) return null;
+  const emptyEvidence = Boolean(total && total.current === 0) || interactionShowsEmptyRoster(interactionMessage);
+  if (!emptyEvidence) return null;
 
   const rawTitle = stripLeadingEmojiTitle(embed.title);
   const seasonMatch = rawTitle.match(/сезон\s*(\d+)/iu);
@@ -831,9 +833,12 @@ export async function handleRosterFormationDiscordAction(params: {
       rosterId,
       message: error instanceof Error ? error.message : String(error),
     });
+    const message = error instanceof Error ? error.message : String(error);
     return {
       ok: false,
-      content: "⚠️ Сховище складу зараз не відповідає. Дані не видалені — спробуй ще раз за кілька секунд.",
+      content: message.includes("storage mismatch")
+        ? "❌ Discord interaction досі обробляє старий runtime без PostgreSQL. Interactions Endpoint URL має бути https://guild.lihvodruida.pp.ua/discord/interactions — старий Worker/Vercel endpoint потрібно вимкнути."
+        : "⚠️ Сховище складу зараз не відповідає. Дані не видалені — спробуй ще раз за кілька секунд.",
     };
   }
   if (!roster) return {

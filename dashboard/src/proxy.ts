@@ -50,9 +50,11 @@ function isPublicApiPath(pathname: string) {
 function isInternalBearerApiPath(pathname: string) {
   return (
     pathname === "/api/profile/discord-lookup" ||
+    pathname === "/api/dashboard/logs/ingest" ||
     pathname === "/api/dashboard/profiles/refresh-external-data" ||
     pathname === "/api/dashboard/profiles/orphan-cleanup" ||
     pathname === "/api/dashboard/profiles/orphan-cleanup/apply" ||
+    pathname === "/api/dashboard/logs/maintenance" ||
     pathname === "/api/raids/lifecycle" ||
     pathname === "/api/polls/close-due" ||
     // Обидва ендпоїнти рекрутингового радника викликає локальний bot service

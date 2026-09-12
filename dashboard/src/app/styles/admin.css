@@ -353,7 +353,6 @@
   justify-content: space-between;
 }
 
-.admin-log-limit-form,
 .admin-log-discord-form {
   display: flex;
   flex-wrap: wrap;
@@ -372,112 +371,6 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
   gap: var(--space-md);
-}
-
-.admin-log-list {
-  display: grid;
-  gap: var(--space-xs);
-  min-width: 0;
-}
-
-/* Рядок журналу: тон грані = рівень події */
-.admin-log-row {
-  display: grid;
-  gap: var(--space-2xs);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--c-ink-500);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  min-width: 0;
-}
-
-.admin-log-row--info {
-  border-left-color: var(--c-info);
-}
-
-.admin-log-row--success {
-  border-left-color: var(--c-success);
-}
-
-.admin-log-row--warning {
-  border-left-color: var(--c-warning);
-}
-
-.admin-log-row--error {
-  border-left-color: var(--c-danger);
-}
-
-.admin-log-row__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  min-width: 0;
-}
-
-.admin-log-row__head strong {
-  font-size: 0.88rem;
-  color: var(--text-strong);
-  overflow-wrap: anywhere;
-}
-
-.admin-log-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3xs) var(--space-sm);
-  color: var(--text-muted);
-  font-size: 0.74rem;
-  overflow-wrap: anywhere;
-}
-
-.admin-log-status {
-  --tone: var(--c-ink-400);
-  padding: var(--space-3xs) var(--space-xs);
-  border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--tone) 14%, transparent);
-  color: var(--tone);
-  font-size: 0.68rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.admin-log-status--success {
-  --tone: var(--c-success);
-}
-
-.admin-log-status--warning {
-  --tone: var(--c-warning);
-}
-
-.admin-log-status--error {
-  --tone: var(--c-danger);
-}
-
-.admin-log-status--info {
-  --tone: var(--c-info);
-}
-
-/* Технічні деталі згорнуті — інакше журнал не прочитати */
-.admin-log-details {
-  margin: 0;
-}
-
-.admin-log-details pre {
-  max-height: 280px;
-  overflow: auto;
-  font-size: 0.72rem;
-}
-
-.admin-log-highlight--success {
-  background: color-mix(in srgb, var(--c-success) 16%, transparent);
-  color: var(--text-on-success);
-}
-
-.admin-log-highlight--error {
-  background: color-mix(in srgb, var(--c-danger) 16%, transparent);
-  color: var(--text-on-danger);
 }
 
 /* =========================================================
@@ -510,12 +403,10 @@
   }
 
   .admin-log-toolbar,
-  .admin-log-limit-form,
   .admin-log-discord-form {
     width: 100%;
   }
 
-  .admin-log-limit-form .btn,
   .admin-log-discord-form .btn {
     flex: 1 1 auto;
   }
@@ -1047,7 +938,6 @@
   .discord-management-card,
   .admin-policy-card,
   .admin-log-toolbar,
-  .admin-log-row,
   .server-section,
   .server-detail-card,
   .server-graph-card,
@@ -1350,7 +1240,6 @@
     gap: 14px;
   }
 
-  .admin-log-limit-form,
   .admin-log-discord-form {
     display: grid;
     align-content: start;

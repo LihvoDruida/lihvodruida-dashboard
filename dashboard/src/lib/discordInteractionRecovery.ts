@@ -118,3 +118,42 @@ export function isExplicitlyZero(value: unknown) {
   const n = firstInteger(value);
   return n === 0;
 }
+
+/** Flatten the public Discord message into searchable text. Older messages do
+ * not always preserve exactly the same field names, so orphan recovery should
+ * rely on visible evidence, not on one historical embed layout. */
+export function interactionMessageText(value: unknown) {
+  const message = asInteractionMessage(value);
+  const embed = firstInteractionEmbed(value);
+  const parts: string[] = [
+    String(message?.content || ""),
+    String(embed?.title || ""),
+    String(embed?.description || ""),
+    String(embed?.footer?.text || ""),
+  ];
+  for (const field of Array.isArray(embed?.fields) ? embed.fields : []) {
+    parts.push(String(field?.name || ""), String(field?.value || ""));
+  }
+  return parts.join("\n").replace(/\s+/g, " ").trim();
+}
+
+export function interactionShowsEmptyRaid(value: unknown) {
+  const text = interactionMessageText(value);
+  if (!text) return false;
+  return /склад\s+рейду.{0,90}\b0\s*\/\s*(?:0|\d+)/iu.test(text)
+    || /0\s*танк(?:и|ів)?.{0,30}0\s*хіл(?:и|ів)?.{0,30}0\s*дд/iu.test(text);
+}
+
+export function interactionShowsEmptyPoll(value: unknown) {
+  const text = interactionMessageText(value);
+  if (!text) return false;
+  return /проголосували.{0,40}(?:^|\s)0(?:\s|$)/iu.test(text)
+    || /голоси\s+за\s+днями.{0,180}(?:пн|пон).{0,20}[—-]\s*0/iu.test(text);
+}
+
+export function interactionShowsEmptyRoster(value: unknown) {
+  const text = interactionMessageText(value);
+  if (!text) return false;
+  return /склад\s*\(\s*0\s*\/\s*\d+\s*\)/iu.test(text)
+    || /ще\s+ніхто\s+не\s+обрав/iu.test(text);
+}

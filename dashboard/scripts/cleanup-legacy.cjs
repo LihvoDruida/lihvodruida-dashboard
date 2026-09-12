@@ -13,6 +13,7 @@ const legacyPaths = [
   'src/components/HomeLocalTime.tsx',
   'src/components/HomeUpcomingRaidList.tsx',
   'src/components/SectionIcon.tsx',
+  'src/lib/dashboardAuditNotifications.ts',
   'public/ui-icons',
 ];
 

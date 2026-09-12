@@ -183,7 +183,7 @@ function actionText(action: string) {
       label: "Зберігаємо...",
       title: "Зберігаємо логування",
       message:
-        "Оновлюємо Discord-канал і правила audit-log.",
+        "Оновлюємо Security-канал і рівень Discord-дзеркала.",
     };
   if (action.includes("/api/dashboard/discord/settings"))
     return {

@@ -5,6 +5,9 @@ cd "$(dirname "$0")/../.."
 BOLD=$'\033[1m'; CYAN=$'\033[1;36m'; RESET=$'\033[0m'
 step() { printf '\n%s==>%s %s%s%s\n' "$CYAN" "$RESET" "$BOLD" "$*" "$RESET"; }
 
+step "Discord Interactions Endpoint"
+"$PWD/deploy/scripts/discord-endpoint.sh" || true
+
 step "Стан контейнерів"
 docker compose ps postgres dashboard bot
 

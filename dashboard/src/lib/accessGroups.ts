@@ -1,11 +1,9 @@
 import "server-only";
 
 import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
-import { logDashboardEvent } from "@/lib/security";
 import { getRuntimeCachedValue, setRuntimeCachedValue, clearRuntimeCachedValue, resilientRead, logThrottled, safeErrorText } from "@/lib/runtimeResilience";
 import { firebaseWrite } from "@/lib/firebaseAccess";
-import { listAdminAuditLogsFromDiscord, publishAdminAuditToDiscord, type AdminAuditNotificationInput } from "@/lib/dashboardAuditNotifications";
-import { getAuditLogRuntimeSettings } from "@/lib/dashboardApiSettings";
+import { inferStructuredLogCategory, listStructuredLogs, recordStructuredLog, type StructuredLogLevel } from "@/lib/structuredLogs";
 import type { DashboardRole, DashboardSession } from "@/lib/auth";
 import {
   DASHBOARD_PERMISSION_KEYS,
@@ -17,7 +15,6 @@ import {
   type AccessGroup,
   type DashboardPermissionKey,
 } from "@/lib/accessGroupSchema";
-import { timestampToIso } from "@/lib/values";
 
 const DEFAULT_GROUPS: AccessGroup[] = [
   {
@@ -436,58 +433,21 @@ export type AdminAuditLogItem = {
   createdAt: string | null;
 };
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __mistblossomAdminAuditFallback: AdminAuditLogItem[] | undefined;
-  // eslint-disable-next-line no-var
-  var __mistblossomAdminAuditDedupe: Map<string, number> | undefined;
+function auditStatus(value: unknown, action = ""): AdminAuditLogItem["status"] {
+  const status = String(value || "").trim().toLowerCase();
+  if (status === "success" || status === "warning" || status === "error" || status === "info") return status;
+  if (/failed|error|denied|blocked/i.test(action)) return "error";
+  return "success";
 }
 
-function fallbackAuditLogs() {
-  const logs = globalThis.__mistblossomAdminAuditFallback || [];
-  globalThis.__mistblossomAdminAuditFallback = logs;
-  return logs;
-}
-
-function pushFallbackAdminAudit(item: AdminAuditLogItem) {
-  const logs = fallbackAuditLogs();
-  logs.unshift(item);
-  if (logs.length > 520) logs.splice(520);
-}
-
-async function mirrorAuditLogToDiscord(item: AdminAuditLogItem) {
-  const payload: AdminAuditNotificationInput = {
-    id: item.id,
-    action: item.action,
-    actorId: item.actorId,
-    actorName: item.actorName,
-    actorGroupId: item.actorGroupId,
-    isServerOwner: item.isServerOwner,
-    status: item.status,
-    summary: item.summary,
-    details: item.details || {},
-    createdAt: item.createdAt || new Date().toISOString(),
-  };
-  const result = await publishAdminAuditToDiscord(payload).catch((error) => ({
-    ok: false,
-    error: error instanceof Error ? error.message : String(error || "unknown"),
-  }));
-  if (result && typeof result === "object" && "ok" in result && result.ok === false) {
-    logDashboardEvent("warn", "admin.audit.discord_mirror_failed", undefined, {
-      action: item.action,
-      actorId: item.actorId,
-      status: item.status,
-      error: "error" in result ? result.error : "Discord mirror failed",
-    });
-  }
-}
-function auditStatus(value: unknown): AdminAuditLogItem["status"] {
-  return value === "success" || value === "warning" || value === "error" || value === "info" ? value : "info";
+function auditLevel(status: AdminAuditLogItem["status"]): StructuredLogLevel {
+  if (status === "warning" || status === "error" || status === "success") return status;
+  return "info";
 }
 
 function auditSummary(action: string, details: Record<string, unknown>) {
   const explicit = String(details.summary || details.message || "").trim();
-  if (explicit) return explicit.slice(0, 260);
+  if (explicit) return explicit.slice(0, 900);
   if (typeof details.checked === "number" || typeof details.changed === "number" || typeof details.failed === "number") {
     return [
       typeof details.checked === "number" ? `перевірено ${details.checked}` : null,
@@ -500,272 +460,78 @@ function auditSummary(action: string, details: Record<string, unknown>) {
   return action;
 }
 
-function normalizeAuditLog(id: string, raw: Record<string, unknown>): AdminAuditLogItem {
-  const details = raw.details && typeof raw.details === "object" && !Array.isArray(raw.details)
-    ? compactAuditDetails(raw.details as Record<string, unknown>)
-    : {};
-  return {
-    id,
-    action: String(raw.action || "admin.action").slice(0, 120),
-    actorId: String(raw.actorId || "").slice(0, 80),
-    actorName: raw.actorName ? String(raw.actorName).slice(0, 100) : null,
-    actorGroupId: raw.actorGroupId ? String(raw.actorGroupId).slice(0, 80) : null,
-    isServerOwner: Boolean(raw.isServerOwner),
-    status: auditStatus(raw.status || details.status),
-    summary: auditSummary(String(raw.action || "admin.action"), details),
-    details,
-    createdAt: timestampToIso(raw.createdAt) || timestampToIso(raw.createdAtIso),
-  };
-}
-
-function auditDedupeMap() {
-  const map = globalThis.__mistblossomAdminAuditDedupe || new Map<string, number>();
-  globalThis.__mistblossomAdminAuditDedupe = map;
-  return map;
-}
-
-function compactAuditValue(value: unknown, depth = 0): unknown {
-  if (value === null || value === undefined) return undefined;
-  if (depth > 4) return "[max-depth]";
-
-  if (typeof value === "string") {
-    const redacted = value
-      .replace(/ghp_[A-Za-z0-9_]+/g, "[redacted]")
-      .replace(/github_pat_[A-Za-z0-9_]+/g, "[redacted]")
-      .replace(/Bot\s+[A-Za-z0-9._-]+/g, "Bot [redacted]")
-      .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, "[email]")
-      .replace(/-----BEGIN [^-]+-----[\s\S]*?-----END [^-]+-----/g, "[redacted-private-key]");
-    return redacted.slice(0, depth === 0 ? 500 : 320);
-  }
-
-  if (typeof value === "number") return Number.isFinite(value) ? value : undefined;
-  if (typeof value === "boolean") return value;
-  if (value instanceof Date) return value.toISOString();
-
-  if (Array.isArray(value)) {
-    const limit = depth <= 1 ? 12 : 6;
-    return value
-      .slice(0, limit)
-      .map((item) => compactAuditValue(item, depth + 1))
-      .filter((item) => item !== undefined);
-  }
-
-  if (typeof value === "object") {
-    const result: Record<string, unknown> = {};
-    for (const [key, item] of Object.entries(value as Record<string, unknown>).slice(0, 32)) {
-      if (/token|secret|password|authorization|cookie|signature|privateKey|raw|html|body|stack/i.test(key)) {
-        result[key] = "[redacted]";
-        continue;
-      }
-      const next = compactAuditValue(item, depth + 1);
-      if (next !== undefined) result[key] = next;
-    }
-    return result;
-  }
-
-  return String(value).slice(0, 240);
-}
-
-function compactAuditDetails(details: Record<string, unknown>) {
-  const compacted = compactAuditValue(details) as Record<string, unknown> | undefined;
-  return compacted && typeof compacted === "object" && !Array.isArray(compacted)
-    ? compacted
-    : {};
-}
-
-function cleanAuditId(value: unknown) {
-  const text = String(value || "").trim();
-  return /^[A-Za-z0-9:._-]{8,120}$/.test(text) ? text : "";
-}
-
-function auditFingerprint(item: Pick<AdminAuditLogItem, "id" | "action" | "actorId" | "status" | "summary" | "details">) {
-  const details = item.details || {};
-  const stableAuditId = cleanAuditId(details.auditId) || cleanAuditId(details.auditKey);
-  const identity = {
-    stableAuditId: stableAuditId || null,
-    action: item.action,
-    actorId: item.actorId,
-    status: item.status,
-    summary: item.summary,
-    groupId: details.groupId,
-    profileId: details.profileId,
-    userId: details.userId,
-    pollId: details.pollId,
-    raidId: details.raidId,
-    messageId: details.messageId,
-    channelId: details.channelId,
-    jobId: details.jobId,
-    reason: details.reason,
-    error: details.error,
-  };
-  return JSON.stringify(identity).slice(0, 1200);
-}
-
-function shouldSkipDuplicateAudit(item: AdminAuditLogItem, dedupeWindowMs: number) {
-  const windowMs = Math.max(0, Math.min(600_000, Math.floor(Number(dedupeWindowMs) || 0)));
-  if (!windowMs) return false;
-  const fingerprint = auditFingerprint(item);
-  const map = auditDedupeMap();
-  const now = Date.now();
-  for (const [key, expiresAt] of map) {
-    if (expiresAt <= now) map.delete(key);
-  }
-  const previousExpiresAt = map.get(fingerprint) || 0;
-  if (previousExpiresAt > now) return true;
-  map.set(fingerprint, now + windowMs);
-  return false;
-}
-
-function clearAdminAuditListCache() {
-  clearRuntimeCachedValue("admin-audit-logs:250");
-  clearRuntimeCachedValue("admin-audit-discord-logs:250");
-}
-
-export async function listAdminAuditLogs(limitInput: unknown = 100) {
+/**
+ * Compatibility reader for code that still expects the old audit shape.
+ * Source of truth is now PostgreSQL `system_logs`; Discord is never read back
+ * as log storage.
+ */
+export async function listAdminAuditLogs(limitInput: unknown = 100): Promise<AdminAuditLogItem[]> {
   const limit = Math.max(10, Math.min(250, Math.floor(Number(limitInput) || 50)));
-  const fallback = fallbackAuditLogs().slice(0, limit);
-  const settings = await getAuditLogRuntimeSettings().catch(() => ({
-    readCacheTtlMs: 30_000,
-    maxStored: 250,
-  }));
-
-  const discordItems = await resilientRead<AdminAuditNotificationInput[]>(
-    "admin-audit-discord-logs:250",
-    () => listAdminAuditLogsFromDiscord(250, {
-      cacheTtlMs: Math.max(10_000, Math.min(120_000, Number(settings.readCacheTtlMs) || 30_000)),
-    }),
-    {
-      ttlMs: Math.max(10_000, Math.min(120_000, Number(settings.readCacheTtlMs) || 30_000)),
-      timeoutMs: 3_000,
-      circuitKey: "discord-audit-read",
-      circuitTtlMs: 90_000,
-      fallback: () => getRuntimeCachedValue<AdminAuditNotificationInput[]>("admin-audit-discord-logs:250", 10 * 60_000) || [],
-      logEvent: "admin.audit.discord_read_failed",
-    },
-  ).catch(() => []);
-
-  const fromDiscord = discordItems.map((item) => normalizeAuditLog(item.id, {
-    action: item.action,
-    actorId: item.actorId,
+  const logs = await listStructuredLogs({ limit, sinceHours: 72 });
+  return logs.map((item) => ({
+    id: item.id,
+    action: item.event,
+    actorId: item.actorId || (item.source === "system" ? "system" : ""),
     actorName: item.actorName,
     actorGroupId: item.actorGroupId,
-    isServerOwner: item.isServerOwner,
-    status: item.status,
-    details: {
-      ...(item.details || {}),
-      status: item.status,
-      auditStorage: "discord",
-    },
-    createdAtIso: item.createdAt,
+    isServerOwner: Boolean(item.details.isServerOwner),
+    status: item.level === "warning" || item.level === "error" || item.level === "success" ? item.level : "info",
+    summary: item.message,
+    details: item.details,
+    createdAt: item.createdAt,
   }));
-
-  const seen = new Set<string>();
-  const merged = [...fallback, ...fromDiscord]
-    .filter((item) => {
-      const key = item.id || `${item.action}:${item.createdAt}:${item.summary}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .sort((a, b) => Date.parse(b.createdAt || "") - Date.parse(a.createdAt || ""));
-
-  return merged.slice(0, Math.min(limit, Math.max(10, Math.min(250, Number(settings.maxStored) || 250))));
 }
 
+/**
+ * Administrative mutations are stored locally as structured Action logs.
+ * They are deliberately NOT mirrored to Discord. Security is the only
+ * category allowed to leave the server-side log store.
+ */
 export async function recordAdminAudit(action: string, viewer: DashboardSession, details: Record<string, unknown> = {}) {
-  const auditSettings = await getAuditLogRuntimeSettings().catch(() => ({
-    dedupeWindowMs: 120_000,
-    maxStored: 500,
-  }));
-  const compactDetails = compactAuditDetails(details);
-  const status = auditStatus(compactDetails.status);
-  const createdAtIso = new Date().toISOString();
-  const actorName = viewer.name || viewer.login || null;
-  const baseRaw = {
-    action,
+  const status = auditStatus(details.status, action);
+  return recordStructuredLog({
+    category: "action",
+    level: auditLevel(status),
+    source: "dashboard",
+    event: action,
+    message: auditSummary(action, details),
     actorId: viewer.id,
-    actorName,
+    actorName: viewer.name || viewer.login || null,
     actorGroupId: viewer.groupId || null,
-    isServerOwner: Boolean(viewer.isServerOwner),
-    status,
-    details: compactAuditDetails({
-      ...compactDetails,
+    resourceType: typeof details.resourceType === "string" ? details.resourceType : null,
+    resourceId: typeof details.resourceId === "string"
+      ? details.resourceId
+      : typeof details.raidId === "string"
+        ? details.raidId
+        : typeof details.pollId === "string"
+          ? details.pollId
+          : typeof details.profileId === "string"
+            ? details.profileId
+            : null,
+    details: {
+      ...details,
       status,
-      auditStorage: "discord",
-    }),
-    createdAtIso,
-  };
-  const stableAuditId = cleanAuditId(compactDetails.auditId) || cleanAuditId(compactDetails.auditKey);
-  const auditItem: AdminAuditLogItem = normalizeAuditLog(
-    stableAuditId || `discord-${createdAtIso}-${Math.random().toString(36).slice(2, 8)}`,
-    baseRaw,
-  );
-
-  if (shouldSkipDuplicateAudit(auditItem, auditSettings.dedupeWindowMs)) {
-    logThrottled(
-      "debug",
-      "admin.audit.duplicate_skipped",
-      { action, actorId: viewer.id, status, storage: "discord" },
-      60_000,
-    );
-    return false;
-  }
-
-  pushFallbackAdminAudit(auditItem);
-  clearAdminAuditListCache();
-  void mirrorAuditLogToDiscord(auditItem);
-  logDashboardEvent("debug", "admin.audit.discord_only_queued", undefined, {
-    action,
-    actorId: viewer.id,
-    status,
+      isServerOwner: Boolean(viewer.isServerOwner),
+    },
   });
-  return true;
 }
 
+/**
+ * System/auth/background events share the same PostgreSQL log. Category is
+ * inferred from the event name so auth/security/database/integration events
+ * can be filtered independently in the explorer.
+ */
 export async function recordSystemAudit(action: string, details: Record<string, unknown> = {}) {
-  const auditSettings = await getAuditLogRuntimeSettings().catch(() => ({
-    dedupeWindowMs: 120_000,
-    maxStored: 500,
-  }));
-  const compactDetails = compactAuditDetails(details);
-  const status = auditStatus(compactDetails.status);
-  const createdAtIso = new Date().toISOString();
-  const baseRaw = {
-    action,
+  const status = auditStatus(details.status, action);
+  const category = inferStructuredLogCategory(action, details);
+  return recordStructuredLog({
+    category,
+    level: auditLevel(status),
+    source: "system",
+    event: action,
+    message: auditSummary(action, details),
     actorId: "system",
     actorName: "System",
-    actorGroupId: null,
-    isServerOwner: false,
-    status,
-    details: compactAuditDetails({
-      ...compactDetails,
-      status,
-      auditStorage: "discord",
-    }),
-    createdAtIso,
-  };
-  const stableAuditId = cleanAuditId(compactDetails.auditId) || cleanAuditId(compactDetails.auditKey);
-  const auditItem: AdminAuditLogItem = normalizeAuditLog(
-    stableAuditId || `system-${createdAtIso}-${Math.random().toString(36).slice(2, 8)}`,
-    baseRaw,
-  );
-
-  if (shouldSkipDuplicateAudit(auditItem, auditSettings.dedupeWindowMs)) {
-    logThrottled(
-      "debug",
-      "admin.audit.system_duplicate_skipped",
-      { action, status, storage: "discord" },
-      60_000,
-    );
-    return false;
-  }
-
-  pushFallbackAdminAudit(auditItem);
-  clearAdminAuditListCache();
-  void mirrorAuditLogToDiscord(auditItem);
-  logDashboardEvent("debug", "admin.audit.system_discord_only_queued", undefined, {
-    action,
-    status,
+    details: { ...details, status },
   });
-  return true;
 }

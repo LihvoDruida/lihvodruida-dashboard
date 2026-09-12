@@ -409,6 +409,17 @@ else
   warn "перевірте DNS, режим проксі Cloudflare і сертифікат — docs/DEPLOYMENT.md, розділ 4"
 fi
 
+step "Перевіряю Discord Interactions Endpoint"
+set +e
+"$PWD/deploy/scripts/discord-endpoint.sh"
+DISCORD_ENDPOINT_STATUS=$?
+set -e
+if [ "$DISCORD_ENDPOINT_STATUS" -eq 3 ]; then
+  problem "Discord Interactions Endpoint вказує не на цей VPS. Виконайте: make discord-endpoint-fix"
+elif [ "$DISCORD_ENDPOINT_STATUS" -ne 0 ]; then
+  warn "не вдалося звірити Discord Interactions Endpoint; перевірте пізніше через make discord-endpoint-check"
+fi
+
 # Оновлюємо snapshot уже після підняття всіх контейнерів, щоб Active/Images
 # на сторінці власника відповідали фактичному поточному стеку.
 "$PWD/deploy/scripts/docker-stats-snapshot.sh" || true

@@ -71,11 +71,6 @@ const DEFAULT_RAID_DISCORD_DELETE_AFTER_START_HOURS = 4;
 const DEFAULT_GUILD_ROSTER_RECORDS_CHUNK_SIZE = 64;
 const DEFAULT_GUILD_ROSTER_READ_LEGACY_MEMBER_DOCS = false;
 const DEFAULT_GUILD_ROSTER_WRITE_LEGACY_MEMBER_DOCS = false;
-const DEFAULT_AUDIT_LOG_READ_CACHE_TTL_MS = 30_000;
-const DEFAULT_ECO_AUDIT_LOG_READ_CACHE_TTL_MS = 120_000;
-const DEFAULT_AUDIT_LOG_DEDUPE_WINDOW_MS = 120_000;
-const DEFAULT_AUDIT_LOG_MAX_STORED = 500;
-const DEFAULT_ECO_AUDIT_LOG_MAX_STORED = 250;
 
 const SETTINGS_CACHE_TTL_MS = Math.max(
   60_000,
@@ -143,9 +138,6 @@ export type DashboardApiSettings = {
   guildRosterRecordsChunkSize: number;
   guildRosterReadLegacyMemberDocs: boolean;
   guildRosterWriteLegacyMemberDocs: boolean;
-  auditLogReadCacheTtlMs: number;
-  auditLogDedupeWindowMs: number;
-  auditLogMaxStored: number;
   raiderIoCharacterCacheTtlMs: number;
   guildRosterMemberLimit: number;
   guildRosterRefreshStepBudgetMs: number;
@@ -324,17 +316,6 @@ function envGuildRosterWriteLegacyMemberDocs() {
   return booleanValue(raw, DEFAULT_GUILD_ROSTER_WRITE_LEGACY_MEMBER_DOCS);
 }
 
-function envAuditLogReadCacheTtlMs() {
-  return integerEnv("ADMIN_AUDIT_READ_CACHE_TTL_MS", ecoFallback(DEFAULT_AUDIT_LOG_READ_CACHE_TTL_MS, DEFAULT_ECO_AUDIT_LOG_READ_CACHE_TTL_MS), 10_000, 120_000);
-}
-
-function envAuditLogDedupeWindowMs() {
-  return integerEnv("ADMIN_AUDIT_DEDUPE_WINDOW_MS", DEFAULT_AUDIT_LOG_DEDUPE_WINDOW_MS, 0, 600_000);
-}
-
-function envAuditLogMaxStored() {
-  return integerEnv("ADMIN_AUDIT_MAX_STORED", ecoFallback(DEFAULT_AUDIT_LOG_MAX_STORED, DEFAULT_ECO_AUDIT_LOG_MAX_STORED), 100, 1000);
-}
 
 function envRaiderIoCharacterCacheTtlMs() {
   return integerEnv("RAIDERIO_CHARACTER_CACHE_TTL_MS", ecoFallback(DEFAULT_CHARACTER_CACHE_TTL_MS, DEFAULT_ECO_CHARACTER_CACHE_TTL_MS), 0, MAX_CHARACTER_CACHE_TTL_MS);
@@ -453,9 +434,6 @@ function defaultDashboardApiSettings(): DashboardApiSettings {
     guildRosterRecordsChunkSize: envGuildRosterRecordsChunkSize(),
     guildRosterReadLegacyMemberDocs: envGuildRosterReadLegacyMemberDocs(),
     guildRosterWriteLegacyMemberDocs: envGuildRosterWriteLegacyMemberDocs(),
-    auditLogReadCacheTtlMs: envAuditLogReadCacheTtlMs(),
-    auditLogDedupeWindowMs: envAuditLogDedupeWindowMs(),
-    auditLogMaxStored: envAuditLogMaxStored(),
     raiderIoCharacterCacheTtlMs: envRaiderIoCharacterCacheTtlMs(),
     guildRosterMemberLimit: envGuildRosterMemberLimit(),
     guildRosterRefreshStepBudgetMs: envGuildRosterRefreshStepBudgetMs(),
@@ -522,9 +500,6 @@ function normalizeSettings(
     guildRosterRecordsChunkSize: integerValue(data?.guildRosterRecordsChunkSize, fallback.guildRosterRecordsChunkSize, 25, 120),
     guildRosterReadLegacyMemberDocs: booleanValue(data?.guildRosterReadLegacyMemberDocs, fallback.guildRosterReadLegacyMemberDocs),
     guildRosterWriteLegacyMemberDocs: booleanValue(data?.guildRosterWriteLegacyMemberDocs, fallback.guildRosterWriteLegacyMemberDocs),
-    auditLogReadCacheTtlMs: integerValue(data?.auditLogReadCacheTtlMs, fallback.auditLogReadCacheTtlMs, 10_000, 120_000),
-    auditLogDedupeWindowMs: integerValue(data?.auditLogDedupeWindowMs, fallback.auditLogDedupeWindowMs, 0, 600_000),
-    auditLogMaxStored: integerValue(data?.auditLogMaxStored, fallback.auditLogMaxStored, 100, 1000),
     raiderIoCharacterCacheTtlMs: integerValue(data?.raiderIoCharacterCacheTtlMs, fallback.raiderIoCharacterCacheTtlMs, 0, MAX_CHARACTER_CACHE_TTL_MS),
     guildRosterMemberLimit: integerValue(data?.guildRosterMemberLimit, fallback.guildRosterMemberLimit, 1, 1000),
     guildRosterRefreshStepBudgetMs: integerValue(data?.guildRosterRefreshStepBudgetMs, fallback.guildRosterRefreshStepBudgetMs, 5_000, 38_000),
@@ -622,9 +597,6 @@ export async function setDashboardApiSettings(input: DashboardApiSettingsInput, 
     guildRosterRecordsChunkSize: settings.guildRosterRecordsChunkSize,
     guildRosterReadLegacyMemberDocs: settings.guildRosterReadLegacyMemberDocs,
     guildRosterWriteLegacyMemberDocs: settings.guildRosterWriteLegacyMemberDocs,
-    auditLogReadCacheTtlMs: settings.auditLogReadCacheTtlMs,
-    auditLogDedupeWindowMs: settings.auditLogDedupeWindowMs,
-    auditLogMaxStored: settings.auditLogMaxStored,
     raiderIoCharacterCacheTtlMs: settings.raiderIoCharacterCacheTtlMs,
     guildRosterMemberLimit: settings.guildRosterMemberLimit,
     guildRosterRefreshStepBudgetMs: settings.guildRosterRefreshStepBudgetMs,
@@ -713,29 +685,16 @@ export async function getSiteRuntimeSettings() {
     raidListCacheTtlMs: settings.raidListCacheTtlMs,
     raidItemCacheTtlMs: settings.raidItemCacheTtlMs,
     raidDiscordDeleteAfterStartHours: settings.raidDiscordDeleteAfterStartHours,
-    auditLogReadCacheTtlMs: settings.auditLogReadCacheTtlMs,
-    auditLogDedupeWindowMs: settings.auditLogDedupeWindowMs,
-    auditLogMaxStored: settings.auditLogMaxStored,
     dashboardApiWarningAuditLogs: settings.dashboardApiWarningAuditLogs,
     dashboardApiDebugAuditLogs: settings.dashboardApiDebugAuditLogs,
   };
 }
 
-export async function getAuditLogRuntimeSettings() {
-  const settings = await getDashboardApiSettings();
-  return {
-    readCacheTtlMs: settings.auditLogReadCacheTtlMs,
-    dedupeWindowMs: settings.auditLogDedupeWindowMs,
-    maxStored: settings.auditLogMaxStored,
-    debugAuditLogs: settings.dashboardApiDebugAuditLogs,
-    warningAuditLogs: settings.dashboardApiWarningAuditLogs,
-  };
-}
 
 export function dashboardApiSettingsSummary(settings: DashboardApiSettings) {
   const rosterSync = `Guild roster: ${settings.guildRosterName}-${settings.guildRosterRealm}-${settings.guildRosterRegion}; ${settings.guildRosterMemberLimit} перс.; Battle.net крок ${settings.guildRosterBattleNetStepSize}; Raider.IO крок ${settings.guildRosterRaiderIoStepSize}; cooldown ${settings.raiderIoRateLimitCooldownSeconds}с; кеш ${settings.guildRosterCacheTtlSeconds}с; бюджет ${settings.guildRosterRefreshStepBudgetMs}мс; client ${settings.guildRosterClientDrivenSyncEnabled ? "ON" : "OFF"}`;
-  const apiDebug = `Discord audit: debug ${settings.dashboardApiDebugAuditLogs ? "ON" : "OFF"}, warnings ${settings.dashboardApiWarningAuditLogs ? "ON" : "OFF"}, read cache ${Math.round(settings.auditLogReadCacheTtlMs / 1000)}с, dedupe ${Math.round(settings.auditLogDedupeWindowMs / 1000)}с`;
-  return `Оновлення: ${Math.round(settings.backgroundRefreshMinSeconds / 60)} хв; Discord-рейди закриваються через ${settings.raidDiscordDeleteAfterStartHours} год після старту; персонажі: ${Math.round(settings.profileViewRefreshMinSeconds / 60)} хв; batch: ${settings.profileExternalRefreshBatchLimit}; ${apiDebug}; ${rosterSync}; chunks ${settings.guildRosterRecordsChunkSize}; legacy read ${settings.guildRosterReadLegacyMemberDocs ? "ON" : "OFF"}; legacy write ${settings.guildRosterWriteLegacyMemberDocs ? "ON" : "OFF"}.`;
+  const apiDiagnostics = `API diagnostics: debug ${settings.dashboardApiDebugAuditLogs ? "ON" : "OFF"}, warnings ${settings.dashboardApiWarningAuditLogs ? "ON" : "OFF"}`;
+  return `Оновлення: ${Math.round(settings.backgroundRefreshMinSeconds / 60)} хв; Discord-рейди закриваються через ${settings.raidDiscordDeleteAfterStartHours} год після старту; персонажі: ${Math.round(settings.profileViewRefreshMinSeconds / 60)} хв; batch: ${settings.profileExternalRefreshBatchLimit}; ${apiDiagnostics}; ${rosterSync}; chunks ${settings.guildRosterRecordsChunkSize}; legacy read ${settings.guildRosterReadLegacyMemberDocs ? "ON" : "OFF"}; legacy write ${settings.guildRosterWriteLegacyMemberDocs ? "ON" : "OFF"}.`;
 }
 
 export function dashboardApiSettingsMinBackgroundRefreshSeconds() {

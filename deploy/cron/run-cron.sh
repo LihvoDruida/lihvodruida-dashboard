@@ -13,6 +13,7 @@
 #   */2  * * * *  /api/guild/sync             — Battle.net + Raider.IO + raid progress у БД
 #   */10 * * * *  /api/raids/lifecycle        — публікація й закриття рейдів
 #   */5  * * * *  /api/polls/close-due        — автозакриття рейд-пулів
+#   */30 * * * *  /api/dashboard/logs/maintenance — retention/budget журналу
 #   0    4 * * *  /api/dashboard/profiles/orphan-cleanup/apply — чистка акаунтів
 # ---------------------------------------------------------------------------
 
@@ -58,6 +59,7 @@ while true; do
   [ $((minute % 2)) -eq 0 ] && call "/api/guild/sync"
   [ $((minute % 10)) -eq 0 ] && call "/api/raids/lifecycle"
   [ $((minute % 5)) -eq 0 ] && call "/api/polls/close-due"
+  [ $((minute % 30)) -eq 0 ] && call "/api/dashboard/logs/maintenance"
 
   # 04:00 за Києвом. Контейнер живе в UTC, тому рахуємо від TZ явно.
   kyiv_hour=$(TZ=Europe/Kyiv date +%-H)

@@ -74,6 +74,7 @@ import {
   inferDifficultyFromTitle,
   interactionField,
   interactionMessageTimestamp,
+  interactionShowsEmptyRaid,
   kyivDateTimeFromEpochSeconds,
   stripDifficultySuffix,
 } from "@/lib/discordInteractionRecovery";
@@ -4896,7 +4897,8 @@ async function recoverEmptyRaidFromDiscordMessage(
   // empty database record: that would trade a visible error for silent loss.
   const rosterField = interactionField(interactionMessage, /склад рейду/i);
   const roster = discordFraction(rosterField);
-  if (!roster || roster.current !== 0) return null;
+  const emptyEvidence = Boolean(roster && roster.current === 0) || interactionShowsEmptyRaid(interactionMessage);
+  if (!emptyEvidence) return null;
 
   const title = stripDifficultySuffix(embed.title) || "Рейд";
   const difficulty = inferDifficultyFromTitle(embed.title);
@@ -4924,7 +4926,7 @@ async function recoverEmptyRaidFromDiscordMessage(
     description: String(embed.description || "").trim() || "Рейд відновлено з активного Discord-повідомлення.",
     minItemLevel: null,
     minItemLevelRequired: false,
-    maxPlayers: roster.total > 0 ? roster.total : null,
+    maxPlayers: roster && roster.total > 0 ? roster.total : null,
     registrationLockEnabled: lockText ? !/вимкн/i.test(lockText) : false,
     registrationLockMinutesBefore: null,
     imageUrl: null,
@@ -5022,9 +5024,12 @@ export async function handleRaidDiscordAction(params: {
       raidId: params.raidId,
       message: error instanceof Error ? error.message : String(error),
     });
+    const message = error instanceof Error ? error.message : String(error);
     return {
       ok: false,
-      content: "⚠️ Сховище рейдів зараз не відповідає. Дані не видалені — спробуй кнопку ще раз за кілька секунд.",
+      content: message.includes("storage mismatch")
+        ? "❌ Discord interaction досі обробляє старий runtime без PostgreSQL. Interactions Endpoint URL має бути https://guild.lihvodruida.pp.ua/discord/interactions — старий Worker/Vercel endpoint потрібно вимкнути."
+        : "⚠️ Сховище рейдів зараз не відповідає. Дані не видалені — спробуй кнопку ще раз за кілька секунд.",
       storageUnavailable: true,
     };
   }
