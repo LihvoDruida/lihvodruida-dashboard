@@ -58,7 +58,7 @@ export default function AdminTabs({
       key: "server" as const,
       href: "/dashboard/server",
       label: "Сервер",
-      description: "CPU · RAM · диск",
+      description: "CPU · RAM · Swap · Docker",
       visible: Boolean(user?.isServerOwner),
     },
   ].filter((tab) => tab.visible);

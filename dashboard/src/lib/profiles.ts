@@ -50,6 +50,7 @@ import type { AccessGroup } from "@/lib/accessGroupSchema";
 import { resilientRead, resilientWrite, getRuntimeCachedValue, clearRuntimeCachedValue, clearRuntimeCachedValuesByPrefix } from "@/lib/runtimeResilience";
 import { firebaseWrite, firebaseUnavailableMessage } from "@/lib/firebaseAccess";
 import { timestampToIso } from "@/lib/values";
+import { resolveDiscordInteractionProfileDocument } from "@/lib/discordInteractionStorage";
 
 export {
   deleteDashboardProfileById,
@@ -1112,6 +1113,33 @@ export async function getProfileById(profileId: string) {
       fallback: () => getRuntimeCachedValue<DashboardProfile | null>(`profile:${profileId}`, 24 * 60 * 60 * 1000),
       logEvent: "profiles.item_read_failed",
     },
+  );
+}
+
+
+export async function getProfileByDiscordUserIdForInteraction(discordUserId: string) {
+  const cleanDiscordId = String(discordUserId || "").trim();
+  if (!/^\d{16,25}$/.test(cleanDiscordId)) return null;
+  if (!hasFirebaseProfileConfig()) return null;
+
+  const stableProfileId = await createStableProfileId("discord", cleanDiscordId);
+  const resolved = await resolveDiscordInteractionProfileDocument({
+    stableProfileId,
+    discordUserId: cleanDiscordId,
+  });
+  if (!resolved) return null;
+
+  clearProfileRuntimeCaches(resolved.id);
+  if (resolved.recovered) {
+    console.warn("[profiles] Discord interaction profile recovered", {
+      discordUserId: cleanDiscordId,
+      stableProfileId,
+      resolvedProfileId: resolved.id,
+      source: resolved.source,
+    });
+  }
+  return resolveProfileAccessForCurrentGroups(
+    normalizeProfile(resolved.id, resolved.data),
   );
 }
 

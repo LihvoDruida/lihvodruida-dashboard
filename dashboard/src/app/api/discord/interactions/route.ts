@@ -6,7 +6,7 @@ import {
   kickGuildMember,
   verifyDiscordInteractionSignature,
 } from "@/lib/discordAdmin";
-import { getMainCharacter, getProfileByDiscordUserId } from "@/lib/profiles";
+import { getMainCharacter, getProfileByDiscordUserIdForInteraction } from "@/lib/profiles";
 import { rulesAcceptUrlForDiscordUser } from "@/lib/rulesOnboarding";
 import { buildRaidManualSpecComponents, dashboardProfileUrl, dashboardRaidRulesUrl, decodeRaidAttendanceCustomId, decodeRaidCharacterSelectCustomId, decodeRaidManualClassCustomId, decodeRaidManualSpecCustomId, decodeRaidRoleSelectCustomId, decodeRaidSignupSubmitCustomId, handleRaidDiscordAction, raidActionHelpComponents, type RaidCharacterRole } from "@/lib/raids";
 import { handleRaidPollDiscordVote } from "@/lib/raidPolls";
@@ -239,6 +239,7 @@ export async function POST(request: NextRequest) {
         values: rosterAction.values,
         userId,
         userName,
+        messageRef: getInteractionMessageRef(interaction),
       });
       logDashboardEvent(result.ok ? "info" : "warn", "discord.roster.action", request, {
         rosterId: rosterAction.rosterId,
@@ -347,7 +348,7 @@ export async function POST(request: NextRequest) {
 
   if (effectiveParsed.action === "raid_signup") {
     try {
-      const profile = await getProfileByDiscordUserId(userId);
+      const profile = await getProfileByDiscordUserIdForInteraction(userId);
       const mainCharacter = profile ? getMainCharacter(profile) : null;
       if (!profile || !mainCharacter) {
         logDashboardEvent("warn", "discord.raid_rules.profile_missing", request, { guildId, userId });

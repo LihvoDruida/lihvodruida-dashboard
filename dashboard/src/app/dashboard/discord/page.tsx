@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import DashboardIdentity from "@/components/DashboardIdentity";
-import HeroSidePanel from "@/components/HeroSidePanel";
+import AdminPageHeader from "@/components/AdminPageHeader";
 import AdminTabs from "@/components/AdminTabs";
 import { buildPageMetadata } from "@/lib/seo";
 import { getSession } from "@/lib/auth";
@@ -128,26 +128,17 @@ export default async function AdminDiscordPage() {
     <main className="container app-page admin-container">
       <section className="dashboard-shell content-shell admin-page discord-management-page app-page-stack" aria-label="Керування Discord-учасниками">
         <DashboardIdentity user={user} activeSection="admin" />
-        <header className="hero panel admin-hero discord-admin-hero">
-          <div className="hero-copy dashboard-hero__copy guild-hero__copy">
-            <span className="eyebrow">Mistblossom Vanguard • Discord</span>
-            <h1>Discord-учасники</h1>
-            <span className="hero-accent" aria-hidden="true" />
-            <p className="lead">Очищення профілів у базі, контроль серверних ніків, шаблон і безпечні масові Discord-дії в одному місці.</p>
-          </div>
-          <HeroSidePanel
-            ariaLabel="Огляд Discord-керування"
-            summary={[
-              { label: "ДОСТУП", value: user.groupName || user.role, note: "Права поточного користувача" },
-              { label: "СЕРВЕР", value: guild ? guild.name : "Недоступно", note: guildId ? guildId : "Discord не підключено" },
-            ]}
-            stats={[
-              { label: "РОЛЕЙ", value: roles.length.toLocaleString("uk-UA") },
-              { label: "ДОСТУПНО", value: manageableRoles.length.toLocaleString("uk-UA") },
-              { label: "BOT", value: control.botCanManageRoles ? "OK" : "ERR" },
-            ]}
-          />
-        </header>
+        <AdminPageHeader
+          eyebrow="Mistblossom Vanguard • Discord"
+          title="Discord-учасники"
+          description="Ніки, ролі, очищення профілів і масові Discord-дії з єдиною перевіркою прав бота."
+          metrics={[
+            { label: "Сервер", value: guild ? guild.name : "Недоступно", note: guildId || "Discord не підключено", tone: guild ? "good" : "danger" },
+            { label: "Ролей", value: roles.length.toLocaleString("uk-UA") },
+            { label: "Керованих", value: manageableRoles.length.toLocaleString("uk-UA"), tone: manageableRoles.length ? "good" : "warning" },
+            { label: "Bot Manage Roles", value: control.botCanManageRoles ? "OK" : "ERR", tone: control.botCanManageRoles ? "good" : "danger" },
+          ]}
+        />
 
         <AdminTabs active="discord" user={user} />
 

@@ -39,3 +39,7 @@ pnpm-debug.log*
 # Архіви
 dashboard.zip
 *.tar.gz
+
+# Host-generated server monitoring snapshots
+runtime/server-stats/*.jsonl
+!runtime/server-stats/.gitkeep

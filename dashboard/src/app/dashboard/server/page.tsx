@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import AdminTabs from "@/components/AdminTabs";
 import DashboardIdentity from "@/components/DashboardIdentity";
-import HeroSidePanel from "@/components/HeroSidePanel";
+import AdminPageHeader from "@/components/AdminPageHeader";
 import ServerStatusDashboard from "@/components/ServerStatusDashboard";
 import { getSession } from "@/lib/auth";
 import { buildPageMetadata } from "@/lib/seo";
@@ -34,26 +34,17 @@ export default async function ServerStatusPage() {
     <main className="container app-page admin-container server-status-container">
       <section className="dashboard-shell content-shell admin-page server-status-page app-page-stack" aria-label="Стан сервера Mistblossom Vanguard">
         <DashboardIdentity user={user} activeSection="admin" />
-        <header className="hero panel admin-hero server-status-hero">
-          <div className="hero-copy dashboard-hero__copy guild-hero__copy">
-            <span className="eyebrow">Mistblossom Vanguard • Owner only</span>
-            <h1>Стан сервера</h1>
-            <span className="hero-accent" aria-hidden="true" />
-            <p className="lead">Живий моніторинг процесора, кожного логічного ядра, оперативної пам’яті, swap, диска та uptime. Системний API доступний тільки власнику Discord-сервера.</p>
-          </div>
-          <HeroSidePanel
-            ariaLabel="Коротка інформація про сервер"
-            summary={[
-              { label: "ХОСТ", value: snapshot.platform.hostname, note: `${snapshot.platform.platform} ${snapshot.platform.arch}` },
-              { label: "CPU", value: `${snapshot.cpu.logicalCores} ядер`, note: snapshot.cpu.model },
-            ]}
-            stats={[
-              { label: "RAM", value: `${Math.round(snapshot.memory.usagePercent)}%` },
-              { label: "ДИСК", value: snapshot.disk.usagePercent === null ? "—" : `${Math.round(snapshot.disk.usagePercent)}%` },
-              { label: "UPTIME", value: `${Math.max(0, Math.floor(snapshot.uptime.systemSeconds / 3600))} год` },
-            ]}
-          />
-        </header>
+        <AdminPageHeader
+          eyebrow="Mistblossom Vanguard • Owner only"
+          title="Стан сервера"
+          description="Живі CPU, RAM, Swap, диск, Docker cache та uptime без запису телеметрії в базу даних."
+          metrics={[
+            { label: "Хост", value: snapshot.platform.hostname, note: `${snapshot.platform.platform} ${snapshot.platform.arch}` },
+            { label: "CPU", value: `${snapshot.cpu.logicalCores} ядра`, note: snapshot.cpu.model },
+            { label: "RAM", value: `${Math.round(snapshot.memory.usagePercent)}%`, tone: snapshot.memory.usagePercent >= 85 ? "danger" : snapshot.memory.usagePercent >= 70 ? "warning" : "good" },
+            { label: "Диск", value: snapshot.disk.usagePercent === null ? "—" : `${Math.round(snapshot.disk.usagePercent)}%`, tone: (snapshot.disk.usagePercent ?? 0) >= 85 ? "danger" : (snapshot.disk.usagePercent ?? 0) >= 70 ? "warning" : "good" },
+          ]}
+        />
         <AdminTabs active="server" user={user} />
         <ServerStatusDashboard initialSnapshot={snapshot} />
       </section>

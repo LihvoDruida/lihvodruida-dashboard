@@ -532,11 +532,6 @@
 }
 
 /* ---------- Останні дрібні класи адмінки ---------- */
-.discord-admin-hero,
-.admin-logs-hero {
-  min-width: 0;
-}
-
 .admin-policy-form {
   display: grid;
   gap: var(--gap-stack);
@@ -906,4 +901,792 @@
   .server-core-grid {
     grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
   }
+}
+
+/* =========================================================
+   9. ЄДИНА СТРУКТУРА РОЗДІЛУ «КЕРУВАННЯ»
+   ========================================================= */
+.admin-page {
+  --admin-card-radius: 14px;
+  --admin-control-height: 42px;
+  display: grid;
+  gap: 16px;
+}
+
+.admin-page-header {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(520px, 1.35fr);
+  gap: 20px;
+  align-items: stretch;
+  padding: 20px 22px;
+  border-radius: var(--admin-card-radius);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--surface-raised) 94%, var(--c-accent-500) 6%), var(--surface));
+}
+
+.admin-page-header__copy {
+  display: grid;
+  align-content: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.admin-page-header__copy h1 {
+  margin: 0;
+  font-size: clamp(1.55rem, 2.2vw, 2.15rem);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+}
+
+.admin-page-header__copy p {
+  max-width: 68ch;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.admin-page-header__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-page-header__metric {
+  --admin-metric-tone: var(--border-strong);
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 11px 13px;
+  border: 1px solid color-mix(in srgb, var(--admin-metric-tone) 36%, var(--border-subtle));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--admin-metric-tone) 5%, var(--surface-sunken));
+}
+
+.admin-page-header__metric.is-good { --admin-metric-tone: var(--c-success); }
+.admin-page-header__metric.is-warning { --admin-metric-tone: var(--c-warning); }
+.admin-page-header__metric.is-danger { --admin-metric-tone: var(--c-danger); }
+
+.admin-page-header__metric > span {
+  color: var(--text-faint);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-page-header__metric > strong {
+  min-width: 0;
+  color: var(--text-strong);
+  font-size: 0.92rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.admin-page-header__metric > small {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+/* Вкладки більше не виглядають як випадковий ряд пігулок. */
+.admin-tabs.dashboard-subnav {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 6px;
+  overflow: visible;
+  padding: 6px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--surface-sunken);
+}
+
+.admin-tabs.dashboard-subnav > a {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 2px;
+  min-width: 0;
+  min-height: 52px;
+  padding: 9px 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  line-height: 1.15;
+}
+
+.admin-tabs.dashboard-subnav > a:hover {
+  border-color: var(--border-subtle);
+  background: var(--surface-raised);
+  color: var(--text-strong);
+}
+
+.admin-tabs.dashboard-subnav > a.is-active {
+  border-color: color-mix(in srgb, var(--c-accent-400) 55%, var(--border));
+  background: color-mix(in srgb, var(--c-accent-500) 14%, var(--surface-raised));
+  color: var(--text-strong);
+  box-shadow: inset 0 -2px 0 var(--c-accent-400);
+}
+
+.admin-tabs.dashboard-subnav > a strong {
+  font-size: 0.79rem;
+}
+
+.admin-tabs.dashboard-subnav > a small {
+  color: var(--text-faint);
+  font-size: 0.66rem;
+  font-weight: 500;
+  white-space: normal;
+}
+
+/* Базова геометрія всіх робочих блоків адмінки. */
+.admin-page :where(
+  .discord-management-card,
+  .admin-policy-card,
+  .admin-log-toolbar,
+  .admin-log-row,
+  .server-section,
+  .server-detail-card,
+  .server-graph-card,
+  .server-summary-card
+) {
+  border-radius: var(--admin-card-radius);
+}
+
+.admin-page :where(.input, .select, textarea) {
+  min-height: var(--admin-control-height);
+}
+
+.admin-page :where(.btn) {
+  min-height: var(--admin-control-height);
+}
+
+.admin-page :where(.profile-card-head, .discord-management-section-head, .server-section__head) h2 {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.admin-page :where(.profile-card-lead, .discord-management-section-head p) {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+/* =========================================================
+   10. SERVER MONITORING V2 — швидке тихе оновлення + Docker cache
+   ========================================================= */
+.server-status-dashboard {
+  gap: 14px;
+}
+
+.server-status-toolbar {
+  padding: 14px 16px;
+  border-radius: var(--admin-card-radius);
+}
+
+.server-status-toolbar__state {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+.server-live-dot {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--c-success);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--c-success) 12%, transparent);
+}
+
+.server-live-dot.is-live {
+  animation: server-live-pulse 2.2s ease-in-out infinite;
+}
+
+.server-live-dot.is-paused {
+  background: var(--c-warning);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--c-warning) 12%, transparent);
+}
+
+.server-live-dot.is-error {
+  background: var(--c-danger);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--c-danger) 12%, transparent);
+}
+
+@keyframes server-live-pulse {
+  0%, 100% { opacity: 0.55; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+.server-summary-grid {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.server-summary-card {
+  gap: 7px;
+  min-height: 128px;
+  padding: 14px 15px;
+}
+
+.server-summary-card > strong {
+  font-size: clamp(1.4rem, 2.1vw, 1.95rem);
+}
+
+.server-graphs-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.server-graph-card {
+  padding: 14px;
+}
+
+.server-graph {
+  height: 128px;
+  margin-top: 8px;
+}
+
+.server-section {
+  gap: 14px;
+  padding: 16px;
+}
+
+.server-docker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.server-docker-card {
+  --server-docker-tone: var(--c-info);
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 12px 13px;
+  border: 1px solid color-mix(in srgb, var(--server-docker-tone) 25%, var(--border-subtle));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--server-docker-tone) 4%, var(--surface-sunken));
+}
+
+.server-docker-card.is-good { --server-docker-tone: var(--c-success); }
+.server-docker-card.is-warning { --server-docker-tone: var(--c-warning); }
+.server-docker-card.is-neutral { --server-docker-tone: var(--c-info); }
+
+.server-docker-card > span {
+  color: var(--text-faint);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.server-docker-card > strong {
+  color: var(--text-strong);
+  font-size: 1.18rem;
+}
+
+.server-docker-card > small {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+.server-cache-health {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 13px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 11px;
+  background: var(--surface-sunken);
+}
+
+.server-cache-health > div {
+  display: grid;
+  gap: 2px;
+}
+
+.server-cache-health strong {
+  color: var(--text-strong);
+  font-size: 0.82rem;
+}
+
+.server-cache-health small {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.server-cache-health code {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 7px;
+  background: var(--surface-raised);
+  color: var(--c-accent-300);
+  font-size: 0.72rem;
+}
+
+.server-cache-health.is-warning {
+  border-color: color-mix(in srgb, var(--c-warning) 42%, var(--border-subtle));
+  background: color-mix(in srgb, var(--c-warning) 7%, var(--surface-sunken));
+}
+
+.server-cache-health.is-good {
+  border-color: color-mix(in srgb, var(--c-success) 28%, var(--border-subtle));
+}
+
+.server-docker-empty {
+  padding: 16px;
+  border: 1px dashed var(--border);
+  border-radius: 11px;
+  background: var(--surface-sunken);
+}
+
+.server-docker-empty strong {
+  color: var(--text-strong);
+}
+
+.server-docker-empty p {
+  margin: 5px 0 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.server-detail-grid {
+  gap: 10px;
+}
+
+.server-detail-card {
+  padding: 14px 16px;
+}
+
+@media (max-width: 1180px) {
+  .admin-page-header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .server-docker-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .admin-page {
+    gap: 12px;
+  }
+
+  .admin-page-header {
+    padding: 16px;
+  }
+
+  .admin-page-header__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-tabs.dashboard-subnav {
+    display: flex;
+    overflow-x: auto;
+    padding: 5px;
+    scroll-snap-type: x proximity;
+  }
+
+  .admin-tabs.dashboard-subnav > a {
+    flex: 0 0 150px;
+    min-height: 48px;
+  }
+
+  .server-graphs-grid,
+  .server-docker-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .server-cache-health {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .server-live-dot.is-live {
+    animation: none;
+  }
+}
+
+/* Desktop hierarchy: ліворуч компактні точкові дії, праворуч — основні масові. */
+@media (min-width: 1001px) {
+  .discord-management-layout {
+    grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .discord-management-sidebar {
+    display: grid;
+    gap: 12px;
+    align-content: start;
+    min-width: 0;
+  }
+
+  .discord-management-main {
+    gap: 12px;
+  }
+
+  .admin-overview-grid,
+  .discord-settings-grid {
+    gap: 12px;
+  }
+
+  .admin-log-toolbar--settings {
+    display: grid;
+    grid-template-columns: minmax(240px, 0.6fr) minmax(0, 1.7fr);
+    align-items: start;
+    gap: 14px;
+  }
+
+  .admin-log-limit-form,
+  .admin-log-discord-form {
+    display: grid;
+    align-content: start;
+    gap: 12px;
+  }
+}
+
+/* =========================================================
+   11. GROUPS — та сама робоча геометрія, що й решта керування
+   ========================================================= */
+.access-groups-layout {
+  display: grid;
+  grid-template-columns: 270px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  min-width: 0;
+}
+
+.access-groups-list {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  position: sticky;
+  top: 88px;
+}
+
+.access-groups-list__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 8px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.access-groups-list__header small {
+  color: var(--text-faint);
+  font-size: 0.7rem;
+}
+
+.access-group-tab.btn {
+  display: grid;
+  justify-items: start;
+  gap: 3px;
+  width: 100%;
+  height: auto;
+  min-height: 58px;
+  padding: 9px 10px;
+  border-color: transparent;
+  background: transparent;
+  text-align: left;
+}
+
+.access-group-tab.btn strong {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-strong);
+  font-size: 0.8rem;
+}
+
+.access-group-tab.btn > span:not(.access-group-tab__icon) {
+  color: var(--text-faint);
+  font-size: 0.66rem;
+  line-height: 1.35;
+}
+
+.access-group-tab.btn.is-active {
+  border-color: color-mix(in srgb, var(--c-accent-400) 40%, var(--border-subtle));
+  background: color-mix(in srgb, var(--c-accent-500) 10%, var(--surface-raised));
+  box-shadow: inset 3px 0 0 var(--c-accent-400);
+}
+
+.access-group-tab__icon,
+.access-group-title-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+}
+
+.access-groups-editor {
+  min-width: 0;
+}
+
+.access-group-card {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: 18px;
+  border-radius: var(--admin-card-radius);
+}
+
+.access-group-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.access-group-card__head > div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.access-group-card__head h2 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: 1.08rem;
+}
+
+.access-group-card__head p {
+  max-width: 82ch;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.access-group-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.access-group-summary > span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 10px 11px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--surface-sunken);
+}
+
+.access-group-summary strong {
+  color: var(--text-strong);
+  font-size: 0.77rem;
+  overflow-wrap: anywhere;
+}
+
+.access-group-summary small {
+  color: var(--text-faint);
+  font-size: 0.66rem;
+  line-height: 1.35;
+}
+
+.access-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.permissions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 10px;
+}
+
+.permissions-grid fieldset {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 11px;
+  background: var(--surface-sunken);
+}
+
+.permissions-grid legend {
+  padding: 0 4px;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.permission-check {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.permission-check:hover {
+  background: var(--surface-raised);
+}
+
+.permission-check input {
+  margin-top: 2px;
+}
+
+.permission-check > span {
+  display: grid;
+  gap: 2px;
+}
+
+.permission-check strong {
+  color: var(--text-strong);
+  font-size: 0.75rem;
+}
+
+.permission-check small {
+  color: var(--text-faint);
+  font-size: 0.66rem;
+  line-height: 1.35;
+}
+
+.access-warning {
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--c-warning) 38%, var(--border-subtle));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--c-warning) 7%, var(--surface-sunken));
+  color: var(--text-soft);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.access-form-actions {
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+@media (max-width: 1050px) {
+  .access-groups-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .access-groups-list {
+    position: static;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .access-groups-list__header {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  .access-group-summary,
+  .access-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .access-group-card__head {
+    flex-direction: column;
+  }
+
+  .access-group-card__head > .btn {
+    width: 100%;
+  }
+}
+
+/* Overview security cards: role/country choices use the same compact control language. */
+.auth-access-role-list,
+.geo-country-chip-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 7px;
+  min-width: 0;
+}
+
+.auth-access-role-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  padding: 9px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 9px;
+  background: var(--surface-sunken);
+  cursor: pointer;
+}
+
+.auth-access-role-option input {
+  margin-top: 2px;
+}
+
+.auth-access-role-option > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.auth-access-role-option strong {
+  color: var(--text-strong);
+  font-size: 0.75rem;
+}
+
+.auth-access-role-option small {
+  color: var(--text-faint);
+  font-size: 0.65rem;
+  line-height: 1.35;
+}
+
+.geo-country-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 6px 9px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 9px;
+  background: var(--surface-sunken);
+  color: var(--text-soft);
+  font-size: 0.72rem;
+}
+
+.geo-country-chip--muted {
+  color: var(--text-faint);
+}
+
+.discord-management-status__item.is-ok {
+  border-color: color-mix(in srgb, var(--c-success) 28%, var(--border-subtle));
+  background: color-mix(in srgb, var(--c-success) 5%, var(--surface-sunken));
+}
+
+.discord-management-status__item.is-warning {
+  border-color: color-mix(in srgb, var(--c-warning) 34%, var(--border-subtle));
+  background: color-mix(in srgb, var(--c-warning) 6%, var(--surface-sunken));
+}
+
+.discord-management-status__item em {
+  color: var(--text-faint);
+  font-size: 0.68rem;
+  font-style: normal;
+  line-height: 1.35;
 }

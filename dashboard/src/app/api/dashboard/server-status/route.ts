@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json(
@@ -25,7 +25,8 @@ export async function GET() {
   }
 
   try {
-    const snapshot = await getServerStatusSnapshot();
+    const url = new URL(request.url);
+    const snapshot = await getServerStatusSnapshot({ includeDocker: url.searchParams.get("scope") !== "fast" });
     return NextResponse.json(
       { ok: true, snapshot },
       { status: 200, headers: noStoreHeaders() },

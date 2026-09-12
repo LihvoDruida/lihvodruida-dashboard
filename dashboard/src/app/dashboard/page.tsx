@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import DashboardIdentity from "@/components/DashboardIdentity";
-import HeroSidePanel from "@/components/HeroSidePanel";
+import AdminPageHeader from "@/components/AdminPageHeader";
 import AdminTabs from "@/components/AdminTabs";
 import IntegrationStatusPanel from "@/components/IntegrationStatusPanel";
 import { buildPageMetadata } from "@/lib/seo";
@@ -83,46 +83,18 @@ export default async function AdminOverviewPage() {
         aria-label="Керування Mistblossom Vanguard"
       >
         <DashboardIdentity user={user} activeSection="admin" />
-        <header className="hero panel admin-hero">
-          <div className="hero-copy dashboard-hero__copy guild-hero__copy">
-            <span className="eyebrow">
-              Mistblossom Vanguard • Панель керування
-            </span>
-            <h1>Керування</h1>
-            <span className="hero-accent" aria-hidden="true" />
-            <p className="lead">
-              Один центр для прав доступу, Discord-ролей, серверних ніків і
-              глобального шаблону імен.
-            </p>
-          </div>
-          <HeroSidePanel
-            ariaLabel="Огляд панелі керування"
-            summary={[
-              {
-                label: "ГРУПА",
-                value: user.groupName || user.role,
-                note: user.isServerOwner
-                  ? "Власник сервера"
-                  : "Поточні права",
-              },
-              {
-                label: "ШАБЛОН",
-                value: policy.template,
-                note: nicknameTemplateExample(policy.template),
-              },
-            ]}
-            stats={[
-              { label: "ГРУПИ", value: canManageGroups(user) ? "Так" : "—" },
-              {
-                label: "DISCORD",
-                value: canManageDiscordMembers(user) ? "Так" : "—",
-              },
-              { label: "ЛОГИ", value: canViewAdminLogs(user) ? "Так" : "—" },
-              { label: "ГЕО", value: geoPolicy.enabled ? "Так" : "Ні" },
-              { label: "ВХІД", value: authPolicy.enabled ? "Так" : "Ні" },
-            ]}
-          />
-        </header>
+        <AdminPageHeader
+          eyebrow="Mistblossom Vanguard • Панель керування"
+          title="Керування"
+          description="Один центр для прав доступу, Discord-ролей, серверних ніків, журналу й стану сервера."
+          metrics={[
+            { label: "Група", value: user.groupName || user.role, note: user.isServerOwner ? "Власник сервера" : "Поточні права", tone: "good" },
+            { label: "Шаблон ніку", value: policy.template, note: nicknameTemplateExample(policy.template) },
+            { label: "Discord", value: canManageDiscordMembers(user) ? "Доступ" : "—", tone: canManageDiscordMembers(user) ? "good" : "neutral" },
+            { label: "Вхід", value: authPolicy.enabled ? "Обмежено" : "Вільний", tone: authPolicy.enabled ? "warning" : "neutral" },
+            { label: "Гео", value: geoPolicy.enabled ? "Увімкнено" : "Вимкнено" },
+          ]}
+        />
 
         <AdminTabs active="overview" user={user} />
 

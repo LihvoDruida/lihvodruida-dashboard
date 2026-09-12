@@ -33,3 +33,35 @@ NODE_BUILD_MEMORY_MB=2560
 On this 4 GB machine, increasing `NEXT_BUILD_CPUS` above 2 or the Node heap above ~3 GB usually makes builds slower because the host starts swapping.
 
 A 2 GB swap file is recommended as an OOM safety net, but it should not be treated as normal build memory.
+
+## VPS 2 vCPU / 4 GB / 40 GB: BuildKit cache guard
+
+Repeated `docker compose build` can grow `/var/lib/containerd` even when the
+application, logs and PostgreSQL are small.  The deployment flow therefore
+runs a conservative cache maintenance step after a successful image build.
+
+Defaults:
+
+```text
+BUILD_CACHE_KEEP_STORAGE=6GB
+BUILD_CACHE_MAX_AGE=168h
+AUTO_PRUNE_BUILD_CACHE=1
+```
+
+The maintenance script removes only unused BuildKit cache / dangling images.
+It never uses `--volumes`, so `mistblossom_pgdata` and certificate volumes are
+not part of the cleanup.  Set `AUTO_PRUNE_BUILD_CACHE=0` for a one-off deploy
+if you intentionally want to keep all build cache.
+
+Useful commands:
+
+```bash
+make docker-stats   # refresh server-page Docker snapshot, no cleanup
+make clean-cache    # cap unused build cache and refresh snapshot
+make resources      # host/container resource summary
+```
+
+The dashboard does **not** receive `/var/run/docker.sock`.  `make up` writes a
+read-only `runtime/server-stats/docker-system-df.jsonl` snapshot instead. This
+keeps the owner monitoring page useful without granting the web process root-
+equivalent Docker access.

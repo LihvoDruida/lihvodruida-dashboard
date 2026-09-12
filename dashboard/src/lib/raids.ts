@@ -26,6 +26,7 @@ import {
 import {
   getMainCharacter,
   getProfileByDiscordUserId,
+  getProfileByDiscordUserIdForInteraction,
   getProfileById,
   getProfilePublicName,
   cleanProfileGrammaticalGender,
@@ -65,6 +66,7 @@ import {
 } from "@/lib/raidCompositionAlgorithm";
 import { DpsRangeType, MAX_RAID_PLAYERS, RAID_PARTY_SIZE, dpsRangeType, dpsTierTwoScore, missingCriticalBuffs, partyCapacity, partyFlexRoleCount, partyMembersCount, pickParty, raidMinimumItemLevel, raidRegistrationLimit, roleSortWeight, signupClassKey } from "@/lib/raidPartyShared";
 import { cleanSnowflake, cleanSnowflakeIds, timestampToIso, timezoneOffsetMs } from "@/lib/values";
+import { resolveDiscordInteractionDocument } from "@/lib/discordInteractionStorage";
 import {  isActiveSignupStatus, raidActiveRosterSize, raidAutoComposition } from "@/lib/raidPartyShared";
 export { autoRaidCompositionForSize, raidActiveRosterSize, raidAutoComposition, raidAutoCompositionLabel } from "@/lib/raidPartyShared";
 
@@ -4551,7 +4553,11 @@ function signupFromProfile(
   };
 }
 
-export async function recordRaidSignup(raidId: string, signup: RaidSignup) {
+export async function recordRaidSignup(
+  raidId: string,
+  signup: RaidSignup,
+  options: { interaction?: boolean } = {},
+) {
   const id = cleanRaidId(raidId);
   if (!id || !hasRaidStorage())
     throw new Error("Рейд не знайдено або збереження тимчасово недоступне.");
@@ -4560,12 +4566,13 @@ export async function recordRaidSignup(raidId: string, signup: RaidSignup) {
     () => ({ ...EMPTY_RAID_BENCH_PRIORITY_SETTINGS }),
   );
 
-  await firebaseWrite(
+  const updated = await firebaseWrite<RaidItem>(
     "raid",
     `raid:${id}:signup:${signup.discordId}`,
     async () => {
-      const ref = getFirebaseAdminDb().collection(RAID_COLLECTION).doc(id);
-      await getFirebaseAdminDb().runTransaction(async (transaction: any) => {
+      const db = getFirebaseAdminDb();
+      const ref = db.collection(RAID_COLLECTION).doc(id);
+      const saved = await db.runTransaction(async (transaction: any) => {
         const snapshot = await transaction.get(ref);
         if (!snapshot.exists) throw new Error("Рейд не знайдено.");
         const raid = {
@@ -4626,22 +4633,31 @@ export async function recordRaidSignup(raidId: string, signup: RaidSignup) {
           signedAt,
           updatedAt: now,
         });
+        const normalizedSignups = normalizeRaidSignupNumbers(nextSignups);
         transaction.set(
           ref,
           {
-            signups: normalizeRaidSignupNumbers(nextSignups),
+            signups: normalizedSignups,
             updatedAt: FieldValue.serverTimestamp(),
           },
           { merge: true },
         );
+        return {
+          ...raid,
+          signups: normalizedSignups,
+          updatedAt: now,
+        } as RaidItem;
       });
       clearRaidRuntimeCaches(id);
+      return saved;
     },
-    { timeoutMs: 5_000, logEvent: "raids.signup_write_failed" },
+    {
+      timeoutMs: 5_000,
+      logEvent: "raids.signup_write_failed",
+      bypassCircuit: Boolean(options.interaction),
+    },
   );
 
-  const updated = await getRaid(id);
-  if (!updated) throw new Error("Рейд не знайдено після оновлення.");
   return updated;
 }
 
@@ -4850,6 +4866,36 @@ function attendanceSuccessText(
   return warning ? `${base}\n\n${warning}` : base;
 }
 
+async function getRaidForDiscordInteraction(
+  raidId: string,
+  messageRef?: DiscordMessageRefInput | null,
+): Promise<RaidItem | null> {
+  const id = cleanRaidId(raidId);
+  if (!id || !hasRaidStorage()) return null;
+
+  const ref = cleanDiscordMessageRef(messageRef);
+  const resolved = await resolveDiscordInteractionDocument({
+    collection: RAID_COLLECTION,
+    resourceId: id,
+    messageRef: ref,
+  });
+  if (!resolved) return null;
+
+  const raid = normalizeRaid(resolved.id, resolved.data);
+  clearRaidRuntimeCaches(raid.id);
+  scheduleRaidAutoCloseSync(raid, `discord-interaction:${resolved.source}`);
+  if (resolved.recovered) {
+    console.warn("[raids] Discord interaction resource recovered", {
+      requestedRaidId: id,
+      resolvedRaidId: raid.id,
+      source: resolved.source,
+      channelId: ref?.channelId || null,
+      messageId: ref?.messageId || null,
+    });
+  }
+  return raid;
+}
+
 export async function handleRaidDiscordAction(params: {
   raidId: string;
   action: RaidSignupStatus;
@@ -4863,9 +4909,22 @@ export async function handleRaidDiscordAction(params: {
   messageRef?: DiscordMessageRefInput | null;
   syncDiscord?: boolean;
 }) {
-  const raid = await getRaid(params.raidId);
+  let raid: RaidItem | null = null;
+  try {
+    raid = await getRaidForDiscordInteraction(params.raidId, params.messageRef);
+  } catch (error) {
+    console.error("[raids] authoritative Discord lookup failed", {
+      raidId: params.raidId,
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      ok: false,
+      content: "⚠️ Сховище рейдів зараз не відповідає. Дані не видалені — спробуй кнопку ще раз за кілька секунд.",
+      storageUnavailable: true,
+    };
+  }
   if (!raid)
-    return { ok: false, content: "❌ Рейд не знайдено або він уже видалений." };
+    return { ok: false, content: "❌ Рейд справді не знайдено. Повідомлення Discord могло залишитися від уже видаленого рейду." };
   const lifecycle = await syncRaidLifecycleAfterRead(raid).catch(() => null);
   if (lifecycle?.status === "closed" || isRaidClosed(raid))
     return {
@@ -4905,7 +4964,7 @@ export async function handleRaidDiscordAction(params: {
     ? cleanRaidManualSelection(params.manual.classKey, params.manual.specKey)
     : null;
   if (params.action !== "skipped") {
-    profile = await getProfileByDiscordUserId(params.userId);
+    profile = await getProfileByDiscordUserIdForInteraction(params.userId);
     profile = await refreshProfileBeforeRaidSignup(profile, {
       raidId: raid.id,
       userId: params.userId,
@@ -5021,7 +5080,7 @@ export async function handleRaidDiscordAction(params: {
     }
     }
   } else {
-    profile = await getProfileByDiscordUserId(params.userId).catch(() => null);
+    profile = await getProfileByDiscordUserIdForInteraction(params.userId).catch(() => null);
   }
 
   const signup = manualSelection
@@ -5050,7 +5109,7 @@ export async function handleRaidDiscordAction(params: {
     };
   let updated: RaidItem;
   try {
-    updated = await recordRaidSignup(raid.id, signup);
+    updated = await recordRaidSignup(raid.id, signup, { interaction: true });
   } catch (error) {
     return {
       ok: false,

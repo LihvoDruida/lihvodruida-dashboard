@@ -26,6 +26,7 @@ import {
   raidAlgorithmDpsRangeType,
 } from "@/lib/raidCompositionAlgorithm";
 import { cleanSnowflake, cleanSnowflakeIds } from "@/lib/values";
+import { resolveDiscordInteractionDocument, type DiscordInteractionMessageRef } from "@/lib/discordInteractionStorage";
 
 /* ==========================================================================
    Система «Формування складу».
@@ -221,6 +222,34 @@ export async function getRosterFormation(rosterId: string): Promise<RosterFormat
     },
     { ttlMs: ROSTER_GET_TTL_MS, fallback: () => null, logEvent: "roster.get_failed" },
   );
+}
+
+async function getRosterFormationForDiscordInteraction(
+  rosterId: string,
+  messageRef?: DiscordInteractionMessageRef | null,
+): Promise<RosterFormation | null> {
+  if (!hasRosterStorage()) return null;
+  const id = String(rosterId || "").trim();
+  if (!id) return null;
+
+  const resolved = await resolveDiscordInteractionDocument({
+    collection: ROSTER_COLLECTION,
+    resourceId: id,
+    messageRef,
+  });
+  if (!resolved) return null;
+  const roster = normalizeRosterFormation(resolved.id, resolved.data);
+  clearRosterCaches(roster.id);
+  if (resolved.recovered) {
+    console.warn("[rosterFormation] Discord interaction resource recovered", {
+      requestedRosterId: id,
+      resolvedRosterId: roster.id,
+      source: resolved.source,
+      channelId: messageRef?.channelId || null,
+      messageId: messageRef?.messageId || null,
+    });
+  }
+  return roster;
 }
 
 function clearRosterCaches(rosterId?: string | null) {
@@ -685,7 +714,7 @@ async function applyPickTransaction(
         return { ...roster, picks, updatedAt };
       });
     },
-    { logEvent: "roster.mutate_failed" },
+    { logEvent: "roster.mutate_failed", bypassCircuit: true },
   );
 
   // Кеш списку і картки складу треба скинути одразу після запису.
@@ -711,6 +740,7 @@ export async function handleRosterFormationDiscordAction(params: {
   values: string[];
   userId: string;
   userName: string;
+  messageRef?: DiscordInteractionMessageRef | null;
 }): Promise<RosterActionResult> {
   const { rosterId, kind, values, userId, userName } = params;
 
@@ -718,15 +748,28 @@ export async function handleRosterFormationDiscordAction(params: {
     return { ok: false, content: "❌ Discord не передав твій ID. Спробуй натиснути кнопку ще раз." };
   }
 
-  const roster = await getRosterFormation(rosterId);
-  if (!roster) return { ok: false, content: "Це формування складу вже недоступне." };
+  let roster: RosterFormation | null = null;
+  try {
+    roster = await getRosterFormationForDiscordInteraction(rosterId, params.messageRef);
+  } catch (error) {
+    console.error("[rosterFormation] authoritative Discord lookup failed", {
+      rosterId,
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      ok: false,
+      content: "⚠️ Сховище складу зараз не відповідає. Дані не видалені — спробуй ще раз за кілька секунд.",
+    };
+  }
+  if (!roster) return { ok: false, content: "❌ Формування складу справді не знайдено. Discord-повідомлення могло залишитися від видаленого формування." };
+  const effectiveRosterId = roster.id;
   if (roster.status === "closed") return { ok: false, content: "🔒 Набір складу вже закрито офіцером." };
 
   if (kind === "pick") {
     return {
       ok: true,
       content: "🧭 Обери свій клас для складу:",
-      components: classSelectComponents(rosterId),
+      components: classSelectComponents(effectiveRosterId),
     };
   }
 
@@ -734,7 +777,7 @@ export async function handleRosterFormationDiscordAction(params: {
     const classKey = values[0];
     const cls = findWowClass(classKey);
     if (!cls) return { ok: false, content: "Невідомий клас. Спробуй ще раз." };
-    const specs = specSelectComponents(rosterId, cls.key);
+    const specs = specSelectComponents(effectiveRosterId, cls.key);
     if (!specs) return { ok: false, content: "Не вдалося показати спеки цього класу." };
     return { ok: true, content: `Клас: **${cls.label}**. Тепер обери спеку:`, components: specs };
   }
@@ -744,7 +787,7 @@ export async function handleRosterFormationDiscordAction(params: {
     if (!resolved) return { ok: false, content: "Невідома спеціалізація. Спробуй ще раз." };
     const now = new Date().toISOString();
 
-    const updated = await applyPickTransaction(rosterId, (current) => {
+    const updated = await applyPickTransaction(effectiveRosterId, (current) => {
       const existing = current.picks.find((pick) => pick.discordUserId === userId);
       const withoutUser = current.picks.filter((pick) => pick.discordUserId !== userId);
       if (!existing && withoutUser.length >= ROSTER_TARGET_SIZE) {
@@ -777,7 +820,7 @@ export async function handleRosterFormationDiscordAction(params: {
 
   // leave
   const before = roster.picks.length;
-  const updated = await applyPickTransaction(rosterId, (current) => ({
+  const updated = await applyPickTransaction(effectiveRosterId, (current) => ({
     picks: current.picks.filter((pick) => pick.discordUserId !== userId),
   }));
   if (updated.picks.length === before) {

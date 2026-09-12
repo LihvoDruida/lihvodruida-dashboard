@@ -104,8 +104,6 @@
   /* ---------- Заголовок сторінки ---------- */
   .hero,
   .dashboard-hero,
-  .admin-hero,
-  .access-groups-hero,
   [class$="-hero"]:not(:where([class*="landing"])),
   [class*="-hero "]:not(:where([class*="landing"])) {
     grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.7fr);

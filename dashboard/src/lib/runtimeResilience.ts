@@ -248,11 +248,13 @@ export async function resilientWrite<T>(
     timeoutMs?: number;
     fallback: () => T | Promise<T>;
     logEvent?: string;
+    /** User-triggered mutations may probe the backend even while a stale circuit is open. */
+    bypassCircuit?: boolean;
   },
 ): Promise<T> {
   const breakerKey = options.circuitKey || "firebase-write";
   const circuit = getRuntimeCircuit(breakerKey);
-  if (circuit) return options.fallback();
+  if (circuit && !options.bypassCircuit) return options.fallback();
   try {
     const operation = writer();
     const result = await (options.timeoutMs ? withTimeout(operation, options.timeoutMs, key) : operation);

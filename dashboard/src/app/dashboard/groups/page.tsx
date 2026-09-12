@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import DashboardIdentity from "@/components/DashboardIdentity";
-import HeroSidePanel from "@/components/HeroSidePanel";
+import AdminPageHeader from "@/components/AdminPageHeader";
 import AccessGroupsManager from "@/components/AccessGroupsManager";
 import AdminTabs from "@/components/AdminTabs";
 import { buildPageMetadata } from "@/lib/seo";
@@ -127,26 +127,17 @@ export default async function AdminGroupsPage() {
     <main className="container app-page admin-container access-groups-container">
       <section className="dashboard-shell content-shell admin-page access-groups-page app-page-stack" aria-label="Керування групами та правами доступу Mistblossom Vanguard">
         <DashboardIdentity user={user} activeSection="admin" />
-        <header className="hero panel admin-hero access-groups-hero">
-          <div className="hero-copy dashboard-hero__copy guild-hero__copy">
-            <span className="eyebrow">Mistblossom Vanguard • Права</span>
-            <h1>Групи та права доступу</h1>
-            <span className="hero-accent" aria-hidden="true" />
-            <p className="lead">Права зберігаються у налаштованій базі даних. Кожна група має одну Discord-роль, ранг і набір дозволів. Env використовується лише для підключень.</p>
-          </div>
-          <HeroSidePanel
-            ariaLabel="Огляд груп доступу"
-            summary={[
-              { label: "ПОТОЧНА ГРУПА", value: user.groupName || user.role, note: user.isServerOwner ? "Власник сервера" : "Активна сесія" },
-              { label: "СХОВИЩЕ", value: "База даних", note: "PostgreSQL / сумісне сховище" },
-            ]}
-            stats={[
-              { label: "ГРУП", value: groups.length.toLocaleString("uk-UA") },
-              { label: "РАНГ ADMIN", value: "1" },
-              { label: "РАНГ USER", value: "99" },
-            ]}
-          />
-        </header>
+        <AdminPageHeader
+          eyebrow="Mistblossom Vanguard • Права"
+          title="Групи та права доступу"
+          description="Єдина модель доступу: Discord-роль, ранг і набір дозволів для кожної групи."
+          metrics={[
+            { label: "Поточна група", value: user.groupName || user.role, note: user.isServerOwner ? "Власник сервера" : "Активна сесія", tone: "good" },
+            { label: "Груп", value: groups.length.toLocaleString("uk-UA") },
+            { label: "Сховище", value: "PostgreSQL", note: "Права з бази даних" },
+            { label: "Діапазон рангів", value: "1–99", note: "1 = найвищий" },
+          ]}
+        />
         <AdminTabs active="groups" user={user} />
         <AccessGroupsManager
           groups={groups}

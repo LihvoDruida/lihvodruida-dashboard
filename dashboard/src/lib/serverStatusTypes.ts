@@ -5,6 +5,26 @@ export type CpuCoreMetric = {
   usagePercent: number | null;
 };
 
+
+export type DockerStorageMetric = {
+  type: string;
+  totalCount: number | null;
+  activeCount: number | null;
+  sizeBytes: number | null;
+  reclaimableBytes: number | null;
+  reclaimablePercent: number | null;
+};
+
+export type DockerStorageSnapshot = {
+  sampledAt: string | null;
+  available: boolean;
+  metrics: DockerStorageMetric[];
+  buildCache: DockerStorageMetric | null;
+  images: DockerStorageMetric | null;
+  containers: DockerStorageMetric | null;
+  volumes: DockerStorageMetric | null;
+};
+
 export type ServerStatusSnapshot = {
   sampledAt: string;
   platform: {
@@ -44,4 +64,5 @@ export type ServerStatusSnapshot = {
     freeBytes: number | null;
     usagePercent: number | null;
   };
+  docker: DockerStorageSnapshot | null;
 };

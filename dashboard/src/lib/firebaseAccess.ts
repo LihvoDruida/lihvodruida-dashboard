@@ -173,10 +173,13 @@ export async function firebaseWrite<T>(
     fallback?: () => T | Promise<T>;
     circuitTtlMs?: number;
     logEvent?: string;
+    /** Retry a real user mutation even if a previous transient failure opened the circuit. */
+    bypassCircuit?: boolean;
   } = {},
 ): Promise<T> {
   const capability = firebaseCapability(area, "write");
-  if (!capability.available) {
+  const mayProbeOpenCircuit = options.bypassCircuit && capability.mode === "circuit-open";
+  if (!capability.available && !mayProbeOpenCircuit) {
     logThrottled(
       "warn",
       "firebase.write.skipped",
@@ -192,6 +195,7 @@ export async function firebaseWrite<T>(
     circuitTtlMs: options.circuitTtlMs || 120_000,
     timeoutMs: options.timeoutMs,
     logEvent: options.logEvent || `firebase.${cleanArea(area)}.write_failed`,
+    bypassCircuit: Boolean(options.bypassCircuit),
     fallback: async () => {
       const reason = firebaseCapability(area, "write").reason;
       logThrottled(

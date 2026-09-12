@@ -1,13 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import type { ServerStatusSnapshot } from "@/lib/serverStatusTypes";
+import type { DockerStorageMetric, ServerStatusSnapshot } from "@/lib/serverStatusTypes";
 
 type HistoryPoint = {
   at: number;
   cpu: number | null;
   memory: number;
+  swap: number | null;
   disk: number | null;
   cores: Array<number | null>;
 };
@@ -20,8 +21,9 @@ type ApiPayload = {
   loginUrl?: string;
 };
 
-const POLL_MS = 2_500;
-const MAX_HISTORY = 72;
+const POLL_MS = 2_000;
+const SLOW_REFRESH_MS = 60_000;
+const MAX_HISTORY = 90;
 
 function formatBytes(bytes: number | null | undefined) {
   if (bytes === null || bytes === undefined || !Number.isFinite(bytes)) return "—";
@@ -32,7 +34,7 @@ function formatBytes(bytes: number | null | undefined) {
     value /= 1024;
     unit += 1;
   }
-  const digits = unit >= 3 ? 1 : unit >= 2 ? 0 : 0;
+  const digits = unit >= 3 ? 1 : 0;
   return `${value.toLocaleString("uk-UA", { maximumFractionDigits: digits })} ${units[unit]}`;
 }
 
@@ -58,11 +60,21 @@ function percentClass(value: number | null | undefined) {
   return "is-good";
 }
 
+function swapPercent(snapshot: ServerStatusSnapshot) {
+  const total = snapshot.memory.swapTotalBytes;
+  const used = snapshot.memory.swapUsedBytes;
+  if (!total || used === null) return null;
+  return Math.max(0, Math.min(100, (used / total) * 100));
+}
+
 function addHistory(history: HistoryPoint[], snapshot: ServerStatusSnapshot) {
+  const at = Date.parse(snapshot.sampledAt) || Date.now();
+  if (history.at(-1)?.at === at) return history;
   const next: HistoryPoint = {
-    at: Date.parse(snapshot.sampledAt) || Date.now(),
+    at,
     cpu: snapshot.cpu.usagePercent,
     memory: snapshot.memory.usagePercent,
+    swap: swapPercent(snapshot),
     disk: snapshot.disk.usagePercent,
     cores: snapshot.cpu.cores.map((core) => core.usagePercent),
   };
@@ -123,25 +135,58 @@ function UsageBar({ value }: { value: number | null | undefined }) {
   );
 }
 
+function DockerMetricCard({ metric, label }: { metric: DockerStorageMetric | null; label: string }) {
+  if (!metric) {
+    return (
+      <article className="server-docker-card is-neutral">
+        <span>{label}</span>
+        <strong>—</strong>
+        <small>Дані ще не зібрані</small>
+      </article>
+    );
+  }
+  const tone = metric.reclaimableBytes && metric.reclaimableBytes >= 2 * 1024 ** 3 ? "is-warning" : "is-good";
+  return (
+    <article className={`server-docker-card ${tone}`}>
+      <span>{label}</span>
+      <strong>{formatBytes(metric.sizeBytes)}</strong>
+      <small>
+        {metric.reclaimableBytes ? `${formatBytes(metric.reclaimableBytes)} можна звільнити` : "reclaimable 0 Б"}
+        {metric.totalCount !== null ? ` · ${metric.totalCount} об.` : ""}
+      </small>
+    </article>
+  );
+}
+
 export default function ServerStatusDashboard({ initialSnapshot }: { initialSnapshot: ServerStatusSnapshot }) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [history, setHistory] = useState<HistoryPoint[]>(() => addHistory([], initialSnapshot));
   const [paused, setPaused] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [manualLoading, setManualLoading] = useState(false);
   const [error, setError] = useState("");
+  const [latencyMs, setLatencyMs] = useState<number | null>(null);
   const inFlight = useRef(false);
+  const lastSlowRefresh = useRef(Date.now());
+  const errorCount = useRef(0);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async ({ manual = false, includeDocker = false }: { manual?: boolean; includeDocker?: boolean } = {}) => {
     if (inFlight.current) return;
     inFlight.current = true;
-    setLoading(true);
+    if (manual) setManualLoading(true);
+    const started = performance.now();
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 4_000);
     try {
-      const response = await fetch("/api/dashboard/server-status", {
+      const requestOptions: RequestInit = {
         method: "GET",
         credentials: "same-origin",
         cache: "no-store",
         headers: { Accept: "application/json" },
-      });
+        signal: controller.signal,
+      };
+      const response = includeDocker
+        ? await fetch("/api/dashboard/server-status", requestOptions)
+        : await fetch("/api/dashboard/server-status?scope=fast", requestOptions);
       const payload = await response.json().catch(() => ({ ok: false })) as ApiPayload;
       if (response.status === 401 && payload.loginUrl) {
         window.location.assign(payload.loginUrl);
@@ -150,27 +195,56 @@ export default function ServerStatusDashboard({ initialSnapshot }: { initialSnap
       if (!response.ok || !payload.ok || !payload.snapshot) {
         throw new Error(payload.message || (response.status === 403 ? "Ця сторінка доступна лише власнику сервера." : "Метрики сервера тимчасово недоступні."));
       }
-      setSnapshot(payload.snapshot);
-      setHistory((current) => addHistory(current, payload.snapshot!));
+      const incoming = payload.snapshot;
+      startTransition(() => {
+        setSnapshot((current) => ({ ...incoming, docker: incoming.docker ?? current.docker }));
+        setHistory((current) => addHistory(current, incoming));
+      });
+      setLatencyMs(Math.round(performance.now() - started));
       setError("");
+      errorCount.current = 0;
+      if (includeDocker) lastSlowRefresh.current = Date.now();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Не вдалося оновити стан сервера.");
+      errorCount.current += 1;
+      setError(reason instanceof Error && reason.name !== "AbortError" ? reason.message : "Сервер не встиг відповісти на запит метрик.");
     } finally {
-      setLoading(false);
+      window.clearTimeout(timeout);
+      if (manual) setManualLoading(false);
       inFlight.current = false;
     }
   }, []);
 
   useEffect(() => {
-    const first = window.setTimeout(() => {
-      if (!paused) void refresh();
-    }, 700);
-    const timer = window.setInterval(() => {
-      if (!paused && document.visibilityState === "visible") void refresh();
-    }, POLL_MS);
+    let cancelled = false;
+    let timer = 0;
+
+    const schedule = (delay: number) => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(tick, delay);
+    };
+
+    const tick = async () => {
+      if (cancelled) return;
+      if (paused || document.visibilityState !== "visible") {
+        schedule(POLL_MS);
+        return;
+      }
+      const includeDocker = Date.now() - lastSlowRefresh.current >= SLOW_REFRESH_MS;
+      await refresh({ includeDocker });
+      const backoff = errorCount.current ? Math.min(12_000, POLL_MS * (errorCount.current + 1)) : POLL_MS;
+      schedule(backoff);
+    };
+
+    const onVisibility = () => {
+      if (!cancelled && !paused && document.visibilityState === "visible") schedule(150);
+    };
+
+    document.addEventListener("visibilitychange", onVisibility);
+    schedule(650);
     return () => {
-      window.clearTimeout(first);
-      window.clearInterval(timer);
+      cancelled = true;
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [paused, refresh]);
 
@@ -180,24 +254,37 @@ export default function ServerStatusDashboard({ initialSnapshot }: { initialSnap
   );
 
   const sampledAt = new Date(snapshot.sampledAt);
-  const swapPercent = snapshot.memory.swapTotalBytes && snapshot.memory.swapUsedBytes !== null
-    ? (snapshot.memory.swapUsedBytes / snapshot.memory.swapTotalBytes) * 100
+  const swapUsage = swapPercent(snapshot);
+  const docker = snapshot.docker;
+  const dockerCache = docker?.buildCache ?? null;
+  const dockerCacheDiskPercent = dockerCache?.sizeBytes && snapshot.disk.totalBytes
+    ? Math.min(100, (dockerCache.sizeBytes / snapshot.disk.totalBytes) * 100)
     : null;
+  const dockerWarning = Boolean(
+    dockerCache?.sizeBytes && dockerCache.sizeBytes >= 8 * 1024 ** 3
+    || dockerCache?.reclaimableBytes && dockerCache.reclaimableBytes >= 3 * 1024 ** 3,
+  );
 
   return (
     <div className="server-status-dashboard">
       <section className="panel server-status-toolbar" aria-label="Керування моніторингом сервера">
-        <div>
-          <span className="eyebrow">Live monitoring</span>
-          <strong>{error ? "Оновлення призупинено помилкою" : paused ? "Автооновлення призупинено" : `Автооновлення кожні ${POLL_MS / 1000} с`}</strong>
-          <small>Останній знімок: {Number.isNaN(sampledAt.getTime()) ? "—" : sampledAt.toLocaleTimeString("uk-UA")}</small>
+        <div className="server-status-toolbar__state">
+          <span className={`server-live-dot ${paused ? "is-paused" : error ? "is-error" : "is-live"}`} aria-hidden="true" />
+          <div>
+            <span className="eyebrow">Live monitoring</span>
+            <strong>{paused ? "Автооновлення призупинено" : error ? "Працюємо з останнім успішним знімком" : `Тихе автооновлення кожні ${POLL_MS / 1000} с`}</strong>
+            <small>
+              Останній знімок: {Number.isNaN(sampledAt.getTime()) ? "—" : sampledAt.toLocaleTimeString("uk-UA")}
+              {latencyMs !== null ? ` · ${latencyMs} мс` : ""}
+            </small>
+          </div>
         </div>
         <div className="server-status-toolbar__actions">
           <button type="button" className="btn secondary" onClick={() => setPaused((value) => !value)}>
             {paused ? "Продовжити" : "Пауза"}
           </button>
-          <button type="button" className="btn primary" onClick={() => void refresh()} disabled={loading}>
-            {loading ? "Оновлення…" : "Оновити зараз"}
+          <button type="button" className="btn primary" onClick={() => void refresh({ manual: true, includeDocker: true })} disabled={manualLoading}>
+            {manualLoading ? "Оновлюю…" : "Оновити все"}
           </button>
         </div>
         {error ? <p className="form-error server-status-error" role="alert">{error}</p> : null}
@@ -216,6 +303,12 @@ export default function ServerStatusDashboard({ initialSnapshot }: { initialSnap
           <UsageBar value={snapshot.memory.usagePercent} />
           <small>{formatBytes(snapshot.memory.usedBytes)} зайнято · {formatBytes(snapshot.memory.availableBytes)} вільно</small>
         </article>
+        <article className={`panel server-summary-card ${percentClass(swapUsage)}`}>
+          <span>Swap</span>
+          <strong>{snapshot.memory.swapTotalBytes ? formatPercent(swapUsage, 1) : "Вимкнено"}</strong>
+          <UsageBar value={swapUsage} />
+          <small>{snapshot.memory.swapTotalBytes ? `${formatBytes(snapshot.memory.swapUsedBytes)} зайнято · ${formatBytes(snapshot.memory.swapFreeBytes)} вільно` : "Для 4 GB VPS рекомендовано 1–2 GB swap"}</small>
+        </article>
         <article className={`panel server-summary-card ${percentClass(snapshot.disk.usagePercent)}`}>
           <span>Диск</span>
           <strong>{formatPercent(snapshot.disk.usagePercent, 1)}</strong>
@@ -232,7 +325,43 @@ export default function ServerStatusDashboard({ initialSnapshot }: { initialSnap
       <section className="server-graphs-grid" aria-label="Графіки використання ресурсів">
         <MetricGraph label="Загальне навантаження CPU" value={formatPercent(snapshot.cpu.usagePercent, 1)} history={history.map((point) => point.cpu)} className={percentClass(snapshot.cpu.usagePercent)} />
         <MetricGraph label="Використання RAM" value={formatPercent(snapshot.memory.usagePercent, 1)} history={history.map((point) => point.memory)} className={percentClass(snapshot.memory.usagePercent)} />
+        <MetricGraph label="Використання Swap" value={snapshot.memory.swapTotalBytes ? formatPercent(swapUsage, 1) : "Вимкнено"} history={history.map((point) => point.swap)} className={percentClass(swapUsage)} />
         <MetricGraph label="Заповнення диска" value={formatPercent(snapshot.disk.usagePercent, 1)} history={history.map((point) => point.disk)} className={percentClass(snapshot.disk.usagePercent)} />
+      </section>
+
+      <section className="panel server-section server-docker-section" aria-labelledby="server-docker-title">
+        <div className="server-section__head">
+          <div>
+            <span className="eyebrow">Docker storage</span>
+            <h2 id="server-docker-title">Docker / BuildKit</h2>
+          </div>
+          <p>{docker?.sampledAt ? `Знімок ${new Date(docker.sampledAt).toLocaleString("uk-UA")}` : "Знімок створюється після deploy / clean-cache"}</p>
+        </div>
+        {docker?.available ? (
+          <>
+            <div className="server-docker-grid">
+              <DockerMetricCard metric={docker.images} label="Images" />
+              <DockerMetricCard metric={docker.containers} label="Containers" />
+              <DockerMetricCard metric={docker.volumes} label="Volumes" />
+              <DockerMetricCard metric={docker.buildCache} label="Build cache" />
+            </div>
+            <div className={`server-cache-health ${dockerWarning ? "is-warning" : "is-good"}`}>
+              <div>
+                <strong>{dockerWarning ? "Build cache потребує уваги" : "Build cache у нормі"}</strong>
+                <small>
+                  {dockerCache ? `${formatBytes(dockerCache.sizeBytes)} загалом · ${formatBytes(dockerCache.reclaimableBytes)} reclaimable` : "Немає даних"}
+                  {dockerCacheDiskPercent !== null ? ` · ${dockerCacheDiskPercent.toFixed(1)}% диска` : ""}
+                </small>
+              </div>
+              <code>make clean-cache</code>
+            </div>
+          </>
+        ) : (
+          <div className="server-docker-empty">
+            <strong>Docker snapshot ще не створений</strong>
+            <p>Після наступного <code>make up</code> або <code>make clean-cache</code> тут зʼявляться Images, Volumes і Build Cache без доступу dashboard до Docker socket.</p>
+          </div>
+        )}
       </section>
 
       <section className="panel server-section" aria-labelledby="server-cpu-cores-title">
@@ -272,7 +401,7 @@ export default function ServerStatusDashboard({ initialSnapshot }: { initialSnap
         </article>
 
         <article className="panel server-detail-card">
-          <div className="server-detail-card__head"><span>Swap</span><strong>{snapshot.memory.swapTotalBytes === null ? "—" : formatPercent(swapPercent, 1)}</strong></div>
+          <div className="server-detail-card__head"><span>Swap</span><strong>{snapshot.memory.swapTotalBytes === null ? "—" : formatPercent(swapUsage, 1)}</strong></div>
           <dl>
             <div><dt>Усього</dt><dd>{formatBytes(snapshot.memory.swapTotalBytes)}</dd></div>
             <div><dt>Зайнято</dt><dd>{formatBytes(snapshot.memory.swapUsedBytes)}</dd></div>
@@ -301,7 +430,7 @@ export default function ServerStatusDashboard({ initialSnapshot }: { initialSnap
       </section>
 
       <p className="server-status-note">
-        Графіки зберігають тільки коротку історію поточної вкладки браузера й не записуються в базу даних. Якщо dashboard працює в Docker, системні значення читаються з середовища контейнера та доступного йому файлового сховища.
+        Швидкі метрики оновлюються окремим легким запитом і не пишуться в PostgreSQL. Docker/BuildKit читається з безпечного host-snapshot файлу, тому dashboard не отримує доступу до Docker socket. Старий невикористаний build cache автоматично обмежується після deploy.
       </p>
     </div>
   );

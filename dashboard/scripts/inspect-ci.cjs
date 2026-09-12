@@ -206,6 +206,38 @@ if (exists('src/app/theme.css')) {
 }
 
 
+
+// Discord buttons are mutations and must not interpret a stale/null page cache as
+// "resource deleted". Keep their backing reads authoritative and preserve the
+// public Discord message reference so already-published messages can self-heal
+// after resource recreation or the Firestore -> PostgreSQL migration.
+if (exists('src/app/api/discord/interactions/route.ts')) {
+  const interactionsText = read('src/app/api/discord/interactions/route.ts');
+  assert(/handleRosterFormationDiscordAction\([\s\S]{0,500}messageRef:\s*getInteractionMessageRef\(interaction\)/.test(interactionsText), 'Roster Discord interactions must pass the public messageRef to authoritative storage lookup.');
+  assert(/handleRaidPollDiscordVote\([\s\S]{0,500}messageRef/.test(interactionsText), 'Raid-poll Discord interactions must pass messageRef to authoritative storage lookup.');
+  assert(/handleRaidDiscordAction\([\s\S]{0,500}messageRef:\s*getInteractionMessageRef\(interaction\)/.test(interactionsText), 'Raid Discord interactions must pass messageRef to authoritative storage lookup.');
+  assert(interactionsText.includes('getProfileByDiscordUserIdForInteraction'), 'Discord rules/raid signup must use authoritative profile lookup rather than the page cache.');
+}
+if (exists('src/lib/discordInteractionStorage.ts')) {
+  const discordStorageText = read('src/lib/discordInteractionStorage.ts');
+  assert(discordStorageText.includes('resolveDiscordInteractionDocument'), 'Missing authoritative Discord resource resolver.');
+  assert(discordStorageText.includes('legacy-message') && discordStorageText.includes('backfillLegacyDocument'), 'Discord resource resolver must retain legacy Firestore read-through/backfill support.');
+  assert(discordStorageText.includes('resolveDiscordInteractionProfileDocument'), 'Discord interaction profile lookup must bypass the shared page-read circuit.');
+}
+if (exists('src/lib/raids.ts')) {
+  const raidsText = read('src/lib/raids.ts');
+  assert(raidsText.includes('getRaidForDiscordInteraction'), 'Raid Discord actions must resolve the raid authoritatively.');
+  assert(/recordRaidSignup\(raid\.id, signup, \{ interaction: true \}\)/.test(raidsText), 'Discord raid signup writes must be allowed to probe past a stale write circuit.');
+}
+if (exists('src/lib/raidPolls.ts')) {
+  const pollsText = read('src/lib/raidPolls.ts');
+  assert(/raid_polls\.vote_failed", bypassCircuit: true/.test(pollsText), 'Discord raid-poll mutations must probe past a stale write circuit.');
+}
+if (exists('src/lib/rosterFormation.ts')) {
+  const rosterFormationText = read('src/lib/rosterFormation.ts');
+  assert(/roster\.mutate_failed", bypassCircuit: true/.test(rosterFormationText), 'Discord roster mutations must probe past a stale write circuit.');
+}
+
 assert(exists('tsconfig.typecheck.json'), 'Missing tsconfig.typecheck.json. Typecheck must avoid generated/cache directories.');
 if (exists('tsconfig.typecheck.json')) {
   const typecheckConfig = read('tsconfig.typecheck.json');

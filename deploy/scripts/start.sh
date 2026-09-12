@@ -306,6 +306,21 @@ if [ "$BUILD" -eq 1 ]; then
   BUILD_STARTED=$SECONDS
   $COMPOSE build dashboard bot
   ok "образи готові за $((SECONDS - BUILD_STARTED)) с"
+
+  # На 40 GB VPS BuildKit може за кілька деплоїв вирости до 10–15+ GB.
+  # Після успішної збірки обмежуємо тільки НЕВИКОРИСТОВУВАНИЙ cache; volumes
+  # і робочі образи не чіпаємо. Dashboard не отримує Docker socket — для UI
+  # нижче створюється лише read-only snapshot `docker system df`.
+  if [ "${AUTO_PRUNE_BUILD_CACHE:-1}" != "0" ]; then
+    step "Обмежую BuildKit cache (${BUILD_CACHE_KEEP_STORAGE:-6GB})"
+    BUILD_CACHE_KEEP_STORAGE="${BUILD_CACHE_KEEP_STORAGE:-6GB}" \
+      BUILD_CACHE_MAX_AGE="${BUILD_CACHE_MAX_AGE:-168h}" \
+      "$PWD/deploy/scripts/docker-cache-maintenance.sh" || warn "cache maintenance не виконано"
+  else
+    "$PWD/deploy/scripts/docker-stats-snapshot.sh" || true
+  fi
+else
+  "$PWD/deploy/scripts/docker-stats-snapshot.sh" || true
 fi
 
 UP_ARGS="-d --remove-orphans --no-build --no-deps"
@@ -393,6 +408,10 @@ else
   warn "https://$DOMAIN/api/health недоступний ззовні"
   warn "перевірте DNS, режим проксі Cloudflare і сертифікат — docs/DEPLOYMENT.md, розділ 4"
 fi
+
+# Оновлюємо snapshot уже після підняття всіх контейнерів, щоб Active/Images
+# на сторінці власника відповідали фактичному поточному стеку.
+"$PWD/deploy/scripts/docker-stats-snapshot.sh" || true
 
 printf '\n'
 $COMPOSE ps

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import AdminTabs from "@/components/AdminTabs";
 import DashboardIdentity from "@/components/DashboardIdentity";
-import HeroSidePanel from "@/components/HeroSidePanel";
+import AdminPageHeader from "@/components/AdminPageHeader";
 import { getSession } from "@/lib/auth";
 import { safeRecruitmentGatewayStatus } from "@/lib/discordRecruitmentGatewayControl";
 import { getRecruitmentAdvisorSettings } from "@/lib/discordRecruitmentAdvisorSettings";
@@ -140,44 +140,17 @@ export default async function DiscordRecruitmentPage() {
         aria-label="Discord-автовідповіді"
       >
         <DashboardIdentity user={user} activeSection="admin" />
-        <header className="hero panel admin-hero discord-admin-hero">
-          <div className="hero-copy dashboard-hero__copy guild-hero__copy">
-            <span className="eyebrow">Mistblossom Vanguard • Discord</span>
-            <h1>Автовідповіді новачкам</h1>
-            <span className="hero-accent" aria-hidden="true" />
-            <p className="lead">
-              Gateway слухає нові повідомлення миттєво, а ручна перевірка
-              проходить старі повідомлення за вибраний період без повторних
-              відповідей на вже оброблені.
-            </p>
-          </div>
-          <HeroSidePanel
-            ariaLabel="Стан автовідповідей"
-            summary={[
-              {
-                label: "СИСТЕМА",
-                value: settings.enabled ? "Увімкнено" : "Вимкнено",
-                note: settings.dryRun ? "Dry-run активний" : "Бойовий режим",
-              },
-              {
-                label: "GATEWAY",
-                value: gateway.connected ? "Підключений" : "Відключений",
-                note:
-                  gateway.lastError ||
-                  gateway.error ||
-                  "Mistblossom bot",
-              },
-            ]}
-            stats={[
-              { label: "ГОД.", value: String(settings.lookbackHours) },
-              { label: "ВІДП.", value: String(settings.manualScanLimit) },
-              {
-                label: "RIO",
-                value: settings.minRio ? String(settings.minRio) : "AUTO",
-              },
-            ]}
-          />
-        </header>
+        <AdminPageHeader
+          eyebrow="Mistblossom Vanguard • Discord"
+          title="Автовідповіді новачкам"
+          description="Gateway обробляє нові повідомлення миттєво, а ручний скан безпечно доглядає старі без повторних відповідей."
+          metrics={[
+            { label: "Система", value: settings.enabled ? "Увімкнено" : "Вимкнено", note: settings.dryRun ? "Dry-run" : "Бойовий режим", tone: settings.enabled ? "good" : "warning" },
+            { label: "Gateway", value: gateway.connected ? "Підключений" : "Відключений", note: gateway.lastError || gateway.error || "Mistblossom bot", tone: gateway.connected ? "good" : "danger" },
+            { label: "Період", value: `${settings.lookbackHours} год` },
+            { label: "Ліміт", value: String(settings.manualScanLimit), note: "повідомлень за скан" },
+          ]}
+        />
 
         <AdminTabs active="recruitment" user={user} />
 

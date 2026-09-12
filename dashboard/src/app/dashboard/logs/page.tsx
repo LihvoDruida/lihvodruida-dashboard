@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import DashboardIdentity from "@/components/DashboardIdentity";
-import HeroSidePanel from "@/components/HeroSidePanel";
+import AdminPageHeader from "@/components/AdminPageHeader";
 import AdminTabs from "@/components/AdminTabs";
 import { buildPageMetadata } from "@/lib/seo";
 import { getSession } from "@/lib/auth";
@@ -102,30 +102,18 @@ export default async function AdminLogsPage({
     <main className="container app-page admin-container">
       <section className="dashboard-shell content-shell admin-page admin-logs-page app-page-stack" aria-label="Журнал адміністративних дій">
         <DashboardIdentity user={user} activeSection="admin" />
-        <header className="hero panel admin-hero admin-logs-hero">
-          <div className="hero-copy dashboard-hero__copy guild-hero__copy">
-            <span className="eyebrow">Mistblossom Vanguard • Журнал</span>
-            <h1>Журнал дій</h1>
-            <span className="hero-accent" aria-hidden="true" />
-            <p className="lead">Останні адміністративні дії читаються з Discord-каналу журналу. Firebase більше не використовується для зберігання журналу.</p>
-          </div>
-          <HeroSidePanel
-            ariaLabel="Огляд журналу дій"
-            summary={[
-              { label: "ЗАПИСИ", value: logs.length.toLocaleString("uk-UA"), note: `Discord + поточна памʼять, до ${limit}` },
-              { label: "СТАН", value: failed ? "Є помилки" : warnings ? "Є попередження" : "Чисто", note: "Адміністративні операції" },
-              { label: "ДЖЕРЕЛО", value: discordPolicy.enabled ? "Discord" : "Локально", note: discordPolicy.channelId ? `Канал ${discordPolicy.channelId}` : "Канал не задано" },
-            ]}
-            stats={[
-              { label: "WARNING", value: warnings.toLocaleString("uk-UA") },
-              { label: "ERROR", value: failed.toLocaleString("uk-UA") },
-              { label: "LIMIT", value: limit.toLocaleString("uk-UA") },
-              { label: "CACHE", value: `${Math.round(auditSettings.readCacheTtlMs / 1000)}с` },
-              { label: "DEDUPE", value: `${Math.round(auditSettings.dedupeWindowMs / 1000)}с` },
-              { label: "MIRROR", value: discordPolicy.minStatus.toUpperCase() },
-            ]}
-          />
-        </header>
+        <AdminPageHeader
+          eyebrow="Mistblossom Vanguard • Журнал"
+          title="Журнал дій"
+          description="Адміністративні події, помилки й попередження в одному потоці з Discord-дзеркалом і локальним кешем читання."
+          metrics={[
+            { label: "Записів", value: logs.length.toLocaleString("uk-UA"), note: `до ${limit}` },
+            { label: "Помилок", value: failed.toLocaleString("uk-UA"), tone: failed ? "danger" : "good" },
+            { label: "Попереджень", value: warnings.toLocaleString("uk-UA"), tone: warnings ? "warning" : "good" },
+            { label: "Джерело", value: discordPolicy.enabled ? "Discord" : "Локально", note: discordPolicy.channelId ? `Канал ${discordPolicy.channelId}` : "Канал не задано" },
+            { label: "Read cache", value: `${Math.round(auditSettings.readCacheTtlMs / 1000)}с` },
+          ]}
+        />
 
         <AdminTabs active="logs" user={user} />
 

@@ -173,9 +173,7 @@ main .dashboard-shell {
 
 .dashboard-hero,
 
-.admin-hero,
 
-.access-groups-hero,
 
 [class$="-hero"]:not(:where([class*="landing"])),
 
@@ -197,7 +195,6 @@ main .dashboard-shell {
 
 .dashboard-hero::before,
 
-.admin-hero::before,
 
 [class$="-hero"]:not(:where([class*="landing"]))::before,
 
@@ -218,9 +215,7 @@ main .dashboard-shell {
 
 .hero > *,
 
-.dashboard-hero > *,
-
-.admin-hero > *{
+.dashboard-hero > * {
   position: relative;
   z-index: 1;
   min-width: 0;
@@ -290,7 +285,6 @@ main .dashboard-shell {
 
 .dashboard-hero,
 
-.admin-hero,
 
 [class$="-hero"]:not(:where([class*="landing"])),
 

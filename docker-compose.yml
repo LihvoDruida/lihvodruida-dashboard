@@ -91,6 +91,7 @@ services:
       PORT: "3000"
       HOSTNAME: "0.0.0.0"
       TZ: Europe/Kyiv
+      SERVER_DOCKER_STATS_FILE: /runtime/server-stats/docker-system-df.jsonl
     depends_on:
       postgres:
         condition: service_healthy
@@ -100,6 +101,10 @@ services:
       - edge
       - data
     # Панель нічого не пише на диск: стан у PostgreSQL, кеш у памʼяті.
+    # Єдиний host-файл нижче — read-only snapshot `docker system df`; Docker
+    # socket навмисно НЕ монтується в dashboard.
+    volumes:
+      - ./runtime/server-stats:/runtime/server-stats:ro
     read_only: true
     tmpfs:
       - /tmp

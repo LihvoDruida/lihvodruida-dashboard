@@ -41,7 +41,7 @@ export function documentStoreMode(): "postgres" | "firestore" | "unconfigured" {
   return hasFirebaseCredentials() ? "firestore" : "unconfigured";
 }
 
-function getFirestoreDb() {
+export function getLegacyFirestoreAdminDb() {
   // Динамічний require: коли працюємо на PostgreSQL, firebase-admin взагалі
   // не має завантажуватись — це десятки мегабайт залежностей на холодний старт.
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -62,6 +62,6 @@ function getFirestoreDb() {
 
 export function getFirebaseAdminDb() {
   if (hasPostgresConfig()) return getPgDocumentStore();
-  if (hasFirebaseCredentials()) return getFirestoreDb() as unknown as ReturnType<typeof getPgDocumentStore>;
+  if (hasFirebaseCredentials()) return getLegacyFirestoreAdminDb() as unknown as ReturnType<typeof getPgDocumentStore>;
   throw new Error("Сховище не налаштоване: задайте DATABASE_URL (PostgreSQL) або ключі Firebase.");
 }

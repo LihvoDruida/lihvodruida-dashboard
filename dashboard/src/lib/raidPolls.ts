@@ -89,6 +89,7 @@ import {
   type RaidPollVoteResult,
 } from "@/lib/raidPollShared";
 import { cleanSnowflake, cleanSnowflakeIds, envFlag, timestampToIso, timezoneOffsetMs, dashboardPublicOrigin } from "@/lib/values";
+import { resolveDiscordInteractionDocument } from "@/lib/discordInteractionStorage";
 
 const RAID_POLL_COLLECTION = "dashboardRaidPolls";
 const RAID_POLL_ACTION_PREFIX = "mbv1:poll";
@@ -2479,26 +2480,55 @@ export async function handleRaidPollDiscordVote(params: {
   messageRef?: DiscordMessageRef | null;
 }): Promise<RaidPollVoteResult> {
   if (!hasRaidPollStorage()) {
-    return { ok: false, content: "❌ Голосування тимчасово недоступне: Firebase не налаштований." };
+    return { ok: false, content: "❌ Голосування тимчасово недоступне: сховище даних не налаштоване." };
   }
 
   const userId = cleanSnowflake(params.userId);
   if (!userId) return { ok: false, content: "❌ Не вдалося визначити Discord ID користувача." };
+
+  let resolvedDocument: Awaited<ReturnType<typeof resolveDiscordInteractionDocument>> = null;
+  try {
+    resolvedDocument = await resolveDiscordInteractionDocument({
+      collection: RAID_POLL_COLLECTION,
+      resourceId: params.pollId,
+      messageRef: params.messageRef,
+    });
+  } catch (error) {
+    console.error("[raidPolls] authoritative Discord lookup failed", {
+      pollId: params.pollId,
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      ok: false,
+      content: "⚠️ Сховище рейд-пулів зараз не відповідає. Дані не видалені — спробуй ще раз за кілька секунд.",
+    };
+  }
+  if (!resolvedDocument) {
+    return { ok: false, content: "❌ Рейд-пул справді не знайдено. Discord-повідомлення могло залишитися від видаленого пулу." };
+  }
+  const effectivePollId = resolvedDocument.id;
+  if (resolvedDocument.recovered) {
+    console.warn("[raidPolls] Discord interaction resource recovered", {
+      requestedPollId: params.pollId,
+      resolvedPollId: effectivePollId,
+      source: resolvedDocument.source,
+      channelId: params.messageRef?.channelId || null,
+      messageId: params.messageRef?.messageId || null,
+    });
+  }
 
   const nowIso = new Date().toISOString();
   const isPrompt = params.kind === "vote_prompt" || params.kind === "character_prompt";
   let changedPoll: RaidPollItem | null = null;
 
   if (isPrompt || params.kind === "schedule_page") {
-    const snap = await pollRef(params.pollId).get();
-    if (!snap.exists) return { ok: false, content: "❌ Рейд-пул не знайдено або його було видалено." };
-    const poll = normalizeRaidPoll(snap.id, snap.data() || {});
+    const poll = normalizeRaidPoll(resolvedDocument.id, resolvedDocument.data);
     const existingVote = poll.votes.find((vote) => vote.discordId === userId) || null;
     const fallback = existingVote
       ? draftFromExistingVote(existingVote, nowIso)
       : baseDraftForUser({ ...params, userId }, nowIso);
     const draft = {
-      ...voteDraftFromPollData(snap.data() || {}, userId, fallback),
+      ...voteDraftFromPollData(resolvedDocument.data, userId, fallback),
       // Нік міг змінитись на сервері після попереднього голосу — беремо свіжий.
       discordName: cleanString(params.userName, 100) || fallback.discordName,
     };
@@ -2517,8 +2547,8 @@ export async function handleRaidPollDiscordVote(params: {
     };
   }
 
-  const result = await firebaseWrite<RaidPollVoteResult>("raid", `raid-poll:vote:${params.pollId}:${userId}:${params.kind}`, async () => {
-    const ref = pollRef(params.pollId);
+  const result = await firebaseWrite<RaidPollVoteResult>("raid", `raid-poll:vote:${effectivePollId}:${userId}:${params.kind}`, async () => {
+    const ref = pollRef(effectivePollId);
     return getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
       const snap = await tx.get(ref);
       if (!snap.exists) return { ok: false, content: "❌ Рейд-пул не знайдено або його було видалено." };
@@ -2665,7 +2695,7 @@ export async function handleRaidPollDiscordVote(params: {
         components: buildRaidPollSubmittedComponents(changedPoll),
       };
     });
-  }, { logEvent: "raid_polls.vote_failed" });
+  }, { logEvent: "raid_polls.vote_failed", bypassCircuit: true });
 
   if (result.poll) {
     clearRaidPollRuntimeCaches(result.poll.id);

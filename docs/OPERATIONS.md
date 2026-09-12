@@ -241,3 +241,27 @@ docker compose logs postgres | tail -50
 
 Перевірка відновлення — не формальність. Неперевірений бекап це не бекап: про
 те, що дампи псуються, дізнаються рівно в той момент, коли вони потрібні.
+
+## Discord-кнопки: діагностика backing data
+
+Якщо Discord приймає натискання, але відповідає, що рейд / пул / склад не
+знайдено, не перевидавайте повідомлення навмання. Спочатку запустіть:
+
+```bash
+make discord-check
+```
+
+Команда нічого не змінює. Вона показує стан `postgres`, `dashboard`, `bot`,
+кількість документів `dashboardRaids`, `dashboardRaidPolls`,
+`dashboardRosterFormations`, `dashboardProfiles`, скільки з них привʼязані до
+Discord `channelId/messageId`, наявність (але не значення) legacy Firestore
+credentials і останні interaction/storage логи.
+
+Discord interaction path читає backing resource напряму, без page-cache і
+спільного read circuit-breaker. Для старого опублікованого повідомлення lookup
+має чотири шанси: поточний ID у PostgreSQL, `channelId + messageId` у
+PostgreSQL, ID у legacy Firestore, `channelId + messageId` у legacy Firestore.
+Знайдений legacy документ автоматично backfill-иться в PostgreSQL. Якщо
+документа немає ані в PostgreSQL, ані у доступному legacy Firestore, відновити
+повний бізнес-стан лише з Discord embed неможливо — потрібна резервна копія або
+повторне створення ресурсу.
