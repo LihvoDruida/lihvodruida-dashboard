@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     "INTERNAL_PROFILE_LOOKUP_TOKEN",
   ], { minLength: 24 });
   if (!token.ok) {
-    logDashboardEvent("warn", "raids.lifecycle.forbidden", request, { reason: token.reason, envName: token.envName || null });
+    logDashboardEvent("warn", "raids.lifecycle.forbidden", request, { reason: token.reason, envName: token.envName || null, statusCode: 401 });
     return unauthorizedResponse();
   }
 

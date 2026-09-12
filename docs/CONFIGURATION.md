@@ -26,7 +26,7 @@
 | `POSTGRES_PASSWORD` | так | пароль бази. Генеруйте: `openssl rand -base64 32` |
 | `DISCORD_PUBLIC_KEY` | так | публічний ключ застосунку Discord для перевірки підпису |
 | `INTERNAL_API_TOKEN` | так | спільний секрет бот ↔ панель |
-| `CRON_SECRET` | так | токен для планових задач |
+| `INTERNAL_API_TOKEN` | так | єдиний токен bot/cron/dashboard для внутрішніх API |
 | `LETSENCRYPT_EMAIL` | так | адреса для сповіщень про закінчення сертифіката |
 | `IMAGE_TAG` | ні | тег образів, типово `latest` |
 | `BOT_LOG_LEVEL` | ні | `info` / `debug` |
@@ -77,7 +77,7 @@
 | `BOT_INTERNAL_URL` | ні | типово `http://bot:8080` |
 | `INTERNAL_API_TOKEN` | так | має збігатися з `bot/.env.production` |
 | `INTERNAL_PROFILE_LOOKUP_TOKEN` | так | бот шукає профіль за Discord ID |
-| `CRON_SECRET` | так | контейнер `cron` стукає в ендпоїнти панелі |
+| `INTERNAL_API_TOKEN` | так | канонічний токен: контейнер `cron` отримує його як `INTERNAL_CRON_TOKEN` |
 
 ### Зовнішні API
 
@@ -147,7 +147,7 @@ docker compose exec bot       env | grep -E 'DISCORD_PUBLIC_KEY|INTERNAL_API_TOK
 
 ```bash
 openssl rand -base64 32   # SESSION_SECRET, POSTGRES_PASSWORD
-openssl rand -hex 32      # INTERNAL_API_TOKEN, CRON_SECRET
+openssl rand -hex 32      # INTERNAL_API_TOKEN
 ```
 
 `DISCORD_PUBLIC_KEY` не генерується — він береться в Discord Developer Portal,

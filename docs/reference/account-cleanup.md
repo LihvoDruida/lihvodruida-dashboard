@@ -22,17 +22,17 @@
 
 ```sh
 POST /api/dashboard/profiles/orphan-cleanup/apply
-Authorization: Bearer $CRON_SECRET
+Authorization: Bearer $INTERNAL_API_TOKEN
 ```
 
-Розклад описаний у `deploy/cron/run-cron.sh`. Для роботи потрібен `CRON_SECRET`
+Розклад описаний у `deploy/cron/run-cron.sh`. Для роботи self-hosted cron використовує канонічний `INTERNAL_API_TOKEN`
 або `ACCOUNT_CLEANUP_SECRET` у `dashboard/.env.production`.
 
 ## Internal cron endpoint
 
 ```http
 GET /api/dashboard/profiles/orphan-cleanup/apply?force=1
-Authorization: Bearer <CRON_SECRET або ACCOUNT_CLEANUP_SECRET>
+Authorization: Bearer <INTERNAL_API_TOKEN або ACCOUNT_CLEANUP_SECRET>
 ```
 
 Для ручної перевірки без видалення використовується `GET /api/dashboard/profiles/orphan-cleanup` — він працює як dry-run, якщо не задано `ACCOUNT_CLEANUP_AUTO_APPLY=1`.

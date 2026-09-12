@@ -20,9 +20,9 @@
 set -eu
 
 BASE="${DASHBOARD_INTERNAL_URL:-http://dashboard:3000}"
-# Той самий CRON_SECRET, який перевіряє verifyInternalBearerToken
-# у /api/raids/lifecycle і /api/polls/close-due.
-TOKEN="${INTERNAL_CRON_TOKEN:?INTERNAL_CRON_TOKEN не заданий (це значення CRON_SECRET)}"
+# Єдиний service-to-service токен. Compose передає сюди кореневий
+# INTERNAL_API_TOKEN, який dashboard приймає на всіх internal routes.
+TOKEN="${INTERNAL_CRON_TOKEN:?INTERNAL_CRON_TOKEN не заданий (очікується INTERNAL_API_TOKEN)}"
 
 log() {
   echo "[cron $(date -u '+%Y-%m-%dT%H:%M:%SZ')] $*"

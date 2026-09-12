@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   ], { minLength: 24 });
 
   if (!token.ok) {
-    logDashboardEvent("warn", "discord.recruitment_advice.forbidden", request, { reason: token.reason, envName: token.envName || null });
+    logDashboardEvent("warn", "discord.recruitment_advice.forbidden", request, { reason: token.reason, envName: token.envName || null, statusCode: 401 });
     return unauthorizedResponse();
   }
 

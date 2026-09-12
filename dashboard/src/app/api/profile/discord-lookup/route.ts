@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 
   const auth = await verifyInternalBearerToken(request, INTERNAL_LOOKUP_TOKENS, { minLength: 24 });
   if (!auth.ok) {
-    logDashboardEvent("warn", "profile.discord_lookup.forbidden", request, { reason: auth.reason });
+    logDashboardEvent("warn", "profile.discord_lookup.forbidden", request, { reason: auth.reason, statusCode: 403 });
     return NextResponse.json({ found: false, error: "Forbidden", reason: "forbidden" }, { status: 403, headers: noStoreHeaders() });
   }
 

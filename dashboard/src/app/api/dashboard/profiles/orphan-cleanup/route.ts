@@ -70,7 +70,7 @@ function limitFromRequest(request: NextRequest) {
 async function run(request: NextRequest) {
   const auth = await verifyInternalBearerToken(request, ACCOUNT_CLEANUP_TOKENS, { minLength: 24 });
   if (!auth.ok) {
-    logDashboardEvent("warn", "profiles.orphan_cleanup.forbidden", request, { reason: auth.reason, envName: auth.envName || null });
+    logDashboardEvent("warn", "profiles.orphan_cleanup.forbidden", request, { reason: auth.reason, envName: auth.envName || null, statusCode: 401 });
     return unauthorizedResponse("Forbidden");
   }
 

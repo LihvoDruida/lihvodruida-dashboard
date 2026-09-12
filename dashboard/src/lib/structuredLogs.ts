@@ -50,6 +50,10 @@ function cleanText(value: unknown, max = 500) {
 }
 
 function cleanInt(value: unknown, min = 0, max = Number.MAX_SAFE_INTEGER) {
+  // Number(null) and Number("") are 0. The old implementation then clamped
+  // a missing HTTP status to 100 and a missing duration to 0 ms, which made
+  // the log explorer show fabricated telemetry. Missing values must stay null.
+  if (value === null || value === undefined || value === "") return null;
   const n = Number(value);
   return Number.isFinite(n) ? Math.max(min, Math.min(max, Math.floor(n))) : null;
 }

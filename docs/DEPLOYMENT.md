@@ -129,7 +129,7 @@ DASHBOARD_PUBLIC_URL=https://guild.lihvodruida.pp.ua
 POSTGRES_PASSWORD=<openssl rand -base64 32>
 DISCORD_PUBLIC_KEY=<Public Key з Discord Developer Portal>
 INTERNAL_API_TOKEN=<openssl rand -hex 32>
-CRON_SECRET=<той самий CRON_SECRET, що в dashboard/.env.production>
+INTERNAL_API_TOKEN=<той самий INTERNAL_API_TOKEN, що в dashboard/.env.production і bot/.env.production>
 IMAGE_TAG=latest
 ENV
 chmod 600 .env
@@ -495,7 +495,7 @@ journalctl -u mistblossom -f          логи запуску
 ## 7. Планові задачі
 
 Раніше це були Vercel Cron Jobs. Тепер — контейнер `cron`, який стукає у ті
-самі HTTP-ендпоїнти внутрішньою мережею з `Authorization: Bearer $CRON_SECRET`.
+самі HTTP-ендпоїнти внутрішньою мережею з `Authorization: Bearer $INTERNAL_API_TOKEN`.
 
 | Розклад | Ендпоїнт | Навіщо |
 |---------|----------|--------|
@@ -515,11 +515,11 @@ docker compose logs -f cron
 docker compose exec dashboard node -e "
   fetch('http://127.0.0.1:3000/api/polls/close-due', {
     method: 'POST',
-    headers: { authorization: 'Bearer ' + process.env.CRON_SECRET }
+    headers: { authorization: 'Bearer ' + process.env.INTERNAL_API_TOKEN }
   }).then(r => r.text()).then(console.log)"
 ```
 
-`CRON_SECRET` має бути **не коротшим за 24 символи** — `verifyInternalBearerToken`
+`INTERNAL_API_TOKEN` має бути **не коротшим за 24 символи** — `verifyInternalBearerToken`
 відхиляє короткі токени.
 
 ---
@@ -651,3 +651,17 @@ deploy/systemd/mistblossom-certbot.{service,timer}   поновлення сер
 
 Далі — [OPERATIONS.md](./OPERATIONS.md): щоденний контроль, оновлення й розбір
 інцидентів.
+
+
+### Єдиний внутрішній токен
+
+Для self-hosted Docker-стеку `INTERNAL_API_TOKEN` у кореневому `.env` є
+канонічним service-to-service секретом. Compose передає саме його у dashboard,
+bot і cron. Значення `INTERNAL_API_TOKEN` у `dashboard/.env.production` та
+`bot/.env.production` також мають збігатися — `make up` перевіряє це до
+дорогої Docker-збірки. Окремий `CRON_SECRET` більше не потрібен для cron-контейнера.
+
+Після запуску `make up` перевіряє Discord Interactions Endpoint і, якщо він
+усе ще вказує на старий Vercel/Worker, автоматично намагається переключити його
+на `${DASHBOARD_PUBLIC_URL}/discord/interactions`. Автовиправлення можна вимкнути
+через `AUTO_FIX_DISCORD_INTERACTIONS_ENDPOINT=0` у кореневому `.env`.

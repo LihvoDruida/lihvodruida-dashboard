@@ -192,6 +192,7 @@ export function requestContext(request: Request | NextRequest) {
   }
 
   return {
+    requestId: request.headers.get("x-mistblossom-request-id") || null,
     method: String(request.method || "GET").toUpperCase(),
     path,
     host: getRequestHost(request),
@@ -223,11 +224,18 @@ export function logDashboardEvent(
     return;
   }
 
+  const ctx = request ? requestContext(request) : null;
+  const generatedRequestId = typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : undefined;
+  const requestId = typeof ctx?.requestId === "string" && ctx.requestId
+    ? ctx.requestId
+    : generatedRequestId;
   const payload = redactLogValue({
     event,
-    requestId: typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : undefined,
     time: new Date().toISOString(),
-    ...(request ? requestContext(request) : {}),
+    ...(ctx || {}),
+    requestId,
     ...details,
   }) as Record<string, unknown>;
 
@@ -245,7 +253,12 @@ export function logDashboardEvent(
   // dynamic import also keeps the PostgreSQL logger out of code paths that only
   // need the lightweight security helpers during request proxying.
   if (options.persist !== false && (level !== "debug" || envFlag("DASHBOARD_DEBUG_LOGS") || envFlag("SECURITY_DEBUG_LOGS"))) {
-    const ctx = request ? requestContext(request) : null;
+    const requestStartedAt = request
+      ? Number(request.headers.get("x-mistblossom-request-started-at") || NaN)
+      : NaN;
+    const measuredDurationMs = Number.isFinite(requestStartedAt)
+      ? Math.max(0, Date.now() - requestStartedAt)
+      : null;
     void import("@/lib/structuredLogs")
       .then(({ inferStructuredLogCategory, recordStructuredLog }) => recordStructuredLog({
         level: level === "warn" ? "warning" : level,
@@ -255,12 +268,14 @@ export function logDashboardEvent(
         source: "dashboard",
         event,
         message: typeof details.message === "string" ? details.message : null,
-        requestId: typeof payload.requestId === "string" ? payload.requestId : null,
+        requestId: typeof ctx?.requestId === "string" && ctx.requestId
+          ? ctx.requestId
+          : typeof payload.requestId === "string" ? payload.requestId : null,
         method: ctx?.method || null,
         path: ctx?.path || null,
         ip: ctx?.ip || null,
         statusCode: typeof details.statusCode === "number" ? details.statusCode : null,
-        durationMs: typeof details.durationMs === "number" ? details.durationMs : null,
+        durationMs: typeof details.durationMs === "number" ? details.durationMs : measuredDurationMs,
         resourceType: typeof details.resourceType === "string" ? details.resourceType : null,
         resourceId: typeof details.resourceId === "string" ? details.resourceId : null,
         details,
@@ -306,7 +321,7 @@ export function assertRequestBodySize(request: Request | NextRequest, maxBytes =
 
   const size = Number(raw);
   if (Number.isFinite(size) && size > maxBytes) {
-    logDashboardEvent("warn", "request_body_too_large", request, { size, maxBytes });
+    logDashboardEvent("warn", "request_body_too_large", request, { size, maxBytes, statusCode: 413 });
 
     return NextResponse.json(
       { error: "Запит завеликий." },
@@ -351,7 +366,7 @@ export function verifyTrustedOrigin(request: Request | NextRequest) {
 
   const host = getRequestHost(request);
   const reject = (reason: string, details: Record<string, unknown> = {}) => {
-    logDashboardEvent("warn", "trusted_origin_rejected", request, { reason, ...details });
+    logDashboardEvent("warn", "trusted_origin_rejected", request, { reason, statusCode: 403, ...details });
     return false;
   };
 

@@ -93,8 +93,8 @@ export function recruitmentGatewayControlEndpoint() {
 
 export function recruitmentGatewayControlToken() {
   return String(
-    process.env.DISCORD_RECRUITMENT_ADVICE_SECRET ||
-      process.env.INTERNAL_API_TOKEN ||
+    process.env.INTERNAL_API_TOKEN ||
+      process.env.DISCORD_RECRUITMENT_ADVICE_SECRET ||
       process.env.INTERNAL_PROFILE_LOOKUP_TOKEN ||
       process.env.CRON_SECRET ||
       "",

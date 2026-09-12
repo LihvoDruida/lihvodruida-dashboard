@@ -86,9 +86,11 @@ function dashboardScanEndpoint() {
 }
 
 function internalToken() {
+  // One canonical service token prevents dashboard/bot env files from silently
+  // drifting apart. The legacy advice secret remains a compatibility fallback.
   return env(
-    "DISCORD_RECRUITMENT_ADVICE_SECRET",
-    env("INTERNAL_API_TOKEN", env("WORKER_SHARED_SECRET")),
+    "INTERNAL_API_TOKEN",
+    env("DISCORD_RECRUITMENT_ADVICE_SECRET", env("WORKER_SHARED_SECRET")),
   );
 }
 

@@ -26,6 +26,7 @@ import {
   runtimeCircuitOpen,
 } from "@/lib/runtimeResilience";
 import {
+  documentStoreMode,
   getFirebaseAdminDb,
   hasFirebaseProfileConfig,
 } from "@/lib/firebaseAdmin";
@@ -181,6 +182,29 @@ const GUILD_RECORDS_CHUNKS_COLLECTION = "memberChunks";
 const GUILD_RECORDS_CHUNK_FORMAT_VERSION = 2;
 const GUILD_RECORDS_MAX_CHUNKS = 80;
 const SYNC_JOB_DOCUMENT = "guildRosterSyncJob";
+
+function guildRosterPersistentSource() {
+  const mode = documentStoreMode();
+  if (mode === "postgres") return "postgres-records";
+  if (mode === "firestore") return "firestore-records";
+  return "document-store-unconfigured";
+}
+
+function normalizeGuildRosterSource(value: unknown) {
+  const source = cleanText(value);
+  // Old rows used "firebase-records" even when getFirebaseAdminDb() was already
+  // backed by PostgreSQL. Rewrite those labels at read time so logs/UI describe
+  // the storage that is actually active.
+  if (!source || ["firebase-records", "firestore-records", "postgres-records", "database-records"].includes(source)) {
+    return guildRosterPersistentSource();
+  }
+  return source;
+}
+
+function guildRosterStoredReason() {
+  return documentStoreMode() === "postgres" ? "served_from_postgres" : "served_from_document_store";
+}
+
 const CLASS_ID_FALLBACK: Record<number, string> = {
   1: "Warrior",
   2: "Paladin",
@@ -771,7 +795,7 @@ async function hydrateCachedRosterProfileLinks(
     members,
     source: cache.source?.includes("profile-links-live")
       ? cache.source
-      : `${cache.source || "firebase-records"} • profile-links-live`,
+      : `${normalizeGuildRosterSource(cache.source)} • profile-links-live`,
   } satisfies CachedRoster);
   globalThis.__mistblossomGuildRosterCache = next;
   return next;
@@ -1662,7 +1686,7 @@ function buildRosterFromFirebaseRecords(data: any, members: GuildRosterMember[])
   return stripUndefined({
     members: sortedMembers,
     stats,
-    source: cleanText(data?.source) || "firebase-records",
+    source: normalizeGuildRosterSource(data?.source),
     error: typeof data?.error === "string" ? data.error : null,
     cachedAt: cleanText(data?.cachedAt || data?.updatedAtIso) || new Date().toISOString(),
     authoritativeRoster: true,
@@ -1787,7 +1811,7 @@ async function writeGuildRosterRecords(
       authoritativeRoster: true,
       rosterSource: "battlenet-guild-roster",
       stats: cache.stats,
-      source: "firebase-records",
+      source: guildRosterPersistentSource(),
       error: cache.error || null,
       memberCount: cache.members.length,
       cachedAt: cache.cachedAt,
@@ -1898,9 +1922,8 @@ async function readCachedRoster(
     return hydrateCachedRosterProfileLinks(globalThis.__mistblossomGuildRosterCache);
   }
 
-  // Display priority is Firebase records: the site reads the last authoritative
-  // stored roster first. Cloudflare KV is a fallback/offload layer, not the
-  // source of truth for the visible guild roster.
+  // Display priority is the authoritative document-store roster (PostgreSQL in
+  // self-hosted production). Historical helper names remain for compatibility.
   const records = await readGuildRosterRecords(settings, { bypassCache: options.bypassCache }).catch(() => null);
   if (records) {
     const linkedRecords = await hydrateCachedRosterProfileLinks(records);
@@ -1917,7 +1940,7 @@ async function readCachedRoster(
   return null;
 }
 
-function firebaseGuildRosterStorageLimited() {
+function guildRosterStorageLimited() {
   return (
     runtimeCircuitOpen("firebase-guild-roster-records-read") ||
     runtimeCircuitOpen("firebase-guild-roster-read") ||
@@ -1926,14 +1949,14 @@ function firebaseGuildRosterStorageLimited() {
 }
 
 function emptyGuildRosterFallback(message?: string): GuildRosterLoadResult {
-  const storageLimited = firebaseGuildRosterStorageLimited();
+  const storageLimited = guildRosterStorageLimited();
   return {
     members: [],
     stats: fallbackStats(),
-    source: storageLimited ? "firebase-temporary-unavailable" : "firebase-records-missing",
+    source: storageLimited ? "document-store-temporary-unavailable" : `${guildRosterPersistentSource()}-missing`,
     error: storageLimited
-      ? message || "Тимчасова технічна помилка: сховище Firebase недоступне або перевищило ліміти. Сайт зупинив важкі Firebase-запити, щоб не збільшувати перевищення квоти."
-      : message || "Firebase-записи складу ще створюються. Синхронізація створює склад тільки з Battle.net guild roster; профільні персонажі не використовуються як джерело складу.",
+      ? message || "Тимчасова технічна помилка: сховище даних недоступне. Синхронізацію призупинено, щоб не створювати повторні важкі запити."
+      : message || "Записи складу в базі ще створюються. Синхронізація формує склад тільки з Battle.net guild roster; профільні персонажі не використовуються як джерело складу.",
   };
 }
 
@@ -1949,7 +1972,7 @@ async function writeCachedRoster(
 ) {
   const cache = stripUndefined({
     ...result,
-    source: "firebase-records",
+    source: guildRosterPersistentSource(),
     cachedAt: new Date().toISOString(),
     authoritativeRoster: true,
     fingerprint: guildRosterFingerprint(result),
@@ -2002,7 +2025,7 @@ function publicFromCache(cache: CachedRoster): GuildRosterLoadResult {
   return {
     members: cache.members,
     stats: cache.stats,
-    source: cache.source || "firebase-records",
+    source: normalizeGuildRosterSource(cache.source),
     error: cache.error || null,
   };
 }
@@ -2896,8 +2919,8 @@ export async function refreshGuildRosterApiBatch(
       ...base,
       refresh: {
         roster: { refreshed: false, source: base.source },
-        battleNet: emptyProgress("served_from_firebase"),
-        raiderIo: emptyProgress("served_from_firebase"),
+        battleNet: emptyProgress(guildRosterStoredReason()),
+        raiderIo: emptyProgress(guildRosterStoredReason()),
         sync: syncProgress(activeJob),
       },
     };
@@ -2918,11 +2941,11 @@ export async function refreshGuildRosterApiBatch(
     : existingJob;
   const isActiveRequest = shouldStart || job?.status === "running";
 
-  let rosterProgress = { refreshed: false, source: cached?.source || "Firebase records" };
+  let rosterProgress = { refreshed: false, source: cached?.source || guildRosterPersistentSource() };
   let battleNetProgress: GuildRosterApiBatchProgress =
-    emptyProgress("served_from_firebase");
+    emptyProgress(guildRosterStoredReason());
   let raiderIoProgress: GuildRosterApiBatchProgress =
-    emptyProgress("served_from_firebase");
+    emptyProgress(guildRosterStoredReason());
 
   if (job?.status === "running" && shouldStart) {
     const step = await advanceGuildRosterSyncStep(job, cached, settings);
@@ -2939,8 +2962,8 @@ export async function refreshGuildRosterApiBatch(
       ...fallback,
       refresh: {
         roster: rosterProgress,
-        battleNet: emptyProgress("firebase_records_missing"),
-        raiderIo: emptyProgress("firebase_records_missing"),
+        battleNet: emptyProgress("database_records_missing"),
+        raiderIo: emptyProgress("database_records_missing"),
         sync: syncProgress(isActiveRequest ? job : null),
       },
     };

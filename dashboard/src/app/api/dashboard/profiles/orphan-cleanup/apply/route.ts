@@ -55,7 +55,7 @@ function wantsForceRun(request: NextRequest) {
 export async function GET(request: NextRequest) {
   const auth = await verifyInternalBearerToken(request, ACCOUNT_CLEANUP_TOKENS, { minLength: 24 });
   if (!auth.ok) {
-    logDashboardEvent("warn", "profiles.orphan_cleanup_apply.forbidden", request, { reason: auth.reason, envName: auth.envName || null });
+    logDashboardEvent("warn", "profiles.orphan_cleanup_apply.forbidden", request, { reason: auth.reason, envName: auth.envName || null, statusCode: 401 });
     return unauthorizedResponse("Forbidden");
   }
 

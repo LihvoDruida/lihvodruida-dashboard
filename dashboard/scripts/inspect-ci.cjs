@@ -252,6 +252,27 @@ if (exists('src/lib/logSettings.ts')) {
 }
 assert(!/listAdminAuditLogsFromDiscord|publishAdminAuditToDiscord|ADMIN_AUDIT_(?:READ|DEDUPE|MAX|POLICY)/.test(runtimeCombined), 'Legacy Discord audit-storage code/config detected.');
 
+
+// Self-hosted internal service auth must use one canonical token. This prevents
+// cron/bot/dashboard from silently drifting into 421/401/token_mismatch loops.
+const composePath = '../docker-compose.yml';
+if (exists(composePath)) {
+  const composeText = read(composePath);
+  assert(/dashboard:[\s\S]{0,2600}INTERNAL_API_TOKEN:\s*\$\{INTERNAL_API_TOKEN/.test(composeText), 'dashboard must receive canonical root INTERNAL_API_TOKEN from docker-compose.');
+  assert(/bot:[\s\S]{0,2600}INTERNAL_API_TOKEN:\s*\$\{INTERNAL_API_TOKEN/.test(composeText), 'bot must receive canonical root INTERNAL_API_TOKEN from docker-compose.');
+  assert(/cron:[\s\S]{0,1800}INTERNAL_CRON_TOKEN:\s*\$\{INTERNAL_API_TOKEN/.test(composeText), 'cron must map INTERNAL_CRON_TOKEN from canonical INTERNAL_API_TOKEN.');
+}
+assert(exists('src/app/api/internal/health/route.ts'), 'Internal bearer health endpoint must exist for service-to-service auth checks.');
+if (exists('src/proxy.ts')) {
+  const proxyText = read('src/proxy.ts');
+  assert(proxyText.includes('pathname === "/api/internal/health"'), 'Internal health route must be allowed through bearer-only internal host handling.');
+  assert(proxyText.includes('pathname === "/api/discord/interactions"'), 'Bot-forwarded Discord interactions must be allowed on the internal dashboard host.');
+}
+if (exists('src/lib/structuredLogs.ts')) {
+  const logText = read('src/lib/structuredLogs.ts');
+  assert(/value === null \|\| value === undefined \|\| value === ""/.test(logText), 'Structured logs must preserve missing numeric telemetry as null instead of fabricating HTTP 100 / 0 ms.');
+}
+
 // Discord buttons are mutations and must not interpret a stale/null page cache as
 // "resource deleted". Keep their backing reads authoritative and preserve the
 // public Discord message reference so already-published messages can self-heal

@@ -61,7 +61,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ra
 
   const auth = await verifyInternalBearerToken(request, INTERNAL_RAID_ACTION_TOKENS, { minLength: 24 });
   if (!auth.ok) {
-    logDashboardEvent("warn", "raids.discord_action.forbidden", request, { reason: auth.reason });
+    logDashboardEvent("warn", "raids.discord_action.forbidden", request, { reason: auth.reason, statusCode: 403 });
     return NextResponse.json({ ok: false, content: "Forbidden" }, { status: 403, headers: noStoreHeaders() });
   }
 

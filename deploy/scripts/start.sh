@@ -156,8 +156,28 @@ compare_var() {
 
 compare_var DISCORD_PUBLIC_KEY
 compare_var DISCORD_GUILD_ID
-compare_var INTERNAL_API_TOKEN
 compare_var DISCORD_BOT_TOKEN
+
+compare_with_root() {
+  local key="$1" file="$2"
+  local root_value; root_value="$(env_get .env "$key" || true)"
+  local file_value; file_value="$(env_get "$file" "$key" || true)"
+  [ -n "$root_value" ] && [ -n "$file_value" ] || return 0
+  if [ "$root_value" = "$file_value" ]; then
+    ok "$key збігається між .env і $file"
+  else
+    warn "$key відрізняється у .env і $file; Docker безпечно використає канонічне значення з кореневого .env"
+  fi
+}
+
+compare_with_root INTERNAL_API_TOKEN dashboard/.env.production
+compare_with_root INTERNAL_API_TOKEN bot/.env.production
+ROOT_INTERNAL_TOKEN="$(env_get .env INTERNAL_API_TOKEN || true)"
+if [ "${#ROOT_INTERNAL_TOKEN}" -lt 24 ]; then
+  problem "INTERNAL_API_TOKEN у .env має бути не коротший 24 символів (verifyInternalBearerToken відхилить коротший)"
+else
+  ok "INTERNAL_API_TOKEN має достатню довжину"
+fi
 
 # --- Типова помилка з хостом бази ------------------------------------------
 DB_URL="$(env_get dashboard/.env.production DATABASE_URL || true)"
@@ -400,6 +420,13 @@ else
   problem "бот не відповідає на /healthz"
 fi
 
+step "Перевіряю внутрішню авторизацію сервісів"
+if "$PWD/deploy/scripts/internal-auth-check.sh"; then
+  ok "service-to-service авторизація узгоджена"
+else
+  problem "внутрішні токени не узгоджені; cron/bot не зможуть викликати dashboard"
+fi
+
 if curl -fsS -o /dev/null --max-time 15 "https://$DOMAIN/api/health" 2>/dev/null; then
   ok "https://$DOMAIN/api/health доступний ззовні"
 else
@@ -415,7 +442,22 @@ set +e
 DISCORD_ENDPOINT_STATUS=$?
 set -e
 if [ "$DISCORD_ENDPOINT_STATUS" -eq 3 ]; then
-  problem "Discord Interactions Endpoint вказує не на цей VPS. Виконайте: make discord-endpoint-fix"
+  AUTO_FIX_DISCORD_ENDPOINT="$(env_get .env AUTO_FIX_DISCORD_INTERACTIONS_ENDPOINT || true)"
+  AUTO_FIX_DISCORD_ENDPOINT="${AUTO_FIX_DISCORD_ENDPOINT:-1}"
+  if [ "$AUTO_FIX_DISCORD_ENDPOINT" != "0" ] && [ "$AUTO_FIX_DISCORD_ENDPOINT" != "false" ]; then
+    warn "Discord Interactions Endpoint застарілий — пробую автоматично переключити на VPS"
+    set +e
+    "$PWD/deploy/scripts/discord-endpoint.sh" --fix
+    FIX_STATUS=$?
+    set -e
+    if [ "$FIX_STATUS" -eq 0 ]; then
+      ok "Discord Interactions Endpoint переключено на VPS"
+    else
+      problem "не вдалося автоматично переключити Discord endpoint; виконайте: make discord-endpoint-fix"
+    fi
+  else
+    problem "Discord Interactions Endpoint вказує не на цей VPS. Виконайте: make discord-endpoint-fix"
+  fi
 elif [ "$DISCORD_ENDPOINT_STATUS" -ne 0 ]; then
   warn "не вдалося звірити Discord Interactions Endpoint; перевірте пізніше через make discord-endpoint-check"
 fi

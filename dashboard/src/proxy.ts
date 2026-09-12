@@ -49,7 +49,12 @@ function isPublicApiPath(pathname: string) {
 
 function isInternalBearerApiPath(pathname: string) {
   return (
+    pathname === "/api/internal/health" ||
     pathname === "/api/profile/discord-lookup" ||
+    // Bot forwards verified Discord interactions through the private compose network.
+    // The public endpoint stays public for direct Discord delivery, while this branch
+    // only relaxes Host checking for dashboard:3000 when a bearer header is present.
+    pathname === "/api/discord/interactions" ||
     pathname === "/api/dashboard/logs/ingest" ||
     pathname === "/api/dashboard/profiles/refresh-external-data" ||
     pathname === "/api/dashboard/profiles/orphan-cleanup" ||
@@ -223,6 +228,7 @@ export function proxy(request: NextRequest) {
     logDashboardEvent(isSafeRedirect ? "debug" : "warn", "proxy.host_rejected", request, {
       blockedHost: host,
       redirected: isSafeRedirect,
+      statusCode: isSafeRedirect ? 308 : 421,
     });
 
     if (isSafeRedirect) {
@@ -246,6 +252,7 @@ export function proxy(request: NextRequest) {
     logDashboardEvent("warn", "proxy.cloudflare_signal_missing", request, {
       mode: cloudflareProxyMode,
       action: cloudflareProxyMode === "strict" ? "blocked" : "allowed",
+      ...(cloudflareProxyMode === "strict" ? { statusCode: 403 } : {}),
     });
 
     if (cloudflareProxyMode === "strict") {
@@ -386,6 +393,10 @@ export function proxy(request: NextRequest) {
   const nonce = createNonce();
   const csp = contentSecurityPolicy(nonce);
   const requestHeaders = new Headers(request.headers);
+  const requestId = request.headers.get("x-mistblossom-request-id")
+    || (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
+  requestHeaders.set("x-mistblossom-request-id", requestId);
+  requestHeaders.set("x-mistblossom-request-started-at", String(Date.now()));
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", csp);
 

@@ -124,6 +124,7 @@ export async function POST(request: NextRequest) {
     logDashboardEvent("warn", "guild.roster.auto_sync_forbidden", request, {
       reason: token.reason,
       envName: token.envName || null,
+      statusCode: 401,
     });
     return unauthorizedResponse();
   }

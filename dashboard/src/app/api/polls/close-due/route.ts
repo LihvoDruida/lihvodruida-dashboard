@@ -42,7 +42,7 @@ function wantsForceRun(request: NextRequest) {
 async function run(request: NextRequest) {
   const auth = await verifyInternalBearerToken(request, INTERNAL_POLL_CRON_TOKENS, { minLength: 24 });
   if (!auth.ok) {
-    logDashboardEvent("warn", "raid_polls.close_due.forbidden", request, { reason: auth.reason, envName: auth.envName || null });
+    logDashboardEvent("warn", "raid_polls.close_due.forbidden", request, { reason: auth.reason, envName: auth.envName || null, statusCode: 403 });
     return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403, headers: noStoreHeaders() });
   }
 

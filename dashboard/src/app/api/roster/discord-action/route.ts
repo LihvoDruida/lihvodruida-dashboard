@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
 
   const auth = await verifyInternalBearerToken(request, INTERNAL_ROSTER_ACTION_TOKENS, { minLength: 24 });
   if (!auth.ok) {
-    logDashboardEvent("warn", "roster.discord_action.forbidden", request, { reason: auth.reason });
+    logDashboardEvent("warn", "roster.discord_action.forbidden", request, { reason: auth.reason, statusCode: 403 });
     return NextResponse.json({ ok: false, content: "Forbidden" }, { status: 403, headers: noStoreHeaders() });
   }
 

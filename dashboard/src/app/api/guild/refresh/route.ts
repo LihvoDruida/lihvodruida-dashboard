@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     const warningReasons = [
       roster.refresh.battleNet.reason,
       roster.refresh.raiderIo.reason,
-    ].filter((reason): reason is string => Boolean(reason && !["served_from_firebase", "not_current_phase", "fresh", "disabled", "disabled_by_step_size"].includes(reason)));
+    ].filter((reason): reason is string => Boolean(reason && !["served_from_firebase", "served_from_postgres", "served_from_document_store", "not_current_phase", "fresh", "disabled", "disabled_by_step_size"].includes(reason)));
     const syncError = roster.refresh.sync.errors.at(-1) || null;
     const auditLevel = roster.refresh.sync.status === "failed"
       ? "error"

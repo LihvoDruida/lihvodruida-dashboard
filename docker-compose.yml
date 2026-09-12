@@ -91,6 +91,9 @@ services:
       PORT: "3000"
       HOSTNAME: "0.0.0.0"
       TZ: Europe/Kyiv
+      # Єдине джерело service-to-service авторизації. Значення з кореневого
+      # .env навмисно перекриває можливий застарілий запис у dashboard/.env.production.
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?треба задати INTERNAL_API_TOKEN}
       SERVER_DOCKER_STATS_FILE: /runtime/server-stats/docker-system-df.jsonl
     depends_on:
       postgres:
@@ -209,7 +212,9 @@ services:
     entrypoint: ["/bin/sh", "/opt/cron/run-cron.sh"]
     environment:
       DASHBOARD_INTERNAL_URL: http://dashboard:3000
-      INTERNAL_CRON_TOKEN: ${CRON_SECRET:?треба задати CRON_SECRET}
+      # Cron використовує той самий канонічний INTERNAL_API_TOKEN, що dashboard і bot.
+      # Окремий CRON_SECRET більше не створює ризик тихого token_mismatch.
+      INTERNAL_CRON_TOKEN: ${INTERNAL_API_TOKEN:?треба задати INTERNAL_API_TOKEN}
       TZ: Europe/Kyiv
     volumes:
       - ./deploy/cron/run-cron.sh:/opt/cron/run-cron.sh:ro
