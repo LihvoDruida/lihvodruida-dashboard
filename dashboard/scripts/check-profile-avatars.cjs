@@ -25,6 +25,8 @@ const checks = [
   [callback, /guildAvatarHash:\s*member\?\.avatar/, "OAuth does not prefer guild member avatar"],
   [callback, /userAvatarHash:\s*user\.avatar/, "OAuth global avatar fallback missing"],
   [discordAdmin, /avatarUrl:\s*resolveDiscordAvatarUrl/, "live guild member snapshot has no avatar URL"],
+  [discordAdmin, /export type DiscordGuildMemberModerationItem\s*=\s*DiscordGuildMemberSnapshot/, "moderation member type must stay aligned with the full Discord snapshot"],
+  [discordAdmin, /normalizeGuildMemberForModeration[\s\S]*defaultAvatarUrl:\s*discordDefaultAvatarUrl\(userId, user\.discriminator\)/, "moderation member mapping is missing default avatar URL"],
   [auth, /avatar:\s*member\.avatarUrl[\s\S]*avatar_url:\s*member\.avatarUrl/, "live Discord session does not refresh avatar"],
   [avatarComponent, /onError=\{\(\) => setFailed\(true\)\}/, "broken CDN image does not switch to placeholder"],
   [avatarComponent, /data-avatar-placeholder="true"/, "local avatar placeholder missing"],

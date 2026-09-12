@@ -1624,15 +1624,7 @@ export function discordMessageUrl(channelId: string, messageId: string) {
   return `https://discord.com/channels/${guildId}/${channelId}/${messageId}`;
 }
 
-export type DiscordGuildMemberModerationItem = {
-  userId: string;
-  username: string | null;
-  globalName: string | null;
-  nick: string | null;
-  displayName: string;
-  avatarUrl: string | null;
-  roleIds: string[];
-};
+export type DiscordGuildMemberModerationItem = DiscordGuildMemberSnapshot;
 
 function normalizeGuildMemberForModeration(member: any): DiscordGuildMemberModerationItem | null {
   if (!member || typeof member !== "object") return null;
@@ -1659,6 +1651,7 @@ function normalizeGuildMemberForModeration(member: any): DiscordGuildMemberModer
       discriminator: user.discriminator,
       size: 128,
     }),
+    defaultAvatarUrl: discordDefaultAvatarUrl(userId, user.discriminator),
     roleIds,
   };
 }
