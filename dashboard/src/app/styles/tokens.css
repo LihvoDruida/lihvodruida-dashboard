@@ -101,7 +101,6 @@
   --accent-soft: rgba(255, 155, 85, 0.12);
   --accent-ring: rgba(255, 155, 85, 0.35);
   --accent-gradient: linear-gradient(135deg, var(--c-accent-300), var(--c-accent-600));
-  --accent-glow: 0 0 24px rgba(255, 155, 85, 0.35);
 
   /* ---------- Тіні ---------- */
   --shadow-md: 0 12px 28px -14px rgba(0, 0, 0, 0.75);
@@ -115,7 +114,6 @@
   --space-md: 16px;
   --space-lg: 24px;
   --space-xl: 32px;
-  --space-2xl: 48px;
   --space-3xl: 64px;
 
   /* ---------- Ритм сторінки ---------- */

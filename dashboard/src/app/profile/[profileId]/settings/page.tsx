@@ -1,6 +1,7 @@
 import DashboardIdentity from "@/components/DashboardIdentity";
 import LogoutButton from "@/components/LogoutButton";
 import ProfileNameControls from "@/components/ProfileNameControls";
+import ProfileAvatar from "@/components/ProfileAvatar";
 import { buildPageMetadata } from "@/lib/seo";
 import { getSession } from "@/lib/auth";
 import { recordDashboardSystemLog } from "@/lib/dashboardSystemLogs";
@@ -628,24 +629,13 @@ export default async function ProfileSettingsPage({
         <div className="profile-account-layout">
           <aside className="panel profile-account-sidebar" aria-label="Навігація профілю">
             <div className="profile-account-sidebar__identity">
-              {profile.avatarUrl ? (
-                <img
-                  className="profile-account-sidebar__avatar"
-                  src={profile.avatarUrl}
-                  alt=""
-                  width={96}
-                  height={96}
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <span
-                  className="profile-account-sidebar__avatar profile-account-sidebar__avatar--fallback"
-                  aria-hidden="true"
-                >
-                  {(publicNamePreview || profile.displayName || "A").charAt(0)}
-                </span>
-              )}
+              <ProfileAvatar
+                className="profile-account-sidebar__avatar"
+                fallbackClassName="profile-account-sidebar__avatar--fallback"
+                src={liveDiscordMember?.avatarUrl || profile.avatarUrl || null}
+                width={96}
+                height={96}
+              />
               <strong>{publicNamePreview}</strong>
               <span>{accountStatusLabel}</span>
               <div className="profile-account-sidebar__pills" aria-label="Стан профілю">

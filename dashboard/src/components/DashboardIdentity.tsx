@@ -17,6 +17,7 @@ import LogoutButton from "@/components/LogoutButton";
 import DashboardDesktopNav from "@/components/DashboardDesktopNav";
 import DashboardNavIcon, { type DashboardNavSection } from "@/components/DashboardNavIcon";
 import SiteNavBehaviour from "@/components/SiteNavBehaviour";
+import ProfileAvatar from "@/components/ProfileAvatar";
 import { getProfileById, getProfilePublicName } from "@/lib/profiles";
 import { getGuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
 
@@ -140,21 +141,13 @@ export default async function DashboardIdentity({
               aria-expanded="false"
               aria-controls="dashboard-user-menu"
             >
-              {avatar ? (
-                <img
-                  className="dashboard-user__avatar"
-                  src={avatar}
-                  alt=""
-                  width={36}
-                  height={36}
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <span className="dashboard-user__avatar dashboard-user__avatar--fallback" aria-hidden="true">
-                  {(displayName || "A").charAt(0)}
-                </span>
-              )}
+              <ProfileAvatar
+                className="dashboard-user__avatar"
+                fallbackClassName="dashboard-user__avatar--fallback"
+                src={avatar}
+                width={36}
+                height={36}
+              />
               <span className="dashboard-user__meta">
                 <strong>{displayName}</strong>
                 {accountSub ? <small>{accountSub}</small> : null}

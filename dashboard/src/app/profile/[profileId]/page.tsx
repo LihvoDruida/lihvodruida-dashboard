@@ -5,6 +5,7 @@ import ProfileCandidateBulkActions from "@/components/ProfileCandidateBulkAction
 import ProfileCandidateExpiryTimer from "@/components/ProfileCandidateExpiryTimer";
 import ProfileCandidateCharacterRow from "@/components/ProfileCandidateCharacterRow";
 import ProfileCharactersLiveSection from "@/components/ProfileCharactersLiveSection";
+import ProfileAvatar from "@/components/ProfileAvatar";
 import { getEnabledBattleNetRegions } from "@/lib/battlenet";
 import { normalizeCharacterKey } from "@/lib/wowCharacters";
 import {
@@ -18,6 +19,7 @@ import {
 import { buildPageMetadata } from "@/lib/seo";
 import { formatStableUkCompactDate } from "@/lib/stableUiText";
 import { getDashboardApiSettings } from "@/lib/dashboardApiSettings";
+import { fetchDiscordGuildMemberSnapshot } from "@/lib/discordAdmin";
 import { wowRoleLabel } from "@/lib/wowRoles";
 import { getSession, type DashboardSession } from "@/lib/auth";
 import {
@@ -425,6 +427,10 @@ export default async function ProfilePage({
     ? await listProfileRaidSignups(profile).catch(() => [])
     : [];
   const accountStatusLabel = dashboardRoleLabel(profile.role);
+  const liveDiscordAvatarUrl = profile.provider === "discord" && /^\d{16,25}$/.test(profile.providerUserId)
+    ? (await fetchDiscordGuildMemberSnapshot(profile.providerUserId).catch(() => null))?.avatarUrl || null
+    : null;
+  const profileAvatarUrl = liveDiscordAvatarUrl || profile.avatarUrl || null;
   const visibleCharacters = [...profile.characters].sort((a, b) => {
     if (a.isMain !== b.isMain) return a.isMain ? -1 : 1;
     if (a.verifiedGuild !== b.verifiedGuild) return a.verifiedGuild ? -1 : 1;
@@ -445,24 +451,13 @@ export default async function ProfilePage({
         <div className="profile-account-layout">
           <aside className="panel profile-account-sidebar" aria-label="Навігація профілю">
             <div className="profile-account-sidebar__identity">
-              {profile.avatarUrl ? (
-                <img
-                  className="profile-account-sidebar__avatar"
-                  src={profile.avatarUrl}
-                  alt=""
-                  width={96}
-                  height={96}
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <span
-                  className="profile-account-sidebar__avatar profile-account-sidebar__avatar--fallback"
-                  aria-hidden="true"
-                >
-                  {(publicNamePreview || profile.displayName || "A").charAt(0)}
-                </span>
-              )}
+              <ProfileAvatar
+                className="profile-account-sidebar__avatar"
+                fallbackClassName="profile-account-sidebar__avatar--fallback"
+                src={profileAvatarUrl}
+                width={96}
+                height={96}
+              />
               <strong>{publicNamePreview}</strong>
               <span>{accountStatusLabel}</span>
               <div className="profile-account-sidebar__pills" aria-label="Стан профілю">

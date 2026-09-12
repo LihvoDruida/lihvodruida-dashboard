@@ -133,14 +133,6 @@ export default async function LoginPage({
 
   return (
     <main className="login-screen">
-      <div className="login-screen__backdrop" aria-hidden="true">
-        <span className="login-glow login-glow--gold" />
-        <span className="login-glow login-glow--ember" />
-        <span className="login-grid" />
-        <span className="login-ornament login-ornament--top" />
-        <span className="login-ornament login-ornament--bottom" />
-      </div>
-
       <section className="login-shell" aria-labelledby="login-title">
         <span className="login-shell__corner login-shell__corner--tl" aria-hidden="true" />
         <span className="login-shell__corner login-shell__corner--tr" aria-hidden="true" />
@@ -169,10 +161,7 @@ export default async function LoginPage({
 
           <div className="login-title-block">
             <p className="login-eyebrow">{guild.name}</p>
-            <h1 id="login-title">
-              Вхід до панелі
-              <span>гільдії</span>
-            </h1>
+            <h1 id="login-title">Вхід до панелі гільдії</h1>
             <div className="login-title-divider" aria-hidden="true">
               <span />
               <i />
@@ -181,15 +170,9 @@ export default async function LoginPage({
           </div>
 
           <p className="login-lead">
-            Увійди через Discord. Доступ і можливості панелі визначаються
-            ролями на сервері Mistblossom Vanguard.
+            Увійди через Discord — доступ до панелі визначається ролями сервера
+            Mistblossom Vanguard.
           </p>
-
-          <div className="login-feature-list" aria-label="Можливості панелі">
-            <span>Рейди</span>
-            <span>Discord-ролі</span>
-            <span>Профілі</span>
-          </div>
 
           {loggedOut ? (
             <div className="notice success login-alert" role="status">
@@ -258,11 +241,6 @@ export default async function LoginPage({
               </form>
             </details>
           ) : null}
-
-          <p className="login-note">
-            Доступ визначається Discord-ролями. Учасники бачать лише дозволені
-            розділи, а серверні перевірки виконуються до створення сесії.
-          </p>
 
           <nav className="login-legal" aria-label="Юридична інформація">
             <a href="/terms">Умови</a>

@@ -248,6 +248,8 @@ async function refreshDiscordAccess(
               {
                 ...session,
                 name: member.displayName || session.name,
+                avatar: member.avatarUrl || session.avatar || null,
+                avatar_url: member.avatarUrl || session.avatar_url || session.avatar || null,
                 discordRoleIds: member.roleIds || [],
                 impersonatedBy: undefined,
               },

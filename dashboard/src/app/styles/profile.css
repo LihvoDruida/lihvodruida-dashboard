@@ -2219,3 +2219,35 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* =========================================================
+   18. КОМПАКТНА СІТКА КАРТОК ПЕРСОНАЖІВ
+
+   Картка має стабільну робочу ширину й не розтягується до
+   половини/всієї сторінки, коли персонажів лише один або два.
+   ========================================================= */
+.profile-character-list--single-flow {
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 360px));
+  justify-content: start;
+  align-items: stretch;
+}
+
+.profile-character-card {
+  width: 100%;
+  max-width: 360px;
+}
+
+.profile-account-sidebar__avatar--fallback svg {
+  width: 54%;
+  height: 54%;
+}
+
+@media (max-width: 520px) {
+  .profile-character-list--single-flow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-character-card {
+    max-width: none;
+  }
+}

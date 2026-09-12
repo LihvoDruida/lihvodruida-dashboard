@@ -1,4 +1,5 @@
 import DashboardIdentity from "@/components/DashboardIdentity";
+import ProfileAvatar from "@/components/ProfileAvatar";
 import { getSession } from "@/lib/auth";
 import {
   canManageDiscordMembers,
@@ -14,6 +15,7 @@ import {
 } from "@/lib/profiles";
 import { redirect } from "next/navigation";
 import { buildPageMetadata } from "@/lib/seo";
+import { fetchDiscordGuildMembersCachedForUi } from "@/lib/discordAdmin";
 
 export const metadata = buildPageMetadata({
   title: "Профілі учасників",
@@ -127,7 +129,7 @@ function roleLabel(role: DashboardProfile["role"]) {
   return "Учасник";
 }
 
-function ProfileRow({ profile }: { profile: DashboardProfile }) {
+function ProfileRow({ profile, avatarUrl }: { profile: DashboardProfile; avatarUrl?: string | null }) {
   const displayName = getProfilePublicName(profile);
   const guildStatus = profile.groupName || guildStatusLabel(profile.role);
   const href = `/profile/${profile.profileId}`;
@@ -143,13 +145,13 @@ function ProfileRow({ profile }: { profile: DashboardProfile }) {
       aria-label={`Відкрити профіль: ${displayName}`}
     >
       <div className="profile-directory-user" role="cell" data-label="Користувач">
-        {profile.avatarUrl ? (
-          <img className="profile-directory-avatar" src={profile.avatarUrl} alt="" loading="lazy" />
-        ) : (
-          <span className="profile-directory-avatar profile-directory-avatar--fallback" aria-hidden="true">
-            {Array.from(displayName.trim())[0]?.toUpperCase() || "?"}
-          </span>
-        )}
+        <ProfileAvatar
+          className="profile-directory-avatar"
+          fallbackClassName="profile-directory-avatar--fallback"
+          src={avatarUrl || profile.avatarUrl || null}
+          width={40}
+          height={40}
+        />
         <span className="profile-directory-user-copy">
           <strong>{displayName}</strong>
           <small title={profile.providerUserId}>{identity}</small>
@@ -239,6 +241,16 @@ export default async function ProfilesPage({
   const page = Math.min(requestedPage, pageCount);
   const pageStart = (page - 1) * PROFILE_PAGE_SIZE;
   const profiles = filteredProfiles.slice(pageStart, pageStart + PROFILE_PAGE_SIZE);
+  const hasDiscordProfiles = profiles.some((profile) =>
+    profile.provider === "discord" && /^\d{16,25}$/.test(profile.providerUserId)
+  );
+  const liveDiscordAvatars = new Map<string, string>();
+  if (hasDiscordProfiles) {
+    const members = await fetchDiscordGuildMembersCachedForUi().catch(() => []);
+    for (const member of members) {
+      if (member.avatarUrl) liveDiscordAvatars.set(member.userId, member.avatarUrl);
+    }
+  }
   const pageEnd = Math.min(pageStart + profiles.length, filteredProfiles.length);
   const canManageCleanup = canManageDiscordMembers(user);
   const linkedBattleNetCount = filteredProfiles.filter((profile) => profile.battlenet?.linked).length;
@@ -366,7 +378,7 @@ export default async function ProfilesPage({
 
               <div className="profile-directory-rows">
                 {profiles.length ? (
-                  profiles.map((profile) => <ProfileRow key={profile.profileId} profile={profile} />)
+                  profiles.map((profile) => <ProfileRow key={profile.profileId} profile={profile} avatarUrl={liveDiscordAvatars.get(profile.providerUserId)} />)
                 ) : (
                   <div className="profile-directory-empty" role="row">
                     <span className="profile-directory-empty-icon" aria-hidden="true">⌕</span>

@@ -25,6 +25,7 @@ import {
   fetchDiscordUser,
   getDashboardUrl,
 } from "@/lib/oauth";
+import { resolveDiscordAvatarUrl } from "@/lib/discordAvatar";
 import {
   checkRateLimit,
   getClientIp,
@@ -357,9 +358,14 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const avatarUrl = user.avatar
-      ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128`
-      : null;
+    const avatarUrl = resolveDiscordAvatarUrl({
+      userId: user.id,
+      guildId: process.env.DISCORD_GUILD_ID,
+      guildAvatarHash: member?.avatar,
+      userAvatarHash: user.avatar,
+      discriminator: user.discriminator,
+      size: 256,
+    });
 
     const discordRoleIds = Array.isArray(member.roles)
       ? member.roles

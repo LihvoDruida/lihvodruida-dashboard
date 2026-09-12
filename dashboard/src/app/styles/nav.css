@@ -809,3 +809,8 @@
     padding-inline: 8px;
   }
 }
+
+.dashboard-user__avatar--fallback svg {
+  width: 58%;
+  height: 58%;
+}

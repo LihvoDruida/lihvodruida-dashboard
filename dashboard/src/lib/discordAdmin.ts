@@ -2,6 +2,7 @@ import { mapConcurrent } from "@/lib/concurrency";
 import { parseRulesRoleIdsFromUrl } from "@/lib/rulesOnboarding";
 import { logDashboardEvent } from "@/lib/security";
 import { cleanSnowflake } from "@/lib/values";
+import { resolveDiscordAvatarUrl, discordDefaultAvatarUrl } from "@/lib/discordAvatar";
 import { readGuildRulesStats, readRaidRulesRecords } from "@/lib/discordRulesStats";
 
 const DISCORD_API_BASE = "https://discord.com/api/v10";
@@ -223,6 +224,8 @@ export type DiscordGuildMemberSnapshot = {
   username: string | null;
   globalName: string | null;
   displayName: string;
+  avatarUrl: string | null;
+  defaultAvatarUrl: string | null;
   roleIds: string[];
 };
 
@@ -1448,6 +1451,15 @@ export async function fetchDiscordGuildMemberSnapshot(userIdInput: string, guild
     username,
     globalName,
     displayName: nick || globalName || username || "Discord",
+    avatarUrl: resolveDiscordAvatarUrl({
+      userId,
+      guildId,
+      guildAvatarHash: member?.avatar,
+      userAvatarHash: user.avatar,
+      discriminator: user.discriminator,
+      size: 256,
+    }),
+    defaultAvatarUrl: discordDefaultAvatarUrl(userId, user.discriminator),
     roleIds,
   };
 }
@@ -1618,6 +1630,7 @@ export type DiscordGuildMemberModerationItem = {
   globalName: string | null;
   nick: string | null;
   displayName: string;
+  avatarUrl: string | null;
   roleIds: string[];
 };
 
@@ -1638,9 +1651,22 @@ function normalizeGuildMemberForModeration(member: any): DiscordGuildMemberModer
     globalName,
     nick,
     displayName: nick || globalName || username || `Discord ${userId.slice(-6)}`,
+    avatarUrl: resolveDiscordAvatarUrl({
+      userId,
+      guildId: getDiscordGuildId(),
+      guildAvatarHash: member?.avatar,
+      userAvatarHash: user.avatar,
+      discriminator: user.discriminator,
+      size: 128,
+    }),
     roleIds,
   };
 }
+
+let discordGuildMembersUiCache: {
+  checkedAt: number;
+  members: DiscordGuildMemberModerationItem[];
+} | null = null;
 
 export async function fetchDiscordGuildMembers(limitInput: unknown = 1000) {
   const guildId = getDiscordGuildId();
@@ -1667,6 +1693,17 @@ export async function fetchDiscordGuildMembers(limitInput: unknown = 1000) {
   }
 
   return result;
+}
+
+export async function fetchDiscordGuildMembersCachedForUi(ttlMsInput: unknown = 60_000) {
+  const parsedTtl = Number(ttlMsInput);
+  const ttlMs = Number.isFinite(parsedTtl) ? Math.max(15_000, Math.min(300_000, Math.floor(parsedTtl))) : 60_000;
+  if (discordGuildMembersUiCache && Date.now() - discordGuildMembersUiCache.checkedAt < ttlMs) {
+    return discordGuildMembersUiCache.members;
+  }
+  const members = await fetchDiscordGuildMembers(0);
+  discordGuildMembersUiCache = { checkedAt: Date.now(), members };
+  return members;
 }
 
 export async function removeGuildMemberRoles(params: {
