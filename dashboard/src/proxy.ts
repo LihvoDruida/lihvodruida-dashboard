@@ -63,11 +63,6 @@ function isInternalBearerApiPath(pathname: string) {
     pathname === "/api/guild/sync" ||
     pathname === "/api/raids/lifecycle" ||
     pathname === "/api/polls/close-due" ||
-    // Обидва ендпоїнти рекрутингового радника викликає локальний bot service
-    // із внутрішнім bearer-токеном. Без цих рядків middleware відхиляє
-    // їх як «Потрібен вхід» ще до verifyInternalBearerToken у обробнику.
-    pathname === "/api/discord/recruitment-advice" ||
-    pathname === "/api/discord/recruitment-advice/message" ||
     /^\/api\/raids\/[^/]+\/discord-action$/.test(pathname) ||
     /^\/api\/polls\/[^/]+\/vote$/.test(pathname) ||
     pathname === "/api/roster/discord-action"

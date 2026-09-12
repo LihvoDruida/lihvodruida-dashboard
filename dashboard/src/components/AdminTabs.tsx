@@ -6,7 +6,7 @@ import {
 } from "@/lib/permissions";
 
 export type AdminTabKey =
-  "overview" | "groups" | "discord" | "recruitment" | "logs" | "server";
+  "overview" | "groups" | "discord" | "logs" | "server";
 
 export default function AdminTabs({
   active,
@@ -38,13 +38,6 @@ export default function AdminTabs({
       href: "/dashboard/discord",
       label: "Discord",
       description: "учасники й ніки",
-      visible: canOpenDiscord,
-    },
-    {
-      key: "recruitment" as const,
-      href: "/dashboard/discord/recruitment",
-      label: "Автовідповіді",
-      description: "Discord-рекрутинг",
       visible: canOpenDiscord,
     },
     {

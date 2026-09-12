@@ -45,7 +45,6 @@ Cloudflare (DNS, TLS, WAF), сертифікат, запуск, планові �
 | [reference/API.md](./reference/API.md) | HTTP-ендпоїнти панелі |
 | [reference/raid-polls.md](./reference/raid-polls.md) | рейд-пули: модель даних, Discord-взаємодії, `custom_id` |
 | [reference/raid-composition.md](./reference/raid-composition.md) | алгоритм формування складу й вибору дня |
-| [reference/discord-recruitment.md](./reference/discord-recruitment.md) | рекрутинговий адвайзер |
 | [reference/account-cleanup.md](./reference/account-cleanup.md) | очищення акаунтів, які вийшли з Discord |
 | [reference/theme-system.md](./reference/theme-system.md) | дизайн-токени й теми |
 

@@ -8,7 +8,7 @@
 | `dashboard/.env.production` | панель |
 | `bot/.env.production` | Discord-бот |
 
-Шаблони: `dashboard/.env.example`, `bot/.env.example`.
+Шаблони: `.env.example`, `dashboard/.env.example`, `bot/.env.example`.
 
 > **Секрети тільки серверні.** Усе, що починається з `NEXT_PUBLIC_`, потрапляє
 > у бандл браузера. Токени, приватні ключі й OAuth-секрети туди класти не
@@ -25,12 +25,10 @@
 | `POSTGRES_USER` | ні | користувач бази, типово `mistblossom` |
 | `POSTGRES_PASSWORD` | так | пароль бази. Генеруйте: `openssl rand -base64 32` |
 | `DISCORD_PUBLIC_KEY` | так | публічний ключ застосунку Discord для перевірки підпису |
-| `INTERNAL_API_TOKEN` | так | спільний секрет бот ↔ панель |
 | `INTERNAL_API_TOKEN` | так | єдиний токен bot/cron/dashboard для внутрішніх API |
 | `LETSENCRYPT_EMAIL` | так | адреса для сповіщень про закінчення сертифіката |
 | `IMAGE_TAG` | ні | тег образів, типово `latest` |
 | `BOT_LOG_LEVEL` | ні | `info` / `debug` |
-| `DISCORD_RECRUITMENT_GATEWAY_ENABLED` | ні | `0` вимикає auto-start Recruitment Gateway у bot-сервісі |
 
 ---
 
@@ -67,7 +65,7 @@
 | `DISCORD_GUILD_ID` | так | ID сервера гільдії |
 | `DISCORD_OAUTH_CLIENT_ID` | так | вхід через Discord |
 | `DISCORD_OAUTH_CLIENT_SECRET` | так | те саме |
-| `DISCORD_PUBLIC_KEY` | так | має збігатися зі значенням у боті |
+| `DISCORD_PUBLIC_KEY` | через `.env` | у production Compose передає канонічне значення з кореневого `.env`; у local dev можна задати тут |
 | `RAID_RULES_URL` | ні | посилання на правила рейду у відповідях бота |
 
 ### Внутрішні сервіси
@@ -75,9 +73,8 @@
 | Змінна | Обовʼязкова | Призначення |
 |--------|-------------|-------------|
 | `BOT_INTERNAL_URL` | ні | типово `http://bot:8080` |
-| `INTERNAL_API_TOKEN` | так | має збігатися з `bot/.env.production` |
-| `INTERNAL_PROFILE_LOOKUP_TOKEN` | так | бот шукає профіль за Discord ID |
-| `INTERNAL_API_TOKEN` | так | канонічний токен: контейнер `cron` отримує його як `INTERNAL_CRON_TOKEN` |
+| `INTERNAL_API_TOKEN` | через `.env` | канонічний root token; контейнер `cron` отримує його як `INTERNAL_CRON_TOKEN` |
+| `INTERNAL_PROFILE_LOOKUP_TOKEN` | ні | окремий legacy/інтеграційний token для `/api/profile/discord-lookup`, якщо цей endpoint використовується напряму |
 
 ### Зовнішні API
 
@@ -110,13 +107,10 @@
 
 | Змінна | Обовʼязкова | Призначення |
 |--------|-------------|-------------|
-| `DISCORD_PUBLIC_KEY` | так | перевірка підпису Ed25519. Без нього бот відхиляє всі запити з 401 |
-| `DISCORD_BOT_TOKEN` | так | Discord REST API, Recruitment Gateway і typing |
-| `DISCORD_GUILD_ID` | так | ID сервера |
+| `DISCORD_PUBLIC_KEY` | через `.env` | у production Compose передає канонічне значення з root `.env`; для local bot запуску можна задати тут |
+| `DISCORD_APPLICATION_ID` | так | Application ID для завершення відкладених interaction-відповідей через Discord webhook API |
 | `DASHBOARD_INTERNAL_URL` | так | `http://dashboard:3000` |
-| `INTERNAL_API_TOKEN` | так | має збігатися з панеллю |
-| `DISCORD_RECRUITMENT_GATEWAY_ENABLED` | ні | `1` автоматично запускає Recruitment Gateway, типово увімкнено |
-| `DISCORD_RECRUITMENT_ADVICE_SECRET` | ні | окремий bot ↔ dashboard секрет для recruitment; якщо порожній, використовується `INTERNAL_API_TOKEN` |
+| `INTERNAL_API_TOKEN` | через `.env` | у production Compose передає канонічний root token; для local bot запуску можна задати тут |
 
 ---
 
@@ -128,9 +122,7 @@
 | Значення | Панель | Бот |
 |----------|--------|-----|
 | `DISCORD_PUBLIC_KEY` | ✓ | ✓ |
-| `DISCORD_GUILD_ID` | ✓ | ✓ |
 | `INTERNAL_API_TOKEN` | ✓ | ✓ |
-| `DISCORD_BOT_TOKEN` | ✓ | ✓ |
 
 Швидка перевірка після деплою:
 
@@ -164,7 +156,6 @@ openssl rand -hex 32      # INTERNAL_API_TOKEN
 |--------|-------|
 | `DEBUG_LOGS=1` | детальні логи бота на кожен запит |
 | `PUBLIC_CACHE_DISABLED=1` | вимикає кеш — перевірити, чи проблема в застарілих даних |
-| `DISCORD_RECRUITMENT_GATEWAY_ENABLED=0` | не запускає Recruitment Gateway автоматично; interaction endpoint і control API лишаються доступними |
 
 Після діагностики приберіть їх: `DEBUG_LOGS` на живому сервері швидко
 роздуває журнал.

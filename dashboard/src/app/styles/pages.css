@@ -1013,18 +1013,6 @@
   min-width: 0;
 }
 
-.discord-debug-pre {
-  max-height: 320px;
-  overflow: auto;
-  padding: var(--space-sm);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  font-family: var(--font-mono);
-  font-size: 0.76rem;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
 
 .discord-json-error {
   padding: var(--space-xs) var(--space-md);
@@ -1061,22 +1049,12 @@
   min-width: 0;
 }
 
-.discord-rules-data-overview,
-.discord-recruitment-events {
+.discord-rules-data-overview {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
   gap: var(--space-sm);
 }
 
-.discord-recruitment-event {
-  display: grid;
-  gap: var(--space-3xs);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  min-width: 0;
-}
 
 .discord-rules-metric {
   display: grid;

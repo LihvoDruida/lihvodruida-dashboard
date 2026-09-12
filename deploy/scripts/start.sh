@@ -77,6 +77,36 @@ ok "docker $(docker version --format '{{.Server.Version}}' 2>/dev/null || echo '
 ok "compose $($COMPOSE version --short 2>/dev/null || echo '?')"
 
 # ---------------------------------------------------------------------------
+# 1.5. Статична цілісність релізу
+# ---------------------------------------------------------------------------
+step "Перевіряю цілісність релізу"
+
+for script in deploy/scripts/*.sh deploy/cron/*.sh; do
+  [ -f "$script" ] || { problem "немає $script"; continue; }
+  if bash -n "$script"; then
+    ok "syntax: $script"
+  else
+    problem "синтаксична помилка shell: $script"
+  fi
+done
+
+for f in dashboard/Dockerfile bot/Dockerfile dashboard/package.json dashboard/package-lock.json \
+         bot/package.json bot/package-lock.json bot/src/server.mjs deploy/cron/run-cron.sh; do
+  [ -f "$f" ] && ok "$f" || problem "відсутній build/runtime файл: $f"
+done
+
+# package-lock має бути переносимим на VPS. Внутрішні CI/проксі registry URL
+# можуть працювати лише в середовищі, де lock-файл було згенеровано, і ламати
+# чистий `npm ci` після очищення Docker cache.
+if grep -Eqi 'internal\.api\.|artifactory|applied-caas-gateway' dashboard/package-lock.json; then
+  problem "dashboard/package-lock.json містить приватний/internal registry URL; потрібен registry.npmjs.org"
+else
+  ok "package-lock використовує переносимі registry URL"
+fi
+
+[ "$PROBLEMS" -eq 0 ] || fail "Статична перевірка релізу не пройдена."
+
+# ---------------------------------------------------------------------------
 # 2. Файли конфігурації
 # ---------------------------------------------------------------------------
 step "Перевіряю файли конфігурації"
@@ -136,8 +166,10 @@ require_var dashboard/.env.production SESSION_SECRET
 require_var dashboard/.env.production DISCORD_BOT_TOKEN
 require_var dashboard/.env.production DISCORD_GUILD_ID
 
-require_var bot/.env.production DISCORD_PUBLIC_KEY
-require_var bot/.env.production INTERNAL_API_TOKEN
+# У Docker DISCORD_PUBLIC_KEY та INTERNAL_API_TOKEN приходять з кореневого .env
+# і навмисно перекривають можливі застарілі значення bot/.env.production.
+# DISCORD_APPLICATION_ID лишається bot-only і потрібен для PATCH відкладеної відповіді.
+require_var bot/.env.production DISCORD_APPLICATION_ID
 
 # --- Значення, які мусять збігатися між сервісами --------------------------
 # Розбіжність тут не дає помилки при старті: панель і бот піднімуться, а
@@ -154,10 +186,6 @@ compare_var() {
   fi
 }
 
-compare_var DISCORD_PUBLIC_KEY
-compare_var DISCORD_GUILD_ID
-compare_var DISCORD_BOT_TOKEN
-
 compare_with_root() {
   local key="$1" file="$2"
   local root_value; root_value="$(env_get .env "$key" || true)"
@@ -172,6 +200,8 @@ compare_with_root() {
 
 compare_with_root INTERNAL_API_TOKEN dashboard/.env.production
 compare_with_root INTERNAL_API_TOKEN bot/.env.production
+compare_with_root DISCORD_PUBLIC_KEY dashboard/.env.production
+compare_with_root DISCORD_PUBLIC_KEY bot/.env.production
 ROOT_INTERNAL_TOKEN="$(env_get .env INTERNAL_API_TOKEN || true)"
 if [ "${#ROOT_INTERNAL_TOKEN}" -lt 24 ]; then
   problem "INTERNAL_API_TOKEN у .env має бути не коротший 24 символів (verifyInternalBearerToken відхилить коротший)"

@@ -3,8 +3,8 @@
 Discord-бот Mistblossom Vanguard.
 
 Свідомо тонкий: перевіряє підпис Ed25519, миттєво відповідає Discord,
-тримає Recruitment Gateway для `MESSAGE_CREATE` і передає бізнес-логіку
-панелі. Бази даних та доменної логіки тут немає — вони в `../dashboard`.
+передає interaction-бізнес-логіку панелі та завершує відкладені відповіді
+Discord. Бази даних та доменної логіки тут немає — вони в `../dashboard`.
 
 Чому саме так: Discord дає на відповідь 3 секунди. Якби бот чекав, поки
 панель порахує склад рейду й перемалює embed, кожна друга кнопка віддавала б
@@ -26,11 +26,10 @@ npm test             # перевірка підпису + контракт
 | `POST /discord/interactions` | взаємодії з Discord (публічний, через nginx) |
 | `POST /interactions` | те саме для прямих внутрішніх викликів |
 | `GET /health`, `GET /healthz` | перевірка живості |
-| `GET/POST /discord/recruitment-gateway?action=...` | внутрішнє керування Recruitment Gateway: status/start/reconnect/stop/test-relay/manual-scan |
 
 ## Що бот знає і чого не знає
 
-Знає: `DISCORD_PUBLIC_KEY`, `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`, адресу панелі та спільний внутрішній токен.
+Знає: `DISCORD_PUBLIC_KEY`, `DISCORD_APPLICATION_ID`, адресу панелі та спільний внутрішній токен.
 
 Не знає: рядка підключення до бази, ключів Battle.net, сесійного секрета.
 Це навмисно — контейнер дивиться в інтернет, і зайвий секрет у ньому це

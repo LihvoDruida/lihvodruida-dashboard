@@ -79,6 +79,10 @@ if (exists('package-lock.json')) {
     if (name.endsWith('node_modules/node-domexception')) {
       assert(String(meta.resolved || '').includes('vendor/node-domexception'), 'node-domexception must resolve to the native DOMException shim to avoid npm deprecated warnings.');
     }
+    const resolved = String(meta.resolved || '');
+    if (/^https?:\/\//.test(resolved)) {
+      assert(resolved.startsWith('https://registry.npmjs.org/'), `package-lock contains a non-public npm registry URL: ${resolved}`);
+    }
   }
 }
 
@@ -263,6 +267,7 @@ const composePath = '../docker-compose.yml';
 if (exists(composePath)) {
   const composeText = read(composePath);
   assert(/dashboard:[\s\S]{0,2600}INTERNAL_API_TOKEN:\s*\$\{INTERNAL_API_TOKEN/.test(composeText), 'dashboard must receive canonical root INTERNAL_API_TOKEN from docker-compose.');
+  assert(/dashboard:[\s\S]{0,2800}DISCORD_PUBLIC_KEY:\s*\$\{DISCORD_PUBLIC_KEY/.test(composeText), 'dashboard must receive canonical root DISCORD_PUBLIC_KEY from docker-compose.');
   assert(/bot:[\s\S]{0,2600}INTERNAL_API_TOKEN:\s*\$\{INTERNAL_API_TOKEN/.test(composeText), 'bot must receive canonical root INTERNAL_API_TOKEN from docker-compose.');
   assert(/cron:[\s\S]{0,1800}INTERNAL_CRON_TOKEN:\s*\$\{INTERNAL_API_TOKEN/.test(composeText), 'cron must map INTERNAL_CRON_TOKEN from canonical INTERNAL_API_TOKEN.');
 }

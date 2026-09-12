@@ -117,23 +117,21 @@ ${EDITOR:-nano} dashboard/.env.production
 ${EDITOR:-nano} bot/.env.production
 ```
 
-Значення, які **мають збігатися** в обох файлах: `DISCORD_PUBLIC_KEY`,
-`DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`, `INTERNAL_API_TOKEN`. Розбіжність не
-дає помилки при старті — вона проявляється як «Дія не вдалася» в Discord.
+У production `DISCORD_PUBLIC_KEY` та `INTERNAL_API_TOKEN` мають одне
+канонічне джерело — кореневий `.env`. Compose передає їх і dashboard, і bot,
+а для cron той самий token мапиться як `INTERNAL_CRON_TOKEN`. `DISCORD_BOT_TOKEN`
+та `DISCORD_GUILD_ID` потрібні тільки dashboard; bot-контейнер їх не отримує.
 
-**`.env`** у корені — те, що потрібне самому Compose:
+**`.env`** у корені — те, що потрібне самому Compose. Є готовий шаблон:
 
 ```bash
-cat > .env <<'ENV'
-DASHBOARD_PUBLIC_URL=https://guild.lihvodruida.pp.ua
-POSTGRES_PASSWORD=<openssl rand -base64 32>
-DISCORD_PUBLIC_KEY=<Public Key з Discord Developer Portal>
-INTERNAL_API_TOKEN=<openssl rand -hex 32>
-INTERNAL_API_TOKEN=<той самий INTERNAL_API_TOKEN, що в dashboard/.env.production і bot/.env.production>
-IMAGE_TAG=latest
-ENV
+cp .env.example .env
 chmod 600 .env
+${EDITOR:-nano} .env
 ```
+
+Мінімально заповніть `DASHBOARD_PUBLIC_URL`, `POSTGRES_PASSWORD`,
+`DISCORD_PUBLIC_KEY`, `INTERNAL_API_TOKEN` і `LETSENCRYPT_EMAIL`.
 
 `DASHBOARD_PUBLIC_URL` — головна змінна. З неї будуються редіректи, посилання
 в Discord-повідомленнях і домен для cookie. Задай її **до першої збірки**:

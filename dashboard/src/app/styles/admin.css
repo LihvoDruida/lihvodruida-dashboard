@@ -101,16 +101,11 @@
   border-left-color: var(--c-warning);
 }
 
-.discord-management-card--settings,
-.discord-management-card--worker {
+.discord-management-card--settings {
   border-left-color: var(--c-info);
 }
 
-.discord-management-card--live {
-  border-left-color: var(--c-success);
-}
 
-.discord-management-card--preview,
 .discord-management-card--compact {
   border-left-color: var(--border-strong);
 }
@@ -131,11 +126,6 @@
   min-width: 0;
 }
 
-.discord-recruitment-hint {
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  line-height: 1.55;
-}
 
 /* =========================================================
    3. СТАТУС І ЧІПИ

@@ -22,20 +22,23 @@ PUBLIC_URL="$(env_get .env DASHBOARD_PUBLIC_URL || true)"
 [ -n "$PUBLIC_URL" ] || fail "DASHBOARD_PUBLIC_URL не знайдений."
 EXPECTED="${PUBLIC_URL%/}/discord/interactions"
 
-if ! docker compose ps --status running bot 2>/dev/null | grep -q bot; then
-  fail "bot-контейнер не запущений. Спочатку make up."
+if ! docker compose ps --status running dashboard 2>/dev/null | grep -q dashboard; then
+  fail "dashboard-контейнер не запущений. Спочатку make up."
 fi
 
 printf '%sDiscord Interactions Endpoint%s\n' "$BOLD" "$RESET"
 printf '  Очікується: %s\n' "$EXPECTED"
 
 set +e
-OUTPUT="$(docker compose exec -T -e EXPECTED_INTERACTIONS_ENDPOINT="$EXPECTED" -e ENDPOINT_MODE="$MODE" bot node --input-type=module - <<'NODE'
+# DISCORD_BOT_TOKEN навмисно НЕ передається bot-контейнеру: після видалення
+# recruitment gateway він йому не потрібен. Endpoint application керує dashboard,
+# де bot token уже потрібен для ролей/рейдів/адміністрування Discord.
+OUTPUT="$(docker compose exec -T -e EXPECTED_INTERACTIONS_ENDPOINT="$EXPECTED" -e ENDPOINT_MODE="$MODE" dashboard node --input-type=module - <<'NODE'
 const token = String(process.env.DISCORD_BOT_TOKEN || '').trim();
 const expected = String(process.env.EXPECTED_INTERACTIONS_ENDPOINT || '').trim();
 const mode = String(process.env.ENDPOINT_MODE || 'check');
 if (!token) {
-  console.error(JSON.stringify({ ok:false, error:'DISCORD_BOT_TOKEN missing in bot container' }));
+  console.error(JSON.stringify({ ok:false, error:'DISCORD_BOT_TOKEN missing in dashboard container' }));
   process.exit(2);
 }
 const headers = { authorization: `Bot ${token}`, 'content-type': 'application/json' };

@@ -94,6 +94,9 @@ services:
       # Єдине джерело service-to-service авторизації. Значення з кореневого
       # .env навмисно перекриває можливий застарілий запис у dashboard/.env.production.
       INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?треба задати INTERNAL_API_TOKEN}
+      # Публічний ключ Discord також канонічний у кореневому .env: dashboard
+      # повторно перевіряє підпис interaction, тому він має бути тим самим, що у bot.
+      DISCORD_PUBLIC_KEY: ${DISCORD_PUBLIC_KEY:?треба задати DISCORD_PUBLIC_KEY}
       SERVER_DOCKER_STATS_FILE: /runtime/server-stats/docker-system-df.jsonl
     depends_on:
       postgres:
@@ -145,8 +148,8 @@ services:
         max-size: "10m"
         max-file: "5"
 
-  # Discord-бот. Приймає interaction-кнопки, тримає Recruitment Gateway для
-  # MESSAGE_CREATE і пересилає бізнес-логіку у dashboard внутрішньою мережею.
+  # Discord-бот. Приймає interaction-кнопки та пересилає бізнес-логіку
+  # у dashboard внутрішньою мережею.
   # Назовні interaction endpoint видно тільки через nginx /discord/interactions.
   bot:
     build:
@@ -161,17 +164,13 @@ services:
       TZ: Europe/Kyiv
       LOG_LEVEL: ${BOT_LOG_LEVEL:-info}
       BOT_LOG_SINK_LEVEL: ${BOT_LOG_SINK_LEVEL:-info}
-      # Public Key перевіряє interaction-підпис. Bot token для Gateway/typing
-      # береться з bot/.env.production.
+      # Public Key перевіряє interaction-підпис.
       DISCORD_PUBLIC_KEY: ${DISCORD_PUBLIC_KEY:?треба задати DISCORD_PUBLIC_KEY}
       # Панель доступна ботові тільки внутрішньою мережею — жодних
       # публічних URL між нашими ж сервісами.
       DASHBOARD_URL: http://dashboard:3000
       DASHBOARD_INTERNAL_URL: http://dashboard:3000
       INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?треба задати INTERNAL_API_TOKEN}
-      # Recruitment Gateway тепер живе в цьому ж bot-сервісі.
-      # 0 вимикає тільки auto-start; control API панелі лишається доступним.
-      DISCORD_RECRUITMENT_GATEWAY_ENABLED: ${DISCORD_RECRUITMENT_GATEWAY_ENABLED:-1}
     env_file:
       - ./bot/.env.production
     depends_on:

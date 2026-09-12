@@ -39,23 +39,3 @@ else
   fail "cron → dashboard: INTERNAL_CRON_TOKEN не збігається з dashboard"
 fi
 
-# Dashboard controls Recruitment Gateway with the same canonical token.
-if docker compose exec -T dashboard node --input-type=module - <<'NODE'
-const token = String(process.env.INTERNAL_API_TOKEN || '').trim();
-if (!token) process.exit(2);
-const r = await fetch('http://bot:8080/discord/recruitment-gateway?action=status', {
-  headers: { authorization: `Bearer ${token}` },
-  signal: AbortSignal.timeout(5000),
-});
-if (r.status === 401) {
-  console.error(await r.text().catch(() => 'unauthorized'));
-  process.exit(3);
-}
-if (!r.ok && r.status !== 400) process.exit(4);
-console.log(await r.text());
-NODE
-then
-  ok "dashboard → bot: Recruitment Gateway control авторизовано"
-else
-  fail "dashboard → bot: Recruitment Gateway control unauthorized"
-fi

@@ -96,7 +96,7 @@ npm test             # перевірка підпису + контракт
 
 ```bash
 cd /srv/mistblossom
-docker compose up -d
+make up
 curl -fsS https://guild.lihvodruida.pp.ua/api/health
 ```
 
