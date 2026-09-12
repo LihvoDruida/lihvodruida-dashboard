@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cleanupDashboardProfilesDiscordMembership } from "@/lib/discordMemberManagement";
+import { acquireAccountCleanupExecutionLock } from "@/lib/accountCleanupAutomation";
 import {
   logDashboardEvent,
   noStoreHeaders,
@@ -72,6 +73,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: true, skipped: true, reason: "cooldown", cooldownMs: cooldown, ...(guard.lastResult || {}) }, { headers: noStoreHeaders({ "X-Mistblossom-Account-Cleanup": "cooldown" }) });
   }
 
+  const execution = acquireAccountCleanupExecutionLock("legacy-internal-apply");
+  if (!execution) {
+    return NextResponse.json({ ok: true, skipped: true, reason: "cleanup_in_flight" }, { headers: noStoreHeaders({ "X-Mistblossom-Account-Cleanup": "in-flight" }) });
+  }
+
   guard.lastStartedAt = now;
   const task = cleanupDashboardProfilesDiscordMembership({
     limit: limitFromRequest(request),
@@ -111,6 +117,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(payload, { status: 500, headers: noStoreHeaders({ "X-Mistblossom-Account-Cleanup": "error" }) });
   } finally {
     guard.inFlight = undefined;
+    execution.release();
   }
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "lihvodruida-dashboard",
-  "version": "3.5.3",
+  "version": "3.5.4",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
@@ -12,9 +12,9 @@
     "typecheck": "node scripts/typecheck.cjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "verify": "npm run cleanup:legacy && npm run typecheck && npm run lint && npm run check:actions && npm run check:site && npm run check:rules-accept && npm run check:poll-scheduling && npm run check:admin-overview && npm run check:footer-version && npm run check:raid-editor && npm run check:discord-management && npm run check:imports && npm run audit:styles && npm run audit:ui && npm run inspect:ci",
+    "verify": "npm run cleanup:legacy && npm run typecheck && npm run lint && npm run check:actions && npm run check:site && npm run check:rules-accept && npm run check:poll-scheduling && npm run check:admin-overview && npm run check:footer-version && npm run check:raid-editor && npm run check:discord-management && npm run check:account-cleanup && npm run check:imports && npm run audit:styles && npm run audit:ui && npm run inspect:ci",
     "inspect:ci": "node scripts/inspect-ci.cjs",
-    "build:ci": "npm run cleanup:legacy && npm run typecheck && npm run check:actions && npm run check:site && npm run check:rules-accept && npm run check:poll-scheduling && npm run check:admin-overview && npm run check:footer-version && npm run check:raid-editor && npm run check:discord-management && npm run check:imports && npm run audit:styles && npm run audit:ui && npm run inspect:ci && npm run build",
+    "build:ci": "npm run cleanup:legacy && npm run typecheck && npm run check:actions && npm run check:site && npm run check:rules-accept && npm run check:poll-scheduling && npm run check:admin-overview && npm run check:footer-version && npm run check:raid-editor && npm run check:discord-management && npm run check:account-cleanup && npm run check:imports && npm run audit:styles && npm run audit:ui && npm run inspect:ci && npm run build",
     "start:dev-server": "next start",
     "db:init": "node scripts/db-init.mjs",
     "db:migrate-from-firestore": "node scripts/migrate-firestore-to-postgres.mjs",
@@ -30,7 +30,8 @@
     "check:admin-overview": "node scripts/check-admin-overview.cjs",
     "check:footer-version": "node scripts/check-footer-version.cjs",
     "check:raid-editor": "node scripts/check-raid-editor.cjs",
-    "check:discord-management": "node scripts/check-discord-management.cjs"
+    "check:discord-management": "node scripts/check-discord-management.cjs",
+    "check:account-cleanup": "node scripts/check-account-cleanup.cjs"
   },
   "dependencies": {
     "@mistblossom/discord-contract": "file:../shared",

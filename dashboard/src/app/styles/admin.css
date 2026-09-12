@@ -2682,3 +2682,221 @@
     justify-self: start;
   }
 }
+
+/* Automated inactive-account maintenance -------------------------------- */
+.discord-profile-maintenance-grid > .discord-management-card--import,
+.account-cleanup-card {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.account-cleanup-body {
+  gap: 16px;
+}
+
+.account-cleanup-status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.account-cleanup-status-card {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  min-width: 0;
+  min-height: 96px;
+  padding: 11px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface-raised) 55%, var(--surface-sunken));
+}
+
+.account-cleanup-status-card--danger {
+  border-color: color-mix(in srgb, var(--c-danger) 26%, var(--border-subtle));
+}
+
+.account-cleanup-status-card > small {
+  color: var(--text-faint);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.account-cleanup-status-card > strong {
+  min-width: 0;
+  color: var(--text-strong);
+  font-size: 0.86rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.account-cleanup-status-card > span {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+.account-cleanup-last-error {
+  overflow-wrap: anywhere;
+}
+
+.account-cleanup-settings,
+.account-cleanup-manual {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--surface-sunken);
+}
+
+.account-cleanup-toggle-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.account-cleanup-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.account-cleanup-settings-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.account-cleanup-settings-actions .form-hint {
+  max-width: 68ch;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.account-cleanup-subhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.account-cleanup-subhead h3 {
+  margin: 3px 0 0;
+  color: var(--text-strong);
+  font-size: 0.95rem;
+}
+
+.account-cleanup-manual > form {
+  display: grid;
+  gap: 12px;
+}
+
+.account-cleanup-history > summary {
+  color: var(--text-strong);
+}
+
+.account-cleanup-history-list {
+  display: grid;
+  gap: 6px;
+  padding: 0 10px 10px;
+}
+
+.account-cleanup-history-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.7fr) minmax(0, 1.3fr);
+  gap: 12px;
+  align-items: center;
+  padding: 9px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+
+.account-cleanup-history-row.is-warning {
+  border-color: var(--tint-warning-border);
+}
+
+.account-cleanup-history-row.is-error {
+  border-color: color-mix(in srgb, var(--c-danger) 48%, var(--border-subtle));
+}
+
+.account-cleanup-history-row > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.account-cleanup-history-row strong {
+  color: var(--text-strong);
+}
+
+.account-cleanup-history-row small {
+  color: var(--text-faint);
+  font-size: 0.68rem;
+}
+
+.account-cleanup-history-metrics {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.account-cleanup-history-metrics span {
+  white-space: nowrap;
+}
+
+@media (max-width: 1240px) {
+  .account-cleanup-status-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .account-cleanup-toggle-grid,
+  .account-cleanup-settings-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .account-cleanup-settings-actions,
+  .account-cleanup-subhead {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .account-cleanup-settings-actions .btn {
+    width: 100%;
+  }
+
+  .account-cleanup-history-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .account-cleanup-history-metrics {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 600px) {
+  .account-cleanup-status-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .account-cleanup-status-card {
+    min-height: 0;
+  }
+
+  .account-cleanup-settings,
+  .account-cleanup-manual {
+    padding: 10px;
+  }
+}

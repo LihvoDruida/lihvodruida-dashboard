@@ -6,7 +6,7 @@
 # який стукає у ті самі HTTP-ендпоїнти внутрішньою мережею.
 #
 # Чому не системний cron у контейнері: busybox crond у образі curl немає,
-# а тягнути окремий образ заради трьох задач надлишково. Цикл із перевіркою
+# а тягнути окремий образ заради кількох задач надлишково. Цикл із перевіркою
 # хвилини робить те саме і легко читається в логах.
 #
 # Задачі та розклад:
@@ -14,7 +14,7 @@
 #   */10 * * * *  /api/raids/lifecycle        — публікація й закриття рейдів
 #   */5  * * * *  /api/polls/close-due?force=1 — scheduled-публікація + автозакриття/повтор
 #   */30 * * * *  /api/dashboard/logs/maintenance — retention/budget журналу
-#   0    4 * * *  /api/dashboard/profiles/orphan-cleanup/apply — чистка акаунтів
+#   */15 * * * *  /api/dashboard/profiles/orphan-cleanup — scheduler перевірки/очищення акаунтів
 # ---------------------------------------------------------------------------
 
 set -eu
@@ -52,7 +52,6 @@ log "старт; база=${BASE}"
 
 while true; do
   minute=$(date -u +%-M)
-  hour=$(date -u +%-H)
 
   # Власний VPS дозволяє тримати склад актуальним без browser-driven sync.
   # Endpoint сам застосовує TTL, короткі батчі та Raider.IO cooldown.
@@ -61,12 +60,9 @@ while true; do
   [ $((minute % 5)) -eq 0 ] && call "/api/polls/close-due?force=1"
   [ $((minute % 30)) -eq 0 ] && call "/api/dashboard/logs/maintenance"
 
-  # 04:00 за Києвом. Контейнер живе в UTC, тому рахуємо від TZ явно.
-  kyiv_hour=$(TZ=Europe/Kyiv date +%-H)
-  kyiv_minute=$(TZ=Europe/Kyiv date +%-M)
-  if [ "$kyiv_hour" = "4" ] && [ "$kyiv_minute" = "0" ]; then
-    call "/api/dashboard/profiles/orphan-cleanup/apply"
-  fi
+  # Scheduler акаунтів сам читає збережені налаштування і вирішує,
+  # чи настав час dry-run перевірки або реального очищення.
+  [ $((minute % 15)) -eq 0 ] && call "/api/dashboard/profiles/orphan-cleanup"
 
   # Спимо до початку наступної хвилини, а не рівно 60 секунд:
   # інакше дрейф поступово зсуває задачі повз потрібну хвилину.
