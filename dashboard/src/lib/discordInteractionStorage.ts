@@ -54,8 +54,21 @@ async function authoritativeRead<T>(loader: () => Promise<T>, label: string): Pr
     : new Error(`${label}: authoritative read failed`);
 }
 
-async function authoritativeGet(ref: any, label: string) {
-  return authoritativeRead(() => ref.get(), label);
+type SnapshotLike = {
+  id?: string;
+  exists?: boolean;
+  data?: () => Record<string, unknown> | undefined;
+};
+
+type QuerySnapshotLike = {
+  docs?: SnapshotLike[];
+};
+
+async function authoritativeGet(ref: any, label: string): Promise<SnapshotLike> {
+  return authoritativeRead<SnapshotLike>(
+    async () => (await ref.get()) as SnapshotLike,
+    label,
+  );
 }
 
 async function queryByMessageRef(db: any, collection: string, messageRef: DiscordInteractionMessageRef | null | undefined) {
@@ -72,7 +85,9 @@ async function queryByMessageRef(db: any, collection: string, messageRef: Discor
     `${collection}:message:${ref.channelId}/${ref.messageId}`,
   );
 
-  const docs = Array.isArray((snapshot as any)?.docs) ? (snapshot as any).docs : [];
+  const docs = Array.isArray((snapshot as QuerySnapshotLike)?.docs)
+    ? ((snapshot as QuerySnapshotLike).docs || [])
+    : [];
   if (!docs.length) return null;
   if (docs.length > 1) {
     throw new Error(`${collection}: Discord message maps to more than one document`);
@@ -82,6 +97,89 @@ async function queryByMessageRef(db: any, collection: string, messageRef: Discor
     id: cleanText(doc?.id, 100),
     data: (doc?.data?.() || {}) as Record<string, unknown>,
   };
+}
+
+
+function nestedRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function storedDiscordRef(data: Record<string, unknown>) {
+  const discord = nestedRecord(data.discord) || nestedRecord(data.discordMessage) || nestedRecord(data.message);
+  const channelId = cleanText(
+    data.channelId || data.channel_id || data.discordChannelId || data.discord_channel_id || discord?.channelId || discord?.channel_id,
+    32,
+  );
+  const messageId = cleanText(
+    data.messageId || data.message_id || data.discordMessageId || data.discord_message_id || discord?.messageId || discord?.message_id || discord?.id,
+    32,
+  );
+  const messageUrl = cleanText(data.messageUrl || data.message_url || data.discordMessageUrl || data.discord_message_url, 2048);
+  return { channelId, messageId, messageUrl };
+}
+
+function embeddedResourceIds(data: Record<string, unknown>) {
+  return [
+    data.id,
+    data.resourceId,
+    data.resource_id,
+    data.raidId,
+    data.raid_id,
+    data.pollId,
+    data.poll_id,
+    data.rosterId,
+    data.roster_id,
+  ]
+    .map((value) => cleanText(value, 100))
+    .filter(Boolean);
+}
+
+function messageUrlMatches(url: string, ref: { channelId: string; messageId: string }) {
+  if (!url) return false;
+  return url.includes(`/channels/`) && url.includes(`/${ref.channelId}/${ref.messageId}`);
+}
+
+/**
+ * Compatibility fallback for data written by older adapters/migrations.
+ * It intentionally runs only after the indexed exact lookup missed, so the
+ * normal interaction path stays O(1). Resource collections are small, and a
+ * bounded scan is preferable to reporting a live Discord button as deleted
+ * just because an older document used message_id/discordMessageId/nested keys.
+ */
+async function scanStoreForResource(
+  db: any,
+  collection: string,
+  resourceId: string,
+  messageRef?: DiscordInteractionMessageRef | null,
+) {
+  const ref = cleanMessageRef(messageRef);
+  const snapshot = await authoritativeRead<QuerySnapshotLike>(
+    async () => (await db.collection(collection).limit(500).get()) as QuerySnapshotLike,
+    `${collection}:compat-scan`,
+  );
+  const docs = Array.isArray(snapshot?.docs) ? snapshot.docs : [];
+
+  for (const doc of docs) {
+    const id = cleanText(doc?.id, 100);
+    const data = (doc?.data?.() || {}) as Record<string, unknown>;
+    if (!id) continue;
+
+    if (embeddedResourceIds(data).includes(resourceId)) {
+      return { id, data, matchedBy: "embedded-id" as const };
+    }
+
+    if (ref) {
+      const stored = storedDiscordRef(data);
+      const exactPair = stored.channelId === ref.channelId && stored.messageId === ref.messageId;
+      const idOnly = stored.messageId === ref.messageId && (!stored.channelId || stored.channelId === ref.channelId);
+      if (exactPair || idOnly || messageUrlMatches(stored.messageUrl, ref)) {
+        return { id, data, matchedBy: "message-scan" as const };
+      }
+    }
+  }
+  return null;
 }
 
 /** Convert Firestore values into JSON-safe values accepted by the PostgreSQL document adapter. */
@@ -168,6 +266,16 @@ export async function resolveDiscordInteractionDocument(params: {
     };
   }
 
+  const primaryScan = await scanStoreForResource(primary, collection, resourceId, params.messageRef);
+  if (primaryScan?.id) {
+    return {
+      id: primaryScan.id,
+      data: primaryScan.data,
+      source: "primary-query",
+      recovered: primaryScan.id !== resourceId || primaryScan.matchedBy !== "embedded-id",
+    };
+  }
+
   // During/after migration old Discord messages may still reference documents
   // that exist only in Firestore. Read-through is intentionally limited to
   // interaction misses; normal page traffic remains PostgreSQL-only.
@@ -201,6 +309,17 @@ export async function resolveDiscordInteractionDocument(params: {
       id: legacyByMessage.id,
       data,
       source: "legacy-message",
+      recovered: true,
+    };
+  }
+
+  const legacyScan = await scanStoreForResource(legacy, collection, resourceId, params.messageRef);
+  if (legacyScan?.id) {
+    const data = await backfillLegacyDocument(collection, legacyScan.id, legacyScan.data);
+    return {
+      id: legacyScan.id,
+      data,
+      source: "legacy-query",
       recovered: true,
     };
   }
@@ -246,7 +365,9 @@ export async function resolveDiscordInteractionProfileDocument(params: {
           .get(),
         `dashboardProfiles:${field}:${discordUserId}`,
       );
-      const docs = Array.isArray((snapshot as any)?.docs) ? (snapshot as any).docs : [];
+      const docs = Array.isArray((snapshot as QuerySnapshotLike)?.docs)
+        ? ((snapshot as QuerySnapshotLike).docs || [])
+        : [];
       for (const doc of docs) {
         const data = (doc?.data?.() || {}) as Record<string, unknown>;
         const provider = cleanText(data.provider, 32);

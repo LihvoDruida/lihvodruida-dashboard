@@ -67,6 +67,16 @@ import {
 import { DpsRangeType, MAX_RAID_PLAYERS, RAID_PARTY_SIZE, dpsRangeType, dpsTierTwoScore, missingCriticalBuffs, partyCapacity, partyFlexRoleCount, partyMembersCount, pickParty, raidMinimumItemLevel, raidRegistrationLimit, roleSortWeight, signupClassKey } from "@/lib/raidPartyShared";
 import { cleanSnowflake, cleanSnowflakeIds, timestampToIso, timezoneOffsetMs } from "@/lib/values";
 import { resolveDiscordInteractionDocument } from "@/lib/discordInteractionStorage";
+import {
+  firstDiscordTimestampSeconds,
+  firstInteractionEmbed,
+  fraction as discordFraction,
+  inferDifficultyFromTitle,
+  interactionField,
+  interactionMessageTimestamp,
+  kyivDateTimeFromEpochSeconds,
+  stripDifficultySuffix,
+} from "@/lib/discordInteractionRecovery";
 import {  isActiveSignupStatus, raidActiveRosterSize, raidAutoComposition } from "@/lib/raidPartyShared";
 export { autoRaidCompositionForSize, raidActiveRosterSize, raidAutoComposition, raidAutoCompositionLabel } from "@/lib/raidPartyShared";
 
@@ -4061,8 +4071,12 @@ export async function publishOrUpdateRaid(
   raid: RaidItem,
   channelId?: string | null,
 ) {
-  const payload = buildRaidDiscordPayload(raid);
   const closed = isRaidClosed(raid);
+  // A draft becomes published as part of this operation. Build the public
+  // message from that effective state, otherwise Discord visibly says
+  // “Чернетка” while already exposing live signup buttons.
+  const publicRaid: RaidItem = { ...raid, status: closed ? "closed" : "published" };
+  const payload = buildRaidDiscordPayload(publicRaid);
   const components = buildRaidAttendanceComponents(raid.id, {
     disabled: closed,
     full: !closed && isRaidRegistrationFull(raid),
@@ -4178,7 +4192,7 @@ export async function publishOrUpdateRaid(
         );
       clearRaidRuntimeCaches(raid.id);
     },
-    { timeoutMs: 3_000, logEvent: "raids.publish_state_write_failed" },
+    { timeoutMs: 3_000, bypassCircuit: true, logEvent: "raids.publish_state_write_failed" },
   );
 
   return { channelId: nextChannelId, messageId: nextMessageId, messageUrl };
@@ -4866,9 +4880,97 @@ function attendanceSuccessText(
   return warning ? `${base}\n\n${warning}` : base;
 }
 
+
+async function recoverEmptyRaidFromDiscordMessage(
+  raidId: string,
+  messageRef: DiscordMessageRefInput | null | undefined,
+  interactionMessage?: unknown,
+): Promise<RaidItem | null> {
+  const id = cleanRaidId(raidId);
+  const ref = cleanDiscordMessageRef(messageRef);
+  const embed = firstInteractionEmbed(interactionMessage);
+  if (!id || !ref || !embed) return null;
+
+  // We can safely recreate an orphan only while the public message proves that
+  // no signup state exists. Never turn a populated Discord roster into an
+  // empty database record: that would trade a visible error for silent loss.
+  const rosterField = interactionField(interactionMessage, /склад рейду/i);
+  const roster = discordFraction(rosterField);
+  if (!roster || roster.current !== 0) return null;
+
+  const title = stripDifficultySuffix(embed.title) || "Рейд";
+  const difficulty = inferDifficultyFromTitle(embed.title);
+  const dateField = interactionField(interactionMessage, /дата/i);
+  const dateTime = kyivDateTimeFromEpochSeconds(firstDiscordTimestampSeconds(dateField));
+  const roleField = interactionField(interactionMessage, /ролі/i);
+  const roleMatches = Array.from(roleField.matchAll(/(\d+)\s*\/\s*(\d+)\s*(?:танк|хіл|дд)/giu));
+  const composition: RaidComposition = {
+    tanks: Math.max(1, Number(roleMatches[0]?.[2] || 2)),
+    healers: Math.max(1, Number(roleMatches[1]?.[2] || 2)),
+    dps: Math.max(1, Number(roleMatches[2]?.[2] || 6)),
+  };
+  const consumablesText = interactionField(interactionMessage, /розхідники/i).toLowerCase();
+  const lootText = interactionField(interactionMessage, /лут/i).toLowerCase();
+  const lockText = interactionField(interactionMessage, /блокування запису/i).toLowerCase();
+  const creator = interactionField(interactionMessage, /створив/i) || "Відновлено з Discord";
+  const createdAt = interactionMessageTimestamp(interactionMessage);
+  const now = new Date().toISOString();
+
+  const raw: Record<string, unknown> = {
+    title,
+    difficulty,
+    date: dateTime?.date || "",
+    time: dateTime?.time || "",
+    description: String(embed.description || "").trim() || "Рейд відновлено з активного Discord-повідомлення.",
+    minItemLevel: null,
+    minItemLevelRequired: false,
+    maxPlayers: roster.total > 0 ? roster.total : null,
+    registrationLockEnabled: lockText ? !/вимкн/i.test(lockText) : false,
+    registrationLockMinutesBefore: null,
+    imageUrl: null,
+    thumbnailUrl: null,
+    mentionRoleIds: [],
+    createdByDiscordId: "",
+    createdByName: creator,
+    createdByMain: null,
+    raidLeaderName: null,
+    consumables: consumablesText.includes("гільд") ? "guild" : "own",
+    lootMode: lootText.includes("soft") ? "soft-reserve" : lootText.includes("council") ? "loot-council" : lootText.includes("віль") ? "free-roll" : "ms-os",
+    composition,
+    status: "published",
+    channelId: ref.channelId,
+    messageId: ref.messageId,
+    messageUrl: discordMessageUrl(ref.channelId, ref.messageId),
+    signups: [],
+    createdAt,
+    updatedAt: now,
+    publishedAt: createdAt,
+    recoveredFromDiscordMessageAt: now,
+    recoveredFromDiscordMessage: true,
+  };
+
+  await firebaseWrite(
+    "raid",
+    `raid:${id}:discord-orphan-recovery`,
+    async () => {
+      await getFirebaseAdminDb().collection(RAID_COLLECTION).doc(id).set(raw, { merge: true });
+      return true;
+    },
+    { timeoutMs: 5_000, bypassCircuit: true, logEvent: "raids.discord_orphan_recovered" },
+  );
+  clearRaidRuntimeCaches(id);
+  console.warn("[raids] restored empty raid backing document from Discord message", {
+    raidId: id,
+    channelId: ref.channelId,
+    messageId: ref.messageId,
+  });
+  return normalizeRaid(id, raw);
+}
+
 async function getRaidForDiscordInteraction(
   raidId: string,
   messageRef?: DiscordMessageRefInput | null,
+  interactionMessage?: unknown,
 ): Promise<RaidItem | null> {
   const id = cleanRaidId(raidId);
   if (!id || !hasRaidStorage()) return null;
@@ -4879,7 +4981,9 @@ async function getRaidForDiscordInteraction(
     resourceId: id,
     messageRef: ref,
   });
-  if (!resolved) return null;
+  if (!resolved) {
+    return recoverEmptyRaidFromDiscordMessage(id, ref, interactionMessage);
+  }
 
   const raid = normalizeRaid(resolved.id, resolved.data);
   clearRaidRuntimeCaches(raid.id);
@@ -4907,11 +5011,12 @@ export async function handleRaidDiscordAction(params: {
   manual?: RaidManualSelection | null;
   commit?: boolean;
   messageRef?: DiscordMessageRefInput | null;
+  interactionMessage?: unknown;
   syncDiscord?: boolean;
 }) {
   let raid: RaidItem | null = null;
   try {
-    raid = await getRaidForDiscordInteraction(params.raidId, params.messageRef);
+    raid = await getRaidForDiscordInteraction(params.raidId, params.messageRef, params.interactionMessage);
   } catch (error) {
     console.error("[raids] authoritative Discord lookup failed", {
       raidId: params.raidId,

@@ -240,6 +240,7 @@ export async function POST(request: NextRequest) {
         userId,
         userName,
         messageRef: getInteractionMessageRef(interaction),
+        interactionMessage: interaction?.message,
       });
       logDashboardEvent(result.ok ? "info" : "warn", "discord.roster.action", request, {
         rosterId: rosterAction.rosterId,
@@ -275,6 +276,7 @@ export async function POST(request: NextRequest) {
         guildId,
         guildName: String(interaction?.guild?.name || "Discord server"),
         messageRef,
+        interactionMessage: interaction?.message,
       });
       logDashboardEvent(result.ok ? "info" : "warn", "discord.raid_poll.action", request, { pollId: pollAction.pollId, kind: pollAction.kind, userId, ok: result.ok });
       return finishDecision(interaction, result.content, result.components || []);
@@ -316,6 +318,7 @@ export async function POST(request: NextRequest) {
         commit: Boolean((raidAction as { commit?: boolean }).commit),
         manual: raidManualSpec ? raidManualSpec.manual : null,
         messageRef: getInteractionMessageRef(interaction),
+        interactionMessage: interaction?.message,
       });
       logDashboardEvent(result.ok ? "info" : "warn", "discord.raid.action", request, { raidId: raidAction.raidId, action: raidAction.action, userId, ok: result.ok });
 

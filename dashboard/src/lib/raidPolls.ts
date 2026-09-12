@@ -90,6 +90,15 @@ import {
 } from "@/lib/raidPollShared";
 import { cleanSnowflake, cleanSnowflakeIds, envFlag, timestampToIso, timezoneOffsetMs, dashboardPublicOrigin } from "@/lib/values";
 import { resolveDiscordInteractionDocument } from "@/lib/discordInteractionStorage";
+import {
+  firstDiscordTimestampSeconds,
+  firstInteractionEmbed,
+  inferDifficultyFromTitle,
+  interactionField,
+  interactionMessageTimestamp,
+  isExplicitlyZero,
+  stripDifficultySuffix,
+} from "@/lib/discordInteractionRecovery";
 
 const RAID_POLL_COLLECTION = "dashboardRaidPolls";
 const RAID_POLL_ACTION_PREFIX = "mbv1:poll";
@@ -1646,7 +1655,7 @@ async function savePollDiscordRef(pollId: string, ref: { channelId: string; mess
       updatedAtMs: Date.now(),
     });
     return true;
-  }, { logEvent: "raid_polls.discord_ref_failed" });
+  }, { bypassCircuit: true, logEvent: "raid_polls.discord_ref_failed" });
   clearRaidPollRuntimeCaches(pollId);
   clearRaidPollDiscordSignatureCache(pollId);
   return updatedAt;
@@ -2467,6 +2476,90 @@ export type RaidPollDiscordVoteKind =
   | "role"
   | "submit";
 
+
+async function recoverEmptyRaidPollFromDiscordMessage(
+  pollId: string,
+  messageRef: DiscordMessageRef | null | undefined,
+  interactionMessage?: unknown,
+): Promise<RaidPollItem | null> {
+  const id = cleanString(pollId, 80);
+  const channelId = cleanSnowflake(messageRef?.channelId);
+  const messageId = cleanSnowflake(messageRef?.messageId);
+  const embed = firstInteractionEmbed(interactionMessage);
+  if (!id || !channelId || !messageId || !embed) return null;
+
+  // A message with votes contains state that an embed cannot faithfully
+  // reconstruct. Auto-heal only the demonstrably empty case from the public
+  // counters; populated orphan polls require migration/republish instead.
+  const voterCount = interactionField(interactionMessage, /проголосували/i);
+  if (!isExplicitlyZero(voterCount)) return null;
+
+  const statusText = interactionField(interactionMessage, /статус/i).toLowerCase();
+  const status: RaidPollStatus = statusText.includes("заверш") || statusText.includes("закрит")
+    ? "closed"
+    : statusText.includes("пау") || statusText.includes("призуп")
+      ? "paused"
+      : "open";
+  const closeSeconds = firstDiscordTimestampSeconds(statusText);
+  const createdAt = interactionMessageTimestamp(interactionMessage);
+  const now = Date.now();
+  const closesAtMs = closeSeconds ? closeSeconds * 1000 : Math.max(now + 12 * 60 * 60_000, Date.parse(createdAt) + 12 * 60 * 60_000);
+  const title = stripDifficultySuffix(embed.title) || "Рейд-пул";
+  const raw: Record<string, unknown> = {
+    title,
+    difficulty: inferDifficultyFromTitle(embed.title),
+    description: String(embed.description || "").trim() || RAID_POLL_DESCRIPTION,
+    status,
+    closeAfterMinutes: 12 * 60,
+    closesAt: new Date(closesAtMs).toISOString(),
+    closesAtMs,
+    closedAt: status === "closed" ? new Date(now).toISOString() : null,
+    closedReason: status === "closed" ? "manual" : null,
+    pausedAt: status === "paused" ? new Date(now).toISOString() : null,
+    pausedRemainingMs: status === "paused" ? Math.max(0, closesAtMs - now) : null,
+    createdByDiscordId: "",
+    createdByName: "Відновлено з Discord",
+    channelId,
+    messageId,
+    messageUrl: discordMessageUrl(channelId, messageId),
+    mentionRoleIds: [],
+    autoRepeatWeekly: false,
+    repeatWeeklyDay: null,
+    repeatWeeklyTime: null,
+    repeatNextAt: null,
+    repeatNextAtMs: null,
+    repeatSeriesId: null,
+    repeatedFromPollId: null,
+    days: RAID_POLL_DAYS.map((day) => day.value),
+    votes: [],
+    votesByDiscordId: {},
+    createdAt,
+    updatedAt: new Date(now).toISOString(),
+    createdAtMs: Date.parse(createdAt) || now,
+    updatedAtMs: now,
+    recoveredFromDiscordMessageAt: new Date(now).toISOString(),
+    recoveredFromDiscordMessage: true,
+  };
+
+  await firebaseWrite(
+    "raid",
+    `raid-poll:${id}:discord-orphan-recovery`,
+    async () => {
+      await pollRef(id).set(raw, { merge: true });
+      return true;
+    },
+    { timeoutMs: 5_000, bypassCircuit: true, logEvent: "raid_polls.discord_orphan_recovered" },
+  );
+  clearRaidPollRuntimeCaches(id);
+  clearRaidPollDiscordSignatureCache(id);
+  console.warn("[raidPolls] restored empty poll backing document from Discord message", {
+    pollId: id,
+    channelId,
+    messageId,
+  });
+  return normalizeRaidPoll(id, raw);
+}
+
 export async function handleRaidPollDiscordVote(params: {
   pollId: string;
   kind: RaidPollDiscordVoteKind;
@@ -2478,6 +2571,7 @@ export async function handleRaidPollDiscordVote(params: {
   guildId?: string | null;
   guildName?: string | null;
   messageRef?: DiscordMessageRef | null;
+  interactionMessage?: unknown;
 }): Promise<RaidPollVoteResult> {
   if (!hasRaidPollStorage()) {
     return { ok: false, content: "❌ Голосування тимчасово недоступне: сховище даних не налаштоване." };
@@ -2504,7 +2598,25 @@ export async function handleRaidPollDiscordVote(params: {
     };
   }
   if (!resolvedDocument) {
-    return { ok: false, content: "❌ Рейд-пул справді не знайдено. Discord-повідомлення могло залишитися від видаленого пулу." };
+    const recoveredPoll = await recoverEmptyRaidPollFromDiscordMessage(
+      params.pollId,
+      params.messageRef,
+      params.interactionMessage,
+    );
+    if (recoveredPoll) {
+      resolvedDocument = {
+        id: recoveredPoll.id,
+        data: recoveredPoll as unknown as Record<string, unknown>,
+        source: "primary-id",
+        recovered: true,
+      };
+    }
+  }
+  if (!resolvedDocument) {
+    return {
+      ok: false,
+      content: "❌ Дані цього рейд-пулу відсутні в базі. Якщо в повідомленні вже були голоси, автоматичне відновлення навмисно не створює порожній пул — спершу віднови БД або перепублікуй пул із сайту.",
+    };
   }
   const effectivePollId = resolvedDocument.id;
   if (resolvedDocument.recovered) {

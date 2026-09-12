@@ -27,6 +27,12 @@ import {
 } from "@/lib/raidCompositionAlgorithm";
 import { cleanSnowflake, cleanSnowflakeIds } from "@/lib/values";
 import { resolveDiscordInteractionDocument, type DiscordInteractionMessageRef } from "@/lib/discordInteractionStorage";
+import {
+  firstInteractionEmbed,
+  fraction as discordFraction,
+  interactionMessageTimestamp,
+  stripLeadingEmojiTitle,
+} from "@/lib/discordInteractionRecovery";
 
 /* ==========================================================================
    Система «Формування складу».
@@ -224,9 +230,75 @@ export async function getRosterFormation(rosterId: string): Promise<RosterFormat
   );
 }
 
+
+async function recoverEmptyRosterFromDiscordMessage(
+  rosterId: string,
+  messageRef: DiscordInteractionMessageRef | null | undefined,
+  interactionMessage?: unknown,
+): Promise<RosterFormation | null> {
+  const id = String(rosterId || "").trim();
+  const channelId = cleanSnowflake(messageRef?.channelId);
+  const messageId = cleanSnowflake(messageRef?.messageId);
+  const embed = firstInteractionEmbed(interactionMessage);
+  if (!id || !channelId || !messageId || !embed) return null;
+
+  const rosterField = Array.isArray(embed.fields)
+    ? embed.fields.find((field) => /склад\s*\(/iu.test(String(field?.name || "")))
+    : null;
+  const total = discordFraction(String(rosterField?.name || ""));
+  if (!total || total.current !== 0) return null;
+
+  const rawTitle = stripLeadingEmojiTitle(embed.title);
+  const seasonMatch = rawTitle.match(/сезон\s*(\d+)/iu);
+  const season = cleanSeason(seasonMatch?.[1] || 1);
+  const statusField = Array.isArray(embed.fields)
+    ? embed.fields.find((field) => /статус/iu.test(String(field?.name || "")))
+    : null;
+  const statusText = String(statusField?.value || "").toLowerCase();
+  const createdAt = interactionMessageTimestamp(interactionMessage);
+  const now = new Date().toISOString();
+  const raw: Record<string, unknown> = {
+    season,
+    title: rawTitle || rosterFullTitle(season),
+    description: String(embed.description || "").trim() || "Формування складу відновлено з активного Discord-повідомлення.",
+    channelId,
+    messageId,
+    messageUrl: discordMessageUrl(channelId, messageId),
+    mentionRoleIds: [],
+    authorId: "",
+    authorName: cleanText(embed.author?.name, 80) || "Відновлено з Discord",
+    status: statusText.includes("закрит") ? "closed" : "open",
+    picks: [],
+    createdAt,
+    updatedAt: now,
+    createdAtMs: Date.parse(createdAt) || Date.now(),
+    updatedAtMs: Date.now(),
+    recoveredFromDiscordMessageAt: now,
+    recoveredFromDiscordMessage: true,
+  };
+
+  await firebaseWrite(
+    "raid",
+    `roster:${id}:discord-orphan-recovery`,
+    async () => {
+      await rosterRef(id).set(raw, { merge: true });
+      return true;
+    },
+    { timeoutMs: 5_000, bypassCircuit: true, logEvent: "roster.discord_orphan_recovered" },
+  );
+  clearRosterCaches(id);
+  console.warn("[rosterFormation] restored empty roster backing document from Discord message", {
+    rosterId: id,
+    channelId,
+    messageId,
+  });
+  return normalizeRosterFormation(id, raw);
+}
+
 async function getRosterFormationForDiscordInteraction(
   rosterId: string,
   messageRef?: DiscordInteractionMessageRef | null,
+  interactionMessage?: unknown,
 ): Promise<RosterFormation | null> {
   if (!hasRosterStorage()) return null;
   const id = String(rosterId || "").trim();
@@ -237,7 +309,9 @@ async function getRosterFormationForDiscordInteraction(
     resourceId: id,
     messageRef,
   });
-  if (!resolved) return null;
+  if (!resolved) {
+    return recoverEmptyRosterFromDiscordMessage(id, messageRef, interactionMessage);
+  }
   const roster = normalizeRosterFormation(resolved.id, resolved.data);
   clearRosterCaches(roster.id);
   if (resolved.recovered) {
@@ -741,6 +815,7 @@ export async function handleRosterFormationDiscordAction(params: {
   userId: string;
   userName: string;
   messageRef?: DiscordInteractionMessageRef | null;
+  interactionMessage?: unknown;
 }): Promise<RosterActionResult> {
   const { rosterId, kind, values, userId, userName } = params;
 
@@ -750,7 +825,7 @@ export async function handleRosterFormationDiscordAction(params: {
 
   let roster: RosterFormation | null = null;
   try {
-    roster = await getRosterFormationForDiscordInteraction(rosterId, params.messageRef);
+    roster = await getRosterFormationForDiscordInteraction(rosterId, params.messageRef, params.interactionMessage);
   } catch (error) {
     console.error("[rosterFormation] authoritative Discord lookup failed", {
       rosterId,
@@ -761,7 +836,10 @@ export async function handleRosterFormationDiscordAction(params: {
       content: "⚠️ Сховище складу зараз не відповідає. Дані не видалені — спробуй ще раз за кілька секунд.",
     };
   }
-  if (!roster) return { ok: false, content: "❌ Формування складу справді не знайдено. Discord-повідомлення могло залишитися від видаленого формування." };
+  if (!roster) return {
+    ok: false,
+    content: "❌ Дані цього формування відсутні в базі. Якщо в Discord уже були учасники, автоматичне відновлення навмисно не створює порожній склад — віднови БД або перепублікуй формування із сайту.",
+  };
   const effectiveRosterId = roster.id;
   if (roster.status === "closed") return { ok: false, content: "🔒 Набір складу вже закрито офіцером." };
 
@@ -883,36 +961,73 @@ export async function saveRosterFormationFromInput(
     updatedAt: now,
   };
 
-  const published = await publishRosterMessage(draft, channelId);
-  const finalRoster: RosterFormation = { ...draft, ...published, updatedAt: new Date().toISOString() };
-
+  // Persist the backing document BEFORE publishing the Discord message.
+  // Otherwise a transient DB failure leaves a perfectly clickable orphan in
+  // Discord that can never resolve its custom_id.
   await firebaseWrite<void>(
     "raid",
     `roster:create:${id}`,
     async () => {
       await rosterRef(id).set({
-        season: finalRoster.season,
-        title: finalRoster.title,
-        description: finalRoster.description,
-        channelId: finalRoster.channelId,
-        messageId: finalRoster.messageId,
-        messageUrl: finalRoster.messageUrl,
-        mentionRoleIds: finalRoster.mentionRoleIds,
-        authorId: finalRoster.authorId,
-        authorName: finalRoster.authorName,
-        status: finalRoster.status,
+        season: draft.season,
+        title: draft.title,
+        description: draft.description,
+        channelId: draft.channelId,
+        messageId: "",
+        messageUrl: "",
+        mentionRoleIds: draft.mentionRoleIds,
+        authorId: draft.authorId,
+        authorName: draft.authorName,
+        status: draft.status,
         picks: [],
-        createdAt: finalRoster.createdAt,
-        updatedAt: finalRoster.updatedAt,
+        createdAt: draft.createdAt,
+        updatedAt: draft.updatedAt,
         createdAtMs: Date.now(),
         updatedAtMs: Date.now(),
       });
     },
-    { logEvent: "roster.create_failed" },
+    { bypassCircuit: true, logEvent: "roster.create_failed" },
   );
 
-  clearRosterCaches(id);
-  return finalRoster;
+  let published: { channelId: string; messageId: string; messageUrl: string } | null = null;
+  try {
+    published = await publishRosterMessage(draft, channelId);
+    const finalRoster: RosterFormation = { ...draft, ...published, updatedAt: new Date().toISOString() };
+    await firebaseWrite<void>(
+      "raid",
+      `roster:create:${id}:discord-ref`,
+      async () => {
+        await rosterRef(id).set({
+          channelId: finalRoster.channelId,
+          messageId: finalRoster.messageId,
+          messageUrl: finalRoster.messageUrl,
+          updatedAt: finalRoster.updatedAt,
+          updatedAtMs: Date.now(),
+        }, { merge: true });
+      },
+      { bypassCircuit: true, logEvent: "roster.create_discord_ref_failed" },
+    );
+    clearRosterCaches(id);
+    return finalRoster;
+  } catch (error) {
+    if (published?.channelId && published?.messageId) {
+      await deleteDiscordRaidMessage({
+        ref: { channelId: published.channelId, messageId: published.messageId },
+        auditReason: `Rollback failed roster create: ${id}`,
+      }).catch(() => null);
+    }
+    await firebaseWrite(
+      "raid",
+      `roster:create:${id}:rollback`,
+      async () => {
+        await rosterRef(id).delete().catch(() => null);
+        return true;
+      },
+      { bypassCircuit: true, logEvent: "roster.create_rollback_failed" },
+    ).catch(() => null);
+    clearRosterCaches(id);
+    throw error;
+  }
 }
 
 /** Очистка складу: прибирає всі вибори гравців (лише адмін). */

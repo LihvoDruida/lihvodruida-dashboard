@@ -60,6 +60,8 @@ export async function POST(request: NextRequest) {
     const values = cleanValues(body?.values);
     const userId = String(body?.userId || body?.user_id || "").trim();
     const userName = String(body?.userName || body?.user_name || "").trim();
+    const channelId = String(body?.channelId || body?.channel_id || "").trim();
+    const messageId = String(body?.messageId || body?.message_id || "").trim();
 
     if (!rosterId || !kind) {
       return NextResponse.json(
@@ -89,6 +91,7 @@ export async function POST(request: NextRequest) {
       values,
       userId,
       userName,
+      messageRef: { channelId, messageId },
     });
 
     logDashboardEvent(result.ok ? "info" : "warn", "roster.discord_action.done", request, {
