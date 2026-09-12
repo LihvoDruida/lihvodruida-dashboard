@@ -55,6 +55,7 @@ function isInternalBearerApiPath(pathname: string) {
     pathname === "/api/dashboard/profiles/orphan-cleanup" ||
     pathname === "/api/dashboard/profiles/orphan-cleanup/apply" ||
     pathname === "/api/dashboard/logs/maintenance" ||
+    pathname === "/api/guild/sync" ||
     pathname === "/api/raids/lifecycle" ||
     pathname === "/api/polls/close-due" ||
     // Обидва ендпоїнти рекрутингового радника викликає локальний bot service
@@ -74,6 +75,25 @@ function hasPotentialInternalBearerToken(request: NextRequest) {
     /^Bearer\s+\S+/i.test(authorization) ||
     Boolean(request.headers.get("x-worker-stats-token"))
   );
+}
+
+/**
+ * Host-и, якими сервіси Docker звертаються до dashboard напряму всередині
+ * compose-мережі. Вони НЕ додаються до загального allowlist публічних host-ів:
+ * такий host дозволяється тільки для відомого internal API, коли запит уже має
+ * Bearer-заголовок. Справжність токена все одно перевіряє route handler через
+ * verifyInternalBearerToken().
+ */
+function isInternalServiceHost(host: string) {
+  const normalized = String(host || "").trim().toLowerCase();
+  const configured = String(
+    process.env.DASHBOARD_INTERNAL_HOSTS || "dashboard,dashboard:3000",
+  )
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+
+  return configured.includes(normalized);
 }
 
 function isProtectedApiPath(pathname: string) {
@@ -180,15 +200,25 @@ function isLoopbackHost(host: string) {
 
 export function proxy(request: NextRequest) {
   const host = getRequestHost(request);
+  const pathname = request.nextUrl.pathname;
+  const hasInternalBearerAuth =
+    isInternalBearerApiPath(pathname) &&
+    hasPotentialInternalBearerToken(request);
+  const isInternalServiceRequest =
+    hasInternalBearerAuth && isInternalServiceHost(host);
 
   if (
-    HOST_CHECK_EXEMPT_PATHS.has(request.nextUrl.pathname)
+    HOST_CHECK_EXEMPT_PATHS.has(pathname)
     && isLoopbackHost(host)
   ) {
     return NextResponse.next();
   }
 
-  if (!isAllowedHost(host)) {
+  // `cron` і `bot` ходять до Next напряму як http://dashboard:3000.
+  // Публічний host-check не повинен блокувати ці запити, але виняток діє
+  // тільки для відомих internal API з Bearer-заголовком. Route handler
+  // після middleware обов'язково перевіряє значення секрету.
+  if (!isAllowedHost(host) && !isInternalServiceRequest) {
     const isSafeRedirect = request.method === "GET" || request.method === "HEAD";
     logDashboardEvent(isSafeRedirect ? "debug" : "warn", "proxy.host_rejected", request, {
       blockedHost: host,
@@ -209,7 +239,9 @@ export function proxy(request: NextRequest) {
     });
   }
 
-  const cloudflareProxyMode = getCloudflareProxyMode(host);
+  const cloudflareProxyMode = isInternalServiceRequest
+    ? "off"
+    : getCloudflareProxyMode(host);
   if (cloudflareProxyMode !== "off" && !hasCloudflareSignal(request)) {
     logDashboardEvent("warn", "proxy.cloudflare_signal_missing", request, {
       mode: cloudflareProxyMode,
@@ -222,10 +254,7 @@ export function proxy(request: NextRequest) {
   }
 
   const isDiscordInteractionEndpoint =
-    request.nextUrl.pathname === "/api/discord/interactions";
-  const hasInternalBearerAuth =
-    isInternalBearerApiPath(request.nextUrl.pathname) &&
-    hasPotentialInternalBearerToken(request);
+    pathname === "/api/discord/interactions";
 
   if (
     !isDiscordInteractionEndpoint &&

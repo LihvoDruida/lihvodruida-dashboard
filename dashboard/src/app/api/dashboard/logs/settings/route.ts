@@ -82,9 +82,20 @@ export async function POST(request: NextRequest) {
 
   try {
     const form = await request.formData();
+    const mirrorEnabled = String(form.get("securityDiscordEnabled") || "").trim() === "1";
+    const mirrorChannelId = String(form.get("securityDiscordChannelId") || "").trim();
+    if (mirrorEnabled && !/^\d{16,25}$/.test(mirrorChannelId)) {
+      return responseFor(request, {
+        ok: false,
+        title: "Не вказано Security-канал",
+        message: "Для увімкненого Discord mirror потрібен коректний channel ID (16–25 цифр).",
+        status: 400,
+      });
+    }
+
     const settings = await updateStructuredLogSettings({
-      securityDiscordEnabled: form.get("securityDiscordEnabled"),
-      securityDiscordChannelId: form.get("securityDiscordChannelId"),
+      securityDiscordEnabled: mirrorEnabled,
+      securityDiscordChannelId: mirrorChannelId,
       securityDiscordMinLevel: form.get("securityDiscordMinLevel"),
       maxStorageMb: form.get("maxStorageMb"),
       maxRows: form.get("maxRows"),

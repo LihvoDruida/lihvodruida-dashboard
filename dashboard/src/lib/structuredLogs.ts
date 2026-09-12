@@ -179,8 +179,12 @@ export async function recordStructuredLog(input: StructuredLogInput): Promise<bo
     );
 
     if (log.category === "security") {
-      void mirrorSecurityLogToDiscord(log).catch((error) => {
+      // Security is the only category allowed to leave the VPS.  Await the
+      // mirror inside this background logging task so Node does not abandon
+      // the Discord request between the PostgreSQL insert and promise cleanup.
+      await mirrorSecurityLogToDiscord(log).catch((error) => {
         console.warn("[structured-logs] security mirror error", error instanceof Error ? error.message : String(error));
+        return false;
       });
     }
     return true;
@@ -262,6 +266,93 @@ export async function listStructuredLogs(query: StructuredLogQuery = {}): Promis
     resourceId: row.resource_id,
     details: row.details || {},
   }));
+}
+
+
+export type StructuredLogExportCursor = {
+  createdAt: string;
+  id: string;
+};
+
+export async function listStructuredLogsExportPage(query: {
+  pageSize?: number;
+  sinceHours?: number;
+  category?: string | null;
+  level?: string | null;
+  search?: string | null;
+  cursor?: StructuredLogExportCursor | null;
+} = {}): Promise<{ items: StructuredLogRecord[]; nextCursor: StructuredLogExportCursor | null }> {
+  if (!hasPostgresConfig()) return { items: [], nextCursor: null };
+  const pageSize = Math.max(100, Math.min(2000, Math.floor(Number(query.pageSize) || 1000)));
+  const sinceHours = Math.max(1, Math.min(72, Math.floor(Number(query.sinceHours) || 72)));
+  const params: unknown[] = [sinceHours];
+  const where = [`created_at >= now() - ($1::text || ' hours')::interval`];
+
+  const category = String(query.category || "").trim().toLowerCase();
+  if (CATEGORY_VALUES.has(category as StructuredLogCategory)) {
+    params.push(category);
+    where.push(`category = $${params.length}`);
+  }
+  const level = String(query.level || "").trim().toLowerCase();
+  if (LEVEL_VALUES.has(level as StructuredLogLevel)) {
+    params.push(level);
+    where.push(`level = $${params.length}`);
+  }
+  const search = String(query.search || "").trim().slice(0, 120);
+  if (search) {
+    params.push(`%${search.replace(/[%_]/g, "\\$&")}%`);
+    where.push(`(event ILIKE $${params.length} ESCAPE '\\' OR COALESCE(message,'') ILIKE $${params.length} ESCAPE '\\' OR COALESCE(path,'') ILIKE $${params.length} ESCAPE '\\' OR COALESCE(actor_name,'') ILIKE $${params.length} ESCAPE '\\')`);
+  }
+  if (query.cursor?.createdAt && query.cursor.id && Number.isFinite(Date.parse(query.cursor.createdAt))) {
+    params.push(new Date(query.cursor.createdAt).toISOString());
+    const atParam = params.length;
+    params.push(query.cursor.id);
+    const idParam = params.length;
+    where.push(`(created_at, id) < ($${atParam}::timestamptz, $${idParam})`);
+  }
+  params.push(pageSize);
+
+  const result = await pgQuery<{
+    id: string; created_at: Date | string; level: StructuredLogLevel; category: StructuredLogCategory; source: StructuredLogSource;
+    event: string; message: string | null; actor_id: string | null; actor_name: string | null; actor_group_id: string | null;
+    request_id: string | null; method: string | null; path: string | null; status_code: number | null; duration_ms: number | null;
+    ip: string | null; resource_type: string | null; resource_id: string | null; details: Record<string, unknown>;
+  }>(
+    `SELECT id, created_at, level, category, source, event, message, actor_id, actor_name, actor_group_id,
+            request_id, method, path, status_code, duration_ms, ip, resource_type, resource_id, details
+       FROM system_logs
+      WHERE ${where.join(" AND ")}
+      ORDER BY created_at DESC, id DESC
+      LIMIT $${params.length}`,
+    params,
+  );
+
+  const items = result.rows.map((row) => ({
+    id: row.id,
+    createdAt: new Date(row.created_at).toISOString(),
+    level: row.level,
+    category: row.category,
+    source: row.source,
+    event: row.event,
+    message: row.message,
+    actorId: row.actor_id,
+    actorName: row.actor_name,
+    actorGroupId: row.actor_group_id,
+    requestId: row.request_id,
+    method: row.method,
+    path: row.path,
+    statusCode: row.status_code,
+    durationMs: row.duration_ms,
+    ip: row.ip,
+    resourceType: row.resource_type,
+    resourceId: row.resource_id,
+    details: row.details || {},
+  }));
+  const last = items.length ? items[items.length - 1] : undefined;
+  return {
+    items,
+    nextCursor: items.length === pageSize && last ? { createdAt: last.createdAt, id: last.id } : null,
+  };
 }
 
 export async function getStructuredLogOverview(sinceHours = 24) {

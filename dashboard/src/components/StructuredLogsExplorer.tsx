@@ -103,6 +103,35 @@ function detailsText(details: Record<string, unknown>) {
   try { return JSON.stringify(details || {}, null, 2); } catch { return "{}"; }
 }
 
+function normalizedTimeline(
+  input: Overview["timeline"],
+  hours: number,
+  nowIso: string,
+) {
+  const stepMinutes = hours >= 72 ? 60 : 15;
+  const stepMs = stepMinutes * 60_000;
+  const nowMs = Number.isFinite(Date.parse(nowIso)) ? Date.parse(nowIso) : Date.now();
+  const end = Math.floor(nowMs / stepMs) * stepMs;
+  const count = Math.max(4, Math.min(96, Math.ceil((hours * 60) / stepMinutes)));
+  const start = end - (count - 1) * stepMs;
+  const buckets = Array.from({ length: count }, (_, index) => ({
+    at: new Date(start + index * stepMs).toISOString(),
+    total: 0,
+    warnings: 0,
+    errors: 0,
+  }));
+  for (const item of input) {
+    const at = Date.parse(item.at);
+    if (!Number.isFinite(at)) continue;
+    const slot = Math.floor((at - start) / stepMs);
+    if (slot < 0 || slot >= buckets.length) continue;
+    buckets[slot].total += item.total || 0;
+    buckets[slot].warnings += item.warnings || 0;
+    buckets[slot].errors += item.errors || 0;
+  }
+  return buckets;
+}
+
 export default function StructuredLogsExplorer({
   initialItems,
   initialOverview,
@@ -186,8 +215,13 @@ export default function StructuredLogsExplorer({
     };
   }, [live, refresh]);
 
-  const maxTimeline = Math.max(1, ...overview.timeline.map((item) => item.total));
-  const exportHref = `/api/dashboard/logs/export?${queryString()}`;
+  const timeline = useMemo(
+    () => normalizedTimeline(overview.timeline, hours, lastUpdatedAt),
+    [overview.timeline, hours, lastUpdatedAt],
+  );
+  const maxTimeline = Math.max(1, ...timeline.map((item) => item.total));
+  const filteredExportHref = `/api/dashboard/logs/export?scope=filtered&${queryString()}`;
+  const fullExportHref = "/api/dashboard/logs/export?scope=all";
 
   return (
     <div className={styles.workspace}>
@@ -208,7 +242,10 @@ export default function StructuredLogsExplorer({
             <span className={styles.liveDot} /> {live ? "Live" : "Пауза"}
           </button>
           <button type="button" className={`btn ${styles.chip}`} onClick={() => void refresh(false)} disabled={isPending}>↻ Оновити</button>
-          <a className={`btn ${styles.chip}`} href={exportHref}>⇩ JSONL</a>
+          <div className={styles.exportGroup} aria-label="Експорт журналу">
+            <a className={`btn ${styles.chip}`} href={filteredExportHref}>⇩ Фільтр JSON</a>
+            <a className={`btn ${styles.chip}`} href={fullExportHref}>⇩ Усі 3 дні JSON</a>
+          </div>
         </div>
 
         <div className={styles.filterRow}>
@@ -227,7 +264,7 @@ export default function StructuredLogsExplorer({
         </div>
 
         <div className={styles.timeline} aria-label="Активність журналу">
-          {overview.timeline.length ? overview.timeline.map((bucket) => (
+          {timeline.length ? timeline.map((bucket) => (
             <div key={bucket.at} className={styles.timelineSlot} title={`${formatDateTime(bucket.at)} · ${bucket.total}`}>
               <span className={styles.timelineBar} style={{ height: `${Math.max(6, (bucket.total / maxTimeline) * 100)}%` }} />
               {bucket.errors ? <span className={styles.timelineError} style={{ height: `${Math.max(4, (bucket.errors / maxTimeline) * 100)}%` }} /> : null}

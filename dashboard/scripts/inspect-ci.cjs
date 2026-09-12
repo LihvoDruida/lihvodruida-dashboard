@@ -117,6 +117,7 @@ if (exists('src/proxy.ts')) {
     '/api/polls/close-due',
     '/api/dashboard/logs/maintenance',
     '/api/dashboard/logs/ingest',
+    '/api/guild/sync',
   ];
   for (const routePath of requiredInternalBearerPaths) {
     assert(proxyText.includes(routePath), `Proxy must allow internal Bearer access before session checks: ${routePath}.`);
@@ -124,6 +125,9 @@ if (exists('src/proxy.ts')) {
   assert(/\^\\\/api\\\/raids\\\/\[\^\/\]\+\\\/discord-action\$/.test(proxyText), 'Proxy must allow internal Bearer access to /api/raids/[raidId]/discord-action.');
   assert(/\^\\\/api\\\/polls\\\/\[\^\/\]\+\\\/vote\$/.test(proxyText), 'Proxy must allow internal Bearer access to /api/polls/[pollId]/vote.');
   assert(proxyText.includes('/api/calendar/raids.ics'), 'Public calendar feed /api/calendar/raids.ics must bypass session checks so Google Calendar/webcal imports work.');
+  assert(proxyText.includes('DASHBOARD_INTERNAL_HOSTS'), 'Proxy must keep a dedicated allowlist for Docker-internal service hosts.');
+  assert(proxyText.includes('!isAllowedHost(host) && !isInternalServiceRequest'), 'Internal Bearer requests from Docker service hosts must bypass only the public Host gate.');
+  assert(/isInternalServiceRequest[\s\S]{0,100}\? \"off\"/.test(proxyText), 'Docker-internal Bearer requests must bypass the Cloudflare edge requirement.');
 }
 
 
@@ -230,6 +234,7 @@ assert(!exists('src/lib/dashboardAuditNotifications.ts'), 'Legacy Discord-as-log
 if (exists('src/lib/db/schema.sql')) {
   const schemaText = read('src/lib/db/schema.sql');
   assert(schemaText.includes('CREATE TABLE IF NOT EXISTS system_logs'), 'PostgreSQL system_logs table must exist.');
+  assert(schemaText.includes('CREATE TABLE IF NOT EXISTS system_log_settings'), 'Structured log settings must live in PostgreSQL.');
 }
 if (exists('src/lib/structuredLogs.ts')) {
   const structuredLogsText = read('src/lib/structuredLogs.ts');
@@ -239,6 +244,11 @@ if (exists('src/lib/structuredLogs.ts')) {
 if (exists('src/lib/securityLogDiscord.ts')) {
   const securityMirrorText = read('src/lib/securityLogDiscord.ts');
   assert(securityMirrorText.includes('SECURITY_MIRROR_DEDUPE_MS'), 'Security Discord mirror must retain anti-spam dedupe.');
+}
+if (exists('src/lib/logSettings.ts')) {
+  const logSettingsText = read('src/lib/logSettings.ts');
+  assert(logSettingsText.includes('system_log_settings'), 'Structured log settings must use PostgreSQL system_log_settings.');
+  assert(!/firebaseRead|firebaseWrite|dashboardSettings/.test(logSettingsText), 'Structured log settings must not depend on the legacy Firebase settings path.');
 }
 assert(!/listAdminAuditLogsFromDiscord|publishAdminAuditToDiscord|ADMIN_AUDIT_(?:READ|DEDUPE|MAX|POLICY)/.test(runtimeCombined), 'Legacy Discord audit-storage code/config detected.');
 

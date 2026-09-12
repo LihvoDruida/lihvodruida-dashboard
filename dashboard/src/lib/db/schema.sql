@@ -97,3 +97,19 @@ CREATE INDEX IF NOT EXISTS system_logs_request_id_idx
   WHERE request_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS system_logs_details_gin_idx
   ON system_logs USING gin (details jsonb_path_ops);
+
+-- Runtime settings for the structured log subsystem.  This deliberately lives
+-- beside system_logs rather than in the legacy Firestore-compatible document
+-- wrapper: logging must keep working even when Firebase compatibility flags are
+-- disabled on the self-hosted VPS.
+CREATE TABLE IF NOT EXISTS system_log_settings (
+  settings_key                 text        PRIMARY KEY DEFAULT 'default',
+  security_discord_enabled     boolean     NOT NULL DEFAULT false,
+  security_discord_channel_id  text        NOT NULL DEFAULT '',
+  security_discord_min_level   text        NOT NULL DEFAULT 'warning' CHECK (security_discord_min_level IN ('info','warning','error')),
+  max_storage_mb               integer     NOT NULL DEFAULT 192 CHECK (max_storage_mb BETWEEN 32 AND 1024),
+  max_rows                     integer     NOT NULL DEFAULT 50000 CHECK (max_rows BETWEEN 5000 AND 250000),
+  query_limit                  integer     NOT NULL DEFAULT 250 CHECK (query_limit BETWEEN 50 AND 500),
+  updated_at                   timestamptz NOT NULL DEFAULT now(),
+  updated_by                   text
+);

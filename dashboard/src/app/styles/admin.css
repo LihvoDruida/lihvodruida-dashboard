@@ -169,8 +169,7 @@
 
 /* Ряд чіпів «що саме перевіряється» */
 .discord-officer-sync-summary,
-.discord-settings-summary,
-.admin-log-discord-summary {
+.discord-settings-summary {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2xs);
@@ -340,39 +339,6 @@
 /* =========================================================
    6. ЖУРНАЛ ПОДІЙ
    ========================================================= */
-.admin-log-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--space-md);
-  min-width: 0;
-}
-
-.admin-log-toolbar--settings {
-  align-items: center;
-  justify-content: space-between;
-}
-
-.admin-log-discord-form {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--space-xs);
-}
-
-.admin-log-toggle-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.admin-log-discord-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
-  gap: var(--space-md);
-}
-
 /* =========================================================
    7. АДАПТИВ
    ========================================================= */
@@ -401,18 +367,7 @@
     grid-column: 1 / -1;
     justify-self: start;
   }
-
-  .admin-log-toolbar,
-  .admin-log-discord-form {
-    width: 100%;
-  }
-
-  .admin-log-discord-form .btn {
-    flex: 1 1 auto;
-  }
-
-  .discord-cleanup-role-grid,
-  .admin-log-discord-grid {
+  .discord-cleanup-role-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -937,7 +892,6 @@
 .admin-page :where(
   .discord-management-card,
   .admin-policy-card,
-  .admin-log-toolbar,
   .server-section,
   .server-detail-card,
   .server-graph-card,
@@ -1233,18 +1187,6 @@
     gap: 12px;
   }
 
-  .admin-log-toolbar--settings {
-    display: grid;
-    grid-template-columns: minmax(240px, 0.6fr) minmax(0, 1.7fr);
-    align-items: start;
-    gap: 14px;
-  }
-
-  .admin-log-discord-form {
-    display: grid;
-    align-content: start;
-    gap: 12px;
-  }
 }
 
 /* =========================================================
