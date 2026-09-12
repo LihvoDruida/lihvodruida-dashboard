@@ -74,8 +74,8 @@ export default async function EditDiscordRulesPage({
   }
 
   return (
-    <main className="container">
-      <section className="dashboard-shell content-shell discord-shell" aria-label="Редагування Discord правил Mistblossom Vanguard">
+    <main className="container app-page">
+      <section className="dashboard-shell content-shell discord-shell app-page-stack" aria-label="Редагування Discord правил Mistblossom Vanguard">
         <DashboardIdentity user={user} activeSection="discord" />
         <header className="discord-editor-header panel">
           <div>

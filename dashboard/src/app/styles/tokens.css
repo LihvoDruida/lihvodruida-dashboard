@@ -132,7 +132,7 @@
   --radius-lg: 20px;
   --radius-xl: 28px;
   --radius-pill: 999px;
-  --control-radius: var(--radius-md);
+  --control-radius: 10px;
 
   /* ---------- Рух ---------- */
   --dur-instant: 0.12s;
@@ -174,7 +174,17 @@
   --nav-shadow: var(--shadow-lg), 0 2px 12px rgba(0, 0, 0, 0.35);
 
   /* ---------- Ширина контенту ---------- */
-  --page-max: 1200px;
+  --page-max: 1520px;
+  --page-gutter: clamp(16px, 2vw, 28px);
+  --page-gap: 20px;
+  --section-gap: 16px;
+  --card-radius: var(--radius-md);
+  --card-padding: var(--space-md);
+  --panel-padding: 20px;
+  --control-height: 42px;
+  --control-height-sm: 34px;
+  --control-pad-x: 16px;
+  --sidebar-width: 272px;
 
   /* ---------- Короткий alias для фокусу/форм ---------- */
   --orange-main: var(--c-accent-400);

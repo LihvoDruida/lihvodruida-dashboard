@@ -164,8 +164,8 @@ export default async function DashboardPage({
   const classOptions = filterOptions.classes;
 
   return (
-    <main className="container">
-      <section className="dashboard-shell content-shell applications-page" aria-label="Панель заявок Mistblossom Vanguard">
+    <main className="container app-page">
+      <section className="dashboard-shell content-shell applications-page app-page-stack" aria-label="Панель заявок Mistblossom Vanguard">
         <DashboardIdentity user={user} activeSection="applications" />
         <header className="hero panel dashboard-hero">
         <div className="hero-copy dashboard-hero__copy">

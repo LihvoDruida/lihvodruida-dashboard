@@ -10,9 +10,11 @@ import {
 export default function LogoutButton({
   className = "nav-account__logout",
   errorClassName = "nav-account__logout-error",
+  buttonClassName = "btn ghost",
 }: {
   className?: string;
   errorClassName?: string;
+  buttonClassName?: string;
 } = {}) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -92,6 +94,7 @@ export default function LogoutButton({
       onSubmit={submitLogout}
     >
       <button
+        className={buttonClassName}
         type="submit"
         aria-label="Вийти"
         disabled={pending}

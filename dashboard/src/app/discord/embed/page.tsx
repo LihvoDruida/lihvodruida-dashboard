@@ -77,8 +77,8 @@ export default async function GeneralDiscordEmbedPage({
   }
 
   return (
-    <main className="container">
-      <section className="dashboard-shell content-shell discord-shell" aria-label="Звичайне Discord-повідомлення Mistblossom Vanguard">
+    <main className="container app-page">
+      <section className="dashboard-shell content-shell discord-shell app-page-stack" aria-label="Звичайне Discord-повідомлення Mistblossom Vanguard">
         <DashboardIdentity user={user} activeSection="discord" />
         <header className="discord-editor-header panel">
           <div>

@@ -78,7 +78,7 @@
 .profile-account-sidebar__avatar--fallback {
   display: grid;
   place-items: center;
-  font-family: var(--font-brand);
+  font-family: var(--font-display);
   font-size: 2rem;
   color: var(--c-accent-300);
 }
@@ -419,18 +419,6 @@
   overflow-wrap: anywhere;
 }
 
-.profile-character-icon {
-  display: inline-grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  flex: 0 0 auto;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle);
-  background: var(--surface-raised);
-  font-size: 0.8rem;
-}
-
 .profile-character-main-corner {
   position: absolute;
   top: var(--space-sm);
@@ -545,68 +533,6 @@
 
 .profile-character-actions__full > * {
   width: 100%;
-}
-
-.profile-character-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-xs);
-  min-height: 40px;
-  padding: 0 var(--space-md);
-  border: 1px solid var(--border);
-  border-radius: var(--control-radius);
-  background: var(--surface-raised);
-  color: var(--text-soft);
-  font-family: inherit;
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    transform var(--dur-fast) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out),
-    background-color var(--dur-fast) var(--ease-out),
-    color var(--dur-fast) var(--ease-out);
-}
-
-.profile-character-btn:hover {
-  transform: translateY(-2px);
-  border-color: var(--border-strong);
-  color: var(--text-strong);
-}
-
-.profile-character-btn--accent {
-  border-color: transparent;
-  background: var(--accent-gradient);
-  color: var(--text-on-accent);
-}
-
-.profile-character-btn--accent:hover {
-  color: var(--text-on-accent);
-}
-
-.profile-character-btn--danger {
-  border-color: rgba(224, 112, 95, 0.32);
-  background: rgba(224, 112, 95, 0.1);
-  color: var(--c-danger);
-}
-
-.profile-character-btn--ghost {
-  border-color: transparent;
-  background: transparent;
-}
-
-.profile-character-btn.is-disabled,
-.profile-character-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.profile-character-btn__icon {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 auto;
 }
 
 .profile-character-add-footer {
@@ -1040,52 +966,10 @@
   border-color: rgba(224, 112, 95, 0.5);
 }
 
-/* Квадратна кнопка-іконка: без ширини вона займала весь рядок */
-.profile-icon-action {
-  display: inline-grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  flex: 0 0 auto;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--control-radius);
-  background: var(--surface-raised);
-  color: var(--text-soft);
-  cursor: pointer;
-  transition:
-    transform var(--dur-fast) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out),
-    background-color var(--dur-fast) var(--ease-out),
-    color var(--dur-fast) var(--ease-out);
-}
-
-.profile-icon-action:hover {
-  transform: translateY(-2px);
-  border-color: var(--border-strong);
-  color: var(--text-strong);
-}
-
+/* Іконкова дія використовує спільну .btn.btn-icon геометрію. */
 .profile-icon-action svg {
   width: 18px;
   height: 18px;
-}
-
-.profile-icon-action--confirm {
-  border-color: transparent;
-  background: var(--accent-gradient);
-  color: var(--text-on-accent);
-}
-
-.profile-icon-action--confirm:hover {
-  color: var(--text-on-accent);
-}
-
-.profile-icon-action:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  transform: none;
 }
 
 /* ---------- Збережене імʼя ---------- */
@@ -1255,39 +1139,15 @@
   overflow-wrap: anywhere;
 }
 
-/* Кнопка синхронізації ніку: та сама квадратна іконка */
+/* Discord nickname: форма не задає власну геометрію кнопки. */
 .profile-discord-nick-form {
   display: inline-grid;
-}
-
-.profile-nick-sync-button {
-  display: inline-grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--control-radius);
-  background: var(--surface-raised);
-  color: var(--c-accent-300);
-  cursor: pointer;
-  transition: transform var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
-}
-
-.profile-nick-sync-button:hover {
-  transform: translateY(-2px);
-  border-color: var(--border-strong);
 }
 
 .profile-nick-sync-button.is-synced {
   border-color: color-mix(in srgb, var(--c-success) 40%, transparent);
   background: color-mix(in srgb, var(--c-success) 12%, transparent);
   color: var(--c-success);
-}
-
-.profile-nick-sync-button--copy {
-  color: var(--text-soft);
 }
 
 .profile-nick-sync-button svg {
@@ -1489,7 +1349,7 @@
   display: grid;
 }
 
-.profile-character-actions__full > .profile-character-btn {
+.profile-character-actions__full > .btn {
   width: 100%;
 }
 
@@ -1889,7 +1749,7 @@
 }
 
 .profile-account-sidebar__identity strong {
-  font-family: var(--font-brand);
+  font-family: var(--font-display);
   font-size: 1.05rem;
   letter-spacing: 0.02em;
 }
@@ -2089,7 +1949,7 @@
    різав арт до 92px — а саме арт тут головний носій впізнавання.
    ========================================================= */
 .profile-character-list--single-flow {
-  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
   gap: var(--space-md);
 }
 
@@ -2143,7 +2003,7 @@
 
 .profile-character-title-copy h3 {
   margin: 0;
-  font-family: var(--font-brand);
+  font-family: var(--font-display);
   font-size: 1.15rem;
   color: var(--text-strong);
   overflow-wrap: anywhere;
@@ -2187,7 +2047,7 @@
 }
 
 .profile-character-stat__copy strong {
-  font-family: var(--font-brand);
+  font-family: var(--font-display);
   font-size: 1.25rem;
   color: var(--text-strong);
 }

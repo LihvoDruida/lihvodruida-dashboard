@@ -91,7 +91,41 @@ function CharacterArtwork({ character }: { character: ProfileCharacter }) {
 type CharacterIconKind = "guild" | "other" | "ilvl" | "level" | "rio" | "updated" | "external" | "trash" | "crown" | "mainStar";
 
 function CharacterInlineIcon({ kind }: { kind: CharacterIconKind }) {
-  return <span className={`profile-character-icon profile-character-icon--${kind}`} aria-hidden="true" />;
+  const common = {
+    viewBox: "0 0 24 24",
+    width: 18,
+    height: 18,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.9,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    focusable: false,
+    "aria-hidden": true,
+  };
+
+  switch (kind) {
+    case "crown":
+      return <svg {...common}><path d="M3 8l4 4 5-7 5 7 4-4v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z" /></svg>;
+    case "mainStar":
+      return <svg {...common}><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z" /></svg>;
+    case "external":
+      return <svg {...common}><path d="M14 5h5v5" /><path d="m19 5-8 8" /><path d="M19 13v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5" /></svg>;
+    case "trash":
+      return <svg {...common}><path d="M4 7h16" /><path d="M9 7V4h6v3" /><path d="m7 7 1 13h8l1-13" /><path d="M10 11v5M14 11v5" /></svg>;
+    case "guild":
+      return <svg {...common}><path d="M12 3 19 6v6c0 4.4-3 8.3-7 9-4-.7-7-4.6-7-9V6Z" /><path d="m9 12 2 2 4-4" /></svg>;
+    case "other":
+      return <svg {...common}><circle cx="12" cy="8" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>;
+    case "ilvl":
+      return <svg {...common}><path d="M12 3v18M7 8l5-5 5 5M7 16l5 5 5-5" /></svg>;
+    case "level":
+      return <svg {...common}><path d="M5 18h14" /><path d="M7 15 12 5l5 10" /></svg>;
+    case "rio":
+      return <svg {...common}><path d="M4 19V9M10 19V5M16 19v-7M22 19H2" /></svg>;
+    case "updated":
+      return <svg {...common}><circle cx="12" cy="12" r="8" /><path d="M12 8v5l3 2" /></svg>;
+  }
 }
 
 function CharacterStat({ icon, label, value }: { icon: "ilvl" | "level" | "rio" | "updated"; label: string; value: string | number }) {
@@ -168,8 +202,8 @@ function CharacterCard({ character, profileId, canManage, showMainBadge, returnT
             <form className="profile-character-actions__full" action="/api/profile/characters/main" method="post">
               <input type="hidden" name="characterKey" value={character.key} />
               {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
-              <button className="profile-character-btn profile-character-btn--accent" type="submit">
-                <span className="profile-character-btn__icon"><CharacterInlineIcon kind="crown" /></span>
+              <button className="btn primary profile-character-action" type="submit">
+                <span className="btn__icon"><CharacterInlineIcon kind="crown" /></span>
                 <span>Зробити мейном</span>
               </button>
             </form>
@@ -177,22 +211,22 @@ function CharacterCard({ character, profileId, canManage, showMainBadge, returnT
 
           <div className={`profile-character-actions__row${canManage ? "" : " is-single"}`}>
             {rioUrl ? (
-              <a className="profile-character-btn profile-character-btn--ghost" href={rioUrl} target="_blank" rel="noreferrer">
+              <a className="btn subtle profile-character-action" href={rioUrl} target="_blank" rel="noreferrer">
                 <span>Raider.IO</span>
-                <span className="profile-character-btn__icon"><CharacterInlineIcon kind="external" /></span>
+                <span className="btn__icon"><CharacterInlineIcon kind="external" /></span>
               </a>
             ) : (
-              <span className="profile-character-btn profile-character-btn--ghost is-disabled" aria-disabled="true">
+              <span className="btn subtle profile-character-action is-disabled" aria-disabled="true">
                 <span>Raider.IO</span>
-                <span className="profile-character-btn__icon"><CharacterInlineIcon kind="external" /></span>
+                <span className="btn__icon"><CharacterInlineIcon kind="external" /></span>
               </span>
             )}
             {canManage ? (
               <form action="/api/profile/characters/remove" method="post">
                 <input type="hidden" name="characterKey" value={character.key} />
                 {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
-                <button className="profile-character-btn profile-character-btn--danger" type="submit">
-                  <span className="profile-character-btn__icon"><CharacterInlineIcon kind="trash" /></span>
+                <button className="btn danger profile-character-action" type="submit">
+                  <span className="btn__icon"><CharacterInlineIcon kind="trash" /></span>
                   <span>Видалити</span>
                 </button>
               </form>

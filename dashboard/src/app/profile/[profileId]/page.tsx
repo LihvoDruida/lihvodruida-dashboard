@@ -249,7 +249,7 @@ function ProfileRaidSignupCard({ item }: { item: ProfileRaidSignup }) {
 
         <div className="profile-raid-card__actions">
           <a
-            className="profile-raid-card__action"
+            className="btn subtle btn-sm profile-raid-card__action"
             href={`/raids/${encodeURIComponent(item.raid.id)}`}
           >
             Відкрити рейд
@@ -316,7 +316,7 @@ function ProfileRaidSignups({ items }: { items: ProfileRaidSignup[] }) {
               Коли ти запишеш персонажа на рейд, запис зʼявиться тут.
             </span>
           </div>
-          <a className="profile-raid-empty-state__action" href="/raids">
+          <a className="btn subtle btn-sm profile-raid-empty-state__action" href="/raids">
             Перейти до рейдів
           </a>
         </div>
@@ -516,9 +516,9 @@ export default async function ProfilePage({
     return a.name.localeCompare(b.name, "uk");
   });
   return (
-    <main className="container profile-page-container">
+    <main className="container app-page profile-page-container">
       <section
-        className="dashboard-shell content-shell profile-shell profile-account-page"
+        className="dashboard-shell content-shell profile-shell profile-account-page app-page-stack"
         aria-label="Профіль Mistblossom Vanguard"
       >
         <DashboardIdentity user={viewer} activeSection="profile" />
@@ -605,7 +605,7 @@ export default async function ProfilePage({
 
             {isOwnProfile ? (
               <div className="profile-account-sidebar__footer">
-                <LogoutButton className="btn subtle" errorClassName="profile-card-note" />
+                <LogoutButton className="profile-account-logout" buttonClassName="btn subtle" errorClassName="profile-card-note" />
               </div>
             ) : null}
           </aside>
@@ -767,7 +767,7 @@ export default async function ProfilePage({
                         <strong>{profile.battlenet?.linked ? "Battle.net підключено" : battleNetAction.eyebrow}</strong>
                         <small>{profile.battlenet?.linked ? `Остання синхронізація: ${battleNetLastSyncLabel}` : battleNetAction.hint}</small>
                       </span>
-                      <a className="profile-bnet-status__action" href={battleNetCharacterActionHref}>
+                      <a className="btn subtle btn-sm profile-bnet-status__action" href={battleNetCharacterActionHref}>
                         <ProfileUiIcon kind={profile.battlenet?.linked ? "sync" : "link"} />
                         <span>{battleNetAction.title}</span>
                       </a>
@@ -811,7 +811,7 @@ export default async function ProfilePage({
                             : "Підключи Battle.net, щоб додати персонажів"}
                       </span>
                     </span>
-                    <a className="profile-character-add-button" href={battleNetCharacterActionHref}>
+                    <a className="btn ghost btn-sm profile-character-add-button" href={battleNetCharacterActionHref}>
                       <ProfileUiIcon kind="plus" />
                       <span>
                         {hasAvailableBattleNetCandidates

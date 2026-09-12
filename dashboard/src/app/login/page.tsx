@@ -228,7 +228,7 @@ export default async function LoginPage({
                     placeholder="Введи резервний ключ"
                     autoComplete="current-password"
                   />
-                  <button type="submit">Увійти</button>
+                  <button className="btn primary" type="submit">Увійти</button>
                 </div>
               </form>
             </details>

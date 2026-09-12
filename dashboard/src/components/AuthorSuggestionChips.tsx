@@ -28,7 +28,7 @@ export default function AuthorSuggestionChips({ suggestions = [], targetId, onPi
       <small>Підставити:</small>
       <span>
         {cleanSuggestions.map((item) => (
-          <button key={`${item.source}-${item.value}`} type="button" onClick={() => apply(item.value)} title={item.label}>
+          <button className="author-suggestion-chip" key={`${item.source}-${item.value}`} type="button" onClick={() => apply(item.value)} title={item.label}>
             <strong>{item.value}</strong>
             <em>{item.label}</em>
           </button>

@@ -53,8 +53,8 @@ export default async function DiscordHubPage({
   const discordEnabled = hasDiscordEmbedConfig();
 
   return (
-    <main className="container">
-      <section className="dashboard-shell content-shell discord-shell" aria-label="Панель Discord-дій Mistblossom Vanguard">
+    <main className="container app-page">
+      <section className="dashboard-shell content-shell discord-shell app-page-stack" aria-label="Панель Discord-дій Mistblossom Vanguard">
         <DashboardIdentity user={user} activeSection="discord" />
         <header className="hero panel dashboard-hero content-dashboard-hero discord-dashboard-hero">
           <div className="hero-copy dashboard-hero__copy content-dashboard-hero__copy">

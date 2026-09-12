@@ -382,8 +382,8 @@ export default async function DiscordRulesPage({
   const raidSignedCount = raidStats.configured ? Math.max(raidStats.signed, raidSignups.total, raidSignups.signups.length) : 0;
 
   return (
-    <main className="container">
-      <section className="dashboard-shell content-shell discord-shell" aria-label="Список Discord правил Mistblossom Vanguard">
+    <main className="container app-page">
+      <section className="dashboard-shell content-shell discord-shell app-page-stack" aria-label="Список Discord правил Mistblossom Vanguard">
         <DashboardIdentity user={user} activeSection="discord" />
         <header className="hero panel dashboard-hero content-dashboard-hero discord-dashboard-hero discord-dashboard-hero--rules-list">
           <div className="hero-copy dashboard-hero__copy content-dashboard-hero__copy">

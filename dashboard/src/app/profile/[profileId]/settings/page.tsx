@@ -618,9 +618,9 @@ export default async function ProfileSettingsPage({
   const guildStatus = guildStatusLabel(profile.role);
   const accountStatusLabel = guildStatus;
   return (
-    <main className="container profile-page-container">
+    <main className="container app-page profile-page-container">
       <section
-        className="dashboard-shell content-shell profile-shell profile-account-page profile-settings-page"
+        className="dashboard-shell content-shell profile-shell profile-account-page profile-settings-page app-page-stack"
         aria-label="Налаштування профілю Mistblossom Vanguard"
       >
         <DashboardIdentity user={session} activeSection="profile" />
@@ -694,7 +694,7 @@ export default async function ProfileSettingsPage({
             </nav>
 
             <div className="profile-account-sidebar__footer">
-              <LogoutButton className="btn subtle" errorClassName="profile-card-note" />
+              <LogoutButton className="profile-account-logout" buttonClassName="btn subtle" errorClassName="profile-card-note" />
             </div>
           </aside>
 

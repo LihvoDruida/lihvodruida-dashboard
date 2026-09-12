@@ -87,21 +87,6 @@
   border-radius: var(--radius-lg);
 }
 
-.profile-character-btn--accent {
-  border-color: var(--border-strong);
-  color: var(--c-accent-200);
-}
-
-.profile-character-btn--danger {
-  border-color: rgba(224, 112, 95, 0.32);
-  color: var(--c-danger);
-}
-
-.profile-character-btn__icon {
-  width: 16px;
-  height: 16px;
-}
-
 .profile-subsection-head--compact {
   border-bottom: 0;
   padding-bottom: 0;

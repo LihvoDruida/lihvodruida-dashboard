@@ -77,9 +77,9 @@ export default async function AdminOverviewPage() {
     : authPolicy.requiredRoleIds;
 
   return (
-    <main className="container admin-container">
+    <main className="container app-page admin-container">
       <section
-        className="dashboard-shell content-shell admin-page"
+        className="dashboard-shell content-shell admin-page app-page-stack"
         aria-label="Керування Mistblossom Vanguard"
       >
         <DashboardIdentity user={user} activeSection="admin" />

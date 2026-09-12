@@ -65,8 +65,8 @@ export function RaidPollPageShell({
   children: ReactNode;
 }) {
   return (
-    <main className="container raid-page raid-poll-page poll-page">
-      <section className="dashboard-shell content-shell raid-shell" aria-label="Панель рейд-пулів Mistblossom Vanguard">
+    <main className="container app-page raid-page raid-poll-page poll-page">
+      <section className="dashboard-shell content-shell raid-shell app-page-stack" aria-label="Панель рейд-пулів Mistblossom Vanguard">
         {user ? <DashboardIdentity user={user} activeSection={activeSection} /> : null}
 
         {/* Спрощений херо: один рядок сенсу + компактна стрічка метрик замість

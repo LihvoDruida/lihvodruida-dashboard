@@ -11,9 +11,9 @@
     "typecheck": "node scripts/typecheck.cjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "verify": "npm run typecheck && npm run lint && npm run check:actions && npm run check:site && npm run check:imports && npm run audit:styles && npm run inspect:ci",
+    "verify": "npm run typecheck && npm run lint && npm run check:actions && npm run check:site && npm run check:imports && npm run audit:styles && npm run audit:ui && npm run inspect:ci",
     "inspect:ci": "node scripts/inspect-ci.cjs",
-    "build:ci": "npm run typecheck && npm run check:actions && npm run check:site && npm run check:imports && npm run audit:styles && npm run inspect:ci && npm run build",
+    "build:ci": "npm run typecheck && npm run check:actions && npm run check:site && npm run check:imports && npm run audit:styles && npm run audit:ui && npm run inspect:ci && npm run build",
     "start:dev-server": "next start",
     "db:init": "node scripts/db-init.mjs",
     "db:migrate-from-firestore": "node scripts/migrate-firestore-to-postgres.mjs",
@@ -22,7 +22,8 @@
     "check:site": "node scripts/check-site.cjs",
     "smoke:http": "node scripts/http-smoke.cjs",
     "check:imports": "node scripts/check-imports.cjs",
-    "audit:styles": "node scripts/audit-styles.cjs"
+    "audit:styles": "node scripts/audit-styles.cjs",
+    "audit:ui": "node scripts/audit-ui.cjs"
   },
   "dependencies": {
     "@mistblossom/discord-contract": "file:../shared",

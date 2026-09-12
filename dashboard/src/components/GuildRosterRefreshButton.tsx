@@ -228,6 +228,7 @@ export default function GuildRosterRefreshButton({
   return (
     <div className="guild-refresh-action">
       <button
+        className="btn subtle"
         type="button"
         onClick={refreshRoster}
         disabled={state === "loading"}

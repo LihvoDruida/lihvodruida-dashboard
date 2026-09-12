@@ -99,8 +99,8 @@ export default async function AdminLogsPage({
   const canEditLogSettings = canManageGroups(user);
 
   return (
-    <main className="container admin-container">
-      <section className="dashboard-shell content-shell admin-page admin-logs-page" aria-label="Журнал адміністративних дій">
+    <main className="container app-page admin-container">
+      <section className="dashboard-shell content-shell admin-page admin-logs-page app-page-stack" aria-label="Журнал адміністративних дій">
         <DashboardIdentity user={user} activeSection="admin" />
         <header className="hero panel admin-hero admin-logs-hero">
           <div className="hero-copy dashboard-hero__copy guild-hero__copy">

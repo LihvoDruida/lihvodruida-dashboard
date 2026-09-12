@@ -1077,9 +1077,9 @@ export default async function RulesAcceptPage({
   );
 
   return (
-    <main className="container rules-onboarding-page">
+    <main className="container app-page rules-onboarding-page">
       <section
-        className="dashboard-shell content-shell rules-onboarding-shell"
+        className="dashboard-shell content-shell rules-onboarding-shell app-page-stack"
         aria-label="Прийняття правил Mistblossom Vanguard"
       >
         {/* Шапка потрібна і гостю: без неї сторінка лишалась без жодного

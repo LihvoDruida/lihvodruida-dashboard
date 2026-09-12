@@ -232,7 +232,7 @@ export default function RaidBenchPriorityManager({
           <div className="raid-greylist-state-row">
             <span>Видимих вибрано: {selectedVisibleCount}</span>
             {query ? (
-              <button className="link-button" type="button" onClick={() => setQuery("")}>
+              <button className="btn ghost btn-sm" type="button" onClick={() => setQuery("")}>
                 очистити пошук
               </button>
             ) : null}
@@ -325,7 +325,7 @@ export default function RaidBenchPriorityManager({
                   <li key={`missing-${key}`}>
                     <span>Ключ поза поточним складом: {key}</span>
                     <button
-                      className="link-button danger"
+                      className="btn ghost btn-sm danger"
                       type="button"
                       onClick={() => toggleKey(key, false)}
                     >

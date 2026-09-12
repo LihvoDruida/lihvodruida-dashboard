@@ -1,7 +1,7 @@
 /* =========================================================
    LAYOUT — оболонки сторінок, секції, сітки, футер
    Ритм і максимальні ширини — ті самі, що на сайті:
-   1200px контенту, --pad-section по вертикалі,
+   єдина ширина через --page-max, --pad-section по вертикалі,
    --pad-page-inline по горизонталі.
    ========================================================= */
 
@@ -21,7 +21,7 @@ main,
 .container,
 .app-page {
   flex: 1 0 auto;
-  padding: var(--space-xl) var(--pad-page-inline);
+  padding: 24px var(--page-gutter);
   padding-bottom: calc(var(--space-3xl) + env(safe-area-inset-bottom, 0px));
 }
 
@@ -47,7 +47,7 @@ main .dashboard-shell {
 [class*="-shell "] {
   display: flex;
   flex-direction: column;
-  gap: var(--gap-grid);
+  gap: var(--page-gap);
 }
 
 /* ---------- Секція / панель сторінки ---------- */

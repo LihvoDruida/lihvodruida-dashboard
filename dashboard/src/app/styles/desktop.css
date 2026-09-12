@@ -1,130 +1,125 @@
 /* =========================================================
-   DESKTOP WORKSPACE — перебудова ПК-версії без зміни палітри
-   Мобільні стилі навмисно не зачіпаються.
+   DESKTOP — єдиний робочий каркас Mistblossom Vanguard
+
+   Цей файл навмисно підключається останнім. Доменні файли описують
+   зміст конкретних сторінок, а тут задається ОДНА геометрія ПК:
+   ширина полотна, ритм секцій, картки, контролі, таблиці й профіль.
    ========================================================= */
 
 @media (min-width: 1001px) {
-  :root {
-    --desktop-content-max: 1440px;
-    --desktop-page-gap: 20px;
-    --desktop-card-radius: 16px;
-    --desktop-control-height: 40px;
-  }
-
   body {
-    padding-top: 94px;
+    padding-top: 88px;
     background:
-      radial-gradient(circle at 12% -8%, rgba(200, 155, 60, 0.12), transparent 31rem),
-      radial-gradient(circle at 88% 2%, rgba(255, 122, 47, 0.065), transparent 29rem),
-      linear-gradient(180deg, #0d0b08 0%, var(--site-bg-1) 50%, #17120e 100%);
+      radial-gradient(circle at 10% -8%, rgba(200, 155, 60, 0.11), transparent 32rem),
+      radial-gradient(circle at 90% 0%, rgba(255, 122, 47, 0.055), transparent 30rem),
+      linear-gradient(180deg, #0d0b08 0%, var(--site-bg-1) 48%, #15110d 100%);
   }
 
+  /* ---------- Єдина ширина та відступ сторінок ---------- */
   main,
   .container,
   .app-page,
   .admin-container {
-    max-width: var(--desktop-content-max);
-    padding: 26px 28px 68px;
-  }
-
-  .dashboard-shell,
-
-  .content-shell,
-
-  .app-page-stack,
-
-  [class$="-shell"],
-
-  [class*="-shell "] {
-    gap: var(--desktop-page-gap);
-  }
-
-  .dashboard-shell,
-  .content-shell {
     width: 100%;
+    max-width: var(--page-max);
+    margin-inline: auto;
+    padding: 24px var(--page-gutter) 64px;
   }
 
-  /* Менше декоративної "хмари", більше чіткого робочого полотна. */
+  .container .container,
+  .app-page .dashboard-shell,
+  .container .dashboard-shell,
+  main .dashboard-shell {
+    max-width: none;
+    padding: 0;
+  }
+
+  .dashboard-shell,
+  .content-shell,
+  .app-page-stack,
+  [class$="-shell"],
+  [class*="-shell "] {
+    gap: var(--page-gap);
+  }
+
+  .page-section,
+  .profile-card,
+  .content-form-section,
+  .raid-form-section,
+  .discord-management-section {
+    gap: var(--section-gap);
+  }
+
+  /* ---------- Поверхні: одна товщина, радіус і тінь ---------- */
   .panel,
   .card,
-  .detail-box,
-  [class$="-card"]:not(:where([class*="nav"])),
-  [class*="-card "]:not(:where([class*="nav"])),
-  [class$="__card"],
-  [class*="__card "],
-  [class$="-panel"]:not(:where(.dashboard-list-panel)),
-  [class*="-panel "]:not(:where(.dashboard-list-panel)),
-  [class$="__panel"],
-  [class*="__panel "],
-  [class$="-box"],
-  [class*="-box "] {
-    border-radius: var(--desktop-card-radius);
-    border-color: rgba(255, 226, 196, 0.095);
-    background: rgba(29, 23, 18, 0.72);
-    box-shadow: 0 12px 32px -25px rgba(0, 0, 0, 0.92), inset 0 1px 0 rgba(255, 255, 255, 0.018);
+  .detail-box {
+    border-radius: var(--card-radius);
+    border-color: rgba(255, 226, 196, 0.1);
+    background: rgba(29, 23, 18, 0.76);
+    box-shadow:
+      0 14px 34px -27px rgba(0, 0, 0, 0.96),
+      inset 0 1px 0 rgba(255, 255, 255, 0.018);
   }
 
-  .panel .panel,
-  .panel [class$="-card"],
-  .panel [class*="-card "],
-  .panel [class$="__card"],
-  .panel [class*="__card "] {
-    background: rgba(12, 10, 7, 0.28);
-    border-color: rgba(255, 226, 196, 0.07);
+  /* Fallback для доменних surface-класів. :where() має нульову
+     специфічність, тому свідомий стиль конкретного компонента завжди
+     сильніший за глобальну нормалізацію. */
+  :where(
+    [class$="-card"]:not([class*="nav"]),
+    [class*="-card "]:not([class*="nav"]),
+    [class$="__card"],
+    [class*="__card "],
+    [class$="-panel"]:not(.dashboard-list-panel),
+    [class*="-panel "]:not(.dashboard-list-panel),
+    [class$="__panel"],
+    [class*="__panel "],
+    [class$="-box"],
+    [class*="-box "]
+  ) {
+    border-radius: var(--card-radius);
+    border-color: rgba(255, 226, 196, 0.1);
   }
 
-  .panel:not(:where([class*="hero"])),
+  .panel:not(:where([class*="hero"])) {
+    padding: var(--panel-padding);
+  }
+
   .card {
-    padding: 20px;
+    padding: var(--card-padding);
   }
 
-  [class$="-card"]:not(:where([class*="nav"])),
-  [class*="-card "]:not(:where([class*="nav"])),
-  [class$="__card"],
-  [class*="__card "],
-  [class$="-panel"]:not(:where(.dashboard-list-panel)),
-  [class*="-panel "]:not(:where(.dashboard-list-panel)),
-  [class$="__panel"],
-  [class*="__panel "],
-  [class$="-box"],
-  [class*="-box "] {
-    padding: 18px;
+  :where(.panel) :where(
+    .panel,
+    [class$="-card"],
+    [class*="-card "],
+    [class$="__card"],
+    [class*="__card "]
+  ) {
+    border-color: rgba(255, 226, 196, 0.075);
+    background: rgba(12, 10, 7, 0.3);
+    box-shadow: none;
   }
 
-  /* Hero тепер працює як контекстна шапка сторінки, а не як лендинг. */
+  /* ---------- Заголовок сторінки ---------- */
   .hero,
-
   .dashboard-hero,
-
   .admin-hero,
-
   .access-groups-hero,
-
   [class$="-hero"]:not(:where([class*="landing"])),
-
   [class*="-hero "]:not(:where([class*="landing"])) {
-    grid-template-columns: minmax(0, 1.75fr) minmax(300px, 0.75fr);
+    grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.7fr);
     gap: 24px;
     min-height: 0;
-    padding: 24px 26px;
-    border-radius: 18px;
-    border-color: rgba(255, 178, 106, 0.13);
+    padding: 22px 24px;
+    border-radius: var(--card-radius);
+    border-color: rgba(255, 178, 106, 0.14);
     background:
-      linear-gradient(105deg, rgba(255, 155, 85, 0.055), transparent 38%),
-      rgba(25, 20, 16, 0.79);
-    box-shadow: 0 16px 36px -29px rgba(0, 0, 0, 0.98), inset 0 1px 0 rgba(255, 255, 255, 0.025);
-  }
-
-  .hero::before,
-
-  .dashboard-hero::before,
-
-  .admin-hero::before,
-
-  [class$="-hero"]:not(:where([class*="landing"]))::before,
-
-  [class*="-hero "]:not(:where([class*="landing"]))::before {
-    background: linear-gradient(90deg, rgba(255, 155, 85, 0.035), transparent 36%, transparent);
+      linear-gradient(110deg, rgba(255, 155, 85, 0.05), transparent 42%),
+      rgba(25, 20, 16, 0.82);
+    box-shadow:
+      0 16px 38px -30px rgba(0, 0, 0, 0.98),
+      inset 0 1px 0 rgba(255, 255, 255, 0.024);
   }
 
   .hero-copy h1,
@@ -132,7 +127,7 @@
   [class$="-hero__copy"] h1,
   [class*="-hero__copy "] h1 {
     margin-bottom: 6px;
-    font-size: clamp(1.55rem, 2vw, 2.2rem);
+    font-size: clamp(1.55rem, 1.9vw, 2.1rem);
     line-height: 1.12;
   }
 
@@ -143,8 +138,7 @@
   [class$="-eyebrow"],
   [class*="-eyebrow "] {
     padding: 3px 9px;
-    margin-bottom: 7px;
-    background: rgba(255, 155, 85, 0.085);
+    margin-bottom: 6px;
     font-size: 9.5px;
     letter-spacing: 0.12em;
   }
@@ -158,26 +152,48 @@
     line-height: 1.58;
   }
 
+  /* ---------- Заголовки секцій та action bars ---------- */
   .section-header,
   .dashboard-list-head,
-  [class$="__head"],
-  [class*="__head "],
-  [class$="-head"]:not(:where(.profile-card-head--inline)),
-  [class*="-head "]:not(:where(.profile-card-head--inline)) {
+  .profile-card-head,
+  .content-section-head,
+  .content-form-section-head {
+    align-items: center;
     gap: 16px;
   }
 
   .section-header h2,
-  .dashboard-list-head h2 {
-    font-size: 1.15rem;
+  .dashboard-list-head h2,
+  .profile-card-head h2 {
+    font-size: 1.08rem;
+    line-height: 1.25;
   }
 
-  /* Контроли щільніші на ПК, але не дрібні. */
+  .action-bar,
+  .profile-account-header__actions,
+  .raid-greylist-mini-actions {
+    gap: 8px;
+  }
+
+  /* ---------- Контроли ---------- */
   .btn {
-    min-height: var(--desktop-control-height);
-    padding-inline: 16px;
-    border-radius: 10px;
+    min-height: var(--control-height);
+    padding-inline: var(--control-pad-x);
+    border-radius: var(--control-radius);
     font-size: 0.82rem;
+  }
+
+  .btn-sm {
+    min-height: var(--control-height-sm);
+    padding-inline: 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.76rem;
+  }
+
+  .btn-icon {
+    width: var(--control-height);
+    min-width: var(--control-height);
+    padding: 0;
   }
 
   input,
@@ -188,48 +204,49 @@
 
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
   select {
-    min-height: var(--desktop-control-height);
+    min-height: var(--control-height);
   }
 
   textarea {
     min-height: 104px;
   }
 
-  /* Робочі двоколонкові макети використовують місце монітора, а не картку телефона. */
-  [class$="-layout"]:not(:where(.access-groups-layout)),
-  [class*="-layout "]:not(:where(.access-groups-layout)) {
-    grid-template-columns: minmax(0, 1.9fr) minmax(300px, 0.72fr);
-    gap: 20px;
+  /* ---------- Сітки: один ритм, без випадкових 12/24/32px ---------- */
+  :where(
+    [class$="-grid"],
+    [class*="-grid "],
+    [class$="__grid"],
+    [class*="__grid "]
+  ) {
+    gap: var(--section-gap);
   }
 
-  
-
-  [class$="-grid"],
-  [class*="-grid "],
-  [class$="__grid"],
-  [class*="__grid "] {
-    gap: 16px;
+  :where(
+    [class$="-layout"]:not(.profile-account-layout):not(.access-groups-layout),
+    [class*="-layout "]:not(.profile-account-layout):not(.access-groups-layout)
+  ) {
+    gap: var(--page-gap);
   }
 
-  /* Табличні екрани: чіткий каркас та краща читабельність рядків. */
+  /* ---------- Таблиці й списки ---------- */
   .dashboard-table-card,
   .dashboard-list-panel {
     overflow: hidden;
-    border-radius: 16px;
-    border: 1px solid rgba(255, 226, 196, 0.095);
-    background: rgba(29, 23, 18, 0.72);
-    box-shadow: 0 12px 32px -25px rgba(0, 0, 0, 0.92);
+    border: 1px solid rgba(255, 226, 196, 0.1);
+    border-radius: var(--card-radius);
+    background: rgba(29, 23, 18, 0.76);
+    box-shadow: 0 14px 34px -27px rgba(0, 0, 0, 0.96);
   }
 
   .dashboard-table-titlebar,
   .dashboard-list-head {
-    padding: 18px 20px;
+    padding: 16px 18px;
     border-bottom: 1px solid var(--border-subtle);
-    background: rgba(255, 255, 255, 0.015);
+    background: rgba(255, 255, 255, 0.014);
   }
 
   .dashboard-table-head {
-    background: rgba(12, 10, 7, 0.46);
+    background: rgba(12, 10, 7, 0.48);
     color: var(--text-faint);
     font-size: 10px;
     letter-spacing: 0.08em;
@@ -248,13 +265,123 @@
 
   .dashboard-table-footer {
     border-top: 1px solid var(--border-subtle);
-    background: rgba(12, 10, 7, 0.22);
+    background: rgba(12, 10, 7, 0.24);
   }
 
-  /* Сторінки керування — вкладки читаються як частина програми. */
+  /* =======================================================
+     PROFILE — виправлення проблем зі скріну
+     ======================================================= */
+  .profile-account-layout {
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+
+  .profile-account-sidebar {
+    top: 92px;
+    gap: 16px;
+    padding: 22px;
+    border-radius: var(--card-radius);
+  }
+
+  .profile-account-sidebar__avatar {
+    width: 88px;
+    height: 88px;
+  }
+
+  .profile-account-sidebar__facts {
+    width: 100%;
+  }
+
+  .profile-account-sidebar__nav,
+  .profile-account-sidebar__footer,
+  .profile-account-sidebar__footer > *,
+  .profile-account-logout,
+  .profile-account-logout > .btn {
+    width: 100%;
+  }
+
+  .profile-account-sidebar__nav a {
+    min-height: 40px;
+    padding: 0 12px;
+    border-radius: 10px;
+  }
+
+  .profile-account-main {
+    gap: 18px;
+  }
+
+  .profile-account-header {
+    align-items: end;
+    gap: 18px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .profile-account-overview {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .profile-account-overview-card {
+    min-height: 82px;
+    padding: 14px 16px;
+  }
+
+  .profile-card-toolbar--compact {
+    gap: 8px;
+  }
+
+  .profile-card-toolbar--compact > span {
+    min-width: 84px;
+    padding: 7px 12px;
+  }
+
+  /* auto-fit, не auto-fill: порожні треки більше не залишають
+     величезну пусту ділянку праворуч, коли персонажів 2–3. */
+  .profile-character-list--single-flow {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  .profile-character-card {
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  .profile-character-artwork {
+    height: 250px;
+  }
+
+  .profile-character-body {
+    min-height: 360px;
+    padding: 18px;
+  }
+
+  .profile-character-actions,
+  .profile-character-actions__full,
+  .profile-character-actions__full > *,
+  .profile-character-actions__row > *,
+  .profile-character-action {
+    width: 100%;
+  }
+
+  .profile-character-actions__row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .profile-character-action {
+    min-width: 0;
+  }
+
+  /* ---------- Адмінські екрани ---------- */
   .admin-tabs,
   [class*="admin-tabs"] {
-    border-radius: 14px;
+    border-radius: 12px;
   }
 
   .app-footer {
@@ -264,12 +391,12 @@
   }
 
   .app-footer__inner {
-    max-width: var(--desktop-content-max);
+    max-width: var(--page-max);
   }
 }
 
-@media (min-width: 1280px) {
+@media (min-width: 1320px) {
   .dashboard-brand__copy strong {
-    max-width: 250px;
+    max-width: 260px;
   }
 }

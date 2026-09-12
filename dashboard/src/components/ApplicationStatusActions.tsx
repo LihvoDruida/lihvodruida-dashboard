@@ -146,7 +146,7 @@ export default function ApplicationStatusActions({
 
           <button
             type="button"
-            className="action-button action-button--primary"
+            className="btn primary"
             disabled={!canApply}
             aria-disabled={!canApply}
             aria-busy={busy}

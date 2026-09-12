@@ -336,8 +336,8 @@ function DiscordPreview({ embed, content, isValid, mentionRoles = [], previewMod
       <div className="discord-preview-titlebar">
         <span>Перегляд</span>
         <div className="discord-preview-mode-toggle" aria-label="Режим перегляду Discord">
-          <button type="button" className={previewMode === "desktop" ? "is-active" : undefined} onClick={() => onPreviewModeChange?.("desktop")}>ПК</button>
-          <button type="button" className={previewMode === "mobile" ? "is-active" : undefined} onClick={() => onPreviewModeChange?.("mobile")}>Телефон</button>
+          <button type="button" className={`discord-preview-mode-button${previewMode === "desktop" ? " is-active" : ""}`} onClick={() => onPreviewModeChange?.("desktop")}>ПК</button>
+          <button type="button" className={`discord-preview-mode-button${previewMode === "mobile" ? " is-active" : ""}`} onClick={() => onPreviewModeChange?.("mobile")}>Телефон</button>
         </div>
       </div>
       <div className="discord-preview-canvas">

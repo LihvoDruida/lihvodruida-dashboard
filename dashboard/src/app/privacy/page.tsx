@@ -15,8 +15,8 @@ const updatedAt = "09 травня 2026";
 
 export default function PrivacyPage() {
   return (
-    <main className="container legal-page">
-      <section className="dashboard-shell content-shell legal-shell" aria-label="Політика конфіденційності Mistblossom Vanguard">
+    <main className="container app-page legal-page">
+      <section className="dashboard-shell content-shell legal-shell app-page-stack" aria-label="Політика конфіденційності Mistblossom Vanguard">
         <header className="hero panel dashboard-hero legal-hero">
           <div className="hero-copy dashboard-hero__copy guild-hero__copy">
             <div className="eyebrow">Mistblossom Vanguard • Документи</div>

@@ -31,8 +31,8 @@ export default async function ServerStatusPage() {
   const snapshot = await getServerStatusSnapshot();
 
   return (
-    <main className="container admin-container server-status-container">
-      <section className="dashboard-shell content-shell admin-page server-status-page" aria-label="Стан сервера Mistblossom Vanguard">
+    <main className="container app-page admin-container server-status-container">
+      <section className="dashboard-shell content-shell admin-page server-status-page app-page-stack" aria-label="Стан сервера Mistblossom Vanguard">
         <DashboardIdentity user={user} activeSection="admin" />
         <header className="hero panel admin-hero server-status-hero">
           <div className="hero-copy dashboard-hero__copy guild-hero__copy">

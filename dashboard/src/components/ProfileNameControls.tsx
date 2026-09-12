@@ -255,7 +255,7 @@ export default function ProfileNameControls({
               aria-describedby={`${inputId}-hint`}
             />
             <button
-              className="profile-icon-action profile-icon-action--confirm"
+              className="btn btn-icon primary profile-icon-action"
               type="submit"
               disabled={!canSubmitName}
               data-preserve-label="true"
@@ -387,7 +387,7 @@ export default function ProfileNameControls({
           {canManage && canSyncDiscord && hasName && nicknamePreview ? (
             discordOwnerLocked ? (
               <button
-                className="profile-nick-sync-button profile-nick-sync-button--copy"
+                className="btn subtle btn-sm profile-nick-sync-button"
                 type="button"
                 onClick={copyNickname}
                 title={`Скопіювати: ${nicknamePreview}`}
@@ -406,7 +406,7 @@ export default function ProfileNameControls({
                   <input type="hidden" name="returnTo" value={returnTo} />
                 ) : null}
                 <button
-                  className={`profile-nick-sync-button${synced ? " is-synced" : ""}`}
+                  className={`btn subtle btn-sm profile-nick-sync-button${synced ? " is-synced" : ""}`}
                   type="submit"
                   data-preserve-label="true"
                   title={`Змінити серверне імʼя на: ${nicknamePreview}`}

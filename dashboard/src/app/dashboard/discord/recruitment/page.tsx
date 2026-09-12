@@ -134,9 +134,9 @@ export default async function DiscordRecruitmentPage() {
   ]);
 
   return (
-    <main className="container admin-container">
+    <main className="container app-page admin-container">
       <section
-        className="dashboard-shell content-shell admin-page discord-management-page"
+        className="dashboard-shell content-shell admin-page discord-management-page app-page-stack"
         aria-label="Discord-автовідповіді"
       >
         <DashboardIdentity user={user} activeSection="admin" />

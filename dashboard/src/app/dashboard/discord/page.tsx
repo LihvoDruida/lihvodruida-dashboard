@@ -125,8 +125,8 @@ export default async function AdminDiscordPage() {
   ];
 
   return (
-    <main className="container admin-container">
-      <section className="dashboard-shell content-shell admin-page discord-management-page" aria-label="Керування Discord-учасниками">
+    <main className="container app-page admin-container">
+      <section className="dashboard-shell content-shell admin-page discord-management-page app-page-stack" aria-label="Керування Discord-учасниками">
         <DashboardIdentity user={user} activeSection="admin" />
         <header className="hero panel admin-hero discord-admin-hero">
           <div className="hero-copy dashboard-hero__copy guild-hero__copy">

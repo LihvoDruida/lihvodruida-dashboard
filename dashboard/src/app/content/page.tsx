@@ -361,8 +361,8 @@ export default async function ContentPage({
   const heroPath = selectedItem?.path || (isCreateMode ? "Новий матеріал" : `${items.length} матеріалів у бібліотеці`);
 
   return (
-    <main className="container">
-      <section className="dashboard-shell content-shell" aria-label="Публікація матеріалів Mistblossom Vanguard">
+    <main className="container app-page">
+      <section className="dashboard-shell content-shell app-page-stack" aria-label="Публікація матеріалів Mistblossom Vanguard">
         <DashboardIdentity user={user} activeSection="content" />
         <header className={`hero panel dashboard-hero content-dashboard-hero content-dashboard-hero--${heroMode}`}>
           <div className="hero-copy dashboard-hero__copy content-dashboard-hero__copy">
