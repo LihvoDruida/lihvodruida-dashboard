@@ -10,6 +10,7 @@
 # хвилини робить те саме і легко читається в логах.
 #
 # Задачі та розклад:
+#   */2  * * * *  /api/guild/sync             — Battle.net + Raider.IO + raid progress у БД
 #   */10 * * * *  /api/raids/lifecycle        — публікація й закриття рейдів
 #   */5  * * * *  /api/polls/close-due        — автозакриття рейд-пулів
 #   0    4 * * *  /api/dashboard/profiles/orphan-cleanup/apply — чистка акаунтів
@@ -52,6 +53,9 @@ while true; do
   minute=$(date -u +%-M)
   hour=$(date -u +%-H)
 
+  # Власний VPS дозволяє тримати склад актуальним без browser-driven sync.
+  # Endpoint сам застосовує TTL, короткі батчі та Raider.IO cooldown.
+  [ $((minute % 2)) -eq 0 ] && call "/api/guild/sync"
   [ $((minute % 10)) -eq 0 ] && call "/api/raids/lifecycle"
   [ $((minute % 5)) -eq 0 ] && call "/api/polls/close-due"
 

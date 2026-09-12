@@ -192,7 +192,7 @@ export default function GuildRosterRefreshButton({
         payload?.hasMore
           ? clientDrivenSyncEnabled
             ? `Досягнуто ліміт кроків (${maxSteps}). Частину даних уже збережено, натисни “Оновити склад” ще раз для продовження.`
-            : `Перший крок виконано: збережено ${payload?.memberCount ?? 0} персонажів. Натисни ще раз для продовження.`
+            : `Синхронізацію запущено: збережено ${payload?.memberCount ?? 0} персонажів. Серверний cron автоматично продовжить наступні кроки.`
           : `Готово: склад оновлено, персонажів: ${payload?.memberCount ?? 0}.`,
       );
       notifyDashboardDataChanged({
@@ -234,7 +234,7 @@ export default function GuildRosterRefreshButton({
         disabled={state === "loading"}
         aria-busy={state === "loading"}
       >
-        {state === "loading" ? "Синхронізація…" : "Оновити склад"}
+        {state === "loading" ? "Синхронізація…" : "Оновити зараз"}
       </button>
       {message ? (
         <span

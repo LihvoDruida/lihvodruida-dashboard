@@ -56,6 +56,10 @@ export async function POST(request: NextRequest) {
     const cacheOnly = truthy(body?.cacheOnly);
     const softSync = truthy(body?.soft);
     const bypassCache = truthy(body?.bypassCache) || cacheOnly || softSync;
+    const wantsExternalSync = forceRefresh || continueSync || softSync || !cacheOnly;
+    if (wantsExternalSync && !session?.isServerOwner) {
+      return forbiddenResponse();
+    }
     const apiSettings = await getDashboardApiSettings().catch(() => null);
     const debugAuditEnabled = Boolean(debugRequested || apiSettings?.dashboardApiDebugAuditLogs);
     const roster = await refreshGuildRosterApiBatch({

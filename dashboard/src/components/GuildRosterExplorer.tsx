@@ -5,24 +5,36 @@ import {
   useMemo,
   useState,
   type CSSProperties,
-  type ChangeEvent,
   type KeyboardEvent,
   type MouseEvent,
 } from "react";
 import type {
+  GuildRaidProgress,
   GuildRosterMember,
   GuildRosterStats,
   GuildScoreSegment,
 } from "@/lib/guildRoster";
 import { useDashboardApiResource } from "@/lib/dashboardBackgroundApi";
 import { formatStableNumber, stableTextCompare } from "@/lib/stableUiText";
+import styles from "./GuildRoster.module.css";
 
 type SortKey =
   | "rio-desc"
   | "rio-asc"
   | "ilvl-desc"
+  | "raid-desc"
   | "name-asc"
   | "rank-asc";
+
+type RaidClearFilter =
+  | "all"
+  | "progress"
+  | "normal-clear"
+  | "heroic-clear"
+  | "mythic-clear"
+  | "no-raid";
+
+type LinkFilter = "all" | "profile" | "raiderio";
 
 type Props = {
   members: GuildRosterMember[];
@@ -35,23 +47,29 @@ type GuildRosterLivePayload = Props & {
   ok?: boolean;
   memberCount?: number;
   updatedAt?: string | null;
+  refresh?: {
+    sync?: {
+      status?: string;
+      phase?: string;
+      totalMembers?: number;
+      processed?: { roster?: number; battleNet?: number; raiderIo?: number };
+    };
+  };
 };
 
 const SEGMENT_LABELS: Record<GuildScoreSegment, string> = {
-  all: "ALL",
+  all: "Загальний",
   dps: "DPS",
-  healer: "HEALER",
-  tank: "TANK",
+  healer: "Heal",
+  tank: "Tank",
 };
 
-const ROLE_LABELS: Record<string, string> = {
-  all: "Усі ролі",
-  tank: "Танк",
-  healer: "Хіл",
-  dps: "DPS",
-  unknown: "Без ролі",
-};
-
+const ROLE_FILTERS = [
+  { value: "all", label: "Всі" },
+  { value: "tank", label: "Tank" },
+  { value: "healer", label: "Heal" },
+  { value: "dps", label: "DPS" },
+] as const;
 
 const CLASS_COLOR: Record<string, string> = {
   "death knight": "#c41e3a",
@@ -75,7 +93,7 @@ function formatNumber(value: number, digits = 0) {
 }
 
 function formatRosterDate(value?: string | null) {
-  if (!value) return "—";
+  if (!value) return "ще немає";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat("uk-UA", {
@@ -92,8 +110,8 @@ function uniqueSorted(values: string[]) {
 }
 
 function roleShort(role: string) {
-  if (role === "tank") return "Танк";
-  if (role === "healer") return "Хіл";
+  if (role === "tank") return "Tank";
+  if (role === "healer") return "Heal";
   if (role === "dps") return "DPS";
   return "—";
 }
@@ -102,197 +120,11 @@ function classColor(className: string) {
   return CLASS_COLOR[className.trim().toLowerCase()] || "#f6efe2";
 }
 
-function FilterSelect({
-  id,
-  name,
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  id: string;
-  name: string;
-  label: string;
-  value: string;
-  options: string[];
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="guild-filter-field directory-filter-field" htmlFor={id}>
-      <span>{label}</span>
-      <select
-        id={id}
-        name={name}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      >
-        {options.map((option) => (
-          <option value={option} key={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
-function clampValue(value: number, min: number, max: number) {
-  if (!Number.isFinite(value)) return min;
-  return Math.min(max, Math.max(min, value));
-}
-
-function parseNumberInput(
-  event: ChangeEvent<HTMLInputElement>,
-  fallback: number,
-) {
-  const raw = event.target.value.trim();
-  if (!raw) return fallback;
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed)) return fallback;
-  return parsed;
-}
-
-const RANGE_THUMB_HALF_PX = 10;
-
-function rangePosition(percentValue: number) {
-  const safePercent = Math.min(100, Math.max(0, percentValue));
-  const insetCompensation = RANGE_THUMB_HALF_PX * (1 - safePercent / 50);
-  const roundedPercent = Number(safePercent.toFixed(4));
-  const roundedCompensation = Number(insetCompensation.toFixed(4));
-
-  return `calc(${roundedPercent}% + ${roundedCompensation}px)`;
-}
-
-function RangeFilter({
-  idBase,
-  nameBase,
-  label,
-  minValue,
-  maxValue,
-  absoluteMin,
-  absoluteMax,
-  onMinChange,
-  onMaxChange,
-}: {
-  idBase: string;
-  nameBase: string;
-  label: string;
-  minValue: number;
-  maxValue: number;
-  absoluteMin: number;
-  absoluteMax: number;
-  onMinChange: (value: number) => void;
-  onMaxChange: (value: number) => void;
-}) {
-  const safeAbsoluteMax = Math.max(absoluteMin, absoluteMax);
-  const safeMin = clampValue(minValue, absoluteMin, safeAbsoluteMax);
-  const safeMax = clampValue(maxValue, absoluteMin, safeAbsoluteMax);
-  const low = Math.min(safeMin, safeMax);
-  const high = Math.max(safeMin, safeMax);
-  const span = Math.max(1, safeAbsoluteMax - absoluteMin);
-  const startPercent = ((low - absoluteMin) / span) * 100;
-  const endPercent = 100 - ((high - absoluteMin) / span) * 100;
-
-  return (
-    <div className="guild-range-group guild-range-group--inline directory-range-filter">
-      <div className="guild-range-head">
-        <span>{label}</span>
-      </div>
-
-      <label className="guild-range-value" htmlFor={`${idBase}-min`}>
-        <span>від</span>
-        <input
-          id={`${idBase}-min`}
-          name={`${nameBase}_min`}
-          type="number"
-          inputMode="numeric"
-          min={absoluteMin}
-          max={safeAbsoluteMax}
-          value={safeMin}
-          onChange={(event) =>
-            onMinChange(
-              clampValue(
-                parseNumberInput(event, safeMin),
-                absoluteMin,
-                safeAbsoluteMax,
-              ),
-            )
-          }
-        />
-      </label>
-
-      <div
-        className="guild-dual-range"
-        style={
-          {
-            "--range-start": rangePosition(startPercent),
-            "--range-end": rangePosition(endPercent),
-          } as CSSProperties
-        }
-      >
-        <div className="guild-dual-range__line" aria-hidden="true" />
-        <div className="guild-dual-range__active" aria-hidden="true" />
-        <input
-          id={`${idBase}-min-slider`}
-          name={`${nameBase}_min_slider`}
-          className="guild-dual-range__input"
-          type="range"
-          min={absoluteMin}
-          max={safeAbsoluteMax}
-          value={safeMin}
-          onChange={(event) =>
-            onMinChange(
-              clampValue(
-                Number(event.target.value),
-                absoluteMin,
-                safeAbsoluteMax,
-              ),
-            )
-          }
-        />
-        <input
-          id={`${idBase}-max-slider`}
-          name={`${nameBase}_max_slider`}
-          className="guild-dual-range__input"
-          type="range"
-          min={absoluteMin}
-          max={safeAbsoluteMax}
-          value={safeMax}
-          onChange={(event) =>
-            onMaxChange(
-              clampValue(
-                Number(event.target.value),
-                absoluteMin,
-                safeAbsoluteMax,
-              ),
-            )
-          }
-        />
-      </div>
-
-      <label className="guild-range-value" htmlFor={`${idBase}-max`}>
-        <span>до</span>
-        <input
-          id={`${idBase}-max`}
-          name={`${nameBase}_max`}
-          type="number"
-          inputMode="numeric"
-          min={absoluteMin}
-          max={safeAbsoluteMax}
-          value={safeMax}
-          onChange={(event) =>
-            onMaxChange(
-              clampValue(
-                parseNumberInput(event, safeMax),
-                absoluteMin,
-                safeAbsoluteMax,
-              ),
-            )
-          }
-        />
-      </label>
-    </div>
-  );
+function roleStyleClass(role: GuildRosterMember["role"]) {
+  if (role === "tank") return styles.roleTank;
+  if (role === "healer") return styles.roleHealer;
+  if (role === "dps") return styles.roleDps;
+  return "";
 }
 
 function openProfileCard(event: MouseEvent<HTMLElement>, href?: string | null) {
@@ -306,20 +138,158 @@ function openProfileCardWithKeyboard(
   event: KeyboardEvent<HTMLElement>,
   href?: string | null,
 ) {
-  if (!href) return;
-  if (event.key !== "Enter" && event.key !== " ") return;
+  if (!href || (event.key !== "Enter" && event.key !== " ")) return;
   const target = event.target as HTMLElement | null;
   if (target?.closest("a,button,input,select,textarea,label")) return;
   event.preventDefault();
   window.location.href = href;
 }
 
-export default function GuildRosterExplorer({
-  members,
-  stats,
-  source,
-  error,
-}: Props) {
+function normalizedRaidProgress(member: GuildRosterMember) {
+  return Array.isArray(member.raidProgression) ? member.raidProgression : [];
+}
+
+function raidWeight(raid: GuildRaidProgress | null) {
+  if (!raid) return 0;
+  return (
+    raid.mythicKills * 1_000_000 +
+    raid.heroicKills * 10_000 +
+    raid.normalKills * 100 +
+    raid.totalBosses
+  );
+}
+
+function bestRaid(member: GuildRosterMember, raidSlug = "all") {
+  const raids = normalizedRaidProgress(member);
+  if (raidSlug !== "all") {
+    return raids.find((raid) => raid.slug === raidSlug) || null;
+  }
+  // Raider.IO повертає агрегат поточного tier як `tier-*`; він важливіший
+  // за вже закриті старі рейди, інакше дефолтний список показував би історію.
+  return raids.find((raid) => /^tier-/i.test(raid.slug)) || raids[0] || null;
+}
+
+function raidIsClear(raid: GuildRaidProgress | null, difficulty: "normal" | "heroic" | "mythic") {
+  if (!raid || raid.totalBosses <= 0) return false;
+  if (difficulty === "mythic") return raid.mythicKills >= raid.totalBosses;
+  if (difficulty === "heroic") return raid.heroicKills >= raid.totalBosses;
+  return raid.normalKills >= raid.totalBosses;
+}
+
+function raidHasProgress(raid: GuildRaidProgress | null) {
+  return Boolean(raid && (raid.normalKills > 0 || raid.heroicKills > 0 || raid.mythicKills > 0));
+}
+
+function raidSummary(raid: GuildRaidProgress | null) {
+  if (!raid) return { main: "—", detail: "Немає даних" };
+  const total = raid.totalBosses || 0;
+  if (!total) return { main: raid.summary || "—", detail: raid.name };
+
+  const highest = raid.mythicKills > 0
+    ? `M ${raid.mythicKills}/${total}`
+    : raid.heroicKills > 0
+      ? `H ${raid.heroicKills}/${total}`
+      : `N ${raid.normalKills}/${total}`;
+  const detail = [
+    raid.mythicKills > 0 ? `M ${raid.mythicKills}/${total}` : null,
+    raid.heroicKills > 0 ? `H ${raid.heroicKills}/${total}` : null,
+    raid.normalKills > 0 ? `N ${raid.normalKills}/${total}` : null,
+  ].filter(Boolean).join(" · ") || raid.summary || "Без убивств";
+
+  return { main: highest, detail };
+}
+
+function compactRaidName(name: string) {
+  return name.length > 30 ? `${name.slice(0, 29)}…` : name;
+}
+
+function friendlySource(value: string) {
+  const source = String(value || "").toLowerCase();
+  if (source.includes("raider")) return "Raider.IO → PostgreSQL";
+  if (source.includes("battle")) return "Battle.net → PostgreSQL";
+  if (source.includes("firebase") || source.includes("database") || source.includes("records")) return "PostgreSQL";
+  if (source.includes("live-sync")) return "Battle.net + Raider.IO";
+  return value || "PostgreSQL";
+}
+
+function FilterSelect({
+  id,
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  options: Array<{ value: string; label: string }>;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className={styles.filterField} htmlFor={id}>
+      <span>{label}</span>
+      <select id={id} value={value} onChange={(event) => onChange(event.target.value)}>
+        {options.map((option) => (
+          <option value={option.value} key={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function CompactRange({
+  id,
+  label,
+  minValue,
+  maxValue,
+  absoluteMax,
+  onMinChange,
+  onMaxChange,
+}: {
+  id: string;
+  label: string;
+  minValue: number;
+  maxValue: number;
+  absoluteMax: number;
+  onMinChange: (value: number) => void;
+  onMaxChange: (value: number) => void;
+}) {
+  const safeMax = Math.max(0, absoluteMax);
+  return (
+    <fieldset className={styles.rangeField}>
+      <legend>{label}</legend>
+      <label>
+        <span>від</span>
+        <input
+          id={`${id}-min`}
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={safeMax}
+          value={minValue}
+          onChange={(event) => onMinChange(Math.max(0, Math.min(safeMax, Number(event.target.value) || 0)))}
+        />
+      </label>
+      <span className={styles.rangeDash}>—</span>
+      <label>
+        <span>до</span>
+        <input
+          id={`${id}-max`}
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={safeMax}
+          value={maxValue}
+          onChange={(event) => onMaxChange(Math.max(0, Math.min(safeMax, Number(event.target.value) || 0)))}
+        />
+      </label>
+    </fieldset>
+  );
+}
+
+export default function GuildRosterExplorer({ members, stats, source, error }: Props) {
   const initialRoster = useMemo<GuildRosterLivePayload>(
     () => ({ members, stats, source, error: error || null }),
     [members, stats, source, error],
@@ -328,12 +298,12 @@ export default function GuildRosterExplorer({
     key: "guild-roster",
     scope: "guild",
     initialData: initialRoster,
-    minIntervalMs: 10 * 60 * 1000,
+    minIntervalMs: 60_000,
     request: () => ({
       url: "/api/guild/refresh",
       method: "POST",
       headers: { "X-Dashboard-Action": "guild-roster-cache-sync" },
-      json: { cacheOnly: true, includeMembers: true, bypassCache: true },
+      json: { cacheOnly: true, includeMembers: true, includeStats: true, bypassCache: true },
       select: (payload) => {
         const data = payload as Partial<GuildRosterLivePayload> | null;
         return {
@@ -344,54 +314,68 @@ export default function GuildRosterExplorer({
           ok: data?.ok,
           memberCount: data?.memberCount,
           updatedAt: data?.updatedAt,
+          refresh: data?.refresh,
         };
       },
     }),
+    refreshOnMount: true,
   });
 
-  const liveMembers = rosterResource.data.members.length
-    ? rosterResource.data.members
-    : members;
+  useEffect(() => {
+    let timer = 0;
+    const schedule = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        if (!document.hidden) void rosterResource.refresh("guild-roster-poll");
+        schedule();
+      }, 60_000);
+    };
+    const onVisibility = () => {
+      if (!document.hidden) void rosterResource.refresh("guild-roster-visible", { force: true });
+    };
+    schedule();
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [rosterResource.refresh]);
+
+  const liveMembers = rosterResource.data.members;
   const liveStats = rosterResource.data.stats || stats;
   const liveSource = rosterResource.data.source || source;
-  const liveError =
-    rosterResource.data.error || error || rosterResource.error || null;
-
-  const [segment, setSegment] = useState<GuildScoreSegment>("all");
-  const [query, setQuery] = useState("");
-  const [classFilter, setClassFilter] = useState("Усі класи");
-  const [specFilter, setSpecFilter] = useState("Усі спеки");
-  const [roleFilter, setRoleFilter] = useState("Усі ролі");
-  const [factionFilter, setFactionFilter] = useState("Усі фракції");
-  const [rioMin, setRioMin] = useState(0);
-  const [rioMax, setRioMax] = useState(Math.ceil(liveStats.maxRioAll || 0));
-  const [itemLevelMin, setItemLevelMin] = useState(0);
-  const [itemLevelMax, setItemLevelMax] = useState(
-    Math.ceil(liveStats.maxItemLevel || 0),
-  );
-  const [sort, setSort] = useState<SortKey>("rio-desc");
-  const [filtersOpen, setFiltersOpen] = useState(true);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const media = window.matchMedia("(max-width: 720px)");
-    const applyState = () => {
-      setFiltersOpen(!media.matches);
-    };
-
-    applyState();
-    if (typeof media.addEventListener === "function") {
-      media.addEventListener("change", applyState);
-      return () => media.removeEventListener("change", applyState);
-    }
-
-    media.addListener(applyState);
-    return () => media.removeListener(applyState);
-  }, []);
+  const liveError = rosterResource.data.error || error || rosterResource.error || null;
+  const liveSync = rosterResource.data.refresh?.sync;
+  const syncProcessed = liveSync?.phase === "raiderio"
+    ? Number(liveSync.processed?.raiderIo || 0)
+    : liveSync?.phase === "battlenet"
+      ? Number(liveSync.processed?.battleNet || 0)
+      : Number(liveSync?.processed?.roster || 0);
+  const syncTotal = Math.max(0, Number(liveSync?.totalMembers || 0));
+  const liveSyncLabel = liveSync?.status === "running"
+    ? `Фонова синхронізація · ${liveSync.phase === "raiderio" ? "Raider.IO" : liveSync.phase === "battlenet" ? "Battle.net профілі" : "склад Battle.net"}${syncTotal ? ` · ${Math.min(syncProcessed, syncTotal)}/${syncTotal}` : ""}`
+    : null;
 
   const maxRio = Math.max(0, Math.ceil(liveStats.maxRioAll || 0));
   const maxItemLevel = Math.max(0, Math.ceil(liveStats.maxItemLevel || 0));
+
+  const [query, setQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [segment, setSegment] = useState<GuildScoreSegment>("all");
+  const [classFilter, setClassFilter] = useState("all");
+  const [specFilter, setSpecFilter] = useState("all");
+  const [factionFilter, setFactionFilter] = useState("all");
+  const [raidFilter, setRaidFilter] = useState("all");
+  const [raidClearFilter, setRaidClearFilter] = useState<RaidClearFilter>("all");
+  const [linkFilter, setLinkFilter] = useState<LinkFilter>("all");
+  const [rioMin, setRioMin] = useState(0);
+  const [rioMax, setRioMax] = useState(maxRio);
+  const [itemLevelMin, setItemLevelMin] = useState(0);
+  const [itemLevelMax, setItemLevelMax] = useState(maxItemLevel);
+  const [sort, setSort] = useState<SortKey>("rio-desc");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   useEffect(() => {
     setRioMax((value) => (value <= 0 || value < maxRio ? maxRio : Math.min(value, maxRio)));
@@ -403,53 +387,74 @@ export default function GuildRosterExplorer({
     );
   }, [maxItemLevel]);
 
-  const options = useMemo(
-    () => ({
-      classes: [
-        "Усі класи",
-        ...uniqueSorted(liveMembers.map((member) => member.className)),
-      ],
-      specs: [
-        "Усі спеки",
-        ...uniqueSorted(liveMembers.map((member) => member.specName)),
-      ],
-      factions: [
-        "Усі фракції",
-        ...uniqueSorted(liveMembers.map((member) => member.faction)),
-      ],
-    }),
-    [liveMembers],
-  );
+  const options = useMemo(() => {
+    const raidMap = new Map<string, string>();
+    for (const member of liveMembers) {
+      for (const raid of normalizedRaidProgress(member)) {
+        if (raid.slug) raidMap.set(raid.slug, raid.name || raid.slug);
+      }
+    }
+    return {
+      classes: uniqueSorted(liveMembers.map((member) => member.className)),
+      specs: uniqueSorted(
+        liveMembers
+          .filter((member) => classFilter === "all" || member.className === classFilter)
+          .map((member) => member.specName),
+      ),
+      factions: uniqueSorted(liveMembers.map((member) => member.faction)),
+      raids: Array.from(raidMap.entries()).sort((a, b) => stableTextCompare(a[1], b[1])),
+    };
+  }, [liveMembers, classFilter]);
+
+  useEffect(() => {
+    if (specFilter !== "all" && !options.specs.includes(specFilter)) setSpecFilter("all");
+  }, [options.specs, specFilter]);
+
+  const raidStats = useMemo(() => {
+    let profiles = 0;
+    let heroicClears = 0;
+    let mythicClears = 0;
+    for (const member of liveMembers) {
+      const raids = normalizedRaidProgress(member);
+      if (raids.length) profiles += 1;
+      const raid = bestRaid(member);
+      if (raidIsClear(raid, "heroic")) heroicClears += 1;
+      if (raidIsClear(raid, "mythic")) mythicClears += 1;
+    }
+    return { profiles, heroicClears, mythicClears };
+  }, [liveMembers]);
 
   const filteredMembers = useMemo(() => {
     const search = query.trim().toLowerCase();
-    const minRio = Math.min(rioMin, rioMax);
-    const maxRioValue = Math.max(rioMin, rioMax);
-    const minItemLevel = Math.min(itemLevelMin, itemLevelMax);
-    const maxItemLevelValue = Math.max(itemLevelMin, itemLevelMax);
+    const lowRio = Math.min(rioMin, rioMax);
+    const highRio = Math.max(rioMin, rioMax);
+    const lowIlvl = Math.min(itemLevelMin, itemLevelMax);
+    const highIlvl = Math.max(itemLevelMin, itemLevelMax);
 
     return liveMembers
       .filter((member) => {
         const score = member.scores[segment] || 0;
-        if (score < minRio || score > maxRioValue) return false;
-        if (
-          member.itemLevel < minItemLevel ||
-          member.itemLevel > maxItemLevelValue
-        )
-          return false;
-        if (classFilter !== "Усі класи" && member.className !== classFilter)
-          return false;
-        if (specFilter !== "Усі спеки" && member.specName !== specFilter)
-          return false;
-        if (
-          roleFilter !== "Усі ролі" &&
-          ROLE_LABELS[member.role] !== roleFilter
-        )
-          return false;
-        if (factionFilter !== "Усі фракції" && member.faction !== factionFilter)
-          return false;
-        if (!search) return true;
+        if (score < lowRio || score > highRio) return false;
+        if (member.itemLevel < lowIlvl || member.itemLevel > highIlvl) return false;
+        if (roleFilter !== "all" && member.role !== roleFilter) return false;
+        if (classFilter !== "all" && member.className !== classFilter) return false;
+        if (specFilter !== "all" && member.specName !== specFilter) return false;
+        if (factionFilter !== "all" && member.faction !== factionFilter) return false;
+        if (linkFilter === "profile" && !member.ownerProfileId) return false;
+        if (linkFilter === "raiderio" && !member.profileUrl) return false;
 
+        const raid = bestRaid(member, raidFilter);
+        if (raidFilter !== "all" && !raid) return false;
+        if (raidClearFilter === "progress" && !raidHasProgress(raid)) return false;
+        if (raidClearFilter === "normal-clear" && !raidIsClear(raid, "normal")) return false;
+        if (raidClearFilter === "heroic-clear" && !raidIsClear(raid, "heroic")) return false;
+        if (raidClearFilter === "mythic-clear" && !raidIsClear(raid, "mythic")) return false;
+        if (raidClearFilter === "no-raid" && normalizedRaidProgress(member).length > 0) return false;
+
+        if (!search) return true;
+        const raidText = normalizedRaidProgress(member)
+          .map((item) => `${item.name} ${item.summary || ""}`)
+          .join(" ");
         return [
           member.name,
           member.realmName,
@@ -458,42 +463,29 @@ export default function GuildRosterExplorer({
           member.specName,
           member.raceName,
           member.faction,
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(search);
+          member.ownerDisplayName || "",
+          raidText,
+        ].join(" ").toLowerCase().includes(search);
       })
       .sort((a, b) => {
-        if (sort === "rio-asc")
-          return (
-            (a.scores[segment] || 0) - (b.scores[segment] || 0) ||
-            stableTextCompare(a.name, b.name)
-          );
-        if (sort === "ilvl-desc")
-          return (
-            b.itemLevel - a.itemLevel ||
-            (b.scores[segment] || 0) - (a.scores[segment] || 0)
-          );
+        if (sort === "rio-asc") return (a.scores[segment] || 0) - (b.scores[segment] || 0) || stableTextCompare(a.name, b.name);
+        if (sort === "ilvl-desc") return b.itemLevel - a.itemLevel || (b.scores[segment] || 0) - (a.scores[segment] || 0);
+        if (sort === "raid-desc") return raidWeight(bestRaid(b, raidFilter)) - raidWeight(bestRaid(a, raidFilter)) || (b.scores[segment] || 0) - (a.scores[segment] || 0);
         if (sort === "name-asc") return stableTextCompare(a.name, b.name);
-        if (sort === "rank-asc")
-          return (
-            (a.rank ?? 999) - (b.rank ?? 999) ||
-            stableTextCompare(a.name, b.name)
-          );
-        return (
-          (b.scores[segment] || 0) - (a.scores[segment] || 0) ||
-          b.itemLevel - a.itemLevel ||
-          stableTextCompare(a.name, b.name)
-        );
+        if (sort === "rank-asc") return (a.rank ?? 999) - (b.rank ?? 999) || stableTextCompare(a.name, b.name);
+        return (b.scores[segment] || 0) - (a.scores[segment] || 0) || b.itemLevel - a.itemLevel || stableTextCompare(a.name, b.name);
       });
   }, [
     liveMembers,
-    segment,
     query,
+    roleFilter,
+    segment,
     classFilter,
     specFilter,
-    roleFilter,
     factionFilter,
+    raidFilter,
+    raidClearFilter,
+    linkFilter,
     rioMin,
     rioMax,
     itemLevelMin,
@@ -501,28 +493,32 @@ export default function GuildRosterExplorer({
     sort,
   ]);
 
-  const segmentCounts = useMemo(() => {
-    return (["all", "dps", "healer", "tank"] as GuildScoreSegment[]).reduce(
-      (acc, item) => {
-        acc[item] = liveMembers.filter(
-          (member) => (member.scores[item] || 0) > 0,
-        ).length;
-        return acc;
-      },
-      {} as Record<GuildScoreSegment, number>,
-    );
-  }, [liveMembers]);
+  const activeFilterCount = useMemo(() => [
+    query.trim() ? 1 : 0,
+    roleFilter !== "all" ? 1 : 0,
+    segment !== "all" ? 1 : 0,
+    classFilter !== "all" ? 1 : 0,
+    specFilter !== "all" ? 1 : 0,
+    factionFilter !== "all" ? 1 : 0,
+    raidFilter !== "all" ? 1 : 0,
+    raidClearFilter !== "all" ? 1 : 0,
+    linkFilter !== "all" ? 1 : 0,
+    rioMin > 0 || rioMax < maxRio ? 1 : 0,
+    itemLevelMin > 0 || itemLevelMax < maxItemLevel ? 1 : 0,
+  ].reduce((sum, value) => sum + value, 0), [
+    query, roleFilter, segment, classFilter, specFilter, factionFilter,
+    raidFilter, raidClearFilter, linkFilter, rioMin, rioMax, itemLevelMin,
+    itemLevelMax, maxRio, maxItemLevel,
+  ]);
 
-  const rosterPageSize = 20;
-  const [page, setPage] = useState(1);
-  const pageCount = Math.max(1, Math.ceil(filteredMembers.length / rosterPageSize));
+  const pageCount = Math.max(1, Math.ceil(filteredMembers.length / pageSize));
   const safePage = Math.min(page, pageCount);
-  const pageStart = (safePage - 1) * rosterPageSize;
-  const pagedMembers = filteredMembers.slice(pageStart, pageStart + rosterPageSize);
+  const pageStart = (safePage - 1) * pageSize;
+  const pagedMembers = filteredMembers.slice(pageStart, pageStart + pageSize);
 
   useEffect(() => {
     setPage(1);
-  }, [segment, query, classFilter, specFilter, roleFilter, factionFilter, rioMin, rioMax, itemLevelMin, itemLevelMax, sort]);
+  }, [query, roleFilter, segment, classFilter, specFilter, factionFilter, raidFilter, raidClearFilter, linkFilter, rioMin, rioMax, itemLevelMin, itemLevelMax, sort, pageSize]);
 
   useEffect(() => {
     if (page > pageCount) setPage(pageCount);
@@ -530,10 +526,14 @@ export default function GuildRosterExplorer({
 
   function resetFilters() {
     setQuery("");
-    setClassFilter("Усі класи");
-    setSpecFilter("Усі спеки");
-    setRoleFilter("Усі ролі");
-    setFactionFilter("Усі фракції");
+    setRoleFilter("all");
+    setSegment("all");
+    setClassFilter("all");
+    setSpecFilter("all");
+    setFactionFilter("all");
+    setRaidFilter("all");
+    setRaidClearFilter("all");
+    setLinkFilter("all");
     setRioMin(0);
     setRioMax(maxRio);
     setItemLevelMin(0);
@@ -542,291 +542,267 @@ export default function GuildRosterExplorer({
   }
 
   if (!liveMembers.length) {
-    const isStorageLimited =
-      liveSource === "firebase-temporary-unavailable" ||
-      /ліміт|quota|resource|firebase.*недоступ/i.test(liveError || "");
-
-    if (isStorageLimited) {
-      return (
-        <section className="guild-roster-empty panel app-error-panel" aria-live="polite">
-          <span className="eyebrow">Тимчасовий захист</span>
-          <h2>Склад тимчасово недоступний</h2>
-          <p>
-            Сторінка не може безпечно отримати склад зараз. Ми не запускаємо
-            додаткові важкі запити, щоб не погіршити ситуацію.
-          </p>
-          {liveError ? <small>{liveError}</small> : null}
-          <div className="form-actions">
-            <button
-              className="btn subtle"
-              type="button"
-              onClick={() => window.location.reload()}
-            >
-              Оновити сторінку
-            </button>
-          </div>
-        </section>
-      );
-    }
-
     return (
-      <section className="guild-roster-empty panel">
+      <section className={`${styles.emptyState} panel`} aria-live="polite">
+        <span className="eyebrow">Склад гільдії</span>
         <h2>Дані складу ще готуються</h2>
         <p>
-          Склад формується з офіційного списку гільдії та оновлюється
-          покроково. Запусти оновлення або зачекай, поки фонова синхронізація
-          завершить підготовку.
+          Сервер синхронізує Battle.net і Raider.IO у фоні. Сторінка більше не запускає
+          масові зовнішні запити з браузера.
         </p>
         {liveError ? <small>{liveError}</small> : null}
+        <button className="btn subtle" type="button" onClick={() => void rosterResource.refresh("guild-empty-retry", { force: true })}>
+          Перевірити базу
+        </button>
       </section>
     );
   }
 
   return (
-    <>
-      <section className="dashboard-table-card dashboard-list-panel dashboard-table-card--roster panel directory-panel" aria-label="Компактний склад гільдії">
-        <div className="dashboard-table-titlebar dashboard-list-head directory-section-header">
+    <section className={`${styles.rosterPanel} panel`} aria-label="Склад гільдії">
+      <div className={styles.toolbar}>
+        <div className={styles.toolbarTitle}>
           <div>
             <span className="eyebrow">Склад</span>
-            <h2>Ростер гільдії</h2>
+            <h2>Персонажі гільдії</h2>
           </div>
-          <div className="dashboard-table-controls directory-toolbar" aria-label="Пошук і швидкі фільтри складу">
-            <label className="dashboard-table-search" htmlFor="guild-roster-search">
-              <span className="sr-only">Пошук персонажа</span>
-              <input
-                id="guild-roster-search"
-                name="guild_roster_search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Пошук персонажа..."
-                autoComplete="off"
-              />
-            </label>
-            {(["all", "dps", "healer", "tank"] as GuildScoreSegment[]).map((item) => (
+          <span className={styles.resultCount}>{filteredMembers.length} з {liveMembers.length}</span>
+        </div>
+
+        <div className={styles.searchRow}>
+          <label className={styles.searchBox} htmlFor="guild-roster-search">
+            <span aria-hidden="true">⌕</span>
+            <input
+              id="guild-roster-search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Ім’я, клас, спек, рейд…"
+              autoComplete="off"
+            />
+            {query ? (
+              <button className="btn" type="button" onClick={() => setQuery("")} aria-label="Очистити пошук">×</button>
+            ) : null}
+          </label>
+
+          <div className={styles.quickRoles} aria-label="Швидкий фільтр ролі">
+            {ROLE_FILTERS.map((item) => (
               <button
                 type="button"
-                key={item}
-                className={`dashboard-table-filter${segment === item ? " is-active" : ""}`}
-                onClick={() => setSegment(item)}
-                title={`${SEGMENT_LABELS[item]}: ${segmentCounts[item]} персонажів з RIO`}
+                key={item.value}
+                className="btn"
+                aria-pressed={roleFilter === item.value}
+                onClick={() => setRoleFilter(item.value)}
               >
-                {SEGMENT_LABELS[item] === "ALL" ? "Всі" : SEGMENT_LABELS[item]}
+                {item.label}
               </button>
             ))}
-            <button
-              type="button"
-              className={`dashboard-table-filter dashboard-table-filter--muted${filtersOpen ? " is-active" : ""}`}
-              onClick={() => setFiltersOpen((value) => !value)}
-              aria-expanded={filtersOpen}
-            >
-              Фільтри
-            </button>
+          </div>
+
+          <button
+            type="button"
+            className={`btn ${styles.filtersButton}`}
+            onClick={() => setFiltersOpen((value) => !value)}
+            aria-expanded={filtersOpen}
+          >
+            Фільтри{activeFilterCount ? ` · ${activeFilterCount}` : ""}
+          </button>
+        </div>
+      </div>
+
+      <div className={styles.metrics} aria-label="Показники складу">
+        <div><span>Персонажів</span><strong>{liveStats.memberCount || liveMembers.length}</strong></div>
+        <div><span>Показано</span><strong>{filteredMembers.length}</strong></div>
+        <div><span>Сер. ilvl</span><strong>{formatNumber(liveStats.averageItemLevel)}</strong></div>
+        <div><span>Топ M+</span><strong>{formatNumber(liveStats.maxRioAll, 1)}</strong></div>
+        <div><span>Рейд-профілі</span><strong>{raidStats.profiles}</strong></div>
+        <div><span>Heroic clear</span><strong>{raidStats.heroicClears}</strong></div>
+        <div><span>Mythic clear</span><strong>{raidStats.mythicClears}</strong></div>
+      </div>
+
+      {filtersOpen ? (
+        <div className={styles.filtersPanel} aria-label="Розширені фільтри">
+          <FilterSelect
+            id="guild-rio-segment"
+            label="RIO показник"
+            value={segment}
+            options={Object.entries(SEGMENT_LABELS).map(([value, label]) => ({ value, label }))}
+            onChange={(value) => setSegment(value as GuildScoreSegment)}
+          />
+          <FilterSelect
+            id="guild-class"
+            label="Клас"
+            value={classFilter}
+            options={[{ value: "all", label: "Усі класи" }, ...options.classes.map((value) => ({ value, label: value }))]}
+            onChange={setClassFilter}
+          />
+          <FilterSelect
+            id="guild-spec"
+            label="Спек"
+            value={specFilter}
+            options={[{ value: "all", label: "Усі спеки" }, ...options.specs.map((value) => ({ value, label: value }))]}
+            onChange={setSpecFilter}
+          />
+          <FilterSelect
+            id="guild-faction"
+            label="Фракція"
+            value={factionFilter}
+            options={[{ value: "all", label: "Усі фракції" }, ...options.factions.map((value) => ({ value, label: value }))]}
+            onChange={setFactionFilter}
+          />
+          <FilterSelect
+            id="guild-raid"
+            label="Рейд"
+            value={raidFilter}
+            options={[{ value: "all", label: "Усі актуальні рейди" }, ...options.raids.map(([value, label]) => ({ value, label }))]}
+            onChange={setRaidFilter}
+          />
+          <FilterSelect
+            id="guild-raid-clear"
+            label="Закриття рейду"
+            value={raidClearFilter}
+            options={[
+              { value: "all", label: "Будь-який прогрес" },
+              { value: "progress", label: "Є прогрес" },
+              { value: "normal-clear", label: "Normal закрито" },
+              { value: "heroic-clear", label: "Heroic закрито" },
+              { value: "mythic-clear", label: "Mythic закрито" },
+              { value: "no-raid", label: "Без даних рейду" },
+            ]}
+            onChange={(value) => setRaidClearFilter(value as RaidClearFilter)}
+          />
+          <FilterSelect
+            id="guild-links"
+            label="Зв’язок"
+            value={linkFilter}
+            options={[
+              { value: "all", label: "Усі персонажі" },
+              { value: "profile", label: "Є профіль сайту" },
+              { value: "raiderio", label: "Є Raider.IO" },
+            ]}
+            onChange={(value) => setLinkFilter(value as LinkFilter)}
+          />
+          <FilterSelect
+            id="guild-sort"
+            label="Сортування"
+            value={sort}
+            options={[
+              { value: "rio-desc", label: "RIO: від більшого" },
+              { value: "rio-asc", label: "RIO: від меншого" },
+              { value: "ilvl-desc", label: "Item level: від більшого" },
+              { value: "raid-desc", label: "Рейд-прогрес: від більшого" },
+              { value: "name-asc", label: "Ім’я: А–Я" },
+              { value: "rank-asc", label: "Гільдійний ранг" },
+            ]}
+            onChange={(value) => setSort(value as SortKey)}
+          />
+          <CompactRange id="guild-rio" label="RIO" minValue={rioMin} maxValue={rioMax} absoluteMax={maxRio} onMinChange={setRioMin} onMaxChange={setRioMax} />
+          <CompactRange id="guild-ilvl" label="Item level" minValue={itemLevelMin} maxValue={itemLevelMax} absoluteMax={maxItemLevel} onMinChange={setItemLevelMin} onMaxChange={setItemLevelMax} />
+          <div className={styles.filterActions}>
+            <button type="button" className="btn subtle" onClick={resetFilters}>Скинути все</button>
+            <small>База: {formatRosterDate(liveStats.updatedAt)}</small>
           </div>
         </div>
+      ) : null}
 
-        <div className="dashboard-table-stats directory-stats" aria-label="Показники складу">
-          <div>
-            <span>Учасників</span>
-            <strong>{formatNumber(liveStats.memberCount || liveMembers.length)}</strong>
-          </div>
-          <div>
-            <span>Показано</span>
-            <strong>{formatNumber(filteredMembers.length)}</strong>
-          </div>
-          <div>
-            <span>M+ профілів</span>
-            <strong>{formatNumber(segmentCounts.all)}</strong>
-          </div>
-          <div>
-            <span>Сер. ilvl</span>
-            <strong>{formatNumber(liveStats.averageItemLevel)}</strong>
-          </div>
-          <div>
-            <span>Топ M+</span>
-            <strong>{formatNumber(liveStats.maxRioAll, 1)}</strong>
-          </div>
-          <div>
-            <span>Макс. ilvl</span>
-            <strong>{formatNumber(liveStats.maxItemLevel)}</strong>
-          </div>
-        </div>
+      <div className={styles.syncLine}>
+        <span className={rosterResource.status === "error" ? styles.syncError : styles.syncOk} aria-hidden="true" />
+        <span>
+          {rosterResource.status === "checking"
+            ? "Перевіряю нові дані в локальній базі…"
+            : liveSyncLabel || `Автооновлення з VPS · останні дані ${formatRosterDate(liveStats.updatedAt)}`}
+        </span>
+        <span className={styles.syncSource}>{friendlySource(liveSource)}</span>
+      </div>
 
-        {filtersOpen ? (
-          <div className="dashboard-table-advanced panel directory-filter-grid" aria-label="Розширені фільтри складу">
-            <RangeFilter
-              idBase="guild-roster-rio"
-              nameBase="guild_roster_rio"
-              label="RIO"
-              minValue={rioMin}
-              maxValue={rioMax}
-              absoluteMin={0}
-              absoluteMax={maxRio}
-              onMinChange={setRioMin}
-              onMaxChange={setRioMax}
-            />
-            <RangeFilter
-              idBase="guild-roster-item-level"
-              nameBase="guild_roster_item_level"
-              label="ILVL"
-              minValue={itemLevelMin}
-              maxValue={itemLevelMax}
-              absoluteMin={0}
-              absoluteMax={maxItemLevel}
-              onMinChange={setItemLevelMin}
-              onMaxChange={setItemLevelMax}
-            />
-            <FilterSelect
-              id="guild-roster-class"
-              name="guild_roster_class"
-              label="Клас"
-              value={classFilter}
-              options={options.classes}
-              onChange={setClassFilter}
-            />
-            <FilterSelect
-              id="guild-roster-spec"
-              name="guild_roster_spec"
-              label="Спек"
-              value={specFilter}
-              options={options.specs}
-              onChange={setSpecFilter}
-            />
-            <FilterSelect
-              id="guild-roster-role"
-              name="guild_roster_role"
-              label="Роль"
-              value={roleFilter}
-              options={["Усі ролі", "Танк", "Хіл", "DPS", "Без ролі"]}
-              onChange={setRoleFilter}
-            />
-            <FilterSelect
-              id="guild-roster-faction"
-              name="guild_roster_faction"
-              label="Фракція"
-              value={factionFilter}
-              options={options.factions}
-              onChange={setFactionFilter}
-            />
-            <label className="guild-filter-field directory-filter-field" htmlFor="guild-roster-sort">
-              <span>Сортування</span>
-              <select
-                id="guild-roster-sort"
-                name="guild_roster_sort"
-                value={sort}
-                onChange={(event) => setSort(event.target.value as SortKey)}
+      <div className={styles.tableScroll}>
+        <div className={styles.table} role="table" aria-label="Персонажі гільдії">
+          <div className={styles.tableHead} role="row">
+            <span role="columnheader">Персонаж</span>
+            <span role="columnheader">Клас / спек</span>
+            <span role="columnheader">Роль</span>
+            <span role="columnheader">ILVL</span>
+            <span role="columnheader">RIO</span>
+            <span role="columnheader">Рейд</span>
+            <span role="columnheader">Ранг</span>
+            <span role="columnheader">Посилання</span>
+          </div>
+
+          {pagedMembers.length ? pagedMembers.map((member) => {
+            const score = member.scores[segment] || 0;
+            const ownerProfileHref = member.ownerProfileId
+              ? `/profile/${encodeURIComponent(member.ownerProfileId)}`
+              : null;
+            const raid = bestRaid(member, raidFilter);
+            const raidView = raidSummary(raid);
+            return (
+              <article
+                className={styles.tableRow}
+                key={member.key}
+                role="row"
+                tabIndex={ownerProfileHref ? 0 : undefined}
+                onClick={(event) => openProfileCard(event, ownerProfileHref)}
+                onKeyDown={(event) => openProfileCardWithKeyboard(event, ownerProfileHref)}
               >
-                <option value="rio-desc">RIO: від більшого</option>
-                <option value="rio-asc">RIO: від меншого</option>
-                <option value="ilvl-desc">Item level: від більшого</option>
-                <option value="name-asc">Ім’я: А–Я</option>
-                <option value="rank-asc">Гільдійний ранг</option>
-              </select>
-            </label>
-            <div className="dashboard-table-advanced__actions">
-              <button type="button" className="btn subtle" onClick={resetFilters}>
-                Скинути
-              </button>
-              <small>
-                {liveStats.updatedAt ? `Оновлено: ${formatRosterDate(liveStats.updatedAt)}` : "Дані складу оновлюються фоново"}
-              </small>
-            </div>
-          </div>
-        ) : null}
+                <div className={styles.characterCell} role="cell" data-label="Персонаж">
+                  <span className={styles.avatarWrap}>
+                    {member.avatarUrl ? <img src={member.avatarUrl} alt="" loading="lazy" /> : <span>{member.name.charAt(0).toUpperCase()}</span>}
+                  </span>
+                  <span className={styles.characterCopy}>
+                    <strong style={{ color: classColor(member.className) }}>{member.name}</strong>
+                    <small>{member.realmName || member.realmSlug}</small>
+                  </span>
+                </div>
 
-        <div className="dashboard-table-scroll">
-          <div className="dashboard-table dashboard-list dashboard-table--guild directory-list" role="table" aria-label="Список персонажів гільдії">
-            <div className="dashboard-table-head" role="row">
-              <span role="columnheader">Персонаж</span>
-              <span role="columnheader">Клас / спек</span>
-              <span role="columnheader">Роль</span>
-              <span role="columnheader">ILVL</span>
-              <span role="columnheader">M+ ↓</span>
-              <span role="columnheader">ГІ ранг</span>
-              <span role="columnheader">Профіль</span>
-              <span role="columnheader">Raider.IO</span>
-            </div>
-            {pagedMembers.length ? (
-              pagedMembers.map((member) => {
-                const score = member.scores[segment] || 0;
-                const ownerProfileHref = member.ownerProfileId
-                  ? `/profile/${encodeURIComponent(member.ownerProfileId)}`
-                  : null;
-                return (
-                  <article
-                    className={`dashboard-table-row dashboard-list-row dashboard-table-row--clickable guild-table-row guild-table-row--${member.role}`}
-                    key={member.key}
-                    role="row"
-                    tabIndex={ownerProfileHref ? 0 : undefined}
-                    data-profile-href={ownerProfileHref || undefined}
-                    title={ownerProfileHref ? `Відкрити профіль: ${member.ownerDisplayName || member.name}` : undefined}
-                    onClick={(event) => openProfileCard(event, ownerProfileHref)}
-                    onKeyDown={(event) => openProfileCardWithKeyboard(event, ownerProfileHref)}
-                  >
-                    <div className="dashboard-table-primary" role="cell" data-label="Персонаж">
-                      <strong style={{ color: classColor(member.className) }}>{member.name}</strong>
-                      <small>{member.realmName || member.realmSlug}</small>
-                    </div>
-                    <div className="guild-class-cell" role="cell" data-label="Клас / спек">
-                      <span
-                        className="guild-class-mark"
-                        style={{ "--guild-class-color": classColor(member.className) } as CSSProperties}
-                        aria-hidden="true"
-                      >
-                        {(member.className || "?").trim().charAt(0).toUpperCase() || "?"}
-                      </span>
-                      <span className="guild-class-copy">
-                        <strong>{member.className || "—"}</strong>
-                        <small>{member.specName || "—"}</small>
-                      </span>
-                    </div>
-                    <div role="cell" data-label="Роль"><span className={`dashboard-table-pill dashboard-table-pill--${member.role}`}>{roleShort(member.role)}</span></div>
-                    <div role="cell" data-label="ILVL">{member.itemLevel || "—"}</div>
-                    <div role="cell" className="dashboard-table-score" data-label="M+"><strong>{formatNumber(score, 1)}</strong><small>{SEGMENT_LABELS[segment]}</small></div>
-                    <div role="cell" data-label="ГІ ранг">{member.rank === null || member.rank === undefined ? "—" : `#${member.rank}`}</div>
-                    <div role="cell" data-label="Профіль">
-                      {ownerProfileHref ? (
-                        <a href={ownerProfileHref} onClick={(event) => event.stopPropagation()}>
-                          Профіль
-                        </a>
-                      ) : (
-                        <span className="dashboard-table-muted">—</span>
-                      )}
-                    </div>
-                    <div role="cell" data-label="Raider.IO">
-                      {member.profileUrl ? (
-                        <a href={member.profileUrl} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>
-                          RIO
-                        </a>
-                      ) : (
-                        <span className="dashboard-table-muted">—</span>
-                      )}
-                    </div>
-                  </article>
-                );
-              })
-            ) : (
-              <div className="dashboard-table-empty" role="row">
-                <strong>Нікого не знайдено</strong>
-                <span>Зміни фільтри або скинь їх.</span>
-              </div>
-            )}
-          </div>
-        </div>
+                <div className={styles.classCell} role="cell" data-label="Клас / спек">
+                  <span className={styles.classMark} style={{ "--guild-class-color": classColor(member.className) } as CSSProperties}>
+                    {(member.className || "?").trim().charAt(0).toUpperCase() || "?"}
+                  </span>
+                  <span><strong>{member.className || "—"}</strong><small>{member.specName || "—"}</small></span>
+                </div>
 
-        <div className="dashboard-table-footer">
-          <small>
-            Сторінка {safePage} / {pageCount} • {rosterPageSize} персонажів на сторінку
-          </small>
-          <div className="dashboard-table-pagination" aria-label="Навігація сторінками складу">
-            <button type="button" className="btn subtle" disabled={safePage <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>
-              Назад
-            </button>
-            <button type="button" className="btn subtle" disabled={safePage >= pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))}>
-              Далі
-            </button>
-          </div>
+                <div role="cell" data-label="Роль"><span className={`${styles.rolePill} ${roleStyleClass(member.role)}`}>{roleShort(member.role)}</span></div>
+                <div className={styles.numericCell} role="cell" data-label="ILVL"><strong>{member.itemLevel || "—"}</strong></div>
+                <div className={styles.scoreCell} role="cell" data-label="RIO">
+                  <strong style={member.scoreColors?.[segment] ? { color: member.scoreColors[segment] } : undefined}>{formatNumber(score, 1)}</strong>
+                  <small>{SEGMENT_LABELS[segment]}</small>
+                </div>
+                <div className={styles.raidCell} role="cell" data-label="Рейд" title={raid ? `${raid.name}: ${raidView.detail}` : undefined}>
+                  <strong>{raidView.main}</strong>
+                  <small>{raid ? compactRaidName(raid.name) : raidView.detail}</small>
+                </div>
+                <div className={styles.numericCell} role="cell" data-label="Ранг"><strong>{member.rank === null || member.rank === undefined ? "—" : `#${member.rank}`}</strong></div>
+                <div className={styles.linksCell} role="cell" data-label="Посилання">
+                  {ownerProfileHref ? <a href={ownerProfileHref} onClick={(event) => event.stopPropagation()}>Профіль</a> : null}
+                  {member.profileUrl ? <a href={member.profileUrl} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>RIO ↗</a> : null}
+                  {!ownerProfileHref && !member.profileUrl ? <span>—</span> : null}
+                </div>
+              </article>
+            );
+          }) : (
+            <div className={styles.emptyRows} role="row">
+              <strong>Нікого не знайдено</strong>
+              <span>Зміни пошук або фільтри.</span>
+              <button type="button" className="btn subtle" onClick={resetFilters}>Скинути фільтри</button>
+            </div>
+          )}
         </div>
-      </section>
-    </>
+      </div>
+
+      <footer className={styles.footer}>
+        <div className={styles.pageSize}>
+          <span>На сторінці</span>
+          <select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
+        <small>Сторінка {safePage} / {pageCount} · {filteredMembers.length} результатів</small>
+        <div className={styles.pagination}>
+          <button type="button" className="btn subtle" disabled={safePage <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>Назад</button>
+          <button type="button" className="btn subtle" disabled={safePage >= pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))}>Далі</button>
+        </div>
+      </footer>
+    </section>
   );
 }

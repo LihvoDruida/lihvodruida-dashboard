@@ -146,7 +146,6 @@ const LIST_STYLE_SOURCE = 'src/app/styles/components.css';
 const listStyleText = exists(LIST_STYLE_SOURCE) ? read(LIST_STYLE_SOURCE) : '';
 assert(/dashboard-list-panel/.test(listStyleText) && /dashboard-list-row/.test(listStyleText), `Global dashboard list styles must stay centralized in ${LIST_STYLE_SOURCE}.`);
 const listUnifiedFiles = {
-  'src/components/GuildRosterExplorer.tsx': ['dashboard-list', 'dashboard-list-row', 'dashboard-list-head'],
   'src/components/RaidViews.tsx': ['dashboard-list-row', 'dashboard-list-actions'],
   'src/components/RaidPollBrowser.tsx': ['dashboard-list-panel', 'dashboard-list-head', 'dashboard-list', 'dashboard-list-row', 'dashboard-list-actions'],
   'src/app/raids/page.tsx': ['dashboard-list-panel', 'dashboard-list-head', 'dashboard-list'],
@@ -165,9 +164,24 @@ for (const [file, requiredClasses] of Object.entries(listUnifiedFiles)) {
 
 if (exists('src/components/GuildRosterExplorer.tsx')) {
   const rosterText = read('src/components/GuildRosterExplorer.tsx');
-  assert(rosterText.includes('dashboard-table-card--roster'), 'Guild roster must use the compact dashboard table layout.');
-  assert(/const rosterPageSize = 20/.test(rosterText), 'Guild roster must keep 20 characters per page.');
+  assert(rosterText.includes('GuildRoster.module.css'), 'Guild roster must keep its page-specific layout in GuildRoster.module.css.');
+  assert(/useState\(25\)/.test(rosterText), 'Guild roster must default to 25 characters per page.');
   assert(rosterText.includes('pagedMembers'), 'Guild roster must paginate filtered members before rendering rows.');
+  assert(rosterText.includes('raidProgression'), 'Guild roster must expose raid progression/clear data.');
+  assert(rosterText.includes('raidClearFilter'), 'Guild roster must keep the raid-clear filter.');
+}
+
+if (exists('src/lib/guildRoster.ts')) {
+  const guildRosterText = read('src/lib/guildRoster.ts');
+  assert(guildRosterText.includes('mythic_plus_scores_by_season:current,raid_progression'), 'Guild roster Raider.IO requests must include raid_progression.');
+  assert(!guildRosterText.includes('mythic_plus_scores_by_season:current,raid_progression:current-expansion'), 'Character raid progression must use Raider.IO field raid_progression without an unsupported suffix.');
+}
+
+assert(exists('src/app/api/guild/sync/route.ts'), 'Self-hosted guild roster sync endpoint must exist.');
+if (exists('src/app/api/guild/sync/route.ts')) {
+  const guildSyncText = read('src/app/api/guild/sync/route.ts');
+  assert(guildSyncText.includes('verifyInternalBearerToken'), 'Guild auto-sync endpoint must require an internal bearer token.');
+  assert(guildSyncText.includes('GUILD_ROSTER_AUTO_SYNC_ENABLED'), 'Guild auto-sync endpoint must keep its server-side feature switch.');
 }
 
 if (exists('src/app/profiles/page.tsx')) {

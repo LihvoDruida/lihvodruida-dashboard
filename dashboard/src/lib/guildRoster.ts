@@ -43,6 +43,16 @@ export type GuildScoreSegment = "all" | "dps" | "healer" | "tank";
 export type GuildRosterRole = "tank" | "healer" | "dps" | "unknown";
 export type GuildRosterExternalSource = "battleNet" | "raiderIo";
 
+export type GuildRaidProgress = {
+  slug: string;
+  name: string;
+  summary: string | null;
+  totalBosses: number;
+  normalKills: number;
+  heroicKills: number;
+  mythicKills: number;
+};
+
 export type GuildRosterExternalError = {
   message: string;
   failedAt: string;
@@ -77,11 +87,13 @@ export type GuildRosterMember = {
   scores: Record<GuildScoreSegment, number>;
   scoreColors: Partial<Record<GuildScoreSegment, string>>;
   hasRaiderIo: boolean;
+  raidProgression: GuildRaidProgress[];
   raiderIoUpdatedAt?: string | null;
 };
 
 export type GuildRosterStats = {
   updatedAt: string | null;
+  rosterUpdatedAt?: string | null;
   memberCount: number;
   guildName: string;
   guildRealm: string;
@@ -543,7 +555,7 @@ async function fetchRaiderGuild(
   url.searchParams.set("name", guildName);
   url.searchParams.set(
     "fields",
-    "raid_progression:current-expansion:previous-expansion,raid_rankings:current-expansion:previous-expansion",
+    "raid_progression,raid_rankings",
   );
   const key = raiderIoAccessKey();
   if (key) url.searchParams.set("access_key", key);
@@ -566,7 +578,7 @@ async function fetchRaiderCharacter(
   url.searchParams.set("region", region);
   url.searchParams.set("realm", realmSlug);
   url.searchParams.set("name", name);
-  url.searchParams.set("fields", "gear,mythic_plus_scores_by_season:current");
+  url.searchParams.set("fields", "gear,mythic_plus_scores_by_season:current,raid_progression");
   const key = raiderIoAccessKey();
   if (key) url.searchParams.set("access_key", key);
 
@@ -806,6 +818,37 @@ function hasUsefulScores(
   return Boolean(scores && Object.values(scores).some((score) => score > 0));
 }
 
+function raidDisplayName(slug: string, value: Record<string, any>) {
+  const explicit = cleanText(value.name || value.raid_name || value.raidName);
+  if (explicit) return explicit;
+  if (/^tier-/i.test(slug)) return "Поточний рейдовий тир";
+  return slug
+    .split(/[-_]+/g)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ") || "Рейд";
+}
+
+function normalizeRaidProgression(value: unknown): GuildRaidProgress[] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+  return Object.entries(value as Record<string, unknown>)
+    .map(([slug, raw]) => {
+      const raid = raw && typeof raw === "object" && !Array.isArray(raw)
+        ? raw as Record<string, any>
+        : {};
+      return {
+        slug: cleanText(slug),
+        name: raidDisplayName(slug, raid),
+        summary: cleanText(raid.summary) || null,
+        totalBosses: Math.max(0, Math.floor(Number(raid.total_bosses ?? raid.totalBosses ?? 0) || 0)),
+        normalKills: Math.max(0, Math.floor(Number(raid.normal_bosses_killed ?? raid.normalKills ?? 0) || 0)),
+        heroicKills: Math.max(0, Math.floor(Number(raid.heroic_bosses_killed ?? raid.heroicKills ?? 0) || 0)),
+        mythicKills: Math.max(0, Math.floor(Number(raid.mythic_bosses_killed ?? raid.mythicKills ?? 0) || 0)),
+      } satisfies GuildRaidProgress;
+    })
+    .filter((raid) => Boolean(raid.slug && (raid.totalBosses > 0 || raid.summary || raid.normalKills || raid.heroicKills || raid.mythicKills)));
+}
+
 function memberBattleNetKey(input: {
   region: string;
   realmSlug: string;
@@ -885,6 +928,9 @@ function mergePreviousMemberSnapshot(
     scoreColors: nextScoreColors,
     hasRaiderIo:
       member.hasRaiderIo || previous.hasRaiderIo || hasUsefulScores(nextScores),
+    raidProgression: member.raidProgression?.length
+      ? member.raidProgression
+      : previous.raidProgression || [],
     raiderIoUpdatedAt:
       member.raiderIoUpdatedAt || previous.raiderIoUpdatedAt || null,
   };
@@ -953,6 +999,7 @@ function applyRaiderIoPayload(
   }
 
   const scores = buildScores(raider);
+  const raidProgression = normalizeRaidProgression(raider.raid_progression);
   const profileUrl = cleanText(raider.profile_url) || member.profileUrl || null;
 
   const cleanMember = withoutExternalFailure(member, "raiderIo");
@@ -964,7 +1011,8 @@ function applyRaiderIoPayload(
     profileUrl,
     scores,
     scoreColors: buildScoreColors(raider),
-    hasRaiderIo: Boolean(profileUrl || hasUsefulScores(scores)),
+    hasRaiderIo: Boolean(profileUrl || hasUsefulScores(scores) || raidProgression.length),
+    raidProgression,
     raiderIoUpdatedAt: updatedAt,
   };
 }
@@ -1069,6 +1117,7 @@ function buildMemberFromSources(input: {
     scores,
     scoreColors: buildScoreColors(null),
     hasRaiderIo: false,
+    raidProgression: [],
   };
 }
 
@@ -1087,6 +1136,7 @@ function buildStats(input: {
 
   return {
     updatedAt: input.updatedAt,
+    rosterUpdatedAt: input.updatedAt,
     memberCount:
       members.length || Number(guild.member_count || guild.members_count || 0),
     guildName: cleanText(
@@ -1118,6 +1168,7 @@ function recomputeGuildRosterStats(
   return {
     ...base,
     updatedAt: updatedAt || base.updatedAt || null,
+    rosterUpdatedAt: base.rosterUpdatedAt || base.updatedAt || updatedAt || null,
     memberCount: members.length,
     maxRioAll: Math.max(0, ...members.map((member) => member.scores.all)),
     maxItemLevel: Math.max(0, ...members.map((member) => member.itemLevel)),
@@ -1299,6 +1350,7 @@ function fallbackStats(): GuildRosterStats {
   const config = getGuildConfig();
   return {
     updatedAt: null,
+    rosterUpdatedAt: null,
     memberCount: 0,
     guildName: config.guildName,
     guildRealm: config.realmSlug,
@@ -1351,6 +1403,7 @@ function stableRosterMemberFingerprint(member: GuildRosterMember) {
     itemLevel: member.itemLevel || 0,
     scores: member.scores,
     hasRaiderIo: member.hasRaiderIo,
+    raidProgression: member.raidProgression,
   };
 }
 
@@ -1560,7 +1613,18 @@ function normalizeMemberRecord(data: any): GuildRosterMember | null {
         : undefined,
     scores,
     scoreColors: raw.scoreColors && typeof raw.scoreColors === "object" ? raw.scoreColors : {},
-    hasRaiderIo: Boolean(raw.hasRaiderIo || raw.profileUrl || hasUsefulScores(scores)),
+    hasRaiderIo: Boolean(raw.hasRaiderIo || raw.profileUrl || hasUsefulScores(scores) || (Array.isArray(raw.raidProgression) && raw.raidProgression.length)),
+    raidProgression: Array.isArray(raw.raidProgression)
+      ? raw.raidProgression.map((raid: any) => ({
+          slug: cleanText(raid?.slug),
+          name: cleanText(raid?.name || raid?.slug || "Рейд"),
+          summary: cleanText(raid?.summary) || null,
+          totalBosses: Math.max(0, Math.floor(Number(raid?.totalBosses || 0))),
+          normalKills: Math.max(0, Math.floor(Number(raid?.normalKills || 0))),
+          heroicKills: Math.max(0, Math.floor(Number(raid?.heroicKills || 0))),
+          mythicKills: Math.max(0, Math.floor(Number(raid?.mythicKills || 0))),
+        })).filter((raid: GuildRaidProgress) => Boolean(raid.slug))
+      : [],
     raiderIoUpdatedAt: cleanText(raw.raiderIoUpdatedAt) || null,
   } satisfies GuildRosterMember);
 }

@@ -13,6 +13,7 @@
 #   make rebuild-bot        зібрати/перезапустити тільки bot
 #   make resources    CPU/RAM/disk + docker stats
 #   make discord-check  діагностика Discord-кнопок і backing data
+#   make guild-sync     вручну просунути фонову синхронізацію складу
 #   make clean-cache  обмежити BuildKit cache й оновити snapshot
 #   make docker-stats зняти Docker storage snapshot без очищення
 #   make logs         логи всіх сервісів
@@ -42,7 +43,7 @@ export AUTO_PRUNE_BUILD_CACHE ?= 1
 .NOTPARALLEL:
 
 .PHONY: help start up restart stop check cert cert-self cert-status cert-origin \
-        backup restore deploy logs ps resources clean-cache docker-stats rebuild-dashboard rebuild-bot discord-check fix-perms
+        backup restore deploy logs ps resources clean-cache docker-stats rebuild-dashboard rebuild-bot discord-check guild-sync fix-perms
 
 help:
 	@sed -n '3,18p' Makefile | sed 's/^# \?//'
@@ -114,6 +115,11 @@ rebuild-bot: fix-perms
 discord-check: fix-perms
 	@$(SCRIPTS)/discord-check.sh
 
+# Один безпечний крок серверної синхронізації складу. Основний розклад усе
+# одно виконує cron-контейнер; ця команда потрібна лише для ручної перевірки.
+guild-sync:
+	@docker compose exec -T cron sh -lc 'curl --silent --show-error --fail-with-body --max-time 55 --request POST --header "Authorization: Bearer $$INTERNAL_CRON_TOKEN" --header "Content-Type: application/json" --data "{\"source\":\"make-guild-sync\"}" "$$DASHBOARD_INTERNAL_URL/api/guild/sync"'
+	@printf "\n"
 
 # Одноразовий знімок ресурсів VPS + контейнерів.
 resources: fix-perms

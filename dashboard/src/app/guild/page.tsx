@@ -10,6 +10,7 @@ import { canViewGuildRoster } from "@/lib/permissions";
 import { buildPageMetadata } from "@/lib/seo";
 import { getDashboardApiSettings } from "@/lib/dashboardApiSettings";
 import { recordDashboardSystemLog } from "@/lib/dashboardSystemLogs";
+import rosterStyles from "@/components/GuildRoster.module.css";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -80,7 +81,7 @@ export default async function GuildRosterPage() {
         { persist: false },
       );
       return {
-        guildRosterClientDrivenSyncEnabled: true,
+        guildRosterClientDrivenSyncEnabled: false,
         guildRosterClientStepDelayMs: 500,
         guildRosterClientRequestTimeoutMs: 25_000,
         guildRosterClientMaxSteps: 500,
@@ -115,34 +116,37 @@ export default async function GuildRosterPage() {
         aria-label="Панель Mistblossom Vanguard"
       >
         <DashboardIdentity user={user} activeSection="guild" />
-        <header className="hero panel guild-hero app-page-hero directory-hero">
-          <div className="hero-copy dashboard-hero__copy guild-hero__copy">
+        <header className={`panel ${rosterStyles.pageHero}`}>
+          <div className={rosterStyles.heroCopy}>
             <div className="eyebrow">Mistblossom Vanguard • Склад гільдії</div>
             <h1>Склад гільдії</h1>
-            <span className="hero-accent" aria-hidden="true" />
-            <p className="lead">
-              Живий список персонажів гільдії з Raider.IO, item level, ролями,
-              класами, спеками та фракціями.
+            <p>
+              Актуальна база персонажів із Battle.net, Raider.IO та рейд-прогресом.
+              Сервер оновлює дані автоматично — відкривати сторінку для синхронізації більше не потрібно.
             </p>
+            <div className={rosterStyles.heroBadges} aria-label="Джерела даних">
+              <span className={rosterStyles.heroBadge}>Автооновлення VPS</span>
+              <span className={rosterStyles.heroBadge}>Battle.net roster</span>
+              <span className={rosterStyles.heroBadge}>Raider.IO M+</span>
+              <span className={rosterStyles.heroBadge}>Raid progress</span>
+            </div>
           </div>
 
-          <div className="guild-hero-side" aria-label="Огляд складу гільдії">
-            <GuildRosterLiveHeroStats
-              members={members}
-              stats={roster.stats}
-              source={roster.source}
-              error={roster.error}
-              autoStartMissingRecords={members.length === 0}
-              refreshSettings={{
-                clientDrivenSyncEnabled:
-                  apiSettings.guildRosterClientDrivenSyncEnabled,
-                clientStepDelayMs: apiSettings.guildRosterClientStepDelayMs,
-                clientRequestTimeoutMs:
-                  apiSettings.guildRosterClientRequestTimeoutMs,
-                clientMaxSteps: apiSettings.guildRosterClientMaxSteps,
-              }}
-            />
-          </div>
+          <GuildRosterLiveHeroStats
+            members={members}
+            stats={roster.stats}
+            source={roster.source}
+            error={roster.error}
+            allowManualRefresh={Boolean(user.isServerOwner)}
+            refreshSettings={{
+              clientDrivenSyncEnabled:
+                apiSettings.guildRosterClientDrivenSyncEnabled,
+              clientStepDelayMs: apiSettings.guildRosterClientStepDelayMs,
+              clientRequestTimeoutMs:
+                apiSettings.guildRosterClientRequestTimeoutMs,
+              clientMaxSteps: apiSettings.guildRosterClientMaxSteps,
+            }}
+          />
         </header>
         <GuildRosterExplorer
           members={members}

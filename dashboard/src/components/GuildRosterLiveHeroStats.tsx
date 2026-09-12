@@ -6,6 +6,7 @@ import GuildRosterRefreshButton, {
 } from "@/components/GuildRosterRefreshButton";
 import type { GuildRosterMember, GuildRosterStats } from "@/lib/guildRoster";
 import { useDashboardApiResource } from "@/lib/dashboardBackgroundApi";
+import styles from "./GuildRoster.module.css";
 
 type Props = {
   members: GuildRosterMember[];
@@ -13,17 +14,18 @@ type Props = {
   source: string;
   error?: string | null;
   refreshSettings?: GuildRosterRefreshSettings;
-  autoStartMissingRecords?: boolean;
+  allowManualRefresh?: boolean;
 };
 
 type GuildRosterLivePayload = Props & {
   ok?: boolean;
   memberCount?: number;
   updatedAt?: string | null;
+  refresh?: unknown;
 };
 
 function formatDate(value?: string | null) {
-  if (!value) return "оновлення очікується";
+  if (!value) return "очікується";
   const date = new Date(value.replace(" ", "T"));
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat("uk-UA", {
@@ -43,7 +45,7 @@ export default function GuildRosterLiveHeroStats({
   source,
   error,
   refreshSettings,
-  autoStartMissingRecords = false,
+  allowManualRefresh = false,
 }: Props) {
   const initialRoster = useMemo<GuildRosterLivePayload>(
     () => ({ members, stats, source, error: error || null }),
@@ -53,12 +55,12 @@ export default function GuildRosterLiveHeroStats({
     key: "guild-roster",
     scope: "guild",
     initialData: initialRoster,
-    minIntervalMs: 10 * 60 * 1000,
+    minIntervalMs: 60_000,
     request: () => ({
       url: "/api/guild/refresh",
       method: "POST",
       headers: { "X-Dashboard-Action": "guild-roster-cache-sync" },
-      json: { cacheOnly: true, includeMembers: true, bypassCache: true },
+      json: { cacheOnly: true, includeMembers: true, includeStats: true, bypassCache: true },
       select: (payload) => {
         const data = payload as Partial<GuildRosterLivePayload> | null;
         return {
@@ -69,75 +71,50 @@ export default function GuildRosterLiveHeroStats({
           ok: data?.ok,
           memberCount: data?.memberCount,
           updatedAt: data?.updatedAt,
+          refresh: data?.refresh,
         };
       },
     }),
     refreshOnMount: false,
   });
 
-  const liveMembers = rosterResource.data.members.length
-    ? rosterResource.data.members
-    : members;
+  const liveMembers = rosterResource.data.members;
   const liveStats = rosterResource.data.stats || stats;
+  const rioProfiles = liveMembers.filter((member) => member.hasRaiderIo).length;
+  const raidProfiles = liveMembers.filter((member) => member.raidProgression?.length).length;
 
   return (
-    <>
-      <div className="guild-summary-card" aria-label="Підсумок складу гільдії">
-        <div className="guild-summary-card__head">
-          <div className="guild-summary-card__brand">
-            <img
-              className="guild-summary-card__icon"
-              src="/mistblossom-icon.png"
-              alt="Емблема Mistblossom Vanguard"
-              loading="lazy"
-            />
-            <div className="guild-summary-card__brand-copy">
-              <strong>{liveStats.guildName}</strong>
-              <p>{liveStats.guildRealm}</p>
-            </div>
-          </div>
-
-          <div className="guild-summary-card__count">
-            <strong>{liveStats.memberCount.toLocaleString("uk-UA")} персонажів</strong>
-            <p>Оновлено: {formatDate(liveStats.updatedAt)}</p>
+    <div className={styles.summary} aria-label="Стан синхронізації складу">
+      <div className={styles.summaryTop}>
+        <div className={styles.summaryBrand}>
+          <img src="/mistblossom-icon.png" alt="" loading="lazy" />
+          <div>
+            <strong>{liveStats.guildName}</strong>
+            <small>{liveStats.guildRealm} · {liveStats.guildFaction}</small>
           </div>
         </div>
-
-        <div className="guild-hero-stats guild-summary-card__stats" aria-label="Коротка статистика складу">
-          <div className="guild-hero-stat-card">
-            <span>СЕР. RIO</span>
-            <strong>{round(liveStats.averageRioAll)}</strong>
-          </div>
-          <div className="guild-hero-stat-card">
-            <span>СЕР. ILVL</span>
-            <strong>{round(liveStats.averageItemLevel)}</strong>
-          </div>
-          <div className="guild-hero-stat-card">
-            <span>МАКС. RIO</span>
-            <strong>{round(liveStats.maxRioAll)}</strong>
-          </div>
+        <div className={styles.summaryFreshness}>
+          <strong>{liveStats.memberCount.toLocaleString("uk-UA")} персонажів</strong>
+          <small>База: {formatDate(liveStats.updatedAt)}</small>
         </div>
-
-        {refreshSettings ? (
-          <div className="guild-summary-card__actions">
-            <GuildRosterRefreshButton
-              autoStartMissingRecords={autoStartMissingRecords}
-              settings={refreshSettings}
-            />
-          </div>
-        ) : null}
       </div>
 
-      {rosterResource.status === "checking" ? (
-        <p className="guild-refresh-action__status guild-refresh-action__status--loading">
-          Зчитую актуальний запис складу з бази даних…
-        </p>
-      ) : null}
-      {!liveMembers.length && (rosterResource.error || error) ? (
-        <p className="guild-refresh-action__status guild-refresh-action__status--error">
-          {rosterResource.error || error}
-        </p>
-      ) : null}
-    </>
+      <div className={styles.summaryMetrics}>
+        <div className={styles.summaryMetric}><span>Сер. RIO</span><strong>{round(liveStats.averageRioAll)}</strong></div>
+        <div className={styles.summaryMetric}><span>Сер. ILVL</span><strong>{round(liveStats.averageItemLevel)}</strong></div>
+        <div className={styles.summaryMetric}><span>RIO профілі</span><strong>{rioProfiles}</strong></div>
+        <div className={styles.summaryMetric}><span>Рейд дані</span><strong>{raidProfiles}</strong></div>
+      </div>
+
+      <div className={styles.summaryBottom}>
+        <span className={styles.autoStatus}>
+          <span className={styles.autoDot} aria-hidden="true" />
+          Автосинхронізація на VPS · Battle.net → Raider.IO → PostgreSQL
+        </span>
+        {allowManualRefresh && refreshSettings ? (
+          <GuildRosterRefreshButton settings={refreshSettings} />
+        ) : null}
+      </div>
+    </div>
   );
 }
