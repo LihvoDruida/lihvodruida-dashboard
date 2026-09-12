@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import DashboardIdentity from "@/components/DashboardIdentity";
-import HeroSidePanel from "@/components/HeroSidePanel";
 import { getSession } from "@/lib/auth";
 import {
   fetchDiscordRaidRulesSignups,
@@ -20,6 +19,7 @@ import {
 import { buildPageMetadata } from "@/lib/seo";
 import { getOwnProfilePath } from "@/lib/profiles";
 import { canManageRulesEmbeds, canViewRulesStats } from "@/lib/permissions";
+import styles from "./rules-page.module.css";
 
 export const metadata = buildPageMetadata({
   title: "Правила Discord",
@@ -84,10 +84,10 @@ function metricValue(value: number | string, configured = true) {
 
 function RulesMetric({ label, value, hint, tone = "neutral" }: { label: string; value: number | string; hint: string; tone?: "neutral" | "good" | "bad" | "warn" }) {
   return (
-    <div className={`discord-rules-metric discord-rules-metric--${tone}`}>
-      <span>{label}</span>
-      <strong>{value}</strong>
-      <small>{hint}</small>
+    <div className={`discord-rules-metric discord-rules-metric--${tone} ${styles.metric} ${styles[`metric_${tone}`]}`}>
+      <span className={styles.metricLabel}>{label}</span>
+      <strong className={styles.metricValue}>{value}</strong>
+      <small className={styles.metricHint}>{hint}</small>
     </div>
   );
 }
@@ -117,38 +117,38 @@ function RulesDataOverview({
     : (raidStats.error || raidSignups.error || "Статистика правил рейду тимчасово недоступна.");
 
   return (
-    <section className="discord-rules-data-overview" aria-label="Розділені дані правил">
-      <article className="panel discord-rules-data-panel discord-rules-data-panel--guild">
-        <div className="discord-rules-data-head">
+    <section className={`discord-rules-data-overview ${styles.overviewGrid}`} aria-label="Розділені дані правил">
+      <article className={`panel discord-rules-data-panel discord-rules-data-panel--guild ${styles.overviewCard} ${styles.overviewCardGuild}`}>
+        <div className={`discord-rules-data-head ${styles.overviewHead}`}>
           <div>
             <span className="eyebrow">Звичайні правила</span>
             <h2>Discord правила</h2>
           </div>
-          <span className={`discord-rules-status-pill${stats.configured ? "" : " discord-rules-status-pill--error"}`}>{sourceLabel(stats.source)}</span>
+          <span className={`discord-rules-status-pill ${styles.statusPill}${stats.configured ? "" : ` discord-rules-status-pill--error ${styles.statusPillError}`}`}>{sourceLabel(stats.source)}</span>
         </div>
-        <div className="discord-rules-metric-grid">
+        <div className={`discord-rules-metric-grid ${styles.metricGrid}`}>
           <RulesMetric label="Прийняли" value={metricValue(stats.accepted, stats.configured)} hint="користувачів натиснули “Прийняти”" tone="good" />
           <RulesMetric label="Відмовились" value={metricValue(stats.declined, stats.configured)} hint="користувачів натиснули “Відмовитися”" tone="bad" />
           <RulesMetric label="Всього дій" value={metricValue(stats.total, stats.configured)} hint="прийняття й відмови" />
           <RulesMetric label="Повідомлень" value={guildMessagesCount} hint={`знайдено у ${channelLabel}`} tone="warn" />
         </div>
-        <p className="discord-rules-data-note">{guildStatus}</p>
+        <p className={`discord-rules-data-note ${styles.dataNote}`}>{guildStatus}</p>
       </article>
 
-      <article className="panel discord-rules-data-panel discord-rules-data-panel--raid">
-        <div className="discord-rules-data-head">
+      <article className={`panel discord-rules-data-panel discord-rules-data-panel--raid ${styles.overviewCard} ${styles.overviewCardRaid}`}>
+        <div className={`discord-rules-data-head ${styles.overviewHead}`}>
           <div>
             <span className="eyebrow">Правила рейду</span>
             <h2>Рейдові правила</h2>
           </div>
-          <span className={`discord-rules-status-pill${raidStats.configured || raidSignups.configured ? "" : " discord-rules-status-pill--error"}`}>{sourceLabel(raidStats.source || raidSignups.source)}</span>
+          <span className={`discord-rules-status-pill ${styles.statusPill}${raidStats.configured || raidSignups.configured ? "" : ` discord-rules-status-pill--error ${styles.statusPillError}`}`}>{sourceLabel(raidStats.source || raidSignups.source)}</span>
         </div>
-        <div className="discord-rules-metric-grid">
+        <div className={`discord-rules-metric-grid ${styles.metricGrid}`}>
           <RulesMetric label="Підписались" value={metricValue(raidSigned, raidStats.configured || raidSignups.configured)} hint="унікальних Discord-користувачів" tone="good" />
           <RulesMetric label="У списку" value={metricValue(raidSignups.signups.length, raidSignups.configured)} hint="з Discord і мейн-персонажем" />
           <RulesMetric label="Повідомлень" value={raidMessagesCount} hint={`рейдових повідомлень у ${channelLabel}`} tone="warn" />
         </div>
-        <p className="discord-rules-data-note">{raidStatus}</p>
+        <p className={`discord-rules-data-note ${styles.dataNote}`}>{raidStatus}</p>
       </article>
     </section>
   );
@@ -176,43 +176,43 @@ function RaidRulesSignupsPanel({ signups }: { signups: DiscordRaidRulesSignupsRe
     : (signups.error || "Список підписантів тимчасово недоступний.");
 
   return (
-    <section className="panel discord-raid-signups-panel" aria-label="Підписанти правил рейду">
-      <div className="content-section-head content-section-head--toolbar discord-rules-section-head dashboard-list-head">
+    <section className={`panel discord-raid-signups-panel ${styles.signupsPanel}`} aria-label="Підписанти правил рейду">
+      <div className={`content-section-head content-section-head--toolbar discord-rules-section-head dashboard-list-head ${styles.sectionHead}`}>
         <div>
           <span className="eyebrow">Правила рейду</span>
           <h2>Хто підписався на правила рейду</h2>
         </div>
-        <div className="content-toolbar-actions">
+        <div className={`content-toolbar-actions ${styles.toolbarActions}`}>
           <small>{totalLabel}</small>
           <a className="btn subtle" href="/discord/rules">Оновити</a>
         </div>
       </div>
 
-      <p className="discord-raid-signups-hint">{hint}</p>
+      <p className={`discord-raid-signups-hint ${styles.signupsHint}`}>{hint}</p>
 
       {!signups.configured ? (
         <div className="notice error-note">Список підписантів тимчасово недоступний.</div>
       ) : signups.signups.length === 0 ? (
-        <div className="content-empty discord-empty-state">
+        <div className={`content-empty discord-empty-state ${styles.emptyState}`}>
           <strong>Підписантів ще немає.</strong>
           <span>Коли користувач натисне кнопку під рейдовими правилами, бот запише Discord і мейн-персонажа сюди.</span>
         </div>
       ) : (
-        <div className="discord-raid-signups-table" role="table" aria-label="Список підписантів рейдових правил">
-          <div className="discord-raid-signups-row discord-raid-signups-row--head" role="row">
+        <div className={`discord-raid-signups-table ${styles.signupsTable}`} role="table" aria-label="Список підписантів рейдових правил">
+          <div className={`discord-raid-signups-row discord-raid-signups-row--head ${styles.signupRow} ${styles.signupRowHead}`} role="row">
             <span role="columnheader">Discord</span>
             <span role="columnheader">Мейн-персонаж</span>
             <span role="columnheader">Підпис</span>
           </div>
           {signups.signups.map((signup) => (
-            <div className="discord-raid-signups-row" role="row" key={signup.discordId}>
+            <div className={`discord-raid-signups-row ${styles.signupRow}`} role="row" key={signup.discordId}>
               <span role="cell">
-                <small className="discord-raid-mobile-label">Discord</small>
+                <small className={`discord-raid-mobile-label ${styles.mobileLabel}`}>Discord</small>
                 <strong>{signup.discordName || "Discord користувач"}</strong>
                 
               </span>
               <span role="cell">
-                <small className="discord-raid-mobile-label">Мейн-персонаж</small>
+                <small className={`discord-raid-mobile-label ${styles.mobileLabel}`}>Мейн-персонаж</small>
                 {signup.mainCharacter?.profileUrl ? (
                   <a href={signup.mainCharacter.profileUrl} target="_blank" rel="noreferrer">{characterLabel(signup)}</a>
                 ) : (
@@ -221,7 +221,7 @@ function RaidRulesSignupsPanel({ signups }: { signups: DiscordRaidRulesSignupsRe
                 {signup.mainCharacter?.className ? <small>{signup.mainCharacter.className}</small> : null}
               </span>
               <span role="cell">
-                <small className="discord-raid-mobile-label">Підпис</small>
+                <small className={`discord-raid-mobile-label ${styles.mobileLabel}`}>Підпис</small>
                 <time dateTime={signup.signedAt || undefined}>{signedAtLabel(signup.signedAt)}</time>
               </span>
             </div>
@@ -236,14 +236,14 @@ function RulesRoleBadges({ roleIds, roles }: { roleIds: string[]; roles: Discord
   const uniqueRoleIds = Array.from(new Set(roleIds.filter(Boolean)));
 
   if (uniqueRoleIds.length === 0) {
-    return <span className="discord-rules-role-empty">Ролі не задані</span>;
+    return <span className={`discord-rules-role-empty ${styles.roleEmpty}`}>Ролі не задані</span>;
   }
 
   return (
-    <span className="discord-rules-role-badges" aria-label="Активні ролі, які видають правила">
+    <span className={`discord-rules-role-badges ${styles.roleBadges}`} aria-label="Активні ролі, які видають правила">
       {uniqueRoleIds.map((roleId) => (
-        <span className="discord-rules-role-chip" key={roleId} title={roleName(roleId, roles)}>
-          <span className="discord-role-dot" style={{ backgroundColor: roleColor(roleId, roles) }} />
+        <span className={`discord-rules-role-chip ${styles.roleChip}`} key={roleId} title={roleName(roleId, roles)}>
+          <span className={`discord-role-dot ${styles.roleDot}`} style={{ backgroundColor: roleColor(roleId, roles) }} />
           {roleName(roleId, roles)}
         </span>
       ))}
@@ -256,23 +256,23 @@ function RulesRow({ message, roles }: { message: DiscordEditableMessage; roles: 
   const isRaidRules = message.rulesType === "raid";
 
   return (
-    <article className={`discord-rules-row dashboard-list-row${isRaidRules ? " discord-rules-row--raid" : ""}`} role="listitem">
-      <div className="discord-rules-row-main">
-        <span className="discord-rules-row-icon" aria-hidden="true">{isRaidRules ? "🐉" : "🌸"}</span>
-        <span className="discord-rules-row-title">
+    <article className={`discord-rules-row dashboard-list-row ${styles.ruleRow}${isRaidRules ? ` discord-rules-row--raid ${styles.ruleRowRaid}` : ""}`} role="listitem">
+      <div className={`discord-rules-row-main ${styles.ruleRowMain}`}>
+        <span className={`discord-rules-row-icon ${styles.ruleIcon}`} aria-hidden="true">{isRaidRules ? "🐉" : "🌸"}</span>
+        <span className={`discord-rules-row-title ${styles.ruleTitle}`}>
           <strong>{message.title}</strong>
           <small>{shortDiscordUrl(message.url)}</small>
         </span>
-        <span className="discord-rules-row-meta">
-          <span className="discord-rules-row-state">
+        <span className={`discord-rules-row-meta ${styles.ruleMeta}`}>
+          <span className={`discord-rules-row-state ${styles.ruleState}`}>
             <time dateTime={message.editedAt || message.createdAt || undefined}>{stateLabel}</time>
-            <span className={`discord-rules-type-chip${isRaidRules ? " discord-rules-type-chip--raid" : ""}`}>{isRaidRules ? "Рейд" : "Звичайні"}</span>
+            <span className={`discord-rules-type-chip ${styles.typeChip}${isRaidRules ? ` discord-rules-type-chip--raid ${styles.typeChipRaid}` : ""}`}>{isRaidRules ? "Рейд" : "Звичайні"}</span>
           </span>
-          <span className="discord-rules-row-roles-label">{isRaidRules ? "Дія кнопки" : "Роль після реєстрації"}</span>
-          {isRaidRules ? <span className="discord-rules-role-empty">Підпис на правила рейду</span> : <RulesRoleBadges roleIds={message.roleIds} roles={roles} />}
+          <span className={`discord-rules-row-roles-label ${styles.metaLabel}`}>{isRaidRules ? "Дія кнопки" : "Роль після реєстрації"}</span>
+          {isRaidRules ? <span className={`discord-rules-role-empty ${styles.roleEmpty}`}>Підпис на правила рейду</span> : <RulesRoleBadges roleIds={message.roleIds} roles={roles} />}
         </span>
       </div>
-      <div className="discord-rules-row-actions dashboard-list-actions">
+      <div className={`discord-rules-row-actions dashboard-list-actions ${styles.ruleActions}`}>
         <a className="btn subtle" href={message.url} target="_blank" rel="noreferrer">Discord</a>
         <a className="btn primary" href={`/discord/rules/edit?message=${encodeURIComponent(message.url)}`}>Редагувати</a>
       </div>
@@ -282,26 +282,26 @@ function RulesRow({ message, roles }: { message: DiscordEditableMessage; roles: 
 
 function RulesMessagesPanel({ title, eyebrow, description, messages, roles, createHref, emptyText, canEditRules }: { title: string; eyebrow: string; description: string; messages: DiscordEditableMessage[]; roles: DiscordRoleOption[]; createHref: string; emptyText: string; canEditRules: boolean }) {
   return (
-    <section className="panel discord-rules-list-panel dashboard-list-panel" aria-label={title}>
-      <div className="content-section-head content-section-head--toolbar discord-rules-section-head dashboard-list-head">
+    <section className={`panel discord-rules-list-panel dashboard-list-panel ${styles.libraryPanel}`} aria-label={title}>
+      <div className={`content-section-head content-section-head--toolbar discord-rules-section-head dashboard-list-head ${styles.sectionHead}`}>
         <div>
           <span className="eyebrow">{eyebrow}</span>
           <h2>{title}</h2>
           <p>{description}</p>
         </div>
-        <div className="content-toolbar-actions">
+        <div className={`content-toolbar-actions ${styles.toolbarActions}`}>
           <small>{messages.length} знайдено</small>
         </div>
       </div>
 
       {messages.length === 0 ? (
-        <div className="content-empty discord-empty-state">
+        <div className={`content-empty discord-empty-state ${styles.emptyState}`}>
           <strong>{emptyText}</strong>
           <span>Якщо повідомлення вже є у Discord, переконайся, що воно опубліковане через цю панель.</span>
           {canEditRules ? <a className="btn primary" href={createHref}>Створити повідомлення</a> : null}
         </div>
       ) : (
-        <div className="discord-rules-table dashboard-list" role="list">
+        <div className={`discord-rules-table dashboard-list ${styles.rulesList}`} role="list">
           {messages.map((message) => <RulesRow key={message.id} message={message} roles={roles} />)}
         </div>
       )}
@@ -385,40 +385,55 @@ export default async function DiscordRulesPage({
     <main className="container app-page">
       <section className="dashboard-shell content-shell discord-shell app-page-stack" aria-label="Список Discord правил Mistblossom Vanguard">
         <DashboardIdentity user={user} activeSection="discord" />
-        <header className="hero panel dashboard-hero content-dashboard-hero discord-dashboard-hero discord-dashboard-hero--rules-list">
-          <div className="hero-copy dashboard-hero__copy content-dashboard-hero__copy">
-            <div className="eyebrow">Mistblossom Vanguard • Правила</div>
-            <div className="content-hero-status-row">
-              <span className="content-mode-pill content-mode-pill--library">Правила</span>
-              <span className="content-hero-path">{rulesChannelName} • {canEditRules ? "керування й статистика" : "перегляд статистики"}</span>
-            </div>
-            <h1>Правила Discord</h1>
-            <span className="hero-accent" aria-hidden="true" />
-            <p className="lead">Правила сервера, правила рейду, статистика прийняття та список підписантів зібрані в одному зрозумілому місці.</p>
-            <div className="hero-secure-note content-hero-actions">
-              <span className="hero-lock" aria-hidden="true">✦</span>
-              <span>Звичайні правила видають ролі. Рейдові правила записують Discord і мейн-персонажа.</span>
-              <div className="content-hero-buttons">
-                {canEditRules ? <a className="btn primary content-add-btn" href="/discord/rules/new">Додати звичайні</a> : null}
-                {canEditRules ? <a className="btn subtle content-add-btn" href="/discord/rules/new?type=raid">Додати рейдові</a> : null}
-                <a className="btn subtle content-add-btn" href="/discord">Назад</a>
+        <div className={styles.page}>
+          <header className={`panel ${styles.pageHeader}`}>
+            <div className={styles.headerMain}>
+              <div className={styles.headerCopy}>
+                <div className={styles.headerKicker}>
+                  <span className="eyebrow">Mistblossom Vanguard • Правила</span>
+                  <span className={styles.modePill}>Discord</span>
+                </div>
+                <h1>Правила Discord</h1>
+                <p>Керуйте звичайними та рейдовими правилами, бачте статистику прийняття і список підписантів без переходів між окремими екранами.</p>
+                <div className={styles.headerNote}>
+                  <span aria-hidden="true">✦</span>
+                  <span>Звичайні правила видають ролі, рейдові — фіксують Discord-користувача та його мейн-персонажа.</span>
+                </div>
+              </div>
+
+              <div className={styles.headerActions} aria-label="Дії з правилами">
+                {canEditRules ? <a className="btn primary" href="/discord/rules/new">Додати звичайні</a> : null}
+                {canEditRules ? <a className="btn subtle" href="/discord/rules/new?type=raid">Додати рейдові</a> : null}
+                <a className="btn subtle" href="/discord">До Discord</a>
               </div>
             </div>
-          </div>
-          <HeroSidePanel
-            ariaLabel="Огляд правил Discord"
-            summary={[
-              { label: "КАНАЛ", value: rulesChannelName, note: canEditRules ? "Керування й статистика" : "Перегляд статистики" },
-              { label: "ДОСТУП", value: canEditRules ? "Редагування" : "Перегляд", note: hasDiscordEmbedConfig() ? "Discord API налаштовано" : "Discord API недоступний" },
-            ]}
-            stats={[
-              { label: "ПРИЙНЯЛИ", value: stats.configured ? stats.accepted.toLocaleString("uk-UA") : "—" },
-              { label: "РЕЙД", value: raidSignedCount.toLocaleString("uk-UA") },
-              { label: "MSG", value: messages.length.toLocaleString("uk-UA") },
-            ]}
-          />
-        </header>
-      <StatusNotice params={params} />
+
+            <div className={styles.summaryGrid} aria-label="Короткий огляд правил Discord">
+              <div className={`${styles.summaryItem} ${styles.summaryItemWide}`}>
+                <span>Канал</span>
+                <strong>{rulesChannelName}</strong>
+                <small>{canEditRules ? "Керування й статистика" : "Перегляд статистики"}</small>
+              </div>
+              <div className={styles.summaryItem}>
+                <span>Доступ</span>
+                <strong>{canEditRules ? "Редагування" : "Перегляд"}</strong>
+                <small>{hasDiscordEmbedConfig() ? "Discord API активний" : "Discord API недоступний"}</small>
+              </div>
+              <div className={styles.summaryStat}>
+                <span>Прийняли</span>
+                <strong>{stats.configured ? stats.accepted.toLocaleString("uk-UA") : "—"}</strong>
+              </div>
+              <div className={styles.summaryStat}>
+                <span>Рейд</span>
+                <strong>{raidSignedCount.toLocaleString("uk-UA")}</strong>
+              </div>
+              <div className={styles.summaryStat}>
+                <span>Повідомлень</span>
+                <strong>{messages.length.toLocaleString("uk-UA")}</strong>
+              </div>
+            </div>
+          </header>
+          <StatusNotice params={params} />
 
       {!hasDiscordEmbedConfig() ? (
         <div className="notice panel error-note">Публікація в Discord тимчасово недоступна. Спробуй пізніше або звернись до гільдмайстра.</div>
@@ -436,7 +451,7 @@ export default async function DiscordRulesPage({
           />
           <RaidRulesSignupsPanel signups={raidSignups} />
 
-          {canEditRules ? <div className="discord-rules-library-split" aria-label="Бібліотека правил">
+          {canEditRules ? <div className={`discord-rules-library-split ${styles.libraryGrid}`} aria-label="Бібліотека правил">
             <RulesMessagesPanel
               title="Звичайні правила"
               eyebrow="Звичайні правила"
@@ -460,6 +475,7 @@ export default async function DiscordRulesPage({
           </div> : null}
         </>
       )}
+        </div>
       </section>
     </main>
   );
