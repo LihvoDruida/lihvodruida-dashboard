@@ -2988,7 +2988,7 @@ export async function loadStoredGuildRosterData(
   const cached = await readCachedRoster(settings, { bypassCache: options.bypassCache }).catch(() => null);
   if (cached) return publicFromCache(cached);
 
-  return emptyGuildRosterFallback("У Firebase ще немає нормалізованих записів складу гільдії.");
+  return emptyGuildRosterFallback("У сховищі даних ще немає нормалізованих записів складу гільдії.");
 }
 
 export async function loadGuildRosterData(
@@ -3001,8 +3001,8 @@ export async function loadGuildRosterData(
   if (cached) return publicFromCache(cached);
 
   return emptyGuildRosterFallback(
-    firebaseGuildRosterStorageLimited()
-      ? "Тимчасова технічна помилка: сховище Firebase недоступне або перевищило ліміти. Сайт не запускає додаткові важкі читання, щоб не добивати квоту."
-      : "У Firebase ще немає нормалізованих записів складу або вони тимчасово недоступні. Сторінка не запускає live-збір під час render; синхронізація створює записи покроково.",
+    guildRosterStorageLimited()
+      ? "Тимчасова технічна помилка: сховище даних недоступне або спрацював захисний ліміт. Сайт не запускає додаткові важкі читання, щоб не перевантажувати сховище."
+      : "У сховищі даних ще немає нормалізованих записів складу або вони тимчасово недоступні. Сторінка не запускає live-збір під час render; синхронізація створює записи покроково.",
   );
 }
