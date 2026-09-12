@@ -2597,6 +2597,8 @@ function validateRaidPayload(
     throw new Error("Вкажи коректний час рейду.");
   if (!payload.description.trim())
     throw new Error("Додай короткий опис рейду.");
+  if (payload.minItemLevelRequired && !payload.minItemLevel)
+    throw new Error("Щоб блокувати запис за item level, спочатку вкажи мінімальний item level.");
 
   const limit = raidRegistrationLimit({ maxPlayers: payload.maxPlayers });
   const activeCount = existingRaid ? raidActiveRosterSize(existingRaid) : 0;

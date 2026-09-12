@@ -15,7 +15,8 @@ const actions = read('src/components/RaidPollActions.tsx');
 const views = read('src/components/RaidPollViews.tsx');
 const lifecycle = read('src/app/api/polls/close-due/route.ts');
 const createRoute = read('src/app/api/polls/route.ts');
-const cron = fs.readFileSync(path.resolve(root, '..', 'deploy/cron/run-cron.sh'), 'utf8');
+const cronPath = path.resolve(root, '..', 'deploy/cron/run-cron.sh');
+const cron = fs.existsSync(cronPath) ? fs.readFileSync(cronPath, 'utf8') : '';
 
 const lifecyclePublishIndex = polls.indexOf('const scheduled = await publishDueRaidPolls');
 const lifecycleRepeatIndex = polls.indexOf('const repeated = await repeatDueRaidPolls');
@@ -42,6 +43,7 @@ const checks = [
   ['scheduled detail UI shows publication deadline instead of close deadline', views.includes('state === "scheduled" ? "Публікація"') && views.includes('state === "scheduled" ? "До публікації"')],
   ['create API reports scheduled creation separately', createRoute.includes('raid_polls.scheduled') && createRoute.includes('Discord-повідомлення зʼявиться автоматично')],
   ['lifecycle degraded result preserves scheduled counters', lifecycle.includes('scheduledChecked: 0') && lifecycle.includes('scheduledPublished: 0')],
+  ['VPS cron script is available to the scheduling CI audit', cron.length > 0],
   ['VPS cron forces the five-minute lifecycle tick so cooldown cannot miss an hourly schedule', cron.includes('/api/polls/close-due?force=1')],
 ];
 

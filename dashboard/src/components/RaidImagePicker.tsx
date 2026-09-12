@@ -64,6 +64,7 @@ export default function RaidImagePicker({ defaultValue = "" }: { defaultValue?: 
   const [state, setState] = useState<LoadState>("idle");
   const [error, setError] = useState("");
   const requestIdRef = useRef(0);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setValue(String(defaultValue || ""));
@@ -71,6 +72,13 @@ export default function RaidImagePicker({ defaultValue = "" }: { defaultValue?: 
 
   const selected = useMemo(() => images.find((image) => sameUrl(image.url, value)), [images, value]);
   const isLoading = state === "loading";
+
+  const selectImage = useCallback((nextValue: string) => {
+    setValue(nextValue);
+    window.requestAnimationFrame(() => {
+      inputRef.current?.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  }, []);
 
   const loadImages = useCallback(async (signal?: AbortSignal) => {
     const requestId = requestIdRef.current + 1;
@@ -115,6 +123,7 @@ export default function RaidImagePicker({ defaultValue = "" }: { defaultValue?: 
       <span>Зображення оголошення</span>
       <div className="raid-image-picker__input-row">
         <input
+          ref={inputRef}
           className="input"
           name="imageUrl"
           placeholder="https://..."
@@ -139,7 +148,7 @@ export default function RaidImagePicker({ defaultValue = "" }: { defaultValue?: 
                 key={image.path || image.url}
                 type="button"
                 className={`raid-image-picker__item${active ? " is-selected" : ""}`}
-                onClick={() => setValue(image.url)}
+                onClick={() => selectImage(image.url)}
                 aria-pressed={active}
                 title={image.name}
               >

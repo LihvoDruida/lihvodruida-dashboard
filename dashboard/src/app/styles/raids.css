@@ -824,6 +824,24 @@
 /* =========================================================
    4. СТВОРЕННЯ Й РЕДАГУВАННЯ
    ========================================================= */
+.raid-editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.32fr) minmax(360px, 0.68fr);
+  gap: clamp(var(--space-md), 2.2vw, var(--space-xl));
+  align-items: start;
+  min-width: 0;
+}
+
+.raid-editor-layout > .raid-preview-column {
+  position: sticky;
+  top: 92px;
+  align-self: start;
+  max-height: calc(100vh - 112px);
+  overflow: auto;
+  scrollbar-gutter: stable;
+  padding-right: 2px;
+}
+
 .raid-form-stack {
   display: grid;
   gap: var(--gap-grid);
@@ -842,101 +860,255 @@
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-sm);
-  padding-bottom: var(--space-sm);
+  gap: var(--space-md);
+  padding-bottom: var(--space-md);
   border-bottom: 1px solid var(--border-subtle);
 }
 
-.raid-form-heading > div {
+.raid-form-heading > div:first-child {
   display: grid;
-  gap: var(--space-3xs);
+  gap: var(--space-xs);
+  flex: 1 1 460px;
   min-width: 0;
 }
 
 .raid-form-heading .section-title {
   font-family: var(--font-brand);
-  font-size: 1.1rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-size: 1.14rem;
+  font-weight: 750;
+  letter-spacing: 0.035em;
   color: var(--text-strong);
 }
 
 .raid-form-heading p {
   margin: 0;
-  max-width: 70ch;
+  max-width: 72ch;
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   line-height: 1.55;
 }
 
-/* Секція форми — згрупований блок полів */
-.raid-form-section {
+.raid-form-heading-status {
   display: grid;
-  /* Поля лягають у дві колонки: інпут на всю ширину панелі
-     читається гірше, ніж пара полів поруч. */
-  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
-  gap: var(--space-md);
-  padding: var(--pad-card-compact);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
+  justify-items: end;
+  gap: var(--space-2xs);
+  flex: 0 1 230px;
   min-width: 0;
 }
 
-/* Заголовок секції, довгі поля й вкладені рядки — на всю ширину */
-.raid-form-section > strong,
-.raid-form-section > .raid-form-row,
-.raid-form-section > .raid-checkbox-line,
-.raid-form-section > .raid-form-hint,
+.raid-form-heading-status small {
+  color: var(--text-faint);
+  font-size: 0.7rem;
+  text-align: right;
+}
+
+.raid-editor-jump-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  margin-top: var(--space-2xs);
+}
+
+.raid-editor-jump-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: var(--space-3xs) var(--space-sm);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 650;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.raid-editor-jump-nav a:hover,
+.raid-editor-jump-nav a:focus-visible {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  color: var(--c-accent-200);
+}
+
+/* Секція — окрема логічна сходинка форми, а не суцільний список полів. */
+.raid-form-section {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-md);
+  padding: clamp(var(--space-md), 1.6vw, var(--space-lg));
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface-sunken) 86%, transparent);
+  min-width: 0;
+  scroll-margin-top: 112px;
+}
+
+.raid-form-section-heading {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-sm);
+  align-items: start;
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.raid-form-section-heading > div {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.raid-form-section-heading strong,
+.raid-publish-panel__copy strong {
+  color: var(--text-strong);
+  font-size: 0.92rem;
+  font-weight: 750;
+}
+
+.raid-form-section-heading p,
+.raid-publish-panel__copy p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.raid-form-step {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(235, 146, 65, 0.34);
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--c-accent-200);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.raid-field--wide,
 .raid-form-section > .raid-image-picker,
-.raid-form-section > .discord-role-picker,
-.raid-form-section > label:has(> textarea) {
+.raid-form-section > .raid-discord-role-block,
+.raid-form-section > .raid-auto-composition-note {
   grid-column: 1 / -1;
 }
 
-.raid-form-section > strong {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--c-accent-300);
-}
-
-/* Три поля в ряд: канал, розхідники, лут */
-.raid-form-section--two {
-  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
-  align-items: start;
-}
-
-.raid-form-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
-  gap: var(--space-md);
-}
-
-/* Підпис поля: текст згори, контрол знизу */
+/* Підпис поля: текст згори, контрол знизу. */
 .field-label {
   display: grid;
+  align-content: start;
   gap: var(--space-xs);
   min-width: 0;
-  font-size: 0.8rem;
+  font-size: 0.79rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.015em;
   color: var(--text-soft);
 }
 
 .field-label > small {
-  font-size: 0.74rem;
+  font-size: 0.73rem;
   font-weight: 400;
   letter-spacing: 0;
   line-height: 1.5;
   color: var(--text-muted);
 }
 
-.raid-form-hint {
-  margin: 0;
-  color: var(--text-muted);
+.raid-form-section .input,
+.raid-form-section .select {
+  width: 100%;
+}
+
+.raid-form-section--rules {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.raid-setting-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 0;
+  padding: var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+
+.raid-setting-card__head {
+  display: grid;
+  gap: var(--space-3xs);
+  padding-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.raid-setting-card__head strong {
+  color: var(--text-strong);
+  font-size: 0.84rem;
+}
+
+.raid-setting-card__head span {
+  color: var(--text-faint);
+  font-size: 0.7rem;
+}
+
+.raid-setting-card .raid-checkbox-line {
+  margin-top: auto;
+}
+
+.raid-checkbox-line {
+  min-width: 0;
+}
+
+.raid-checkbox-line > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.raid-checkbox-line > span > strong {
+  color: var(--text-soft);
   font-size: 0.78rem;
+}
+
+.raid-checkbox-line > span > small {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+.raid-checkbox-line--primary {
+  align-items: flex-start;
+  padding: var(--space-xs) 0;
+}
+
+.raid-dependent-control[data-enabled="false"],
+.raid-dependent-field[data-enabled="false"] {
+  opacity: 0.5;
+}
+
+.raid-dependent-control[data-enabled="false"] {
+  cursor: not-allowed;
+}
+
+.raid-dependent-field[data-enabled="false"] .select {
+  cursor: not-allowed;
+}
+
+.raid-setting-status {
+  display: block;
+  margin-top: auto;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1.45;
 }
 
 .raid-auto-composition-note {
@@ -951,23 +1123,61 @@
 
 .raid-auto-composition-note strong {
   color: var(--c-accent-200);
-  font-size: 0.88rem;
+  font-size: 0.84rem;
 }
 
 .raid-auto-composition-note span {
   color: var(--text-soft);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.raid-form-section--discord {
+  align-items: start;
+}
+
+.raid-discord-role-block {
+  display: grid;
+  gap: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.raid-discord-role-block__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+.raid-discord-role-block__head strong {
+  color: var(--text-strong);
   font-size: 0.82rem;
-  line-height: 1.6;
+}
+
+.raid-discord-role-block__head span {
+  color: var(--text-muted);
+  font-size: 0.72rem;
 }
 
 .raid-description-textarea {
-  min-height: 200px;
+  min-height: 210px;
+  resize: vertical;
+}
+
+.raid-form-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
 }
 
 /* ---------- Вибір зображення ---------- */
 .raid-image-picker {
   display: grid;
   gap: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-subtle);
 }
 
 .raid-image-picker__input-row {
@@ -987,11 +1197,11 @@
 
 .raid-image-picker__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(120px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(132px, 100%), 1fr));
   gap: var(--space-sm);
-  max-height: 320px;
+  max-height: 340px;
   overflow-y: auto;
-  padding: var(--space-2xs);
+  padding: var(--space-xs);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   background: var(--surface);
@@ -1000,12 +1210,14 @@
 .raid-image-picker__grid img,
 .raid-image-picker__preview img {
   width: 100%;
-  height: 84px;
+  height: 88px;
   border-radius: var(--radius-sm);
   object-fit: cover;
   border: 1px solid var(--border-subtle);
   cursor: pointer;
-  transition: border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
 }
 
 .raid-image-picker__grid img:hover {
@@ -1036,21 +1248,83 @@
   font-size: 0.78rem;
 }
 
-/* ---------- Дії форми ---------- */
+/* ---------- Фінальна дія ---------- */
+.raid-publish-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-md) var(--space-lg);
+  align-items: center;
+  padding: clamp(var(--space-md), 1.6vw, var(--space-lg));
+  border: 1px solid rgba(235, 146, 65, 0.3);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent-soft) 74%, var(--surface-raised)),
+    var(--surface-raised)
+  );
+  scroll-margin-top: 112px;
+}
+
+.raid-publish-panel__copy {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-sm);
+  align-items: start;
+  min-width: 0;
+}
+
+.raid-publish-panel__copy > div {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.raid-save-state {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: var(--space-2xs);
+  padding: var(--space-3xs) var(--space-sm);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+
+.raid-form-panel.is-dirty .raid-save-state {
+  border-color: var(--tint-warning-border);
+  background: var(--tint-warning-bg);
+  color: var(--text-on-warning);
+}
+
 .raid-form-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-sm);
-  padding-top: var(--space-sm);
-  border-top: 1px solid var(--border-subtle);
+  justify-content: flex-end;
+  gap: var(--space-xs);
+  min-width: min(100%, 360px);
 }
 
 .raid-form-actions .btn {
-  flex: 0 1 auto;
-  min-width: 200px;
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.raid-publish-panel__warning {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--tint-warning-border);
+  border-radius: var(--radius-sm);
+  background: var(--tint-warning-bg);
+  color: var(--text-on-warning);
+  font-size: 0.74rem;
 }
 
 .raid-form-links {
+  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-md);
@@ -1058,11 +1332,11 @@
 
 .raid-message-link {
   color: var(--c-accent-300);
-  font-size: 0.84rem;
-  font-weight: 600;
+  font-size: 0.82rem;
+  font-weight: 650;
 }
 
-/* Небезпечна зона — окрема панель, а не рядок у формі */
+/* Небезпечна зона — візуально відділена від звичайного збереження. */
 .raid-form-danger-zone {
   display: grid;
   gap: var(--space-xs);
@@ -1087,6 +1361,19 @@
 /* =========================================================
    5. АДАПТИВ
    ========================================================= */
+@media (max-width: 1180px) {
+  .raid-editor-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .raid-editor-layout > .raid-preview-column {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+}
+
 @media (max-width: 1000px) {
   .raid-member-layout {
     grid-template-columns: minmax(0, 1fr);
@@ -1095,6 +1382,14 @@
   .raid-roster-panel {
     position: static;
     max-height: none;
+  }
+
+  .raid-form-section--rules {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .raid-setting-card--deadline {
+    grid-column: 1 / -1;
   }
 }
 
@@ -1166,9 +1461,45 @@
     justify-content: center;
   }
 
+  .raid-form-section,
+  .raid-form-section--rules {
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--space-md);
+  }
+
+  .raid-setting-card--deadline {
+    grid-column: auto;
+  }
+
+  .raid-field--wide,
+  .raid-form-section > .raid-image-picker,
+  .raid-form-section > .raid-discord-role-block,
+  .raid-form-section > .raid-auto-composition-note {
+    grid-column: auto;
+  }
+
+  .raid-publish-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .raid-form-actions {
+    width: 100%;
+    min-width: 0;
+    justify-content: stretch;
+  }
+
   .raid-form-actions .btn {
     flex: 1 1 100%;
     min-width: 0;
+  }
+
+  .raid-form-heading-status {
+    justify-items: start;
+    flex-basis: 100%;
+  }
+
+  .raid-form-heading-status small {
+    text-align: left;
   }
 
   .raid-character-picker {
@@ -1177,6 +1508,40 @@
 }
 
 @media (max-width: 520px) {
+  .raid-editor-jump-nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .raid-editor-jump-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .raid-editor-jump-nav a {
+    flex: 0 0 auto;
+  }
+
+  .raid-form-section-heading,
+  .raid-publish-panel__copy {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .raid-form-step {
+    width: 28px;
+    height: 28px;
+  }
+
+  .raid-image-picker__input-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .raid-image-picker__refresh {
+    width: 100%;
+  }
+
   .raid-list-main-link img {
     width: 44px;
     height: 44px;

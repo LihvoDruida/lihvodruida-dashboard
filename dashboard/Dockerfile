@@ -52,6 +52,12 @@ COPY --from=deps /repo/shared /repo/shared
 COPY --from=deps /repo/dashboard/node_modules ./node_modules
 COPY dashboard/ ./
 
+# CI scheduling audit also verifies the real VPS cron endpoint. The dashboard
+# build context is the repository root, but files are not present in a stage
+# until they are explicitly copied. Copy only this non-secret deployment
+# script for build-time validation; it is not copied into the runtime image.
+COPY deploy/cron/run-cron.sh /repo/deploy/cron/run-cron.sh
+
 # Змінні, які Next вшиває у клієнтський бандл на етапі збірки.
 # Решта конфігурації читається під час старту з оточення контейнера.
 ARG NEXT_PUBLIC_DASHBOARD_URL

@@ -6,12 +6,14 @@ import RaidAttendanceClient, {
 } from "@/components/RaidAttendanceClient";
 import RaidRoleMentionPicker from "@/components/RaidRoleMentionPicker";
 import RaidImagePicker from "@/components/RaidImagePicker";
+import RaidEditorFormEnhancer from "@/components/RaidEditorFormEnhancer";
 import type { DiscordRoleOption } from "@/components/DiscordEmbedEditor";
 import { DiscordMarkdown } from "@/components/DiscordMarkdown";
 import type { DashboardSession } from "@/lib/auth";
 import type { DashboardProfile } from "@/lib/profiles";
 import { hierarchyTitle } from "@/lib/permissions";
 import { pickWowAvatarImageUrl } from "@/lib/wowCharacters";
+import { isInternalRaidThumbnail } from "@/lib/raidThumbnailAssets";
 import {
   buildRaidGroupLayout,
   raidGroupLayoutSlotCounts,
@@ -1080,6 +1082,14 @@ export function RaidForm({
   const selectedMentionRoleIds = Array.from(
     new Set((raid?.mentionRoleIds || []).filter(Boolean)),
   );
+  const activeSignupCount = raid
+    ? raid.signups.filter(
+        (signup) =>
+          signup.status === "going" ||
+          signup.status === "late" ||
+          signup.status === "tentative",
+      ).length
+    : 0;
   const isExistingRaid = Boolean(raid?.id);
   const isDiscordPublished = Boolean(
     raid?.channelId && raid?.messageId && raid?.status !== "draft",
@@ -1092,46 +1102,77 @@ export function RaidForm({
   const publishLabel = isDiscordPublished
     ? "Оновити Discord"
     : "Опублікувати в Discord";
+  const initialSaveState = isExistingRaid
+    ? "Усі завантажені зміни збережені"
+    : "Новий рейд ще не збережено";
+
   return (
     <div className="raid-form-stack">
+      <RaidEditorFormEnhancer />
       <form
         className="panel raid-form-panel raid-form-panel--modern"
         action="/api/raids"
         method="post"
         data-raid-editor-form="true"
+        data-existing-raid={isExistingRaid ? "true" : "false"}
       >
         <input type="hidden" name="raidId" value={raid?.id || ""} />
         <input type="hidden" name="composition" value={defaultComposition} />
+
         <div className="raid-form-heading">
           <div>
             <div className="section-title">
               {raid?.id ? "Редагування рейду" : "Створення рейду"}
             </div>
             <p>
-              Чернетка зберігає дані без публікації. Публікація створює або
-              оновлює Discord-оголошення з кнопками запису.
+              Заповнюй форму зверху вниз. Чернетка змінює тільки сайт, а
+              публікація створює або оновлює Discord-оголошення.
             </p>
+            <nav className="raid-editor-jump-nav" aria-label="Розділи форми рейду">
+              <a href="#raid-editor-main">Основне</a>
+              <a href="#raid-editor-rules">Запис</a>
+              <a href="#raid-editor-discord">Discord</a>
+              <a href="#raid-editor-content">Оформлення</a>
+              <a href="#raid-editor-publish">Публікація</a>
+            </nav>
           </div>
-          {raid ? (
-            <em className={`raid-state raid-state--${raidStatusClass(raid)}`}>
-              {raidStatusLabel(raid)}
-            </em>
-          ) : null}
+          <div className="raid-form-heading-status">
+            {raid ? (
+              <em className={`raid-state raid-state--${raidStatusClass(raid)}`}>
+                {raidStatusLabel(raid)}
+              </em>
+            ) : (
+              <em className="raid-state raid-state--draft">Новий</em>
+            )}
+            <small>{defaultComposition} • склад формується автоматично</small>
+          </div>
         </div>
 
-        <div className="raid-form-section">
-          <strong>Основне</strong>
+        <section
+          className="raid-form-section raid-form-section--core"
+          id="raid-editor-main"
+          aria-labelledby="raid-editor-main-title"
+        >
+          <div className="raid-form-section-heading">
+            <span className="raid-form-step" aria-hidden="true">01</span>
+            <div>
+              <strong id="raid-editor-main-title">Основне</strong>
+              <p>Назва, складність, дата, час і відповідальний рейд-лідер.</p>
+            </div>
+          </div>
+
           <label className="field-label">
             Назва рейду
             <input
               className="input"
               name="title"
               defaultValue={raid?.title || "Войдспайр"}
+              maxLength={120}
               required
             />
           </label>
           <label className="field-label">
-            Тип рейду
+            Складність
             <select
               className="select"
               name="difficulty"
@@ -1142,29 +1183,27 @@ export function RaidForm({
               <option value="mythic">Міфік</option>
             </select>
           </label>
-          <div className="raid-form-row">
-            <label className="field-label">
-              Дата
-              <input
-                className="input"
-                type="date"
-                name="date"
-                defaultValue={raid?.date || todayIso()}
-                required
-              />
-            </label>
-            <label className="field-label">
-              Час
-              <input
-                className="input"
-                type="time"
-                name="time"
-                defaultValue={raid?.time || "20:00"}
-                required
-              />
-            </label>
-          </div>
           <label className="field-label">
+            Дата
+            <input
+              className="input"
+              type="date"
+              name="date"
+              defaultValue={raid?.date || todayIso()}
+              required
+            />
+          </label>
+          <label className="field-label">
+            Час
+            <input
+              className="input"
+              type="time"
+              name="time"
+              defaultValue={raid?.time || "20:00"}
+              required
+            />
+          </label>
+          <label className="field-label raid-field--wide">
             Рейд-лідер / РЛ
             <input
               className="input"
@@ -1174,93 +1213,155 @@ export function RaidForm({
               maxLength={120}
             />
             <small>
-              Необов’язково. Якщо поле порожнє, у Discord-оголошенні блок РЛ не
-              показується.
+              Необов’язково. Якщо залишити порожнім, блок РЛ у Discord не
+              показуватиметься.
             </small>
           </label>
-          <label className="field-label">
-            Мінімальний item level
-            <input
-              className="input"
-              type="number"
-              name="minItemLevel"
-              min="1"
-              max="9999"
-              step="1"
-              placeholder="Напр. 675"
-              defaultValue={raid?.minItemLevel || ""}
-            />
-            <small>
-              Необов’язково. Без галочки нижче це лише попередження; з галочкою
-              запис нижче порогу буде заблоковано.
-            </small>
-          </label>
-          <label className="raid-checkbox-line">
-            <input
-              type="checkbox"
-              name="minItemLevelRequired"
-              value="1"
-              defaultChecked={Boolean(raid?.minItemLevelRequired)}
-            />
-            <span>
-              Блокувати запис, якщо item level нижче мінімального порогу
-            </span>
-          </label>
-          <label className="field-label">
-            Максимум гравців
-            <input
-              className="input"
-              type="number"
-              name="maxPlayers"
-              min="1"
-              max="80"
-              step="1"
-              placeholder="Напр. 20"
-              defaultValue={raid?.maxPlayers || ""}
-            />
-            <small>
-              Порожньо — без жорсткого ліміту. Коли активних записів стане
-              стільки ж, нові “Підписатися” і “Затримаюсь” будуть заблоковані.
-            </small>
-          </label>
-          <label className="raid-checkbox-line">
-            <input
-              type="checkbox"
-              name="registrationLockEnabled"
-              value="1"
-              defaultChecked={Boolean(raid?.registrationLockEnabled)}
-            />
-            <span>Блокувати запис за X часу до старту рейду</span>
-          </label>
-          <label className="field-label">
-            Коли закрити запис
-            <select
-              className="select"
-              name="registrationLockMinutesBefore"
-              defaultValue={String(raid?.registrationLockMinutesBefore || 60)}
-            >
-              <option value="30">За 30 хв</option>
-              <option value="60">За 1 год</option>
-              <option value="120">За 2 год</option>
-              <option value="180">За 3 год</option>
-              <option value="1440">За 1 день</option>
-            </select>
-            <small>
-              Після дедлайну “Підписатися”, “Затримаюсь” і зміна персонажа
-              будуть відхилятися. “Пропустити” лишається доступним до старту,
-              щоб не тримати зайве місце.
-            </small>
-          </label>
-        </div>
+        </section>
 
-        <div className="raid-form-section raid-form-section--two">
-          <label className="field-label">
+        <section
+          className="raid-form-section raid-form-section--rules"
+          id="raid-editor-rules"
+          aria-labelledby="raid-editor-rules-title"
+        >
+          <div className="raid-form-section-heading">
+            <span className="raid-form-step" aria-hidden="true">02</span>
+            <div>
+              <strong id="raid-editor-rules-title">Правила запису</strong>
+              <p>Ліміти, вимоги до спорядження та автоматичний дедлайн.</p>
+            </div>
+          </div>
+
+          <div className="raid-setting-card">
+            <div className="raid-setting-card__head">
+              <strong>Item level</strong>
+              <span>Фільтр спорядження</span>
+            </div>
+            <label className="field-label">
+              Мінімальний item level
+              <input
+                className="input"
+                type="number"
+                name="minItemLevel"
+                min="1"
+                max="9999"
+                step="1"
+                placeholder="Напр. 675"
+                defaultValue={raid?.minItemLevel || ""}
+              />
+              <small>Порожнє поле повністю вимикає перевірку ilvl.</small>
+            </label>
+            <label className="raid-checkbox-line raid-dependent-control">
+              <input
+                type="checkbox"
+                name="minItemLevelRequired"
+                value="1"
+                defaultChecked={Boolean(raid?.minItemLevelRequired)}
+              />
+              <span>
+                <strong>Блокувати нижчий ilvl</strong>
+                <small>Без цього перемикача система лише попереджає.</small>
+              </span>
+            </label>
+          </div>
+
+          <div className="raid-setting-card">
+            <div className="raid-setting-card__head">
+              <strong>Місткість</strong>
+              <span>Ліміт активних записів</span>
+            </div>
+            <label className="field-label">
+              Максимум гравців
+              <input
+                className="input"
+                type="number"
+                name="maxPlayers"
+                min={Math.max(1, activeSignupCount || 1)}
+                max="80"
+                step="1"
+                placeholder="Напр. 20"
+                defaultValue={raid?.maxPlayers || ""}
+              />
+              <small>
+                {activeSignupCount > 0
+                  ? `Зараз активних записів: ${activeSignupCount}. Менше цього значення зберегти не можна.`
+                  : "Порожньо — без жорсткого ліміту, склад масштабується автоматично."}
+              </small>
+            </label>
+          </div>
+
+          <div className="raid-setting-card raid-setting-card--deadline">
+            <div className="raid-setting-card__head">
+              <strong>Дедлайн</strong>
+              <span>Автоматичне закриття запису</span>
+            </div>
+            <label className="raid-checkbox-line raid-checkbox-line--primary">
+              <input
+                type="checkbox"
+                name="registrationLockEnabled"
+                value="1"
+                defaultChecked={Boolean(raid?.registrationLockEnabled)}
+              />
+              <span>
+                <strong>Закривати запис до старту</strong>
+                <small>Залишає “Пропустити” доступним до початку рейду.</small>
+              </span>
+            </label>
+            <label className="field-label raid-dependent-field">
+              Коли закрити запис
+              <select
+                className="select"
+                name="registrationLockMinutesBefore"
+                defaultValue={String(raid?.registrationLockMinutesBefore || 60)}
+              >
+                <option value="30">За 30 хв</option>
+                <option value="60">За 1 год</option>
+                <option value="120">За 2 год</option>
+                <option value="180">За 3 год</option>
+                <option value="1440">За 1 день</option>
+              </select>
+            </label>
+            <span
+              className="raid-setting-status"
+              data-raid-registration-deadline
+              aria-live="polite"
+            >
+              Дедлайн буде розраховано за датою та часом рейду.
+            </span>
+          </div>
+
+          <div className="raid-auto-composition-note">
+            <strong>Склад формується автоматично • {defaultComposition}</strong>
+            <span>
+              Максимум 2 танки на рейд, кількість хілів масштабується від паті,
+              а ДД добираються з урахуванням критичних бафів та балансу
+              мілі/рендж. Якщо задано максимум гравців, схема рахується від
+              цього ліміту.
+            </span>
+          </div>
+        </section>
+
+        <section
+          className="raid-form-section raid-form-section--discord"
+          id="raid-editor-discord"
+          aria-labelledby="raid-editor-discord-title"
+        >
+          <div className="raid-form-section-heading">
+            <span className="raid-form-step" aria-hidden="true">03</span>
+            <div>
+              <strong id="raid-editor-discord-title">Discord і правила рейду</strong>
+              <p>Канал публікації, лут, розхідники та ролі для згадки.</p>
+            </div>
+          </div>
+
+          <label className="field-label raid-field--wide">
             Канал Discord
             {channelOptions.length ? (
               <select
                 className="select"
                 name="channelId"
                 defaultValue={raid?.channelId || channelOptions[0]?.id || ""}
+                disabled={!discordEnabled}
               >
                 {channelOptions.map((channel) => (
                   <option key={channel.id} value={channel.id}>
@@ -1280,13 +1381,16 @@ export function RaidForm({
                 required={discordEnabled}
               />
             )}
-            {!channelOptions.length ? (
+            {!discordEnabled ? (
+              <small>Discord зараз недоступний — дані можна зберегти як чернетку.</small>
+            ) : !channelOptions.length ? (
               <small>
-                Список каналів не прочитався автоматично. Встав ID каналу вручну
-                або задай DISCORD_CHANNEL_ID / DISCORD_GUILD_CHANNELS_ENDPOINT у
-                змінних середовища.
+                Список каналів не прочитався автоматично. Встав ID каналу
+                вручну або перевір Discord-конфігурацію сервера.
               </small>
-            ) : null}
+            ) : (
+              <small>Саме в цей канал піде нове або оновлене оголошення.</small>
+            )}
           </label>
           <label className="field-label">
             Розхідники
@@ -1312,106 +1416,137 @@ export function RaidForm({
               <option value="loot-council">Loot Council</option>
             </select>
           </label>
-        </div>
 
-        <div className="raid-form-section discord-visual-section discord-visual-section--roles">
-          <strong>Тег ролей у Discord</strong>
-          <RaidRoleMentionPicker
-            roles={roles}
-            selectedRoleIds={selectedMentionRoleIds}
-          />
-        </div>
+          <div className="raid-discord-role-block">
+            <div className="raid-discord-role-block__head">
+              <strong>Кого тегнути</strong>
+              <span>Ролі з’являться над Discord embed.</span>
+            </div>
+            <RaidRoleMentionPicker
+              roles={roles}
+              selectedRoleIds={selectedMentionRoleIds}
+            />
+          </div>
+        </section>
 
-        <div className="raid-auto-composition-note">
-          <strong>Склад формується автоматично</strong>
-          <span>
-            Поточна схема: {defaultComposition}. Якщо задано максимум гравців,
-            схема рахується від цього числа; без ліміту — від активного запису.
-            Правило: максимум 2 танки на рейд, хіли масштабуються від кількості паті
-            з верхньою межею 5, ДД добираються за бафами та балансом мілі/рендж.
-          </span>
-        </div>
+        <section
+          className="raid-form-section raid-form-section--content"
+          id="raid-editor-content"
+          aria-labelledby="raid-editor-content-title"
+        >
+          <div className="raid-form-section-heading">
+            <span className="raid-form-step" aria-hidden="true">04</span>
+            <div>
+              <strong id="raid-editor-content-title">Опис і візуал</strong>
+              <p>Текст оголошення, мініатюра та велике зображення рейду.</p>
+            </div>
+          </div>
 
-        <div className="raid-form-section">
-          <strong>Текст і зображення</strong>
-          <label className="field-label">
+          <label className="field-label raid-field--wide">
             Опис
             <textarea
               className="input textarea markdown-area raid-description-textarea"
               name="description"
               rows={8}
+              maxLength={4096}
               defaultValue={
                 raid?.description ||
                 "Глибоко в серці темної цитаделі нас чекають давні таємниці та смертельні вороги.\n\nБудьте готові до суворого випробування!"
               }
             />
+            <small>
+              Підтримується Discord Markdown: жирний текст, курсив, списки,
+              заголовки, цитати, посилання й код.
+            </small>
           </label>
-          <p className="raid-form-hint">
-            Підтримується Markdown для Discord: жирний текст, курсив, списки,
-            заголовки, цитати, посилання й код.
-          </p>
-          <label className="field-label">
+          <label className="field-label raid-field--wide">
             Мініатюра / іконка
             <input
               className="input"
               name="thumbnailUrl"
+              inputMode="url"
               placeholder="https://..."
               defaultValue={
-                resolveRaidThumbnailUrl({
-                  difficulty: raid?.difficulty || "heroic",
-                  thumbnailUrl: raid?.thumbnailUrl || null,
-                })
+                raid?.thumbnailUrl && !isInternalRaidThumbnail(raid.thumbnailUrl)
+                  ? raid.thumbnailUrl
+                  : ""
               }
             />
             <small>
-              Якщо поле не змінювати, система автоматично використає мініатюру
-              за типом рейду.
+              Залиш порожнім для автоматичної мініатюри за складністю. Власний URL
+              завжди має пріоритет.
             </small>
           </label>
           <RaidImagePicker defaultValue={raid?.imageUrl || ""} />
-        </div>
+        </section>
 
-        <div className="raid-form-actions">
-          <button
-            className="btn subtle"
-            name="action"
-            value="save"
-            type="submit"
-          >
-            {saveLabel}
-          </button>
-          <button
-            className="btn primary"
-            formAction="/api/raids/publish"
-            name="action"
-            value="publish"
-            type="submit"
-            disabled={!canPublish}
-          >
-            {publishLabel}
-          </button>
-        </div>
-        <div className="raid-form-links">
-          {raid?.id ? (
-            <a
-              className="raid-message-link"
-              href={`/raids/${encodeURIComponent(raid.id)}`}
+        <section
+          className="raid-publish-panel"
+          id="raid-editor-publish"
+          aria-labelledby="raid-editor-publish-title"
+        >
+          <div className="raid-publish-panel__copy">
+            <span className="raid-form-step" aria-hidden="true">05</span>
+            <div>
+              <strong id="raid-editor-publish-title">Збереження і публікація</strong>
+              <p>
+                “Зберегти” не чіпає Discord. “{publishLabel}” зберігає форму й
+                одразу синхронізує оголошення.
+              </p>
+              <span className="raid-save-state" data-raid-save-state aria-live="polite">
+                {initialSaveState}
+              </span>
+            </div>
+          </div>
+          <div className="raid-form-actions">
+            <button
+              className="btn subtle"
+              name="action"
+              value="save"
+              type="submit"
             >
-              Відкрити сторінку рейду
-            </a>
-          ) : null}
-          {raid?.messageUrl ? (
-            <a
-              className="raid-message-link"
-              href={raid.messageUrl}
-              target="_blank"
-              rel="noreferrer"
+              {saveLabel}
+            </button>
+            <button
+              className="btn primary"
+              formAction="/api/raids/publish"
+              name="action"
+              value="publish"
+              type="submit"
+              disabled={!canPublish}
             >
-              Відкрити Discord-повідомлення
-            </a>
+              {publishLabel}
+            </button>
+          </div>
+          {!canPublish ? (
+            <p className="raid-publish-panel__warning">
+              Discord-публікація зараз недоступна. Чернетку та локальні зміни
+              все одно можна зберегти.
+            </p>
           ) : null}
-        </div>
+          <div className="raid-form-links">
+            {raid?.id ? (
+              <a
+                className="raid-message-link"
+                href={`/raids/${encodeURIComponent(raid.id)}`}
+              >
+                Відкрити сторінку рейду
+              </a>
+            ) : null}
+            {raid?.messageUrl ? (
+              <a
+                className="raid-message-link"
+                href={raid.messageUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Відкрити Discord-повідомлення
+              </a>
+            ) : null}
+          </div>
+        </section>
       </form>
+
       {raid?.id ? (
         <form
           className="panel raid-form-danger-zone raid-form-danger-zone--separate"
