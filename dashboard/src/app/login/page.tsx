@@ -89,15 +89,17 @@ export default async function LoginPage({
     force?: string;
     switch?: string;
     reauth?: string;
+    loggedOut?: string;
   }>;
 }) {
   const params = await searchParams;
   const nextPath = safeNextPath(params.next);
+  const loggedOut = isEnabled(params.loggedOut);
   const forceFreshLogin =
     isEnabled(params.force) ||
     isEnabled(params.switch) ||
     isEnabled(params.reauth);
-  const session = forceFreshLogin
+  const session = forceFreshLogin || loggedOut
     ? null
     : await getStoredSession().catch(() => null);
   if (session) {
@@ -177,7 +179,11 @@ export default async function LoginPage({
             <span>Заявки</span>
           </div>
 
-          {error ? (
+          {loggedOut ? (
+            <div className="notice success login-alert" role="status">
+              Сесію завершено. Можна безпечно закрити сторінку або увійти знову через Discord.
+            </div>
+          ) : error ? (
             <div className="login-alert" role="alert">
               {error}
             </div>

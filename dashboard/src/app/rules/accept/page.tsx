@@ -2,6 +2,7 @@ import DashboardIdentity from "@/components/DashboardIdentity";
 import HeroSidePanel from "@/components/HeroSidePanel";
 import ProfileCandidateBulkActions from "@/components/ProfileCandidateBulkActions";
 import ProfileCandidateExpiryTimer from "@/components/ProfileCandidateExpiryTimer";
+import ProfileCandidateCharacterRow from "@/components/ProfileCandidateCharacterRow";
 import ProfileCharactersLiveSection from "@/components/ProfileCharactersLiveSection";
 import ProfileNameControls from "@/components/ProfileNameControls";
 import RulesChoiceEnhancer from "@/components/RulesChoiceEnhancer";
@@ -40,10 +41,7 @@ import {
   wowRoleLabel,
   type WowCharacterRole,
 } from "@/lib/wowRoles";
-import {
-  normalizeCharacterKey,
-  pickWowAvatarImageUrl,
-} from "@/lib/wowCharacters";
+import { normalizeCharacterKey } from "@/lib/wowCharacters";
 
 export const metadata = buildPageMetadata({
   title: "Прийняття правил",
@@ -702,64 +700,6 @@ function RegistrationNicknameCharactersForm({
   );
 }
 
-function characterAuxMeta(
-  character: Pick<ProfileCharacter, "level" | "raceName" | "faction">,
-) {
-  return [
-    typeof character.level === "number" ? `Lvl ${character.level}` : null,
-    character.raceName || null,
-    character.faction || null,
-  ].filter(Boolean);
-}
-
-function RegistrationCandidateRow({
-  character,
-  bulkFormId,
-}: {
-  character: ProfileCharacter;
-  bulkFormId: string;
-}) {
-  const kindLabel = character.verifiedGuild ? "🌿 Гільдійний" : "🤝 Інший";
-  const image = pickWowAvatarImageUrl(
-    character.avatarUrl,
-    character.renderUrl,
-    character.mediaUrl,
-  );
-  const realmLabel = character.realmName || character.realmSlug || "Реалм —";
-  const extraMeta = characterAuxMeta(character);
-
-  return (
-    <li className={`profile-character-candidate${character.verifiedGuild ? " is-guild" : " is-other"}`}>
-      <label className="profile-candidate-select" title={`Позначити ${character.name}`}>
-        <input
-          data-profile-candidate-checkbox="true"
-          form={bulkFormId}
-          type="checkbox"
-          name="characterKeys"
-          value={character.key}
-          aria-label={`Вибрати ${character.name}`}
-        />
-        <span aria-hidden="true" />
-      </label>
-      <span className="profile-character-candidate__avatar">
-        {image ? <img src={image} alt="" loading="lazy" referrerPolicy="no-referrer" /> : character.name.charAt(0)}
-      </span>
-      <span className="profile-character-candidate__body">
-        <strong>
-          {character.name} <em className="profile-character-candidate__kind">{kindLabel}</em>
-        </strong>
-        <small>
-          {realmLabel} • {character.activeSpecName ? `${character.activeSpecName} ` : ""}
-          {character.className || "Клас невідомий"} • {wowRoleLabel(character.activeSpecRole)}
-          {typeof character.itemLevel === "number" ? ` • ilvl ${character.itemLevel}` : ""}
-          {typeof character.level === "number" ? ` • lvl ${character.level}` : ""}
-        </small>
-        {extraMeta.length ? <small>{extraMeta.join(" • ")}</small> : null}
-      </span>
-    </li>
-  );
-}
-
 function RegistrationCharactersBlock({
   profile,
   returnTo,
@@ -890,7 +830,7 @@ function RegistrationCharactersBlock({
                 </div>
                 <ul className="profile-character-candidates">
                   {availableGuildCandidates.map((character) => (
-                    <RegistrationCandidateRow key={character.key} character={character} bulkFormId={bulkFormId} />
+                    <ProfileCandidateCharacterRow key={character.key} character={character} bulkFormId={bulkFormId} />
                   ))}
                 </ul>
               </section>
@@ -903,7 +843,7 @@ function RegistrationCharactersBlock({
                 </div>
                 <ul className="profile-character-candidates">
                   {availableOtherCandidates.map((character) => (
-                    <RegistrationCandidateRow key={character.key} character={character} bulkFormId={bulkFormId} />
+                    <ProfileCandidateCharacterRow key={character.key} character={character} bulkFormId={bulkFormId} />
                   ))}
                 </ul>
               </section>
@@ -1141,6 +1081,43 @@ function PublicRulesAction({
   );
 }
 
+
+function RulesCompletionState({
+  publicMode,
+  discordLabel,
+  roleLabels,
+}: {
+  publicMode: boolean;
+  discordLabel: string;
+  roleLabels: string;
+}) {
+  return (
+    <section
+      className="rules-onboarding-complete"
+      role="status"
+      aria-label="Правила прийнято"
+    >
+      <span className="rules-onboarding-complete__icon" aria-hidden="true">✓</span>
+      <span className="rules-onboarding-complete__copy">
+        <span className="eyebrow">Готово</span>
+        <strong>Правила вже прийнято</strong>
+        <small>
+          Discord-роль уже видана користувачу {discordLabel}. Повторно підтверджувати
+          це саме посилання не потрібно.
+        </small>
+        {roleLabels ? (
+          <span className="rules-onboarding-complete__meta">
+            <b>Роль:</b> {roleLabels}
+          </span>
+        ) : null}
+      </span>
+      <a className="btn primary rules-onboarding-complete__action" href={publicMode ? "/login?next=%2Fprofile" : "/profile"}>
+        {publicMode ? "Налаштувати профіль" : "Відкрити профіль"}
+      </a>
+    </section>
+  );
+}
+
 export default async function RulesAcceptPage({
   searchParams,
 }: {
@@ -1153,11 +1130,10 @@ export default async function RulesAcceptPage({
   const parsedToken = parseRulesRoleTokenDetails(token);
   const roleIds = parsedToken.roleIds;
   const publicDiscordUserId = parsedToken.discordUserId;
-  const notice = statusNotice(
-    String(
-      Array.isArray(params.status) ? params.status[0] : params.status || "",
-    ),
+  const completionStatus = String(
+    Array.isArray(params.status) ? params.status[0] : params.status || "",
   );
+  const notice = statusNotice(completionStatus);
   const actionNotice = profileActionNotice(
     String(
       Array.isArray(params.characterStatus)
@@ -1223,6 +1199,30 @@ export default async function RulesAcceptPage({
     authenticatedDiscordUserId &&
       discordGuild?.ownerId === authenticatedDiscordUserId,
   );
+  const targetHasRequiredRoles = Boolean(
+    roleIds.length &&
+      discordMemberLookup.member &&
+      roleIds.every((roleId) => discordMemberLookup.member?.roleIds.includes(roleId)),
+  );
+  const completionCanBeTrusted =
+    targetHasRequiredRoles || discordMemberLookup.state === "unavailable";
+  const publicAcceptanceCompleted = Boolean(
+    completionStatus === "completed_public" &&
+      !isDiscordAuthorized &&
+      publicDiscordUserId &&
+      completionCanBeTrusted,
+  );
+  const authenticatedAcceptanceCompleted = Boolean(
+    isDiscordAuthorized &&
+      new Set([
+        "completed",
+        "completed_owner_nickname_manual",
+        "completed_nickname_manual",
+      ]).has(completionStatus) &&
+      completionCanBeTrusted,
+  );
+  const acceptanceCompleted =
+    publicAcceptanceCompleted || authenticatedAcceptanceCompleted;
   const rulesTargetValid = Boolean(
     roleIds.length &&
       discordConfigured &&
@@ -1253,10 +1253,14 @@ export default async function RulesAcceptPage({
       ? "підписаний Discord token"
       : "немає підтверджених даних";
   const canAcceptPublicly = Boolean(
-    !isDiscordAuthorized &&
+    !acceptanceCompleted &&
+      !isDiscordAuthorized &&
       publicDiscordUserId &&
       rulesTargetValid,
   );
+  const acceptedRoleLabels = roleIds
+    .map((roleId) => roleName(roleId, roles))
+    .join(", ");
   const canSyncDiscordNickname = Boolean(
     profile?.provider === "discord" &&
       /^\d{16,25}$/.test(profile.providerUserId) &&
@@ -1355,15 +1359,27 @@ export default async function RulesAcceptPage({
               <div className="profile-card-head profile-card-head--inline">
                 <div>
                   <span className="eyebrow">Discord-підтвердження</span>
-                  <h2>{canAcceptPublicly ? "Все готово до прийняття" : "Оберіть правильний шлях"}</h2>
+                  <h2>
+                    {publicAcceptanceCompleted
+                      ? "Правила вже прийнято"
+                      : canAcceptPublicly
+                        ? "Все готово до прийняття"
+                        : "Оберіть правильний шлях"}
+                  </h2>
                   <p className="profile-card-lead">
-                    {canAcceptPublicly
-                      ? "Discord уже підтвердив користувача через персональну кнопку. Додаткова OAuth-авторизація для самої видачі ролі не потрібна."
-                      : "Без персонального Discord-підтвердження сайт не вгадує, кому видавати роль. Увійти через Discord можна окремо — для профілю, Battle.net і налаштування ніку."}
+                    {publicAcceptanceCompleted
+                      ? "Роль уже видана. Повторне підтвердження цього самого персонального посилання не потрібне."
+                      : canAcceptPublicly
+                        ? "Discord уже підтвердив користувача через персональну кнопку. Додаткова OAuth-авторизація для самої видачі ролі не потрібна."
+                        : "Без персонального Discord-підтвердження сайт не вгадує, кому видавати роль. Увійти через Discord можна окремо — для профілю, Battle.net і налаштування ніку."}
                   </p>
                 </div>
-                <span className={`profile-count-pill${canAcceptPublicly ? " is-ok" : " is-warning"}`}>
-                  {canAcceptPublicly ? "Підтверджено" : "Потрібна дія"}
+                <span className={`profile-count-pill${publicAcceptanceCompleted || canAcceptPublicly ? " is-ok" : " is-warning"}`}>
+                  {publicAcceptanceCompleted
+                    ? "Завершено"
+                    : canAcceptPublicly
+                      ? "Підтверджено"
+                      : "Потрібна дія"}
                 </span>
               </div>
 
@@ -1421,8 +1437,8 @@ export default async function RulesAcceptPage({
 
               {roleIds.length ? (
                 <div className="rules-onboarding-role-box">
-                  <strong>Що буде видано</strong>
-                  <span>{roleIds.map((roleId) => roleName(roleId, roles)).join(", ")}</span>
+                  <strong>{publicAcceptanceCompleted ? "Видано" : "Що буде видано"}</strong>
+                  <span>{acceptedRoleLabels}</span>
                   <small>
                     Discord-користувач: {publicDiscordLabel}. Джерело: {publicDiscordSource}.
                     {roleLookup.ok
@@ -1432,7 +1448,13 @@ export default async function RulesAcceptPage({
                 </div>
               ) : null}
 
-              {roleIds.length ? (
+              {publicAcceptanceCompleted ? (
+                <RulesCompletionState
+                  publicMode={true}
+                  discordLabel={publicDiscordLabel}
+                  roleLabels={acceptedRoleLabels}
+                />
+              ) : roleIds.length ? (
                 <PublicRulesAction
                   token={token}
                   canAcceptPublicly={canAcceptPublicly}
@@ -1460,7 +1482,7 @@ export default async function RulesAcceptPage({
                 </section>
               )}
 
-              {canAcceptPublicly ? <RegistrationLockedPanel loginHref={loginHref} /> : null}
+              {canAcceptPublicly && !publicAcceptanceCompleted ? <RegistrationLockedPanel loginHref={loginHref} /> : null}
             </>
           ) : profile ? (
             <>
@@ -1565,7 +1587,7 @@ export default async function RulesAcceptPage({
               {roleIds.length ? (
                 <div className="rules-onboarding-role-box">
                   <strong>Роль після завершення</strong>
-                  <span>{roleIds.map((roleId) => roleName(roleId, roles)).join(", ")}</span>
+                  <span>{acceptedRoleLabels}</span>
                   <small>
                     <span id="rules-complete-help">
                       Роль видається тільки цьому Discord-користувачу після фінального підтвердження. Нік формується за шаблоном: {nicknamePolicy.template}.
@@ -1574,6 +1596,13 @@ export default async function RulesAcceptPage({
                 </div>
               ) : null}
 
+              {authenticatedAcceptanceCompleted ? (
+                <RulesCompletionState
+                  publicMode={false}
+                  discordLabel={profile.displayName || profile.providerUserId}
+                  roleLabels={acceptedRoleLabels}
+                />
+              ) : (
               <section
                 className={`rules-onboarding-final-action${status.complete && rulesTargetValid ? " is-ready" : " is-pending"}`}
                 aria-label="Фінальна дія реєстрації"
@@ -1623,6 +1652,7 @@ export default async function RulesAcceptPage({
                   </form>
                 ) : null}
               </section>
+              )}
             </>
           ) : (
             <div className="login-alert profile-storage-warning" role="status">

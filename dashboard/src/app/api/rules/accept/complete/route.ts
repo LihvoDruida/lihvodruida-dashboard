@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { appBaseUrl } from "@/lib/apiRoute";
 import { getSession } from "@/lib/auth";
 import {
   addGuildMemberRoles,
@@ -35,7 +36,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 function redirectToToken(request: NextRequest, token: string, status: string) {
-  const url = new URL("/rules/accept", request.url);
+  const url = new URL("/rules/accept", appBaseUrl(request));
   if (token) url.searchParams.set("rt", token);
   url.searchParams.set("status", status);
   const response = NextResponse.redirect(url, 303);
@@ -48,9 +49,10 @@ function rulesTokenFromReferrer(request: NextRequest) {
     request.headers.get("referer") || request.headers.get("referrer") || "";
   if (!referrer) return "";
   try {
-    const url = new URL(referrer, request.url);
+    const url = new URL(referrer, appBaseUrl(request));
+    const publicOrigin = new URL(appBaseUrl(request)).origin;
     if (
-      url.origin !== new URL(request.url).origin ||
+      url.origin !== publicOrigin ||
       url.pathname !== "/rules/accept"
     )
       return "";

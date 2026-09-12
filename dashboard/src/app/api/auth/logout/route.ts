@@ -7,6 +7,7 @@ import {
   SESSION_COOKIE,
 } from "@/lib/session";
 import { logDashboardEvent, noStoreHeaders, applyNoStoreHeaders } from "@/lib/security";
+import { appBaseUrl } from "@/lib/apiRoute";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
   // same-origin button submits.
   logDashboardEvent("info", "auth.logout.post", request);
   await clearSession();
-  return logoutRedirect(new URL("/login", request.url).toString());
+  return logoutRedirect(new URL("/login?loggedOut=1", appBaseUrl(request)).toString());
 }
 
 export async function GET(request: NextRequest) {
@@ -73,7 +74,7 @@ export async function GET(request: NextRequest) {
     logDashboardEvent("warn", "auth.logout.get_fallback", request);
     await clearSession();
     return logoutRedirect(
-      new URL("/login?loggedOut=1", request.url).toString(),
+      new URL("/login?loggedOut=1", appBaseUrl(request)).toString(),
     );
   }
 

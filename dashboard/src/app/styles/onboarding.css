@@ -1271,12 +1271,10 @@
   box-shadow: var(--shadow-sm);
 }
 
-@media (min-width: 1120px) {
-  .rules-onboarding-page .profile-character-list--single-flow,
-  .rules-onboarding-page .profile-character-candidates {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
+/* Картки персонажів і Battle.net-кандидатів тут навмисно НЕ мають
+   окремої rules-розкладки. /rules/accept використовує той самий компонент
+   і ті самі profile.css/desktop.css правила, що й /profile, щоб дизайн,
+   кількість колонок, висота арту та адаптивність не розходилися. */
 
 @media (max-width: 760px) {
   .rules-onboarding-page {
@@ -1399,5 +1397,78 @@
   .profile-nickname-character-option:has(input:checked) {
     border-color: color-mix(in srgb, var(--c-accent-400) 58%, var(--border-strong));
     background: var(--accent-soft);
+  }
+}
+
+/* =========================================================
+   RULES ACCEPT — завершений стан
+
+   Після успішної public/authenticated видачі ролі сторінка більше не
+   показує ту саму destructive/submit дію вдруге. Замість неї — короткий
+   підтверджений результат і наступний безпечний крок.
+   ========================================================= */
+.rules-onboarding-complete {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border: 1px solid var(--tint-success-border);
+  border-left: 3px solid var(--c-success);
+  border-radius: var(--radius-md);
+  background: var(--tint-success-bg);
+  min-width: 0;
+}
+
+.rules-onboarding-complete__icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid color-mix(in srgb, var(--c-success) 38%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--c-success) 12%, transparent);
+  color: var(--c-success);
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.rules-onboarding-complete__copy {
+  display: grid;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.rules-onboarding-complete__copy > strong {
+  color: var(--text-strong);
+  font-size: 1rem;
+}
+
+.rules-onboarding-complete__copy > small,
+.rules-onboarding-complete__meta {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.rules-onboarding-complete__meta b {
+  color: var(--text-soft);
+}
+
+.rules-onboarding-complete__action {
+  min-width: 190px;
+}
+
+@media (max-width: 760px) {
+  .rules-onboarding-complete {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .rules-onboarding-complete__action {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
   }
 }

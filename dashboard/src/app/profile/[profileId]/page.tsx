@@ -3,12 +3,10 @@ import DashboardIdentity from "@/components/DashboardIdentity";
 import LogoutButton from "@/components/LogoutButton";
 import ProfileCandidateBulkActions from "@/components/ProfileCandidateBulkActions";
 import ProfileCandidateExpiryTimer from "@/components/ProfileCandidateExpiryTimer";
+import ProfileCandidateCharacterRow from "@/components/ProfileCandidateCharacterRow";
 import ProfileCharactersLiveSection from "@/components/ProfileCharactersLiveSection";
 import { getEnabledBattleNetRegions } from "@/lib/battlenet";
-import {
-  normalizeCharacterKey,
-  pickWowAvatarImageUrl,
-} from "@/lib/wowCharacters";
+import { normalizeCharacterKey } from "@/lib/wowCharacters";
 import {
   listProfileRaidSignups,
   raidDisplayCapacity,
@@ -98,30 +96,6 @@ function battleNetActionCopy(
     title: "Підключити Battle.net",
     hint: "Знайде гільдійних та інших персонажів Battle.net",
   };
-}
-
-function characterAvatarUrl(
-  character?: Pick<
-    ProfileCharacter,
-    "renderUrl" | "avatarUrl" | "mediaUrl"
-  > | null,
-) {
-  if (!character) return null;
-  return pickWowAvatarImageUrl(
-    character.avatarUrl,
-    character.renderUrl,
-    character.mediaUrl,
-  );
-}
-
-function characterAuxMeta(
-  character: Pick<ProfileCharacter, "level" | "raceName" | "faction">,
-) {
-  return [
-    typeof character.level === "number" ? `Lvl ${character.level}` : null,
-    character.raceName || null,
-    character.faction || null,
-  ].filter(Boolean);
 }
 
 function raidSignupStatusLabel(
@@ -322,65 +296,6 @@ function ProfileRaidSignups({ items }: { items: ProfileRaidSignup[] }) {
         </div>
       )}
     </article>
-  );
-}
-
-function CandidateRow({
-  character,
-  bulkFormId,
-}: {
-  character: ProfileCharacter;
-  bulkFormId: string;
-}) {
-  const kindLabel = character.verifiedGuild ? "🌿 Гільдійний" : "🤝 Інший";
-  const image = characterAvatarUrl(character);
-  const realmLabel = character.realmName || character.realmSlug || "Реалм —";
-  const extraMeta = characterAuxMeta(character);
-  return (
-    <li
-      className={`profile-character-candidate${character.verifiedGuild ? " is-guild" : " is-other"}`}
-    >
-      <label
-        className="profile-candidate-select"
-        title={`Позначити ${character.name}`}
-      >
-        <input
-          data-profile-candidate-checkbox="true"
-          form={bulkFormId}
-          type="checkbox"
-          name="characterKeys"
-          value={character.key}
-          aria-label={`Вибрати ${character.name}`}
-        />
-        <span aria-hidden="true" />
-      </label>
-      <span className="profile-character-candidate__avatar">
-        {image ? (
-          <img src={image} alt="" loading="lazy" referrerPolicy="no-referrer" />
-        ) : (
-          character.name.charAt(0)
-        )}
-      </span>
-      <span className="profile-character-candidate__body">
-        <strong>
-          {character.name}{" "}
-          <em className="profile-character-candidate__kind">{kindLabel}</em>
-        </strong>
-        <small>
-          {realmLabel} •{" "}
-          {character.activeSpecName ? `${character.activeSpecName} ` : ""}
-          {character.className || "Клас невідомий"} •{" "}
-          {wowRoleLabel(character.activeSpecRole)}
-          {typeof character.itemLevel === "number"
-            ? ` • ilvl ${character.itemLevel}`
-            : ""}
-          {typeof character.level === "number"
-            ? ` • lvl ${character.level}`
-            : ""}
-        </small>
-        {extraMeta.length ? <small>{extraMeta.join(" • ")}</small> : null}
-      </span>
-    </li>
   );
 }
 
@@ -906,7 +821,7 @@ export default async function ProfilePage({
                           </div>
                           <ul className="profile-character-candidates">
                             {availableGuildCandidates.map((character) => (
-                              <CandidateRow
+                              <ProfileCandidateCharacterRow
                                 key={character.key}
                                 character={character}
                                 bulkFormId={bulkFormId}
@@ -926,7 +841,7 @@ export default async function ProfilePage({
                           </div>
                           <ul className="profile-character-candidates">
                             {availableOtherCandidates.map((character) => (
-                              <CandidateRow
+                              <ProfileCandidateCharacterRow
                                 key={character.key}
                                 character={character}
                                 bulkFormId={bulkFormId}
