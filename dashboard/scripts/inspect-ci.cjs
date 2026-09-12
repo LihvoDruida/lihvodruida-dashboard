@@ -178,7 +178,11 @@ if (exists('src/components/GuildRosterExplorer.tsx')) {
 
 if (exists('src/lib/guildRoster.ts')) {
   const guildRosterText = read('src/lib/guildRoster.ts');
-  assert(guildRosterText.includes('mythic_plus_scores_by_season:current,raid_progression'), 'Guild roster Raider.IO requests must include raid_progression.');
+  assert(guildRosterText.includes('mythic_plus_scores_by_season:current,raid_progression'), 'Guild roster Raider.IO requests must include current M+ scores and raid_progression.');
+  assert(!guildRosterText.includes('gear,mythic_plus_scores_by_season:current,raid_progression'), 'Guild roster must not request Raider.IO gear: Battle.net is authoritative for item level/character data.');
+  assert(guildRosterText.includes('season.scores'), 'Guild roster must read Raider.IO M+ values from mythic_plus_scores_by_season[].scores.');
+  assert(guildRosterText.includes('scoreFromCurrentSeason'), 'Guild roster must keep scores-first Raider.IO parsing with segments fallback.');
+  assert(guildRosterText.includes('error instanceof ApiHttpError && error.status === 404'), 'Only Raider.IO 404 may become an empty character result; transport/auth/server errors must stay visible and retryable.');
   assert(!guildRosterText.includes('mythic_plus_scores_by_season:current,raid_progression:current-expansion'), 'Character raid progression must use Raider.IO field raid_progression without an unsupported suffix.');
 }
 
@@ -267,6 +271,8 @@ if (exists('src/proxy.ts')) {
   const proxyText = read('src/proxy.ts');
   assert(proxyText.includes('pathname === "/api/internal/health"'), 'Internal health route must be allowed through bearer-only internal host handling.');
   assert(proxyText.includes('pathname === "/api/discord/interactions"'), 'Bot-forwarded Discord interactions must be allowed on the internal dashboard host.');
+  assert(proxyText.includes('pathname === "/api/guild/sync"'), 'Guild auto-sync must be allowed through bearer-only internal host handling.');
+  assert(proxyText.includes('DASHBOARD_INTERNAL_HOSTS || "dashboard,dashboard:3000"'), 'Internal Docker host dashboard:3000 must stay allowlisted only for bearer-authenticated internal APIs.');
 }
 if (exists('src/lib/structuredLogs.ts')) {
   const logText = read('src/lib/structuredLogs.ts');

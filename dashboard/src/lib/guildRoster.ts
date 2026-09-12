@@ -339,13 +339,39 @@ function scoreColorFromSegments(
   return /^#[0-9a-f]{6}$/i.test(color) ? color : undefined;
 }
 
-function extractCurrentSeasonSegments(
+function extractCurrentSeasonScoreData(
   payload: RaiderIoCharacterPayload | null | undefined,
 ) {
   const seasons = Array.isArray(payload?.mythic_plus_scores_by_season)
-    ? payload?.mythic_plus_scores_by_season
+    ? payload.mythic_plus_scores_by_season
     : [];
-  return (seasons[0]?.segments || {}) as Record<string, any>;
+  const season = seasons[0] && typeof seasons[0] === "object"
+    ? seasons[0] as Record<string, any>
+    : {};
+  return {
+    scores: season.scores && typeof season.scores === "object"
+      ? season.scores as Record<string, any>
+      : {},
+    segments: season.segments && typeof season.segments === "object"
+      ? season.segments as Record<string, any>
+      : {},
+  };
+}
+
+function scoreFromCurrentSeason(
+  payload: RaiderIoCharacterPayload | null | undefined,
+  segment: GuildScoreSegment,
+) {
+  const { scores, segments } = extractCurrentSeasonScoreData(payload);
+  const direct = scores?.[segment] ?? scores?.[segment.toUpperCase()];
+  if (direct && typeof direct === "object") {
+    const nested = parsePositiveNumber(direct.score);
+    if (nested > 0) return nested;
+  } else {
+    const numeric = parsePositiveNumber(direct);
+    if (numeric > 0) return numeric;
+  }
+  return scoreFromSegments(segments, segment);
 }
 
 function characterKey(
@@ -602,7 +628,7 @@ async function fetchRaiderCharacter(
   url.searchParams.set("region", region);
   url.searchParams.set("realm", realmSlug);
   url.searchParams.set("name", name);
-  url.searchParams.set("fields", "gear,mythic_plus_scores_by_season:current,raid_progression");
+  url.searchParams.set("fields", "mythic_plus_scores_by_season:current,raid_progression");
   const key = raiderIoAccessKey();
   if (key) url.searchParams.set("access_key", key);
 
@@ -614,7 +640,12 @@ async function fetchRaiderCharacter(
     )) as RaiderIoCharacterPayload;
   } catch (error) {
     if (isRaiderIoRateLimitError(error)) throw error;
-    return null;
+    // A genuine 404 means Raider.IO has no indexed profile for this exact
+    // region/realm/name. Other failures (401/403/5xx/network/timeout) must not
+    // be converted into a successful empty snapshot, otherwise the member is
+    // incorrectly marked fresh for the full RIO TTL and we silently lose data.
+    if (error instanceof ApiHttpError && error.status === 404) return null;
+    throw error;
   }
 }
 
@@ -812,10 +843,13 @@ type GuildRosterApiBatchProgress = {
 function buildScores(
   raider: RaiderIoCharacterPayload | null,
 ): Record<GuildScoreSegment, number> {
-  const segments = extractCurrentSeasonSegments(raider);
   return SEGMENTS.reduce(
     (acc, segment) => {
-      acc[segment] = scoreFromSegments(segments, segment);
+      // Raider.IO exposes the numeric score in season.scores. Some responses
+      // also expose colour-aware segment objects in season.segments. Scores
+      // are authoritative for the value; segments are a backwards-compatible
+      // fallback only.
+      acc[segment] = scoreFromCurrentSeason(raider, segment);
       return acc;
     },
     {} as Record<GuildScoreSegment, number>,
@@ -825,7 +859,7 @@ function buildScores(
 function buildScoreColors(
   raider: RaiderIoCharacterPayload | null,
 ): Partial<Record<GuildScoreSegment, string>> {
-  const segments = extractCurrentSeasonSegments(raider);
+  const { segments } = extractCurrentSeasonScoreData(raider);
   return SEGMENTS.reduce(
     (acc, segment) => {
       const color = scoreColorFromSegments(segments, segment);
@@ -1010,28 +1044,48 @@ function applyBattleNetCharacterSnapshot(
   };
 }
 
+function raiderIoCharacterProfileUrl(member: GuildRosterMember) {
+  const region = cleanText(member.region).toLowerCase();
+  const realm = cleanText(member.realmSlug).toLowerCase();
+  const name = cleanText(member.name);
+  if (!region || !realm || !name) return null;
+  return `https://raider.io/characters/${encodeURIComponent(region)}/${encodeURIComponent(realm)}/${encodeURIComponent(name)}`;
+}
+
 function applyRaiderIoPayload(
   member: GuildRosterMember,
   raider: RaiderIoCharacterPayload | null,
   updatedAt: string,
 ): GuildRosterMember {
+  const cleanMember = withoutExternalFailure(member, "raiderIo");
+
   if (!raider) {
+    // 404 is a valid Raider.IO result: this exact character is not indexed.
+    // Clear a stale RIO snapshot instead of pretending the previous score is
+    // still current. Core character data remains untouched because Blizzard is
+    // authoritative for it.
     return {
-      ...member,
+      ...cleanMember,
+      profileUrl: null,
+      scores: buildScores(null),
+      scoreColors: buildScoreColors(null),
+      hasRaiderIo: false,
+      raidProgression: [],
       raiderIoUpdatedAt: updatedAt,
     };
   }
 
   const scores = buildScores(raider);
   const raidProgression = normalizeRaidProgression(raider.raid_progression);
-  const profileUrl = cleanText(raider.profile_url) || member.profileUrl || null;
-
-  const cleanMember = withoutExternalFailure(member, "raiderIo");
+  const profileUrl =
+    cleanText(raider.profile_url) || raiderIoCharacterProfileUrl(member);
 
   return {
     ...cleanMember,
-    // Raider.IO is intentionally limited to Mythic+ score and Raider.IO link.
-    // Battle.net remains the source of truth for class/spec/role/avatar/ilvl.
+    // IMPORTANT: Raider.IO may return class/spec/role/gear too, but these are
+    // deliberately ignored here. Battle.net is the authoritative source for
+    // identity, class/spec/role, avatar, guild rank and item level. Raider.IO
+    // only enriches the member with M+ scores, raid progress and its profile URL.
     profileUrl,
     scores,
     scoreColors: buildScoreColors(raider),
@@ -2299,10 +2353,10 @@ async function enrichGuildMembersWithBattleNetStep(
       checked += 1;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error || "unknown");
-      updates.set(member.key, {
-        ...withExternalFailure(member, "battleNet", message, updatedAt),
-        battleNetUpdatedAt: updatedAt,
-      });
+      updates.set(
+        member.key,
+        withExternalFailure(member, "battleNet", message, updatedAt),
+      );
       changedMemberKeys.add(member.key);
       checked += 1;
       if (
@@ -2420,10 +2474,10 @@ async function enrichGuildMembersWithRaiderIoStep(
       }
 
       const message = error instanceof Error ? error.message : String(error || "unknown");
-      updates.set(member.key, {
-        ...withExternalFailure(member, "raiderIo", message, updatedAt),
-        raiderIoUpdatedAt: updatedAt,
-      });
+      updates.set(
+        member.key,
+        withExternalFailure(member, "raiderIo", message, updatedAt),
+      );
       changedMemberKeys.add(member.key);
       checked += 1;
       if (
