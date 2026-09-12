@@ -6,6 +6,8 @@ import {
   isRaidPollPromptKind,
   validateInteractionComponents,
   INTERACTION_DOMAINS,
+  ROSTER_CUSTOM_ID_PATTERN,
+  RULES_CUSTOM_ID_PATTERN,
 } from "@mistblossom/discord-contract";
 
 const POLL = "abc123def456ghi789";
@@ -42,13 +44,63 @@ test("сміття не проходить", () => {
   assert.equal(decodeRaidPollCustomId(`evil:poll_role:${POLL}`, ["tank"]), null);
 });
 
-test("домени визначаються правильно", () => {
+test("домени визначаються за реальними custom_id, які будує dashboard", () => {
   assert.equal(interactionDomainFor(`mbv1:poll_role:${POLL}`), INTERACTION_DOMAINS.RAID_POLL);
   assert.equal(interactionDomainFor(`mbv1:raid:${POLL}:going`), INTERACTION_DOMAINS.RAID);
   assert.equal(interactionDomainFor(`mbv1:rss:${POLL}:going:key:dps`), INTERACTION_DOMAINS.RAID);
-  assert.equal(interactionDomainFor(`mbv1:roster:${POLL}:publish`), INTERACTION_DOMAINS.ROSTER);
-  assert.equal(interactionDomainFor("mbv1:rules:accept"), INTERACTION_DOMAINS.RULES);
+
+  // rosterFormation.ts -> mbv1:roster_<action>:...
+  assert.equal(interactionDomainFor(`mbv1:roster_pick:${POLL}`), INTERACTION_DOMAINS.ROSTER);
+  assert.equal(interactionDomainFor(`mbv1:roster_class:${POLL}`), INTERACTION_DOMAINS.ROSTER);
+  assert.equal(interactionDomainFor(`mbv1:roster_spec:${POLL}:druid`), INTERACTION_DOMAINS.ROSTER);
+  assert.equal(interactionDomainFor(`mbv1:roster_leave:${POLL}`), INTERACTION_DOMAINS.ROSTER);
+
+  // discordAdmin.ts uses compact rules IDs to stay under Discord's 100-char cap.
+  assert.equal(interactionDomainFor("mbv1:a:abc.123"), INTERACTION_DOMAINS.RULES);
+  assert.equal(interactionDomainFor("mbv1:c:a:abc.123"), INTERACTION_DOMAINS.RULES);
+  assert.equal(interactionDomainFor("mbv1:d"), INTERACTION_DOMAINS.RULES);
+  assert.equal(interactionDomainFor("mbv1:c:d"), INTERACTION_DOMAINS.RULES);
+  assert.equal(interactionDomainFor("mbv1:r:s"), INTERACTION_DOMAINS.RULES);
+  assert.equal(interactionDomainFor("mbv1:r:c:s"), INTERACTION_DOMAINS.RULES);
+
+  assert.equal(interactionDomainFor("mbv1:danger"), null);
   assert.equal(interactionDomainFor("something:else"), null);
+});
+
+test("контракт приймає фактичні roster/rules custom_id", () => {
+  for (const value of [
+    `mbv1:roster_pick:${POLL}`,
+    `mbv1:roster_class:${POLL}`,
+    `mbv1:roster_spec:${POLL}:druid`,
+    `mbv1:roster_leave:${POLL}`,
+  ]) {
+    assert.match(value, ROSTER_CUSTOM_ID_PATTERN);
+  }
+  for (const value of [
+    "mbv1:a:abc.123",
+    "mbv1:c:a:abc.123",
+    "mbv1:d",
+    "mbv1:c:d",
+    "mbv1:r:s",
+    "mbv1:r:c:s",
+  ]) {
+    assert.match(value, RULES_CUSTOM_ID_PATTERN);
+  }
+});
+
+test("усі поточні raid custom_id доходять до raid domain", () => {
+  for (const value of [
+    `mbv1:raid:${POLL}:going`,
+    `mbv1:rsc:${POLL}:going:dps`,
+    `mbv1:rsr:${POLL}:going:char_key`,
+    `mbv1:rss:${POLL}:going:char_key:dps`,
+    `mbv1:rmc:${POLL}:going`,
+    `mbv1:rms:${POLL}:going:druid`,
+    `mbv1:rc:${POLL}:going`,
+    `mbv1:rr:${POLL}:going:char_key`,
+  ]) {
+    assert.equal(interactionDomainFor(value), INTERACTION_DOMAINS.RAID, value);
+  }
 });
 
 test("дублікат custom_id у наборі компонентів ловиться", () => {

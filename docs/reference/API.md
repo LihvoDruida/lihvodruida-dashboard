@@ -19,7 +19,7 @@ http://localhost:3000
 - Для чутливих дій є rate limit.
 - Для великих form/json запитів є body size limit.
 - Відповіді API, які не мають кешуватися, повертають `no-store` headers.
-- Worker-to-dashboard endpoints використовують Bearer token.
+- Bot-to-dashboard та інші внутрішні service endpoints використовують Bearer token.
 
 ## Авторизація
 
@@ -443,7 +443,7 @@ Authorization: Bearer <INTERNAL_PROFILE_LOOKUP_TOKEN>
 **Headers:**
 
 ```http
-Authorization: Bearer <INTERNAL_PROFILE_LOOKUP_TOKEN або DISCORD_RULES_STATS_TOKEN або WORKER_STATS_TOKEN>
+Authorization: Bearer <INTERNAL_PROFILE_LOOKUP_TOKEN>
 ```
 
 **Body:** JSON.

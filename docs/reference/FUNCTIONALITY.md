@@ -336,7 +336,7 @@ Battle.net OAuth використовується для отримання пе
 - кнопки accept/decline;
 - видачу ролей після прийняття;
 - kick після відмови;
-- статистику правил через Worker endpoint.
+- статистику правил через локальний dashboard/bot flow.
 
 ### Dynamic preview
 

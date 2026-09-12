@@ -3,6 +3,13 @@ import { verifyDiscordSignature } from "./signature.mjs";
 import { completeInteraction } from "./dashboardClient.mjs";
 import { logger } from "./logger.mjs";
 import {
+  authorizeRecruitmentControl,
+  handleRecruitmentGatewayControl,
+  shouldAutoStartRecruitmentGateway,
+  startRecruitmentGateway,
+  shutdownRecruitmentGateway,
+} from "./recruitmentGateway.mjs";
+import {
   INTERACTION_DOMAINS,
   interactionDomainFor,
   isRaidPollPromptKind,
@@ -20,8 +27,9 @@ import {
  *
  * Бот НЕ знає бізнес-логіки. Його робота: перевірити підпис, зрозуміти домен
  * дії, миттєво відповісти Discord «прийнято» і переслати запит у панель.
- * Уся логіка — далі, у панелі. Тому тут немає ні бази, ні Discord-токена
- * для запису: тільки публічний ключ для перевірки підпису.
+ * Бізнес-логіка лишається в панелі. Бот тримає лише транспорт: interaction ACK,
+ * Discord Gateway для нових повідомлень рекрутингу та relay у dashboard. Бази
+ * даних у контейнері бота немає.
  */
 
 const PORT = Number(process.env.PORT || 8080);
@@ -152,6 +160,11 @@ const HEALTH_PATHS = new Set(["/health", "/healthz"]);
  * попереду немає.
  */
 const INTERACTION_PATHS = ["/discord/interactions", "/interactions"];
+const RECRUITMENT_CONTROL_PATHS = new Set(["/discord/recruitment-gateway", "/recruitment-gateway"]);
+
+function requestUrl(request) {
+  return new URL(String(request.url || "/"), `http://${String(request.headers.host || "127.0.0.1")}`);
+}
 
 function requestPath(request) {
   return String(request.url || "/").split("?")[0];
@@ -159,6 +172,30 @@ function requestPath(request) {
 
 const server = createServer(async (request, response) => {
   const path = requestPath(request);
+
+  if (RECRUITMENT_CONTROL_PATHS.has(path)) {
+    if (request.method !== "GET" && request.method !== "POST") {
+      return json(response, 405, { ok: false, error: "method_not_allowed" });
+    }
+    if (!authorizeRecruitmentControl(request)) {
+      logger.warn("Відхилено неавторизований Recruitment Gateway control");
+      return json(response, 401, { ok: false, error: "unauthorized" });
+    }
+    const action = requestUrl(request).searchParams.get("action") || "status";
+    try {
+      const result = await handleRecruitmentGatewayControl(action);
+      return json(response, result?.ok === false ? 400 : 200, result);
+    } catch (error) {
+      logger.error("Збій Recruitment Gateway control", {
+        action,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return json(response, 500, {
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
 
   if (request.method === "GET" && HEALTH_PATHS.has(path)) {
     return json(response, 200, {
@@ -214,12 +251,22 @@ const server = createServer(async (request, response) => {
 
 server.listen(PORT, HOST, () => {
   logger.info("Бот слухає", { host: HOST, port: PORT });
+  if (shouldAutoStartRecruitmentGateway()) {
+    startRecruitmentGateway().catch((error) => {
+      logger.error("Recruitment Gateway не стартував", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    });
+  } else {
+    logger.info("Recruitment Gateway auto-start вимкнений або немає DISCORD_BOT_TOKEN");
+  }
 });
 
 // Без цього Docker чекав би 10 секунд таймауту на кожен рестарт.
 for (const signal of ["SIGTERM", "SIGINT"]) {
   process.on(signal, () => {
     logger.info("Зупинка", { signal });
+    shutdownRecruitmentGateway();
     server.close(() => process.exit(0));
     setTimeout(() => process.exit(0), 5000).unref();
   });

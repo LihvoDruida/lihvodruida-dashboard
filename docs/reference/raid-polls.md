@@ -8,7 +8,7 @@
 
 1. Офіцер відкриває `/discord` або `/polls/new`. Основна форма створення інтегрована в Discord Hub як блок `Створення рейд-голосування`.
 2. Сайт створює документ у колекції `dashboardRaidPolls`.
-3. Сайт публікує Discord embed через наявний Discord Admin/Worker relay.
+3. Сайт публікує Discord embed через наявний Discord Admin REST API.
 4. Учасники голосують у Discord через приватний (ephemeral) пульт. Публічне повідомлення має єдину кнопку `mbv1:poll_vote_prompt:{pollId}`, яка відкриває пульт із рядками:
    - `mbv1:poll_role:{pollId}` — роль у рейді: танк / хіл / дд.
    - `mbv1:poll_quick:{pollId}` — швидке заповнення всіх днів одним значенням.

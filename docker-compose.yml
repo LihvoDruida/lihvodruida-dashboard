@@ -127,9 +127,9 @@ services:
         max-size: "10m"
         max-file: "5"
 
-  # Discord-бот. Приймає взаємодії від Discord, перевіряє підпис Ed25519 і
-  # пересилає їх у панель внутрішньою мережею. Назовні видно тільки через
-  # nginx за шляхом /discord/interactions.
+  # Discord-бот. Приймає interaction-кнопки, тримає Recruitment Gateway для
+  # MESSAGE_CREATE і пересилає бізнес-логіку у dashboard внутрішньою мережею.
+  # Назовні interaction endpoint видно тільки через nginx /discord/interactions.
   bot:
     build:
       context: .
@@ -142,17 +142,17 @@ services:
       HOST: "0.0.0.0"
       TZ: Europe/Kyiv
       LOG_LEVEL: ${BOT_LOG_LEVEL:-info}
-      # Публічний ключ застосунку Discord — єдиний секрет, потрібний боту.
+      # Public Key перевіряє interaction-підпис. Bot token для Gateway/typing
+      # береться з bot/.env.production.
       DISCORD_PUBLIC_KEY: ${DISCORD_PUBLIC_KEY:?треба задати DISCORD_PUBLIC_KEY}
       # Панель доступна ботові тільки внутрішньою мережею — жодних
       # публічних URL між нашими ж сервісами.
       DASHBOARD_URL: http://dashboard:3000
       DASHBOARD_INTERNAL_URL: http://dashboard:3000
       INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?треба задати INTERNAL_API_TOKEN}
-      # Планувальник замість Cloudflare Cron Triggers: той самий інтервал,
-      # що стояв у wrangler.toml.
-      BOT_CRON_ENABLED: ${BOT_CRON_ENABLED:-1}
-      BOT_CRON_INTERVAL_MS: "600000"
+      # Recruitment Gateway тепер живе в цьому ж bot-сервісі.
+      # 0 вимикає тільки auto-start; control API панелі лишається доступним.
+      DISCORD_RECRUITMENT_GATEWAY_ENABLED: ${DISCORD_RECRUITMENT_GATEWAY_ENABLED:-1}
     env_file:
       - ./bot/.env.production
     depends_on:

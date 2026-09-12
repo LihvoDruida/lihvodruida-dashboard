@@ -41,7 +41,7 @@ function gatewayHint(gateway: Awaited<ReturnType<typeof safeRecruitmentGatewaySt
   if (!gateway.connected) return "Gateway не підключений → натисни “Перепідключити”.";
   if (gateway.lastDispatchType && !gateway.lastMessageCreateAt) return "Dispatch є, але MESSAGE_CREATE не приходить → перевір Message Content Intent, guild id і права каналу.";
   if (gateway.lastMessageContentLength === 0) return "MESSAGE_CREATE без тексту → найчастіше вимкнений Message Content Intent або немає права читати канал.";
-  if (gateway.lastRelayError) return "Relay помиляється → перевір dashboard URL і секрет Worker/dashboard.";
+  if (gateway.lastRelayError) return "Relay помиляється → перевір внутрішній URL панелі та спільний секрет bot/dashboard.";
   if (gateway.lastMessageDropReason) return `Останній drop: ${gateway.lastMessageDropReason}.`;
   return "Якщо нове повідомлення не дає відповіді — перевір Preview і останні обробки нижче.";
 }
@@ -165,7 +165,7 @@ export default async function DiscordRecruitmentPage() {
                 note:
                   gateway.lastError ||
                   gateway.error ||
-                  "Cloudflare Durable Object",
+                  "Mistblossom bot",
               },
             ]}
             stats={[
@@ -188,11 +188,9 @@ export default async function DiscordRecruitmentPage() {
           <header className="discord-management-section-head">
             <span className="eyebrow">Gateway</span>
             <div>
-              <h2>Стан Cloudflare Discord Gateway</h2>
+              <h2>Стан Discord Gateway у боті</h2>
               <p>
-                Якщо <strong>connected=true</strong>, Worker отримує
-                Discord-події. Якщо відповідей немає — запускай тестову або
-                ручну перевірку нижче.
+                Якщо <strong>connected=true</strong>, бот отримує Discord-події в реальному часі. Якщо відповідей немає — запускай тест relay або ручну перевірку нижче.
               </p>
             </div>
           </header>
@@ -419,8 +417,7 @@ export default async function DiscordRecruitmentPage() {
                 <p className="profile-card-lead">
                   Ця дія сканує доступні текстові канали й активні треди за
                   заданий період. Якщо на повідомлення вже була успішна
-                  відповідь, Firebase-мітка{" "}
-                  <code>discordRecruitmentAdviceReplies</code> заблокує дубль.
+                  відповідь, запис у базі <code>discordRecruitmentAdviceReplies</code> заблокує дубль.
                 </p>
                 <div className="discord-officer-sync-summary">
                   <InfoChip
@@ -501,26 +498,24 @@ export default async function DiscordRecruitmentPage() {
             <section className="panel discord-management-card discord-management-card--action discord-management-card--worker">
               <div className="profile-card-head profile-card-head--inline">
                 <div>
-                  <span className="eyebrow">Cloudflare</span>
-                  <h2>Worker manual-scan</h2>
+                  <span className="eyebrow">Bot service</span>
+                  <h2>Bot relay і manual-scan</h2>
                 </div>
                 <span className="status-pill good">ручний</span>
               </div>
               <div className="discord-management-card__body">
                 <p className="profile-card-lead">
-                  Автоматичний backfill при старті Worker вимкнений. Якщо треба
-                  перевірити пропущене після reconnect/deploy — запускай його
-                  вручну з панелі.
+                  Gateway тепер живе в основному bot-контейнері. Тест перевіряє зв’язок bot → dashboard у dry-run, а manual-scan обробляє пропущені повідомлення після reconnect/deploy.
                 </p>
                 <div className="form-actions form-actions--split">
                   <ControlButton
                     action="test-relay"
-                    label="Тест Worker → dashboard"
+                    label="Тест bot → dashboard"
                     tone="subtle"
                   />
                   <ControlButton
                     action="manual-scan"
-                    label="Запустити Worker manual-scan"
+                    label="Запустити bot manual-scan"
                     tone="subtle"
                   />
                 </div>
@@ -533,7 +528,7 @@ export default async function DiscordRecruitmentPage() {
                   <span className="eyebrow">Live pipeline</span>
                   <h2>Останні обробки</h2>
                 </div>
-                <span className="status-pill good">Firebase</span>
+                <span className="status-pill good">Database</span>
               </div>
               <div className="discord-management-card__body">
                 {recentEntries.length ? (
@@ -561,7 +556,7 @@ export default async function DiscordRecruitmentPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="profile-card-lead">Ще немає записів обробки або Firebase недоступний.</p>
+                  <p className="profile-card-lead">Ще немає записів обробки або база даних недоступна.</p>
                 )}
               </div>
             </section>

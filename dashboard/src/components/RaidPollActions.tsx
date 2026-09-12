@@ -43,7 +43,7 @@ export default function RaidPollActions({
     if (pending) return;
 
     if (kind === "close" && !window.confirm(`Закрити рейд-пул «${pollTitle}»?\n\nКнопки голосування в Discord стануть неактивними. Пул можна буде відкрити знову.`)) return;
-    if (kind === "delete" && !window.confirm(`Видалити рейд-пул «${pollTitle}»?\n\nЗапис зникне з Firebase, Discord-повідомлення буде прибрано. Дію не можна скасувати.`)) return;
+    if (kind === "delete" && !window.confirm(`Видалити рейд-пул «${pollTitle}»?\n\nЗапис зникне з бази даних, Discord-повідомлення буде прибрано. Дію не можна скасувати.`)) return;
 
     setPending(kind);
 

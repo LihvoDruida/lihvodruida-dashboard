@@ -21,6 +21,7 @@ export const CUSTOM_ID_NAMESPACE = "mbv1";
 export const CUSTOM_ID_MAX_LENGTH = 100;
 
 const RAID_ID = "[A-Za-z0-9_-]{8,80}";
+const ROSTER_ID = "[A-Za-z0-9_-]{6,40}";
 const SIGNUP_STATUS = "going|tentative|late|skipped";
 const ACTIVE_STATUS = "going|tentative|late";
 const ROLE = "tank|healer|dps";
@@ -119,11 +120,13 @@ export const RAID_CUSTOM_ID_PATTERNS = Object.freeze({
 });
 
 export const ROSTER_CUSTOM_ID_PATTERN = new RegExp(
-  `^${CUSTOM_ID_NAMESPACE}:roster:(${RAID_ID}):([a-z_]{2,24})$`,
+  `^${CUSTOM_ID_NAMESPACE}:roster_(pick|class|spec|leave):(${ROSTER_ID})(?::([a-z0-9_]{2,20}))?$`,
 );
 
+// Guild rules use compact IDs because Discord limits custom_id to 100 chars.
+// Raid-rules sign-up keeps the mbv1:r:* family for backwards compatibility.
 export const RULES_CUSTOM_ID_PATTERN = new RegExp(
-  `^${CUSTOM_ID_NAMESPACE}:r(?:ules)?:([a-z_]{2,24})(?::([A-Za-z0-9_:-]{1,80}))?$`,
+  `^${CUSTOM_ID_NAMESPACE}:(?:a:[0-9a-z.]{1,90}|c:a:[0-9a-z.]{1,88}|d|c:d|r:(?:s|c:s))$`,
 );
 
 /* ------------------------------------------------------------------ *
@@ -145,6 +148,8 @@ export const INTERACTION_DOMAINS = Object.freeze({
 
 const DOMAIN_PREFIXES = [
   [`${CUSTOM_ID_NAMESPACE}:poll_`, INTERACTION_DOMAINS.RAID_POLL],
+  // Current roster UI uses mbv1:roster_<action>:..., keep the old colon form too.
+  [`${CUSTOM_ID_NAMESPACE}:roster_`, INTERACTION_DOMAINS.ROSTER],
   [`${CUSTOM_ID_NAMESPACE}:roster:`, INTERACTION_DOMAINS.ROSTER],
   [`${CUSTOM_ID_NAMESPACE}:raid:`, INTERACTION_DOMAINS.RAID],
   [`${CUSTOM_ID_NAMESPACE}:rsc:`, INTERACTION_DOMAINS.RAID],
@@ -154,6 +159,10 @@ const DOMAIN_PREFIXES = [
   [`${CUSTOM_ID_NAMESPACE}:rms:`, INTERACTION_DOMAINS.RAID],
   [`${CUSTOM_ID_NAMESPACE}:rc:`, INTERACTION_DOMAINS.RAID],
   [`${CUSTOM_ID_NAMESPACE}:rr:`, INTERACTION_DOMAINS.RAID],
+  // Guild rules: accept/confirm-accept use role payloads; decline IDs are exact.
+  [`${CUSTOM_ID_NAMESPACE}:c:a:`, INTERACTION_DOMAINS.RULES],
+  [`${CUSTOM_ID_NAMESPACE}:a:`, INTERACTION_DOMAINS.RULES],
+  // Legacy published rules messages may still use the verbose namespace.
   [`${CUSTOM_ID_NAMESPACE}:rules:`, INTERACTION_DOMAINS.RULES],
   [`${CUSTOM_ID_NAMESPACE}:r:`, INTERACTION_DOMAINS.RULES],
 ];
@@ -166,6 +175,13 @@ const DOMAIN_PREFIXES = [
 export function interactionDomainFor(customId) {
   const value = String(customId || "").trim();
   if (!value.startsWith(`${CUSTOM_ID_NAMESPACE}:`)) return null;
+
+  // Compact decline IDs have no trailing delimiter, so match them exactly rather
+  // than using startsWith() and accidentally accepting mbv1:danger..., etc.
+  if (value === `${CUSTOM_ID_NAMESPACE}:d` || value === `${CUSTOM_ID_NAMESPACE}:c:d`) {
+    return INTERACTION_DOMAINS.RULES;
+  }
+
   for (const [prefix, domain] of DOMAIN_PREFIXES) {
     if (value.startsWith(prefix)) return domain;
   }

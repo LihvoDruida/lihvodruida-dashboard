@@ -30,7 +30,7 @@
 | `LETSENCRYPT_EMAIL` | так | адреса для сповіщень про закінчення сертифіката |
 | `IMAGE_TAG` | ні | тег образів, типово `latest` |
 | `BOT_LOG_LEVEL` | ні | `info` / `debug` |
-| `BOT_CRON_ENABLED` | ні | `0` вимикає планувальник бота |
+| `DISCORD_RECRUITMENT_GATEWAY_ENABLED` | ні | `0` вимикає auto-start Recruitment Gateway у bot-сервісі |
 
 ---
 
@@ -111,13 +111,12 @@
 | Змінна | Обовʼязкова | Призначення |
 |--------|-------------|-------------|
 | `DISCORD_PUBLIC_KEY` | так | перевірка підпису Ed25519. Без нього бот відхиляє всі запити з 401 |
-| `DISCORD_BOT_TOKEN` | так | редагування відповідей на взаємодії |
+| `DISCORD_BOT_TOKEN` | так | Discord REST API, Recruitment Gateway і typing |
 | `DISCORD_GUILD_ID` | так | ID сервера |
 | `DASHBOARD_INTERNAL_URL` | так | `http://dashboard:3000` |
 | `INTERNAL_API_TOKEN` | так | має збігатися з панеллю |
-| `BOT_CRON_ENABLED` | ні | `1` вмикає планувальник, типово увімкнено |
-| `BOT_CRON_INTERVAL_MS` | ні | 600000 (10 хв) |
-| `ALLOWED_ORIGINS` | ні | CORS для публічних ендпоїнтів |
+| `DISCORD_RECRUITMENT_GATEWAY_ENABLED` | ні | `1` автоматично запускає Recruitment Gateway, типово увімкнено |
+| `DISCORD_RECRUITMENT_ADVICE_SECRET` | ні | окремий bot ↔ dashboard секрет для recruitment; якщо порожній, використовується `INTERNAL_API_TOKEN` |
 
 ---
 
@@ -165,7 +164,7 @@ openssl rand -hex 32      # INTERNAL_API_TOKEN, CRON_SECRET
 |--------|-------|
 | `DEBUG_LOGS=1` | детальні логи бота на кожен запит |
 | `PUBLIC_CACHE_DISABLED=1` | вимикає кеш — перевірити, чи проблема в застарілих даних |
-| `BOT_CRON_ENABLED=0` | зупиняє планувальник бота, не зупиняючи прийом взаємодій |
+| `DISCORD_RECRUITMENT_GATEWAY_ENABLED=0` | не запускає Recruitment Gateway автоматично; interaction endpoint і control API лишаються доступними |
 
 Після діагностики приберіть їх: `DEBUG_LOGS` на живому сервері швидко
 роздуває журнал.

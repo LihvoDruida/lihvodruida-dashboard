@@ -11,13 +11,14 @@
     "typecheck": "node scripts/typecheck.cjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "verify": "npm run typecheck && npm run lint && npm run inspect:ci",
+    "verify": "npm run typecheck && npm run lint && npm run check:actions && npm run inspect:ci",
     "inspect:ci": "node scripts/inspect-ci.cjs",
-    "build:ci": "npm run typecheck && npm run inspect:ci && npm run build",
+    "build:ci": "npm run typecheck && npm run check:actions && npm run inspect:ci && npm run build",
     "start:dev-server": "next start",
     "db:init": "node scripts/db-init.mjs",
     "db:migrate-from-firestore": "node scripts/migrate-firestore-to-postgres.mjs",
-    "db:migrate-dry-run": "node scripts/migrate-firestore-to-postgres.mjs --dry-run"
+    "db:migrate-dry-run": "node scripts/migrate-firestore-to-postgres.mjs --dry-run",
+    "check:actions": "node scripts/check-actions.cjs"
   },
   "dependencies": {
     "@mistblossom/discord-contract": "file:../shared",

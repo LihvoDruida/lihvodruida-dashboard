@@ -115,8 +115,15 @@ export async function callRecruitmentGatewayControl(
   const url = new URL(recruitmentGatewayControlEndpoint());
   url.searchParams.set("action", action);
 
+  const timeoutMs = action === "manual-scan"
+    ? 75_000
+    : action === "test-relay"
+      ? 45_000
+      : 8_000;
+
   const response = await fetch(url.toString(), {
     method: action === "status" ? "GET" : "POST",
+    signal: AbortSignal.timeout(timeoutMs),
     headers: {
       accept: "application/json",
       authorization: `Bearer ${token}`,
@@ -135,7 +142,7 @@ export async function callRecruitmentGatewayControl(
     };
   }
   if (!response.ok && !data.error)
-    data.error = `Worker повернув HTTP ${response.status}`;
+    data.error = `Bot повернув HTTP ${response.status}`;
   return data;
 }
 

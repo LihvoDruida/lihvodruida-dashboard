@@ -69,14 +69,14 @@ DISCORD_RECRUITMENT_ADVICE_SECRET=...
 Статус Gateway:
 
 ```bash
-curl -H "Authorization: Bearer $WORKER_STATS_TOKEN" \
+curl -H "Authorization: Bearer $INTERNAL_API_TOKEN" \
   "http://bot:8080/discord/recruitment-gateway?action=status"
 ```
 
 Ручний старт:
 
 ```bash
-curl -X POST -H "Authorization: Bearer $WORKER_STATS_TOKEN" \
+curl -X POST -H "Authorization: Bearer $INTERNAL_API_TOKEN" \
   "http://bot:8080/discord/recruitment-gateway?action=start"
 ```
 
@@ -101,7 +101,7 @@ curl -X POST "https://admin.lihvodruida.pp.ua/api/discord/recruitment-advice/mes
 
 ## Ручний backfill через панель
 
-Discord Gateway надсилає тільки нові `MESSAGE_CREATE` події. Старі повідомлення більше не перевіряються автоматично після старту Worker, щоб не було неочікуваних відповідей. Для перевірки старих повідомлень відкрий:
+Discord Gateway надсилає тільки нові `MESSAGE_CREATE` події. Старі повідомлення більше не перевіряються автоматично після старту bot Gateway, щоб не було неочікуваних відповідей. Для перевірки старих повідомлень відкрий:
 
 ```text
 /dashboard/discord/recruitment
@@ -111,7 +111,8 @@ Discord Gateway надсилає тільки нові `MESSAGE_CREATE` поді
 
 - `Тест без відправки` — dry-run сканування старих повідомлень;
 - `Перевірити і відповісти` — ручна перевірка за заданий період;
-- `Backfill` — ручний виклик бота з `action=backfill`;
-- `start/reconnect/stop/status` для Durable Object Gateway.
+- `Тест bot → dashboard` — dry-run через control API бота;
+- `Bot manual-scan` — ручний backfill через bot → dashboard;
+- `start/reconnect/stop/status` — керування Gateway у bot-контейнері.
 
 Повторних відповідей не буде: dashboard зберігає успішні відповіді у `discordRecruitmentAdviceReplies` за Discord `message.id`. Якщо відповідь уже має статус `replied` або `replyMessageId`, навіть ручна перевірка не дублює її.

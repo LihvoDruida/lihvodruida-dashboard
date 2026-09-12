@@ -31,7 +31,7 @@ async function saveGroupAction(formData: FormData) {
   if (!canManageGroups(user)) { redirect("/access-denied?reason=groups&from=/dashboard/groups"); throw new Error("Access denied"); }
 
   const isUpdate = Boolean(formData.get("currentId"));
-  let targetUrl = `/dashboard/groups?${isUpdate ? "updated" : "created"}=${encodeURIComponent("Групу доступу збережено у Firebase.")}`;
+  let targetUrl = `/dashboard/groups?${isUpdate ? "updated" : "created"}=${encodeURIComponent("Групу доступу збережено у базі даних.")}`;
   try {
     const savedGroup = await upsertAccessGroup({
       currentId: formData.get("currentId"),
@@ -55,7 +55,7 @@ async function saveGroupAction(formData: FormData) {
       discordRoleIds: savedGroup.discordRoleIds,
     });
     revalidatePath("/dashboard/groups");
-    await setActionToast("success", isUpdate ? "Групу оновлено" : "Групу створено", "Права, Discord role ID та іконку збережено у Firebase.");
+    await setActionToast("success", isUpdate ? "Групу оновлено" : "Групу створено", "Права, Discord role ID та іконку збережено у базі даних.");
   } catch (error) {
     const message = error instanceof Error ? error.message : "Перевір ID, роль, ранг, Discord role ID і права групи.";
     await setActionToast("error", isUpdate ? "Групу не оновлено" : "Групу не створено", message);
@@ -132,13 +132,13 @@ export default async function AdminGroupsPage() {
             <span className="eyebrow">Mistblossom Vanguard • Права</span>
             <h1>Групи та права доступу</h1>
             <span className="hero-accent" aria-hidden="true" />
-            <p className="lead">Права зберігаються у Firebase. Кожна група має одну Discord-роль, ранг і набір дозволів. Env використовується лише для підключень.</p>
+            <p className="lead">Права зберігаються у налаштованій базі даних. Кожна група має одну Discord-роль, ранг і набір дозволів. Env використовується лише для підключень.</p>
           </div>
           <HeroSidePanel
             ariaLabel="Огляд груп доступу"
             summary={[
               { label: "ПОТОЧНА ГРУПА", value: user.groupName || user.role, note: user.isServerOwner ? "Власник сервера" : "Активна сесія" },
-              { label: "СХОВИЩЕ", value: "Firebase", note: "Env тільки для підключень" },
+              { label: "СХОВИЩЕ", value: "База даних", note: "PostgreSQL / сумісне сховище" },
             ]}
             stats={[
               { label: "ГРУП", value: groups.length.toLocaleString("uk-UA") },

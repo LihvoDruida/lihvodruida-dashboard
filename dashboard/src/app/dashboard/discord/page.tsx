@@ -13,7 +13,7 @@ export const revalidate = 0;
 
 export const metadata = buildPageMetadata({
   title: "Discord-учасники",
-  description: "Перевірка Discord-профілів, очищення Firebase-профілів, серверні ніки та глобальний шаблон ніку Mistblossom Vanguard.",
+  description: "Перевірка Discord-профілів, очищення записів у базі, серверні ніки та глобальний шаблон ніку Mistblossom Vanguard.",
   path: "/dashboard/discord",
   keywords: ["Discord", "ролі", "ніки", "керування"],
 });
@@ -133,7 +133,7 @@ export default async function AdminDiscordPage() {
             <span className="eyebrow">Mistblossom Vanguard • Discord</span>
             <h1>Discord-учасники</h1>
             <span className="hero-accent" aria-hidden="true" />
-            <p className="lead">Очищення Firebase-профілів, контроль серверних ніків, шаблон і безпечні масові Discord-дії в одному місці.</p>
+            <p className="lead">Очищення профілів у базі, контроль серверних ніків, шаблон і безпечні масові Discord-дії в одному місці.</p>
           </div>
           <HeroSidePanel
             ariaLabel="Огляд Discord-керування"
@@ -200,6 +200,33 @@ export default async function AdminDiscordPage() {
                 <label className="field-label">Discord user ID<input className="input" name="userId" inputMode="numeric" pattern="[0-9]{16,25}" required /></label>
                 <label className="field-label">Новий серверний нік<input className="input" name="nickname" maxLength={32} required placeholder={nicknameTemplateExample(policy.template)} /></label>
                 <button className="btn primary" type="submit">Змінити нік</button>
+              </div>
+            </form>
+
+            <form className="panel discord-management-card discord-management-card--compact" action="/api/dashboard/discord/roles/add" method="post" data-dashboard-action-form="true" data-dashboard-live-submit="true">
+              <div className="profile-card-head">
+                <span className="eyebrow">Учасник</span>
+                <h2>Ручне керування ролями</h2>
+              </div>
+              <div className="discord-management-card__body">
+                <p className="profile-card-lead">Додати або зняти вибрані ролі в одного учасника. Перед зміною система перевіряє учасника, права бота та ієрархію ролей, після зміни — перечитує стан із Discord.</p>
+                <label className="field-label">Discord user ID
+                  <input className="input" name="userId" inputMode="numeric" pattern="[0-9]{16,25}" required />
+                </label>
+                <RoleCheckboxes roles={roles} fieldName="roleIds" emptyText="Немає ролей, якими бот може керувати. Перевір ієрархію ролей і permission Manage Roles." />
+                <div className="form-actions form-actions--split">
+                  <button className="btn primary" type="submit" disabled={!hasManageableRoles}>Додати ролі</button>
+                  <button
+                    className="btn danger"
+                    type="submit"
+                    formAction="/api/dashboard/discord/roles/remove"
+                    formMethod="post"
+                    disabled={!hasManageableRoles}
+                    data-confirm-message="Зняти вибрані Discord-ролі з цього учасника? Система перевірить результат після операції."
+                  >
+                    Зняти ролі
+                  </button>
+                </div>
               </div>
             </form>
 
@@ -273,19 +300,19 @@ export default async function AdminDiscordPage() {
             <form className="panel discord-management-card discord-management-card--primary" action="/api/dashboard/discord/profiles/cleanup" method="post" data-dashboard-action-form="true" data-dashboard-live-submit="true">
               <div className="profile-card-head profile-card-head--inline">
                 <div>
-                  <span className="eyebrow">Firebase-профілі</span>
+                  <span className="eyebrow">База профілів</span>
                   <h2>Глобальне очищення акаунтів</h2>
                 </div>
                 <span className="status-pill warning">Roster + Discord</span>
               </div>
               <div className="discord-management-card__body">
-                <p className="profile-card-lead">Перед перевіркою система автоматично оновлює склад гільдії в базі, а потім проходить по Firebase-профілях зі звіркою проти актуального складу та Discord-сервера. Видаляються лише акаунти, які одночасно не мають персонажів у складі гільдії і вже не є учасниками Discord. Перед видаленням прибираються всі записи цього акаунта з рейдів і його піки з активних складів сезону та голоси у відкритих пулах (закриті лишаються як історія). Ембеди рейдів, складу і пулів у Discord перемальовуються.</p>
+                <p className="profile-card-lead">Перед перевіркою система автоматично оновлює склад гільдії в базі, а потім проходить по збережених профілях зі звіркою проти актуального складу та Discord-сервера. Видаляються лише акаунти, які одночасно не мають персонажів у складі гільдії і вже не є учасниками Discord. Перед видаленням прибираються всі записи цього акаунта з рейдів і його піки з активних складів сезону та голоси у відкритих пулах (закриті лишаються як історія). Ембеди рейдів, складу і пулів у Discord перемальовуються.</p>
                 <label className="field-label discord-management-limit-field">Скільки профілів перевірити
                   <input className="input" name="limit" type="number" min="0" max="50000" defaultValue="0" />
                   <small>0 = пройти всі профілі посторінково, без обмеження першими 5/10 записами.</small>
                 </label>
                 <div className="discord-officer-sync-summary" aria-label="Що перевіряється перед очищенням профілів">
-                  <InfoChip title="Firebase" text="dashboardProfiles" />
+                  <InfoChip title="База" text="dashboardProfiles" />
                   <InfoChip title="Roster" text="Автооновлення" />
                   <InfoChip title="Discord" text="Учасники сервера" />
                   <InfoChip title="Рейди" text="Чистка записів" />
@@ -296,7 +323,7 @@ export default async function AdminDiscordPage() {
                 </div>
                 <div className="form-actions form-actions--split">
                   <button className="btn subtle" name="mode" value="inspect" type="submit">Тільки перевірити</button>
-                  <button className="btn danger" name="mode" value="apply" type="submit" data-confirm-message="Ця дія видалить Firebase-профілі тільки якщо акаунт одночасно відсутній у складі гільдії та не є учасником Discord-сервера. Усі записи цього акаунта з рейдів і його піки з активних складів сезону також будуть прибрані. Якщо roster порожній або недоступний — дія заблокується. Продовжити?">Видалити неактуальні профілі</button>
+                  <button className="btn danger" name="mode" value="apply" type="submit" data-confirm-message="Ця дія видалить профілі з бази тільки якщо акаунт одночасно відсутній у складі гільдії та не є учасником Discord-сервера. Усі записи цього акаунта з рейдів і його піки з активних складів сезону також будуть прибрані. Якщо roster порожній або недоступний — дія заблокується. Продовжити?">Видалити неактуальні профілі</button>
                 </div>
               </div>
             </form>

@@ -72,7 +72,7 @@ function actionText(action: string) {
     return {
       label: "Зберігаємо...",
       title: "Зберігаємо групу",
-      message: "Оновлюємо назву, іконку, Discord role ID та права у Firebase.",
+      message: "Оновлюємо назву, іконку, Discord role ID та права у базі даних.",
     };
   if (action === "access-groups-delete")
     return {
@@ -183,7 +183,7 @@ function actionText(action: string) {
       label: "Зберігаємо...",
       title: "Зберігаємо логування",
       message:
-        "Оновлюємо Discord-канал і правила дублювання audit-log у Firebase.",
+        "Оновлюємо Discord-канал і правила audit-log.",
     };
   if (action.includes("/api/dashboard/discord/settings"))
     return {
@@ -214,17 +214,19 @@ function actionText(action: string) {
       label: "Перевіряємо...",
       title: "Перевіряємо акаунти",
       message:
-        "Оновлюємо склад гільдії в базі, потім звіряємо Firebase-профілі з roster, Discord-сервером і рейдовими записами.",
+        "Оновлюємо склад гільдії в базі, потім звіряємо профілі з roster, Discord-сервером і рейдовими записами.",
     };
-  if (
-    action.includes("/api/dashboard/discord/roles/add") ||
-    action.includes("/api/dashboard/discord/roles/remove")
-  )
+  if (action.includes("/api/dashboard/discord/roles/add"))
     return {
-      label: "Заблоковано...",
-      title: "Ручні ролі вимкнено",
-      message:
-        "У /dashboard/discord тепер використовується перевірка профілів або окремі масові дії.",
+      label: "Додаємо...",
+      title: "Додаємо Discord-ролі",
+      message: "Перевіряємо учасника, ієрархію ролей і результат у Discord.",
+    };
+  if (action.includes("/api/dashboard/discord/roles/remove"))
+    return {
+      label: "Знімаємо...",
+      title: "Знімаємо Discord-ролі",
+      message: "Перевіряємо учасника, ієрархію ролей і результат у Discord.",
     };
   if (action.includes("/api/dashboard/discord/officers/sync"))
     return {
