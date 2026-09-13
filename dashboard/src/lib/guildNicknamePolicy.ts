@@ -416,6 +416,90 @@ export function nicknameTemplateToRegex(_templateInput: unknown = DEFAULT_NICKNA
   return new RegExp(`^\\s*${output}\\s*$`, "iu");
 }
 
+export type NicknameValidationDetail = {
+  valid: boolean;
+  code: "valid" | "missing" | "structure" | "name" | "characters" | "character_length" | "empty_character";
+  message: string;
+};
+
+export function explainNicknameValidation(nicknameInput: unknown): NicknameValidationDetail {
+  const nickname = String(nicknameInput || "").normalize("NFC").replace(/\s+/g, " ").trim();
+  if (!nickname) {
+    return {
+      valid: false,
+      code: "missing",
+      message: "Серверний нік не встановлено. Потрібно вказати імʼя та щонайменше мейн-персонажа у квадратних дужках.",
+    };
+  }
+
+  const match = nickname.match(/^([^\[\]\n]+?)\s*\[([^\]\n]*)\]\s*$/u);
+  if (!match) {
+    return {
+      valid: false,
+      code: "structure",
+      message: "Порушена структура ніку: після імені має бути один блок персонажів у квадратних дужках — наприклад `Імʼя [Мейн]`.",
+    };
+  }
+
+  const name = match[1].trim();
+  const nameLength = codePointLength(name);
+  if (nameLength < 2 || nameLength > 32) {
+    return {
+      valid: false,
+      code: "name",
+      message: `Помилка в частині імені перед дужками: потрібно 2–32 символи, зараз ${nameLength}.`,
+    };
+  }
+
+  const rawCharacters = match[2];
+  if (!rawCharacters.trim()) {
+    return {
+      valid: false,
+      code: "characters",
+      message: "У квадратних дужках немає персонажа. Першим обовʼязково вкажи мейн-персонажа.",
+    };
+  }
+
+  const characters = rawCharacters.split(",").map((part) => part.trim());
+  if (characters.some((part) => !part)) {
+    return {
+      valid: false,
+      code: "empty_character",
+      message: "У списку персонажів є порожнє значення біля коми. Прибери зайву кому або впиши імʼя персонажа.",
+    };
+  }
+  if (characters.length < 1 || characters.length > 3) {
+    return {
+      valid: false,
+      code: "characters",
+      message: `У квадратних дужках має бути від 1 до 3 персонажів: мейн і до двох альтів. Зараз вказано ${characters.length}.`,
+    };
+  }
+
+  const invalidCharacter = characters.find((part) => {
+    const length = codePointLength(part);
+    return length < 2 || length > 16 || /[\[\]\n]/u.test(part);
+  });
+  if (invalidCharacter) {
+    const length = codePointLength(invalidCharacter);
+    return {
+      valid: false,
+      code: "character_length",
+      message: `Помилка в імені персонажа «${invalidCharacter}»: дозволено 2–16 символів без квадратних дужок, зараз ${length}.`,
+    };
+  }
+
+  if (!nicknameTemplateToRegex(DEFAULT_NICKNAME_TEMPLATE).test(nickname)) {
+    return {
+      valid: false,
+      code: "structure",
+      message: "Нік не відповідає одній із трьох глобальних структур. Перевір квадратні дужки, коми та порядок: імʼя → мейн → до двох альтів.",
+    };
+  }
+
+  return { valid: true, code: "valid", message: "Серверний нік відповідає глобальним правилам." };
+}
+
 export function nicknameMatchesTemplate(nicknameInput: unknown, templateInput: unknown) {
   const nickname = String(nicknameInput || "").normalize("NFC").replace(/\s+/g, " ").trim();
   if (!nickname) return false;

@@ -88,6 +88,16 @@ function InfoChip({ title, text }: { title: string; text: string }) {
   );
 }
 
+function NicknameMetric({ label, value, note }: { label: string; value: string; note?: string }) {
+  return (
+    <div className="nickname-warning-metric">
+      <small>{label}</small>
+      <strong>{value}</strong>
+      {note ? <span>{note}</span> : null}
+    </div>
+  );
+}
+
 
 function formatCleanupDate(value?: string | null) {
   if (!value) return "Ще не запускалось";
@@ -273,67 +283,102 @@ export default async function AdminDiscordPage() {
             />
           </div>
           <form className="panel discord-management-card discord-management-card--settings discord-settings-card" action="/api/dashboard/discord/settings" method="post" data-dashboard-action-form="true" data-dashboard-live-submit="true">
+            <input type="hidden" name="template" value={DEFAULT_NICKNAME_TEMPLATE} />
+            <input type="hidden" name="nicknameReminderIntervalHours" value={policy.nicknameReminderIntervalHours} />
+
             <div className="discord-settings-card__primary">
-              <div className="field-label">Глобальні структури серверного ніку
-                <input type="hidden" name="template" value={DEFAULT_NICKNAME_TEMPLATE} />
-                <div className="admin-nickname-template">
-                  {VALID_NICKNAME_STRUCTURES.map((structure) => <div key={structure}><code>{structure}</code></div>)}
+              <section className="nickname-policy-card" aria-label="Глобальні формати серверного ніку">
+                <div className="nickname-policy-card__head">
+                  <div>
+                    <span className="eyebrow">Формат ніку</span>
+                    <h3>Три дозволені структури</h3>
+                  </div>
+                  <span className="status-pill good">Глобально</span>
                 </div>
-                <small>Це єдині валідні структури по всьому сайту. Альти опційні; довільні шаблони вимкнені. Приклад: {nicknameTemplateExample(DEFAULT_NICKNAME_TEMPLATE)}.</small>
-              </div>
-              <div className="discord-settings-summary" aria-label="Поточна конфігурація Discord-дій">
-                <InfoChip title={String(policy.nicknameCleanupConcurrency || "Авто")} text="попередження ніків" />
-              </div>
+                <p>Однакове правило використовується в профілі, onboarding, ручному перейменуванні та автоматичній перевірці.</p>
+                <div className="nickname-structure-list">
+                  {VALID_NICKNAME_STRUCTURES.map((structure, index) => (
+                    <div className="nickname-structure-item" key={structure}>
+                      <span>{index === 0 ? "Мейн" : index === 1 ? "Мейн + 1 альт" : "Мейн + 2 альти"}</span>
+                      <code>{structure}</code>
+                    </div>
+                  ))}
+                </div>
+                <div className="nickname-policy-example">
+                  <small>Приклад валідного ніку</small>
+                  <strong>{nicknameTemplateExample(DEFAULT_NICKNAME_TEMPLATE)}</strong>
+                </div>
+              </section>
+
+              <details className="discord-management-details nickname-advanced-settings">
+                <summary>Додатково: продуктивність Discord API</summary>
+                <div className="nickname-advanced-settings__grid">
+                  <label className="field-label">Паралельних перевірок
+                    <input className="input" name="nicknameCleanupConcurrency" type="number" min="0" max={policy.nicknameCleanupMaxConcurrency} defaultValue={policy.nicknameCleanupConcurrency} />
+                    <small>0 = система підбере автоматично</small>
+                  </label>
+                  <label className="field-label">Максимум одночасно
+                    <input className="input" name="nicknameCleanupMaxConcurrency" type="number" min="1" max="4" defaultValue={policy.nicknameCleanupMaxConcurrency} />
+                    <small>1–4 одночасні Discord-запити</small>
+                  </label>
+                </div>
+              </details>
             </div>
+
             <div className="discord-settings-card__limits">
-              <div className="discord-settings-grid" aria-label="Паралельність Discord-дій">
-                <label className="field-label">Попередження ніків
-                  <input className="input" name="nicknameCleanupConcurrency" type="number" min="0" max={policy.nicknameCleanupMaxConcurrency} defaultValue={policy.nicknameCleanupConcurrency} />
-                  <small>0 = автоматично</small>
-                </label>
-                <label className="field-label">Макс. паралельно
-                  <input className="input" name="nicknameCleanupMaxConcurrency" type="number" min="1" max="4" defaultValue={policy.nicknameCleanupMaxConcurrency} />
-                  <small>1–4 Discord-запити</small>
-                </label>
-              </div>
               <section className="nickname-warning-settings" aria-label="Автоматичні попередження про серверні ніки">
                 <div className="nickname-warning-settings__head">
-                  <div><span className="eyebrow">Автоматизація ніків</span><h3>DM → fallback-канал</h3></div>
-                  <label className="settings-toggle-row">
+                  <div>
+                    <span className="eyebrow">Автоматизація ніків</span>
+                    <h3>Перевірка та попередження</h3>
+                    <p>Спочатку DM. Якщо приватні повідомлення закриті — повідомлення у вибраний fallback-канал.</p>
+                  </div>
+                  <label className="settings-toggle-row settings-toggle-row--card">
                     <input name="nicknameReminderEnabled" type="checkbox" defaultChecked={policy.nicknameReminderEnabled} />
-                    <span><strong>Автоматично попереджати</strong><small>Ніколи не змінює ролі чи нік — лише надсилає повідомлення.</small></span>
+                    <span><strong>Автоматично</strong><small>Не змінює ролі, доступи чи нік.</small></span>
                   </label>
                 </div>
-                <div className="nickname-warning-settings__grid">
-                  <input type="hidden" name="nicknameReminderIntervalHours" value={policy.nicknameReminderIntervalHours} />
-                  <label className="field-label">Некоректні — перевіряти кожні
-                    <input className="input" name="nicknameInvalidRecheckHours" type="number" min="1" max="72" defaultValue={policy.nicknameInvalidRecheckHours} />
-                    <small>годин; це пріоритетна черга з точковою перевіркою Discord member</small>
-                  </label>
-                  <label className="field-label">Коректні — повний sweep кожні
-                    <input className="input" name="nicknameValidRecheckHours" type="number" min="12" max="720" defaultValue={policy.nicknameValidRecheckHours} />
-                    <small>годин; одним guild-members запитом перевіряється весь сервер і перебудовується черга</small>
-                  </label>
-                  <label className="field-label">Cooldown учасника
-                    <input className="input" name="nicknameReminderCooldownHours" type="number" min="1" max="720" defaultValue={policy.nicknameReminderCooldownHours} />
-                    <small>повторно не турбувати з тією самою помилкою</small>
-                  </label>
-                  <label className="field-label">Макс. за прохід
-                    <input className="input" name="nicknameReminderBatchLimit" type="number" min="1" max="500" defaultValue={policy.nicknameReminderBatchLimit} />
-                    <small>максимум пріоритетних перевірок/попереджень за один cron-прохід</small>
-                  </label>
-                  <label className="field-label">Fallback-канал
+
+                <div className="nickname-warning-settings__group">
+                  <div className="nickname-warning-settings__group-head"><strong>Частота перевірок</strong><small>Некоректні ніки мають вищий пріоритет.</small></div>
+                  <div className="nickname-warning-settings__grid nickname-warning-settings__grid--timing">
+                    <label className="field-label">Некоректний нік
+                      <div className="input-with-suffix"><input className="input" name="nicknameInvalidRecheckHours" type="number" min="1" max="72" defaultValue={policy.nicknameInvalidRecheckHours} /><span>год</span></div>
+                      <small>Точкова повторна перевірка учасника.</small>
+                    </label>
+                    <label className="field-label">Повна перевірка сервера
+                      <div className="input-with-suffix"><input className="input" name="nicknameValidRecheckHours" type="number" min="12" max="720" defaultValue={policy.nicknameValidRecheckHours} /><span>год</span></div>
+                      <small>Перебудовує valid/invalid чергу без масової розсилки.</small>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="nickname-warning-settings__group">
+                  <div className="nickname-warning-settings__group-head"><strong>Повідомлення</strong><small>Контроль повторів і навантаження.</small></div>
+                  <div className="nickname-warning-settings__grid nickname-warning-settings__grid--delivery">
+                    <label className="field-label">Не повторювати раніше ніж
+                      <div className="input-with-suffix"><input className="input" name="nicknameReminderCooldownHours" type="number" min="1" max="720" defaultValue={policy.nicknameReminderCooldownHours} /><span>год</span></div>
+                      <small>Для тієї самої помилки в того самого учасника.</small>
+                    </label>
+                    <label className="field-label">Ліміт за один запуск
+                      <input className="input" name="nicknameReminderBatchLimit" type="number" min="1" max="500" defaultValue={policy.nicknameReminderBatchLimit} />
+                      <small>Скільки пріоритетних учасників обробити за раз.</small>
+                    </label>
+                  </div>
+                  <label className="field-label nickname-fallback-field">Канал, якщо DM недоступні
                     <select className="input" name="nicknameReminderChannelId" defaultValue={policy.nicknameReminderChannelId}>
-                      <option value="">Без fallback-каналу</option>
+                      <option value="">Не надсилати у канал</option>
                       {policy.nicknameReminderChannelId && !textChannels.channels.some((channel) => channel.id === policy.nicknameReminderChannelId) ? <option value={policy.nicknameReminderChannelId}>Поточний канал ({policy.nicknameReminderChannelId})</option> : null}
                       {textChannels.channels.map((channel) => <option key={channel.id} value={channel.id}># {channel.name}</option>)}
                     </select>
-                    <small>Якщо DM закриті — бот тегне учасника тут.</small>
+                    <small>Fallback використовується тільки коли бот не може написати учаснику приватно.</small>
                   </label>
                 </div>
-                <p className="nickname-warning-settings__hint">Scheduler пріоритезує некоректні ніки: їх перечитує точково й частіше. Коректні не опитуються по одному — вони повторно перевіряються лише під час рідкого повного sweep. Порядок доставки: DM → fallback-канал.</p>
               </section>
-              <button className="btn primary" type="submit">Зберегти налаштування</button>
+              <div className="discord-settings-save-row">
+                <span>Зміни застосовуються до наступних перевірок без перезапуску scheduler-а.</span>
+                <button className="btn primary" type="submit">Зберегти налаштування</button>
+              </div>
             </div>
           </form>
         </section>
@@ -421,44 +466,55 @@ export default async function AdminDiscordPage() {
             </form>
 
             <article className="panel discord-management-card discord-management-card--action nickname-warning-card">
-              <div className="profile-card-head profile-card-head--inline">
-                <div><span className="eyebrow">Серверні ніки</span><h2>Попередження про неправильний нік</h2></div>
-                <span className={`status-pill ${policy.nicknameReminderEnabled ? "good" : "subtle"}`}>{policy.nicknameReminderEnabled ? "Автоматично" : "Ручний режим"}</span>
-              </div>
-              <div className="discord-management-card__body">
-                <p className="profile-card-lead">Перевіряє <code>member.nick</code> за трьома глобальними структурами. <strong>Ролі, доступи й нік не змінюються.</strong> Автоматичний full sweep лише класифікує учасників і перебудовує чергу без масової розсилки. Після повного проходу некоректні ніки переходять у пріоритетну часту чергу, а коректні перевіряються значно рідше повним sweep. Коли некоректний учасник стає due у priority-run, бот спочатку пише в DM; якщо приватні повідомлення недоступні — тегне у fallback-каналі.</p>
-                <div className="nickname-warning-status-grid">
-                  <InfoChip title={nicknameWarningState.lastFullScanAt ? formatCleanupDate(nicknameWarningState.lastFullScanAt) : "Ще не було"} text="повна перевірка" />
-                  <InfoChip title={`${nicknameWarningState.trackedInvalid} / ${nicknameWarningState.trackedValid}`} text="пріоритет / коректні" />
-                  <InfoChip title={nicknameWarningState.nextInvalidCheckAt ? formatCleanupDate(nicknameWarningState.nextInvalidCheckAt) : "Черга порожня"} text="наступна пріоритетна" />
-                  <InfoChip title={`${nicknameWarningState.lastDm} / ${nicknameWarningState.lastChannel}`} text="DM / канал" />
-                  <InfoChip title={String(nicknameWarningState.lastFailed)} text="помилок" />
+              <div className="profile-card-head profile-card-head--inline nickname-warning-card__head">
+                <div>
+                  <span className="eyebrow">Серверні ніки</span>
+                  <h2>Контроль формату ніків</h2>
+                  <p>Система частіше перевіряє проблемні ніки й значно рідше — коректні. Ролі, доступи та сам нік не змінюються.</p>
                 </div>
+                <span className={`status-pill ${policy.nicknameReminderEnabled ? "good" : "subtle"}`}>{policy.nicknameReminderEnabled ? "Автоматизація увімкнена" : "Автоматизація вимкнена"}</span>
+              </div>
+
+              <div className="discord-management-card__body">
+                <div className="nickname-warning-status-grid" aria-label="Стан перевірки серверних ніків">
+                  <NicknameMetric label="Остання повна перевірка" value={nicknameWarningState.lastFullScanAt ? formatCleanupDate(nicknameWarningState.lastFullScanAt) : "Ще не запускалась"} />
+                  <NicknameMetric label="Некоректних" value={String(nicknameWarningState.trackedInvalid)} note={`повторна перевірка кожні ${policy.nicknameInvalidRecheckHours} год`} />
+                  <NicknameMetric label="Коректних" value={String(nicknameWarningState.trackedValid)} note={`повний sweep кожні ${policy.nicknameValidRecheckHours} год`} />
+                  <NicknameMetric label="Наступна перевірка" value={nicknameWarningState.nextInvalidCheckAt ? formatCleanupDate(nicknameWarningState.nextInvalidCheckAt) : "Черга порожня"} />
+                  <NicknameMetric label="Остання доставка" value={`${nicknameWarningState.lastDm} DM · ${nicknameWarningState.lastChannel} канал`} />
+                  <NicknameMetric label="Помилки" value={String(nicknameWarningState.lastFailed)} />
+                </div>
+
                 {nicknameWarningState.lastError ? <div className="discord-inline-warning"><strong>Остання помилка:</strong> {nicknameWarningState.lastError}</div> : null}
-                <form action="/api/dashboard/discord/nicknames/notify" method="post" data-dashboard-action-form="true" data-dashboard-live-submit="true">
-                  <label className="field-label discord-management-limit-field">Скільки учасників перевірити
-                    <input className="input" name="limit" type="number" min="0" max="50000" defaultValue="0" />
-                    <small>0 = весь сервер. Повна перевірка перебудовує пріоритетну чергу; автоматичний priority-run обробляє до {policy.nicknameReminderBatchLimit} некоректних учасників.</small>
-                  </label>
-                  <div className="nickname-warning-flow" aria-label="Логіка сповіщення">
-                    <span><b>1</b><strong>Full sweep</strong><small>коректні раз на {policy.nicknameValidRecheckHours} год</small></span>
-                    <span><b>2</b><strong>Priority</strong><small>некоректні раз на {policy.nicknameInvalidRecheckHours} год</small></span>
-                    <span><b>3</b><strong>DM → fallback</strong><small>{policy.nicknameReminderChannelId ? `# ${textChannels.channels.find((channel) => channel.id === policy.nicknameReminderChannelId)?.name || policy.nicknameReminderChannelId}` : "без fallback"}</small></span>
-                    <span><b>4</b><strong>Cooldown</strong><small>{policy.nicknameReminderCooldownHours} год</small></span>
+
+                <div className="nickname-warning-flow" aria-label="Як працює автоматизація">
+                  <span><b>1</b><strong>Повна перевірка</strong><small>класифікує весь сервер без масової розсилки</small></span>
+                  <span><b>2</b><strong>Пріоритетна черга</strong><small>повторно перевіряє тільки некоректні ніки</small></span>
+                  <span><b>3</b><strong>Приватне повідомлення</strong><small>DM, а якщо недоступно — fallback-канал</small></span>
+                  <span><b>4</b><strong>Контроль повторів</strong><small>не частіше ніж раз на {policy.nicknameReminderCooldownHours} год</small></span>
+                </div>
+
+                <form className="nickname-warning-actions" action="/api/dashboard/discord/nicknames/notify" method="post" data-dashboard-action-form="true" data-dashboard-live-submit="true">
+                  <div className="nickname-warning-actions__field">
+                    <label className="field-label">Обсяг ручної перевірки
+                      <input className="input" name="limit" type="number" min="0" max="50000" defaultValue="0" />
+                      <small><strong>0</strong> = перевірити весь сервер. Значення більше 0 обмежує кількість учасників.</small>
+                    </label>
                   </div>
-                  <div className="form-actions form-actions--split">
-                    <button className="btn subtle" formAction="/api/dashboard/discord/nicknames/inspect" formMethod="post" type="submit" name="recheckAll" value="1" data-confirm-message="Переперевірити серверні ніки всіх учасників і повністю перебудувати пріоритетну чергу? Повідомлення надсилатися не будуть.">Переперевірити всіх</button>
-                    {user.isServerOwner ? <button className="btn subtle" formAction="/api/dashboard/discord/nicknames/test-message" formMethod="post" type="submit">Тест повідомлення</button> : null}
-                    <button className="btn primary" type="submit" data-confirm-message="Перевірити серверні ніки й надіслати попередження учасникам із неправильним ніком? Ролі та ніки автоматично не змінюватимуться.">Перевірити й попередити</button>
+                  <div className="nickname-warning-actions__buttons">
+                    <button className="btn subtle" formAction="/api/dashboard/discord/nicknames/inspect" formMethod="post" type="submit" name="recheckAll" value="1" data-confirm-message="Переперевірити ніки всіх учасників і повністю перебудувати пріоритетну чергу? Повідомлення надсилатися не будуть.">Переперевірити всіх</button>
+                    {user.isServerOwner ? <button className="btn subtle" formAction="/api/dashboard/discord/nicknames/test-message" formMethod="post" type="submit">Надіслати тест у DM</button> : null}
+                    <button className="btn primary" type="submit" data-confirm-message="Перевірити серверні ніки й надіслати попередження учасникам із неправильним форматом? Ролі та ніки автоматично не змінюватимуться.">Перевірити й попередити</button>
                   </div>
                 </form>
+
                 {nicknameWarningState.recentRuns.length ? (
                   <details className="discord-management-details nickname-warning-history">
-                    <summary>Останні запуски ({nicknameWarningState.recentRuns.length})</summary>
+                    <summary>Історія останніх запусків ({nicknameWarningState.recentRuns.length})</summary>
                     <div className="nickname-warning-history__list">
                       {nicknameWarningState.recentRuns.map((run) => (
                         <div className={`nickname-warning-history__row is-${run.status}`} key={run.id}>
-                          <span><strong>{run.source === "automatic" ? "Автоматично" : "Вручну"} · {run.mode === "priority" ? "priority" : "full sweep"}</strong><small>{formatCleanupDate(run.completedAt)}</small></span>
+                          <span><strong>{run.source === "automatic" ? "Автоматично" : "Вручну"} · {run.mode === "priority" ? "пріоритетна черга" : "повна перевірка"}</strong><small>{formatCleanupDate(run.completedAt)}</small></span>
                           <span>перевірено <b>{run.checked}</b></span>
                           <span>некоректних <b>{run.invalid}</b></span>
                           <span>попереджено <b>{run.notified}</b></span>
