@@ -444,6 +444,20 @@ async function loadDueInvalidNicknameTargets(limit: number, now = Date.now()) {
   };
 }
 
+/**
+ * Публічний фолбек у канал доречний лише тоді, коли Discord прямо каже, що DM
+ * до цього користувача заборонені (403 / 50007). Раніше в фолбек летіла
+ * будь-яка помилка — включно з 429 і таймаутами, — і тимчасовий збій Discord
+ * перетворювався на публічний тег людини в каналі. Тепер такі помилки
+ * піднімаються вище: запуск позначить їх як failed, а планувальник повторить.
+ */
+function directMessageBlocked(error: unknown) {
+  const message = String((error as Error)?.message || error || "");
+  if (/Discord API 403/i.test(message)) return true;
+  if (/\b50007\b/.test(message)) return true;
+  return /cannot send messages to this user/i.test(message);
+}
+
 function warningSignature(template: string, nickname: string | null) {
   return `${String(template || "").trim()}|${String(nickname || "<missing>").normalize("NFC").trim()}`.slice(0, 180);
 }
@@ -663,6 +677,7 @@ async function deliverNicknameWarning(
     }, { category: "action" });
     return { userId: member.userId, name: member.displayName, status: "sent" as const, delivery: "dm" as const, nickname };
   } catch (error) {
+    if (!directMessageBlocked(error)) throw error;
     dmError = safeErrorMessage(error, "DM недоступні.");
   }
 
@@ -845,6 +860,12 @@ export async function sendNicknameWarnings(input: {
     async (member) => {
       const fresh = await fetchDiscordGuildMemberSnapshot(member.userId).catch(() => null);
       if (!fresh) throw new Error("Discord-учасника не вдалося перечитати перед попередженням.");
+      // 404 від Discord повертається як порожній знімок, а не як помилка. Без
+      // цієї перевірки людина, що вийшла з сервера, виглядала як «нік не
+      // встановлено» і отримувала DM про правила сервера, якого вже покинула.
+      if (missingMemberSnapshot(fresh)) {
+        return { userId: member.userId, name: member.displayName, status: "missing" as const, delivery: null, nickname: null };
+      }
       return deliverNicknameWarning(fresh, policy, { ...input, force: true, guildName, guildId: guild?.id || null });
     },
     {
@@ -863,15 +884,18 @@ export async function sendNicknameWarnings(input: {
   const cooldown = ok.filter((result) => result.value.status === "cooldown");
   const cooldownSkipped = preCooldownSkipped + cooldown.length;
   const corrected = ok.filter((result) => result.value.status === "corrected");
-  if (ok.length) {
-    await writeMemberCheckRecords(ok.map((result) => buildMemberCheckRecord({
+  const missing = ok.filter((result) => result.value.status === "missing");
+  const present = ok.filter((result) => result.value.status !== "missing");
+  if (present.length) {
+    await writeMemberCheckRecords(present.map((result) => buildMemberCheckRecord({
       userId: result.value.userId,
       displayName: result.value.name,
       nick: result.value.nickname,
     }, policy)));
   }
+  if (missing.length) await deleteMemberCheckRecords(missing.map((result) => result.value.userId));
   const queueAfter = await loadDueInvalidNicknameTargets(1);
-  const summary = `Перевірено ${members.length}; некоректних ${invalid.length}; попереджено ${sent.length} (DM ${dm.length}, канал ${channel.length}); cooldown ${cooldownSkipped}; відкладено лімітом ${deferredByBatch}; виправили до відправки ${corrected.length}; помилок ${failed.length}.`;
+  const summary = `Перевірено ${members.length}; некоректних ${invalid.length}; попереджено ${sent.length} (DM ${dm.length}, канал ${channel.length}); cooldown ${cooldownSkipped}; відкладено лімітом ${deferredByBatch}; виправили до відправки ${corrected.length}; вийшли із сервера ${missing.length}; помилок ${failed.length}.`;
   const status: NicknameWarningRunStatus = failed.length ? "warning" : "success";
   const completedAt = new Date().toISOString();
   const run: NicknameWarningRun = {

@@ -58,7 +58,7 @@ export const LEGACY_OAUTH_STATE_COOKIE = "mistblossom_oauth_state";
  * the existing legacy cookie names without Secure. Both names are always read
  * and cleared, keeping upgrades/downgrades predictable.
  */
-export function useSecureAuthCookies() {
+export function secureAuthCookiesEnabled() {
   return process.env.NODE_ENV === "production";
 }
 const SESSION_AUDIENCE = "mistblossom-dashboard";
@@ -661,7 +661,7 @@ export async function getSession(
 export async function setSession(session: DashboardSession) {
   const store = await cookies();
   const token = await createSessionToken(session);
-  const secure = useSecureAuthCookies();
+  const secure = secureAuthCookiesEnabled();
   const cookieName = secure ? SESSION_COOKIE : LEGACY_SESSION_COOKIE;
   const staleCookieName = secure ? LEGACY_SESSION_COOKIE : SESSION_COOKIE;
 

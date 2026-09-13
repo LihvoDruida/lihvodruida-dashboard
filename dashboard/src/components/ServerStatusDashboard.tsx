@@ -166,7 +166,9 @@ export default function ServerStatusDashboard({ initialSnapshot }: { initialSnap
   const [error, setError] = useState("");
   const [latencyMs, setLatencyMs] = useState<number | null>(null);
   const inFlight = useRef(false);
-  const lastSlowRefresh = useRef(Date.now());
+  // Ref ініціалізується лениво: Date.now() під час рендера — нечиста
+  // операція, від якої результат залежить від випадкових ре-рендерів.
+  const lastSlowRefresh = useRef<number | null>(null);
   const errorCount = useRef(0);
 
   const refresh = useCallback(async ({ manual = false, includeDocker = false }: { manual?: boolean; includeDocker?: boolean } = {}) => {
@@ -229,6 +231,7 @@ export default function ServerStatusDashboard({ initialSnapshot }: { initialSnap
         schedule(POLL_MS);
         return;
       }
+      if (lastSlowRefresh.current === null) lastSlowRefresh.current = Date.now();
       const includeDocker = Date.now() - lastSlowRefresh.current >= SLOW_REFRESH_MS;
       await refresh({ includeDocker });
       const backoff = errorCount.current ? Math.min(12_000, POLL_MS * (errorCount.current + 1)) : POLL_MS;

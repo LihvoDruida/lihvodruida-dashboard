@@ -29,6 +29,9 @@ export default function LogoutButton({
       ttl: 4200,
     });
     notifyDashboardLogout();
+    // Свідомо жорстка навігація, а не router.push: після виходу треба скинути
+    // клієнтський RSC-кеш авторизованих сторінок, інакше вони лишаються в памʼяті.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.assign("/api/auth/logout?fallback=1");
   }
 
@@ -71,6 +74,9 @@ export default function LogoutButton({
         message: "Повертаємо на сторінку входу.",
       });
       notifyDashboardLogout();
+      // Те саме, що й у fallbackLogout: повний перезавантаж документа гарантує,
+      // що після виходу не лишиться закешованого приватного RSC-контенту.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.assign("/login");
     } catch (caught) {
       console.error("[dashboard:logout]", caught);

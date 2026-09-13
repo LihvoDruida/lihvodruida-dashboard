@@ -133,7 +133,7 @@ for (const file of sourceFiles) {
 const authPath = path.join(srcRoot, 'lib', 'auth.ts');
 if (fs.existsSync(authPath)) {
   const authText = fs.readFileSync(authPath, 'utf8');
-  if (!/useSecureAuthCookies[\s\S]{0,180}NODE_ENV === ["']production["']/.test(authText)) {
+  if (!/secureAuthCookiesEnabled[\s\S]{0,180}NODE_ENV === ["']production["']/.test(authText)) {
     failures.push('auth має використовувати non-Secure legacy cookie names у development, інакше HTTP 0.0.0.0 губить OAuth/session cookies.');
   }
 }

@@ -29,7 +29,8 @@ type FirestoreModule = {
 function loadFirebaseModule(): FirestoreModule | null {
   try {
     // require, а не import: модуль не має бути в бандлі, якщо Firebase не
-    // використовується. eslint-disable-next-line @typescript-eslint/no-require-imports
+    // використовується.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const mod = require("firebase-admin/firestore") as Record<string, unknown>;
     return {
       FieldValue: mod.FieldValue as typeof PgFieldValue,

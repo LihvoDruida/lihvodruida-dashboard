@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { appBaseUrl } from "@/lib/apiRoute";
 import { cookies } from "next/headers";
-import { getSession, useSecureAuthCookies } from "@/lib/auth";
+import { getSession, secureAuthCookiesEnabled } from "@/lib/auth";
 import { randomState } from "@/lib/oauth";
 import {
   BNET_OAUTH_STATE_COOKIE,
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
     : enabledRegions[0];
   const state = `${randomState()}.${region}.${session.profileId || session.id}${nextPath ? `.${encodeNextPath(nextPath)}` : ""}`;
   const store = await cookies();
-  const secureAuthCookies = useSecureAuthCookies();
+  const secureAuthCookies = secureAuthCookiesEnabled();
   const stateCookieName = secureAuthCookies ? BNET_OAUTH_STATE_COOKIE : LEGACY_BNET_OAUTH_STATE_COOKIE;
   const staleCookieName = secureAuthCookies ? LEGACY_BNET_OAUTH_STATE_COOKIE : BNET_OAUTH_STATE_COOKIE;
   store.set(stateCookieName, state, {

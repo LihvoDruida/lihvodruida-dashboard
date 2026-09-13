@@ -382,9 +382,14 @@ function characterNicknamePattern() {
   return "[^\\[\\],\\n]{2,16}";
 }
 
+let cachedNicknameRegex: RegExp | null = null;
+
 export function nicknameTemplateToRegex(_templateInput: unknown = DEFAULT_NICKNAME_TEMPLATE) {
   // Глобальна валідація завжди приймає рівно сімейство з 1–3 персонажів:
   // {name} [{main}] / {name} [{main}, {alt}] / {name} [{main}, {alt}, {alt}].
+  // Структура фіксована, тож регулярку достатньо зібрати один раз на процес:
+  // під час sweep вона викликається на кожного учасника сервера.
+  if (cachedNicknameRegex) return cachedNicknameRegex;
   const template = DEFAULT_NICKNAME_TEMPLATE;
   let output = "";
   let lastIndex = 0;
@@ -413,7 +418,8 @@ export function nicknameTemplateToRegex(_templateInput: unknown = DEFAULT_NICKNA
   }
 
   output += templateLiteralToRegex(template.slice(lastIndex));
-  return new RegExp(`^\\s*${output}\\s*$`, "iu");
+  cachedNicknameRegex = new RegExp(`^\\s*${output}\\s*$`, "iu");
+  return cachedNicknameRegex;
 }
 
 export type NicknameValidationDetail = {
@@ -501,7 +507,11 @@ export function explainNicknameValidation(nicknameInput: unknown): NicknameValid
 }
 
 export function nicknameMatchesTemplate(nicknameInput: unknown, templateInput: unknown) {
-  const nickname = String(nicknameInput || "").normalize("NFC").replace(/\s+/g, " ").trim();
-  if (!nickname) return false;
-  return nicknameTemplateToRegex(templateInput).test(nickname);
+  // Єдине джерело правди — explainNicknameValidation. Раніше перевірка йшла
+  // тільки по регулярці, і вона була слабшою за пояснення: `Д [Khayen]`
+  // (однолітерне імʼя + пробіл) проходив як валідний, хоча DM-повідомлення
+  // для такого ніку писало «потрібно 2–32 символи». Через це один і той самий
+  // нік міг вважатися коректним у sweep і некоректним у тексті попередження.
+  void templateInput;
+  return explainNicknameValidation(nicknameInput).valid;
 }

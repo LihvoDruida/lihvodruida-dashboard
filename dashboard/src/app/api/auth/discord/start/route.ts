@@ -6,7 +6,7 @@ import {
   OAUTH_STATE_COOKIE,
   SESSION_COOKIE,
   createOAuthStateToken,
-  useSecureAuthCookies,
+  secureAuthCookiesEnabled,
 } from "@/lib/auth";
 import { buildDiscordOAuthUrl } from "@/lib/oauth";
 import {
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
   );
   applyNoStoreHeaders(response);
 
-  const secureAuthCookies = useSecureAuthCookies();
+  const secureAuthCookies = secureAuthCookiesEnabled();
   const oauthCookieName = secureAuthCookies ? OAUTH_STATE_COOKIE : LEGACY_OAUTH_STATE_COOKIE;
   response.cookies.set(
     oauthCookieName,

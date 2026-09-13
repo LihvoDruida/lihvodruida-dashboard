@@ -14,7 +14,7 @@ import {
   LEGACY_SESSION_COOKIE,
   OAUTH_STATE_COOKIE,
   SESSION_COOKIE,
-  useSecureAuthCookies,
+  secureAuthCookiesEnabled,
   createStableProfileId,
   parseOAuthStateToken,
 } from "@/lib/auth";
@@ -84,7 +84,7 @@ function rememberRemainingOAuthNonces(
   const clean = Array.from(
     new Set(nonces.map((item) => String(item || "").trim()).filter(Boolean)),
   ).slice(-MAX_PARALLEL_OAUTH_FLOWS);
-  const secureAuthCookies = useSecureAuthCookies();
+  const secureAuthCookies = secureAuthCookiesEnabled();
   const oauthCookieName = secureAuthCookies ? OAUTH_STATE_COOKIE : LEGACY_OAUTH_STATE_COOKIE;
   const staleCookieName = secureAuthCookies ? LEGACY_OAUTH_STATE_COOKIE : OAUTH_STATE_COOKIE;
   if (clean.length) {
