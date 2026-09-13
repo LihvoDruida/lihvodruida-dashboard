@@ -38,19 +38,37 @@ origin="$(env_get .env SECURITY_STRICT_ORIGIN_CHECKS || true)"; origin="${origin
 case "${origin,,}" in true|1|yes|on) pass 'strict Origin/Referer checks enabled' ;; *) fail "SECURITY_STRICT_ORIGIN_CHECKS=$origin (expected true)" ;; esac
 
 # Containers must not publish private application/database ports.
+# Do not use `docker compose port` here: Compose v5 may print `invalid IP:0` for
+# an exposed-but-unpublished port, which is not a real host binding. Inspect the
+# running container's actual NetworkSettings.Ports and only fail when Docker has
+# created a non-null host binding for the private port.
 if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
   for spec in 'dashboard 3000' 'bot 8080' 'postgres 5432'; do
     set -- $spec
-    out="$(docker compose port "$1" "$2" 2>/dev/null || true)"
-    [ -z "$out" ] && pass "$1:$2 is not published to the host" || fail "$1:$2 is publicly published: $out"
+    service="$1"; private_port="$2"
+    cid="$(docker compose ps -q "$service" 2>/dev/null | head -n1 || true)"
+    if [ -z "$cid" ]; then
+      warn "$service container is not running; host-port audit skipped for $private_port/tcp"
+      continue
+    fi
+    bindings="$(docker inspect --format '{{range $p, $items := .NetworkSettings.Ports}}{{if $items}}{{$p}} => {{range $items}}{{.HostIp}}:{{.HostPort}} {{end}}{{"\n"}}{{end}}{{end}}' "$cid" 2>/dev/null || true)"
+    out="$(printf '%s\n' "$bindings" | awk -v p="${private_port}/tcp" '$1 == p { print; exit }')"
+    [ -z "$out" ] && pass "$service:$private_port is not published to the host" || fail "$service:$private_port is publicly published: $out"
   done
 else
   warn 'docker compose unavailable; container port audit skipped'
 fi
 
-# Host listeners. Localhost-only listeners are fine; public listeners outside SSH/HTTP(S) need review.
+# Host listeners. Loopback listeners (including systemd-resolved on
+# 127.0.0.53/54:53) are local-only and not externally reachable. Public
+# listeners outside SSH/HTTP(S) need review.
 if command -v ss >/dev/null 2>&1; then
-  unexpected="$(ss -H -lnt 2>/dev/null | awk '{ addr=$4; n=split(addr,a,":"); port=a[n]+0; if (port!=22 && port!=80 && port!=443 && addr !~ /^127\.0\.0\.1:/ && addr !~ /^\[?::1\]?:/) print addr }' || true)"
+  unexpected="$(ss -H -lnt 2>/dev/null | awk '{
+    addr=$4; n=split(addr,a,":"); port=a[n]+0;
+    if (port==22 || port==80 || port==443) next;
+    if (addr ~ /^127\./ || addr ~ /^\[?::1\]?:/) next;
+    print addr
+  }' || true)"
   [ -z "$unexpected" ] && pass 'no unexpected public TCP listeners detected' || warn "review additional listeners: $(echo "$unexpected" | tr '\n' ' ')"
 else
   warn 'ss unavailable; listener audit skipped'
@@ -58,12 +76,18 @@ fi
 
 # Firewall / intrusion prevention / unattended security updates.
 if command -v ufw >/dev/null 2>&1; then
-  ufw_text="$(ufw status 2>/dev/null || true)"
-  grep -q '^Status: active' <<<"$ufw_text" && pass 'UFW firewall is active' || warn 'UFW firewall is not active'
-  if grep -Eq '^(80|443)/tcp[[:space:]]+ALLOW[[:space:]]+Anywhere' <<<"$ufw_text"; then
-    fail 'UFW allows direct public HTTP/HTTPS; production origin should accept those ports only from Cloudflare CIDRs'
+  ufw_text="$(ufw status 2>&1 || true)"
+  if grep -Eqi 'need to be root|permission denied|operation not permitted|not permitted' <<<"$ufw_text"; then
+    warn 'could not inspect UFW without elevated privileges; run: sudo make security-audit'
   elif grep -q '^Status: active' <<<"$ufw_text"; then
-    pass 'UFW has no generic public 80/443 allow rule'
+    pass 'UFW firewall is active'
+    if grep -Eq '^(80|443)/tcp[[:space:]]+ALLOW[[:space:]]+Anywhere' <<<"$ufw_text"; then
+      fail 'UFW allows direct public HTTP/HTTPS; production origin should accept those ports only from Cloudflare CIDRs'
+    else
+      pass 'UFW has no generic public 80/443 allow rule'
+    fi
+  else
+    warn 'UFW firewall is not active'
   fi
 else
   warn 'UFW is not installed'
@@ -88,11 +112,13 @@ else
   warn 'sshd command unavailable; SSH audit skipped'
 fi
 
-home_dir="${HOME:-}"
+audit_user="${SUDO_USER:-$(id -un)}"
+home_dir="$(getent passwd "$audit_user" 2>/dev/null | cut -d: -f6 || true)"
+home_dir="${home_dir:-${HOME:-}}"
 if [ -n "$home_dir" ] && [ -s "$home_dir/.ssh/authorized_keys" ]; then
-  pass "authorized_keys exists for $(id -un)"
+  pass "authorized_keys exists for $audit_user"
 else
-  warn "no non-empty $home_dir/.ssh/authorized_keys; do not disable SSH passwords until key login is verified"
+  warn "no non-empty $home_dir/.ssh/authorized_keys for $audit_user; do not disable SSH passwords until key login is verified"
 fi
 
 if [ -f /var/run/reboot-required ]; then warn 'system reboot is required for installed updates'; else pass 'no pending reboot marker'; fi
@@ -106,8 +132,8 @@ else
   pass 'application DB identity is separated from the bootstrap POSTGRES_USER (or could not be matched)'
 fi
 
-if id -nG 2>/dev/null | tr ' ' '\n' | grep -qx docker; then
-  warn 'current user belongs to docker group; docker access is effectively root-equivalent — protect this account/SSH key accordingly'
+if id -nG "$audit_user" 2>/dev/null | tr ' ' '\n' | grep -qx docker; then
+  warn "$audit_user belongs to docker group; docker access is effectively root-equivalent — protect this account/SSH key accordingly"
 fi
 
 printf '\nSummary: %d OK · %d WARN · %d FAIL\n' "$PASS" "$WARN" "$FAIL"
