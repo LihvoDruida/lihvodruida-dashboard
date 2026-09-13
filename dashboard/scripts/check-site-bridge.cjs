@@ -18,7 +18,12 @@ const roster = read('dashboard/src/lib/guildRoster.ts');
 const compose = read('docker-compose.yml');
 const envExample = read('.env.example');
 const page = read('dashboard/src/app/applications/page.tsx');
+const proxy = read('dashboard/src/proxy.ts');
 
+check(proxy.includes('function isPublicSiteBridgePath'), 'proxy must explicitly identify public Main Site bridge routes');
+check(proxy.includes('pathname === "/api/site/applications"') && proxy.includes('pathname === "/api/site/guild"'), 'both Main Site bridge routes must be public at proxy level');
+check(proxy.includes('isPublicSiteBridgePath(pathname) ||'), 'public bridge routes must bypass Dashboard session protection');
+check(proxy.includes('!isPublicSiteBridgeRequest &&'), 'public bridge routes must bypass Dashboard same-origin middleware and defer to route CORS policy');
 check(applicationsRoute.includes('isAllowedPublicSiteOrigin'), 'application POST must enforce public-site origin allowlist');
 check(applicationsRoute.includes('assertRequestBodySize'), 'application POST must enforce Content-Length body limit');
 check(applicationsRoute.includes('Buffer.byteLength(rawBody, "utf8") > 16 * 1024'), 'application POST must enforce body limit after reading chunked payloads');
@@ -43,7 +48,7 @@ check(roster.includes('raidProgression: normalizeRaidProgression'), 'guild raid 
 check(roster.includes('raidRankings: normalizeRaidRankings'), 'guild raid rankings must be persisted in roster stats');
 check(compose.includes('PUBLIC_SITE_ORIGINS:'), 'dashboard container must receive the public-site origin allowlist');
 check(envExample.includes('PUBLIC_SITE_ORIGINS='), 'public-site origin allowlist must be documented in env example');
-check(page.includes('Index (2) ↔ VPS'), 'applications UI must expose bridge health/source context');
+check(page.includes('Main Site ↔ VPS'), 'applications UI must expose bridge health/source context');
 check(page.includes('PostgreSQL source of truth'), 'applications UI must identify the server source of truth');
 
 console.log(`[check-site-bridge] OK — ${checked}/${checked} public-site bridge, privacy, raid and application invariants checked.`);

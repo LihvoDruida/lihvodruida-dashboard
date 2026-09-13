@@ -174,9 +174,9 @@ export default async function DashboardPage({
           <div className="applications-hero__copy">
             <div className="eyebrow">Mistblossom Vanguard • Recruitment desk</div>
             <h1>Заявки до гільдії</h1>
-            <p className="lead">Одна черга для сайту, PostgreSQL і Discord. Нові заявки з index (2) з’являються тут одразу після відправлення.</p>
+            <p className="lead">Одна черга для сайту, PostgreSQL і Discord. Нові заявки з Main Site з’являються тут одразу після відправлення.</p>
             <div className="applications-hero__signals" aria-label="Стан інтеграції">
-              <span className="applications-signal applications-signal--online"><i aria-hidden="true" />Index (2) ↔ VPS</span>
+              <span className="applications-signal applications-signal--online"><i aria-hidden="true" />Main Site ↔ VPS</span>
               <span className="applications-signal">PostgreSQL source of truth</span>
               <span className="applications-signal">Discord sync</span>
               <span className="applications-signal">Raider.IO enrichment</span>
@@ -269,7 +269,7 @@ export default async function DashboardPage({
                   <footer className="application-card__footer">
                     <div className="application-card__source">
                       <span className="application-source-dot" aria-hidden="true" />
-                      <span>{sourceSystem === "public-site" ? "Надіслано з index (2)" : "Синхронізовано зі сховищем"}</span>
+                      <span>{sourceSystem === "public-site" ? "Надіслано з Main Site" : "Синхронізовано зі сховищем"}</span>
                     </div>
                     {mayViewSensitiveApplications && item.html_url ? <a className="application-card__external" href={item.html_url} target="_blank" rel="noreferrer">Відкрити джерело ↗</a> : null}
                   </footer>

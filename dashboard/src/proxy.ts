@@ -33,8 +33,19 @@ function isProtectedPagePath(pathname: string) {
   );
 }
 
+function isPublicSiteBridgePath(pathname: string) {
+  return (
+    pathname === "/api/site/applications" ||
+    pathname === "/api/site/guild"
+  );
+}
+
 function isPublicApiPath(pathname: string) {
   return (
+    // Public Main Site bridge: ці endpoint-и навмисно не вимагають Dashboard-сесії.
+    // POST заявок окремо перевіряє PUBLIC_SITE_ORIGINS у route handler; GET віддає
+    // лише санітизовані публічні дані.
+    isPublicSiteBridgePath(pathname) ||
     // Liveness для healthcheck контейнера і upstream-перевірки Nginx.
     // Має бути публічним: kubelet/docker/systemd не мають сесії.
     pathname === "/api/health" ||
@@ -260,9 +271,15 @@ export function proxy(request: NextRequest) {
 
   const isDiscordInteractionEndpoint =
     pathname === "/api/discord/interactions";
+  const isPublicSiteBridgeRequest = isPublicSiteBridgePath(pathname);
 
+  // Main Site (`lihvodruida.pp.ua`) є окремим origin. Загальна Dashboard
+  // same-origin перевірка не може застосовуватись до bridge endpoint-ів, інакше
+  // browser CORS-запит буде відхилений ще до route handler. Самі bridge routes
+  // мають вузьку CORS/origin політику та не віддають приватних даних.
   if (
     !isDiscordInteractionEndpoint &&
+    !isPublicSiteBridgeRequest &&
     !hasInternalBearerAuth &&
     !verifyTrustedOrigin(request)
   ) {
