@@ -165,29 +165,6 @@
   overflow-wrap: anywhere;
 }
 
-/* Факти рейду: розділені крапкою, як у Discord-оголошенні */
-.raid-list-facts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3xs) var(--space-sm);
-  min-width: 0;
-}
-
-.raid-list-facts small {
-  position: relative;
-  font-size: 0.74rem;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-.raid-list-facts small + small::before {
-  content: "·";
-  position: absolute;
-  left: calc(var(--space-sm) / -2);
-  transform: translateX(-50%);
-  color: var(--text-faint);
-}
-
 .raid-list-progress {
   display: block;
   width: 100%;
@@ -563,13 +540,6 @@
   align-items: start;
 }
 
-.raid-party-column {
-  display: grid;
-  gap: var(--space-md);
-  align-content: start;
-  min-width: 0;
-}
-
 .raid-party-card {
   display: grid;
   gap: var(--space-2xs);
@@ -813,12 +783,6 @@
 
 .raid-roster-member.is-bench-priority {
   border-left: 2px solid var(--c-warning);
-}
-
-.raid-detail-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
 }
 
 /* =========================================================
@@ -1551,13 +1515,6 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .raid-list-facts small + small::before {
-    content: none;
-  }
-
-  .raid-list-facts {
-    gap: var(--space-3xs) var(--space-xs);
-  }
 }
 
 /* =========================================================
@@ -2002,4 +1959,726 @@
 .raid-roster-member.is-manual .raid-roster-member-copy small:last-child {
   color: var(--text-faint);
   font-style: italic;
+}
+
+/* =========================================================
+   6. RAID UX REFRESH — v3.8.6
+   Пріоритет: швидке сканування стану, ролей і дій без дублювання.
+   ========================================================= */
+.raid-page .raid-dashboard-hero {
+  min-height: auto;
+  padding-block: clamp(var(--space-lg), 2.2vw, var(--space-xl));
+}
+
+.raid-list-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(86px, 0.7fr)) minmax(220px, 1.8fr);
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+  max-width: 760px;
+}
+
+.raid-list-kpis > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface-sunken) 88%, transparent);
+}
+
+.raid-list-kpis small {
+  color: var(--text-faint);
+  font-size: 0.64rem;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.raid-list-kpis strong {
+  color: var(--text-strong);
+  font-size: 0.96rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.raid-list-kpi-next strong {
+  color: var(--c-accent-200);
+}
+
+.raid-list-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border-left-width: 2px;
+}
+
+.raid-list-item:hover {
+  transform: translateY(-1px);
+}
+
+.raid-list-item--closed,
+.raid-list-item--archived {
+  opacity: 0.78;
+}
+
+.raid-list-main-link {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.raid-list-thumb {
+  position: relative;
+  display: block;
+  width: 68px;
+  height: 68px;
+  flex: 0 0 auto;
+}
+
+.raid-list-main-link .raid-list-thumb img {
+  width: 68px;
+  height: 68px;
+  border-radius: var(--radius-md);
+}
+
+.raid-list-status-dot {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 14px;
+  height: 14px;
+  border: 3px solid var(--surface-raised);
+  border-radius: 999px;
+  background: var(--c-ink-400);
+  box-shadow: 0 0 0 1px var(--border-subtle);
+}
+
+.raid-list-status-dot--published,
+.raid-list-status-dot--active {
+  background: var(--c-success);
+}
+
+.raid-list-status-dot--draft {
+  background: var(--c-warning);
+}
+
+.raid-list-copy {
+  gap: 6px;
+}
+
+.raid-list-title-row {
+  gap: var(--space-sm);
+}
+
+.raid-list-title-row strong {
+  font-size: 1.02rem;
+  line-height: 1.25;
+}
+
+.raid-list-primary-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px var(--space-md);
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.raid-list-primary-meta__time {
+  color: var(--text-soft);
+  font-weight: 650;
+}
+
+.raid-list-role-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
+.raid-list-role-summary > span,
+.raid-roster-role-summary > span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: 0.69rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.raid-list-role-summary .is-tank,
+.raid-roster-role-summary .is-tank,
+.raid-role-counts .is-tank {
+  color: var(--c-role-tank);
+}
+
+.raid-list-role-summary .is-healer,
+.raid-roster-role-summary .is-healer,
+.raid-role-counts .is-healer {
+  color: var(--c-role-healer);
+}
+
+.raid-list-role-summary .is-dps,
+.raid-roster-role-summary .is-dps,
+.raid-role-counts .is-dps {
+  color: var(--c-role-dps);
+}
+
+.raid-list-role-summary .is-bench,
+.raid-roster-role-summary .is-bench {
+  color: var(--c-warning);
+}
+
+.raid-list-role-summary .is-total,
+.raid-list-role-summary .is-ilvl {
+  color: var(--text-soft);
+}
+
+.raid-list-progress-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-xs);
+  max-width: 420px;
+}
+
+.raid-list-progress-wrap .raid-list-progress {
+  max-width: none;
+  height: 4px;
+}
+
+.raid-list-progress-wrap > small {
+  min-width: 34px;
+  color: var(--text-faint);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.raid-list-actions {
+  justify-content: flex-end;
+}
+
+.raid-list-action-open {
+  font-weight: 700;
+}
+
+/* ---------- Сторінка рейду: навігація ---------- */
+.raid-detail-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 38px;
+  padding: 0 var(--space-2xs);
+}
+
+.raid-detail-toolbar__spacer {
+  flex: 1 1 auto;
+}
+
+.raid-detail-back {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.raid-detail-back:hover,
+.raid-detail-back:focus-visible {
+  color: var(--c-accent-200);
+}
+
+.raid-member-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(290px, 340px);
+  gap: clamp(var(--space-md), 1.8vw, var(--space-lg));
+}
+
+.raid-preview-card {
+  gap: var(--space-md);
+  padding: clamp(var(--space-md), 1.8vw, var(--space-lg));
+}
+
+.raid-preview-head--modern {
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-md);
+}
+
+.raid-preview-artwork {
+  display: grid;
+  gap: var(--space-xs);
+  justify-items: center;
+  width: 88px;
+}
+
+.raid-preview-head--modern .raid-preview-artwork > img {
+  width: 88px;
+  height: 88px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-sunken);
+  object-fit: cover;
+}
+
+.raid-preview-artwork .raid-state {
+  width: max-content;
+  max-width: 100%;
+  text-align: center;
+}
+
+.raid-preview-head-copy {
+  display: grid;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.raid-preview-title-copy {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.raid-preview-title-copy h2 {
+  font-size: clamp(1.3rem, 2vw, 1.7rem);
+  line-height: 1.15;
+}
+
+.raid-preview-primary-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px var(--space-md);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.raid-description-markdown--compact {
+  max-width: 86ch;
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.raid-closed-banner {
+  display: grid;
+  gap: 2px;
+}
+
+.raid-closed-banner strong {
+  color: var(--text-soft);
+}
+
+.raid-closed-banner span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+/* Чотири речі, які треба побачити за 2 секунди. */
+.raid-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-xs);
+}
+
+.raid-overview-card {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+  min-height: 92px;
+  padding: var(--space-sm);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface-sunken) 88%, transparent);
+}
+
+.raid-overview-card--active {
+  border-color: color-mix(in srgb, var(--c-success) 28%, var(--border-subtle));
+}
+
+.raid-overview-card--warning {
+  border-color: var(--tint-warning-border);
+}
+
+.raid-overview-card--closed {
+  opacity: 0.82;
+}
+
+.raid-overview-card__label {
+  color: var(--text-faint);
+  font-size: 0.63rem;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.raid-overview-card strong {
+  color: var(--text-strong);
+  font-size: 0.98rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.raid-overview-card small {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.raid-overview-card__value-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+.raid-overview-card__value-line > span {
+  color: var(--text-faint);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.raid-overview-meter,
+.raid-roster-meter {
+  display: block;
+  width: 100%;
+  height: 4px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+}
+
+.raid-overview-meter > span,
+.raid-roster-meter > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent-gradient);
+}
+
+.raid-role-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.raid-role-counts > span {
+  font-size: 0.9rem;
+}
+
+.raid-detail-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
+.raid-detail-facts > span {
+  padding: 5px 9px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+
+.raid-detail-facts b {
+  color: var(--text-soft);
+  font-weight: 700;
+}
+
+.raid-context-notice {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--c-info);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface-sunken) 84%, transparent);
+}
+
+.raid-context-notice strong {
+  color: var(--text-strong);
+  font-size: 0.82rem;
+}
+
+.raid-context-notice span {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.raid-context-notice--warning {
+  border-color: var(--tint-warning-border);
+  border-left-color: var(--c-warning);
+  background: var(--tint-warning-bg);
+}
+
+.raid-attendance-panel {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface-raised) 64%, var(--surface-sunken));
+}
+
+.raid-attendance-panel__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.raid-attendance-panel__head > div {
+  display: grid;
+  gap: 2px;
+}
+
+.raid-attendance-panel__head strong {
+  color: var(--text-strong);
+  font-size: 0.95rem;
+}
+
+.raid-attendance-panel__head span,
+.raid-attendance-panel__head small {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.raid-character-picker {
+  max-width: 520px;
+}
+
+.raid-preview-buttons--interactive {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.raid-preview-buttons--interactive .raid-action {
+  justify-content: center;
+  min-width: 0;
+  padding-inline: var(--space-sm);
+}
+
+.raid-preview-roster-head--modern {
+  display: flex;
+  grid-template-columns: none;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.raid-roster-head-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2xs);
+}
+
+.raid-roster-head-stats > span {
+  padding: 4px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.raid-party-columns--flat {
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+}
+
+.raid-party-card {
+  padding: var(--space-sm);
+}
+
+.raid-party-row {
+  padding-block: 6px;
+}
+
+/* ---------- Правий склад: тільки корисні секції ---------- */
+.raid-roster-heading {
+  align-items: center;
+}
+
+.raid-roster-heading > div {
+  display: grid;
+  gap: 1px;
+}
+
+.raid-roster-heading > div > small {
+  color: var(--text-faint);
+  font-size: 0.66rem;
+}
+
+.raid-roster-heading > span {
+  color: var(--c-accent-200);
+  font-size: 1rem;
+}
+
+.raid-roster-role-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
+.raid-roster-panel {
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  scrollbar-gutter: stable;
+}
+
+.raid-roster-block {
+  gap: 5px;
+}
+
+.raid-roster-member {
+  padding: 6px;
+}
+
+@media (max-width: 1180px) {
+  .raid-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1000px) {
+  .raid-member-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .raid-roster-panel {
+    max-height: none;
+  }
+
+  .raid-party-columns--flat {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .raid-list-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-width: none;
+  }
+
+  .raid-list-kpi-next {
+    grid-column: 1 / -1;
+  }
+
+  .raid-list-item {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .raid-list-actions {
+    width: 100%;
+  }
+
+  .raid-preview-buttons--interactive {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .raid-preview-roster-head--modern {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .raid-roster-head-stats {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 620px) {
+  .raid-list-kpis,
+  .raid-overview-grid,
+  .raid-party-columns--flat {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .raid-list-kpi-next {
+    grid-column: auto;
+  }
+
+  .raid-list-main-link {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .raid-list-thumb,
+  .raid-list-main-link .raid-list-thumb img {
+    width: 54px;
+    height: 54px;
+  }
+
+  .raid-list-primary-meta {
+    gap: 3px var(--space-sm);
+  }
+
+  .raid-list-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+
+  .raid-list-action-open {
+    justify-content: center;
+  }
+
+  .raid-list-action-state-form,
+  .raid-list-action-state-form .btn {
+    width: 100%;
+  }
+
+  .raid-preview-head--modern {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .raid-preview-artwork {
+    width: 100%;
+    grid-template-columns: auto 1fr;
+    justify-items: start;
+    align-items: center;
+  }
+
+  .raid-preview-head--modern .raid-preview-artwork > img {
+    width: 64px;
+    height: 64px;
+  }
+
+  .raid-preview-title-row,
+  .raid-attendance-panel__head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .raid-preview-manage-actions,
+  .raid-manage-actions,
+  .raid-manage-actions > *,
+  .raid-manage-actions .btn {
+    width: 100%;
+  }
+
+  .raid-manage-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .raid-preview-buttons--interactive {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .raid-detail-toolbar {
+    flex-wrap: wrap;
+  }
 }

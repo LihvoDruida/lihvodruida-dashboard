@@ -457,13 +457,30 @@ export function RosterSideList({
   const layout = buildRaidGroupLayout(raid);
   const layoutCounts = raidGroupLayoutSlotCounts(layout);
   const layoutCapacity = layout.targetSize || raidDisplayCapacity(raid);
+  const fillPercent = Math.min(
+    100,
+    Math.round((layoutCounts.roster / Math.max(1, layoutCapacity)) * 100),
+  );
+  const benchCount = layout.bench.members.length;
   return (
     <aside className="raid-roster-panel panel">
       <div className="raid-roster-heading">
-        <strong>Хто йде</strong>
+        <div>
+          <strong>Склад рейду</strong>
+          <small>{fillPercent}% основи заповнено</small>
+        </div>
         <span>
           {layoutCounts.roster} / {layoutCapacity}
         </span>
+      </div>
+      <div className="raid-roster-meter" aria-label={`Заповнення складу ${layoutCounts.roster} з ${layoutCapacity}`}>
+        <span style={{ width: `${fillPercent}%` }} />
+      </div>
+      <div className="raid-roster-role-summary" aria-label="Ролі у складі">
+        <span className="is-tank">🛡 {layoutCounts.tanks}/{composition.tanks}</span>
+        <span className="is-healer">✚ {layoutCounts.healers}/{composition.healers}</span>
+        <span className="is-dps">⚔ {layoutCounts.dps}/{composition.dps}</span>
+        {benchCount ? <span className="is-bench">Лава {benchCount}</span> : null}
       </div>
       <RosterBlock
         title={`Танки (${grouped.tanks.length}/${composition.tanks})`}
@@ -492,36 +509,39 @@ export function RosterSideList({
         benchPriority={raid.benchPriority || null}
         showBenchPriorityMarkers={showBenchPriorityMarkers}
       />
-      <RosterBlock
-        title={`50/50 / невпевнені (${grouped.tentative.length})`}
-        items={grouped.tentative}
-        empty="—"
-        showItemLevel={showItemLevel}
-        minItemLevel={raid.minItemLevel}
-        minItemLevelRequired={raid.minItemLevelRequired}
-        benchPriority={raid.benchPriority || null}
-        showBenchPriorityMarkers={showBenchPriorityMarkers}
-      />
-      <RosterBlock
-        title={`Затримаюсь (${grouped.late.length})`}
-        items={grouped.late}
-        empty="—"
-        showItemLevel={showItemLevel}
-        minItemLevel={raid.minItemLevel}
-        minItemLevelRequired={raid.minItemLevelRequired}
-        benchPriority={raid.benchPriority || null}
-        showBenchPriorityMarkers={showBenchPriorityMarkers}
-      />
-      <RosterBlock
-        title={`Пропускають (${grouped.skipped.length})`}
-        items={grouped.skipped}
-        empty="—"
-        showItemLevel={showItemLevel}
-        minItemLevel={raid.minItemLevel}
-        minItemLevelRequired={raid.minItemLevelRequired}
-        benchPriority={raid.benchPriority || null}
-        showBenchPriorityMarkers={showBenchPriorityMarkers}
-      />
+      {grouped.tentative.length ? (
+        <RosterBlock
+          title={`50/50 (${grouped.tentative.length})`}
+          items={grouped.tentative}
+          showItemLevel={showItemLevel}
+          minItemLevel={raid.minItemLevel}
+          minItemLevelRequired={raid.minItemLevelRequired}
+          benchPriority={raid.benchPriority || null}
+          showBenchPriorityMarkers={showBenchPriorityMarkers}
+        />
+      ) : null}
+      {grouped.late.length ? (
+        <RosterBlock
+          title={`Затримаюсь (${grouped.late.length})`}
+          items={grouped.late}
+          showItemLevel={showItemLevel}
+          minItemLevel={raid.minItemLevel}
+          minItemLevelRequired={raid.minItemLevelRequired}
+          benchPriority={raid.benchPriority || null}
+          showBenchPriorityMarkers={showBenchPriorityMarkers}
+        />
+      ) : null}
+      {grouped.skipped.length ? (
+        <RosterBlock
+          title={`Пропускають (${grouped.skipped.length})`}
+          items={grouped.skipped}
+          showItemLevel={showItemLevel}
+          minItemLevel={raid.minItemLevel}
+          minItemLevelRequired={raid.minItemLevelRequired}
+          benchPriority={raid.benchPriority || null}
+          showBenchPriorityMarkers={showBenchPriorityMarkers}
+        />
+      ) : null}
     </aside>
   );
 }
@@ -718,9 +738,11 @@ export function RaidAnnouncementPreview({
   const layout = buildRaidGroupLayout(raid);
   const layoutCounts = raidGroupLayoutSlotCounts(layout);
   const layoutCapacity = layout.targetSize || raidDisplayCapacity(raid);
+  const fillPercent = Math.min(
+    100,
+    Math.round((layoutCounts.roster / Math.max(1, layoutCapacity)) * 100),
+  );
   const parties = layout.parties;
-  const oddParties = parties.filter((party) => party.index % 2 === 1);
-  const evenParties = parties.filter((party) => party.index % 2 === 0);
   const bench = layout.bench;
   const compositionWarnings = layout.warnings;
   const closed = isRaidClosed(raid);
@@ -728,190 +750,155 @@ export function RaidAnnouncementPreview({
     raidRegistrationLimit(raid) && layoutCounts.roster >= layoutCapacity,
   );
   const registrationLock = raidRegistrationLockSummary(raid);
+  const statusClass = raidStatusClass(raid);
   return (
     <section
       className={`panel raid-preview-card${closed ? " is-closed" : ""}`}
       aria-label="Оголошення рейду"
     >
       <div className="raid-preview-accent" aria-hidden="true" />
-      <div className="raid-preview-head">
-        {
+
+      <div className="raid-preview-head raid-preview-head--modern">
+        <div className="raid-preview-artwork">
           <img
             src={resolveRaidThumbnailUrl(raid)}
             alt=""
-            width={74}
-            height={74}
+            width={88}
+            height={88}
             referrerPolicy="no-referrer"
           />
-        }
-        <div>
+          <em className={`raid-state raid-state--${statusClass}`}>
+            {raidStatusLabel(raid)}
+          </em>
+        </div>
+        <div className="raid-preview-head-copy">
           <div className="raid-preview-title-row">
-            <h2>{raidTitle(raid)}</h2>
+            <div className="raid-preview-title-copy">
+              <h2>{raidTitle(raid)}</h2>
+              <div className="raid-preview-primary-line">
+                <span>📅 {formatRaidDateTime(raid.date, raid.time)}</span>
+                {raid.raidLeaderName ? <span>🧭 РЛ: {raid.raidLeaderName}</span> : null}
+                <span>👥 {layoutCounts.roster}/{layoutCapacity}</span>
+              </div>
+            </div>
             {manageActions ? (
               <div className="raid-preview-manage-actions">{manageActions}</div>
             ) : null}
           </div>
-          <div className="raid-description-markdown">
+          <div className="raid-description-markdown raid-description-markdown--compact">
             <DiscordMarkdown value={raid.description} />
           </div>
           {closed ? (
             <div className="raid-closed-banner">
-              🔒 Запис закрито. Усі кнопки на сайті й у Discord неактивні.
+              <strong>🔒 Запис закрито</strong>
+              <span>Склад зафіксовано, а кнопки сайту й Discord неактивні.</span>
             </div>
           ) : null}
         </div>
       </div>
-      <div className="raid-preview-meta">
-        <span>
-          <strong>📌 Статус</strong>
-          {raidStatusLabel(raid)}
-        </span>
-        <span>
-          <strong>📅 Дата</strong>
-          {formatRaidDateTime(raid.date, raid.time)}
-        </span>
-        <span>
-          <strong>👤 Створив</strong>
-          {raid.createdByName}
-          {raid.createdByMain ? (
-            <small>Мейн: {raid.createdByMain}</small>
-          ) : null}
-        </span>
-        {raid.raidLeaderName ? (
-          <span>
-            <strong>🧭 РЛ</strong>
-            {raid.raidLeaderName}
-          </span>
-        ) : null}
-        <span>
-          <strong>🧪 Розхідники</strong>
-          {raidConsumablesLabel(raid.consumables)}
-        </span>
-        <span>
-          <strong>🎁 Лут</strong>
-          {raidLootLabel(raid.lootMode)}
-        </span>
-        {showRosterDetails && raid.minItemLevel ? (
-          <span>
-            <strong>👙 Мін. ilvl</strong>
-            {raid.minItemLevel}
-            <small>
-              {raid.minItemLevelRequired
-                ? "Блокує запис нижче порогу"
-                : "Лише попередження"}
-            </small>
-          </span>
-        ) : null}
-        {showRosterDetails && averageItemLevel ? (
-          <span>
-            <strong>📊 Середній ilvl</strong>
-            {averageItemLevel}
-            <small>За активними учасниками рейду</small>
-          </span>
-        ) : null}
-        <span>
-          <strong>👥 Записано</strong>
-          {layoutCounts.roster} / {layoutCapacity}
-          <small>
-            {raid.maxPlayers
-              ? `Основний склад: ${raid.maxPlayers} • схема ${raidAutoCompositionLabel(raid)}`
-              : raidAutoCompositionLabel(raid)}
-          </small>
-        </span>
-        {registrationLock.enabled ? (
-          <span>
-            <strong>🔐 Дедлайн запису</strong>
-            {registrationLock.label}
-            <small>{registrationLock.detail}</small>
-          </span>
-        ) : null}
+
+      <div className="raid-overview-grid" aria-label="Ключова інформація рейду">
+        <div className={`raid-overview-card raid-overview-card--${closed ? "closed" : registrationLock.locked ? "warning" : "active"}`}>
+          <span className="raid-overview-card__label">Запис</span>
+          <strong>{closed ? "Закрито" : registrationLock.enabled ? registrationLock.label : "Відкрито"}</strong>
+          <small>{registrationLock.enabled ? registrationLock.detail : "Можна змінювати участь до старту рейду"}</small>
+        </div>
+        <div className="raid-overview-card raid-overview-card--roster">
+          <span className="raid-overview-card__label">Основний склад</span>
+          <div className="raid-overview-card__value-line">
+            <strong>{layoutCounts.roster} / {layoutCapacity}</strong>
+            <span>{fillPercent}%</span>
+          </div>
+          <span className="raid-overview-meter" aria-hidden="true"><span style={{ width: `${fillPercent}%` }} /></span>
+        </div>
+        <div className="raid-overview-card raid-overview-card--roles">
+          <span className="raid-overview-card__label">Ролі</span>
+          <strong className="raid-role-counts">
+            <span className="is-tank">🛡 {layoutCounts.tanks}</span>
+            <span className="is-healer">✚ {layoutCounts.healers}</span>
+            <span className="is-dps">⚔ {layoutCounts.dps}</span>
+          </strong>
+          <small>Ціль: {raidAutoCompositionLabel(raid)}</small>
+        </div>
+        <div className="raid-overview-card raid-overview-card--quality">
+          <span className="raid-overview-card__label">Готовність</span>
+          <strong>{averageItemLevel ? `${averageItemLevel} ilvl` : "—"}</strong>
+          <small>{bench.members.length ? `Лава: ${bench.members.length}` : "Без лави запасних"}</small>
+        </div>
       </div>
-      {showRosterDetails && raid.minItemLevel ? (
-        <div className="raid-ilvl-notice">
-          👙 Мінімальний ilvl для цього рейду:{" "}
-          <strong>{raid.minItemLevel}</strong>.{" "}
-          {raid.minItemLevelRequired
-            ? "Якщо персонаж нижче порогу, система заблокує запис."
-            : "Якщо персонаж нижче порогу, система покаже попередження, але не блокує запис."}
-        </div>
-      ) : null}
-      {raidRegistrationLimit(raid) ? (
-        <div className="raid-ilvl-notice">
-          👥 Основний склад для цього рейду:{" "}
-          <strong>{raidRegistrationLimit(raid)}</strong>.{" "}
-          {mainRosterFull
-            ? "Основний склад заповнений — наступні активні записи будуть відображені в лаві запасних."
-            : "Після заповнення основного складу нові активні записи підуть у лаву запасних, а не будуть заблоковані."}
-        </div>
-      ) : null}
-      {registrationLock.enabled ? (
-        <div
-          className={`raid-ilvl-notice${registrationLock.locked ? " is-blocked" : ""}`}
-        >
-          🔐 Блокування запису: <strong>{registrationLock.label}</strong>.{" "}
-          {registrationLock.locked
-            ? "Запис закрито: усі дії з реєстрацією недоступні."
-            : registrationLock.detail}
+
+      <div className="raid-detail-facts" aria-label="Додаткові параметри рейду">
+        {showRosterDetails && raid.minItemLevel ? (
+          <span><b>Мін. ilvl</b> {raid.minItemLevel}{raid.minItemLevelRequired ? " · обовʼязково" : " · попередження"}</span>
+        ) : null}
+        <span><b>Розхідники</b> {raidConsumablesLabel(raid.consumables)}</span>
+        <span><b>Лут</b> {raidLootLabel(raid.lootMode)}</span>
+        <span><b>Створив</b> {raid.createdByName}{raid.createdByMain ? ` · ${raid.createdByMain}` : ""}</span>
+      </div>
+
+      {mainRosterFull && !closed ? (
+        <div className="raid-context-notice raid-context-notice--info">
+          <strong>Основний склад заповнений</strong>
+          <span>Нові активні записи автоматично підуть у лаву запасних, доки не звільниться місце.</span>
         </div>
       ) : null}
       {showRosterDetails && compositionWarnings.length ? (
-        <div className="raid-ilvl-notice is-warning">
-          ⚠️ Валідація складу: {compositionWarnings.join(" • ")}
+        <div className="raid-context-notice raid-context-notice--warning">
+          <strong>⚠ Потрібна увага до складу</strong>
+          <span>{compositionWarnings.join(" • ")}</span>
         </div>
       ) : null}
-      {actions || (
-        <div
-          className={`raid-preview-buttons${closed ? " is-disabled" : ""}`}
-          aria-hidden="true"
-        >
-          <span className="raid-action raid-action--go">✓ Підписатися</span>
-          <span className="raid-action raid-action--maybe">❓ 50/50</span>
-          <span className="raid-action raid-action--skip">↩ Пропустити</span>
-          <span className="raid-action raid-action--late">🕒 Затримаюсь</span>
+
+      <div className="raid-attendance-panel">
+        <div className="raid-attendance-panel__head">
+          <div>
+            <strong>Моя участь</strong>
+            <span>{closed ? "Рейд уже закритий — доступний лише перегляд." : "Обери персонажа й одразу зафіксуй свій статус."}</span>
+          </div>
+          {!closed && registrationLock.enabled ? <small>{registrationLock.label}</small> : null}
         </div>
-      )}
+        {actions || (
+          <div
+            className={`raid-preview-buttons${closed ? " is-disabled" : ""}`}
+            aria-hidden="true"
+          >
+            <span className="raid-action raid-action--go">✓ Підписатися</span>
+            <span className="raid-action raid-action--maybe">❓ 50/50</span>
+            <span className="raid-action raid-action--skip">↩ Пропустити</span>
+            <span className="raid-action raid-action--late">🕒 Затримаюсь</span>
+          </div>
+        )}
+      </div>
+
       {showRosterDetails ? (
         <>
-          <div className="raid-preview-roster-head">
+          <div className="raid-preview-roster-head raid-preview-roster-head--modern">
             <div>
-              <strong>Склад рейду</strong>
+              <strong>Паті рейду</strong>
               <p>
-                Паті будуються динамічно: максимум 2 танки на рейд, хіли
-                масштабуються від кількості паті, ДД добираються за критичними
-                бафами та балансом мілі/рендж. Якщо основний склад заповнено,
-                зайві танки/хіли/ДД переходять у лаву запасних.
+                Розподіл формується автоматично за ролями й критичними бафами. Офіцери бачать ilvl та пріоритет лави.
               </p>
+            </div>
+            <div className="raid-roster-head-stats" aria-label="Стан розподілу по паті">
+              <span>Паті {parties.length}</span>
+              <span>Основа {layoutCounts.roster}/{layoutCapacity}</span>
+              {bench.members.length ? <span>Лава {bench.members.length}</span> : null}
             </div>
           </div>
           <div className="raid-party-grid">
             <div className="raid-party-layout">
-              <div className="raid-party-columns">
-                <div className="raid-party-column">
-                  {oddParties.map((party) => (
-                    <PartyCard
-                      key={party.index}
-                      party={party}
-                      minItemLevel={raid.minItemLevel}
-                      minItemLevelRequired={raid.minItemLevelRequired}
-                      showItemLevel={showMemberItemLevels}
-                      benchPriority={raid.benchPriority || null}
-                      showBenchPriorityMarkers={showBenchPriorityMarkers}
-                    />
-                  ))}
-                </div>
-                <div className="raid-party-column">
-                  {evenParties.map((party) => (
-                    <PartyCard
-                      key={party.index}
-                      party={party}
-                      minItemLevel={raid.minItemLevel}
-                      minItemLevelRequired={raid.minItemLevelRequired}
-                      showItemLevel={showMemberItemLevels}
-                      benchPriority={raid.benchPriority || null}
-                      showBenchPriorityMarkers={showBenchPriorityMarkers}
-                    />
-                  ))}
-                </div>
+              <div className="raid-party-columns raid-party-columns--flat">
+                {parties.map((party) => (
+                  <PartyCard
+                    key={party.index}
+                    party={party}
+                    minItemLevel={raid.minItemLevel}
+                    minItemLevelRequired={raid.minItemLevelRequired}
+                    showItemLevel={showMemberItemLevels}
+                    benchPriority={raid.benchPriority || null}
+                    showBenchPriorityMarkers={showBenchPriorityMarkers}
+                  />
+                ))}
               </div>
               <BenchCard
                 members={bench.members}
@@ -951,6 +938,11 @@ export function RaidListCard({
   const capacity = layout.targetSize || raidDisplayCapacity(raid);
   const closed = isRaidClosed(raid);
   const registrationLock = raidRegistrationLockSummary(raid);
+  const fillPercent = Math.min(
+    100,
+    Math.round((layoutCounts.roster / Math.max(1, capacity)) * 100),
+  );
+  const benchCount = layout.bench.members.length;
   return (
     <article className={`raid-list-item dashboard-list-row raid-list-item--${statusClass}`}>
       <a
@@ -958,7 +950,7 @@ export function RaidListCard({
         href={`/raids/${encodeURIComponent(raid.id)}`}
         aria-label={`Відкрити рейд ${raidTitle(raid)}`}
       >
-        {
+        <span className="raid-list-thumb">
           <img
             src={resolveRaidThumbnailUrl(raid)}
             alt=""
@@ -967,7 +959,8 @@ export function RaidListCard({
             loading="lazy"
             referrerPolicy="no-referrer"
           />
-        }
+          <span className={`raid-list-status-dot raid-list-status-dot--${statusClass}`} aria-hidden="true" />
+        </span>
         <span className="raid-list-copy">
           <span className="raid-list-title-row">
             <strong>{raidTitle(raid)}</strong>
@@ -975,24 +968,27 @@ export function RaidListCard({
               {raidStatusLabel(raid)}
             </em>
           </span>
-          <span className="raid-list-facts">
-            <small>Дата: {formatRaidDateTime(raid.date, raid.time)}</small>
-            <small>Склад: {layoutCounts.roster} / {capacity}</small>
-            <small>Тип: {raidAutoCompositionLabel(raid)}</small>
-            {raid.raidLeaderName ? <small>РЛ: {raid.raidLeaderName}</small> : null}
-            {raid.minItemLevel ? <small>Мін. ilvl: {raid.minItemLevel}</small> : null}
-            {averageItemLevel ? <small>Сер. ilvl: {averageItemLevel}</small> : null}
-            {registrationLock.enabled ? <small>Запис: {registrationLock.label}</small> : null}
+          <span className="raid-list-primary-meta">
+            <span className="raid-list-primary-meta__time">📅 {formatRaidDateTime(raid.date, raid.time)}</span>
+            {raid.raidLeaderName ? <span>🧭 {raid.raidLeaderName}</span> : null}
+            {registrationLock.enabled ? <span>🔐 {registrationLock.label}</span> : null}
           </span>
-          <span
-            className="raid-list-progress"
-            aria-label={`Заповнення рейду ${layoutCounts.roster} з ${capacity}`}
-          >
+          <span className="raid-list-role-summary" aria-label="Склад за ролями">
+            <span className="is-tank">🛡 {layoutCounts.tanks}</span>
+            <span className="is-healer">✚ {layoutCounts.healers}</span>
+            <span className="is-dps">⚔ {layoutCounts.dps}</span>
+            <span className="is-total">👥 {layoutCounts.roster}/{capacity}</span>
+            {benchCount ? <span className="is-bench">Лава {benchCount}</span> : null}
+            {averageItemLevel ? <span className="is-ilvl">ilvl {averageItemLevel}</span> : null}
+          </span>
+          <span className="raid-list-progress-wrap">
             <span
-              style={{
-                width: `${Math.min(100, Math.round((layoutCounts.roster / Math.max(1, capacity)) * 100))}%`,
-              }}
-            />
+              className="raid-list-progress"
+              aria-label={`Заповнення рейду ${layoutCounts.roster} з ${capacity}`}
+            >
+              <span style={{ width: `${fillPercent}%` }} />
+            </span>
+            <small>{fillPercent}%</small>
           </span>
         </span>
       </a>

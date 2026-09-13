@@ -8,6 +8,7 @@ import {
   RaidListCard,
   RaidPageShell,
   StatusNotice,
+  formatRaidDateTime,
 } from "@/components/RaidViews";
 import { buildPageMetadata } from "@/lib/seo";
 import { recordDashboardSystemLog } from "@/lib/dashboardSystemLogs";
@@ -65,9 +66,7 @@ export default async function RaidsListPage({
   const currentRaids = canManage
     ? [...activeRaids, ...draftRaids]
     : activeRaids;
-  const visibleTotal = canManage
-    ? raids.length
-    : activeRaids.length + closedRaids.length;
+  const nextRaid = activeRaids[0] || null;
 
   return (
     <RaidPageShell
@@ -107,14 +106,25 @@ export default async function RaidsListPage({
                 ? "Активні рейди та чернетки. Закриті рейди винесені в окремий архів нижче."
                 : "Тут видно рейди, на які можна записатися або переглянути свій статус."}
             </p>
-            <div
-              className="raid-list-summary dashboard-list-summary"
-              aria-label="Коротка статистика рейдів"
-            >
-              <span>Усього: {visibleTotal}</span>
-              <span>Активні: {activeRaids.length}</span>
-              {canManage ? <span>Чернетки: {draftRaids.length}</span> : null}
-              <span>Архів: {closedRaids.length}</span>
+            <div className="raid-list-kpis" aria-label="Коротка статистика рейдів">
+              <span>
+                <small>Активні</small>
+                <strong>{activeRaids.length}</strong>
+              </span>
+              {canManage ? (
+                <span>
+                  <small>Чернетки</small>
+                  <strong>{draftRaids.length}</strong>
+                </span>
+              ) : null}
+              <span>
+                <small>Архів</small>
+                <strong>{closedRaids.length}</strong>
+              </span>
+              <span className="raid-list-kpi-next">
+                <small>Найближчий рейд</small>
+                <strong>{nextRaid ? formatRaidDateTime(nextRaid.date, nextRaid.time) : "Немає"}</strong>
+              </span>
             </div>
           </div>
           {canManage ? (

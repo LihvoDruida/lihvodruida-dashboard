@@ -49,28 +49,35 @@ export default async function RaidDetailsPage({
       {!hasRaidStorage() ? <div className="notice panel error-note raid-notice">Запис на рейди тимчасово недоступний. Повтори пізніше або звернись до офіцера.</div> : null}
 
       {visibleRaid ? (
-        <section className="raid-member-layout">
-          <div className="raid-preview-column">
-            <RaidAnnouncementPreview
-              raid={visibleRaid}
-              actions={<RaidAttendanceActions raid={visibleRaid} user={user} profile={profile} />}
-              manageActions={canManage ? <RaidManageActions raid={visibleRaid} /> : null}
-              showRosterDetails={true}
-              showMemberItemLevels={canManage}
-            />
-            <div className="raid-detail-links">
-              {canManage ? <a className="btn subtle" href="/raids">До списку рейдів</a> : null}
-              {visibleRaid.messageUrl ? <a className="btn subtle" href={visibleRaid.messageUrl} target="_blank" rel="noreferrer">Відкрити повідомлення в Discord</a> : null}
+        <>
+          <nav className="raid-detail-toolbar" aria-label="Навігація рейду">
+            <a className="raid-detail-back" href="/raids">← До списку рейдів</a>
+            <span className="raid-detail-toolbar__spacer" />
+            {visibleRaid.messageUrl ? (
+              <a className="btn subtle btn-sm" href={visibleRaid.messageUrl} target="_blank" rel="noreferrer">
+                Discord ↗
+              </a>
+            ) : null}
+          </nav>
+          <section className="raid-member-layout">
+            <div className="raid-preview-column">
+              <RaidAnnouncementPreview
+                raid={visibleRaid}
+                actions={<RaidAttendanceActions raid={visibleRaid} user={user} profile={profile} />}
+                manageActions={canManage ? <RaidManageActions raid={visibleRaid} /> : null}
+                showRosterDetails={true}
+                showMemberItemLevels={canManage}
+              />
             </div>
-          </div>
-          {canSeeRoster ? (
-            <RosterSideList
-              raid={visibleRaid}
-              showItemLevel={canManage}
-              showBenchPriorityMarkers={canManage}
-            />
-          ) : null}
-        </section>
+            {canSeeRoster ? (
+              <RosterSideList
+                raid={visibleRaid}
+                showItemLevel={canManage}
+                showBenchPriorityMarkers={canManage}
+              />
+            ) : null}
+          </section>
+        </>
       ) : <RaidUnavailableState canManage={canManage} />}
     </RaidPageShell>
   );
