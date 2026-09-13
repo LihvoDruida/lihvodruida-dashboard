@@ -28,8 +28,8 @@ function lifecycleGuard() {
 
 function lifecycleMinIntervalMs() {
   const eco = envFlag(["FIREBASE_ECO_MODE", "FIRESTORE_ECO_MODE", "DASHBOARD_ECO_MODE"], false);
-  // Lifecycle runs once per minute so 15-minute reminders and exact
-  // registration deadlines are not delayed by a 5–10 minute polling window.
+  // The task worker wakes once per minute, but each raid event keeps its own
+  // absolute dueAtMs. The tick only claims records whose exact deadline is due.
   const fallback = eco ? 60_000 : 45_000;
   const value = Number(process.env.RAID_LIFECYCLE_MIN_INTERVAL_MS || process.env.DASHBOARD_RAID_LIFECYCLE_MIN_INTERVAL_MS || fallback);
   if (!Number.isFinite(value)) return fallback;
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const url = new URL(request.url);
-    const limit = integerParam(url.searchParams.get("limit"), lifecycleDefaultLimit(), 1, 50);
+    const limit = integerParam(url.searchParams.get("limit"), lifecycleDefaultLimit(), 1, 100);
     guard.lastStartedAt = now;
     const fullSweep = wantsFullSweep(request);
     const promise = syncRaidLifecycleBatch(limit, { fullSweep });

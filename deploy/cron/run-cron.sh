@@ -11,7 +11,7 @@
 #
 # Задачі та розклад:
 #   */2  * * * *  /api/guild/sync             — Battle.net + Raider.IO + raid progress у БД
-#   *    * * * *  /api/raids/lifecycle        — дедлайни, 15-хв нагадування, Discord cleanup
+#   *    * * * *  /api/raids/lifecycle        — per-record task queue: close/reminder/Discord cleanup
 #   */5  * * * *  /api/polls/close-due?force=1 — scheduled-публікація + автозакриття/повтор
 #   */30 * * * *  /api/dashboard/logs/maintenance — retention/budget журналу
 #   */15 * * * *  /api/dashboard/profiles/orphan-cleanup — scheduler перевірки/очищення акаунтів
@@ -51,6 +51,11 @@ call() {
 
 log "старт; база=${BASE}"
 
+# Після рестарту одразу відновлюємо/звіряємо per-raid task queue. Це закриває
+# старі рейди, які були створені до появи task scheduler, не чекаючи початку
+# наступної години. Після reconciliation цей же виклик обробляє вже due tasks.
+call "/api/raids/lifecycle?sweep=1&limit=100"
+
 # Запамʼятовуємо саме календарну хвилину, а не просто робимо sleep 60.
 # Якщо повільна другорядна задача перетнула межу хвилини, цикл одразу
 # виконає новий tick замість того, щоб проспати його до наступної межі.
@@ -65,10 +70,9 @@ while true; do
   last_tick="$tick"
   minute=$(date -u +%-M)
 
-  # Найчутливіша до часу задача завжди йде першою. Так guild sync або
-  # maintenance не можуть затримати закриття запису чи 15-хв reminder.
-  # На початку години full sweep теж спершу бере near-date window і
-  # пріоритезує актуальні close/reminder події над старим cleanup backlog.
+  # Найчутливіша до часу задача завжди йде першою. Звичайний tick читає
+  # тільки dueAtMs із task queue; hourly sweep лише ремонтує/звіряє task plan
+  # для legacy або пропущених записів і потім обробляє due tasks.
   if [ "$minute" -eq 0 ]; then
     call "/api/raids/lifecycle?sweep=1&limit=100"
   else

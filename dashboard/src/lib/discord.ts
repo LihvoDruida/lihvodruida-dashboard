@@ -5,7 +5,8 @@ import {
   statusEmoji,
   statusText,
 } from "./github";
-import { discordApi } from "@/lib/discordAdmin";
+import { discordApi, getDiscordDefaultChannelId } from "@/lib/discordAdmin";
+import { getGuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
 
 function cleanText(value: unknown, max = 200) {
   return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
@@ -13,14 +14,22 @@ function cleanText(value: unknown, max = 200) {
 
 function getDiscordBotConfig() {
   const botToken = process.env.DISCORD_BOT_TOKEN;
-  const channelId = process.env.DISCORD_CHANNEL_ID;
-
   return {
     botToken,
-    channelId,
     ok: !!botToken,
   };
 }
+
+export async function resolveApplicationsDiscordChannelId() {
+  const legacyChannelId = getDiscordDefaultChannelId();
+  try {
+    const policy = await getGuildNicknamePolicy();
+    return String(policy.applicationsChannelId || legacyChannelId || "").trim();
+  } catch {
+    return legacyChannelId;
+  }
+}
+
 
 function updateEmbedDescription(description: string | undefined, status: ApplicationStatus) {
   const statusLine = `**Статус:** ${statusEmoji(status)} ${statusText(status)}`;
@@ -133,10 +142,11 @@ export async function notifyDiscordStatusChange(params: {
   issueUrl?: string;
   source: "dashboard" | "discord";
 }) {
-  const { botToken, channelId } = getDiscordBotConfig();
+  const { botToken } = getDiscordBotConfig();
+  const channelId = await resolveApplicationsDiscordChannelId();
 
   if (!botToken || !channelId) {
-    return { skipped: true, reason: "DISCORD_BOT_TOKEN or DISCORD_CHANNEL_ID is missing" };
+    return { skipped: true, reason: "DISCORD_BOT_TOKEN або канал заявок не налаштований" };
   }
 
   try {
@@ -153,6 +163,15 @@ export async function notifyDiscordStatusChange(params: {
   }
 }
 
+export type DiscordApplicationDeliveryResult = {
+  ok: boolean;
+  skipped?: boolean;
+  reason?: string;
+  error?: string;
+  channel_id?: string;
+  message_id?: string;
+};
+
 export async function notifyDiscordNewApplication(params: {
   issueNumber: number;
   trackingNumber?: string | null;
@@ -165,10 +184,11 @@ export async function notifyDiscordNewApplication(params: {
   battleTag?: string | null;
   source?: string | null;
   availability?: string | null;
-}) {
-  const { botToken, channelId } = getDiscordBotConfig();
+}): Promise<DiscordApplicationDeliveryResult> {
+  const { botToken } = getDiscordBotConfig();
+  const channelId = await resolveApplicationsDiscordChannelId();
   if (!botToken || !channelId) {
-    return { ok: false, skipped: true, reason: "DISCORD_BOT_TOKEN or DISCORD_CHANNEL_ID is missing" };
+    return { ok: false, skipped: true, reason: "DISCORD_BOT_TOKEN або канал заявок не налаштований" };
   }
 
   const fields = [
@@ -204,5 +224,63 @@ export async function notifyDiscordNewApplication(params: {
     };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "Discord API error" };
+  }
+}
+
+
+export async function notifyDiscordApplicationChannelTest(params: { moderator: string; channelId?: string | null }) {
+  const { botToken } = getDiscordBotConfig();
+  const requestedChannelId = String(params.channelId || "").trim();
+  const channelId = /^\d{16,25}$/.test(requestedChannelId) ? requestedChannelId : await resolveApplicationsDiscordChannelId();
+  if (!botToken || !channelId) {
+    return { ok: false, skipped: true, reason: "DISCORD_BOT_TOKEN або канал заявок не налаштований" };
+  }
+
+  try {
+    const message = await discordApi<any>(`/channels/${channelId}/messages`, {
+      method: "POST",
+      body: JSON.stringify({
+        allowed_mentions: { parse: [] },
+        embeds: [{
+          title: "🧪 Тест каналу заявок",
+          description: `Канал заявок Mistblossom Vanguard налаштований правильно.\n\nПеревірив: **${cleanText(params.moderator, 80)}**`,
+          color: statusColor("review"),
+          footer: { text: "Mistblossom Vanguard • Applications test" },
+          timestamp: new Date().toISOString(),
+        }],
+      }),
+    });
+    return { ok: true, channel_id: String(message?.channel_id || channelId), message_id: String(message?.id || "") };
+  } catch (error) {
+    return { ok: false, reason: error instanceof Error ? error.message : "Discord API error" };
+  }
+}
+
+export type DeleteDiscordApplicationMessageResult = {
+  ok: boolean;
+  skipped?: boolean;
+  reason?: string;
+  channel_id?: string;
+  message_id?: string;
+  deleted?: boolean;
+  alreadyMissing?: boolean;
+};
+
+export async function deleteDiscordApplicationMessage(issue: any): Promise<DeleteDiscordApplicationMessageResult> {
+  const { botToken } = getDiscordBotConfig();
+  if (!botToken) return { ok: false, skipped: true, reason: "DISCORD_BOT_TOKEN is missing" };
+
+  const ref = issue?.discord_message_ref || issue?.discord_ref || extractDiscordMessageRef(String(issue?.body || ""));
+  if (!ref) return { ok: true, skipped: true, reason: "Discord message marker is missing" };
+
+  try {
+    await discordApi<void>(`/channels/${ref.channel_id}/messages/${ref.message_id}`, { method: "DELETE", expectedStatuses: [404] });
+    return { ok: true, channel_id: ref.channel_id, message_id: ref.message_id, deleted: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error || "Discord API error");
+    if (/Discord API 404/i.test(message)) {
+      return { ok: true, channel_id: ref.channel_id, message_id: ref.message_id, deleted: false, alreadyMissing: true };
+    }
+    return { ok: false, channel_id: ref.channel_id, message_id: ref.message_id, reason: message };
   }
 }

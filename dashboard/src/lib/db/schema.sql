@@ -35,6 +35,13 @@ CREATE INDEX IF NOT EXISTS documents_repeat_next_idx
   ON documents (collection, ((data ->> 'repeatNextAtMs')::numeric))
   WHERE data ? 'repeatNextAtMs';
 
+-- Окрема черга lifecycle-задач рейдів. Кожен raid event (закриття запису,
+-- reminder, cleanup Discord) має власний dueAtMs і вибирається cron лише
+-- коли конкретний дедлайн настав.
+CREATE INDEX IF NOT EXISTS documents_due_at_idx
+  ON documents (collection, ((data ->> 'dueAtMs')::numeric))
+  WHERE data ? 'dueAtMs';
+
 CREATE INDEX IF NOT EXISTS documents_updated_at_idx
   ON documents (collection, updated_at DESC);
 

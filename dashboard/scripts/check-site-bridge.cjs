@@ -19,6 +19,12 @@ const compose = read('docker-compose.yml');
 const envExample = read('.env.example');
 const page = read('dashboard/src/app/applications/page.tsx');
 const proxy = read('dashboard/src/proxy.ts');
+const discord = read('dashboard/src/lib/discord.ts');
+const discordSettings = read('dashboard/src/lib/guildNicknamePolicy.ts');
+const discordSettingsRoute = read('dashboard/src/app/api/dashboard/discord/settings/route.ts');
+const discordPage = read('dashboard/src/app/dashboard/discord/page.tsx');
+const applicationActions = read('dashboard/src/components/ApplicationStatusActions.tsx');
+const applicationDeleteRoute = read('dashboard/src/app/api/applications/[number]/route.ts');
 
 check(proxy.includes('function isPublicSiteBridgePath'), 'proxy must explicitly identify public Main Site bridge routes');
 check(proxy.includes('pathname === "/api/site/applications"') && proxy.includes('pathname === "/api/site/guild"'), 'both Main Site bridge routes must be public at proxy level');
@@ -51,4 +57,17 @@ check(envExample.includes('PUBLIC_SITE_ORIGINS='), 'public-site origin allowlist
 check(page.includes('Main Site ↔ VPS'), 'applications UI must expose bridge health/source context');
 check(page.includes('PostgreSQL source of truth'), 'applications UI must identify the server source of truth');
 
-console.log(`[check-site-bridge] OK — ${checked}/${checked} public-site bridge, privacy, raid and application invariants checked.`);
+
+check(discordSettings.includes('applicationsChannelId: string'), 'Discord management settings must persist a dedicated applications channel');
+check(discordSettingsRoute.includes('applicationsChannelId: form.get("applicationsChannelId")'), 'Discord settings route must save the applications channel');
+check(discordPage.includes('name="applicationsChannelId"') && discordPage.includes('Канал нових заявок'), 'Discord settings UI must expose applications channel selection');
+check(discordPage.includes('/api/dashboard/discord/applications/test-channel'), 'applications channel must have an in-dashboard test action');
+check(discord.includes('resolveApplicationsDiscordChannelId') && discord.includes('getDiscordDefaultChannelId()'), 'applications channel resolver must preserve legacy DISCORD_CHANNEL_ID fallback');
+check(discord.includes('notifyDiscordNewApplication') && discord.includes('await resolveApplicationsDiscordChannelId()'), 'new applications must use the configured applications channel');
+check(discord.includes('notifyDiscordStatusChange') && discord.includes('deleteDiscordApplicationMessage'), 'legacy status fallback and Discord deletion helpers must remain wired');
+check(applicationDeleteRoute.includes('session.isServerOwner'), 'application deletion must be restricted to the Discord server owner');
+check(applicationDeleteRoute.includes('deleteDiscordApplicationMessage(issue)') && applicationDeleteRoute.includes('deleteGuildApplication(issueNumber)'), 'owner deletion must remove Discord message before server record');
+check(applicationActions.includes('canDelete?: boolean') && applicationActions.includes('method: "DELETE"'), 'applications UI must expose owner-only deletion through DELETE API');
+check(page.includes('canDelete={Boolean(user.isServerOwner)}'), 'applications page must only expose delete action to server owner');
+
+console.log(`[check-site-bridge] OK — ${checked}/${checked} public-site bridge, Discord applications, privacy, raid and application invariants checked.`);

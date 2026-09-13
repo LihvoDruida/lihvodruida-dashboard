@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
       nicknameReminderCooldownHours: form.get("nicknameReminderCooldownHours"),
       nicknameReminderBatchLimit: form.get("nicknameReminderBatchLimit"),
       nicknameReminderChannelId: form.get("nicknameReminderChannelId"),
+      applicationsChannelId: form.get("applicationsChannelId"),
       nicknameNewcomerGateEnabled: form.get("nicknameNewcomerGateEnabled"),
       nicknameNewcomerRoleId: form.get("nicknameNewcomerRoleId"),
     }, guard.session);
@@ -42,6 +43,7 @@ export async function POST(request: NextRequest) {
       nicknameReminderCooldownHours: policy.nicknameReminderCooldownHours,
       nicknameReminderBatchLimit: policy.nicknameReminderBatchLimit,
       nicknameReminderChannelId: policy.nicknameReminderChannelId,
+      applicationsChannelId: policy.applicationsChannelId,
       nicknameNewcomerGateEnabled: policy.nicknameNewcomerGateEnabled,
       nicknameNewcomerRoleId: policy.nicknameNewcomerRoleId,
     });

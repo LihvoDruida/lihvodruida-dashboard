@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { dashboardErrorMessage, dispatchDashboardToast } from "@/lib/clientToasts";
 import { notifyDashboardDataChanged } from "@/lib/dashboardLiveRefresh";
 
@@ -11,6 +12,7 @@ type Props = {
   initialStatus: StatusKey;
   issueState?: string;
   canModerate?: boolean;
+  canDelete?: boolean;
 };
 
 const LABELS: Record<StatusKey, string> = {
@@ -26,13 +28,16 @@ export default function ApplicationStatusActions({
   initialStatus,
   issueState = "open",
   canModerate = true,
+  canDelete = false,
 }: Props) {
+  const router = useRouter();
   const [status, setStatus] = useState<StatusKey>(initialStatus);
   const [selectedStatus, setSelectedStatus] = useState<Exclude<StatusKey, "review">>(
     initialStatus === "declined" ? "declined" : "accepted"
   );
   const [pendingStatus, setPendingStatus] = useState<Exclude<StatusKey, "review"> | null>(null);
   const [message, setMessage] = useState<string>("");
+  const [deleting, setDeleting] = useState(false);
 
   const isClosed = issueState === "closed";
   const isFinalStatus = status === "accepted" || status === "declined";
@@ -117,6 +122,41 @@ export default function ApplicationStatusActions({
     }
   }
 
+
+  async function deleteApplication() {
+    if (!canDelete || deleting) return;
+    if (!window.confirm(`Видалити заявку #${issueNumber} із сервера та її Discord-повідомлення? Цю дію не можна скасувати.`)) return;
+
+    setDeleting(true);
+    setMessage("Видаляємо заявку та Discord-повідомлення...");
+    dispatchDashboardToast({ tone: "warning", title: "Видаляємо заявку", message: `Заявка #${issueNumber}: синхронно видаляємо серверний запис і Discord-повідомлення.`, ttl: 4200 });
+
+    try {
+      const response = await fetch(`/api/applications/${issueNumber}`, {
+        method: "DELETE",
+        headers: { Accept: "application/json", "X-Dashboard-Action": "delete-application" },
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+      const data = await response.json().catch(() => ({ error: "Сервер повернув неочікувану відповідь." }));
+      if (!response.ok || !data?.ok) throw new Error(data?.error || "Не вдалося видалити заявку.");
+
+      notifyDashboardDataChanged({ scope: "applications", resourceId: String(issueNumber), source: "application-delete", action: "delete" });
+      dispatchDashboardToast({
+        tone: "success",
+        title: "Заявку видалено",
+        message: data?.discord?.deleted ? "Запис на сервері та Discord-повідомлення видалено." : "Запис на сервері видалено; Discord-повідомлення вже було відсутнє або не мало reference.",
+      });
+      router.refresh();
+    } catch (error) {
+      const errorMessage = dashboardErrorMessage(error, "Не вдалося видалити заявку.");
+      setMessage(errorMessage);
+      dispatchDashboardToast({ tone: "error", title: "Заявку не видалено", message: errorMessage });
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <div
       className="action-panel"
@@ -154,6 +194,15 @@ export default function ApplicationStatusActions({
           >
             {pendingStatus ? "Застосовуємо..." : "Застосувати"}
           </button>
+        </div>
+      ) : null}
+
+      {canDelete ? (
+        <div className="application-delete-row">
+          <button className="btn danger" type="button" onClick={deleteApplication} disabled={deleting || busy} aria-busy={deleting ? "true" : "false"}>
+            {deleting ? "Видаляємо..." : "Видалити заявку"}
+          </button>
+          <small>Тільки власник сервера · видаляє запис і Discord-повідомлення.</small>
         </div>
       ) : null}
 

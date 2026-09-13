@@ -457,6 +457,41 @@ export const RAID_REMINDER_BEFORE_START_MINUTES = 15;
 export const RAID_REMINDER_DELETE_AFTER_START_HOURS = 4;
 export const RAID_DISCORD_MESSAGE_RETENTION_HOURS = 24;
 
+const RAID_LIFECYCLE_TASK_COLLECTION = "dashboardRaidLifecycleTasks";
+const RAID_LIFECYCLE_TASK_LOCK_MS = 2 * 60_000;
+const RAID_LIFECYCLE_TASK_RETRY_BASE_MS = 60_000;
+const RAID_LIFECYCLE_TASK_RETRY_MAX_MS = 15 * 60_000;
+
+type RaidLifecycleTaskType =
+  | "registration_close"
+  | "discord_close_sync"
+  | "reminder_send"
+  | "reminder_delete"
+  | "discord_delete";
+
+type RaidLifecycleTask = {
+  id: string;
+  raidId: string;
+  type: RaidLifecycleTaskType;
+  scheduledAt: string;
+  scheduledAtMs: number;
+  dueAt: string;
+  dueAtMs: number;
+  attempts: number;
+  lastError?: string | null;
+  lastErrorAt?: string | null;
+  lockedAtMs?: number | null;
+  lockId?: string | null;
+};
+
+const RAID_LIFECYCLE_TASK_TYPES: RaidLifecycleTaskType[] = [
+  "registration_close",
+  "discord_close_sync",
+  "reminder_send",
+  "reminder_delete",
+  "discord_delete",
+];
+
 // Backwards-compatible parser kept for runtime settings/UI that still expose
 // the old field. Raid lifecycle no longer uses this value for closing signup:
 // signup closes at the configured registration deadline, or at raid start.
@@ -1548,28 +1583,23 @@ function waitMs(ms: number) {
 }
 
 function scheduleRaidAutoCloseSync(raid: RaidItem, source: string) {
-  const needsStatusSync =
-    raid.status === "published" && isRaidAutoCloseDue(raid);
-  const needsReminder = Boolean(
-    raid.channelId && !raid.reminderSentAt && raidReminderSendDue(raid),
-  );
-  const canDeleteReminder = raidReminderDeleteDue(raid);
-  const canDeleteDiscordMessage = Boolean(
-    raid.channelId &&
-    raid.messageId &&
-    !raid.discordDeletedAt &&
-    raidMainDiscordDeleteDue(raid),
-  );
-  if (
-    (!needsStatusSync && !needsReminder && !canDeleteReminder && !canDeleteDiscordMessage) ||
-    raidLifecycleSyncInFlight.has(raid.id)
-  )
-    return;
+  if (raid.status === "draft" || raidLifecycleSyncInFlight.has(raid.id)) return;
+  const dueSafetyNet =
+    (raid.status === "published" && isRaidAutoCloseDue(raid)) ||
+    raidDiscordCloseSyncDue(raid) ||
+    raidReminderSendDue(raid) ||
+    raidReminderDeleteDue(raid) ||
+    raidMainDiscordDeleteDue(raid);
+  if (!dueSafetyNet) return;
 
+  // Reads/interactions no longer execute lifecycle side effects themselves.
+  // They only repair/ensure a missing due task as a safety net. The cron task
+  // worker owns close/reminder/delete execution, so a stale Discord message
+  // cannot depend on a user click before being processed.
   raidLifecycleSyncInFlight.add(raid.id);
-  void syncRaidLifecycleAfterRead(raid)
+  void reconcileRaidLifecycleTasksForRaid(raid)
     .catch((error) => {
-      console.warn("[raids] Failed to sync raid lifecycle", {
+      console.warn("[raids] Failed to ensure raid lifecycle tasks", {
         raidId: raid.id,
         source,
         message: error instanceof Error ? error.message : String(error),
@@ -1706,16 +1736,6 @@ export async function getRaid(raidId: string): Promise<RaidItem | null> {
   return attachRaidBenchPrioritySettings(raid);
 }
 
-type RaidLifecycleSyncResult = {
-  raidId: string;
-  status: RaidItem["status"];
-  autoClosed: boolean;
-  discordCloseSynced: boolean;
-  reminderSent: boolean;
-  reminderDeleted: boolean;
-  discordDeleted: boolean;
-};
-
 function buildRaidReminderPayload(raid: RaidItem) {
   const startsAt = raidDateTimeToUtcMs(raid);
   const unix = startsAt === null ? null : Math.floor(startsAt / 1000);
@@ -1754,43 +1774,6 @@ function buildRaidReminderPayload(raid: RaidItem) {
   };
 }
 
-async function syncRaidLifecycleAfterRead(
-  raid: RaidItem,
-): Promise<RaidLifecycleSyncResult> {
-  const closedNow = await syncAutoClosedRaid(raid);
-
-  const lifecycleRaid: RaidItem = closedNow
-    ? {
-        ...raid,
-        status: "closed",
-        closedReason: "auto",
-        closedAt: new Date().toISOString(),
-        discordCloseSyncedAt: null,
-      }
-    : raid;
-
-  // Closing in Firestore and disabling Discord components are deliberately
-  // separate idempotent steps. If Discord is temporarily unavailable after
-  // the database close succeeds, the next lifecycle tick sees the missing
-  // discordCloseSyncedAt marker and retries instead of leaving live buttons.
-  const discordCloseSynced = await syncRaidClosedDiscordState(lifecycleRaid);
-  const reminderSent = await syncRaidReminder(lifecycleRaid);
-  const reminderRaid: RaidItem = reminderSent
-    ? { ...lifecycleRaid, reminderSentAt: new Date().toISOString() }
-    : lifecycleRaid;
-  const reminderDeleted = await syncRaidReminderDeletion(reminderRaid);
-  const discordDeleted = await syncRaidDiscordDeletionAfterStart(lifecycleRaid);
-
-  return {
-    raidId: raid.id,
-    status: lifecycleRaid.status,
-    autoClosed: closedNow,
-    discordCloseSynced,
-    reminderSent,
-    reminderDeleted,
-    discordDeleted,
-  };
-}
 
 async function syncAutoClosedRaid(raid: RaidItem) {
   if (
@@ -2095,7 +2078,191 @@ async function syncRaidDiscordDeletionAfterStart(raid: RaidItem) {
   return true;
 }
 
-type RaidLifecycleScanMode = "window" | "sweep";
+type RaidLifecycleScanMode = "tasks" | "recovery";
+
+type PlannedRaidLifecycleTask = {
+  raidId: string;
+  type: RaidLifecycleTaskType;
+  scheduledAtMs: number;
+};
+
+function raidLifecycleTaskId(raidId: string, type: RaidLifecycleTaskType) {
+  return `${raidId}:${type}`;
+}
+
+function raidLifecycleTaskRef(raidId: string, type: RaidLifecycleTaskType) {
+  return getFirebaseAdminDb()
+    .collection(RAID_LIFECYCLE_TASK_COLLECTION)
+    .doc(raidLifecycleTaskId(raidId, type));
+}
+
+function safeLifecycleTaskMs(value: unknown, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? Math.floor(number) : fallback;
+}
+
+function normalizeRaidLifecycleTask(
+  id: string,
+  raw: Record<string, unknown>,
+): RaidLifecycleTask | null {
+  const raidId = cleanRaidId(raw.raidId);
+  const type = cleanString(raw.type, 40) as RaidLifecycleTaskType;
+  if (!raidId || !RAID_LIFECYCLE_TASK_TYPES.includes(type)) return null;
+  const scheduledAtMs = safeLifecycleTaskMs(raw.scheduledAtMs);
+  const dueAtMs = safeLifecycleTaskMs(raw.dueAtMs, scheduledAtMs);
+  if (!scheduledAtMs || !dueAtMs) return null;
+  return {
+    id,
+    raidId,
+    type,
+    scheduledAt: cleanString(raw.scheduledAt, 64) || new Date(scheduledAtMs).toISOString(),
+    scheduledAtMs,
+    dueAt: cleanString(raw.dueAt, 64) || new Date(dueAtMs).toISOString(),
+    dueAtMs,
+    attempts: Math.max(0, Math.floor(Number(raw.attempts) || 0)),
+    lastError: cleanString(raw.lastError, 500) || null,
+    lastErrorAt: timestampToIso(raw.lastErrorAt),
+    lockedAtMs: safeLifecycleTaskMs(raw.lockedAtMs) || null,
+    lockId: cleanString(raw.lockId, 120) || null,
+  };
+}
+
+function raidLifecycleTaskPlan(raid: RaidItem): PlannedRaidLifecycleTask[] {
+  if (raid.status === "draft") return [];
+  const startsAtMs = raidDateTimeToUtcMs(raid);
+  if (startsAtMs === null) return [];
+
+  const tasks: PlannedRaidLifecycleTask[] = [];
+  const registrationCloseAtMs = raidRegistrationLockDeadlineMs(raid);
+  if (
+    raid.status === "published" &&
+    raid.closedReason !== "manual" &&
+    registrationCloseAtMs !== null
+  ) {
+    tasks.push({
+      raidId: raid.id,
+      type: "registration_close",
+      scheduledAtMs: registrationCloseAtMs,
+    });
+  }
+
+  if (raidDiscordCloseSyncDue(raid)) {
+    const closedAtMs = Date.parse(raid.closedAt || "");
+    tasks.push({
+      raidId: raid.id,
+      type: "discord_close_sync",
+      scheduledAtMs: Number.isFinite(closedAtMs) ? closedAtMs : Date.now(),
+    });
+  }
+
+  const reminderAtMs =
+    startsAtMs - RAID_REMINDER_BEFORE_START_MINUTES * 60 * 1000;
+  if (
+    raid.channelId &&
+    !raid.reminderSentAt &&
+    Date.now() < startsAtMs
+  ) {
+    tasks.push({
+      raidId: raid.id,
+      type: "reminder_send",
+      scheduledAtMs: reminderAtMs,
+    });
+  }
+
+  if (raid.reminderMessageId && !raid.reminderDeletedAt) {
+    tasks.push({
+      raidId: raid.id,
+      type: "reminder_delete",
+      scheduledAtMs:
+        startsAtMs + RAID_REMINDER_DELETE_AFTER_START_HOURS * 60 * 60 * 1000,
+    });
+  }
+
+  if (raid.channelId && raid.messageId && !raid.discordDeletedAt) {
+    tasks.push({
+      raidId: raid.id,
+      type: "discord_delete",
+      scheduledAtMs:
+        startsAtMs + RAID_DISCORD_MESSAGE_RETENTION_HOURS * 60 * 60 * 1000,
+    });
+  }
+
+  return tasks.filter((task) => Number.isFinite(task.scheduledAtMs));
+}
+
+async function readRaidForLifecycleTask(raidId: string): Promise<RaidItem | null> {
+  const snapshot = await getFirebaseAdminDb()
+    .collection(RAID_COLLECTION)
+    .doc(raidId)
+    .get();
+  return snapshot.exists
+    ? normalizeRaid(snapshot.id, snapshot.data() || {})
+    : null;
+}
+
+async function deleteRaidLifecycleTasks(raidId: string) {
+  if (!hasRaidStorage()) return;
+  await Promise.all(
+    RAID_LIFECYCLE_TASK_TYPES.map((type) =>
+      raidLifecycleTaskRef(raidId, type).delete().catch(() => undefined),
+    ),
+  );
+}
+
+async function reconcileRaidLifecycleTasksForRaid(raid: RaidItem) {
+  if (!hasRaidStorage()) return { planned: 0, created: 0, removed: 0 };
+  const plan = raidLifecycleTaskPlan(raid);
+  const byType = new Map(plan.map((task) => [task.type, task]));
+  let created = 0;
+  let removed = 0;
+
+  await Promise.all(
+    RAID_LIFECYCLE_TASK_TYPES.map(async (type) => {
+      const ref = raidLifecycleTaskRef(raid.id, type);
+      const snapshot = await ref.get();
+      const planned = byType.get(type);
+      if (!planned) {
+        if (snapshot.exists) {
+          await ref.delete();
+          removed += 1;
+        }
+        return;
+      }
+
+      const existing = snapshot.exists
+        ? normalizeRaidLifecycleTask(snapshot.id, snapshot.data() || {})
+        : null;
+      if (
+        existing &&
+        existing.scheduledAtMs === planned.scheduledAtMs &&
+        existing.raidId === raid.id &&
+        existing.type === type
+      ) {
+        return;
+      }
+
+      const nowIso = new Date().toISOString();
+      await ref.set({
+        raidId: raid.id,
+        type,
+        scheduledAt: new Date(planned.scheduledAtMs).toISOString(),
+        scheduledAtMs: planned.scheduledAtMs,
+        dueAt: new Date(planned.scheduledAtMs).toISOString(),
+        dueAtMs: planned.scheduledAtMs,
+        attempts: 0,
+        lastError: null,
+        lastErrorAt: null,
+        lockId: null,
+        lockedAtMs: null,
+        ...(existing ? {} : { createdAt: nowIso }),
+        updatedAt: nowIso,
+      }, { merge: true });
+      created += 1;
+    }),
+  );
+
+  return { planned: plan.length, created, removed };
+}
 
 function lifecycleDateKey(offsetDays: number) {
   return new Date(Date.now() + offsetDays * 24 * 60 * 60 * 1000)
@@ -2103,127 +2270,274 @@ function lifecycleDateKey(offsetDays: number) {
     .slice(0, 10);
 }
 
-async function listRaidsForLifecycle(
-  limit: number,
-  options: { fullSweep?: boolean } = {},
-): Promise<{ raids: RaidItem[]; scanMode: RaidLifecycleScanMode }> {
-  if (!hasRaidStorage()) {
-    return { raids: [], scanMode: options.fullSweep ? "sweep" : "window" };
-  }
-  const safeLimit = Math.max(
-    1,
-    Math.min(100, Math.floor(Number(limit) || 40)),
-  );
+async function listRaidsForLifecycleRecovery(limit: number) {
+  if (!hasRaidStorage()) return [] as RaidItem[];
+  const safeLimit = Math.max(1, Math.min(200, Math.floor(Number(limit) || 100)));
   const db = getFirebaseAdminDb();
   const docsById = new Map<
     string,
     { id: string; data: () => Record<string, unknown> | undefined }
   >();
-  let scanMode: RaidLifecycleScanMode = options.fullSweep ? "sweep" : "window";
 
-  {
-    // Every tick, including an hourly recovery sweep, starts with the indexed
-    // near-date window. This guarantees that an old cleanup backlog cannot push
-    // a current close/reminder out of the bounded full-sweep result set.
-    // The ±8-day window covers the maximum 7-day pre-close setting and gives
-    // post-start Discord cleanup several days to retry.
-    const fromDate = lifecycleDateKey(-8);
-    const toDate = lifecycleDateKey(8);
-    const fetchLimit = Math.max(40, Math.min(200, safeLimit * 2));
-    try {
-      const snapshot = await db
-        .collection(RAID_COLLECTION)
-        .where("date", ">=", fromDate)
-        .where("date", "<=", toDate)
-        .orderBy("date", "asc")
-        .limit(fetchLimit)
-        .get();
-      for (const doc of snapshot.docs) docsById.set(doc.id, doc);
-    } catch (error) {
-      console.warn(
-        "[raids] Lifecycle date-window query failed; using status sweep",
-        { message: error instanceof Error ? error.message : String(error) },
-      );
-      if (!options.fullSweep) scanMode = "sweep";
-    }
+  const fromDate = lifecycleDateKey(-8);
+  const toDate = lifecycleDateKey(8);
+  try {
+    const snapshot = await db
+      .collection(RAID_COLLECTION)
+      .where("date", ">=", fromDate)
+      .where("date", "<=", toDate)
+      .orderBy("date", "asc")
+      .limit(Math.max(100, safeLimit))
+      .get();
+    for (const doc of snapshot.docs) docsById.set(doc.id, doc);
+  } catch (error) {
+    console.warn("[raids] Lifecycle recovery date query failed", {
+      message: error instanceof Error ? error.message : String(error),
+    });
   }
 
-  if (options.fullSweep || scanMode === "sweep") {
-    // Hourly sweep catches stale Discord messages after a prolonged outage
-    // without making every minute perform broad published/closed queries.
-    const perStatusLimit = Math.max(25, Math.min(100, safeLimit));
-    try {
-      const [publishedSnapshot, closedSnapshot] = await Promise.all([
-        db
-          .collection(RAID_COLLECTION)
-          .where("status", "==", "published")
-          .limit(perStatusLimit)
-          .get(),
-        db
-          .collection(RAID_COLLECTION)
-          .where("status", "==", "closed")
-          .limit(perStatusLimit)
-          .get(),
-      ]);
-      for (const doc of [...publishedSnapshot.docs, ...closedSnapshot.docs]) {
-        docsById.set(doc.id, doc);
-      }
-    } catch (error) {
-      console.warn(
-        "[raids] Lifecycle status sweep failed; using bounded collection scan",
-        { message: error instanceof Error ? error.message : String(error) },
-      );
-      const snapshot = await db
-        .collection(RAID_COLLECTION)
-        .limit(Math.max(50, Math.min(200, safeLimit * 2)))
-        .get();
-      for (const doc of snapshot.docs) docsById.set(doc.id, doc);
-    }
+  try {
+    const perStatus = Math.max(50, Math.min(150, safeLimit));
+    const [published, closed] = await Promise.all([
+      db.collection(RAID_COLLECTION).where("status", "==", "published").limit(perStatus).get(),
+      db.collection(RAID_COLLECTION).where("status", "==", "closed").limit(perStatus).get(),
+    ]);
+    for (const doc of [...published.docs, ...closed.docs]) docsById.set(doc.id, doc);
+  } catch (error) {
+    console.warn("[raids] Lifecycle recovery status query failed", {
+      message: error instanceof Error ? error.message : String(error),
+    });
   }
 
-  const raids = Array.from(docsById.values())
+  return Array.from(docsById.values())
     .map((doc) => normalizeRaid(doc.id, doc.data() || {}))
     .filter((raid) => raid.status === "published" || raid.status === "closed")
-    .sort((a, b) => {
-      const priority = raidLifecyclePriority(a) - raidLifecyclePriority(b);
-      if (priority) return priority;
-      return (
-        `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`) ||
-        Date.parse(a.updatedAt || a.createdAt || "") -
-          Date.parse(b.updatedAt || b.createdAt || "")
-      );
-    })
+    .sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`))
     .slice(0, safeLimit);
-
-  return { raids, scanMode };
 }
 
-function raidLifecyclePriority(raid: RaidItem) {
-  if (raid.status === "published" && raid.closedReason !== "manual" && isRaidAutoCloseDue(raid)) return 0;
-  if (raid.channelId && !raid.reminderSentAt && raidReminderSendDue(raid)) return 1;
-  if (raidDiscordCloseSyncDue(raid)) return 2;
-  if (raidReminderDeleteDue(raid)) return 3;
-  if (raid.channelId && raid.messageId && !raid.discordDeletedAt && raidMainDiscordDeleteDue(raid)) return 4;
-  return 10;
+async function reconcileRaidLifecycleTaskRecovery(limit: number) {
+  const raids = await listRaidsForLifecycleRecovery(limit);
+  let tasksPlanned = 0;
+  let tasksChanged = 0;
+  for (const raid of raids) {
+    const result = await reconcileRaidLifecycleTasksForRaid(raid);
+    tasksPlanned += result.planned;
+    tasksChanged += result.created + result.removed;
+  }
+  return { scanned: raids.length, tasksPlanned, tasksChanged };
 }
 
-function raidLifecycleCandidates(raids: RaidItem[]) {
-  return raids.filter((raid) => raid.status !== "draft" && raidLifecyclePriority(raid) < 10);
+async function listDueRaidLifecycleTasks(limit: number, nowMs = Date.now()) {
+  if (!hasRaidStorage()) return [] as RaidLifecycleTask[];
+  const safeLimit = Math.max(1, Math.min(100, Math.floor(Number(limit) || 40)));
+  try {
+    const snapshot = await getFirebaseAdminDb()
+      .collection(RAID_LIFECYCLE_TASK_COLLECTION)
+      .where("dueAtMs", "<=", nowMs)
+      .orderBy("dueAtMs", "asc")
+      .limit(safeLimit)
+      .get();
+    return snapshot.docs
+      .map((doc: any) => normalizeRaidLifecycleTask(doc.id, doc.data() || {}))
+      .filter(Boolean) as RaidLifecycleTask[];
+  } catch (error) {
+    console.warn("[raids] Due lifecycle task query failed; using bounded task scan", {
+      message: error instanceof Error ? error.message : String(error),
+    });
+    const snapshot = await getFirebaseAdminDb()
+      .collection(RAID_LIFECYCLE_TASK_COLLECTION)
+      .limit(Math.min(250, safeLimit * 5))
+      .get();
+    return snapshot.docs
+      .map((doc: any) => normalizeRaidLifecycleTask(doc.id, doc.data() || {}))
+      .filter((task: RaidLifecycleTask | null): task is RaidLifecycleTask => Boolean(task && task.dueAtMs <= nowMs))
+      .sort((a: RaidLifecycleTask, b: RaidLifecycleTask) => a.dueAtMs - b.dueAtMs)
+      .slice(0, safeLimit);
+  }
+}
+
+async function claimRaidLifecycleTask(task: RaidLifecycleTask, nowMs: number, lockId: string) {
+  return getFirebaseAdminDb().runTransaction(async (transaction: any) => {
+    const ref = getFirebaseAdminDb().collection(RAID_LIFECYCLE_TASK_COLLECTION).doc(task.id);
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists) return null;
+    const current = normalizeRaidLifecycleTask(snapshot.id, snapshot.data() || {});
+    if (!current || current.dueAtMs > nowMs) return null;
+    if (current.lockedAtMs && nowMs - current.lockedAtMs < RAID_LIFECYCLE_TASK_LOCK_MS) return null;
+    transaction.set(ref, {
+      lockId,
+      lockedAtMs: nowMs,
+      attempts: current.attempts + 1,
+      updatedAt: new Date(nowMs).toISOString(),
+    }, { merge: true });
+    return { ...current, lockId, lockedAtMs: nowMs, attempts: current.attempts + 1 };
+  });
+}
+
+function raidLifecycleRetryDelayMs(attempts: number) {
+  const exponent = Math.max(0, Math.min(4, attempts - 1));
+  return Math.min(
+    RAID_LIFECYCLE_TASK_RETRY_MAX_MS,
+    RAID_LIFECYCLE_TASK_RETRY_BASE_MS * 2 ** exponent,
+  );
+}
+
+async function releaseRaidLifecycleTaskWithError(
+  task: RaidLifecycleTask,
+  lockId: string,
+  error: unknown,
+) {
+  const ref = getFirebaseAdminDb().collection(RAID_LIFECYCLE_TASK_COLLECTION).doc(task.id);
+  await getFirebaseAdminDb().runTransaction(async (transaction: any) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists) return;
+    const current = normalizeRaidLifecycleTask(snapshot.id, snapshot.data() || {});
+    if (!current || current.lockId !== lockId) return;
+    const retryAtMs = Date.now() + raidLifecycleRetryDelayMs(current.attempts || task.attempts);
+    transaction.set(ref, {
+      dueAt: new Date(retryAtMs).toISOString(),
+      dueAtMs: retryAtMs,
+      lockId: null,
+      lockedAtMs: null,
+      lastError: cleanString(error instanceof Error ? error.message : String(error || "unknown"), 500),
+      lastErrorAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+  });
+}
+
+async function completeRaidLifecycleTask(task: RaidLifecycleTask, lockId: string) {
+  const ref = getFirebaseAdminDb().collection(RAID_LIFECYCLE_TASK_COLLECTION).doc(task.id);
+  await getFirebaseAdminDb().runTransaction(async (transaction: any) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists) return;
+    const current = normalizeRaidLifecycleTask(snapshot.id, snapshot.data() || {});
+    if (!current || current.lockId !== lockId) return;
+    transaction.delete(ref);
+  });
+}
+
+async function processClaimedRaidLifecycleTask(task: RaidLifecycleTask) {
+  const raid = await readRaidForLifecycleTask(task.raidId);
+  if (!raid) {
+    await completeRaidLifecycleTask(task, task.lockId || "");
+    return { outcome: "orphan" as const, raid: null as RaidItem | null };
+  }
+
+  const currentPlan = raidLifecycleTaskPlan(raid).find((item) => item.type === task.type);
+  const registrationCloseNeedsDiscordRetry =
+    task.type === "registration_close" &&
+    raid.status === "closed" &&
+    raidDiscordCloseSyncDue(raid);
+  if (!currentPlan && !registrationCloseNeedsDiscordRetry) {
+    await completeRaidLifecycleTask(task, task.lockId || "");
+    await reconcileRaidLifecycleTasksForRaid(raid);
+    return { outcome: "stale" as const, raid };
+  }
+  if (currentPlan && currentPlan.scheduledAtMs !== task.scheduledAtMs) {
+    await completeRaidLifecycleTask(task, task.lockId || "");
+    await reconcileRaidLifecycleTasksForRaid(raid);
+    return { outcome: "rescheduled" as const, raid };
+  }
+
+  if (task.type === "registration_close") {
+    if (raid.status === "published" && isRaidAutoCloseDue(raid)) {
+      await syncAutoClosedRaid(raid);
+    }
+    const closed = await readRaidForLifecycleTask(raid.id);
+    if (!closed) return { outcome: "orphan" as const, raid: null };
+    if (closed.status !== "closed") {
+      throw new Error("Raid registration close task did not persist closed state");
+    }
+    let finalRaid = closed;
+    if (raidDiscordCloseSyncDue(closed)) {
+      await syncRaidClosedDiscordState(closed);
+      const synced = await readRaidForLifecycleTask(raid.id);
+      if (synced && raidDiscordCloseSyncDue(synced)) {
+        throw new Error("Discord close sync is still pending after registration close");
+      }
+      if (synced) finalRaid = synced;
+    }
+    return { outcome: "registration_closed" as const, raid: finalRaid };
+  }
+
+  if (task.type === "discord_close_sync") {
+    if (raidDiscordCloseSyncDue(raid)) {
+      await syncRaidClosedDiscordState(raid);
+      const synced = await readRaidForLifecycleTask(raid.id);
+      if (synced && raidDiscordCloseSyncDue(synced)) {
+        throw new Error("Discord close sync is still pending");
+      }
+      return { outcome: "discord_closed" as const, raid: synced || raid };
+    }
+    return { outcome: "already_done" as const, raid };
+  }
+
+  if (task.type === "reminder_send") {
+    const startsAtMs = raidDateTimeToUtcMs(raid);
+    if (raid.reminderSentAt || (startsAtMs !== null && Date.now() >= startsAtMs)) {
+      return { outcome: "already_done" as const, raid };
+    }
+    await syncRaidReminder(raid);
+    const refreshed = await readRaidForLifecycleTask(raid.id);
+    if (!refreshed) return { outcome: "orphan" as const, raid: null };
+    const refreshedStartsAt = raidDateTimeToUtcMs(refreshed);
+    if (!refreshed.reminderSentAt && (refreshedStartsAt === null || Date.now() < refreshedStartsAt)) {
+      throw new Error("Raid reminder was not sent");
+    }
+    return { outcome: refreshed.reminderSentAt ? "reminder_sent" as const : "already_done" as const, raid: refreshed };
+  }
+
+  if (task.type === "reminder_delete") {
+    if (!raid.reminderMessageId || raid.reminderDeletedAt) {
+      return { outcome: "already_done" as const, raid };
+    }
+    await syncRaidReminderDeletion(raid);
+    const refreshed = await readRaidForLifecycleTask(raid.id);
+    if (refreshed?.reminderMessageId && !refreshed.reminderDeletedAt) {
+      throw new Error("Raid reminder cleanup is still pending");
+    }
+    return { outcome: "reminder_deleted" as const, raid: refreshed || raid };
+  }
+
+  if (!raid.messageId || raid.discordDeletedAt) {
+    return { outcome: "already_done" as const, raid };
+  }
+  await syncRaidDiscordDeletionAfterStart(raid);
+  const refreshed = await readRaidForLifecycleTask(raid.id);
+  if (refreshed?.messageId && !refreshed.discordDeletedAt) {
+    throw new Error("Raid Discord message cleanup is still pending");
+  }
+  return { outcome: "discord_deleted" as const, raid: refreshed || raid };
 }
 
 export async function syncRaidLifecycleBatch(
   limit = 100,
   options: { fullSweep?: boolean } = {},
 ) {
-  const safeLimit = Math.max(
-    1,
-    Math.min(100, Math.floor(Number(limit) || 40)),
-  );
-  const { raids, scanMode } = await listRaidsForLifecycle(safeLimit, options);
-  const candidates = raidLifecycleCandidates(raids);
+  const safeLimit = Math.max(1, Math.min(100, Math.floor(Number(limit) || 40)));
+  const recovery = options.fullSweep
+    ? await reconcileRaidLifecycleTaskRecovery(safeLimit)
+    : { scanned: 0, tasksPlanned: 0, tasksChanged: 0 };
+
+  const dueTasks = await listDueRaidLifecycleTasks(safeLimit);
   const mapped = await mapConcurrentSettled(
-    candidates,
-    async (raid) => syncRaidLifecycleAfterRead(raid),
+    dueTasks,
+    async (task: RaidLifecycleTask) => {
+      const lockId = `${process.pid}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
+      const claimed = await claimRaidLifecycleTask(task, Date.now(), lockId);
+      if (!claimed) return { task, outcome: "not_claimed" as const, raid: null as RaidItem | null };
+      try {
+        const result = await processClaimedRaidLifecycleTask(claimed);
+        await completeRaidLifecycleTask(claimed, lockId);
+        if (result.raid) await reconcileRaidLifecycleTasksForRaid(result.raid);
+        return { task: claimed, ...result };
+      } catch (error) {
+        await releaseRaidLifecycleTaskWithError(claimed, lockId, error);
+        throw error;
+      }
+    },
     {
       envKey: "RAID_LIFECYCLE_CONCURRENCY",
       maxEnvKey: "RAID_LIFECYCLE_MAX_CONCURRENCY",
@@ -2239,34 +2553,43 @@ export async function syncRaidLifecycleBatch(
   let remindersSent = 0;
   let remindersDeleted = 0;
   let discordDeleted = 0;
-  const errors: Array<{ raidId: string; title: string; message: string }> = [];
+  let staleTasks = 0;
+  let notClaimed = 0;
+  const errors: Array<{ raidId: string; task: string; message: string }> = [];
 
   for (const item of mapped.results) {
     if (item.ok) {
-      if (item.value.autoClosed) autoClosed += 1;
-      if (item.value.discordCloseSynced) discordClosuresSynced += 1;
-      if (item.value.reminderSent) remindersSent += 1;
-      if (item.value.reminderDeleted) remindersDeleted += 1;
-      if (item.value.discordDeleted) discordDeleted += 1;
+      const outcome = item.value.outcome;
+      if (outcome === "registration_closed") autoClosed += 1;
+      else if (outcome === "discord_closed") discordClosuresSynced += 1;
+      else if (outcome === "reminder_sent") remindersSent += 1;
+      else if (outcome === "reminder_deleted") remindersDeleted += 1;
+      else if (outcome === "discord_deleted") discordDeleted += 1;
+      else if (outcome === "stale" || outcome === "rescheduled" || outcome === "orphan") staleTasks += 1;
+      else if (outcome === "not_claimed") notClaimed += 1;
       continue;
     }
     errors.push({
-      raidId: item.item.id,
-      title: item.item.title || item.item.id,
+      raidId: item.item.raidId,
+      task: item.item.type,
       message: item.error instanceof Error ? item.error.message : String(item.error || "unknown"),
     });
-    console.warn("[raids] Lifecycle item failed", {
-      raidId: item.item.id,
-      title: item.item.title || item.item.id,
+    console.warn("[raids] Lifecycle task failed", {
+      raidId: item.item.raidId,
+      task: item.item.type,
       message: item.error instanceof Error ? item.error.message : String(item.error),
     });
   }
 
   return {
-    scanMode,
-    checked: candidates.length,
-    scanned: raids.length,
-    total: raids.length,
+    scanMode: options.fullSweep ? "recovery" as RaidLifecycleScanMode : "tasks" as RaidLifecycleScanMode,
+    checked: dueTasks.length,
+    scanned: recovery.scanned,
+    total: dueTasks.length,
+    tasksPlanned: recovery.tasksPlanned,
+    tasksChanged: recovery.tasksChanged,
+    staleTasks,
+    notClaimed,
     autoClosed,
     discordClosuresSynced,
     remindersSent,
@@ -2357,6 +2680,16 @@ export async function closeRaid(raidId: string) {
     }
   }
 
+  if (discordSynced && closed.channelId && closed.messageId) {
+    closed = { ...closed, discordCloseSyncedAt: new Date().toISOString() };
+  }
+  await reconcileRaidLifecycleTasksForRaid(closed).catch((error) => {
+    console.warn("[raids] Failed to reconcile lifecycle tasks after manual close", {
+      raidId: raid.id,
+      message: error instanceof Error ? error.message : String(error),
+    });
+  });
+
   return { ...closed, discordSynced };
 }
 
@@ -2417,6 +2750,12 @@ export async function deleteRaid(raidId: string) {
     },
     { timeoutMs: 3_000, logEvent: "raids.delete_write_failed" },
   );
+  await deleteRaidLifecycleTasks(raid.id).catch((error) => {
+    console.warn("[raids] Failed to remove lifecycle tasks after raid deletion", {
+      raidId: raid.id,
+      message: error instanceof Error ? error.message : String(error),
+    });
+  });
   return { ...raid, discordDeleted, discordDeleteFailed };
 }
 
@@ -2871,7 +3210,7 @@ export async function saveRaidFromForm(
 
   const raidId = cleanRaidId(form.get("raidId"));
   const payload = formRaidPayload(form, user, profile);
-  return firebaseWrite(
+  const savedRaid = await firebaseWrite(
     "raid",
     raidId ? `raid:${raidId}:save` : "raid:new:save",
     async () => {
@@ -2945,6 +3284,13 @@ export async function saveRaidFromForm(
     },
     { timeoutMs: 6_000, logEvent: "raids.save_write_failed" },
   );
+  await reconcileRaidLifecycleTasksForRaid(savedRaid).catch((error) => {
+    console.warn("[raids] Failed to reconcile lifecycle tasks after raid save", {
+      raidId: savedRaid.id,
+      message: error instanceof Error ? error.message : String(error),
+    });
+  });
+  return savedRaid;
 }
 
 function dateTimeLabel(raid: Pick<RaidItem, "date" | "time">) {
@@ -4486,6 +4832,25 @@ export async function publishOrUpdateRaid(
     { timeoutMs: 3_000, bypassCircuit: true, logEvent: "raids.publish_state_write_failed" },
   );
 
+  const publishedRaid: RaidItem = {
+    ...raid,
+    status: closed ? "closed" : "published",
+    closedReason: closed ? (raid.closedReason === "manual" ? "manual" : "auto") : null,
+    closedAt: closed ? (raid.closedAt || new Date().toISOString()) : null,
+    discordCloseSyncedAt: closed ? new Date().toISOString() : null,
+    discordDeletedAt: null,
+    discordDeleteReason: null,
+    channelId: nextChannelId,
+    messageId: nextMessageId,
+    messageUrl,
+  };
+  await reconcileRaidLifecycleTasksForRaid(publishedRaid).catch((error) => {
+    console.warn("[raids] Failed to reconcile lifecycle tasks after publish", {
+      raidId: raid.id,
+      message: error instanceof Error ? error.message : String(error),
+    });
+  });
+
   return { channelId: nextChannelId, messageId: nextMessageId, messageUrl };
 }
 
@@ -5325,11 +5690,11 @@ export async function handleRaidDiscordAction(params: {
   }
   if (!raid)
     return { ok: false, content: "❌ Рейд справді не знайдено. Повідомлення Discord могло залишитися від уже видаленого рейду." };
-  const lifecycle = await syncRaidLifecycleAfterRead(raid).catch(() => null);
-  if (lifecycle?.status === "closed" || isRaidClosed(raid))
+  scheduleRaidAutoCloseSync(raid, "discord-action-deadline");
+  if (isRaidClosed(raid))
     return {
       ok: false,
-      content: "🔒 Запис на рейд уже закрито. Усі кнопки та зміни складу вимкнені.",
+      content: "🔒 Запис на рейд уже закрито. Discord оновлюється окремою lifecycle-задачею.",
       components: buildRaidAttendanceComponents(raid.id, { disabled: true }),
     };
   if (raid.status !== "published")
@@ -5579,9 +5944,9 @@ export async function handleRaidSessionAction(params: {
   const raid = await getRaid(params.raidId);
   if (!raid)
     return { ok: false, content: "❌ Рейд не знайдено або він уже видалений." };
-  const lifecycle = await syncRaidLifecycleAfterRead(raid).catch(() => null);
-  if (lifecycle?.status === "closed" || isRaidClosed(raid))
-    return { ok: false, content: "🔒 Запис на рейд уже закрито. Усі кнопки та зміни складу вимкнені." };
+  scheduleRaidAutoCloseSync(raid, "session-action-deadline");
+  if (isRaidClosed(raid))
+    return { ok: false, content: "🔒 Запис на рейд уже закрито. Discord оновлюється окремою lifecycle-задачею." };
   if (raid.status !== "published")
     return {
       ok: false,

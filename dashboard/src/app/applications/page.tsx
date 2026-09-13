@@ -277,7 +277,7 @@ export default async function DashboardPage({
 
                 <aside className="application-card__decision">
                   <div className="application-card__decision-title"><span>Рішення</span><small>#{item.number}</small></div>
-                  <ApplicationStatusActions issueNumber={item.number} initialStatus={item.status_key} issueState={item.state} canModerate={mayManageApplications} />
+                  <ApplicationStatusActions issueNumber={item.number} initialStatus={item.status_key} issueState={item.state} canModerate={mayManageApplications} canDelete={Boolean(user.isServerOwner)} />
                   <div className="application-card__decision-state">{item.state === "closed" ? "Заявку закрито" : "Очікує рішення офіцера"}</div>
                 </aside>
               </article>

@@ -7,6 +7,7 @@ import { getSession } from "@/lib/auth";
 import {
   fetchDiscordRoleControlSnapshot,
   fetchDiscordTextChannels,
+  getDiscordDefaultChannelId,
   getDiscordGuildId,
   type DiscordManageableRoleOption,
 } from "@/lib/discordAdmin";
@@ -147,6 +148,7 @@ export default async function AdminDiscordPage() {
   const hasManageableRoles = manageableRoles.length > 0;
   const guild = control.guild;
   const guildId = getDiscordGuildId();
+  const legacyApplicationsChannelId = getDiscordDefaultChannelId();
   const importTargetMode = documentStoreMode();
   const importSourceConfigured = hasFirebaseCredentials();
   const importAvailability = {
@@ -326,6 +328,30 @@ export default async function AdminDiscordPage() {
             </div>
 
             <div className="discord-settings-card__limits">
+              <section className="nickname-warning-settings applications-discord-settings" aria-label="Discord-канал заявок">
+                <div className="nickname-warning-settings__head">
+                  <div>
+                    <span className="eyebrow">Заявки</span>
+                    <h3>Канал нових заявок</h3>
+                    <p>Нові заявки з Main Site надсилаються сюди. Старий <code>DISCORD_CHANNEL_ID</code> лишається fallback для сумісності.</p>
+                  </div>
+                  <span className={`status-pill ${(policy.applicationsChannelId || legacyApplicationsChannelId) ? "good" : "warning"}`}>{(policy.applicationsChannelId || legacyApplicationsChannelId) ? "Канал активний" : "Не налаштовано"}</span>
+                </div>
+                <div className="nickname-warning-settings__group">
+                  <label className="field-label">Канал заявок
+                    <select className="input" name="applicationsChannelId" defaultValue={policy.applicationsChannelId}>
+                      <option value="">{legacyApplicationsChannelId ? `Legacy fallback · ${legacyApplicationsChannelId}` : "Не вибрано"}</option>
+                      {policy.applicationsChannelId && !textChannels.channels.some((channel) => channel.id === policy.applicationsChannelId) ? <option value={policy.applicationsChannelId}>Поточний канал ({policy.applicationsChannelId})</option> : null}
+                      {textChannels.channels.map((channel) => <option key={channel.id} value={channel.id}># {channel.name}</option>)}
+                    </select>
+                    <small>Нове значення з Dashboard має пріоритет. Якщо поле порожнє — використовується старий DISCORD_CHANNEL_ID.</small>
+                  </label>
+                  <div className="form-actions">
+                    <button className="btn subtle" formAction="/api/dashboard/discord/applications/test-channel" formMethod="post" type="submit">Тест каналу заявок</button>
+                  </div>
+                </div>
+              </section>
+
               <section className="nickname-warning-settings" aria-label="Автоматичні попередження про серверні ніки">
                 <div className="nickname-warning-settings__head">
                   <div>

@@ -1100,6 +1100,16 @@ export async function setApplicationDiscordMessageRef(issueNumber: number, ref: 
   return true;
 }
 
+export async function deleteGuildApplication(issueNumber: number) {
+  const normalized = Number(issueNumber);
+  if (!Number.isInteger(normalized) || normalized <= 0) throw new Error("Invalid application number");
+  const doc = await findFirebaseApplicationDoc(normalized);
+  if (!doc) throw new Error("Заявку не знайдено у сховищі.");
+  const item = mapFirebaseApplicationDoc(doc);
+  await doc.ref.delete();
+  return { ok: true, item };
+}
+
 export async function listApplicationFilterOptions() {
   const items = await listFirebaseApplicationsBase();
   return {

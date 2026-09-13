@@ -56,6 +56,7 @@ export type GuildNicknamePolicy = {
   nicknameReminderCooldownHours: number;
   nicknameReminderBatchLimit: number;
   nicknameReminderChannelId: string;
+  applicationsChannelId: string;
   nicknameNewcomerGateEnabled: boolean;
   nicknameNewcomerRoleId: string;
   updatedAt?: string | null;
@@ -121,6 +122,7 @@ function normalizePolicyData(data: Record<string, unknown> | null | undefined, f
     nicknameReminderCooldownHours: cleanIntegerSetting(data?.nicknameReminderCooldownHours, DEFAULT_NICKNAME_REMINDER_COOLDOWN_HOURS, 1, 720),
     nicknameReminderBatchLimit: cleanIntegerSetting(data?.nicknameReminderBatchLimit, DEFAULT_NICKNAME_REMINDER_BATCH_LIMIT, 1, 500),
     nicknameReminderChannelId: cleanChannelId(data?.nicknameReminderChannelId),
+    applicationsChannelId: cleanChannelId(data?.applicationsChannelId),
     nicknameNewcomerGateEnabled: cleanBoolSetting(data?.nicknameNewcomerGateEnabled, DEFAULT_NICKNAME_NEWCOMER_GATE_ENABLED),
     nicknameNewcomerRoleId: cleanChannelId(data?.nicknameNewcomerRoleId),
     updatedAt: timestampToIso(data?.updatedAt),
@@ -204,6 +206,7 @@ export async function setGuildDiscordManagementSettings(input: {
   nicknameReminderCooldownHours?: unknown;
   nicknameReminderBatchLimit?: unknown;
   nicknameReminderChannelId?: unknown;
+  applicationsChannelId?: unknown;
   nicknameNewcomerGateEnabled?: unknown;
   nicknameNewcomerRoleId?: unknown;
 }, actor?: DashboardSession | null) {
@@ -217,6 +220,7 @@ export async function setGuildDiscordManagementSettings(input: {
   const nicknameReminderCooldownHours = cleanIntegerSetting(input.nicknameReminderCooldownHours, DEFAULT_NICKNAME_REMINDER_COOLDOWN_HOURS, 1, 720);
   const nicknameReminderBatchLimit = cleanIntegerSetting(input.nicknameReminderBatchLimit, DEFAULT_NICKNAME_REMINDER_BATCH_LIMIT, 1, 500);
   const nicknameReminderChannelId = cleanChannelId(input.nicknameReminderChannelId);
+  const applicationsChannelId = cleanChannelId(input.applicationsChannelId);
   const nicknameNewcomerGateEnabled = cleanBoolSetting(input.nicknameNewcomerGateEnabled, DEFAULT_NICKNAME_NEWCOMER_GATE_ENABLED);
   const nicknameNewcomerRoleId = cleanChannelId(input.nicknameNewcomerRoleId);
   if (nicknameNewcomerGateEnabled && !nicknameNewcomerRoleId) {
@@ -238,6 +242,7 @@ export async function setGuildDiscordManagementSettings(input: {
       nicknameReminderCooldownHours,
       nicknameReminderBatchLimit,
       nicknameReminderChannelId,
+      applicationsChannelId,
       nicknameNewcomerGateEnabled,
       nicknameNewcomerRoleId,
       updatedAt: FieldValue.serverTimestamp(),
@@ -258,6 +263,7 @@ export async function setGuildDiscordManagementSettings(input: {
       nicknameReminderCooldownHours,
       nicknameReminderBatchLimit,
       nicknameReminderChannelId,
+      applicationsChannelId,
       nicknameNewcomerGateEnabled,
       nicknameNewcomerRoleId,
     }),

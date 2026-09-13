@@ -530,3 +530,20 @@
   .application-state { align-self: flex-start; }
   .applications-command__footer small { width: 100%; margin-left: 14px; }
 }
+
+.application-delete-row {
+  display: grid;
+  gap: 7px;
+  padding-top: 12px;
+  margin-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--c-danger) 22%, transparent);
+}
+
+.application-delete-row .btn {
+  width: 100%;
+}
+
+.application-delete-row small {
+  color: var(--text-muted);
+  line-height: 1.45;
+}

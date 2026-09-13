@@ -154,6 +154,13 @@ export async function POST(request: NextRequest) {
       });
       if (discord.ok && discord.channel_id && discord.message_id) {
         await setApplicationDiscordMessageRef(item.number, { channel_id: discord.channel_id, message_id: discord.message_id }).catch(() => false);
+        logDashboardEvent("info", "public_site.applications.discord_notified", request, { number: item.number, channelId: discord.channel_id, messageId: discord.message_id });
+      } else {
+        logDashboardEvent("warn", "public_site.applications.discord_notify_failed", request, {
+          number: item.number,
+          skipped: Boolean(discord.skipped),
+          reason: discord.reason || discord.error || "unknown",
+        });
       }
     }
 
