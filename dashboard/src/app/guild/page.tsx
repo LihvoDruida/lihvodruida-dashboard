@@ -63,6 +63,7 @@ export default async function GuildRosterPage() {
           maxRioAll: 0,
           raidProgression: [],
           raidRankings: [],
+          raidSeasonSnapshot: null,
           updatedAt: null,
         },
         source: "fallback",

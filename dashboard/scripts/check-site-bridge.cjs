@@ -27,6 +27,7 @@ const discordPage = read('dashboard/src/app/dashboard/discord/page.tsx');
 const applicationActions = read('dashboard/src/components/ApplicationStatusActions.tsx');
 const applicationDeleteRoute = read('dashboard/src/app/api/applications/[number]/route.ts');
 const guildSyncRoute = read('dashboard/src/app/api/guild/sync/route.ts');
+const guildPage = read('dashboard/src/app/guild/page.tsx');
 
 check(proxy.includes('function isPublicSiteBridgePath'), 'proxy must explicitly identify public Main Site bridge routes');
 check(proxy.includes('pathname === "/api/site/applications"') && proxy.includes('pathname === "/api/site/guild"'), 'both Main Site bridge routes must be public at proxy level');
@@ -64,6 +65,7 @@ check(raidSeasonResolver.includes('is_main_season') && raidSeasonResolver.includ
 check(raidSeasonResolver.includes('activeNow: isInside'), 'raid relevance must be derived automatically from Raider.IO raid time windows');
 check(raidSeasonResolver.includes('source: "cached"'), 'automatic season resolver must preserve the last good snapshot when upstream APIs temporarily fail');
 check(guildSyncRoute.includes('missingRaidSeasonSnapshot') && guildSyncRoute.includes('raidSeasonSnapshot?.detectedAt'), 'cron must seed season metadata immediately after deployment instead of waiting for the normal roster refresh TTL');
+check(guildPage.includes('raidSeasonSnapshot: null'), 'guild page fallback stats must satisfy GuildRosterStats after raid season metadata became required');
 check(compose.includes('PUBLIC_SITE_ORIGINS:'), 'dashboard container must receive the public-site origin allowlist');
 check(envExample.includes('PUBLIC_SITE_ORIGINS='), 'public-site origin allowlist must be documented in env example');
 check(page.includes('Main Site ↔ VPS'), 'applications UI must expose bridge health/source context');
