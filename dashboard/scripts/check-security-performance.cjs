@@ -47,8 +47,12 @@ const proxyParamsFast = read('deploy/nginx/proxy-params-fast.inc');
 const envExample = read('.env.example');
 const dashboardEnvExample = read('dashboard/.env.example');
 const dockerignore = read('.dockerignore');
+const startScript = read('deploy/scripts/start.sh');
 const logsExplorer = read('dashboard/src/components/StructuredLogsExplorer.tsx');
 const logsPage = read('dashboard/src/app/dashboard/logs/page.tsx');
+const packageJson = JSON.parse(read('dashboard/package.json'));
+const packageLock = JSON.parse(read('dashboard/package-lock.json'));
+const lockRoot = packageLock.packages?.[''] || {};
 
 const overlayMatch = dockerfile.match(/ARG NEXT_SECURITY_VERSION=([^\s]+)/);
 const pinnedNext = overlayMatch?.[1] || '';
@@ -64,6 +68,23 @@ ok(dockerfile.includes('npm install --no-save --package-lock=false') && dockerfi
 ok(dockerfile.includes('MISTBLOSSOM_EXPECTED_NEXT_VERSION=${NEXT_SECURITY_VERSION}'), 'builder must expose the expected Next.js version to CI');
 ok(!dockerfile.includes('/repo/dashboard/scripts ./dashboard/scripts') && dockerfile.includes('scripts/db-init.mjs'), 'runtime image must not copy the whole CI/build scripts directory');
 ok(envExample.includes('NEXT_SECURITY_VERSION=16.3.5'), 'root env example must pin the approved Next.js security release');
+ok(
+  packageJson.dependencies?.next === lockRoot.dependencies?.next,
+  `package.json Next baseline (${packageJson.dependencies?.next || 'missing'}) must equal package-lock baseline (${lockRoot.dependencies?.next || 'missing'}); security upgrades belong in NEXT_SECURITY_VERSION`,
+);
+ok(
+  packageJson.devDependencies?.['eslint-config-next'] === lockRoot.devDependencies?.['eslint-config-next'],
+  `package.json eslint-config-next baseline (${packageJson.devDependencies?.['eslint-config-next'] || 'missing'}) must equal package-lock baseline (${lockRoot.devDependencies?.['eslint-config-next'] || 'missing'})`,
+);
+ok(
+  versionAtLeast(pinnedNext, packageJson.dependencies?.next || '0.0.0'),
+  `Next.js security overlay ${pinnedNext || 'missing'} must not be older than the reproducible package baseline ${packageJson.dependencies?.next || 'missing'}`,
+);
+ok(
+  startScript.includes('Next baseline синхронний: package.json = package-lock') &&
+    startScript.includes('eslint-config-next синхронний: package.json = package-lock'),
+  'deployment preflight must reject package.json/package-lock Next baseline drift before Docker build',
+);
 
 const installedPath = path.join(dashboardRoot, 'node_modules', 'next', 'package.json');
 if (fs.existsSync(installedPath)) {

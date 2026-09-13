@@ -104,6 +104,26 @@ else
   ok "package-lock використовує переносимі registry URL"
 fi
 
+# Security overlay для Next встановлюється окремо в Dockerfile поверх відтворюваного
+# baseline lock-файла. package.json не можна піднімати до overlay-версії окремим
+# комітом: тоді `npm ci` падає ще до встановлення overlay. Ловимо цей дрейф до build.
+pkg_next="$(sed -n 's/^[[:space:]]*"next": "\([^"]*\)".*/\1/p' dashboard/package.json | head -n1)"
+lock_next="$(sed -n '1,80{s/^[[:space:]]*"next": "\([^"]*\)".*/\1/p;}' dashboard/package-lock.json | head -n1)"
+pkg_eslint_next="$(sed -n 's/^[[:space:]]*"eslint-config-next": "\([^"]*\)".*/\1/p' dashboard/package.json | head -n1)"
+lock_eslint_next="$(sed -n '1,80{s/^[[:space:]]*"eslint-config-next": "\([^"]*\)".*/\1/p;}' dashboard/package-lock.json | head -n1)"
+
+if [ -n "$pkg_next" ] && [ "$pkg_next" = "$lock_next" ]; then
+  ok "Next baseline синхронний: package.json = package-lock ($pkg_next)"
+else
+  problem "Next baseline не синхронний: package.json=${pkg_next:-?}, package-lock=${lock_next:-?}. Security overlay змінюйте через NEXT_SECURITY_VERSION, а не окремо в package.json."
+fi
+
+if [ -n "$pkg_eslint_next" ] && [ "$pkg_eslint_next" = "$lock_eslint_next" ]; then
+  ok "eslint-config-next синхронний: package.json = package-lock ($pkg_eslint_next)"
+else
+  problem "eslint-config-next не синхронний: package.json=${pkg_eslint_next:-?}, package-lock=${lock_eslint_next:-?}. Оновіть lock разом із baseline package.json."
+fi
+
 [ "$PROBLEMS" -eq 0 ] || fail "Статична перевірка релізу не пройдена."
 
 # ---------------------------------------------------------------------------
