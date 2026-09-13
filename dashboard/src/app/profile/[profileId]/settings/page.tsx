@@ -502,6 +502,8 @@ export default async function ProfileSettingsPage({
         nicknameCleanupMaxConcurrency: 4,
         nicknameReminderEnabled: false,
         nicknameReminderIntervalHours: 24,
+        nicknameInvalidRecheckHours: 6,
+        nicknameValidRecheckHours: 72,
         nicknameReminderCooldownHours: 72,
         nicknameReminderBatchLimit: 100,
         nicknameReminderChannelId: "",

@@ -302,9 +302,14 @@ export default async function AdminDiscordPage() {
                   </label>
                 </div>
                 <div className="nickname-warning-settings__grid">
-                  <label className="field-label">Інтервал перевірки
-                    <input className="input" name="nicknameReminderIntervalHours" type="number" min="1" max="168" defaultValue={policy.nicknameReminderIntervalHours} />
-                    <small>годин між автоматичними проходами</small>
+                  <input type="hidden" name="nicknameReminderIntervalHours" value={policy.nicknameReminderIntervalHours} />
+                  <label className="field-label">Некоректні — перевіряти кожні
+                    <input className="input" name="nicknameInvalidRecheckHours" type="number" min="1" max="72" defaultValue={policy.nicknameInvalidRecheckHours} />
+                    <small>годин; це пріоритетна черга з точковою перевіркою Discord member</small>
+                  </label>
+                  <label className="field-label">Коректні — повний sweep кожні
+                    <input className="input" name="nicknameValidRecheckHours" type="number" min="12" max="720" defaultValue={policy.nicknameValidRecheckHours} />
+                    <small>годин; одним guild-members запитом перевіряється весь сервер і перебудовується черга</small>
                   </label>
                   <label className="field-label">Cooldown учасника
                     <input className="input" name="nicknameReminderCooldownHours" type="number" min="1" max="720" defaultValue={policy.nicknameReminderCooldownHours} />
@@ -312,7 +317,7 @@ export default async function AdminDiscordPage() {
                   </label>
                   <label className="field-label">Макс. за прохід
                     <input className="input" name="nicknameReminderBatchLimit" type="number" min="1" max="500" defaultValue={policy.nicknameReminderBatchLimit} />
-                    <small>захист від масової розсилки за один запуск</small>
+                    <small>максимум пріоритетних перевірок/попереджень за один cron-прохід</small>
                   </label>
                   <label className="field-label">Fallback-канал
                     <select className="input" name="nicknameReminderChannelId" defaultValue={policy.nicknameReminderChannelId}>
@@ -323,7 +328,7 @@ export default async function AdminDiscordPage() {
                     <small>Якщо DM закриті — бот тегне учасника тут.</small>
                   </label>
                 </div>
-                <p className="nickname-warning-settings__hint">Порядок доставки фіксований: спочатку приватне повідомлення. Тільки якщо Discord не дозволив DM — публічне попередження у вибраному каналі.</p>
+                <p className="nickname-warning-settings__hint">Scheduler пріоритезує некоректні ніки: їх перечитує точково й частіше. Коректні не опитуються по одному — вони повторно перевіряються лише під час рідкого повного sweep. Порядок доставки: DM → fallback-канал.</p>
               </section>
               <button className="btn primary" type="submit">Зберегти налаштування</button>
             </div>
@@ -418,10 +423,11 @@ export default async function AdminDiscordPage() {
                 <span className={`status-pill ${policy.nicknameReminderEnabled ? "good" : "subtle"}`}>{policy.nicknameReminderEnabled ? "Автоматично" : "Ручний режим"}</span>
               </div>
               <div className="discord-management-card__body">
-                <p className="profile-card-lead">Перевіряє <code>member.nick</code> за глобальним шаблоном. <strong>Ролі, доступи й нік не змінюються.</strong> Некоректному учаснику бот спочатку пише в DM; якщо приватні повідомлення недоступні — тегне у fallback-каналі.</p>
+                <p className="profile-card-lead">Перевіряє <code>member.nick</code> за глобальним шаблоном. <strong>Ролі, доступи й нік не змінюються.</strong> Після повного проходу некоректні ніки переходять у пріоритетну часту чергу, а коректні перевіряються значно рідше повним sweep. Некоректному учаснику бот спочатку пише в DM; якщо приватні повідомлення недоступні — тегне у fallback-каналі.</p>
                 <div className="nickname-warning-status-grid">
-                  <InfoChip title={nicknameWarningState.lastRunAt ? formatCleanupDate(nicknameWarningState.lastRunAt) : "Ще не було"} text="останній запуск" />
-                  <InfoChip title={String(nicknameWarningState.lastInvalid)} text="некоректних" />
+                  <InfoChip title={nicknameWarningState.lastFullScanAt ? formatCleanupDate(nicknameWarningState.lastFullScanAt) : "Ще не було"} text="повна перевірка" />
+                  <InfoChip title={`${nicknameWarningState.trackedInvalid} / ${nicknameWarningState.trackedValid}`} text="пріоритет / коректні" />
+                  <InfoChip title={nicknameWarningState.nextInvalidCheckAt ? formatCleanupDate(nicknameWarningState.nextInvalidCheckAt) : "Черга порожня"} text="наступна пріоритетна" />
                   <InfoChip title={`${nicknameWarningState.lastDm} / ${nicknameWarningState.lastChannel}`} text="DM / канал" />
                   <InfoChip title={String(nicknameWarningState.lastFailed)} text="помилок" />
                 </div>
@@ -429,16 +435,16 @@ export default async function AdminDiscordPage() {
                 <form action="/api/dashboard/discord/nicknames/notify" method="post" data-dashboard-action-form="true" data-dashboard-live-submit="true">
                   <label className="field-label discord-management-limit-field">Скільки учасників перевірити
                     <input className="input" name="limit" type="number" min="0" max="50000" defaultValue="0" />
-                    <small>0 = весь сервер. За один запуск буде надіслано не більше {policy.nicknameReminderBatchLimit} попереджень.</small>
+                    <small>0 = весь сервер. Повна перевірка перебудовує пріоритетну чергу; автоматичний priority-run обробляє до {policy.nicknameReminderBatchLimit} некоректних учасників.</small>
                   </label>
                   <div className="nickname-warning-flow" aria-label="Логіка сповіщення">
-                    <span><b>1</b><strong>Перевірка</strong><small>member.nick → шаблон</small></span>
-                    <span><b>2</b><strong>DM</strong><small>пріоритетний канал</small></span>
-                    <span><b>3</b><strong>Fallback</strong><small>{policy.nicknameReminderChannelId ? `# ${textChannels.channels.find((channel) => channel.id === policy.nicknameReminderChannelId)?.name || policy.nicknameReminderChannelId}` : "не налаштований"}</small></span>
+                    <span><b>1</b><strong>Full sweep</strong><small>коректні раз на {policy.nicknameValidRecheckHours} год</small></span>
+                    <span><b>2</b><strong>Priority</strong><small>некоректні раз на {policy.nicknameInvalidRecheckHours} год</small></span>
+                    <span><b>3</b><strong>DM → fallback</strong><small>{policy.nicknameReminderChannelId ? `# ${textChannels.channels.find((channel) => channel.id === policy.nicknameReminderChannelId)?.name || policy.nicknameReminderChannelId}` : "без fallback"}</small></span>
                     <span><b>4</b><strong>Cooldown</strong><small>{policy.nicknameReminderCooldownHours} год</small></span>
                   </div>
                   <div className="form-actions form-actions--split">
-                    <button className="btn subtle" formAction="/api/dashboard/discord/nicknames/inspect" formMethod="post" type="submit">Тільки перевірити</button>
+                    <button className="btn subtle" formAction="/api/dashboard/discord/nicknames/inspect" formMethod="post" type="submit" name="recheckAll" value="1" data-confirm-message="Переперевірити серверні ніки всіх учасників і повністю перебудувати пріоритетну чергу? Повідомлення надсилатися не будуть.">Переперевірити всіх</button>
                     <button className="btn primary" type="submit" data-confirm-message="Перевірити серверні ніки й надіслати попередження учасникам із неправильним ніком? Ролі та ніки автоматично не змінюватимуться.">Перевірити й попередити</button>
                   </div>
                 </form>
@@ -448,7 +454,7 @@ export default async function AdminDiscordPage() {
                     <div className="nickname-warning-history__list">
                       {nicknameWarningState.recentRuns.map((run) => (
                         <div className={`nickname-warning-history__row is-${run.status}`} key={run.id}>
-                          <span><strong>{run.source === "automatic" ? "Автоматично" : "Вручну"}</strong><small>{formatCleanupDate(run.completedAt)}</small></span>
+                          <span><strong>{run.source === "automatic" ? "Автоматично" : "Вручну"} · {run.mode === "priority" ? "priority" : "full sweep"}</strong><small>{formatCleanupDate(run.completedAt)}</small></span>
                           <span>перевірено <b>{run.checked}</b></span>
                           <span>некоректних <b>{run.invalid}</b></span>
                           <span>попереджено <b>{run.notified}</b></span>

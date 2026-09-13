@@ -36,7 +36,21 @@ assert(page.includes('Ролі, доступи й нік не змінюютьс
 assert(page.includes('action="/api/dashboard/discord/nicknames/notify"'), 'manual warning action must exist');
 assert(page.includes('fallback-канал') && page.includes('nicknameReminderChannelId'), 'owner can choose a fallback Discord channel');
 assert(page.includes('nicknameReminderCooldownHours') && page.includes('nicknameReminderBatchLimit'), 'cooldown and per-run batch controls must be exposed');
-assert(policy.includes('nicknameReminderEnabled') && policy.includes('nicknameReminderIntervalHours'), 'nickname warning automation settings must be persisted');
+assert(policy.includes('nicknameReminderEnabled') && policy.includes('nicknameInvalidRecheckHours') && policy.includes('nicknameValidRecheckHours'), 'priority and full-sweep nickname intervals must be persisted');
+
+assert(page.includes('name="nicknameInvalidRecheckHours"') && page.includes('name="nicknameValidRecheckHours"'), 'UI must expose separate frequent-invalid and rare-valid recheck intervals');
+assert(page.includes('name="recheckAll"') && page.includes('Переперевірити всіх'), 'UI must provide an explicit full recheck that rebuilds priority state');
+assert(warnings.includes('checkStatus: NicknameCheckStatus') && warnings.includes('nextCheckAtMs'), 'per-member nickname state must persist validity and next-check scheduling');
+assert(warnings.includes('.where("checkStatus", "==", "invalid")'), 'automatic priority queue must query only known invalid nicknames');
+assert(warnings.includes('nicknameInvalidRecheckHours') && warnings.includes('nicknameValidRecheckHours'), 'member scheduler must assign different intervals to invalid and valid nicknames');
+assert(warnings.includes('persistFullNicknameCheckSnapshot') && warnings.includes('cleanupMissing: true'), 'full recheck must rebuild the queue and remove stale Discord members');
+assert(warnings.includes('processPriorityNicknameWarnings') && warnings.includes('fetchDiscordGuildMemberSnapshot(target.userId)'), 'priority runs must re-read only due invalid members individually');
+assert(warnings.includes('loadStoredWarningStates') && warnings.includes('storedWarningOnCooldown'), 'full sweeps must load cooldown state in bulk instead of repeating one database read per invalid member');
+assert(warnings.includes('deliverNicknameWarning(fresh, policy, { ...input, force: true })'), 'full-sweep delivery must reuse the already-computed cooldown decision instead of reading it twice');
+assert(warnings.includes('status: "missing" as const') && warnings.includes('deleteMemberCheckRecords'), 'members that left Discord must be removed from the priority queue');
+assert(automation.includes('nicknameFullScanDue') && automation.includes('processPriorityNicknameWarnings'), 'automatic route must choose between rare full sweeps and frequent priority runs');
+assert(!automation.includes('nicknameWarningDue(state.lastRunAt'), 'automatic route must not gate all nickname work behind one global interval');
+assert(inspect.includes('acquireNicknameWarningExecution') && inspect.includes('recheckAll ? 0'), 'manual full recheck must share the execution lock and force a complete server scan');
 assert(warnings.includes('sendDiscordDirectMessage') && warnings.includes('sendDiscordChannelUserWarning'), 'delivery must try DM and support channel fallback');
 assert(warnings.indexOf('await sendDiscordDirectMessage') < warnings.indexOf('await sendDiscordChannelUserWarning'), 'DM must be attempted before public fallback');
 assert(warnings.includes('recentMemberWarning') && warnings.includes('nicknameReminderCooldownHours'), 'per-member cooldown must prevent spam');

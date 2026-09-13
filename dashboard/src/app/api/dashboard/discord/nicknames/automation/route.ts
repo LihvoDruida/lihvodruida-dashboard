@@ -4,7 +4,8 @@ import { getGuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
 import {
   acquireNicknameWarningExecution,
   getNicknameWarningAutomationState,
-  nicknameWarningDue,
+  nicknameFullScanDue,
+  processPriorityNicknameWarnings,
   sendNicknameWarnings,
 } from "@/lib/discordNicknameWarnings";
 import { logDashboardEvent, noStoreHeaders, safeErrorMessage, unauthorizedResponse, verifyInternalBearerToken } from "@/lib/security";
@@ -32,34 +33,33 @@ export async function POST(request: NextRequest) {
   }
 
   const state = await getNicknameWarningAutomationState({ fresh: true });
-  if (!nicknameWarningDue(state.lastRunAt, policy.nicknameReminderIntervalHours)) {
-    return NextResponse.json({
-      ok: true,
-      skipped: true,
-      reason: "not_due",
-      lastRunAt: state.lastRunAt,
-      intervalHours: policy.nicknameReminderIntervalHours,
-    }, { headers: noStoreHeaders() });
-  }
-
-  const execution = acquireNicknameWarningExecution("automatic");
+  const runFullScan = nicknameFullScanDue(state, policy);
+  const execution = acquireNicknameWarningExecution(runFullScan ? "automatic:full" : "automatic:priority");
   if (!execution) {
     return NextResponse.json({ ok: true, skipped: true, reason: "in_flight" }, { headers: noStoreHeaders() });
   }
 
-  logDashboardEvent("info", "discord.nickname_warning.auto_started", request, {
-    intervalHours: policy.nicknameReminderIntervalHours,
-    cooldownHours: policy.nicknameReminderCooldownHours,
-    batchLimit: policy.nicknameReminderBatchLimit,
-    fallbackChannelId: policy.nicknameReminderChannelId || null,
-  }, { category: "action" });
+  if (runFullScan) {
+    logDashboardEvent("info", "discord.nickname_warning.auto_started", request, {
+      mode: "full",
+      invalidRecheckHours: policy.nicknameInvalidRecheckHours,
+      validRecheckHours: policy.nicknameValidRecheckHours,
+      cooldownHours: policy.nicknameReminderCooldownHours,
+      batchLimit: policy.nicknameReminderBatchLimit,
+      fallbackChannelId: policy.nicknameReminderChannelId || null,
+      lastFullScanAt: state.lastFullScanAt,
+    }, { category: "action" });
+  }
 
   try {
-    const result = await sendNicknameWarnings({
-      limit: 0,
-      source: "automatic",
-      force: false,
-    });
+    const result = runFullScan
+      ? await sendNicknameWarnings({ limit: 0, source: "automatic", force: false })
+      : await processPriorityNicknameWarnings({ source: "automatic", force: false });
+
+    if ("skipped" in result && result.skipped) {
+      return NextResponse.json({ ok: true, ...result }, { headers: noStoreHeaders() });
+    }
+
     logDashboardEvent(result.failed ? "warn" : "info", "discord.nickname_warning.auto_completed", request, result, { category: "action" });
     return NextResponse.json({ ok: true, result }, { headers: noStoreHeaders() });
   } catch (error) {

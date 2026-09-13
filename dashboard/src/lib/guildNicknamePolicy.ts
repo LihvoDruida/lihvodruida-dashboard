@@ -11,7 +11,9 @@ export const DEFAULT_NICKNAME_TEMPLATE = "{name} [{main}, {alt}, {alt}]";
 export const DEFAULT_NICKNAME_CLEANUP_CONCURRENCY = 0;
 export const DEFAULT_NICKNAME_CLEANUP_MAX_CONCURRENCY = 4;
 export const DEFAULT_NICKNAME_REMINDER_ENABLED = false;
-export const DEFAULT_NICKNAME_REMINDER_INTERVAL_HOURS = 24;
+export const DEFAULT_NICKNAME_REMINDER_INTERVAL_HOURS = 24; // legacy compatibility; priority scheduler uses the intervals below
+export const DEFAULT_NICKNAME_INVALID_RECHECK_HOURS = 6;
+export const DEFAULT_NICKNAME_VALID_RECHECK_HOURS = 72;
 export const DEFAULT_NICKNAME_REMINDER_COOLDOWN_HOURS = 72;
 export const DEFAULT_NICKNAME_REMINDER_BATCH_LIMIT = 100;
 
@@ -43,6 +45,8 @@ export type GuildNicknamePolicy = {
   nicknameCleanupMaxConcurrency: number;
   nicknameReminderEnabled: boolean;
   nicknameReminderIntervalHours: number;
+  nicknameInvalidRecheckHours: number;
+  nicknameValidRecheckHours: number;
   nicknameReminderCooldownHours: number;
   nicknameReminderBatchLimit: number;
   nicknameReminderChannelId: string;
@@ -107,6 +111,8 @@ function normalizePolicyData(data: Record<string, unknown> | null | undefined, f
     nicknameCleanupMaxConcurrency: cleanIntegerSetting(data?.nicknameCleanupMaxConcurrency, DEFAULT_NICKNAME_CLEANUP_MAX_CONCURRENCY, 1, 4),
     nicknameReminderEnabled: cleanBoolSetting(data?.nicknameReminderEnabled, DEFAULT_NICKNAME_REMINDER_ENABLED),
     nicknameReminderIntervalHours: cleanIntegerSetting(data?.nicknameReminderIntervalHours, DEFAULT_NICKNAME_REMINDER_INTERVAL_HOURS, 1, 168),
+    nicknameInvalidRecheckHours: cleanIntegerSetting(data?.nicknameInvalidRecheckHours, DEFAULT_NICKNAME_INVALID_RECHECK_HOURS, 1, 72),
+    nicknameValidRecheckHours: cleanIntegerSetting(data?.nicknameValidRecheckHours, DEFAULT_NICKNAME_VALID_RECHECK_HOURS, 12, 720),
     nicknameReminderCooldownHours: cleanIntegerSetting(data?.nicknameReminderCooldownHours, DEFAULT_NICKNAME_REMINDER_COOLDOWN_HOURS, 1, 720),
     nicknameReminderBatchLimit: cleanIntegerSetting(data?.nicknameReminderBatchLimit, DEFAULT_NICKNAME_REMINDER_BATCH_LIMIT, 1, 500),
     nicknameReminderChannelId: cleanChannelId(data?.nicknameReminderChannelId),
@@ -195,6 +201,8 @@ export async function setGuildDiscordManagementSettings(input: {
   nicknameCleanupMaxConcurrency?: unknown;
   nicknameReminderEnabled?: unknown;
   nicknameReminderIntervalHours?: unknown;
+  nicknameInvalidRecheckHours?: unknown;
+  nicknameValidRecheckHours?: unknown;
   nicknameReminderCooldownHours?: unknown;
   nicknameReminderBatchLimit?: unknown;
   nicknameReminderChannelId?: unknown;
@@ -204,6 +212,8 @@ export async function setGuildDiscordManagementSettings(input: {
   const nicknameCleanupConcurrency = cleanIntegerSetting(input.nicknameCleanupConcurrency, DEFAULT_NICKNAME_CLEANUP_CONCURRENCY, 0, nicknameCleanupMaxConcurrency);
   const nicknameReminderEnabled = cleanBoolSetting(input.nicknameReminderEnabled, false);
   const nicknameReminderIntervalHours = cleanIntegerSetting(input.nicknameReminderIntervalHours, DEFAULT_NICKNAME_REMINDER_INTERVAL_HOURS, 1, 168);
+  const nicknameInvalidRecheckHours = cleanIntegerSetting(input.nicknameInvalidRecheckHours, DEFAULT_NICKNAME_INVALID_RECHECK_HOURS, 1, 72);
+  const nicknameValidRecheckHours = cleanIntegerSetting(input.nicknameValidRecheckHours, DEFAULT_NICKNAME_VALID_RECHECK_HOURS, 12, 720);
   const nicknameReminderCooldownHours = cleanIntegerSetting(input.nicknameReminderCooldownHours, DEFAULT_NICKNAME_REMINDER_COOLDOWN_HOURS, 1, 720);
   const nicknameReminderBatchLimit = cleanIntegerSetting(input.nicknameReminderBatchLimit, DEFAULT_NICKNAME_REMINDER_BATCH_LIMIT, 1, 500);
   const nicknameReminderChannelId = cleanChannelId(input.nicknameReminderChannelId);
@@ -218,6 +228,8 @@ export async function setGuildDiscordManagementSettings(input: {
       nicknameCleanupMaxConcurrency,
       nicknameReminderEnabled,
       nicknameReminderIntervalHours,
+      nicknameInvalidRecheckHours,
+      nicknameValidRecheckHours,
       nicknameReminderCooldownHours,
       nicknameReminderBatchLimit,
       nicknameReminderChannelId,
@@ -234,6 +246,8 @@ export async function setGuildDiscordManagementSettings(input: {
       nicknameCleanupMaxConcurrency,
       nicknameReminderEnabled,
       nicknameReminderIntervalHours,
+      nicknameInvalidRecheckHours,
+      nicknameValidRecheckHours,
       nicknameReminderCooldownHours,
       nicknameReminderBatchLimit,
       nicknameReminderChannelId,
