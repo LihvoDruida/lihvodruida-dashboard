@@ -37,6 +37,7 @@ export default async function AdminLogsPage() {
     getStructuredLogOverview(24),
     getStructuredLogSettings(),
   ]);
+  const initialNow = new Date().toISOString();
   const canEdit = canManageGroups(user);
   const canTuneStorage = Boolean(user.isServerOwner);
 
@@ -59,7 +60,7 @@ export default async function AdminLogsPage() {
 
         <AdminTabs active="logs" user={user} />
 
-        <StructuredLogsExplorer initialItems={items} initialOverview={overview} settings={settings} />
+        <StructuredLogsExplorer initialItems={items} initialOverview={overview} settings={settings} initialNow={initialNow} />
 
         <StructuredLogSettingsPanel
           initialSettings={settings}

@@ -637,6 +637,73 @@ export async function inspectNicknameWarnings(limitInput: unknown = 0) {
   };
 }
 
+export async function processFullNicknameSweep(input: {
+  source?: NicknameWarningSource;
+} = {}) {
+  const source = input.source || "automatic";
+  const startedAt = new Date().toISOString();
+  const inspection = await inspectNicknameWarnings(0);
+  const completedAt = new Date().toISOString();
+  const summary = `Повний sweep: перевірено ${inspection.checked}; коректних ${inspection.validTotal}; некоректних ${inspection.invalidTotal}; без серверного ніку ${inspection.missingNicknameTotal}. Чергу перебудовано без масової розсилки; некоректні підуть у priority-перевірку кожні ${inspection.invalidRecheckHours} год.`;
+  const run: NicknameWarningRun = {
+    id: `${Date.now()}:${source}:full-sweep`,
+    source,
+    mode: "full",
+    status: "success",
+    startedAt,
+    completedAt,
+    checked: inspection.checked,
+    invalid: inspection.invalidTotal,
+    notified: 0,
+    dm: 0,
+    channel: 0,
+    cooldownSkipped: 0,
+    deferredByBatch: 0,
+    correctedBeforeSend: 0,
+    failed: 0,
+    summary,
+  };
+
+  const previous = await getNicknameWarningAutomationState({ fresh: true });
+  const nextState: NicknameWarningAutomationState = {
+    ...previous,
+    lastRunAt: completedAt,
+    lastRunStatus: "success",
+    lastChecked: inspection.checked,
+    lastInvalid: inspection.invalidTotal,
+    lastNotified: 0,
+    lastDm: 0,
+    lastChannel: 0,
+    lastFailed: 0,
+    lastError: null,
+    trackedValid: inspection.validTotal,
+    trackedInvalid: inspection.invalidTotal,
+    recentRuns: [run, ...previous.recentRuns].slice(0, MAX_RECENT_RUNS),
+  };
+
+  if (hasFirebaseProfileConfig()) {
+    await firebaseWrite(
+      "settings",
+      `discord-nickname-warning-state:${source}:full-sweep`,
+      () => getFirebaseAdminDb().collection(STATE_COLLECTION).doc(STATE_DOC_ID).set(nextState, { merge: true }),
+      { timeoutMs: 4_000, logEvent: "discord.nickname_warning.state_write_failed" },
+    );
+  }
+  setStateCache(nextState);
+
+  return {
+    ...run,
+    fullScan: true as const,
+    template: inspection.template,
+    validTotal: inspection.validTotal,
+    invalidTotal: inspection.invalidTotal,
+    missingNicknameTotal: inspection.missingNicknameTotal,
+    invalidRecheckHours: inspection.invalidRecheckHours,
+    validRecheckHours: inspection.validRecheckHours,
+    preview: inspection.preview,
+  };
+}
+
 export async function sendNicknameWarnings(input: {
   limit?: unknown;
   source: NicknameWarningSource;

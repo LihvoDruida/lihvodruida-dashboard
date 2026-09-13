@@ -48,7 +48,9 @@ assert(warnings.includes('processPriorityNicknameWarnings') && warnings.includes
 assert(warnings.includes('loadStoredWarningStates') && warnings.includes('storedWarningOnCooldown'), 'full sweeps must load cooldown state in bulk instead of repeating one database read per invalid member');
 assert(warnings.includes('deliverNicknameWarning(fresh, policy, { ...input, force: true })'), 'full-sweep delivery must reuse the already-computed cooldown decision instead of reading it twice');
 assert(warnings.includes('status: "missing" as const') && warnings.includes('deleteMemberCheckRecords'), 'members that left Discord must be removed from the priority queue');
-assert(automation.includes('nicknameFullScanDue') && automation.includes('processPriorityNicknameWarnings'), 'automatic route must choose between rare full sweeps and frequent priority runs');
+assert(automation.includes('nicknameFullScanDue') && automation.includes('processFullNicknameSweep') && automation.includes('processPriorityNicknameWarnings'), 'automatic route must choose between scan-only rare full sweeps and frequent priority runs');
+assert(!automation.includes('sendNicknameWarnings({ limit: 0'), 'automatic full sweeps must classify members without triggering a mass warning burst');
+assert(warnings.includes('processFullNicknameSweep') && warnings.includes('Чергу перебудовано без масової розсилки'), 'full sweep must rebuild scheduler state without sending warnings');
 assert(!automation.includes('nicknameWarningDue(state.lastRunAt'), 'automatic route must not gate all nickname work behind one global interval');
 assert(inspect.includes('acquireNicknameWarningExecution') && inspect.includes('recheckAll ? 0'), 'manual full recheck must share the execution lock and force a complete server scan');
 assert(warnings.includes('sendDiscordDirectMessage') && warnings.includes('sendDiscordChannelUserWarning'), 'delivery must try DM and support channel fallback');

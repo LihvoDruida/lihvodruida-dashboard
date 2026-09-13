@@ -423,7 +423,7 @@ export default async function AdminDiscordPage() {
                 <span className={`status-pill ${policy.nicknameReminderEnabled ? "good" : "subtle"}`}>{policy.nicknameReminderEnabled ? "Автоматично" : "Ручний режим"}</span>
               </div>
               <div className="discord-management-card__body">
-                <p className="profile-card-lead">Перевіряє <code>member.nick</code> за глобальним шаблоном. <strong>Ролі, доступи й нік не змінюються.</strong> Після повного проходу некоректні ніки переходять у пріоритетну часту чергу, а коректні перевіряються значно рідше повним sweep. Некоректному учаснику бот спочатку пише в DM; якщо приватні повідомлення недоступні — тегне у fallback-каналі.</p>
+                <p className="profile-card-lead">Перевіряє <code>member.nick</code> за глобальним шаблоном. <strong>Ролі, доступи й нік не змінюються.</strong> Автоматичний full sweep лише класифікує учасників і перебудовує чергу без масової розсилки. Після повного проходу некоректні ніки переходять у пріоритетну часту чергу, а коректні перевіряються значно рідше повним sweep. Коли некоректний учасник стає due у priority-run, бот спочатку пише в DM; якщо приватні повідомлення недоступні — тегне у fallback-каналі.</p>
                 <div className="nickname-warning-status-grid">
                   <InfoChip title={nicknameWarningState.lastFullScanAt ? formatCleanupDate(nicknameWarningState.lastFullScanAt) : "Ще не було"} text="повна перевірка" />
                   <InfoChip title={`${nicknameWarningState.trackedInvalid} / ${nicknameWarningState.trackedValid}`} text="пріоритет / коректні" />

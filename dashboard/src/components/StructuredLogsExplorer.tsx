@@ -69,6 +69,8 @@ const CATEGORY_LABELS: Record<Category, string> = {
   system: "Система",
 };
 
+const LOG_TIME_ZONE = "Europe/Kyiv";
+
 const LEVEL_LABELS: Record<Level, string> = {
   debug: "Debug",
   info: "Info",
@@ -79,7 +81,7 @@ const LEVEL_LABELS: Record<Level, string> = {
 
 function formatTime(value: string) {
   try {
-    return new Intl.DateTimeFormat("uk-UA", { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date(value));
+    return new Intl.DateTimeFormat("uk-UA", { timeZone: LOG_TIME_ZONE, hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date(value));
   } catch {
     return "—";
   }
@@ -88,7 +90,7 @@ function formatTime(value: string) {
 function formatDateTime(value: string | null) {
   if (!value) return "—";
   try {
-    return new Intl.DateTimeFormat("uk-UA", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date(value));
+    return new Intl.DateTimeFormat("uk-UA", { timeZone: LOG_TIME_ZONE, day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date(value));
   } catch {
     return value;
   }
@@ -136,10 +138,12 @@ export default function StructuredLogsExplorer({
   initialItems,
   initialOverview,
   settings,
+  initialNow,
 }: {
   initialItems: LogItem[];
   initialOverview: Overview;
   settings: Settings;
+  initialNow: string;
 }) {
   const [items, setItems] = useState(initialItems);
   const [overview, setOverview] = useState(initialOverview);
@@ -150,7 +154,7 @@ export default function StructuredLogsExplorer({
   const [live, setLive] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(initialItems[0]?.id || null);
   const [error, setError] = useState("");
-  const [lastUpdatedAt, setLastUpdatedAt] = useState(() => new Date().toISOString());
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(initialNow);
   const [isPending, startTransition] = useTransition();
   const requestRef = useRef<AbortController | null>(null);
   const selected = useMemo(() => items.find((item) => item.id === selectedId) || null, [items, selectedId]);

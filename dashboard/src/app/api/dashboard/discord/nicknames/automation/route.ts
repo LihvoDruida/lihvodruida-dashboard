@@ -5,8 +5,8 @@ import {
   acquireNicknameWarningExecution,
   getNicknameWarningAutomationState,
   nicknameFullScanDue,
+  processFullNicknameSweep,
   processPriorityNicknameWarnings,
-  sendNicknameWarnings,
 } from "@/lib/discordNicknameWarnings";
 import { logDashboardEvent, noStoreHeaders, safeErrorMessage, unauthorizedResponse, verifyInternalBearerToken } from "@/lib/security";
 
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = runFullScan
-      ? await sendNicknameWarnings({ limit: 0, source: "automatic", force: false })
+      ? await processFullNicknameSweep({ source: "automatic" })
       : await processPriorityNicknameWarnings({ source: "automatic", force: false });
 
     if ("skipped" in result && result.skipped) {

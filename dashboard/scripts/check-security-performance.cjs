@@ -47,6 +47,8 @@ const proxyParamsFast = read('deploy/nginx/proxy-params-fast.inc');
 const envExample = read('.env.example');
 const dashboardEnvExample = read('dashboard/.env.example');
 const dockerignore = read('.dockerignore');
+const logsExplorer = read('dashboard/src/components/StructuredLogsExplorer.tsx');
+const logsPage = read('dashboard/src/app/dashboard/logs/page.tsx');
 
 const overlayMatch = dockerfile.match(/ARG NEXT_SECURITY_VERSION=([^\s]+)/);
 const pinnedNext = overlayMatch?.[1] || '';
@@ -76,6 +78,9 @@ if (fs.existsSync(installedPath)) {
 }
 
 ok(!proxy.includes('next-router-prefetch') && !proxy.includes('purpose:'), 'proxy matcher must not skip auth/security for prefetch requests');
+ok(logsExplorer.includes('timeZone: LOG_TIME_ZONE') && logsExplorer.includes('Europe/Kyiv'), 'logs client timestamps must use an explicit timezone so SSR and browser hydration render identical text');
+ok(logsExplorer.includes('useState(initialNow)') && !logsExplorer.includes('useState(() => new Date().toISOString())'), 'logs client must hydrate from a server-serialized timestamp instead of calling Date during initial render');
+ok(logsPage.includes('initialNow={initialNow}') && logsPage.includes('const initialNow = new Date().toISOString()'), 'logs page must serialize one initial timestamp into the client boundary');
 ok(!proxy.includes('response.headers.set("X-Nonce"') && !proxy.includes("response.headers.set('X-Nonce'"), 'CSP nonce must not be reflected in a response header');
 ok(proxy.includes('frame-src \'none\'') && proxy.includes('child-src \'none\''), 'CSP must explicitly deny frames/child browsing contexts');
 ok(proxy.includes('x-mistblossom-trusted-proxy'), 'Cloudflare enforcement must use the server-created trusted-proxy marker');
