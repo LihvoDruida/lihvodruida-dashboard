@@ -29,6 +29,65 @@ function stripCssComments(text) {
   return text.replace(/\/\*[\s\S]*?\*\//g, ' ');
 }
 
+function validateCssBraces(text, file) {
+  const stack = [];
+  let quote = null;
+  let escaped = false;
+  let inComment = false;
+  let line = 1;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    const next = text[index + 1];
+
+    if (char === '\n') line += 1;
+
+    if (inComment) {
+      if (char === '*' && next === '/') {
+        inComment = false;
+        index += 1;
+      }
+      continue;
+    }
+
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (char === '\\') {
+        escaped = true;
+        continue;
+      }
+      if (char === quote) quote = null;
+      continue;
+    }
+
+    if (char === '/' && next === '*') {
+      inComment = true;
+      index += 1;
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+      continue;
+    }
+    if (char === '{') {
+      stack.push(line);
+      continue;
+    }
+    if (char === '}') {
+      if (!stack.length) return `unexpected } at line ${line}`;
+      stack.pop();
+    }
+  }
+
+  if (quote) return `unterminated string at end of file`;
+  if (inComment) return `unterminated comment at end of file`;
+  if (stack.length) return `unclosed { opened at line ${stack.at(-1)}`;
+  return null;
+}
+
 function escapeRegExp(text) {
   return String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -114,6 +173,9 @@ const dynamicPrefixes = new Set();
 for (const file of sourceFiles) collectClassUsage(file, usedClasses, dynamicPrefixes);
 
 const cssFiles = walk(stylesRoot).filter((file) => file.endsWith('.css'));
+const invalidCssFiles = cssFiles
+  .map((file) => ({ file, error: validateCssBraces(fs.readFileSync(file, 'utf8'), file) }))
+  .filter(({ error }) => error);
 const unreferencedCssFiles = cssFiles.filter((file) => !sourceText.includes(path.basename(file)));
 const cssText = cssFiles.map((file) => fs.readFileSync(file, 'utf8')).join('\n');
 const cssWithoutComments = stripCssComments(cssText);
@@ -181,6 +243,11 @@ console.log(`STYLE AUDIT: ${selectorClasses.size} class selectors across ${cssFi
 console.log(`STYLE AUDIT: ${usedClasses.size} explicit runtime class names + ${dynamicPrefixes.size} dynamic prefixes.`);
 console.log(`STYLE AUDIT: ${selectorIds.size} ID selectors, ${definedVars.size} custom properties, ${keyframes.size} keyframe animation(s).`);
 
+if (invalidCssFiles.length) {
+  console.error(`STYLE AUDIT: ${invalidCssFiles.length} structurally invalid CSS file(s):`);
+  for (const { file, error } of invalidCssFiles) console.error(` - ${path.relative(root, file)}: ${error}`);
+}
+
 if (unreferencedCssFiles.length) {
   console.error(`STYLE AUDIT: ${unreferencedCssFiles.length} CSS file(s) are not imported/referenced by runtime source:`);
   for (const file of unreferencedCssFiles) console.error(` - ${path.relative(root, file)}`);
@@ -212,5 +279,5 @@ if (unusedKeyframes.length) {
   }
 }
 
-if (unreferencedCssFiles.length || unusedClasses.length || unusedIds.length || unusedVars.length || unusedKeyframes.length) process.exit(1);
-console.log('STYLE AUDIT: no conservatively confirmed unused class/ID selectors, custom properties, or keyframes.');
+if (invalidCssFiles.length || unreferencedCssFiles.length || unusedClasses.length || unusedIds.length || unusedVars.length || unusedKeyframes.length) process.exit(1);
+console.log('STYLE AUDIT: CSS structure is valid; no conservatively confirmed unused class/ID selectors, custom properties, or keyframes.');

@@ -335,7 +335,14 @@
     grid-column: 1 / -1;
     justify-self: start;
   }
-  /* ---------- Останні дрібні класи адмінки ---------- */
+
+  /* Форми адмінки: дії на всю ширину — вони довгі й важливі */
+  .discord-management-card .form-actions .btn {
+    width: 100%;
+  }
+}
+
+/* ---------- Останні дрібні класи адмінки ---------- */
 .admin-policy-form {
   display: grid;
   gap: var(--gap-stack);
