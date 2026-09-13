@@ -71,6 +71,14 @@ COPY deploy/nginx/dashboard.conf /repo/deploy/nginx/dashboard.conf
 COPY deploy/nginx/proxy-params.inc /repo/deploy/nginx/proxy-params.inc
 COPY deploy/nginx/proxy-params-fast.inc /repo/deploy/nginx/proxy-params-fast.inc
 
+# Source-level security/performance audit reads a small set of root deployment
+# manifests. They are explicit builder-only inputs; none is copied to runtime.
+# Keeping the list explicit avoids sending secrets while making build:ci see the
+# same compose/.dockerignore policy that is actually deployed on the VPS.
+COPY docker-compose.yml /repo/docker-compose.yml
+COPY .env.example /repo/.env.example
+COPY .dockerignore /repo/.dockerignore
+
 # The shared site footer shows the bot package version, and its CI invariant also
 # checks that the bot health endpoint exposes the same package version. These two
 # non-secret source files are therefore explicit build-time inputs of the dashboard.

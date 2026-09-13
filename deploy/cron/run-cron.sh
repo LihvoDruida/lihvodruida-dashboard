@@ -51,21 +51,36 @@ call() {
 
 log "старт; база=${BASE}"
 
+# Запамʼятовуємо саме календарну хвилину, а не просто робимо sleep 60.
+# Якщо повільна другорядна задача перетнула межу хвилини, цикл одразу
+# виконає новий tick замість того, щоб проспати його до наступної межі.
+last_tick=""
+
 while true; do
+  tick=$(date -u '+%Y%m%d%H%M')
+  if [ "$tick" = "$last_tick" ]; then
+    sleep $((60 - $(date -u +%-S)))
+    continue
+  fi
+  last_tick="$tick"
   minute=$(date -u +%-M)
 
-  # Власний VPS дозволяє тримати склад актуальним без browser-driven sync.
-  # Endpoint сам застосовує TTL, короткі батчі та Raider.IO cooldown.
-  [ $((minute % 2)) -eq 0 ] && call "/api/guild/sync"
-  # Швидкий minute tick читає лише вузьке вікно дат. На початку кожної
-  # години робимо bounded full sweep, щоб дочистити повідомлення після
-  # тривалого Discord/мережевого збою, не навантажуючи БД щохвилини.
+  # Найчутливіша до часу задача завжди йде першою. Так guild sync або
+  # maintenance не можуть затримати закриття запису чи 15-хв reminder.
+  # На початку години full sweep теж спершу бере near-date window і
+  # пріоритезує актуальні close/reminder події над старим cleanup backlog.
   if [ "$minute" -eq 0 ]; then
     call "/api/raids/lifecycle?sweep=1&limit=100"
   else
     call "/api/raids/lifecycle"
   fi
+
   [ $((minute % 5)) -eq 0 ] && call "/api/polls/close-due?force=1"
+
+  # Власний VPS дозволяє тримати склад актуальним без browser-driven sync.
+  # Це важлива, але не секундно-критична задача, тому запускається після raid lifecycle.
+  [ $((minute % 2)) -eq 0 ] && call "/api/guild/sync"
+
   [ $((minute % 30)) -eq 0 ] && call "/api/dashboard/logs/maintenance"
 
   # Scheduler акаунтів сам читає збережені налаштування і вирішує,
@@ -73,7 +88,11 @@ while true; do
   [ $((minute % 15)) -eq 0 ] && call "/api/dashboard/profiles/orphan-cleanup"
   [ $((minute % 15)) -eq 0 ] && call "/api/dashboard/discord/nicknames/automation"
 
-  # Спимо до початку наступної хвилини, а не рівно 60 секунд:
-  # інакше дрейф поступово зсуває задачі повз потрібну хвилину.
-  sleep $((60 - $(date +%-S)))
+  # Якщо задачі завершилися в тій самій хвилині — спимо до наступної межі.
+  # Якщо вони вже перейшли в нову хвилину — не спимо: наступна ітерація
+  # одразу обробить пропущений tick (last_tick відрізнятиметься).
+  current_tick=$(date -u '+%Y%m%d%H%M')
+  if [ "$current_tick" = "$last_tick" ]; then
+    sleep $((60 - $(date -u +%-S)))
+  fi
 done

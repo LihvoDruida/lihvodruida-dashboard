@@ -51,6 +51,12 @@ const dockerignore = read('.dockerignore');
 const overlayMatch = dockerfile.match(/ARG NEXT_SECURITY_VERSION=([^\s]+)/);
 const pinnedNext = overlayMatch?.[1] || '';
 ok(dockerignore.includes('**/.env') && dockerignore.includes('**/.env.*') && dockerignore.includes('!**/.env.example'), 'Docker build context must exclude real env files while allowing templates');
+ok(
+  dockerfile.includes('COPY docker-compose.yml /repo/docker-compose.yml') &&
+    dockerfile.includes('COPY .env.example /repo/.env.example') &&
+    dockerfile.includes('COPY .dockerignore /repo/.dockerignore'),
+  'dashboard builder must copy every root manifest consumed by check:security-performance',
+);
 ok(versionAtLeast(pinnedNext, '16.3.3'), `Docker Next.js security overlay must be >=16.3.3 (found ${pinnedNext || 'missing'})`);
 ok(dockerfile.includes('npm install --no-save --package-lock=false') && dockerfile.includes('next@${NEXT_SECURITY_VERSION}'), 'Docker build must install the pinned Next.js security overlay');
 ok(dockerfile.includes('MISTBLOSSOM_EXPECTED_NEXT_VERSION=${NEXT_SECURITY_VERSION}'), 'builder must expose the expected Next.js version to CI');

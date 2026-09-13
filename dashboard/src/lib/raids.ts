@@ -1710,6 +1710,7 @@ type RaidLifecycleSyncResult = {
   raidId: string;
   status: RaidItem["status"];
   autoClosed: boolean;
+  discordCloseSynced: boolean;
   reminderSent: boolean;
   reminderDeleted: boolean;
   discordDeleted: boolean;
@@ -1756,7 +1757,7 @@ function buildRaidReminderPayload(raid: RaidItem) {
 async function syncRaidLifecycleAfterRead(
   raid: RaidItem,
 ): Promise<RaidLifecycleSyncResult> {
-  const closedNow = await syncAutoClosedRaid(raid, { syncDiscord: true });
+  const closedNow = await syncAutoClosedRaid(raid);
 
   const lifecycleRaid: RaidItem = closedNow
     ? {
@@ -1764,9 +1765,15 @@ async function syncRaidLifecycleAfterRead(
         status: "closed",
         closedReason: "auto",
         closedAt: new Date().toISOString(),
+        discordCloseSyncedAt: null,
       }
     : raid;
 
+  // Closing in Firestore and disabling Discord components are deliberately
+  // separate idempotent steps. If Discord is temporarily unavailable after
+  // the database close succeeds, the next lifecycle tick sees the missing
+  // discordCloseSyncedAt marker and retries instead of leaving live buttons.
+  const discordCloseSynced = await syncRaidClosedDiscordState(lifecycleRaid);
   const reminderSent = await syncRaidReminder(lifecycleRaid);
   const reminderRaid: RaidItem = reminderSent
     ? { ...lifecycleRaid, reminderSentAt: new Date().toISOString() }
@@ -1778,16 +1785,14 @@ async function syncRaidLifecycleAfterRead(
     raidId: raid.id,
     status: lifecycleRaid.status,
     autoClosed: closedNow,
+    discordCloseSynced,
     reminderSent,
     reminderDeleted,
     discordDeleted,
   };
 }
 
-async function syncAutoClosedRaid(
-  raid: RaidItem,
-  options: { syncDiscord?: boolean } = {},
-) {
+async function syncAutoClosedRaid(raid: RaidItem) {
   if (
     !isRaidAutoCloseDue(raid) ||
     raid.closedReason === "manual" ||
@@ -1833,29 +1838,41 @@ async function syncAutoClosedRaid(
     },
   );
 
-  if (
-    closed &&
-    options.syncDiscord !== false &&
-    raid.channelId &&
-    raid.messageId
-  ) {
+  return closed;
+}
+
+function raidDiscordCloseSyncDue(raid: RaidItem) {
+  return Boolean(
+    raid.status === "closed" &&
+      raid.channelId &&
+      raid.messageId &&
+      !raid.discordDeletedAt &&
+      !raid.discordCloseSyncedAt &&
+      !raidMainDiscordDeleteDue(raid),
+  );
+}
+
+async function syncRaidClosedDiscordState(raid: RaidItem) {
+  if (!hasRaidStorage() || !raidDiscordCloseSyncDue(raid)) return false;
+
+  try {
     await publishOrUpdateRaid(
       {
         ...raid,
         status: "closed",
-        closedReason: "auto",
-        closedAt: new Date().toISOString(),
+        closedReason: raid.closedReason === "manual" ? "manual" : "auto",
+        closedAt: raid.closedAt || new Date().toISOString(),
       },
       raid.channelId,
-    ).catch((error) => {
-      console.warn("[raids] Failed to sync Discord message after auto-close", {
-        raidId: raid.id,
-        message: error instanceof Error ? error.message : String(error),
-      });
+    );
+    return true;
+  } catch (error) {
+    console.warn("[raids] Failed to sync closed Discord raid state; will retry", {
+      raidId: raid.id,
+      message: error instanceof Error ? error.message : String(error),
     });
+    return false;
   }
-
-  return closed;
 }
 
 async function syncRaidReminder(raid: RaidItem) {
@@ -2104,10 +2121,12 @@ async function listRaidsForLifecycle(
   >();
   let scanMode: RaidLifecycleScanMode = options.fullSweep ? "sweep" : "window";
 
-  if (!options.fullSweep) {
-    // Normal minute ticks use one indexed date-window query instead of two broad
-    // status queries. The ±8-day window covers the maximum 7-day pre-close
-    // setting and gives post-start Discord cleanup several days to retry.
+  {
+    // Every tick, including an hourly recovery sweep, starts with the indexed
+    // near-date window. This guarantees that an old cleanup backlog cannot push
+    // a current close/reminder out of the bounded full-sweep result set.
+    // The ±8-day window covers the maximum 7-day pre-close setting and gives
+    // post-start Discord cleanup several days to retry.
     const fromDate = lifecycleDateKey(-8);
     const toDate = lifecycleDateKey(8);
     const fetchLimit = Math.max(40, Math.min(200, safeLimit * 2));
@@ -2125,7 +2144,7 @@ async function listRaidsForLifecycle(
         "[raids] Lifecycle date-window query failed; using status sweep",
         { message: error instanceof Error ? error.message : String(error) },
       );
-      scanMode = "sweep";
+      if (!options.fullSweep) scanMode = "sweep";
     }
   }
 
@@ -2165,34 +2184,31 @@ async function listRaidsForLifecycle(
   const raids = Array.from(docsById.values())
     .map((doc) => normalizeRaid(doc.id, doc.data() || {}))
     .filter((raid) => raid.status === "published" || raid.status === "closed")
-    .sort(
-      (a, b) =>
+    .sort((a, b) => {
+      const priority = raidLifecyclePriority(a) - raidLifecyclePriority(b);
+      if (priority) return priority;
+      return (
         `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`) ||
         Date.parse(a.updatedAt || a.createdAt || "") -
-          Date.parse(b.updatedAt || b.createdAt || ""),
-    )
+          Date.parse(b.updatedAt || b.createdAt || "")
+      );
+    })
     .slice(0, safeLimit);
 
   return { raids, scanMode };
 }
 
+function raidLifecyclePriority(raid: RaidItem) {
+  if (raid.status === "published" && raid.closedReason !== "manual" && isRaidAutoCloseDue(raid)) return 0;
+  if (raid.channelId && !raid.reminderSentAt && raidReminderSendDue(raid)) return 1;
+  if (raidDiscordCloseSyncDue(raid)) return 2;
+  if (raidReminderDeleteDue(raid)) return 3;
+  if (raid.channelId && raid.messageId && !raid.discordDeletedAt && raidMainDiscordDeleteDue(raid)) return 4;
+  return 10;
+}
+
 function raidLifecycleCandidates(raids: RaidItem[]) {
-  return raids.filter((raid) => {
-    if (raid.status === "draft") return false;
-    if (raid.status === "published" && raid.closedReason !== "manual" && isRaidAutoCloseDue(raid)) {
-      return true;
-    }
-    if (raid.channelId && !raid.reminderSentAt && raidReminderSendDue(raid)) {
-      return true;
-    }
-    if (raidReminderDeleteDue(raid)) {
-      return true;
-    }
-    if (raid.channelId && raid.messageId && !raid.discordDeletedAt && raidMainDiscordDeleteDue(raid)) {
-      return true;
-    }
-    return false;
-  });
+  return raids.filter((raid) => raid.status !== "draft" && raidLifecyclePriority(raid) < 10);
 }
 
 export async function syncRaidLifecycleBatch(
@@ -2219,6 +2235,7 @@ export async function syncRaidLifecycleBatch(
   );
 
   let autoClosed = 0;
+  let discordClosuresSynced = 0;
   let remindersSent = 0;
   let remindersDeleted = 0;
   let discordDeleted = 0;
@@ -2227,6 +2244,7 @@ export async function syncRaidLifecycleBatch(
   for (const item of mapped.results) {
     if (item.ok) {
       if (item.value.autoClosed) autoClosed += 1;
+      if (item.value.discordCloseSynced) discordClosuresSynced += 1;
       if (item.value.reminderSent) remindersSent += 1;
       if (item.value.reminderDeleted) remindersDeleted += 1;
       if (item.value.discordDeleted) discordDeleted += 1;
@@ -2250,6 +2268,7 @@ export async function syncRaidLifecycleBatch(
     scanned: raids.length,
     total: raids.length,
     autoClosed,
+    discordClosuresSynced,
     remindersSent,
     remindersDeleted,
     discordDeleted,

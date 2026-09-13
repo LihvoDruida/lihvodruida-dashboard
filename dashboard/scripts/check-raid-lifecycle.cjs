@@ -25,6 +25,8 @@ ok(raids.includes('reminderChannelId?: string | null') && raids.includes('remind
 ok(raids.includes('syncRaidReminder(lifecycleRaid)') && raids.includes('syncRaidReminderDeletion(reminderRaid)'), 'single lifecycle pass must send and clean reminders');
 ok(raids.includes('reminderScheduleChanged') && raids.includes('remove stale reminder'), 'editing raid date/time/channel must invalidate an already-sent stale reminder');
 ok(raids.includes('syncRaidDiscordDeletionAfterStart(lifecycleRaid)'), 'single lifecycle pass must clean the primary Discord message');
+ok(raids.includes('syncRaidClosedDiscordState(lifecycleRaid)') && raids.includes('discordCloseSyncedAt') && raids.includes('will retry'), 'closed raids must retry Discord button disabling after a transient Discord failure');
+ok(raids.includes('raidLifecyclePriority') && raids.includes('old cleanup backlog cannot push'), 'lifecycle sweep must prioritize current close/reminder work over stale cleanup backlog');
 ok(raids.includes('disabled: activeJoinDisabled') && views.includes('const skipDisabled = closed || registrationLocked'), 'all signup buttons, including skip, must disable at registration close');
 ok(raids.includes('Запис закрито') && !raids.includes('RAID_DISCORD_DELETE_AFTER_CLOSE_MINUTES'), 'closed UI must say signup is closed and old close-relative deletion must be gone');
 ok(route.includes('export async function POST') && route.includes('return GET(request)'), 'cron POST must be handled by raid lifecycle route');
@@ -34,6 +36,10 @@ ok(route.includes('wantsFullSweep') && route.includes('syncRaidLifecycleBatch(li
 ok(cron.includes('/api/raids/lifecycle?sweep=1&limit=100'), 'cron must run a bounded full lifecycle recovery sweep hourly');
 ok(/\n\s*call "\/api\/raids\/lifecycle"\n/.test(cron), 'cron must execute raid lifecycle every minute');
 ok(!cron.includes('minute % 10)) -eq 0 ] && call "/api/raids/lifecycle"'), 'old 10-minute raid lifecycle cadence must be removed');
+ok(cron.includes('last_tick=""') && cron.includes('current_tick=$(date -u'), 'cron loop must catch up immediately when a slow task crosses a minute boundary');
+const lifecycleCallIndex = cron.indexOf('call "/api/raids/lifecycle');
+const guildSyncCallIndex = cron.indexOf('call "/api/guild/sync"');
+ok(lifecycleCallIndex >= 0 && guildSyncCallIndex >= 0 && lifecycleCallIndex < guildSyncCallIndex, 'time-critical raid lifecycle must run before guild sync');
 ok(pkg.scripts['check:raid-lifecycle'] === 'node scripts/check-raid-lifecycle.cjs', 'package scripts must expose raid lifecycle regression check');
 ok(pkg.scripts['build:ci']?.includes('check:raid-lifecycle'), 'build:ci must run raid lifecycle regression check');
 
