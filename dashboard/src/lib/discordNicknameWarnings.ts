@@ -4,13 +4,14 @@ import { mapConcurrentSettled } from "@/lib/concurrency";
 import {
   fetchDiscordGuildMemberSnapshot,
   fetchDiscordGuildMembers,
+  fetchDiscordGuildSnapshot,
   sendDiscordChannelUserWarning,
   sendDiscordDirectMessage,
   type DiscordGuildMemberModerationItem,
 } from "@/lib/discordAdmin";
 import { firebaseWrite } from "@/lib/firebaseAccess";
 import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
-import { getGuildNicknamePolicy, nicknameMatchesTemplate, nicknameTemplateExample, type GuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
+import { getGuildNicknamePolicy, nicknameMatchesTemplate, nicknameTemplateExample, VALID_NICKNAME_STRUCTURES, type GuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
 import { buildProfileDiscordNicknamePlan, getProfileByDiscordUserId } from "@/lib/profiles";
 import { resilientRead } from "@/lib/runtimeResilience";
 import { dashboardPublicOrigin, timestampToIso } from "@/lib/values";
@@ -511,19 +512,24 @@ async function suggestedNickname(userId: string, template: string) {
   return buildProfileDiscordNicknamePlan(profile, template).value || null;
 }
 
-function warningMessage(input: {
+export function buildNicknameWarningMessage(input: {
   nickname: string | null;
   template: string;
   suggested: string | null;
+  testMode?: boolean;
 }) {
   const profileUrl = `${dashboardPublicOrigin()}/profile`;
   const lines = [
+    ...(input.testMode ? ["🧪 **Тест повідомлення — тільки для власника сервера**", ""] : []),
     "⚠️ **Mistblossom Vanguard — некоректний серверний нік**",
     "Твій серверний нік не відповідає правилам гільдії. Це попередження, ролі та доступи автоматично не змінюються.",
     "",
     `**Поточний нік:** ${input.nickname ? `\`${input.nickname}\`` : "не встановлено"}`,
-    `**Формат:** \`Імʼя [Мейн, Альт1, Альт2]\``,
-    `**Шаблон:** \`${input.template}\``,
+    "**Допустимі формати:**",
+    "`Імʼя [Мейн]`",
+    "`Імʼя [Мейн, Альт1]`",
+    "`Імʼя [Мейн, Альт1, Альт2]`",
+    `**Глобальна структура:** \`${VALID_NICKNAME_STRUCTURES[2]}\` (альти опційні)`,
     `**Приклад:** \`${nicknameTemplateExample(input.template)}\``,
   ];
   if (input.suggested) lines.push(`**Рекомендований нік для твого профілю:** \`${input.suggested}\``);
@@ -537,6 +543,31 @@ function warningMessage(input: {
     "Після виправлення наступна автоматична перевірка більше не надсилатиме це попередження.",
   );
   return lines.join("\n").slice(0, 1900);
+}
+
+export async function sendNicknameWarningTestToOwner() {
+  const policy = await getGuildNicknamePolicy({ bypassCache: true });
+  const guild = await fetchDiscordGuildSnapshot();
+  const ownerId = String(guild.ownerId || "").trim();
+  if (!ownerId) throw new Error("Discord не повернув ID власника сервера.");
+
+  const member = await fetchDiscordGuildMemberSnapshot(ownerId);
+  const nickname = memberNickname(member) || null;
+  const suggested = await suggestedNickname(ownerId, policy.template);
+  const content = buildNicknameWarningMessage({
+    nickname,
+    template: policy.template,
+    suggested: suggested || nicknameTemplateExample(policy.template),
+    testMode: true,
+  });
+  const sent = await sendDiscordDirectMessage({ userId: ownerId, content });
+  logDashboardEvent("info", "discord.nickname_warning.test_sent", undefined, {
+    ownerId,
+    channelId: sent.channelId,
+    messageId: sent.messageId,
+    nickname,
+  }, { category: "action" });
+  return { ownerId, channelId: sent.channelId, messageId: sent.messageId, nickname, contentLength: content.length };
 }
 
 async function deliverNicknameWarning(
@@ -555,7 +586,7 @@ async function deliverNicknameWarning(
   }
 
   const suggested = await suggestedNickname(member.userId, policy.template);
-  const content = warningMessage({ nickname, template: policy.template, suggested });
+  const content = buildNicknameWarningMessage({ nickname, template: policy.template, suggested });
   let dmError: string | null = null;
   try {
     const sent = await sendDiscordDirectMessage({ userId: member.userId, content });

@@ -189,7 +189,7 @@ function actionText(action: string) {
     return {
       label: "Зберігаємо...",
       title: "Зберігаємо Discord-налаштування",
-      message: "Оновлюємо шаблон ніку та ліміти масових Discord-дій.",
+      message: "Оновлюємо глобальні правила ніку та ліміти Discord-дій.",
     };
   if (action.includes("/api/dashboard/security/auth-access"))
     return {
@@ -240,6 +240,12 @@ function actionText(action: string) {
       label: "Перевіряємо...",
       title: "Перевіряємо ніки Discord",
       message: "Звіряємо серверні ніки з глобальним шаблоном.",
+    };
+  if (action.includes("/api/dashboard/discord/nicknames/test-message"))
+    return {
+      label: "Надсилаємо тест...",
+      title: "Тестуємо повідомлення про нік",
+      message: "Надсилаємо власнику сервера в DM точний формат повідомлення про виправлення ніку без зміни cooldown або scheduler state.",
     };
   if (action.includes("/api/dashboard/discord/nicknames/notify"))
     return {

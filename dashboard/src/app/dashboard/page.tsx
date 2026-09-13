@@ -13,6 +13,7 @@ import {
 import {
   getGuildNicknamePolicy,
   nicknameTemplateExample,
+  VALID_NICKNAME_STRUCTURES,
 } from "@/lib/guildNicknamePolicy";
 import { getGeoAccessPolicy } from "@/lib/geoAccessPolicy";
 import { getAuthAccessPolicy } from "@/lib/authAccessPolicy";
@@ -24,7 +25,7 @@ export const revalidate = 0;
 export const metadata = buildPageMetadata({
   title: "Керування",
   description:
-    "Центр керування Mistblossom: групи доступу, Discord-ролі, серверні ніки та глобальний шаблон ніку.",
+    "Центр керування Mistblossom: групи доступу, Discord-ролі, серверні ніки та глобальні структури ніку.",
   path: "/dashboard",
   keywords: ["керування", "Discord", "права", "ролі"],
 });
@@ -153,11 +154,11 @@ export default async function AdminOverviewPage() {
                   ✦
                 </span>
                 <div>
-                  <strong>Шаблон Discord-ніку</strong>
-                  <small>Активний формат для серверних ніків</small>
+                  <strong>Структури Discord-ніку</strong>
+                  <small>Єдині валідні формати по всьому сайту</small>
                 </div>
               </header>
-              <code className="admin-nickname-template">{policy.template}</code>
+              <div className="admin-nickname-template">{VALID_NICKNAME_STRUCTURES.map((structure) => <div key={structure}>{structure}</div>)}</div>
               <div className="admin-nickname-example">
                 <span>Приклад</span>
                 <strong>{nicknameTemplateExample(policy.template)}</strong>

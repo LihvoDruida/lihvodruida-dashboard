@@ -967,7 +967,7 @@ function AuthBenefitsList() {
     <ul className="rules-onboarding-benefits" aria-label="Переваги входу через Discord">
       <li>автоматичне звʼязування профілю з Discord;</li>
       <li>редагування імені, звертання, мейна та Battle.net-персонажів;</li>
-      <li>оновлення серверного ніку за шаблоном гільдії.</li>
+      <li>оновлення серверного ніку за глобальними структурами гільдії.</li>
     </ul>
   );
 }
@@ -1590,7 +1590,7 @@ export default async function RulesAcceptPage({
                   <span>{acceptedRoleLabels}</span>
                   <small>
                     <span id="rules-complete-help">
-                      Роль видається тільки цьому Discord-користувачу після фінального підтвердження. Нік формується за шаблоном: {nicknamePolicy.template}.
+                      Роль видається тільки цьому Discord-користувачу після фінального підтвердження. Допустимі структури ніку: Імʼя [Мейн], Імʼя [Мейн, Альт1], Імʼя [Мейн, Альт1, Альт2].
                     </span>
                   </small>
                 </div>

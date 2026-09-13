@@ -8,6 +8,11 @@ import type { DashboardSession } from "@/lib/auth";
 import { timestampToIso } from "@/lib/values";
 
 export const DEFAULT_NICKNAME_TEMPLATE = "{name} [{main}, {alt}, {alt}]";
+export const VALID_NICKNAME_STRUCTURES = [
+  "{name} [{main}]",
+  "{name} [{main}, {alt}]",
+  "{name} [{main}, {alt}, {alt}]",
+] as const;
 export const DEFAULT_NICKNAME_CLEANUP_CONCURRENCY = 0;
 export const DEFAULT_NICKNAME_CLEANUP_MAX_CONCURRENCY = 4;
 export const DEFAULT_NICKNAME_REMINDER_ENABLED = false;
@@ -72,16 +77,13 @@ function cleanTemplateText(value: unknown) {
 }
 
 function isSupportedNicknameTemplate(template: string) {
-  if (!template || !/\{name\}/i.test(template) || !/\{(main|alt)\}/i.test(template)) return false;
-  const unknownTokens = Array.from(template.matchAll(/\{([^}]+)\}/g))
-    .map((match) => match[1]?.toLowerCase())
-    .filter((token) => token && !["name", "main", "alt"].includes(token));
-  return unknownTokens.length === 0;
+  return VALID_NICKNAME_STRUCTURES.includes(template as (typeof VALID_NICKNAME_STRUCTURES)[number]);
 }
 
-function normalizeStoredTemplate(value: unknown, fallbackTemplate = DEFAULT_NICKNAME_TEMPLATE) {
-  const template = cleanTemplateText(value);
-  return isSupportedNicknameTemplate(template) ? template : fallbackTemplate;
+function normalizeStoredTemplate(_value: unknown, _fallbackTemplate = DEFAULT_NICKNAME_TEMPLATE) {
+  // Runtime policy is canonical. Validation independently accepts all three global
+  // structures, so legacy stored template variants can no longer narrow the rules.
+  return DEFAULT_NICKNAME_TEMPLATE;
 }
 
 function cleanBoolSetting(value: unknown, fallback: boolean) {
@@ -123,19 +125,10 @@ function normalizePolicyData(data: Record<string, unknown> | null | undefined, f
 
 export function cleanNicknameTemplate(value: unknown) {
   const template = cleanTemplateText(value) || DEFAULT_NICKNAME_TEMPLATE;
-  if (!/\{name\}/i.test(template)) {
-    throw new Error("Шаблон ніку має містити {name}.");
+  if (!isSupportedNicknameTemplate(template)) {
+    throw new Error(`Дозволені лише глобальні структури ніку: ${VALID_NICKNAME_STRUCTURES.join(" | ")}.`);
   }
-  if (!/\{(main|alt)\}/i.test(template)) {
-    throw new Error("Шаблон ніку має містити хоча б одну змінну персонажа: {main} або {alt}.");
-  }
-  const unknownTokens = Array.from(template.matchAll(/\{([^}]+)\}/g))
-    .map((match) => match[1]?.toLowerCase())
-    .filter((token) => token && !["name", "main", "alt"].includes(token));
-  if (unknownTokens.length) {
-    throw new Error(`Невідомі змінні шаблону: ${Array.from(new Set(unknownTokens)).join(", ")}. Доступні: {name}, {main}, {alt}.`);
-  }
-  return template;
+  return DEFAULT_NICKNAME_TEMPLATE;
 }
 
 export function nicknameTemplateExample(templateInput: unknown = DEFAULT_NICKNAME_TEMPLATE) {
@@ -389,8 +382,10 @@ function characterNicknamePattern() {
   return "[^\\[\\],\\n]{2,16}";
 }
 
-export function nicknameTemplateToRegex(templateInput: unknown) {
-  const template = normalizeStoredTemplate(templateInput);
+export function nicknameTemplateToRegex(_templateInput: unknown = DEFAULT_NICKNAME_TEMPLATE) {
+  // Глобальна валідація завжди приймає рівно сімейство з 1–3 персонажів:
+  // {name} [{main}] / {name} [{main}, {alt}] / {name} [{main}, {alt}, {alt}].
+  const template = DEFAULT_NICKNAME_TEMPLATE;
   let output = "";
   let lastIndex = 0;
   let seenCharacterToken = false;

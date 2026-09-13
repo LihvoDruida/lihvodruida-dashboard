@@ -115,7 +115,7 @@ function serverNicknameValidation(member: { nick?: string | null }, template: st
     return { ok: false, nickname: null, reason: "Серверний нік не встановлено." };
   }
   if (!nicknameMatchesTemplate(nickname, template)) {
-    return { ok: false, nickname, reason: `Серверний нік не відповідає шаблону: ${template}` };
+    return { ok: false, nickname, reason: "Серверний нік не відповідає жодній із глобальних структур: Імʼя [Мейн], Імʼя [Мейн, Альт1], Імʼя [Мейн, Альт1, Альт2]." };
   }
   return { ok: true, nickname, reason: "" };
 }
@@ -299,6 +299,10 @@ export async function updateDiscordMemberNickname(input: { userId: unknown; nick
   if (!guildId) throw new Error("Discord-сервер не підключений.");
   if (!userId) throw new Error("Вкажи коректний Discord user ID.");
   if (!nickname) throw new Error("Вкажи новий серверний нік.");
+  const policy = await getGuildNicknamePolicy();
+  if (!nicknameMatchesTemplate(nickname, policy.template)) {
+    throw new Error("Нік має відповідати одній із глобальних структур: Імʼя [Мейн], Імʼя [Мейн, Альт1] або Імʼя [Мейн, Альт1, Альт2].");
+  }
 
   const guild = await fetchDiscordGuildSnapshot().catch(() => null);
   if (guild?.ownerId === userId) {

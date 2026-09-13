@@ -10,7 +10,7 @@ import {
   getDiscordGuildId,
   type DiscordManageableRoleOption,
 } from "@/lib/discordAdmin";
-import { getGuildNicknamePolicy, nicknameTemplateExample } from "@/lib/guildNicknamePolicy";
+import { DEFAULT_NICKNAME_TEMPLATE, VALID_NICKNAME_STRUCTURES, getGuildNicknamePolicy, nicknameTemplateExample } from "@/lib/guildNicknamePolicy";
 import { documentStoreMode, hasFirebaseCredentials } from "@/lib/firebaseAdmin";
 import { canManageDiscordMembers } from "@/lib/permissions";
 import { buildPageMetadata } from "@/lib/seo";
@@ -269,15 +269,18 @@ export default async function AdminDiscordPage() {
             <SectionHeader
               eyebrow="Конфігурація"
               title="Глобальні правила Discord"
-              description="Шаблон серверного ніку, паралельність Discord-запитів і автоматичні попередження учасникам."
+              description="Єдині глобальні структури серверного ніку, паралельність Discord-запитів і автоматичні попередження учасникам."
             />
           </div>
           <form className="panel discord-management-card discord-management-card--settings discord-settings-card" action="/api/dashboard/discord/settings" method="post" data-dashboard-action-form="true" data-dashboard-live-submit="true">
             <div className="discord-settings-card__primary">
-              <label className="field-label">Шаблон серверного ніку
-                <input className="input" name="template" defaultValue={policy.template} placeholder="{name} [{main}, {alt}, {alt}]" required />
-                <small>Змінні: <code>{"{name}"}</code>, <code>{"{main}"}</code>, <code>{"{alt}"}</code>. Приклад: {nicknameTemplateExample(policy.template)}.</small>
-              </label>
+              <div className="field-label">Глобальні структури серверного ніку
+                <input type="hidden" name="template" value={DEFAULT_NICKNAME_TEMPLATE} />
+                <div className="admin-nickname-template">
+                  {VALID_NICKNAME_STRUCTURES.map((structure) => <div key={structure}><code>{structure}</code></div>)}
+                </div>
+                <small>Це єдині валідні структури по всьому сайту. Альти опційні; довільні шаблони вимкнені. Приклад: {nicknameTemplateExample(DEFAULT_NICKNAME_TEMPLATE)}.</small>
+              </div>
               <div className="discord-settings-summary" aria-label="Поточна конфігурація Discord-дій">
                 <InfoChip title={String(policy.nicknameCleanupConcurrency || "Авто")} text="попередження ніків" />
               </div>
@@ -423,7 +426,7 @@ export default async function AdminDiscordPage() {
                 <span className={`status-pill ${policy.nicknameReminderEnabled ? "good" : "subtle"}`}>{policy.nicknameReminderEnabled ? "Автоматично" : "Ручний режим"}</span>
               </div>
               <div className="discord-management-card__body">
-                <p className="profile-card-lead">Перевіряє <code>member.nick</code> за глобальним шаблоном. <strong>Ролі, доступи й нік не змінюються.</strong> Автоматичний full sweep лише класифікує учасників і перебудовує чергу без масової розсилки. Після повного проходу некоректні ніки переходять у пріоритетну часту чергу, а коректні перевіряються значно рідше повним sweep. Коли некоректний учасник стає due у priority-run, бот спочатку пише в DM; якщо приватні повідомлення недоступні — тегне у fallback-каналі.</p>
+                <p className="profile-card-lead">Перевіряє <code>member.nick</code> за трьома глобальними структурами. <strong>Ролі, доступи й нік не змінюються.</strong> Автоматичний full sweep лише класифікує учасників і перебудовує чергу без масової розсилки. Після повного проходу некоректні ніки переходять у пріоритетну часту чергу, а коректні перевіряються значно рідше повним sweep. Коли некоректний учасник стає due у priority-run, бот спочатку пише в DM; якщо приватні повідомлення недоступні — тегне у fallback-каналі.</p>
                 <div className="nickname-warning-status-grid">
                   <InfoChip title={nicknameWarningState.lastFullScanAt ? formatCleanupDate(nicknameWarningState.lastFullScanAt) : "Ще не було"} text="повна перевірка" />
                   <InfoChip title={`${nicknameWarningState.trackedInvalid} / ${nicknameWarningState.trackedValid}`} text="пріоритет / коректні" />
@@ -445,6 +448,7 @@ export default async function AdminDiscordPage() {
                   </div>
                   <div className="form-actions form-actions--split">
                     <button className="btn subtle" formAction="/api/dashboard/discord/nicknames/inspect" formMethod="post" type="submit" name="recheckAll" value="1" data-confirm-message="Переперевірити серверні ніки всіх учасників і повністю перебудувати пріоритетну чергу? Повідомлення надсилатися не будуть.">Переперевірити всіх</button>
+                    {user.isServerOwner ? <button className="btn subtle" formAction="/api/dashboard/discord/nicknames/test-message" formMethod="post" type="submit">Тест повідомлення</button> : null}
                     <button className="btn primary" type="submit" data-confirm-message="Перевірити серверні ніки й надіслати попередження учасникам із неправильним ніком? Ролі та ніки автоматично не змінюватимуться.">Перевірити й попередити</button>
                   </div>
                 </form>

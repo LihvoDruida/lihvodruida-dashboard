@@ -169,7 +169,7 @@ export function dashboardCapabilities(role: DashboardRole, permissions?: string[
     { key: "general-embeds", title: "Звичайні Discord-повідомлення", description: "Створення і редагування звичайних Discord-повідомлень, а також згадування вибраних ролей.", enabled: enabled("discord.embeds.manage", canModerate) },
     { key: "raids", title: "Рейди", description: "Створення рейдових оголошень, Discord-кнопки запису та автоматична побудова складу.", enabled: enabled("raids.manage", canModerate) },
     { key: "rules-embeds", title: "Discord правила", description: isAdmin ? "Керування повідомленнями правил, кнопками прийняття, ролями та статистикою." : "Перегляд статистики правил без права змінювати самі повідомлення.", enabled: enabled("discord.rules.manage", isAdmin) },
-    { key: "discord-members", title: "Discord учасники", description: "Видача й зняття ролей, серверні ніки та перевірка шаблону ніку.", enabled: enabled("discord.members.manage", isAdmin) },
+    { key: "discord-members", title: "Discord учасники", description: "Видача й зняття ролей, серверні ніки та перевірка глобальних структур ніку.", enabled: enabled("discord.members.manage", isAdmin) },
     { key: "admin-logs", title: "Журнал дій", description: "Останні адміністративні дії, результати Discord API та помилки.", enabled: enabled("admin.logs.view", isAdmin) },
     { key: "site-content", title: "Новини та гайди сайту", description: "Створення, редагування та видалення матеріалів сайту.", enabled: enabled("content.manage", isAdmin) },
     { key: "groups", title: "Групи та права", description: "Керування групами доступу, Discord role ID та дозволами.", enabled: enabled("groups.manage", isAdmin) },

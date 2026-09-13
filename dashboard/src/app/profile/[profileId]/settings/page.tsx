@@ -896,10 +896,10 @@ export default async function ProfileSettingsPage({
               >
                 <div className="profile-card-head">
                   <span className="eyebrow">Discord</span>
-                  <h2>Шаблон ніку</h2>
+                  <h2>Структура Discord-ніку</h2>
                   <p className="profile-card-lead">
                     Мейн додається автоматично, нижче вибираються тільки два
-                    альти для шаблону Discord-ніка.
+                    альти для глобальної структури Discord-ніка.
                   </p>
                 </div>
                 <NicknameCharactersForm

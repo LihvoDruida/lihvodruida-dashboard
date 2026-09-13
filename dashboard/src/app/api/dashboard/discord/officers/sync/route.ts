@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     });
 
     const nicknameSkipped = (result.skippedMissingNickname || result.skippedInvalidNickname)
-      ? ` Пропущено через серверний нік: без ніку ${result.skippedMissingNickname || 0}, не за шаблоном ${result.skippedInvalidNickname || 0}.`
+      ? ` Пропущено через серверний нік: без ніку ${result.skippedMissingNickname || 0}, не за глобальною структурою ${result.skippedInvalidNickname || 0}.`
       : "";
     const roleHint = result.selectedRoleName ? ` Роль: ${result.selectedRoleName}.` : "";
     const ignoredHint = result.ignoredLowerRoleIds?.length ? ` Нижчі вибрані ролі проігноровано: ${result.ignoredLowerRoleIds.length}.` : "";
