@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { FieldValue } from "@/lib/db/firestoreCompat";
 import { mapConcurrent } from "@/lib/concurrency";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
@@ -80,6 +81,7 @@ export type ApplicationItem = {
   faction?: string;
   class_name?: string;
   source?: string;
+  source_system?: string;
   availability?: string;
   discord?: string | null;
   battle_tag?: string | null;
@@ -95,6 +97,26 @@ export type ApplicationItem = {
 export type DiscordMessageRef = {
   channel_id: string;
   message_id: string;
+};
+
+export type CreateGuildApplicationInput = {
+  characterName: string;
+  realm: string;
+  region?: string;
+  faction: string;
+  className: string;
+  discord: string;
+  battleTag?: string;
+  sourceCreator?: string;
+  sourcePlatform?: string;
+  sourceOther?: string;
+  source?: string;
+  availability: string;
+};
+
+export type CreateGuildApplicationResult = {
+  item: ApplicationItem;
+  duplicate: boolean;
 };
 
 export function extractDiscordMessageRef(body: string): DiscordMessageRef | null {
@@ -862,6 +884,7 @@ function mapFirebaseApplicationDoc(doc: any): ApplicationItem {
     faction: String(data.faction || ""),
     class_name: String(data.class_name || data.className || ""),
     source: String(data.source || ""),
+    source_system: String(data.source_system || data.sourceSystem || "application-store"),
     availability: String(data.availability || ""),
     discord: data.discord ? String(data.discord) : null,
     battle_tag: data.battle_tag || data.battleTag ? String(data.battle_tag || data.battleTag) : null,
@@ -909,6 +932,174 @@ async function findFirebaseApplicationDoc(issueNumber: number) {
   return null;
 }
 
+function normalizeApplicationField(value: unknown, max = 240) {
+  return String(value || "").normalize("NFC").replace(/\s+/g, " ").trim().slice(0, max);
+}
+
+function applicationTrackingNumber() {
+  return `MBV-${randomBytes(5).toString("hex").toUpperCase()}`;
+}
+
+async function allocateApplicationNumber() {
+  const db = getFirebaseAdminDb();
+  const collection = db.collection(applicationsCollectionName());
+  const counterRef = db.collection("guildApplicationRuntime").doc("counter");
+  const seedSnapshot = await collection.limit(1000).get();
+  const seedMax = seedSnapshot.docs.reduce((max: number, doc: any) => {
+    const data = doc.data() || {};
+    return Math.max(max, normalizeApplicationNumber(data.application_number || data.applicationNumber || data.number, doc.id));
+  }, 0);
+
+  return db.runTransaction(async (tx: any) => {
+    const snapshot = await tx.get(counterRef);
+    const current = snapshot.exists ? Number(snapshot.data()?.lastNumber || 0) : 0;
+    const next = Math.max(seedMax, Number.isFinite(current) ? current : 0) + 1;
+    tx.set(counterRef, { lastNumber: next, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    return next;
+  });
+}
+
+function publicApplicationFields(item: ApplicationItem): ApplicationItem {
+  return {
+    number: item.number,
+    application_number: item.application_number || item.number,
+    tracking_number: item.tracking_number || "",
+    title: item.title,
+    state: item.state,
+    html_url: "",
+    created_at: item.created_at,
+    updated_at: item.updated_at,
+    closed_at: item.closed_at || null,
+    status_key: item.status_key,
+    status_text: item.status_text,
+    character_name: item.character_name,
+    realm: item.realm,
+    region: item.region,
+    faction: item.faction,
+    class_name: item.class_name,
+    source: "",
+    source_system: item.source_system || "application-store",
+    availability: "",
+    discord: null,
+    battle_tag: null,
+    avatar_url: item.avatar_url || null,
+    profile_url: item.profile_url || null,
+    raider_io: null,
+    raider_io_error: null,
+    discord_ref: null,
+    discord_message_ref: null,
+    labels: Array.isArray(item.labels) ? item.labels : [],
+  };
+}
+
+export function sanitizeApplicationForPublicSite(item: ApplicationItem): ApplicationItem {
+  return publicApplicationFields(item);
+}
+
+export function sanitizeApplicationsForPublicSite(items: ApplicationItem[]): ApplicationItem[] {
+  return items.map(publicApplicationFields);
+}
+
+export function filterStoredApplications(items: ApplicationItem[], params?: URLSearchParams) {
+  let filtered = [...items];
+  const status = params?.get("status") || "";
+  const query = (params?.get("q") || "").trim().toLowerCase();
+  const className = (params?.get("class") || "").trim().toLowerCase();
+  const sort = params?.get("sort") === "updated" ? "updated" : "created";
+
+  if (status && status !== "all") filtered = filtered.filter((item) => item.status_key === normalizeStatus(status));
+  if (className && className !== "all") filtered = filtered.filter((item) => String(item.class_name || "").toLowerCase() === className);
+  if (query) {
+    filtered = filtered.filter((item) => [
+      item.number, item.application_number, item.tracking_number, item.title,
+      item.character_name, item.realm, item.region, item.faction, item.class_name,
+    ].some((value) => String(value || "").toLowerCase().includes(query)));
+  }
+
+  return filtered.sort((a, b) => timestampForApplicationSort(b, sort) - timestampForApplicationSort(a, sort));
+}
+
+export async function listStoredApplications(params?: URLSearchParams) {
+  return filterStoredApplications(await listFirebaseApplicationsBase(), params);
+}
+
+export async function createGuildApplication(input: CreateGuildApplicationInput): Promise<CreateGuildApplicationResult> {
+  const characterName = normalizeApplicationField(input.characterName, 32);
+  const realm = normalizeApplicationField(input.realm, 48);
+  const region = normalizeApplicationField(input.region || "eu", 8).toLowerCase() || "eu";
+  const faction = normalizeApplicationField(input.faction, 16);
+  const className = normalizeApplicationField(input.className, 32);
+  const discord = normalizeApplicationField(input.discord, 40).toLowerCase();
+  const battleTag = normalizeApplicationField(input.battleTag, 48);
+  const source = normalizeApplicationField(input.source || [input.sourceCreator, input.sourcePlatform, input.sourceOther].filter(Boolean).join(" · "), 240);
+  const availability = normalizeApplicationField(input.availability, 1200);
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const collection = getFirebaseAdminDb().collection(applicationsCollectionName());
+
+  const recent = await collection.orderBy("createdAtMs", "desc").limit(60).get().catch(() => collection.limit(60).get());
+  const duplicateDoc = recent.docs.find((doc: any) => {
+    const data = doc.data() || {};
+    const createdAtMs = Number(data.createdAtMs || Date.parse(data.created_at || data.createdAt || "") || 0);
+    return Date.now() - createdAtMs < 10 * 60 * 1000
+      && normalizeApplicationField(data.character_name || data.characterName, 32).toLowerCase() === characterName.toLowerCase()
+      && normalizeApplicationField(data.realm, 48).toLowerCase() === realm.toLowerCase();
+  });
+  if (duplicateDoc) {
+    return { item: mapFirebaseApplicationDoc(duplicateDoc), duplicate: true };
+  }
+
+  const number = await allocateApplicationNumber();
+  const trackingNumber = applicationTrackingNumber();
+  const id = `application-${number}`;
+  const payload = {
+    application_number: number,
+    number,
+    tracking_number: trackingNumber,
+    title: `Заявка до гільдії: ${characterName}`,
+    state: "open",
+    status: "review",
+    status_key: "review",
+    status_text: statusText("review"),
+    character_name: characterName,
+    realm,
+    region,
+    faction,
+    class_name: className,
+    discord,
+    battle_tag: battleTag || null,
+    source,
+    source_creator: normalizeApplicationField(input.sourceCreator, 80),
+    source_platform: normalizeApplicationField(input.sourcePlatform, 80),
+    source_other: normalizeApplicationField(input.sourceOther, 160),
+    availability,
+    labels: labelsForFirebaseStatus("review"),
+    created_at: nowIso,
+    updated_at: nowIso,
+    closed_at: null,
+    createdAtMs: now.getTime(),
+    updatedAtMs: now.getTime(),
+    source_system: "public-site",
+  };
+
+  const ref = collection.doc(id);
+  await ref.set(payload, { merge: false });
+  const snapshot = await ref.get();
+  return { item: mapFirebaseApplicationDoc(snapshot), duplicate: false };
+}
+
+export async function setApplicationDiscordMessageRef(issueNumber: number, ref: DiscordMessageRef) {
+  const doc = await findFirebaseApplicationDoc(issueNumber);
+  if (!doc) return false;
+  await doc.ref.update({
+    discord_message_ref: { channel_id: ref.channel_id, message_id: ref.message_id },
+    discord_ref: { channel_id: ref.channel_id, message_id: ref.message_id },
+    updated_at: new Date().toISOString(),
+    updatedAtMs: Date.now(),
+  });
+  return true;
+}
+
 export async function listApplicationFilterOptions() {
   const items = await listFirebaseApplicationsBase();
   return {
@@ -924,40 +1115,7 @@ function timestampForApplicationSort(item: ApplicationItem, key: "created" | "up
 }
 
 export async function listApplications(params?: URLSearchParams) {
-  let items = await listFirebaseApplicationsBase();
-
-  const status = params?.get("status") || "";
-  const query = (params?.get("q") || "").trim().toLowerCase();
-  const className = (params?.get("class") || "").trim().toLowerCase();
-  const sort = params?.get("sort") === "updated" ? "updated" : "created";
-
-  if (status && status !== "all") {
-    items = items.filter((item) => item.status_key === normalizeStatus(status));
-  }
-
-  if (className && className !== "all") {
-    items = items.filter((item) => String(item.class_name || "").toLowerCase() === className);
-  }
-
-  if (query) {
-    items = items.filter((item) =>
-      [
-        item.number,
-        item.application_number,
-        item.tracking_number,
-        item.title,
-        item.character_name,
-        item.realm,
-        item.region,
-        item.faction,
-        item.class_name,
-        item.source,
-        item.availability,
-      ].some((value) => String(value || "").toLowerCase().includes(query))
-    );
-  }
-
-  items = [...items].sort((a, b) => timestampForApplicationSort(b, sort) - timestampForApplicationSort(a, sort));
+  const items = await listStoredApplications(params);
 
   const { results } = await mapConcurrent<ApplicationItem, ApplicationItem>(
     items,

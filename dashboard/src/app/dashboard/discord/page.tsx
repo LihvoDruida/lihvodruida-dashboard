@@ -340,6 +340,24 @@ export default async function AdminDiscordPage() {
                 </div>
 
                 <div className="nickname-warning-settings__group">
+                  <div className="nickname-warning-settings__group-head"><strong>Новоприбулі після Discord-ролі</strong><small>Новий учасник не потрапляє у перевірку ніку, доки не отримає вибрану роль.</small></div>
+                  <div className="nickname-warning-settings__grid nickname-warning-settings__grid--delivery">
+                    <label className="settings-toggle-row settings-toggle-row--card">
+                      <input name="nicknameNewcomerGateEnabled" type="checkbox" defaultChecked={policy.nicknameNewcomerGateEnabled} />
+                      <span><strong>Role-gated перевірка</strong><small>Існуючі учасники стають baseline; правило застосовується лише до нових.</small></span>
+                    </label>
+                    <label className="field-label">Роль, що запускає перевірку
+                      <select className="input" name="nicknameNewcomerRoleId" defaultValue={policy.nicknameNewcomerRoleId}>
+                        <option value="">Не вибрано</option>
+                        {policy.nicknameNewcomerRoleId && !roles.some((role) => role.id === policy.nicknameNewcomerRoleId) ? <option value={policy.nicknameNewcomerRoleId}>Поточна роль ({policy.nicknameNewcomerRoleId})</option> : null}
+                        {roles.filter((role) => role.name !== "@everyone").map((role) => <option key={role.id} value={role.id}>{role.name} · {role.id}</option>)}
+                      </select>
+                      <small>Після появи цієї ролі нік перевіряється одразу. Невалідний запис переходить у базу invalid/priority.</small>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="nickname-warning-settings__group">
                   <div className="nickname-warning-settings__group-head"><strong>Частота перевірок</strong><small>Некоректні ніки мають вищий пріоритет.</small></div>
                   <div className="nickname-warning-settings__grid nickname-warning-settings__grid--timing">
                     <label className="field-label">Некоректний нік
@@ -480,6 +498,9 @@ export default async function AdminDiscordPage() {
                   <NicknameMetric label="Остання повна перевірка" value={nicknameWarningState.lastFullScanAt ? formatCleanupDate(nicknameWarningState.lastFullScanAt) : "Ще не запускалась"} />
                   <NicknameMetric label="Некоректних" value={String(nicknameWarningState.trackedInvalid)} note={`повторна перевірка кожні ${policy.nicknameInvalidRecheckHours} год`} />
                   <NicknameMetric label="Коректних" value={String(nicknameWarningState.trackedValid)} note={`повний sweep кожні ${policy.nicknameValidRecheckHours} год`} />
+                  <NicknameMetric label="Нові: очікують роль" value={String(nicknameWarningState.newcomerWaitingRole)} note={policy.nicknameNewcomerGateEnabled ? `роль ${policy.nicknameNewcomerRoleId ? maskSnowflake(policy.nicknameNewcomerRoleId) : "не вибрана"}` : "role-gate вимкнений"} />
+                  <NicknameMetric label="Нові: кваліфіковано" value={String(nicknameWarningState.newcomerQualified)} note={nicknameWarningState.newcomerLastScanAt ? `скан ${formatCleanupDate(nicknameWarningState.newcomerLastScanAt)}` : "ще не сканувалось"} />
+                  <NicknameMetric label="Нові invalid" value={String(nicknameWarningState.newcomerInvalidAdded)} note="додано останнім role-gate проходом" />
                   <NicknameMetric label="Наступна перевірка" value={nicknameWarningState.nextInvalidCheckAt ? formatCleanupDate(nicknameWarningState.nextInvalidCheckAt) : "Черга порожня"} />
                   <NicknameMetric label="Остання доставка" value={`${nicknameWarningState.lastDm} DM · ${nicknameWarningState.lastChannel} канал`} />
                   <NicknameMetric label="Помилки" value={String(nicknameWarningState.lastFailed)} />
@@ -488,10 +509,10 @@ export default async function AdminDiscordPage() {
                 {nicknameWarningState.lastError ? <div className="discord-inline-warning"><strong>Остання помилка:</strong> {nicknameWarningState.lastError}</div> : null}
 
                 <div className="nickname-warning-flow" aria-label="Як працює автоматизація">
-                  <span><b>1</b><strong>Повна перевірка</strong><small>класифікує весь сервер без масової розсилки</small></span>
-                  <span><b>2</b><strong>Пріоритетна черга</strong><small>повторно перевіряє тільки некоректні ніки</small></span>
-                  <span><b>3</b><strong>Приватне повідомлення</strong><small>DM, а якщо недоступно — fallback-канал</small></span>
-                  <span><b>4</b><strong>Контроль повторів</strong><small>не частіше ніж раз на {policy.nicknameReminderCooldownHours} год</small></span>
+                  <span><b>1</b><strong>Новоприбулі</strong><small>{policy.nicknameNewcomerGateEnabled ? "чекають trigger-роль" : "role-gate вимкнений"}</small></span>
+                  <span><b>2</b><strong>Role → перевірка</strong><small>invalid одразу входить у priority-базу</small></span>
+                  <span><b>3</b><strong>Повна перевірка</strong><small>baseline і кваліфіковані учасники</small></span>
+                  <span><b>4</b><strong>Priority + DM</strong><small>повторна перевірка та cooldown {policy.nicknameReminderCooldownHours} год</small></span>
                 </div>
 
                 <form className="nickname-warning-actions" action="/api/dashboard/discord/nicknames/notify" method="post" data-dashboard-action-form="true" data-dashboard-live-submit="true">

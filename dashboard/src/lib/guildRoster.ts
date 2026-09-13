@@ -92,6 +92,19 @@ export type GuildRosterMember = {
   raiderIoUpdatedAt?: string | null;
 };
 
+export type GuildRaidRankingDifficulty = {
+  world: number | null;
+  region: number | null;
+  realm: number | null;
+};
+
+export type GuildRaidRanking = {
+  slug: string;
+  normal: GuildRaidRankingDifficulty;
+  heroic: GuildRaidRankingDifficulty;
+  mythic: GuildRaidRankingDifficulty;
+};
+
 export type GuildRosterStats = {
   updatedAt: string | null;
   rosterUpdatedAt?: string | null;
@@ -104,6 +117,8 @@ export type GuildRosterStats = {
   maxItemLevel: number;
   averageRioAll: number;
   averageItemLevel: number;
+  raidProgression: GuildRaidProgress[];
+  raidRankings: GuildRaidRanking[];
 };
 
 export type GuildRosterLoadResult = {
@@ -605,7 +620,7 @@ async function fetchRaiderGuild(
   url.searchParams.set("name", guildName);
   url.searchParams.set(
     "fields",
-    "raid_progression,raid_rankings",
+    "raid_progression:current-expansion:previous-expansion,raid_rankings:current-expansion:previous-expansion",
   );
   const key = raiderIoAccessKey();
   if (key) url.searchParams.set("access_key", key);
@@ -905,6 +920,34 @@ function normalizeRaidProgression(value: unknown): GuildRaidProgress[] {
       } satisfies GuildRaidProgress;
     })
     .filter((raid) => Boolean(raid.slug && (raid.totalBosses > 0 || raid.summary || raid.normalKills || raid.heroicKills || raid.mythicKills)));
+}
+
+function normalizeRaidRankingDifficulty(value: unknown): GuildRaidRankingDifficulty {
+  const ranking = value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+  const pick = (key: string) => {
+    const numeric = Number(ranking[key]);
+    return Number.isFinite(numeric) && numeric > 0 ? Math.floor(numeric) : null;
+  };
+  return { world: pick("world"), region: pick("region"), realm: pick("realm") };
+}
+
+function normalizeRaidRankings(value: unknown): GuildRaidRanking[] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+  return Object.entries(value as Record<string, unknown>)
+    .map(([slug, raw]) => {
+      const ranking = raw && typeof raw === "object" && !Array.isArray(raw)
+        ? raw as Record<string, unknown>
+        : {};
+      return {
+        slug: cleanText(slug),
+        normal: normalizeRaidRankingDifficulty(ranking.normal),
+        heroic: normalizeRaidRankingDifficulty(ranking.heroic),
+        mythic: normalizeRaidRankingDifficulty(ranking.mythic),
+      } satisfies GuildRaidRanking;
+    })
+    .filter((ranking) => Boolean(ranking.slug));
 }
 
 function memberBattleNetKey(input: {
@@ -1233,6 +1276,8 @@ function buildStats(input: {
     maxItemLevel: Math.max(0, ...members.map((member) => member.itemLevel)),
     averageRioAll: average(members.map((member) => member.scores.all)),
     averageItemLevel: average(members.map((member) => member.itemLevel)),
+    raidProgression: normalizeRaidProgression(input.raiderGuild?.raid_progression),
+    raidRankings: normalizeRaidRankings(input.raiderGuild?.raid_rankings),
   };
 }
 
@@ -1438,6 +1483,8 @@ function fallbackStats(): GuildRosterStats {
     maxItemLevel: 0,
     averageRioAll: 0,
     averageItemLevel: 0,
+    raidProgression: [],
+    raidRankings: [],
   };
 }
 
@@ -1498,6 +1545,8 @@ function guildRosterFingerprint(result: Pick<GuildRosterLoadResult, "members" | 
         maxItemLevel: result.stats.maxItemLevel,
         averageRioAll: Math.round((result.stats.averageRioAll || 0) * 10) / 10,
         averageItemLevel: Math.round((result.stats.averageItemLevel || 0) * 10) / 10,
+        raidProgression: result.stats.raidProgression || [],
+        raidRankings: result.stats.raidRankings || [],
       },
       members: sortMembers(result.members).map(stableRosterMemberFingerprint),
     }))

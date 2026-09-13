@@ -227,6 +227,7 @@ export type DiscordGuildMemberSnapshot = {
   avatarUrl: string | null;
   defaultAvatarUrl: string | null;
   roleIds: string[];
+  joinedAt?: string | null;
 };
 
 export type DiscordGuildBanSnapshot = {
@@ -1479,6 +1480,7 @@ export async function fetchDiscordGuildMemberSnapshot(userIdInput: string, guild
     }),
     defaultAvatarUrl: discordDefaultAvatarUrl(userId, user.discriminator),
     roleIds,
+    joinedAt: cleanText(member?.joined_at, 80) || null,
   };
 }
 
@@ -1671,6 +1673,7 @@ function normalizeGuildMemberForModeration(member: any): DiscordGuildMemberModer
     }),
     defaultAvatarUrl: discordDefaultAvatarUrl(userId, user.discriminator),
     roleIds,
+    joinedAt: cleanText(member?.joined_at, 80) || null,
   };
 }
 

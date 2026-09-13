@@ -83,4 +83,15 @@ assert(proxy.includes('pathname === "/api/dashboard/discord/nicknames/automation
 assert(enhancer.includes('/api/dashboard/discord/nicknames/notify') && !enhancer.includes('/api/dashboard/discord/nicknames/cleanup'), 'live form overlay must describe warnings, not role changes');
 assert(css.includes('.nickname-warning-settings') && css.includes('.nickname-warning-flow'), 'warning settings and flow need dedicated responsive styles');
 
+assert(policy.includes('nicknameNewcomerGateEnabled') && policy.includes('nicknameNewcomerRoleId'), 'nickname policy must persist newcomer role-gate enablement and trigger role');
+assert(page.includes('name="nicknameNewcomerGateEnabled"') && page.includes('name="nicknameNewcomerRoleId"') && page.includes('Новоприбулі після Discord-ролі'), 'Discord UI must expose newcomer role-gate controls');
+assert(warnings.includes('NEWCOMER_GATE_COLLECTION = "discordNicknameNewcomerGateMembers"'), 'newcomer role observation state must have its own persistent collection');
+assert(warnings.includes('gateStatus: "waiting_role"') && warnings.includes('gateStatus: "qualified"'), 'newcomers must remain waiting until the trigger role is observed');
+assert(warnings.includes('eligibilitySource: "newcomer_role"') && warnings.includes('invalidDueNow: true'), 'invalid newcomers must enter the existing invalid priority database immediately after role qualification');
+assert(warnings.includes('eligibleUserIds') && warnings.includes('skippedPendingNewcomers'), 'full nickname sweeps must exclude newcomers that are still waiting for the trigger role');
+assert(automation.includes('syncNicknameNewcomerRoleGate') && automation.includes('nicknameNewcomerGateEnabled'), 'automatic nickname cron must discover newcomer role transitions');
+const rulesComplete = read('src/app/api/rules/accept/complete/route.ts');
+assert(rulesComplete.includes('processNewcomerNicknameRoleGrant') && rulesComplete.includes('grantedRoleIds: roleIds'), 'rules onboarding role grants must trigger immediate newcomer nickname classification');
+assert(discord.includes('joinedAt: cleanText(member?.joined_at'), 'Discord member snapshots must retain joined_at for newcomer tracking');
+
 if (!process.exitCode) console.log(`[check-nickname-warnings] OK — ${checked}/${checked} warning, fallback, cooldown, logging and scheduler invariants checked.`);

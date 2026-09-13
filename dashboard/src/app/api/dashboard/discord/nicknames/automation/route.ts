@@ -7,6 +7,7 @@ import {
   nicknameFullScanDue,
   processFullNicknameSweep,
   processPriorityNicknameWarnings,
+  syncNicknameNewcomerRoleGate,
 } from "@/lib/discordNicknameWarnings";
 import { logDashboardEvent, noStoreHeaders, safeErrorMessage, unauthorizedResponse, verifyInternalBearerToken } from "@/lib/security";
 
@@ -28,12 +29,12 @@ export async function POST(request: NextRequest) {
   }
 
   const policy = await getGuildNicknamePolicy({ bypassCache: true });
-  if (!policy.nicknameReminderEnabled) {
+  if (!policy.nicknameReminderEnabled && !policy.nicknameNewcomerGateEnabled) {
     return NextResponse.json({ ok: true, skipped: true, reason: "disabled" }, { headers: noStoreHeaders() });
   }
 
   const state = await getNicknameWarningAutomationState({ fresh: true });
-  const runFullScan = nicknameFullScanDue(state, policy);
+  const runFullScan = policy.nicknameReminderEnabled && nicknameFullScanDue(state, policy);
   const execution = acquireNicknameWarningExecution(runFullScan ? "automatic:full" : "automatic:priority");
   if (!execution) {
     return NextResponse.json({ ok: true, skipped: true, reason: "in_flight" }, { headers: noStoreHeaders() });
@@ -52,12 +53,32 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const newcomerGate = policy.nicknameNewcomerGateEnabled
+      ? await syncNicknameNewcomerRoleGate({ policy })
+      : null;
+
+    if (!policy.nicknameReminderEnabled) {
+      const result = {
+        skipped: false as const,
+        mode: "newcomer-role-gate" as const,
+        initialized: Boolean(newcomerGate?.initialized),
+        roleId: newcomerGate?.roleId || null,
+        waitingRole: newcomerGate?.waitingRole || 0,
+        newlyQualified: newcomerGate?.newlyQualified || 0,
+        invalidAdded: newcomerGate?.invalidAdded || 0,
+      };
+      if (result.newlyQualified || result.invalidAdded || result.initialized) {
+        logDashboardEvent("info", "discord.nickname_newcomer_gate.auto_completed", request, result, { category: "action" });
+      }
+      return NextResponse.json({ ok: true, result }, { headers: noStoreHeaders() });
+    }
+
     const result = runFullScan
-      ? await processFullNicknameSweep({ source: "automatic" })
+      ? await processFullNicknameSweep({ source: "automatic", members: newcomerGate?.members, newcomerGate: newcomerGate || undefined })
       : await processPriorityNicknameWarnings({ source: "automatic", force: false });
 
     if ("skipped" in result && result.skipped) {
-      return NextResponse.json({ ok: true, ...result }, { headers: noStoreHeaders() });
+      return NextResponse.json({ ok: true, ...result, newcomerGate: newcomerGate ? { waitingRole: newcomerGate.waitingRole, newlyQualified: newcomerGate.newlyQualified, invalidAdded: newcomerGate.invalidAdded } : null }, { headers: noStoreHeaders() });
     }
 
     logDashboardEvent(result.failed ? "warn" : "info", "discord.nickname_warning.auto_completed", request, result, { category: "action" });

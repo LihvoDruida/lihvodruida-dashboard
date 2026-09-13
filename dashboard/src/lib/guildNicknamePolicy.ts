@@ -21,6 +21,7 @@ export const DEFAULT_NICKNAME_INVALID_RECHECK_HOURS = 6;
 export const DEFAULT_NICKNAME_VALID_RECHECK_HOURS = 72;
 export const DEFAULT_NICKNAME_REMINDER_COOLDOWN_HOURS = 72;
 export const DEFAULT_NICKNAME_REMINDER_BATCH_LIMIT = 100;
+export const DEFAULT_NICKNAME_NEWCOMER_GATE_ENABLED = false;
 
 const SETTINGS_COLLECTION = "dashboardSettings";
 const POLICY_DOC_ID = "discordNicknamePolicy";
@@ -55,6 +56,8 @@ export type GuildNicknamePolicy = {
   nicknameReminderCooldownHours: number;
   nicknameReminderBatchLimit: number;
   nicknameReminderChannelId: string;
+  nicknameNewcomerGateEnabled: boolean;
+  nicknameNewcomerRoleId: string;
   updatedAt?: string | null;
   updatedBy?: string | null;
 };
@@ -118,6 +121,8 @@ function normalizePolicyData(data: Record<string, unknown> | null | undefined, f
     nicknameReminderCooldownHours: cleanIntegerSetting(data?.nicknameReminderCooldownHours, DEFAULT_NICKNAME_REMINDER_COOLDOWN_HOURS, 1, 720),
     nicknameReminderBatchLimit: cleanIntegerSetting(data?.nicknameReminderBatchLimit, DEFAULT_NICKNAME_REMINDER_BATCH_LIMIT, 1, 500),
     nicknameReminderChannelId: cleanChannelId(data?.nicknameReminderChannelId),
+    nicknameNewcomerGateEnabled: cleanBoolSetting(data?.nicknameNewcomerGateEnabled, DEFAULT_NICKNAME_NEWCOMER_GATE_ENABLED),
+    nicknameNewcomerRoleId: cleanChannelId(data?.nicknameNewcomerRoleId),
     updatedAt: timestampToIso(data?.updatedAt),
     updatedBy: typeof data?.updatedBy === "string" ? data.updatedBy : null,
   };
@@ -199,6 +204,8 @@ export async function setGuildDiscordManagementSettings(input: {
   nicknameReminderCooldownHours?: unknown;
   nicknameReminderBatchLimit?: unknown;
   nicknameReminderChannelId?: unknown;
+  nicknameNewcomerGateEnabled?: unknown;
+  nicknameNewcomerRoleId?: unknown;
 }, actor?: DashboardSession | null) {
   const template = cleanNicknameTemplate(input.template);
   const nicknameCleanupMaxConcurrency = cleanIntegerSetting(input.nicknameCleanupMaxConcurrency, DEFAULT_NICKNAME_CLEANUP_MAX_CONCURRENCY, 1, 4);
@@ -210,6 +217,11 @@ export async function setGuildDiscordManagementSettings(input: {
   const nicknameReminderCooldownHours = cleanIntegerSetting(input.nicknameReminderCooldownHours, DEFAULT_NICKNAME_REMINDER_COOLDOWN_HOURS, 1, 720);
   const nicknameReminderBatchLimit = cleanIntegerSetting(input.nicknameReminderBatchLimit, DEFAULT_NICKNAME_REMINDER_BATCH_LIMIT, 1, 500);
   const nicknameReminderChannelId = cleanChannelId(input.nicknameReminderChannelId);
+  const nicknameNewcomerGateEnabled = cleanBoolSetting(input.nicknameNewcomerGateEnabled, DEFAULT_NICKNAME_NEWCOMER_GATE_ENABLED);
+  const nicknameNewcomerRoleId = cleanChannelId(input.nicknameNewcomerRoleId);
+  if (nicknameNewcomerGateEnabled && !nicknameNewcomerRoleId) {
+    throw new Error("Для перевірки новоприбулих вибери Discord-роль, після отримання якої дозволена перевірка ніку.");
+  }
 
   if (!hasFirebaseProfileConfig()) throw new Error("Firebase не налаштований для збереження Discord-налаштувань.");
   await firebaseWrite(
@@ -226,6 +238,8 @@ export async function setGuildDiscordManagementSettings(input: {
       nicknameReminderCooldownHours,
       nicknameReminderBatchLimit,
       nicknameReminderChannelId,
+      nicknameNewcomerGateEnabled,
+      nicknameNewcomerRoleId,
       updatedAt: FieldValue.serverTimestamp(),
       updatedBy: actor?.name || actor?.login || actor?.id || null,
     }, { merge: true }),
@@ -244,6 +258,8 @@ export async function setGuildDiscordManagementSettings(input: {
       nicknameReminderCooldownHours,
       nicknameReminderBatchLimit,
       nicknameReminderChannelId,
+      nicknameNewcomerGateEnabled,
+      nicknameNewcomerRoleId,
     }),
     updatedAt: new Date().toISOString(),
     updatedBy: actor?.name || actor?.login || actor?.id || null,

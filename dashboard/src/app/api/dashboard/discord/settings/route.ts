@@ -25,6 +25,8 @@ export async function POST(request: NextRequest) {
       nicknameReminderCooldownHours: form.get("nicknameReminderCooldownHours"),
       nicknameReminderBatchLimit: form.get("nicknameReminderBatchLimit"),
       nicknameReminderChannelId: form.get("nicknameReminderChannelId"),
+      nicknameNewcomerGateEnabled: form.get("nicknameNewcomerGateEnabled"),
+      nicknameNewcomerRoleId: form.get("nicknameNewcomerRoleId"),
     }, guard.session);
 
     await auditDiscordAdmin("discord.management_settings.update", guard.session, {
@@ -40,6 +42,8 @@ export async function POST(request: NextRequest) {
       nicknameReminderCooldownHours: policy.nicknameReminderCooldownHours,
       nicknameReminderBatchLimit: policy.nicknameReminderBatchLimit,
       nicknameReminderChannelId: policy.nicknameReminderChannelId,
+      nicknameNewcomerGateEnabled: policy.nicknameNewcomerGateEnabled,
+      nicknameNewcomerRoleId: policy.nicknameNewcomerRoleId,
     });
 
     return adminDiscordResponse(request, {

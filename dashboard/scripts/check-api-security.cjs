@@ -44,6 +44,9 @@ for (const file of walk(apiRoot).filter((name) => name.endsWith(`${path.sep}rout
   if (rel === 'client-errors/route.ts') {
     if (source.includes('assertRequestBodySize(') && source.includes('checkRateLimit(') && source.includes('cleanStack(')) continue;
   }
+  if (rel === 'site/applications/route.ts') {
+    if (source.includes('isAllowedPublicSiteOrigin(') && source.includes('assertRequestBodySize(') && source.includes('checkRateLimit(') && source.includes('validateApplication(')) continue;
+  }
 
   failed += 1;
   console.error(`[check-api-security] FAIL — unauthenticated mutation surface: ${methods.join('/')} /api/${rel.replace('/route.ts', '')}`);

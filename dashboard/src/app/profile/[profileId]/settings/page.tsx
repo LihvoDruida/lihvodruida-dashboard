@@ -507,6 +507,8 @@ export default async function ProfileSettingsPage({
         nicknameReminderCooldownHours: 72,
         nicknameReminderBatchLimit: 100,
         nicknameReminderChannelId: "",
+        nicknameNewcomerGateEnabled: false,
+        nicknameNewcomerRoleId: "",
         updatedAt: null,
         updatedBy: null,
       };

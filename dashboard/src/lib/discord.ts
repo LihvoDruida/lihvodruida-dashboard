@@ -152,3 +152,57 @@ export async function notifyDiscordStatusChange(params: {
     return { ok: false, error: error instanceof Error ? error.message : "Discord API error" };
   }
 }
+
+export async function notifyDiscordNewApplication(params: {
+  issueNumber: number;
+  trackingNumber?: string | null;
+  characterName: string;
+  realm: string;
+  region?: string | null;
+  faction?: string | null;
+  className?: string | null;
+  discord?: string | null;
+  battleTag?: string | null;
+  source?: string | null;
+  availability?: string | null;
+}) {
+  const { botToken, channelId } = getDiscordBotConfig();
+  if (!botToken || !channelId) {
+    return { ok: false, skipped: true, reason: "DISCORD_BOT_TOKEN or DISCORD_CHANNEL_ID is missing" };
+  }
+
+  const fields = [
+    { name: "Персонаж", value: `**${cleanText(params.characterName, 48)}** · ${cleanText(params.region || "eu", 8).toUpperCase()}-${cleanText(params.realm, 48)}`, inline: false },
+    { name: "Клас / фракція", value: `${cleanText(params.className || "Не вказано", 40)} · ${cleanText(params.faction || "Не вказано", 24)}`, inline: true },
+    { name: "Код", value: cleanText(params.trackingNumber || `#${params.issueNumber}`, 40), inline: true },
+    { name: "Discord", value: cleanText(params.discord || "Не вказано", 64), inline: true },
+    { name: "BattleTag", value: cleanText(params.battleTag || "Не вказано", 64), inline: true },
+    { name: "Звідки дізнався", value: cleanText(params.source || "Не вказано", 180), inline: false },
+    { name: "Коли грає", value: cleanText(params.availability || "Не вказано", 700), inline: false },
+  ];
+
+  try {
+    const message = await discordApi<any>(`/channels/${channelId}/messages`, {
+      method: "POST",
+      body: JSON.stringify({
+        allowed_mentions: { parse: [] },
+        embeds: [{
+          title: `📋 Нова заявка #${params.issueNumber} · ${cleanText(params.characterName, 48)}`,
+          description: `**Статус:** ${statusEmoji("review")} **${statusText("review")}**\nНадіслано через lihvodruida.pp.ua`,
+          color: statusColor("review"),
+          fields,
+          footer: { text: "Mistblossom Vanguard • Applications" },
+          timestamp: new Date().toISOString(),
+        }],
+      }),
+    });
+
+    return {
+      ok: true,
+      channel_id: String(message?.channel_id || channelId),
+      message_id: String(message?.id || ""),
+    };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Discord API error" };
+  }
+}

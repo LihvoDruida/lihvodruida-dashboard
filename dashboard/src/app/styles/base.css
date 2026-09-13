@@ -36,7 +36,6 @@ a:active {
 /* Вимикаємо hover-підйоми на тач-пристроях */
 @media (hover: none) {
   .panel:hover,
-.card:hover,
 [class*="-card"]:hover {
     transform: none;
   }

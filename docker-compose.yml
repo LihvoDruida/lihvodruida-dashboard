@@ -106,6 +106,7 @@ services:
       # override this intentionally for emergency diagnostics.
       SECURITY_REQUIRE_CLOUDFLARE: ${SECURITY_REQUIRE_CLOUDFLARE:-strict}
       SECURITY_STRICT_ORIGIN_CHECKS: ${SECURITY_STRICT_ORIGIN_CHECKS:-true}
+      PUBLIC_SITE_ORIGINS: ${PUBLIC_SITE_ORIGINS:-https://lihvodruida.pp.ua,https://www.lihvodruida.pp.ua}
     depends_on:
       postgres:
         condition: service_healthy

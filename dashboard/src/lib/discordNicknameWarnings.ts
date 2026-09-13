@@ -20,6 +20,7 @@ import { logDashboardEvent, safeErrorMessage } from "@/lib/security";
 const STATE_COLLECTION = "dashboardSettings";
 const STATE_DOC_ID = "discordNicknameWarningAutomation";
 const MEMBER_STATE_COLLECTION = "discordNicknameWarningMembers";
+const NEWCOMER_GATE_COLLECTION = "discordNicknameNewcomerGateMembers";
 const MAX_RECENT_RUNS = 8;
 const STATE_CACHE_TTL_MS = 15_000;
 
@@ -57,6 +58,12 @@ export type NicknameWarningAutomationState = {
   lastPriorityRunAt: string | null;
   lastPriorityChecked: number;
   nextInvalidCheckAt: string | null;
+  newcomerGateRoleId: string | null;
+  newcomerGateInitializedAt: string | null;
+  newcomerLastScanAt: string | null;
+  newcomerWaitingRole: number;
+  newcomerQualified: number;
+  newcomerInvalidAdded: number;
   lastRunStatus: NicknameWarningRunStatus | null;
   lastChecked: number;
   lastInvalid: number;
@@ -147,6 +154,12 @@ function defaultState(): NicknameWarningAutomationState {
     lastPriorityRunAt: null,
     lastPriorityChecked: 0,
     nextInvalidCheckAt: null,
+    newcomerGateRoleId: null,
+    newcomerGateInitializedAt: null,
+    newcomerLastScanAt: null,
+    newcomerWaitingRole: 0,
+    newcomerQualified: 0,
+    newcomerInvalidAdded: 0,
     lastRunStatus: null,
     lastChecked: 0,
     lastInvalid: 0,
@@ -172,6 +185,12 @@ function normalizeState(data: Record<string, unknown> | null | undefined): Nickn
     lastPriorityRunAt: timestampToIso(data?.lastPriorityRunAt),
     lastPriorityChecked: numberValue(data?.lastPriorityChecked),
     nextInvalidCheckAt: timestampToIso(data?.nextInvalidCheckAt),
+    newcomerGateRoleId: data?.newcomerGateRoleId ? String(data.newcomerGateRoleId).slice(0, 25) : null,
+    newcomerGateInitializedAt: timestampToIso(data?.newcomerGateInitializedAt),
+    newcomerLastScanAt: timestampToIso(data?.newcomerLastScanAt),
+    newcomerWaitingRole: numberValue(data?.newcomerWaitingRole),
+    newcomerQualified: numberValue(data?.newcomerQualified),
+    newcomerInvalidAdded: numberValue(data?.newcomerInvalidAdded),
     lastRunStatus: cleanStatus(data?.lastRunStatus),
     lastChecked: numberValue(data?.lastChecked),
     lastInvalid: numberValue(data?.lastInvalid),
@@ -254,17 +273,23 @@ type NicknameMemberCheckRecord = {
   lastCheckedAt: string;
   nextCheckAt: string;
   nextCheckAtMs: number;
+  eligibilitySource?: "newcomer_role";
+  gateRoleId?: string;
+  newcomerQualifiedAt?: string;
 };
 
 function buildMemberCheckRecord(
   member: Pick<DiscordGuildMemberModerationItem, "userId" | "displayName" | "nick">,
   policy: Pick<GuildNicknamePolicy, "template" | "nicknameInvalidRecheckHours" | "nicknameValidRecheckHours">,
   checkedAtMs = Date.now(),
+  options: { invalidDueNow?: boolean; eligibilitySource?: "newcomer_role"; gateRoleId?: string; newcomerQualifiedAt?: string } = {},
 ): NicknameMemberCheckRecord {
   const nickname = memberNickname(member) || null;
   const checkStatus: NicknameCheckStatus = invalidMember(member, policy.template) ? "invalid" : "valid";
   const intervalHours = checkStatus === "invalid" ? policy.nicknameInvalidRecheckHours : policy.nicknameValidRecheckHours;
-  const nextCheckAtMs = checkedAtMs + Math.max(1, intervalHours) * 60 * 60_000;
+  const nextCheckAtMs = checkStatus === "invalid" && options.invalidDueNow
+    ? checkedAtMs
+    : checkedAtMs + Math.max(1, intervalHours) * 60 * 60_000;
   return {
     userId: member.userId,
     displayName: String(member.displayName || `Discord ${member.userId.slice(-6)}`).slice(0, 120),
@@ -274,6 +299,9 @@ function buildMemberCheckRecord(
     lastCheckedAt: new Date(checkedAtMs).toISOString(),
     nextCheckAt: new Date(nextCheckAtMs).toISOString(),
     nextCheckAtMs,
+    ...(options.eligibilitySource ? { eligibilitySource: options.eligibilitySource } : {}),
+    ...(options.gateRoleId ? { gateRoleId: options.gateRoleId } : {}),
+    ...(options.newcomerQualifiedAt ? { newcomerQualifiedAt: options.newcomerQualifiedAt } : {}),
   };
 }
 
@@ -316,6 +344,9 @@ async function writeMemberCheckRecords(records: NicknameMemberCheckRecord[], opt
             nextCheckAt: record.nextCheckAt,
             nextCheckAtMs: record.nextCheckAtMs,
             updatedAt: record.lastCheckedAt,
+            ...(record.eligibilitySource ? { eligibilitySource: record.eligibilitySource } : {}),
+            ...(record.gateRoleId ? { gateRoleId: record.gateRoleId } : {}),
+            ...(record.newcomerQualifiedAt ? { newcomerQualifiedAt: record.newcomerQualifiedAt } : {}),
           }, { merge: true });
         }
         await batch.commit();
@@ -387,6 +418,381 @@ async function patchAutomationState(patch: Partial<NicknameWarningAutomationStat
     );
   }
   return setStateCache(nextState);
+}
+
+
+type NewcomerGateStatus = "baseline" | "waiting_role" | "qualified";
+
+type NewcomerGateRecord = {
+  userId: string;
+  displayName: string;
+  joinedAt: string | null;
+  roleId: string;
+  baseline: boolean;
+  hasRole: boolean;
+  gateStatus: NewcomerGateStatus;
+  validationStatus: NicknameCheckStatus | null;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  qualifiedAt: string | null;
+};
+
+export type NewcomerNicknameGateSyncResult = {
+  skipped: boolean;
+  initialized: boolean;
+  roleId: string | null;
+  members: DiscordGuildMemberModerationItem[];
+  eligibleUserIds: Set<string> | null;
+  waitingRole: number;
+  qualified: number;
+  invalidAdded: number;
+  newlyQualified: number;
+};
+
+function normalizeNewcomerGateRecord(doc: any, roleId: string): NewcomerGateRecord | null {
+  const data = doc?.data?.() || {};
+  const userId = String(data.userId || doc?.id || "").trim();
+  if (!/^\d{16,25}$/.test(userId)) return null;
+  const gateStatusText = String(data.gateStatus || "");
+  const gateStatus: NewcomerGateStatus = gateStatusText === "qualified"
+    ? "qualified"
+    : gateStatusText === "waiting_role"
+      ? "waiting_role"
+      : "baseline";
+  const validationText = String(data.validationStatus || "");
+  const validationStatus: NicknameCheckStatus | null = validationText === "valid" || validationText === "invalid" ? validationText : null;
+  return {
+    userId,
+    displayName: String(data.displayName || `Discord ${userId.slice(-6)}`).slice(0, 120),
+    joinedAt: timestampToIso(data.joinedAt),
+    roleId: String(data.roleId || roleId).slice(0, 25),
+    baseline: Boolean(data.baseline),
+    hasRole: Boolean(data.hasRole),
+    gateStatus,
+    validationStatus,
+    firstSeenAt: timestampToIso(data.firstSeenAt) || new Date(0).toISOString(),
+    lastSeenAt: timestampToIso(data.lastSeenAt) || new Date(0).toISOString(),
+    qualifiedAt: timestampToIso(data.qualifiedAt),
+  };
+}
+
+async function loadNewcomerGateRecords(roleId: string) {
+  if (!hasFirebaseProfileConfig()) return new Map<string, NewcomerGateRecord>();
+  const snapshot = await getFirebaseAdminDb().collection(NEWCOMER_GATE_COLLECTION).limit(5000).get().catch(() => null);
+  const rows = new Map<string, NewcomerGateRecord>();
+  for (const doc of snapshot?.docs || []) {
+    const record = normalizeNewcomerGateRecord(doc, roleId);
+    if (record && record.roleId === roleId) rows.set(record.userId, record);
+  }
+  return rows;
+}
+
+async function writeNewcomerGateRecords(records: NewcomerGateRecord[], options: { cleanupMissing?: boolean } = {}) {
+  if (!hasFirebaseProfileConfig()) return;
+  const db = getFirebaseAdminDb();
+  const currentIds = new Set(records.map((record) => record.userId));
+  const staleRefs: any[] = [];
+  if (options.cleanupMissing) {
+    const snapshot = await db.collection(NEWCOMER_GATE_COLLECTION).limit(5000).get().catch(() => null);
+    for (const doc of snapshot?.docs || []) {
+      if (!currentIds.has(doc.id)) staleRefs.push(doc.ref);
+    }
+  }
+
+  await firebaseWrite(
+    "settings",
+    `discord-nickname-newcomer-gate:${options.cleanupMissing ? "full" : "partial"}`,
+    async () => {
+      const operations: Array<{ type: "set"; record: NewcomerGateRecord } | { type: "delete"; ref: any }> = [
+        ...records.map((record) => ({ type: "set" as const, record })),
+        ...staleRefs.map((ref) => ({ type: "delete" as const, ref })),
+      ];
+      for (let index = 0; index < operations.length; index += 400) {
+        const batch = db.batch();
+        for (const operation of operations.slice(index, index + 400)) {
+          if (operation.type === "delete") {
+            batch.delete(operation.ref);
+            continue;
+          }
+          const record = operation.record;
+          batch.set(db.collection(NEWCOMER_GATE_COLLECTION).doc(record.userId), {
+            ...record,
+            updatedAt: record.lastSeenAt,
+          }, { merge: true });
+        }
+        await batch.commit();
+      }
+    },
+    { timeoutMs: 12_000, logEvent: "discord.nickname_newcomer_gate.state_write_failed" },
+  );
+}
+
+/**
+ * Role-gated newcomer flow.
+ *
+ * The first scan after enabling/changing the role only establishes a baseline:
+ * existing guild members keep using the normal nickname scheduler and are not
+ * treated as newcomers. After that, a member first seen after the baseline is
+ * withheld from nickname validation until the configured role appears. The
+ * role transition is then validated immediately and, when invalid, inserted
+ * into the existing invalid-priority database without changing roles/nickname.
+ */
+export async function syncNicknameNewcomerRoleGate(input: {
+  policy?: GuildNicknamePolicy;
+  members?: DiscordGuildMemberModerationItem[];
+  completeSnapshot?: boolean;
+} = {}): Promise<NewcomerNicknameGateSyncResult> {
+  const policy = input.policy || await getGuildNicknamePolicy({ bypassCache: true });
+  let members = input.members || await fetchDiscordGuildMembers(0);
+  let completeSnapshot = input.completeSnapshot ?? !input.members;
+  const roleId = policy.nicknameNewcomerRoleId || "";
+
+  if (!policy.nicknameNewcomerGateEnabled || !roleId || !hasFirebaseProfileConfig()) {
+    return {
+      skipped: true,
+      initialized: false,
+      roleId: roleId || null,
+      members,
+      eligibleUserIds: null,
+      waitingRole: 0,
+      qualified: 0,
+      invalidAdded: 0,
+      newlyQualified: 0,
+    };
+  }
+
+  const nowMs = Date.now();
+  const nowIso = new Date(nowMs).toISOString();
+  const automationState = await getNicknameWarningAutomationState({ fresh: true });
+  const roleChanged = automationState.newcomerGateRoleId !== roleId || !automationState.newcomerGateInitializedAt;
+  if (roleChanged && !completeSnapshot) {
+    members = await fetchDiscordGuildMembers(0);
+    completeSnapshot = true;
+  }
+  const existing = roleChanged ? new Map<string, NewcomerGateRecord>() : await loadNewcomerGateRecords(roleId);
+
+  if (roleChanged) {
+    const baselineRecords = members.map((member): NewcomerGateRecord => ({
+      userId: member.userId,
+      displayName: member.displayName,
+      joinedAt: member.joinedAt || null,
+      roleId,
+      baseline: true,
+      hasRole: member.roleIds.includes(roleId),
+      gateStatus: "baseline",
+      validationStatus: null,
+      firstSeenAt: nowIso,
+      lastSeenAt: nowIso,
+      qualifiedAt: null,
+    }));
+    await writeNewcomerGateRecords(baselineRecords, { cleanupMissing: true });
+    await patchAutomationState({
+      newcomerGateRoleId: roleId,
+      newcomerGateInitializedAt: nowIso,
+      newcomerLastScanAt: nowIso,
+      newcomerWaitingRole: 0,
+      newcomerQualified: 0,
+      newcomerInvalidAdded: 0,
+    });
+    return {
+      skipped: false,
+      initialized: true,
+      roleId,
+      members,
+      eligibleUserIds: new Set(members.map((member) => member.userId)),
+      waitingRole: 0,
+      qualified: 0,
+      invalidAdded: 0,
+      newlyQualified: 0,
+    };
+  }
+
+  const eligibleUserIds = new Set<string>();
+  const nextRecords: NewcomerGateRecord[] = [];
+  const qualifiedMembers: DiscordGuildMemberModerationItem[] = [];
+
+  for (const member of members) {
+    const previous = existing.get(member.userId);
+    const hasRole = member.roleIds.includes(roleId);
+
+    if (!previous) {
+      if (hasRole) {
+        qualifiedMembers.push(member);
+        eligibleUserIds.add(member.userId);
+        nextRecords.push({
+          userId: member.userId,
+          displayName: member.displayName,
+          joinedAt: member.joinedAt || null,
+          roleId,
+          baseline: false,
+          hasRole: true,
+          gateStatus: "qualified",
+          validationStatus: invalidMember(member, policy.template) ? "invalid" : "valid",
+          firstSeenAt: nowIso,
+          lastSeenAt: nowIso,
+          qualifiedAt: nowIso,
+        });
+      } else {
+        nextRecords.push({
+          userId: member.userId,
+          displayName: member.displayName,
+          joinedAt: member.joinedAt || null,
+          roleId,
+          baseline: false,
+          hasRole: false,
+          gateStatus: "waiting_role",
+          validationStatus: null,
+          firstSeenAt: nowIso,
+          lastSeenAt: nowIso,
+          qualifiedAt: null,
+        });
+      }
+      continue;
+    }
+
+    if (previous.baseline) {
+      eligibleUserIds.add(member.userId);
+      nextRecords.push({ ...previous, displayName: member.displayName, joinedAt: member.joinedAt || previous.joinedAt, hasRole, lastSeenAt: nowIso });
+      continue;
+    }
+
+    if (previous.gateStatus === "qualified") {
+      eligibleUserIds.add(member.userId);
+      nextRecords.push({ ...previous, displayName: member.displayName, joinedAt: member.joinedAt || previous.joinedAt, hasRole, lastSeenAt: nowIso });
+      continue;
+    }
+
+    if (hasRole && !previous.hasRole) {
+      const validationStatus: NicknameCheckStatus = invalidMember(member, policy.template) ? "invalid" : "valid";
+      qualifiedMembers.push(member);
+      eligibleUserIds.add(member.userId);
+      nextRecords.push({
+        ...previous,
+        displayName: member.displayName,
+        joinedAt: member.joinedAt || previous.joinedAt,
+        hasRole: true,
+        gateStatus: "qualified",
+        validationStatus,
+        lastSeenAt: nowIso,
+        qualifiedAt: nowIso,
+      });
+      continue;
+    }
+
+    nextRecords.push({ ...previous, displayName: member.displayName, joinedAt: member.joinedAt || previous.joinedAt, hasRole, lastSeenAt: nowIso });
+  }
+
+  if (qualifiedMembers.length) {
+    await writeMemberCheckRecords(qualifiedMembers.map((member) => buildMemberCheckRecord(member, policy, nowMs, {
+      invalidDueNow: true,
+      eligibilitySource: "newcomer_role",
+      gateRoleId: roleId,
+      newcomerQualifiedAt: nowIso,
+    })));
+  }
+  await writeNewcomerGateRecords(nextRecords, { cleanupMissing: completeSnapshot });
+
+  const waitingRole = nextRecords.filter((record) => !record.baseline && record.gateStatus === "waiting_role").length;
+  const qualified = nextRecords.filter((record) => !record.baseline && record.gateStatus === "qualified").length;
+  const invalidAdded = qualifiedMembers.filter((member) => invalidMember(member, policy.template)).length;
+  await patchAutomationState({
+    newcomerGateRoleId: roleId,
+    newcomerLastScanAt: nowIso,
+    newcomerWaitingRole: waitingRole,
+    newcomerQualified: qualified,
+    newcomerInvalidAdded: invalidAdded,
+  });
+
+  if (qualifiedMembers.length) {
+    logDashboardEvent("info", "discord.nickname_newcomer_gate.qualified", undefined, {
+      roleId,
+      qualified: qualifiedMembers.length,
+      invalidAdded,
+      waitingRole,
+      users: qualifiedMembers.slice(0, 50).map((member) => ({
+        userId: member.userId,
+        displayName: member.displayName,
+        valid: !invalidMember(member, policy.template),
+      })),
+    }, { category: "action" });
+  }
+
+  return {
+    skipped: false,
+    initialized: false,
+    roleId,
+    members,
+    eligibleUserIds,
+    waitingRole,
+    qualified,
+    invalidAdded,
+    newlyQualified: qualifiedMembers.length,
+  };
+}
+
+
+export async function processNewcomerNicknameRoleGrant(input: {
+  userId: string;
+  grantedRoleIds: string[];
+}) {
+  const policy = await getGuildNicknamePolicy({ bypassCache: true });
+  const roleId = policy.nicknameNewcomerRoleId || "";
+  const grantedRoleIds = Array.from(new Set((input.grantedRoleIds || []).map((value) => String(value || "").trim()).filter(Boolean)));
+  if (!policy.nicknameNewcomerGateEnabled || !roleId || !grantedRoleIds.includes(roleId) || !/^\d{16,25}$/.test(String(input.userId || ""))) {
+    return { skipped: true as const, reason: "role_not_matched" as const };
+  }
+
+  // Ensure the gate has a baseline before turning this explicit role grant into
+  // a newcomer qualification event. This prevents all pre-existing members
+  // from being misclassified as newcomers on the next cron tick.
+  await syncNicknameNewcomerRoleGate({ policy });
+
+  const member = await fetchDiscordGuildMemberSnapshot(input.userId);
+  if (missingMemberSnapshot(member)) return { skipped: true as const, reason: "member_missing" as const };
+
+  const nowMs = Date.now();
+  const nowIso = new Date(nowMs).toISOString();
+  const invalid = invalidMember(member, policy.template);
+  await writeMemberCheckRecords([
+    buildMemberCheckRecord(member, policy, nowMs, {
+      invalidDueNow: true,
+      eligibilitySource: "newcomer_role",
+      gateRoleId: roleId,
+      newcomerQualifiedAt: nowIso,
+    }),
+  ]);
+
+  const previous = (await loadNewcomerGateRecords(roleId)).get(member.userId);
+  await writeNewcomerGateRecords([{
+    userId: member.userId,
+    displayName: member.displayName,
+    joinedAt: member.joinedAt || previous?.joinedAt || null,
+    roleId,
+    baseline: false,
+    hasRole: true,
+    gateStatus: "qualified",
+    validationStatus: invalid ? "invalid" : "valid",
+    firstSeenAt: previous?.firstSeenAt || nowIso,
+    lastSeenAt: nowIso,
+    qualifiedAt: nowIso,
+  }]);
+
+  logDashboardEvent("info", "discord.nickname_newcomer_gate.role_grant", undefined, {
+    userId: member.userId,
+    displayName: member.displayName,
+    roleId,
+    nickname: memberNickname(member) || null,
+    status: invalid ? "invalid" : "valid",
+    queuedInvalid: invalid,
+  }, { category: "action" });
+
+  return {
+    skipped: false as const,
+    userId: member.userId,
+    roleId,
+    status: invalid ? "invalid" as const : "valid" as const,
+    queuedInvalid: invalid,
+  };
 }
 
 async function persistFullNicknameCheckSnapshot(
@@ -711,12 +1117,21 @@ async function deliverNicknameWarning(
   return { userId: member.userId, name: member.displayName, status: "sent" as const, delivery: "channel" as const, nickname };
 }
 
-export async function inspectNicknameWarnings(limitInput: unknown = 0) {
+export async function inspectNicknameWarnings(
+  limitInput: unknown = 0,
+  options: { members?: DiscordGuildMemberModerationItem[]; newcomerGate?: NewcomerNicknameGateSyncResult } = {},
+) {
   const policy = await getGuildNicknamePolicy({ bypassCache: true });
   const raw = Number(limitInput);
   const fullScan = !Number.isFinite(raw) || raw <= 0;
   const limit = Number.isFinite(raw) && raw > 0 ? Math.min(50_000, Math.floor(raw)) : 50_000;
-  const members = await fetchDiscordGuildMembers(limit);
+  const allMembers = options.members || await fetchDiscordGuildMembers(limit);
+  const newcomerGate = policy.nicknameNewcomerGateEnabled
+    ? options.newcomerGate || await syncNicknameNewcomerRoleGate({ policy, members: allMembers, completeSnapshot: fullScan })
+    : null;
+  const members = newcomerGate?.eligibleUserIds
+    ? allMembers.filter((member) => newcomerGate.eligibleUserIds!.has(member.userId))
+    : allMembers;
   const checkedAtMs = Date.now();
   const invalid = members.filter((member) => invalidMember(member, policy.template));
   if (fullScan) await persistFullNicknameCheckSnapshot(members, policy, checkedAtMs);
@@ -724,6 +1139,9 @@ export async function inspectNicknameWarnings(limitInput: unknown = 0) {
   return {
     template: policy.template,
     checked: members.length,
+    discovered: allMembers.length,
+    skippedPendingNewcomers: Math.max(0, allMembers.length - members.length),
+    newcomerGateRoleId: newcomerGate?.roleId || null,
     fullScan,
     validTotal: members.length - invalid.length,
     invalidTotal: invalid.length,
@@ -740,12 +1158,14 @@ export async function inspectNicknameWarnings(limitInput: unknown = 0) {
 
 export async function processFullNicknameSweep(input: {
   source?: NicknameWarningSource;
+  members?: DiscordGuildMemberModerationItem[];
+  newcomerGate?: NewcomerNicknameGateSyncResult;
 } = {}) {
   const source = input.source || "automatic";
   const startedAt = new Date().toISOString();
-  const inspection = await inspectNicknameWarnings(0);
+  const inspection = await inspectNicknameWarnings(0, { members: input.members, newcomerGate: input.newcomerGate });
   const completedAt = new Date().toISOString();
-  const summary = `Повний sweep: перевірено ${inspection.checked}; коректних ${inspection.validTotal}; некоректних ${inspection.invalidTotal}; без серверного ніку ${inspection.missingNicknameTotal}. Чергу перебудовано без масової розсилки; некоректні підуть у priority-перевірку кожні ${inspection.invalidRecheckHours} год.`;
+  const summary = `Повний sweep: перевірено ${inspection.checked}; коректних ${inspection.validTotal}; некоректних ${inspection.invalidTotal}; без серверного ніку ${inspection.missingNicknameTotal}; очікують trigger-роль ${inspection.skippedPendingNewcomers}. Чергу перебудовано без масової розсилки; некоректні підуть у priority-перевірку кожні ${inspection.invalidRecheckHours} год.`;
   const run: NicknameWarningRun = {
     id: `${Date.now()}:${source}:full-sweep`,
     source,
@@ -815,8 +1235,14 @@ export async function sendNicknameWarnings(input: {
   const guildName = guild?.name || "Mistblossom Vanguard";
   const rawLimit = Number(input.limit);
   const requestedLimit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(50_000, Math.floor(rawLimit)) : 50_000;
-  const members = await fetchDiscordGuildMembers(requestedLimit);
+  const discoveredMembers = await fetchDiscordGuildMembers(requestedLimit);
   const fullScan = !Number.isFinite(rawLimit) || rawLimit <= 0;
+  const newcomerGate = policy.nicknameNewcomerGateEnabled
+    ? await syncNicknameNewcomerRoleGate({ policy, members: discoveredMembers, completeSnapshot: fullScan })
+    : null;
+  const members = newcomerGate?.eligibleUserIds
+    ? discoveredMembers.filter((member) => newcomerGate.eligibleUserIds!.has(member.userId))
+    : discoveredMembers;
   const scanStartedAtMs = Date.now();
   const invalid = members.filter((member) => invalidMember(member, policy.template));
   if (fullScan) await persistFullNicknameCheckSnapshot(members, policy, scanStartedAtMs);
@@ -895,7 +1321,8 @@ export async function sendNicknameWarnings(input: {
   }
   if (missing.length) await deleteMemberCheckRecords(missing.map((result) => result.value.userId));
   const queueAfter = await loadDueInvalidNicknameTargets(1);
-  const summary = `Перевірено ${members.length}; некоректних ${invalid.length}; попереджено ${sent.length} (DM ${dm.length}, канал ${channel.length}); cooldown ${cooldownSkipped}; відкладено лімітом ${deferredByBatch}; виправили до відправки ${corrected.length}; вийшли із сервера ${missing.length}; помилок ${failed.length}.`;
+  const skippedPendingNewcomers = Math.max(0, discoveredMembers.length - members.length);
+  const summary = `Перевірено ${members.length}; очікують trigger-роль ${skippedPendingNewcomers}; некоректних ${invalid.length}; попереджено ${sent.length} (DM ${dm.length}, канал ${channel.length}); cooldown ${cooldownSkipped}; відкладено лімітом ${deferredByBatch}; виправили до відправки ${corrected.length}; вийшли із сервера ${missing.length}; помилок ${failed.length}.`;
   const status: NicknameWarningRunStatus = failed.length ? "warning" : "success";
   const completedAt = new Date().toISOString();
   const run: NicknameWarningRun = {

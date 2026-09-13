@@ -16,8 +16,6 @@
    1. ПОВЕРХНІ: панель і картка
    ========================================================= */
 .panel,
-.card,
-.detail-box,
 [class$="-card"]:not(:where([class*="nav"])),
 [class*="-card "]:not(:where([class*="nav"])),
 [class$="__card"],
@@ -35,8 +33,7 @@
   box-shadow: var(--shadow-md);
 }
 
-.panel:not(:where([class*="hero"])),
-.card {
+.panel:not(:where([class*="hero"])) {
   padding: var(--pad-card);
 }
 
@@ -911,7 +908,6 @@ a.dashboard-list-row:hover {
   gap: var(--space-sm);
 }
 
-.stat,
 .guild-hero-stat-card {
   display: grid;
   gap: var(--space-3xs);
@@ -919,19 +915,6 @@ a.dashboard-list-row:hover {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   background: var(--surface-sunken);
-}
-
-.stat > span {
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.stat > strong {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--text-strong);
 }
 
 /* Керування у шапці таблиці */
