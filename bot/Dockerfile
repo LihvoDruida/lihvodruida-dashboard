@@ -11,7 +11,7 @@
 # ні npm ci з реєстру, ні зайвих пакетів: лише вихідний код на runtime-базі.
 # ---------------------------------------------------------------------------
 
-ARG NODE_VERSION=24-bookworm-slim
+ARG NODE_VERSION=24.21.0-bookworm-slim
 FROM node:${NODE_VERSION}
 
 ENV NODE_ENV=production \

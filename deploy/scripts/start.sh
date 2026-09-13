@@ -104,6 +104,18 @@ else
   ok "package-lock використовує переносимі registry URL"
 fi
 
+# Не дозволяємо випадково запакувати реальні ключі/токени у source checkout.
+# Шаблони env і документація не скануються тут, щоб placeholder-и не давали false positive.
+SECRET_SCAN_PATHS=(dashboard/src dashboard/scripts bot/src shared deploy)
+secret_hit="$(grep -RIEln --exclude='*.lock' --exclude='*.map' \
+  '(ghp_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----|[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{20,})' \
+  "${SECRET_SCAN_PATHS[@]}" 2>/dev/null | head -n1 || true)"
+if [ -n "$secret_hit" ]; then
+  problem "схоже на закомічений секрет у $secret_hit; видаліть його з Git і ротуй ключ/токен"
+else
+  ok "очевидних hardcoded токенів/private keys у source не знайдено"
+fi
+
 # Security overlay для Next встановлюється окремо в Dockerfile поверх відтворюваного
 # baseline lock-файла. package.json не можна піднімати до overlay-версії окремим
 # комітом: тоді `npm ci` падає ще до встановлення overlay. Ловимо цей дрейф до build.
@@ -146,7 +158,13 @@ for f in .env dashboard/.env.production bot/.env.production; do
   perms="$(stat -c '%a' "$f")"
   case "$perms" in
     600|400) ;;
-    *) warn "$f має права $perms — виправте: chmod 600 $f" ;;
+    *)
+      if chmod 600 "$f" 2>/dev/null; then
+        ok "$f: права автоматично посилено до 600"
+      else
+        problem "$f має небезпечні права $perms і chmod 600 не вдався"
+      fi
+      ;;
   esac
 done
 
@@ -243,6 +261,17 @@ else
   ok "SESSION_SECRET має достатню довжину"
 fi
 
+ADMIN_TOKEN_VALUE="$(env_get dashboard/.env.production ADMIN_DASHBOARD_TOKEN || true)"
+if [ -n "$ADMIN_TOKEN_VALUE" ]; then
+  if [ "${#ADMIN_TOKEN_VALUE}" -lt 32 ]; then
+    problem "ADMIN_DASHBOARD_TOKEN заданий, але коротший 32 символів; видаліть його або згенеруйте сильний break-glass token"
+  else
+    ok "ADMIN_DASHBOARD_TOKEN має достатню довжину"
+  fi
+else
+  ok "emergency ADMIN_DASHBOARD_TOKEN не налаштований"
+fi
+
 PUBLIC_URL_VALUE="$(env_get .env DASHBOARD_PUBLIC_URL || true)"
 case "$PUBLIC_URL_VALUE" in
   https://*) ok "DASHBOARD_PUBLIC_URL використовує HTTPS" ;;
@@ -262,18 +291,49 @@ case "${LIVE_SYNC_VALUE,,}" in
   *) ok "live-перевірка Discord-доступу не вимкнена" ;;
 esac
 
-CF_MODE_VALUE="$(env_get dashboard/.env.production SECURITY_REQUIRE_CLOUDFLARE || true)"
+# Compose бере ці значення з кореневого .env (із fail-closed defaults), тому
+# перевіряємо саме ефективні production overrides, а не застарілу копію у dashboard/.env.production.
+CF_MODE_VALUE="$(env_get .env SECURITY_REQUIRE_CLOUDFLARE || true)"
+CF_MODE_VALUE="${CF_MODE_VALUE:-strict}"
 case "${CF_MODE_VALUE,,}" in
   strict) ok "Cloudflare origin policy: strict" ;;
-  *) warn "SECURITY_REQUIRE_CLOUDFLARE не strict. Після перевірки, що DNS proxy увімкнений і origin не використовується напряму, рекомендовано strict." ;;
+  *) problem "SECURITY_REQUIRE_CLOUDFLARE=$CF_MODE_VALUE; production має бути strict, інакше origin можна атакувати в обхід Cloudflare" ;;
 esac
+
+STRICT_ORIGIN_VALUE="$(env_get .env SECURITY_STRICT_ORIGIN_CHECKS || true)"
+STRICT_ORIGIN_VALUE="${STRICT_ORIGIN_VALUE:-true}"
+case "${STRICT_ORIGIN_VALUE,,}" in
+  1|true|yes|on) ok "CSRF Origin/Referer policy: strict" ;;
+  *) problem "SECURITY_STRICT_ORIGIN_CHECKS=$STRICT_ORIGIN_VALUE; production mutation endpoints мають fail-closed перевірку Origin/Referer" ;;
+esac
+
+version_at_least() {
+  local value="$1" minimum="$2"
+  awk -v v="$value" -v m="$minimum" 'BEGIN { split(v,a,"."); split(m,b,"."); for(i=1;i<=3;i++){a[i]+=0;b[i]+=0;if(a[i]>b[i])exit 0;if(a[i]<b[i])exit 1} exit 0 }'
+}
 
 NEXT_SECURITY_VALUE="$(env_get .env NEXT_SECURITY_VERSION || true)"
 NEXT_SECURITY_VALUE="${NEXT_SECURITY_VALUE:-16.3.5}"
-if awk -v v="$NEXT_SECURITY_VALUE" 'BEGIN { split(v,a,"."); if (a[1] > 16 || (a[1] == 16 && (a[2] > 3 || (a[2] == 3 && a[3] >= 3)))) exit 0; exit 1 }'; then
+if version_at_least "$NEXT_SECURITY_VALUE" "16.3.3"; then
   ok "Next.js security overlay: $NEXT_SECURITY_VALUE"
 else
   problem "NEXT_SECURITY_VERSION=$NEXT_SECURITY_VALUE застарілий; потрібно >= 16.3.3"
+fi
+
+REACT_SECURITY_VALUE="$(env_get .env REACT_SECURITY_VERSION || true)"
+REACT_SECURITY_VALUE="${REACT_SECURITY_VALUE:-19.2.8}"
+if version_at_least "$REACT_SECURITY_VALUE" "19.2.8"; then
+  ok "React security overlay: $REACT_SECURITY_VALUE"
+else
+  problem "REACT_SECURITY_VERSION=$REACT_SECURITY_VALUE застарілий; потрібно >= 19.2.8"
+fi
+
+SHARP_SECURITY_VALUE="$(env_get .env SHARP_SECURITY_VERSION || true)"
+SHARP_SECURITY_VALUE="${SHARP_SECURITY_VALUE:-0.35.4}"
+if version_at_least "$SHARP_SECURITY_VALUE" "0.35.4"; then
+  ok "Sharp/libheif security overlay: $SHARP_SECURITY_VALUE"
+else
+  problem "SHARP_SECURITY_VERSION=$SHARP_SECURITY_VALUE застарілий; потрібно >= 0.35.4"
 fi
 
 # --- Типова помилка з хостом бази ------------------------------------------

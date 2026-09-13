@@ -192,7 +192,10 @@ export function isAllowedHost(host: string) {
   if (isLocalHost(normalized)) return process.env.NODE_ENV !== "production";
 
   const allowed = getAllowedDashboardHosts().map((item) => normalizeHost(item));
-  if (allowed.length === 0) return true;
+  // A missing allowlist is a deployment error in production, not permission to
+  // accept arbitrary Host headers. Development keeps the old permissive
+  // behavior so localhost setups remain convenient.
+  if (allowed.length === 0) return process.env.NODE_ENV !== "production";
 
   return allowed.some((allowedHost) => {
     if (!allowedHost) return false;
@@ -418,7 +421,9 @@ function trustedHeaderUrl(value: string | null) {
 }
 
 function strictOriginChecksEnabled() {
-  return envFlag("SECURITY_STRICT_ORIGIN_CHECKS", false);
+  // Production is fail-closed by default. An explicit false/off value remains
+  // available as a short-lived emergency diagnostic escape hatch.
+  return envFlag("SECURITY_STRICT_ORIGIN_CHECKS", process.env.NODE_ENV === "production");
 }
 
 export function verifyTrustedOrigin(request: Request | NextRequest) {
@@ -466,10 +471,9 @@ export function verifyTrustedOrigin(request: Request | NextRequest) {
   // browser cross-site fetch with this header would require a CORS preflight.
   if (dashboardAction) return true;
 
-  // Do not break real same-origin form submits if a proxy/browser strips metadata.
-  // Session cookies are SameSite=Lax, so cross-site POSTs do not carry the admin
-  // session in modern browsers. Enable SECURITY_STRICT_ORIGIN_CHECKS=true only if
-  // your edge stack reliably preserves Origin/Referer/Sec-Fetch-*.
+  // Missing provenance metadata is not accepted in production by default.
+  // SameSite=Lax is useful defense-in-depth, but it must not be the only CSRF
+  // boundary for privileged mutations.
   if (!strictOriginChecksEnabled()) {
     logDashboardEvent("warn", "trusted_origin_metadata_missing_allowed", request, { host });
     return true;

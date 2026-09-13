@@ -13,15 +13,19 @@
 # все дерево node_modules.
 # ---------------------------------------------------------------------------
 
-ARG NODE_VERSION=24-bookworm-slim
+ARG NODE_VERSION=24.21.0-bookworm-slim
 # Pinned security overlay. package-lock stays the reproducible baseline, then
 # the production image replaces only Next.js with the currently approved
 # patched release before build. CI below verifies that the overlay happened.
 ARG NEXT_SECURITY_VERSION=16.3.5
+ARG REACT_SECURITY_VERSION=19.2.8
+ARG SHARP_SECURITY_VERSION=0.35.4
 
 # --- 1. Залежності -----------------------------------------------------------
 FROM node:${NODE_VERSION} AS deps
 ARG NEXT_SECURITY_VERSION
+ARG REACT_SECURITY_VERSION
+ARG SHARP_SECURITY_VERSION
 WORKDIR /repo/dashboard
 
 # Локальний vendor-пакет підміняє node-domexception (див. overrides у
@@ -35,17 +39,25 @@ COPY dashboard/vendor ./vendor
 # sharp качає нативний бінарник саме в postinstall.
 RUN --mount=type=cache,target=/root/.npm,sharing=locked \
     npm ci --no-audit --no-fund \
-    && npm install --no-save --package-lock=false --no-audit --no-fund "next@${NEXT_SECURITY_VERSION}" \
-    && node -e "const v=require('next/package.json').version; const e=process.argv[1]; if(v!==e) throw new Error('Next security overlay failed: '+v+' != '+e)" "${NEXT_SECURITY_VERSION}"
+    && npm install --no-save --package-lock=false --no-audit --no-fund \
+      "next@${NEXT_SECURITY_VERSION}" \
+      "react@${REACT_SECURITY_VERSION}" \
+      "react-dom@${REACT_SECURITY_VERSION}" \
+      "sharp@${SHARP_SECURITY_VERSION}" \
+    && node -e "const checks=[['next',process.argv[1]],['react',process.argv[2]],['react-dom',process.argv[2]],['sharp',process.argv[3]]]; for (const [pkg,expected] of checks) { const actual=require(pkg+'/package.json').version; if(actual!==expected) throw new Error(pkg+' security overlay failed: '+actual+' != '+expected); }" "${NEXT_SECURITY_VERSION}" "${REACT_SECURITY_VERSION}" "${SHARP_SECURITY_VERSION}"
 
 # --- 2. Збірка ---------------------------------------------------------------
 FROM node:${NODE_VERSION} AS builder
 ARG NEXT_SECURITY_VERSION
+ARG REACT_SECURITY_VERSION
+ARG SHARP_SECURITY_VERSION
 WORKDIR /repo/dashboard
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 ENV MISTBLOSSOM_EXPECTED_NEXT_VERSION=${NEXT_SECURITY_VERSION}
+ENV MISTBLOSSOM_EXPECTED_REACT_VERSION=${REACT_SECURITY_VERSION}
+ENV MISTBLOSSOM_EXPECTED_SHARP_VERSION=${SHARP_SECURITY_VERSION}
 
 # Build preset for a 2-vCPU / 4-GB VPS.  The heap cap prevents a Next/Turbopack
 # build from pushing the host into heavy swap, which is much slower than a
@@ -70,6 +82,12 @@ COPY deploy/nginx/nginx.conf /repo/deploy/nginx/nginx.conf
 COPY deploy/nginx/dashboard.conf /repo/deploy/nginx/dashboard.conf
 COPY deploy/nginx/proxy-params.inc /repo/deploy/nginx/proxy-params.inc
 COPY deploy/nginx/proxy-params-fast.inc /repo/deploy/nginx/proxy-params-fast.inc
+COPY deploy/scripts/start.sh /repo/deploy/scripts/start.sh
+COPY deploy/scripts/db-backup.sh /repo/deploy/scripts/db-backup.sh
+COPY deploy/scripts/db-restore.sh /repo/deploy/scripts/db-restore.sh
+COPY deploy/scripts/security-audit.sh /repo/deploy/scripts/security-audit.sh
+COPY deploy/scripts/harden-host.sh /repo/deploy/scripts/harden-host.sh
+COPY Makefile /repo/Makefile
 
 # Source-level security/performance audit reads a small set of root deployment
 # manifests. They are explicit builder-only inputs; none is copied to runtime.
@@ -84,6 +102,7 @@ COPY .dockerignore /repo/.dockerignore
 # non-secret source files are therefore explicit build-time inputs of the dashboard.
 # They are used only by TypeScript/CI/Next build and are not copied to runner.
 COPY bot/package.json /repo/bot/package.json
+COPY bot/Dockerfile /repo/bot/Dockerfile
 COPY bot/src/server.mjs /repo/bot/src/server.mjs
 
 # Змінні, які Next вшиває у клієнтський бандл на етапі збірки.

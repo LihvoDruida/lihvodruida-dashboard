@@ -164,13 +164,13 @@ function getCloudflareProxyMode(host: string): CloudflareProxyMode {
     .trim()
     .toLowerCase();
 
-  // Backward compatibility: older deployments used SECURITY_REQUIRE_CLOUDFLARE=true
-  // as a hard gate. In practice reverse-proxy/Cloudflare/domain transitions can temporarily
-  // strip CF headers from legitimate custom-domain requests and lock admins out.
-  // Use SECURITY_REQUIRE_CLOUDFLARE=strict only after the DNS/proxy chain is verified.
+  // Production is fail-closed when the setting is missing. Explicit warn/off is
+  // still possible for a short emergency migration, but compose defaults to strict.
+  if (!raw) return "strict";
   if (["strict", "enforce", "block"].includes(raw)) return "strict";
   if (["1", "true", "yes", "on", "warn", "log"].includes(raw)) return "warn";
-  return "off";
+  if (["0", "false", "no", "off", "disabled"].includes(raw)) return "off";
+  return "strict";
 }
 
 function hasCloudflareSignal(request: NextRequest) {

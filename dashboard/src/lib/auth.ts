@@ -779,7 +779,9 @@ export async function createSessionCookie(
 export async function verifyToken(token: string) {
   const expected = String(process.env.ADMIN_DASHBOARD_TOKEN || "").trim();
   const provided = String(token || "").trim();
-  if (!expected || !provided) return null;
+  // Break-glass credentials are full admin credentials. Refuse weak legacy
+  // values instead of treating a short shared secret as an administrator key.
+  if (!expected || expected.length < 32 || !provided || provided.length < 32) return null;
 
   const [expectedHash, providedHash] = await Promise.all([
     sha256Base64Url(expected),

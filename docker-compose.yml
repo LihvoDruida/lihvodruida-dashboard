@@ -84,6 +84,8 @@ services:
         NEXT_BUILD_CPUS: ${NEXT_BUILD_CPUS:-2}
         NODE_BUILD_MEMORY_MB: ${NODE_BUILD_MEMORY_MB:-2560}
         NEXT_SECURITY_VERSION: ${NEXT_SECURITY_VERSION:-16.3.5}
+        REACT_SECURITY_VERSION: ${REACT_SECURITY_VERSION:-19.2.8}
+        SHARP_SECURITY_VERSION: ${SHARP_SECURITY_VERSION:-0.35.4}
     image: mistblossom/dashboard:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file:
@@ -100,6 +102,10 @@ services:
       # повторно перевіряє підпис interaction, тому він має бути тим самим, що у bot.
       DISCORD_PUBLIC_KEY: ${DISCORD_PUBLIC_KEY:?треба задати DISCORD_PUBLIC_KEY}
       SERVER_DOCKER_STATS_FILE: /runtime/server-stats/docker-system-df.jsonl
+      # Production public traffic must traverse Cloudflare. Root .env can only
+      # override this intentionally for emergency diagnostics.
+      SECURITY_REQUIRE_CLOUDFLARE: ${SECURITY_REQUIRE_CLOUDFLARE:-strict}
+      SECURITY_STRICT_ORIGIN_CHECKS: ${SECURITY_STRICT_ORIGIN_CHECKS:-true}
     depends_on:
       postgres:
         condition: service_healthy
@@ -248,7 +254,7 @@ services:
   # Оновлення сертифіката. Запускається вручну або systemd-таймером:
   #   docker compose run --rm certbot renew
   certbot:
-    image: certbot/certbot:latest
+    image: certbot/certbot:v5.7.0
     profiles: ["certbot"]
     volumes:
       - certbot-webroot:/var/www/certbot

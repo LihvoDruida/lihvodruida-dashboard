@@ -62,17 +62,41 @@ export function isManagedContentPath(path: string) {
   return value.startsWith("_news/") || value.startsWith("_guides/");
 }
 
+const DANGEROUS_RAW_HTML_TAGS = /<\s*\/?\s*(?:script|iframe|object|embed|svg|math|meta|link|style|form|input|button|textarea|select|option|base)\b/i;
+const INLINE_EVENT_HANDLER = /\son[a-z0-9_-]+\s*=/i;
+const DANGEROUS_URI_SCHEME = /(?:javascript|vbscript)\s*:/i;
+const DANGEROUS_DATA_URI = /data\s*:\s*(?:text\/html|application\/xhtml\+xml|image\/svg\+xml)/i;
+
 function assertSafeMarkdown(value: string) {
-  const text = String(value || "").toLowerCase();
-  if (/<\s*script\b/.test(text)) {
-    throw new Error("Markdown не може містити <script>.");
+  const text = String(value || "");
+
+  if (DANGEROUS_RAW_HTML_TAGS.test(text)) {
+    throw new Error("Markdown містить небезпечний HTML-тег.");
   }
-  if (/javascript\s*:/i.test(value)) {
-    throw new Error("Markdown не може містити javascript: посилання.");
+  if (INLINE_EVENT_HANDLER.test(text)) {
+    throw new Error("Markdown не може містити inline JavaScript-обробники подій.");
   }
-  if (/<\s*iframe\b/i.test(value)) {
-    throw new Error("Markdown не може містити iframe.");
+  if (DANGEROUS_URI_SCHEME.test(text) || DANGEROUS_DATA_URI.test(text)) {
+    throw new Error("Markdown містить небезпечне посилання або data URI.");
   }
+}
+
+function imageSignatureMatches(buffer: Buffer, mimeType: string) {
+  if (mimeType === "image/jpeg") {
+    return buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+  }
+  if (mimeType === "image/png") {
+    return buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  }
+  if (mimeType === "image/gif") {
+    if (buffer.length < 6) return false;
+    const signature = buffer.subarray(0, 6).toString("ascii");
+    return signature === "GIF87a" || signature === "GIF89a";
+  }
+  if (mimeType === "image/webp") {
+    return buffer.length >= 12 && buffer.subarray(0, 4).toString("ascii") === "RIFF" && buffer.subarray(8, 12).toString("ascii") === "WEBP";
+  }
+  return false;
 }
 
 export function slugify(value: string) {
@@ -207,6 +231,10 @@ async function saveImage(slug: string, file: File | null | undefined, message: s
   if (file.size > MAX_IMAGE_SIZE) throw new Error("Картинка завелика. Максимум 8 MB.");
 
   const buffer = Buffer.from(await file.arrayBuffer());
+  if (!imageSignatureMatches(buffer, file.type)) {
+    throw new Error("Файл не відповідає заявленому формату зображення.");
+  }
+
   const imagePath = `assets/img-content/${slug}.${ext}`;
   await putRepoFile(imagePath, buffer, message);
   return `/${imagePath}`;
