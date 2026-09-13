@@ -80,6 +80,16 @@ ok(!proxy.includes('response.headers.set("X-Nonce"') && !proxy.includes("respons
 ok(proxy.includes('frame-src \'none\'') && proxy.includes('child-src \'none\''), 'CSP must explicitly deny frames/child browsing contexts');
 ok(proxy.includes('x-mistblossom-trusted-proxy'), 'Cloudflare enforcement must use the server-created trusted-proxy marker');
 
+ok(
+  proxy.includes('pathname === "/api/dashboard/discord/nicknames/automation"') &&
+    proxy.includes('!isAllowedHost(host) && !isInternalServiceRequest'),
+  'nickname automation must accept dashboard:3000 only through the bearer-authenticated internal-host path',
+);
+ok(
+  security.includes('verifyInternalBearerToken') && compose.includes('INTERNAL_CRON_TOKEN: ${INTERNAL_API_TOKEN'),
+  'internal schedulers must share the canonical INTERNAL_API_TOKEN and verify it in route handlers',
+);
+
 ok(security.includes('RATE_LIMIT_MAX_BUCKETS') && security.includes('pruneRateLimitBuckets'), 'in-memory rate limiter must be bounded and pruned');
 ok(security.includes('Bearer [redacted]') && security.includes('postgres(?:ql)?'), 'structured logs must redact bearer/database credentials in free-form messages');
 ok(security.includes('x-real-ip') && security.includes('isTrustedCloudflareRequest'), 'client IP must prefer proxy-pinned X-Real-IP and trust CF IP only with marker');

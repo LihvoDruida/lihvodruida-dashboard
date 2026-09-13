@@ -121,6 +121,7 @@ if (exists('src/proxy.ts')) {
     '/api/polls/close-due',
     '/api/dashboard/logs/maintenance',
     '/api/dashboard/logs/ingest',
+    '/api/dashboard/discord/nicknames/automation',
     '/api/guild/sync',
   ];
   for (const routePath of requiredInternalBearerPaths) {
@@ -276,6 +277,7 @@ if (exists('src/proxy.ts')) {
   assert(proxyText.includes('pathname === "/api/internal/health"'), 'Internal health route must be allowed through bearer-only internal host handling.');
   assert(proxyText.includes('pathname === "/api/discord/interactions"'), 'Bot-forwarded Discord interactions must be allowed on the internal dashboard host.');
   assert(proxyText.includes('pathname === "/api/guild/sync"'), 'Guild auto-sync must be allowed through bearer-only internal host handling.');
+  assert(proxyText.includes('pathname === "/api/dashboard/discord/nicknames/automation"'), 'Nickname scheduler must be allowed through bearer-only internal host handling.');
   assert(proxyText.includes('DASHBOARD_INTERNAL_HOSTS || "dashboard,dashboard:3000"'), 'Internal Docker host dashboard:3000 must stay allowlisted only for bearer-authenticated internal APIs.');
 }
 if (exists('src/lib/structuredLogs.ts')) {

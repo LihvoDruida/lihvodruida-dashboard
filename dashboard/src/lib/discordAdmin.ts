@@ -280,6 +280,7 @@ type DiscordEmbedInput = Record<string, unknown>;
 type DiscordRequestInit = Omit<RequestInit, "headers"> & {
   headers?: HeadersInit;
   auditReason?: string;
+  expectedStatuses?: number[];
 };
 
 function getBotToken() {
@@ -389,17 +390,23 @@ export async function discordApi<T = any>(path: string, init: DiscordRequestInit
   const token = getBotToken();
   if (!token) throw new Error("Discord bot token не налаштований. Дії з ролями, ніками та учасниками не можуть виконуватись напряму через Discord API.");
 
-  const method = String(init.method || "GET").toUpperCase();
+  const { auditReason: auditReasonInput, expectedStatuses = [], headers: inputHeaders, ...requestInit } = init;
+  const method = String(requestInit.method || "GET").toUpperCase();
   const isMutation = method !== "GET" && method !== "HEAD";
-  const headers = new Headers(init.headers || {});
+  const headers = new Headers(inputHeaders || {});
   headers.set("Authorization", `Bot ${token}`);
 
-  if (init.body && !headers.has("Content-Type")) {
+  if (requestInit.body && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json; charset=utf-8");
   }
 
-  const auditReason = encodeAuditReason(init.auditReason);
+  const auditReason = encodeAuditReason(auditReasonInput);
   if (auditReason) headers.set("X-Audit-Log-Reason", auditReason);
+  const expectedStatusSet = new Set(
+    expectedStatuses
+      .map((status) => Number(status))
+      .filter((status) => Number.isInteger(status) && status >= 400 && status <= 599),
+  );
 
   const routeKey = discordRouteKey(path, method);
   const maxAttempts = method === "DELETE" ? 7 : isMutation ? 5 : 4;
@@ -412,7 +419,7 @@ export async function discordApi<T = any>(path: string, init: DiscordRequestInit
 
     try {
       const response = await fetch(`${DISCORD_API_BASE}${path}`, {
-        ...init,
+        ...requestInit,
         headers,
         cache: "no-store",
         signal: controller.signal,
@@ -447,15 +454,26 @@ export async function discordApi<T = any>(path: string, init: DiscordRequestInit
 
       if (!response.ok) {
         const detail = typeof json?.message === "string" ? json.message : raw;
-        logDashboardEvent("warn", "discord.api.request_failed", undefined, {
-          method,
-          path: sanitizeDiscordApiPath(path),
-          status: response.status,
-          attempt: attempt + 1,
-          detail: String(detail || "невідома помилка").slice(0, 220),
-        });
+        const safeDetail = String(detail || "невідома помилка").slice(0, 220);
+        if (expectedStatusSet.has(response.status)) {
+          logDashboardEvent("debug", "discord.api.expected_response", undefined, {
+            method,
+            path: sanitizeDiscordApiPath(path),
+            status: response.status,
+            attempt: attempt + 1,
+            detail: safeDetail,
+          });
+        } else {
+          logDashboardEvent("warn", "discord.api.request_failed", undefined, {
+            method,
+            path: sanitizeDiscordApiPath(path),
+            status: response.status,
+            attempt: attempt + 1,
+            detail: safeDetail,
+          });
+        }
         const rateHint = response.status === 429 ? " Після кількох повторів Discord усе ще обмежує запити." : "";
-        throw new Error(`Discord API ${response.status}: ${String(detail || "невідома помилка").slice(0, 220)}${rateHint}`);
+        throw new Error(`Discord API ${response.status}: ${safeDetail}${rateHint}`);
       }
 
       if (isMutation && shouldLogDiscordSuccess()) {
@@ -1436,7 +1454,7 @@ export async function fetchDiscordGuildMemberSnapshot(userIdInput: string, guild
   const userId = cleanSnowflake(userIdInput);
   if (!guildId || !userId) throw new Error("Не вистачає guild/user ID для читання Discord-імені.");
 
-  const member = await discordApi<any>(`/guilds/${guildId}/members/${userId}`);
+  const member = await discordApi<any>(`/guilds/${guildId}/members/${userId}`, { expectedStatuses: [404] });
   const user = member?.user && typeof member.user === "object" ? member.user : {};
   const nick = cleanText(member?.nick, 32) || null;
   const globalName = cleanText(user.global_name, 32) || null;
@@ -1471,7 +1489,7 @@ export async function fetchDiscordGuildBanSnapshot(userIdInput: string, guildIdI
 
   let ban: any;
   try {
-    ban = await discordApi<any>(`/guilds/${guildId}/bans/${userId}`);
+    ban = await discordApi<any>(`/guilds/${guildId}/bans/${userId}`, { expectedStatuses: [404] });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error || "");
     if (/404|unknown ban|10026/i.test(message)) return null;

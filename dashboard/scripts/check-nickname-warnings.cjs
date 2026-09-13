@@ -25,6 +25,7 @@ const enhancer = read('src/components/DashboardFormEnhancer.tsx');
 const cron = read('deploy/cron/run-cron.sh', repo);
 const css = read('src/app/styles/admin.css');
 const management = read('src/lib/discordMemberManagement.ts');
+const proxy = read('src/proxy.ts');
 const legacyCleanup = read('scripts/cleanup-legacy.cjs');
 
 assert(!exists('src/app/api/dashboard/discord/nicknames/cleanup/route.ts'), 'legacy role-changing nickname cleanup route must be removed');
@@ -47,6 +48,7 @@ assert(automation.includes('verifyInternalBearerToken') && automation.includes('
 assert(automation.includes('discord.nickname_warning.auto_completed') && automation.includes('discord.nickname_warning.auto_failed'), 'automatic runs must be logged');
 assert(inspect.includes('inspectNicknameWarnings'), 'preview must use the same nickname rules as delivery');
 assert(cron.includes('/api/dashboard/discord/nicknames/automation'), 'VPS cron must tick nickname warning automation');
+assert(proxy.includes('pathname === "/api/dashboard/discord/nicknames/automation"'), 'nickname automation must be allowed through the bearer-authenticated Docker host gate');
 assert(enhancer.includes('/api/dashboard/discord/nicknames/notify') && !enhancer.includes('/api/dashboard/discord/nicknames/cleanup'), 'live form overlay must describe warnings, not role changes');
 assert(css.includes('.nickname-warning-settings') && css.includes('.nickname-warning-flow'), 'warning settings and flow need dedicated responsive styles');
 

@@ -60,6 +60,7 @@ function isInternalBearerApiPath(pathname: string) {
     pathname === "/api/dashboard/profiles/orphan-cleanup" ||
     pathname === "/api/dashboard/profiles/orphan-cleanup/apply" ||
     pathname === "/api/dashboard/logs/maintenance" ||
+    pathname === "/api/dashboard/discord/nicknames/automation" ||
     pathname === "/api/guild/sync" ||
     pathname === "/api/raids/lifecycle" ||
     pathname === "/api/polls/close-due" ||

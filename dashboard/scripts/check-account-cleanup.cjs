@@ -23,6 +23,7 @@ const manualRoute = read('src/app/api/dashboard/discord/profiles/cleanup/route.t
 const page = read('src/app/dashboard/discord/page.tsx');
 const styles = read('src/app/styles/admin.css');
 const cron = read('deploy/cron/run-cron.sh', repo);
+const discord = read('src/lib/discordAdmin.ts');
 
 assert(scheduler.includes('verifyInternalBearerToken'), 'Scheduler must require an internal bearer token.');
 assert(scheduler.includes('getAccountCleanupAutomationSettings'), 'Scheduler must read persisted cleanup settings.');
@@ -46,4 +47,7 @@ assert(styles.includes('.account-cleanup-status-grid'), 'Cleanup automation UI m
 assert(cron.includes('[ $((minute % 15)) -eq 0 ] && call "/api/dashboard/profiles/orphan-cleanup"'), 'Cron must tick the cleanup scheduler every 15 minutes.');
 assert(!cron.includes('/api/dashboard/profiles/orphan-cleanup/apply"'), 'Cron must not bypass persisted cleanup settings with the legacy apply endpoint.');
 
+assert(discord.includes('expectedStatuses?: number[]'), 'Discord wrapper must support explicitly expected HTTP statuses');
+assert(discord.includes('members/${userId}`, { expectedStatuses: [404] }') && discord.includes('bans/${userId}`, { expectedStatuses: [404] }'), 'member/ban existence checks must classify Discord 404 as expected instead of warning');
+assert(discord.includes('discord.api.expected_response') && discord.includes('logDashboardEvent("debug"'), 'expected Discord responses must be debug telemetry, not warning noise');
 if (!process.exitCode) console.log(`[check-account-cleanup] OK — ${checked}/${checked} automation, safety, logging and UI invariants checked.`);
