@@ -80,6 +80,50 @@ function publicRosterMember(member: GuildRosterMember) {
   };
 }
 
+
+function publicRaidSeasonSnapshot(snapshot: any) {
+  if (!snapshot || typeof snapshot !== "object") return null;
+  const seasons = Array.isArray(snapshot.seasons) ? snapshot.seasons : [];
+  const catalog = snapshot.catalog && typeof snapshot.catalog === "object" ? snapshot.catalog : {};
+  return {
+    detected_at: snapshot.detectedAt || null,
+    source: snapshot.source || null,
+    region: snapshot.region || "eu",
+    current_expansion_id: snapshot.currentExpansionId ?? null,
+    current_expansion: snapshot.currentExpansion || null,
+    current_season_id: snapshot.currentSeasonId || null,
+    current_season_slug: snapshot.currentSeasonSlug || null,
+    battle_net_expansion_id: snapshot.battleNetExpansionId ?? null,
+    battle_net_expansion: snapshot.battleNetExpansion || null,
+    battle_net_raid_names: Array.isArray(snapshot.battleNetRaidNames) ? snapshot.battleNetRaidNames : [],
+    seasons: seasons.map((season: any) => ({
+      id: season.id,
+      slug: season.slug,
+      name: season.name,
+      label: season.label,
+      short_name: season.shortName,
+      expansion: season.expansion,
+      expansion_id: season.expansionId,
+      starts_at: season.startsAt,
+      ends_at: season.endsAt,
+      current: Boolean(season.current),
+      raids: Array.isArray(season.raids) ? season.raids : [],
+    })),
+    catalog: Object.fromEntries(Object.entries(catalog).map(([slug, raw]: [string, any]) => [slug, {
+      slug,
+      name: raw?.name || slug,
+      short_name: raw?.shortName || null,
+      expansion: raw?.expansion || null,
+      expansion_id: raw?.expansionId ?? null,
+      bosses: Number(raw?.bosses || 0),
+      starts_at: raw?.startsAt || null,
+      ends_at: raw?.endsAt || null,
+      active_now: Boolean(raw?.activeNow),
+      current_season: Boolean(raw?.currentSeason),
+    }])),
+  };
+}
+
 function publicRaid(raid: RaidItem) {
   const counts = raidRosterCounts(raid);
   return {
@@ -154,6 +198,7 @@ export async function buildPublicGuildSnapshot() {
     },
     raid_progression: progression,
     raid_rankings: rankings,
+    raid_seasons: publicRaidSeasonSnapshot(roster.stats.raidSeasonSnapshot),
     members: roster.members.map(publicRosterMember),
     scheduled_raids: scheduledRaids,
   };

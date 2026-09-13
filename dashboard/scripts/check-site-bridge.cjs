@@ -15,6 +15,7 @@ const guildRoute = read('dashboard/src/app/api/site/guild/route.ts');
 const bridge = read('dashboard/src/lib/publicSiteBridge.ts');
 const applications = read('dashboard/src/lib/github.ts');
 const roster = read('dashboard/src/lib/guildRoster.ts');
+const raidSeasonResolver = read('dashboard/src/lib/raidSeasonResolver.ts');
 const compose = read('docker-compose.yml');
 const envExample = read('.env.example');
 const page = read('dashboard/src/app/applications/page.tsx');
@@ -25,6 +26,7 @@ const discordSettingsRoute = read('dashboard/src/app/api/dashboard/discord/setti
 const discordPage = read('dashboard/src/app/dashboard/discord/page.tsx');
 const applicationActions = read('dashboard/src/components/ApplicationStatusActions.tsx');
 const applicationDeleteRoute = read('dashboard/src/app/api/applications/[number]/route.ts');
+const guildSyncRoute = read('dashboard/src/app/api/guild/sync/route.ts');
 
 check(proxy.includes('function isPublicSiteBridgePath'), 'proxy must explicitly identify public Main Site bridge routes');
 check(proxy.includes('pathname === "/api/site/applications"') && proxy.includes('pathname === "/api/site/guild"'), 'both Main Site bridge routes must be public at proxy level');
@@ -52,6 +54,16 @@ check(roster.includes('raid_progression:current-expansion:previous-expansion'), 
 check(roster.includes('raid_rankings:current-expansion:previous-expansion'), 'server roster sync must collect guild raid rankings');
 check(roster.includes('raidProgression: normalizeRaidProgression'), 'guild raid progression must be persisted in roster stats');
 check(roster.includes('raidRankings: normalizeRaidRankings'), 'guild raid rankings must be persisted in roster stats');
+check(roster.includes('resolveRaidSeasonSnapshot') && roster.includes('raidSeasonSnapshot'), 'roster sync must persist the automatic raid season snapshot');
+check(bridge.includes('raid_seasons: publicRaidSeasonSnapshot'), 'public guild bridge must expose normalized raid season metadata');
+check(raidSeasonResolver.includes('/data/wow/journal-expansion/index'), 'season resolver must discover the current expansion from Battle.net journal data');
+check(raidSeasonResolver.includes('/data/wow/journal-expansion/${Number(latest.id)}'), 'season resolver must read Battle.net expansion raid metadata');
+check(raidSeasonResolver.includes('mythic-plus') && raidSeasonResolver.includes('static-data'), 'season resolver must use Raider.IO mythic-plus static seasons');
+check(raidSeasonResolver.includes('fetchRaiderStatic("raiding"'), 'season resolver must use Raider.IO raiding static data');
+check(raidSeasonResolver.includes('is_main_season') && raidSeasonResolver.includes('starts') && raidSeasonResolver.includes('ends'), 'season relevance must be derived from main-season time windows rather than a manual season id');
+check(raidSeasonResolver.includes('activeNow: isInside'), 'raid relevance must be derived automatically from Raider.IO raid time windows');
+check(raidSeasonResolver.includes('source: "cached"'), 'automatic season resolver must preserve the last good snapshot when upstream APIs temporarily fail');
+check(guildSyncRoute.includes('missingRaidSeasonSnapshot') && guildSyncRoute.includes('raidSeasonSnapshot?.detectedAt'), 'cron must seed season metadata immediately after deployment instead of waiting for the normal roster refresh TTL');
 check(compose.includes('PUBLIC_SITE_ORIGINS:'), 'dashboard container must receive the public-site origin allowlist');
 check(envExample.includes('PUBLIC_SITE_ORIGINS='), 'public-site origin allowlist must be documented in env example');
 check(page.includes('Main Site ↔ VPS'), 'applications UI must expose bridge health/source context');

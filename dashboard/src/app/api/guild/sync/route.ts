@@ -72,7 +72,14 @@ async function runAutomaticSync() {
     intEnv("GUILD_ROSTER_FULL_REFRESH_SECONDS", 21_600, 900, 604_800) * 1000;
   const stored = await loadStoredGuildRosterData({ bypassCache: true }).catch(() => null);
   const rosterUpdatedAt = stored?.stats?.rosterUpdatedAt || stored?.stats?.updatedAt || null;
-  const forceRoster = !stored?.members?.length || ageMs(rosterUpdatedAt) >= rosterRefreshMs;
+  // A release that introduces or loses season metadata must seed it immediately instead
+  // of waiting up to the normal six-hour full-roster interval. After the first
+  // successful snapshot, the regular refresh cadence applies again.
+  const missingRaidSeasonSnapshot = !stored?.stats?.raidSeasonSnapshot?.detectedAt;
+  const forceRoster =
+    !stored?.members?.length ||
+    missingRaidSeasonSnapshot ||
+    ageMs(rosterUpdatedAt) >= rosterRefreshMs;
 
   let result: Awaited<ReturnType<typeof refreshGuildRosterApiBatch>> | null = null;
   let steps = 0;

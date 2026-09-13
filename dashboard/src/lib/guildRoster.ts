@@ -31,6 +31,10 @@ import {
   hasFirebaseProfileConfig,
 } from "@/lib/firebaseAdmin";
 import {
+  resolveRaidSeasonSnapshot,
+  type RaidSeasonSnapshot,
+} from "@/lib/raidSeasonResolver";
+import {
   listCharacterProfileLinksForKeys,
   type CharacterProfileLink,
 } from "@/lib/profiles";
@@ -119,6 +123,7 @@ export type GuildRosterStats = {
   averageItemLevel: number;
   raidProgression: GuildRaidProgress[];
   raidRankings: GuildRaidRanking[];
+  raidSeasonSnapshot: RaidSeasonSnapshot | null;
 };
 
 export type GuildRosterLoadResult = {
@@ -1245,6 +1250,7 @@ function buildMemberFromSources(input: {
 function buildStats(input: {
   guildSummary: any;
   raiderGuild: any;
+  raidSeasonSnapshot?: RaidSeasonSnapshot | null;
   members: GuildRosterMember[];
   updatedAt: string;
   configuredGuildName: string;
@@ -1278,6 +1284,7 @@ function buildStats(input: {
     averageItemLevel: average(members.map((member) => member.itemLevel)),
     raidProgression: normalizeRaidProgression(input.raiderGuild?.raid_progression),
     raidRankings: normalizeRaidRankings(input.raiderGuild?.raid_rankings),
+    raidSeasonSnapshot: input.raidSeasonSnapshot || null,
   };
 }
 
@@ -1393,11 +1400,17 @@ async function fetchLiveGuildRoster(
     "/roster",
     options.settings,
   );
-  const [summaryResponse, raiderGuild] = await Promise.all([
+  const [summaryResponse, raiderGuild, raidSeasonSnapshot] = await Promise.all([
     fetchBattleNetGuildDataWithFallback(config, "", options.settings).catch(
       () => null,
     ),
     fetchRaiderGuild(config.region, rosterResponse.realmSlug, config.guildName, options.settings),
+    resolveRaidSeasonSnapshot({
+      region: config.region,
+      previous: options.previous?.stats?.raidSeasonSnapshot || null,
+      timeoutMs: options.settings?.raiderIoRequestTimeoutMs || options.settings?.battleNetRequestTimeoutMs || 10_000,
+      retries: Math.max(options.settings?.raiderIoRequestRetries || 0, options.settings?.battleNetRequestRetries || 0),
+    }).catch(() => options.previous?.stats?.raidSeasonSnapshot || null),
   ]);
   const roster = rosterResponse.data;
   const guildSummary = summaryResponse?.data || roster?.guild || null;
@@ -1455,6 +1468,7 @@ async function fetchLiveGuildRoster(
   const stats = buildStats({
     guildSummary: guildSummary || guildBlock,
     raiderGuild,
+    raidSeasonSnapshot,
     members,
     updatedAt,
     configuredGuildName: config.guildName,
@@ -1485,6 +1499,7 @@ function fallbackStats(): GuildRosterStats {
     averageItemLevel: 0,
     raidProgression: [],
     raidRankings: [],
+    raidSeasonSnapshot: null,
   };
 }
 
@@ -1547,6 +1562,7 @@ function guildRosterFingerprint(result: Pick<GuildRosterLoadResult, "members" | 
         averageItemLevel: Math.round((result.stats.averageItemLevel || 0) * 10) / 10,
         raidProgression: result.stats.raidProgression || [],
         raidRankings: result.stats.raidRankings || [],
+        raidSeasonSnapshot: result.stats.raidSeasonSnapshot || null,
       },
       members: sortMembers(result.members).map(stableRosterMemberFingerprint),
     }))
