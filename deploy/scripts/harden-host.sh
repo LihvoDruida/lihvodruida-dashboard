@@ -32,8 +32,16 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y ufw fail2ban unattended-upgrades
 
+# OpenSSH uses the first obtained value for many global options. Ubuntu cloud
+# images commonly ship 50-cloud-init.conf with PasswordAuthentication yes, so a
+# 99-* drop-in can be too late. Use 00-* and verify the effective config before
+# reloading. Keep a backup of an older Mistblossom drop-in for rollback only.
 install -d -m 755 /etc/ssh/sshd_config.d
-cat >/etc/ssh/sshd_config.d/99-mistblossom-hardening.conf <<CFG
+if [ -f /etc/ssh/sshd_config.d/99-mistblossom-hardening.conf ]; then
+  mv -f /etc/ssh/sshd_config.d/99-mistblossom-hardening.conf \
+    /etc/ssh/sshd_config.d/99-mistblossom-hardening.conf.disabled
+fi
+cat >/etc/ssh/sshd_config.d/00-mistblossom-hardening.conf <<CFG
 PermitRootLogin no
 PasswordAuthentication no
 KbdInteractiveAuthentication no
@@ -43,12 +51,37 @@ MaxAuthTries 4
 LoginGraceTime 30
 AllowUsers $target_user
 CFG
+chmod 600 /etc/ssh/sshd_config.d/00-mistblossom-hardening.conf
+
 sshd -t
+ssh_effective="$(sshd -T)"
+for expected in \
+  'permitrootlogin no' \
+  'passwordauthentication no' \
+  'kbdinteractiveauthentication no' \
+  'pubkeyauthentication yes'; do
+  if ! grep -Fqi "$expected" <<<"$ssh_effective"; then
+    echo "Refusing to reload sshd: effective config does not contain '$expected'." >&2
+    echo 'Conflicting active SSH directives:' >&2
+    grep -RniE '^[[:space:]]*(PermitRootLogin|PasswordAuthentication|KbdInteractiveAuthentication|ChallengeResponseAuthentication|PubkeyAuthentication|Include)[[:space:]]+' \
+      /etc/ssh/sshd_config /etc/ssh/sshd_config.d 2>/dev/null >&2 || true
+    exit 1
+  fi
+done
 systemctl reload ssh || systemctl reload sshd
 
 ufw default deny incoming
 ufw default allow outgoing
 ufw limit OpenSSH
+
+# Remove only generic public web allows that bypass Cloudflare. Source-specific
+# Cloudflare rules are not matched by these generic delete specifications.
+for spec in '80/tcp' '443/tcp' '80' '443'; do
+  ufw --force delete allow "$spec" >/dev/null 2>&1 || true
+done
+for profile in 'Nginx Full' 'Nginx HTTP' 'Nginx HTTPS'; do
+  ufw --force delete allow "$profile" >/dev/null 2>&1 || true
+done
 
 # The site is intentionally Cloudflare-only. Reuse the exact CIDRs from the
 # nginx geo trust block so the host firewall and application edge cannot drift.
@@ -63,6 +96,16 @@ for cidr in "${cloudflare_ranges[@]}"; do
   ufw allow proto tcp from "$cidr" to any port 443 comment 'Cloudflare HTTPS'
 done
 ufw --force enable
+
+# Verify there is no remaining generic public HTTP/HTTPS rule. Check the common
+# explicit-port forms and UFW's Nginx application profiles.
+ufw_text="$(ufw status)"
+if grep -Eq '^(80|443)(/tcp)?[[:space:]]+ALLOW[[:space:]]+(IN[[:space:]]+)?Anywhere' <<<"$ufw_text" \
+  || grep -Eq '^Nginx (Full|HTTP|HTTPS)[[:space:]]+ALLOW[[:space:]]+(IN[[:space:]]+)?Anywhere' <<<"$ufw_text"; then
+  echo 'Refusing to report success: a generic public HTTP/HTTPS UFW rule still exists.' >&2
+  ufw status numbered >&2 || true
+  exit 1
+fi
 
 cat >/etc/fail2ban/jail.d/mistblossom-sshd.local <<'CFG'
 [sshd]
@@ -83,4 +126,4 @@ APT::Periodic::Unattended-Upgrade "1";
 CFG
 systemctl enable --now unattended-upgrades.service 2>/dev/null || true
 
-echo 'Host hardening applied. KEEP THIS SSH SESSION OPEN and test a fresh key-only login now.'
+echo 'Host hardening applied and verified. KEEP THIS SSH SESSION OPEN and test a fresh key-only login now.'
