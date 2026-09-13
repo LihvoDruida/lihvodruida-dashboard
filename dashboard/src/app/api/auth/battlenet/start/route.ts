@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { appBaseUrl } from "@/lib/apiRoute";
 import { cookies } from "next/headers";
 import { getSession, useSecureAuthCookies } from "@/lib/auth";
 import { randomState } from "@/lib/oauth";
@@ -35,7 +36,7 @@ function redirectWithNoStore(target: string) {
 export async function GET(request: NextRequest) {
   const session = await getSession();
   if (!session)
-    return redirectWithNoStore(new URL("/login", request.url).toString());
+    return redirectWithNoStore(new URL("/login", appBaseUrl(request)).toString());
 
   logDashboardEvent("info", "auth.battlenet.start", request, {
     profileId: session.profileId,

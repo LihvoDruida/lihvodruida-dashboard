@@ -23,10 +23,22 @@ function connectionString() {
 }
 
 function poolSize() {
-  const raw = Number(process.env.DATABASE_POOL_SIZE || 10);
-  return Number.isFinite(raw) && raw > 0 ? Math.min(50, Math.floor(raw)) : 10;
+  const raw = Number(process.env.DATABASE_POOL_SIZE || 8);
+  return Number.isFinite(raw) && raw > 0 ? Math.min(50, Math.floor(raw)) : 8;
 }
 
+
+function boundedMs(name: string, fallback: number, min: number, max: number) {
+  const raw = Number(process.env[name] || fallback);
+  return Number.isFinite(raw) ? Math.max(min, Math.min(max, Math.floor(raw))) : fallback;
+}
+
+function databaseSessionOptions() {
+  const statementTimeout = boundedMs("DATABASE_STATEMENT_TIMEOUT_MS", 20_000, 2_000, 120_000);
+  const lockTimeout = boundedMs("DATABASE_LOCK_TIMEOUT_MS", 5_000, 500, 30_000);
+  const idleTxTimeout = boundedMs("DATABASE_IDLE_TX_TIMEOUT_MS", 30_000, 5_000, 120_000);
+  return `-c statement_timeout=${statementTimeout} -c lock_timeout=${lockTimeout} -c idle_in_transaction_session_timeout=${idleTxTimeout}`;
+}
 /**
  * TLS вмикається лише коли це справді потрібно. Для локального Postgres на
  * тому ж хості (найчастіший випадок self-hosting) сертифіката немає, і
@@ -50,7 +62,10 @@ export function getPgPool(): Pool {
       connectionString: connectionString(),
       max: poolSize(),
       idleTimeoutMillis: 30_000,
-      connectionTimeoutMillis: 10_000,
+      connectionTimeoutMillis: 8_000,
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 10_000,
+      options: databaseSessionOptions(),
       ssl: sslOptions(),
     });
 

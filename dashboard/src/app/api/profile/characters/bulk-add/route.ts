@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { appBaseUrl } from "@/lib/apiRoute";
 import { getSession } from "@/lib/auth";
 import { addProfileCharacters, getProfileBattleNetCandidates, removeProfileBattleNetCandidates } from "@/lib/profiles";
 import { characterAddStatusFromError } from "@/lib/profileCharacterStatus";
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
   if (tooLarge) return tooLarge;
 
   const session = await getSession();
-  if (!session?.profileId) return NextResponse.redirect(new URL("/login", request.url), 303);
+  if (!session?.profileId) return NextResponse.redirect(new URL("/login", appBaseUrl(request)), 303);
 
   const ip = getClientIp(request);
   const limit = checkRateLimit(`profile-character-bulk-add:${session.profileId}:${ip}`, 20, 10 * 60 * 1000);

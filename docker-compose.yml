@@ -22,7 +22,7 @@ services:
   # панель внутрішньою мережею. Якщо потрібен доступ ззовні для psql —
   # робіть це через SSH-тунель, а не публікацією порту.
   postgres:
-    image: postgres:17-alpine
+    image: postgres:17.11-alpine
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-mistblossom}
@@ -76,12 +76,14 @@ services:
       # усі COPY на shared/ і dashboard/* не знаходять шляхів.
       context: .
       dockerfile: dashboard/Dockerfile
+      pull: true
       args:
         NEXT_PUBLIC_DASHBOARD_URL: ${DASHBOARD_PUBLIC_URL:?треба задати DASHBOARD_PUBLIC_URL}
         # Preset for the production VPS (2 vCPU / 4 GB RAM). Can be overridden
         # from `.env` without editing the Dockerfile.
         NEXT_BUILD_CPUS: ${NEXT_BUILD_CPUS:-2}
         NODE_BUILD_MEMORY_MB: ${NODE_BUILD_MEMORY_MB:-2560}
+        NEXT_SECURITY_VERSION: ${NEXT_SECURITY_VERSION:-16.3.5}
     image: mistblossom/dashboard:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file:
@@ -116,6 +118,9 @@ services:
       - /tmp
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 256
     logging:
       driver: json-file
       options:
@@ -123,7 +128,7 @@ services:
         max-file: "5"
 
   nginx:
-    image: nginx:1.27-alpine
+    image: nginx:1.30.4-alpine
     restart: unless-stopped
     depends_on:
       dashboard:
@@ -142,6 +147,9 @@ services:
       - letsencrypt:/etc/letsencrypt:ro
     networks:
       - edge
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
     logging:
       driver: json-file
       options:
@@ -155,6 +163,7 @@ services:
     build:
       context: .
       dockerfile: bot/Dockerfile
+      pull: true
     image: mistblossom/bot:${IMAGE_TAG:-latest}
     restart: unless-stopped
     environment:
@@ -185,6 +194,9 @@ services:
       - /tmp
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 128
     # Перевірка локальна: бот має вважатись здоровим навіть коли Discord
     # лежить, інакше їхній збій перезапускав би наш контейнер по колу.
     healthcheck:
@@ -203,7 +215,7 @@ services:
   # звичайний cron у контейнері, який стукає у ті самі HTTP-ендпоїнти
   # внутрішньою мережею з bearer-токеном.
   cron:
-    image: curlimages/curl:8.11.1
+    image: curlimages/curl:8.22.0
     restart: unless-stopped
     depends_on:
       dashboard:
@@ -219,6 +231,14 @@ services:
       - ./deploy/cron/run-cron.sh:/opt/cron/run-cron.sh:ro
     networks:
       - edge
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 64
     logging:
       driver: json-file
       options:

@@ -164,6 +164,10 @@ export type RaidItem = {
   discordDeletedAt?: string | null;
   discordDeleteReason?: "manual" | "auto" | null;
   discordCloseSyncedAt?: string | null;
+  reminderChannelId?: string | null;
+  reminderMessageId?: string | null;
+  reminderSentAt?: string | null;
+  reminderDeletedAt?: string | null;
   signups: RaidSignup[];
   benchPriority?: RaidBenchPrioritySettings | null;
   createdAt?: string | null;
@@ -449,76 +453,48 @@ function raidDateTimeToUtcMs(
   return guess.getTime() - timezoneOffsetMs(guess, timeZone);
 }
 
+export const RAID_REMINDER_BEFORE_START_MINUTES = 15;
+export const RAID_REMINDER_DELETE_AFTER_START_HOURS = 4;
+export const RAID_DISCORD_MESSAGE_RETENTION_HOURS = 24;
+
+// Backwards-compatible parser kept for runtime settings/UI that still expose
+// the old field. Raid lifecycle no longer uses this value for closing signup:
+// signup closes at the configured registration deadline, or at raid start.
 export function raidDiscordDeleteAfterStartHoursFromSettings(value: unknown) {
   const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return 4;
+  if (!Number.isFinite(parsed)) return RAID_DISCORD_MESSAGE_RETENTION_HOURS;
   return Math.max(0, Math.min(168, Math.floor(parsed)));
 }
 
-function raidAutoCloseDelayHoursFromEnv() {
-  return raidDiscordDeleteAfterStartHoursFromSettings(
-    process.env.RAID_DISCORD_DELETE_AFTER_START_HOURS,
-  );
-}
-
-function raidAutoCloseDue(
+function raidMainDiscordDeleteDue(
   raid: Pick<RaidItem, "date" | "time"> | Record<string, unknown>,
-  delayHours = raidAutoCloseDelayHoursFromEnv(),
 ) {
   const startsAt = raidDateTimeToUtcMs(raid);
   if (startsAt === null) return false;
-  const safeDelayHours =
-    raidDiscordDeleteAfterStartHoursFromSettings(delayHours);
-  return Date.now() >= startsAt + safeDelayHours * 60 * 60 * 1000;
+  return Date.now() >= startsAt + RAID_DISCORD_MESSAGE_RETENTION_HOURS * 60 * 60 * 1000;
 }
 
-function raidDiscordDeleteAfterCloseMinutesFromSettings(value: unknown) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return 60;
-  return Math.max(0, Math.min(7 * 24 * 60, Math.floor(parsed)));
-}
-
-function raidDiscordDeleteAfterCloseMinutesFromEnv() {
-  return raidDiscordDeleteAfterCloseMinutesFromSettings(
-    process.env.RAID_DISCORD_DELETE_AFTER_CLOSE_MINUTES,
-  );
-}
-
-function raidClosedAtUtcMs(raid: Pick<RaidItem, "closedAt" | "date" | "time">) {
-  const closedAt = Date.parse(String(raid.closedAt || ""));
-  if (Number.isFinite(closedAt)) return closedAt;
-
-  const startsAt = raidDateTimeToUtcMs(raid);
-  if (startsAt === null) return null;
-  return startsAt + raidAutoCloseDelayHoursFromEnv() * 60 * 60 * 1000;
-}
-
-function raidDiscordDeleteDue(
-  raid:
-    | Pick<RaidItem, "date" | "time" | "status" | "closedAt">
-    | Record<string, unknown>,
-  delayMinutes = raidDiscordDeleteAfterCloseMinutesFromEnv(),
-  delayAfterStartHours = raidAutoCloseDelayHoursFromEnv(),
+function raidReminderSendDue(
+  raid: Pick<RaidItem, "date" | "time" | "status" | "reminderSentAt">,
 ) {
-  if ((raid as Record<string, unknown>).status !== "closed") return false;
-
+  if (raid.status === "draft" || raid.reminderSentAt) return false;
   const startsAt = raidDateTimeToUtcMs(raid);
   if (startsAt === null) return false;
+  const now = Date.now();
+  const reminderAt = startsAt - RAID_REMINDER_BEFORE_START_MINUTES * 60 * 1000;
+  return now >= reminderAt && now < startsAt;
+}
 
-  const closedAt = raidClosedAtUtcMs(
-    raid as Pick<RaidItem, "closedAt" | "date" | "time">,
-  );
-  if (closedAt === null) return false;
-
-  const safeDelayMinutes =
-    raidDiscordDeleteAfterCloseMinutesFromSettings(delayMinutes);
-  const safeDelayAfterStartHours =
-    raidDiscordDeleteAfterStartHoursFromSettings(delayAfterStartHours);
-  const deleteAfterStartAt =
-    startsAt + safeDelayAfterStartHours * 60 * 60 * 1000;
-  const deleteAfterCloseAt = closedAt + safeDelayMinutes * 60 * 1000;
-
-  return Date.now() >= Math.max(deleteAfterStartAt, deleteAfterCloseAt);
+function raidReminderDeleteDue(
+  raid: Pick<
+    RaidItem,
+    "date" | "time" | "reminderMessageId" | "reminderDeletedAt"
+  >,
+) {
+  if (!raid.reminderMessageId || raid.reminderDeletedAt) return false;
+  const startsAt = raidDateTimeToUtcMs(raid);
+  if (startsAt === null) return false;
+  return Date.now() >= startsAt + RAID_REMINDER_DELETE_AFTER_START_HOURS * 60 * 60 * 1000;
 }
 
 function cleanRaidClosedReason(value: unknown): "manual" | "auto" | null {
@@ -529,34 +505,35 @@ function cleanRaidClosedReason(value: unknown): "manual" | "auto" | null {
 }
 
 export function isRaidAutoCloseDue(
-  raid: Pick<RaidItem, "status" | "date" | "time"> | Record<string, unknown>,
-  delayHours = raidAutoCloseDelayHoursFromEnv(),
+  raid:
+    | Pick<
+        RaidItem,
+        "status" | "date" | "time" | "registrationLockEnabled" | "registrationLockMinutesBefore"
+      >
+    | Record<string, unknown>,
 ) {
+  const raw = raid as Record<string, unknown>;
   const status =
-    (raid as Record<string, unknown>).status === "published" ||
-    (raid as Record<string, unknown>).status === "closed"
-      ? String((raid as Record<string, unknown>).status)
+    raw.status === "published" || raw.status === "closed"
+      ? String(raw.status)
       : "draft";
-  return status !== "draft" && raidAutoCloseDue(raid, delayHours);
+  if (status === "draft") return false;
+  const deadline = raidRegistrationLockDeadlineMs(
+    raid as RaidRegistrationLockInput,
+  );
+  return deadline !== null && Date.now() >= deadline;
 }
 
 export function isRaidClosed(
-  raid: Pick<RaidItem, "status" | "date" | "time"> & {
+  raid: Pick<
+    RaidItem,
+    "status" | "date" | "time" | "registrationLockEnabled" | "registrationLockMinutesBefore"
+  > & {
     closedReason?: string | null;
   },
 ) {
-  if (raid.status === "closed") {
-    const reason = cleanRaidClosedReason(raid.closedReason);
-    if (reason === "manual") return true;
-    if (reason === "auto") return raidAutoCloseDue(raid);
-
-    // Legacy compatibility: older records may have `status: "closed"` without
-    // `closedReason`. Keep them closed only after the configured post-start
-    // lifecycle window, not at the raid start moment.
-    return raidDateTimeToUtcMs(raid) === null || raidAutoCloseDue(raid);
-  }
-
-  return raid.status === "published" && raidAutoCloseDue(raid);
+  if (raid.status === "closed") return true;
+  return raid.status === "published" && isRaidAutoCloseDue(raid);
 }
 
 function profileMainLabel(profile?: DashboardProfile | null) {
@@ -1109,6 +1086,16 @@ function normalizeRaid(id: string, data: Record<string, unknown>): RaidItem {
     discordCloseSyncedAt: timestampToIso(
       data.discordCloseSyncedAt || data.discord_close_synced_at,
     ),
+    reminderChannelId:
+      cleanString(data.reminderChannelId || data.reminder_channel_id, 32) || null,
+    reminderMessageId:
+      cleanString(data.reminderMessageId || data.reminder_message_id, 32) || null,
+    reminderSentAt: timestampToIso(
+      data.reminderSentAt || data.reminder_sent_at,
+    ),
+    reminderDeletedAt: timestampToIso(
+      data.reminderDeletedAt || data.reminder_deleted_at,
+    ),
     signups,
     createdAt: timestampToIso(data.createdAt),
     updatedAt: timestampToIso(data.updatedAt),
@@ -1187,11 +1174,12 @@ export function raidRegistrationLockMinutesBefore(
 export function raidRegistrationLockDeadlineMs(
   raid: RaidRegistrationLockInput,
 ) {
-  const minutesBefore = raidRegistrationLockMinutesBefore(raid);
-  if (!minutesBefore) return null;
   const startsAt = raidDateTimeToUtcMs(raid);
   if (startsAt === null) return null;
-  return startsAt - minutesBefore * 60 * 1000;
+  const minutesBefore = raidRegistrationLockMinutesBefore(raid);
+  // Навіть без окремого дедлайну запис ніколи не залишається відкритим
+  // після фактичного часу старту рейду.
+  return startsAt - (minutesBefore || 0) * 60 * 1000;
 }
 
 export function isRaidRegistrationLocked(raid: RaidRegistrationLockInput) {
@@ -1232,18 +1220,26 @@ function raidRegistrationLockAbsoluteLabel(deadlineMs: number) {
 
 export function raidRegistrationLockSummary(raid: RaidRegistrationLockInput) {
   const minutesBefore = raidRegistrationLockMinutesBefore(raid);
+  const deadlineMs = raidRegistrationLockDeadlineMs(raid);
   if (!minutesBefore) {
+    const locked = deadlineMs !== null && Date.now() >= deadlineMs;
+    const startLabel = deadlineMs !== null
+      ? raidRegistrationLockAbsoluteLabel(deadlineMs)
+      : null;
     return {
       enabled: false,
-      locked: false,
+      locked,
       minutesBefore: null,
-      deadlineMs: null,
-      label: "Вимкнено",
-      detail: "Запис автоматично закриється тільки зі стартом рейду.",
+      deadlineMs,
+      label: locked
+        ? `Закрито зі стартом рейду${startLabel ? ` • ${startLabel}` : ""}`
+        : startLabel
+          ? `Відкрито до старту • ${startLabel}`
+          : "Відкрито до старту",
+      detail: "Без окремого дедлайну всі записи й зміни автоматично блокуються в момент старту рейду.",
     };
   }
 
-  const deadlineMs = raidRegistrationLockDeadlineMs(raid);
   const duration = raidRegistrationLockDurationLabel(minutesBefore);
   if (deadlineMs === null) {
     return {
@@ -1272,7 +1268,6 @@ export function raidRegistrationLockSummary(raid: RaidRegistrationLockInput) {
 
 function raidRegistrationLockDiscordValue(raid: RaidRegistrationLockInput) {
   const summary = raidRegistrationLockSummary(raid);
-  if (!summary.enabled) return "Вимкнено";
   if (summary.deadlineMs === null) return `${summary.label}\n${summary.detail}`;
   const timestamp = Math.floor(summary.deadlineMs / 1000);
   return `${summary.locked ? "🔒 Запис заблоковано" : "🔓 Запис відкрито"}\n${summary.detail}\n<t:${timestamp}:f> • <t:${timestamp}:R>`;
@@ -1280,12 +1275,11 @@ function raidRegistrationLockDiscordValue(raid: RaidRegistrationLockInput) {
 
 function raidRegistrationLockBlockMessage(
   raid: RaidRegistrationLockInput & Pick<RaidItem, "title" | "difficulty">,
-  action: RaidSignupStatus,
+  _action: RaidSignupStatus,
 ) {
-  if (action === "skipped") return null;
   const summary = raidRegistrationLockSummary(raid);
   if (!summary.locked) return null;
-  return `🔒 Запис і зміна персонажа для ${raidTitle(raid)} вже заблоковані. ${summary.detail} Дедлайн: ${summary.label}. Якщо потрібна заміна — звернись до РЛ або офіцера.`;
+  return `🔒 Запис на ${raidTitle(raid)} закрито. Усі кнопки та зміни складу заблоковані. ${summary.detail} ${summary.label}. Якщо потрібна ручна зміна — звернись до РЛ або офіцера.`;
 }
 
 function nextRaidSignupNumber(signups: RaidSignup[]) {
@@ -1556,15 +1550,18 @@ function waitMs(ms: number) {
 function scheduleRaidAutoCloseSync(raid: RaidItem, source: string) {
   const needsStatusSync =
     raid.status === "published" && isRaidAutoCloseDue(raid);
+  const needsReminder = Boolean(
+    raid.channelId && !raid.reminderSentAt && raidReminderSendDue(raid),
+  );
+  const canDeleteReminder = raidReminderDeleteDue(raid);
   const canDeleteDiscordMessage = Boolean(
     raid.channelId &&
     raid.messageId &&
-    raid.status === "closed" &&
     !raid.discordDeletedAt &&
-    raidDiscordDeleteDue(raid),
+    raidMainDiscordDeleteDue(raid),
   );
   if (
-    (!needsStatusSync && !canDeleteDiscordMessage) ||
+    (!needsStatusSync && !needsReminder && !canDeleteReminder && !canDeleteDiscordMessage) ||
     raidLifecycleSyncInFlight.has(raid.id)
   )
     return;
@@ -1713,25 +1710,53 @@ type RaidLifecycleSyncResult = {
   raidId: string;
   status: RaidItem["status"];
   autoClosed: boolean;
+  reminderSent: boolean;
+  reminderDeleted: boolean;
   discordDeleted: boolean;
 };
 
+function buildRaidReminderPayload(raid: RaidItem) {
+  const startsAt = raidDateTimeToUtcMs(raid);
+  const unix = startsAt === null ? null : Math.floor(startsAt / 1000);
+  const roster = raidActiveRosterSize(raid);
+  const embed = normalizeDiscordEmbed({
+    title: `⏰ Рейд через ${RAID_REMINDER_BEFORE_START_MINUTES} хвилин`,
+    url: dashboardRaidUrl(raid.id),
+    description: `**${raidTitle(raid)}**\nПідготуйте персонажа, розхідники та зайдіть у голосовий канал завчасно.`,
+    color: DIFFICULTY_COLORS[raid.difficulty],
+    fields: [
+      {
+        name: "🕒 Початок",
+        value: unix ? `<t:${unix}:f> • <t:${unix}:R>` : discordDateTimeLabel(raid),
+        inline: true,
+      },
+      {
+        name: "👥 Записано",
+        value: `${roster}`,
+        inline: true,
+      },
+      {
+        name: "📌 Статус",
+        value: isRaidClosed(raid) ? "🔒 Запис закрито" : "🔓 Запис відкрито",
+        inline: true,
+      },
+    ],
+    footer: {
+      text: `Нагадування автоматично видалиться через ${RAID_REMINDER_DELETE_AFTER_START_HOURS} год після старту рейду.`,
+    },
+    timestamp: new Date().toISOString(),
+  });
+  return {
+    content: "",
+    embed,
+    mentionRoleIds: raid.mentionRoleIds || [],
+  };
+}
+
 async function syncRaidLifecycleAfterRead(
   raid: RaidItem,
-  runtimeSettings?: { raidDiscordDeleteAfterStartHours?: number } | null,
 ): Promise<RaidLifecycleSyncResult> {
-  const settings = runtimeSettings || await getSiteRuntimeSettings().catch(() => ({
-    raidDiscordDeleteAfterStartHours: 4,
-  }));
-  const closeDelayHours = raidDiscordDeleteAfterStartHoursFromSettings(
-    settings?.raidDiscordDeleteAfterStartHours,
-  );
-  const deleteDelayMinutes = raidDiscordDeleteAfterCloseMinutesFromEnv();
-
-  const closedNow = await syncAutoClosedRaid(raid, {
-    syncDiscord: true,
-    closeDelayHours,
-  });
+  const closedNow = await syncAutoClosedRaid(raid, { syncDiscord: true });
 
   const lifecycleRaid: RaidItem = closedNow
     ? {
@@ -1742,29 +1767,29 @@ async function syncRaidLifecycleAfterRead(
       }
     : raid;
 
-  const discordDeleted = await syncRaidDiscordDeletionAfterClose(
-    lifecycleRaid,
-    deleteDelayMinutes,
-    closeDelayHours,
-  );
+  const reminderSent = await syncRaidReminder(lifecycleRaid);
+  const reminderRaid: RaidItem = reminderSent
+    ? { ...lifecycleRaid, reminderSentAt: new Date().toISOString() }
+    : lifecycleRaid;
+  const reminderDeleted = await syncRaidReminderDeletion(reminderRaid);
+  const discordDeleted = await syncRaidDiscordDeletionAfterStart(lifecycleRaid);
 
   return {
     raidId: raid.id,
     status: lifecycleRaid.status,
     autoClosed: closedNow,
+    reminderSent,
+    reminderDeleted,
     discordDeleted,
   };
 }
 
 async function syncAutoClosedRaid(
   raid: RaidItem,
-  options: { syncDiscord?: boolean; closeDelayHours?: number } = {},
+  options: { syncDiscord?: boolean } = {},
 ) {
-  const closeDelayHours = raidDiscordDeleteAfterStartHoursFromSettings(
-    options.closeDelayHours ?? raidAutoCloseDelayHoursFromEnv(),
-  );
   if (
-    !isRaidAutoCloseDue(raid, closeDelayHours) ||
+    !isRaidAutoCloseDue(raid) ||
     raid.closedReason === "manual" ||
     !hasRaidStorage()
   )
@@ -1783,7 +1808,7 @@ async function syncAutoClosedRaid(
         const current = normalizeRaid(snapshot.id, snapshot.data() || {});
         if (current.status === "draft" || current.closedReason === "manual")
           return;
-        if (!isRaidAutoCloseDue(current, closeDelayHours)) return;
+        if (!isRaidAutoCloseDue(current)) return;
         if (current.status === "closed" && current.closedReason === "auto")
           return;
 
@@ -1833,55 +1858,201 @@ async function syncAutoClosedRaid(
   return closed;
 }
 
-async function syncRaidDiscordDeletionAfterClose(
-  raid: RaidItem,
-  configuredDelayMinutes?: number,
-  configuredAfterStartHours?: number,
-) {
+async function syncRaidReminder(raid: RaidItem) {
   if (
     !hasRaidStorage() ||
     !raid.channelId ||
-    !raid.messageId ||
-    raid.status !== "closed" ||
-    raid.discordDeletedAt
+    raid.status === "draft" ||
+    raid.reminderSentAt ||
+    !raidReminderSendDue(raid)
   )
     return false;
 
-  const delayMinutes = raidDiscordDeleteAfterCloseMinutesFromSettings(
-    configuredDelayMinutes ?? 60,
+  let claimed = false;
+  await firebaseWrite(
+    "raid",
+    `raid:${raid.id}:reminder-claim`,
+    async () => {
+      const ref = getFirebaseAdminDb().collection(RAID_COLLECTION).doc(raid.id);
+      await getFirebaseAdminDb().runTransaction(async (transaction: any) => {
+        const snapshot = await transaction.get(ref);
+        if (!snapshot.exists) return;
+        const data = snapshot.data() || {};
+        const current = normalizeRaid(snapshot.id, data);
+        if (current.reminderSentAt || !raidReminderSendDue(current)) return;
+        const claimAt = Date.parse(timestampToIso(data.reminderClaimedAt) || "");
+        if (Number.isFinite(claimAt) && Date.now() - claimAt < 2 * 60_000) return;
+        transaction.set(
+          ref,
+          {
+            reminderClaimedAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
+        claimed = true;
+      });
+    },
+    {
+      timeoutMs: 3_000,
+      logEvent: "raids.reminder_claim_failed",
+      fallback: () => undefined,
+    },
   );
-  const delayAfterStartHours = raidDiscordDeleteAfterStartHoursFromSettings(
-    configuredAfterStartHours ?? raidAutoCloseDelayHoursFromEnv(),
-  );
-  if (!raidDiscordDeleteDue(raid, delayMinutes, delayAfterStartHours)) {
+  if (!claimed) return false;
+
+  const clearClaim = async () => {
+    await firebaseWrite(
+      "raid",
+      `raid:${raid.id}:reminder-clear-claim`,
+      async () => {
+        await getFirebaseAdminDb().collection(RAID_COLLECTION).doc(raid.id).set(
+          { reminderClaimedAt: null, updatedAt: FieldValue.serverTimestamp() },
+          { merge: true },
+        );
+      },
+      { timeoutMs: 2_000, fallback: () => undefined },
+    );
+  };
+
+  const payload = buildRaidReminderPayload(raid);
+  let message: any;
+  try {
+    message = await createDiscordRaidMessage({
+      channelId: raid.channelId,
+      content: payload.content,
+      embed: payload.embed,
+      components: [],
+      mentionRoleIds: payload.mentionRoleIds,
+      auditReason: `Raid 15-minute reminder: ${raid.id}`,
+    });
+  } catch (error) {
+    await clearClaim();
+    console.warn("[raids] Failed to send raid reminder", {
+      raidId: raid.id,
+      message: error instanceof Error ? error.message : String(error),
+    });
     return false;
   }
 
-  let deleted = false;
+  const channelId = cleanString(message?.channel_id || raid.channelId, 32);
+  const messageId = cleanString(message?.id, 32);
+  if (!channelId || !messageId) {
+    await clearClaim();
+    return false;
+  }
+
+  let persisted = false;
+  await firebaseWrite(
+    "raid",
+    `raid:${raid.id}:reminder-sent`,
+    async () => {
+      await getFirebaseAdminDb().collection(RAID_COLLECTION).doc(raid.id).set(
+        {
+          reminderChannelId: channelId,
+          reminderMessageId: messageId,
+          reminderSentAt: FieldValue.serverTimestamp(),
+          reminderDeletedAt: null,
+          reminderClaimedAt: null,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+      persisted = true;
+      clearRaidRuntimeCaches(raid.id);
+    },
+    {
+      timeoutMs: 3_000,
+      logEvent: "raids.reminder_state_write_failed",
+      fallback: () => undefined,
+    },
+  );
+  if (!persisted) {
+    await deleteDiscordRaidMessage({
+      ref: { channelId, messageId },
+      auditReason: `Rollback unpersisted raid reminder: ${raid.id}`,
+    }).catch(() => undefined);
+    await clearClaim();
+    return false;
+  }
+  return true;
+}
+
+async function syncRaidReminderDeletion(raid: RaidItem) {
+  if (
+    !hasRaidStorage() ||
+    !raid.reminderMessageId ||
+    raid.reminderDeletedAt ||
+    !raidReminderDeleteDue(raid)
+  )
+    return false;
+
+  const channelId = cleanString(raid.reminderChannelId || raid.channelId, 32);
+  if (!channelId) return false;
+
   try {
     await deleteDiscordRaidMessage({
-      ref: { channelId: raid.channelId, messageId: raid.messageId },
-      auditReason: `Raid auto-deleted from Discord after start+close buffers: ${raid.id}`,
+      ref: { channelId, messageId: raid.reminderMessageId },
+      auditReason: `Raid reminder auto-delete after start+${RAID_REMINDER_DELETE_AFTER_START_HOURS}h: ${raid.id}`,
     });
-    deleted = true;
   } catch (error) {
-    if (isMissingDiscordMessageError(error)) {
-      deleted = true;
-    } else {
-      console.warn(
-        "[raids] Failed to auto-delete closed Discord raid message",
-        {
-          raidId: raid.id,
-          delayAfterStartHours,
-          delayMinutes,
-          message: error instanceof Error ? error.message : String(error),
-        },
-      );
+    if (!isMissingDiscordMessageError(error)) {
+      console.warn("[raids] Failed to auto-delete raid reminder", {
+        raidId: raid.id,
+        message: error instanceof Error ? error.message : String(error),
+      });
       return false;
     }
   }
 
-  if (!deleted) return false;
+  await firebaseWrite(
+    "raid",
+    `raid:${raid.id}:reminder-delete`,
+    async () => {
+      await getFirebaseAdminDb().collection(RAID_COLLECTION).doc(raid.id).set(
+        {
+          reminderDeletedAt: FieldValue.serverTimestamp(),
+          reminderMessageId: null,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+      clearRaidRuntimeCaches(raid.id);
+    },
+    {
+      timeoutMs: 3_000,
+      logEvent: "raids.reminder_delete_write_failed",
+      fallback: () => undefined,
+    },
+  );
+  return true;
+}
+
+async function syncRaidDiscordDeletionAfterStart(raid: RaidItem) {
+  if (
+    !hasRaidStorage() ||
+    !raid.channelId ||
+    !raid.messageId ||
+    raid.discordDeletedAt ||
+    !raidMainDiscordDeleteDue(raid)
+  )
+    return false;
+
+  try {
+    await deleteDiscordRaidMessage({
+      ref: { channelId: raid.channelId, messageId: raid.messageId },
+      auditReason: `Raid message auto-delete after start+${RAID_DISCORD_MESSAGE_RETENTION_HOURS}h: ${raid.id}`,
+    });
+  } catch (error) {
+    if (!isMissingDiscordMessageError(error)) {
+      console.warn("[raids] Failed to auto-delete raid Discord message", {
+        raidId: raid.id,
+        message: error instanceof Error ? error.message : String(error),
+      });
+      return false;
+    }
+  }
+
   await firebaseWrite(
     "raid",
     `raid:${raid.id}:discord-auto-delete`,
@@ -1907,59 +2078,91 @@ async function syncRaidDiscordDeletionAfterClose(
   return true;
 }
 
-async function listRaidsForLifecycle(limit: number): Promise<RaidItem[]> {
-  if (!hasRaidStorage()) return [];
+type RaidLifecycleScanMode = "window" | "sweep";
+
+function lifecycleDateKey(offsetDays: number) {
+  return new Date(Date.now() + offsetDays * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+}
+
+async function listRaidsForLifecycle(
+  limit: number,
+  options: { fullSweep?: boolean } = {},
+): Promise<{ raids: RaidItem[]; scanMode: RaidLifecycleScanMode }> {
+  if (!hasRaidStorage()) {
+    return { raids: [], scanMode: options.fullSweep ? "sweep" : "window" };
+  }
   const safeLimit = Math.max(
     1,
-    Math.min(50, Math.floor(Number(limit) || 20)),
+    Math.min(100, Math.floor(Number(limit) || 40)),
   );
-  const perStatusLimit = Math.max(1, Math.ceil(safeLimit / 2));
   const db = getFirebaseAdminDb();
   const docsById = new Map<
     string,
     { id: string; data: () => Record<string, unknown> | undefined }
   >();
+  let scanMode: RaidLifecycleScanMode = options.fullSweep ? "sweep" : "window";
 
-  try {
-    const [publishedSnapshot, closedSnapshot] = await Promise.all([
-      db
-        .collection(RAID_COLLECTION)
-        .where("status", "==", "published")
-        .limit(perStatusLimit)
-        .get(),
-      db
-        .collection(RAID_COLLECTION)
-        .where("status", "==", "closed")
-        .limit(perStatusLimit)
-        .get(),
-    ]);
-    for (const doc of [...publishedSnapshot.docs, ...closedSnapshot.docs]) {
-      docsById.set(doc.id, doc);
-    }
-  } catch (error) {
-    console.warn(
-      "[raids] Lifecycle status query failed; falling back to date scan",
-      {
-        message: error instanceof Error ? error.message : String(error),
-      },
-    );
+  if (!options.fullSweep) {
+    // Normal minute ticks use one indexed date-window query instead of two broad
+    // status queries. The ±8-day window covers the maximum 7-day pre-close
+    // setting and gives post-start Discord cleanup several days to retry.
+    const fromDate = lifecycleDateKey(-8);
+    const toDate = lifecycleDateKey(8);
+    const fetchLimit = Math.max(40, Math.min(200, safeLimit * 2));
     try {
       const snapshot = await db
         .collection(RAID_COLLECTION)
+        .where("date", ">=", fromDate)
+        .where("date", "<=", toDate)
         .orderBy("date", "asc")
-        .limit(safeLimit)
+        .limit(fetchLimit)
         .get();
       for (const doc of snapshot.docs) docsById.set(doc.id, doc);
-    } catch {
+    } catch (error) {
+      console.warn(
+        "[raids] Lifecycle date-window query failed; using status sweep",
+        { message: error instanceof Error ? error.message : String(error) },
+      );
+      scanMode = "sweep";
+    }
+  }
+
+  if (options.fullSweep || scanMode === "sweep") {
+    // Hourly sweep catches stale Discord messages after a prolonged outage
+    // without making every minute perform broad published/closed queries.
+    const perStatusLimit = Math.max(25, Math.min(100, safeLimit));
+    try {
+      const [publishedSnapshot, closedSnapshot] = await Promise.all([
+        db
+          .collection(RAID_COLLECTION)
+          .where("status", "==", "published")
+          .limit(perStatusLimit)
+          .get(),
+        db
+          .collection(RAID_COLLECTION)
+          .where("status", "==", "closed")
+          .limit(perStatusLimit)
+          .get(),
+      ]);
+      for (const doc of [...publishedSnapshot.docs, ...closedSnapshot.docs]) {
+        docsById.set(doc.id, doc);
+      }
+    } catch (error) {
+      console.warn(
+        "[raids] Lifecycle status sweep failed; using bounded collection scan",
+        { message: error instanceof Error ? error.message : String(error) },
+      );
       const snapshot = await db
         .collection(RAID_COLLECTION)
-        .limit(safeLimit)
+        .limit(Math.max(50, Math.min(200, safeLimit * 2)))
         .get();
       for (const doc of snapshot.docs) docsById.set(doc.id, doc);
     }
   }
 
-  return Array.from(docsById.values())
+  const raids = Array.from(docsById.values())
     .map((doc) => normalizeRaid(doc.id, doc.data() || {}))
     .filter((raid) => raid.status === "published" || raid.status === "closed")
     .sort(
@@ -1969,35 +2172,42 @@ async function listRaidsForLifecycle(limit: number): Promise<RaidItem[]> {
           Date.parse(b.updatedAt || b.createdAt || ""),
     )
     .slice(0, safeLimit);
+
+  return { raids, scanMode };
 }
 
-function raidLifecycleCandidates(raids: RaidItem[], settings: { raidDiscordDeleteAfterStartHours?: number } | null | undefined) {
-  const closeDelayHours = raidDiscordDeleteAfterStartHoursFromSettings(settings?.raidDiscordDeleteAfterStartHours ?? raidAutoCloseDelayHoursFromEnv());
-  const deleteDelayMinutes = raidDiscordDeleteAfterCloseMinutesFromEnv();
+function raidLifecycleCandidates(raids: RaidItem[]) {
   return raids.filter((raid) => {
-    if (raid.status === "published" && raid.closedReason !== "manual") {
-      return isRaidAutoCloseDue(raid, closeDelayHours);
+    if (raid.status === "draft") return false;
+    if (raid.status === "published" && raid.closedReason !== "manual" && isRaidAutoCloseDue(raid)) {
+      return true;
     }
-    if (raid.status !== "closed" || !raid.channelId || !raid.messageId || raid.discordDeletedAt) {
-      return false;
+    if (raid.channelId && !raid.reminderSentAt && raidReminderSendDue(raid)) {
+      return true;
     }
-    return raidDiscordDeleteDue(raid, deleteDelayMinutes, closeDelayHours);
+    if (raidReminderDeleteDue(raid)) {
+      return true;
+    }
+    if (raid.channelId && raid.messageId && !raid.discordDeletedAt && raidMainDiscordDeleteDue(raid)) {
+      return true;
+    }
+    return false;
   });
 }
 
-export async function syncRaidLifecycleBatch(limit = 100) {
+export async function syncRaidLifecycleBatch(
+  limit = 100,
+  options: { fullSweep?: boolean } = {},
+) {
   const safeLimit = Math.max(
     1,
-    Math.min(50, Math.floor(Number(limit) || 20)),
+    Math.min(100, Math.floor(Number(limit) || 40)),
   );
-  const settings = await getSiteRuntimeSettings().catch(() => ({
-    raidDiscordDeleteAfterStartHours: 4,
-  }));
-  const raids = await listRaidsForLifecycle(safeLimit);
-  const candidates = raidLifecycleCandidates(raids, settings);
+  const { raids, scanMode } = await listRaidsForLifecycle(safeLimit, options);
+  const candidates = raidLifecycleCandidates(raids);
   const mapped = await mapConcurrentSettled(
     candidates,
-    async (raid) => syncRaidLifecycleAfterRead(raid, settings),
+    async (raid) => syncRaidLifecycleAfterRead(raid),
     {
       envKey: "RAID_LIFECYCLE_CONCURRENCY",
       maxEnvKey: "RAID_LIFECYCLE_MAX_CONCURRENCY",
@@ -2009,12 +2219,16 @@ export async function syncRaidLifecycleBatch(limit = 100) {
   );
 
   let autoClosed = 0;
+  let remindersSent = 0;
+  let remindersDeleted = 0;
   let discordDeleted = 0;
   const errors: Array<{ raidId: string; title: string; message: string }> = [];
 
   for (const item of mapped.results) {
     if (item.ok) {
       if (item.value.autoClosed) autoClosed += 1;
+      if (item.value.reminderSent) remindersSent += 1;
+      if (item.value.reminderDeleted) remindersDeleted += 1;
       if (item.value.discordDeleted) discordDeleted += 1;
       continue;
     }
@@ -2031,10 +2245,13 @@ export async function syncRaidLifecycleBatch(limit = 100) {
   }
 
   return {
+    scanMode,
     checked: candidates.length,
     scanned: raids.length,
     total: raids.length,
     autoClosed,
+    remindersSent,
+    remindersDeleted,
     discordDeleted,
     failed: errors.length,
     concurrency: mapped.meta.concurrency,
@@ -2130,6 +2347,22 @@ export async function deleteRaid(raidId: string) {
 
   let discordDeleted = false;
   let discordDeleteFailed = false;
+  if (raid.reminderMessageId) {
+    const reminderChannelId = cleanString(raid.reminderChannelId || raid.channelId, 32);
+    if (reminderChannelId) {
+      await deleteDiscordRaidMessage({
+        ref: { channelId: reminderChannelId, messageId: raid.reminderMessageId },
+        auditReason: `Raid reminder manually deleted with raid: ${raid.id}`,
+      }).catch((error) => {
+        if (!isMissingDiscordMessageError(error)) {
+          console.warn("[raids] Failed to delete reminder during manual raid deletion", {
+            raidId: raid.id,
+            message: error instanceof Error ? error.message : String(error),
+          });
+        }
+      });
+    }
+  }
   if (raid.channelId && raid.messageId) {
     try {
       await deleteDiscordRaidMessage({
@@ -2635,11 +2868,26 @@ export async function saveRaidFromForm(
       const nextStatus = snapshot.exists
         ? existingRaid?.status || "draft"
         : "draft";
+      const reminderScheduleChanged = Boolean(
+        existingRaid &&
+          (existingRaid.date !== payload.date ||
+            existingRaid.time !== payload.time ||
+            cleanSnowflake(existingRaid.channelId) !== cleanSnowflake(payload.channelId)),
+      );
 
       await ref.set(
         {
           ...payload,
           status: nextStatus,
+          ...(reminderScheduleChanged
+            ? {
+                reminderChannelId: null,
+                reminderMessageId: null,
+                reminderSentAt: null,
+                reminderDeletedAt: null,
+                reminderClaimedAt: null,
+              }
+            : {}),
           ...(nextStatus === "closed"
             ? {}
             : { closedAt: null, closedReason: null }),
@@ -2650,6 +2898,27 @@ export async function saveRaidFromForm(
         },
         { merge: true },
       );
+
+      if (
+        reminderScheduleChanged &&
+        existingRaid?.reminderMessageId &&
+        (existingRaid.reminderChannelId || existingRaid.channelId)
+      ) {
+        await deleteDiscordRaidMessage({
+          ref: {
+            channelId: existingRaid.reminderChannelId || existingRaid.channelId || "",
+            messageId: existingRaid.reminderMessageId,
+          },
+          auditReason: `Raid schedule changed; remove stale reminder: ${ref.id}`,
+        }).catch((error) => {
+          if (!isMissingDiscordMessageError(error)) {
+            console.warn("[raids] Failed to remove stale reminder after schedule change", {
+              raidId: ref.id,
+              message: error instanceof Error ? error.message : String(error),
+            });
+          }
+        });
+      }
 
       const saved = await ref.get();
       clearRaidRuntimeCaches(ref.id);
@@ -3408,7 +3677,7 @@ export function buildRaidDiscordPayload(raid: RaidItem) {
       name: "📌 Статус",
       value: closed
         ? [
-            "🔒 Рейд закрито — запис вимкнено",
+            "🔒 Запис закрито",
             raid.closedAt
               ? `Закрито: ${discordTimestampLabel(raid.closedAt)}`
               : null,
@@ -3510,7 +3779,7 @@ export function buildRaidDiscordPayload(raid: RaidItem) {
   const discordAnnouncementImageUrl = cleanUrl(raid.imageUrl);
 
   const embed = normalizeDiscordEmbed({
-    title: closed ? `${raidTitle(raid)} • Закрито` : raidTitle(raid),
+    title: closed ? `${raidTitle(raid)} • Запис закрито` : raidTitle(raid),
     url: dashboardRaidUrl(raid.id),
     description,
     color: DIFFICULTY_COLORS[raid.difficulty],
@@ -3520,7 +3789,7 @@ export function buildRaidDiscordPayload(raid: RaidItem) {
       : undefined,
     footer: {
       text: closed
-        ? "🔒 Рейд закрито. Кнопки Discord вимкнені, нові записи заблоковані."
+        ? "🔒 Запис закрито. Усі Discord-кнопки вимкнені, зміни складу заблоковані."
         : "Склад рейду оновлюється автоматично після кожної заявки.",
     },
     timestamp: new Date().toISOString(),
@@ -3721,7 +3990,7 @@ export function buildRaidAttendanceComponents(
           label: "Пропустити",
           emoji: { name: "↩️" },
           custom_id: buildRaidAttendanceCustomId(raidId, "skipped"),
-          disabled,
+          disabled: activeJoinDisabled,
         },
         {
           type: 2,
@@ -5041,7 +5310,7 @@ export async function handleRaidDiscordAction(params: {
   if (lifecycle?.status === "closed" || isRaidClosed(raid))
     return {
       ok: false,
-      content: "🔒 Рейд уже закритий, запис вимкнено.",
+      content: "🔒 Запис на рейд уже закрито. Усі кнопки та зміни складу вимкнені.",
       components: buildRaidAttendanceComponents(raid.id, { disabled: true }),
     };
   if (raid.status !== "published")
@@ -5293,7 +5562,7 @@ export async function handleRaidSessionAction(params: {
     return { ok: false, content: "❌ Рейд не знайдено або він уже видалений." };
   const lifecycle = await syncRaidLifecycleAfterRead(raid).catch(() => null);
   if (lifecycle?.status === "closed" || isRaidClosed(raid))
-    return { ok: false, content: "🔒 Рейд уже закритий, запис вимкнено." };
+    return { ok: false, content: "🔒 Запис на рейд уже закрито. Усі кнопки та зміни складу вимкнені." };
   if (raid.status !== "published")
     return {
       ok: false,

@@ -209,6 +209,53 @@ else
   ok "INTERNAL_API_TOKEN має достатню довжину"
 fi
 
+ROOT_PUBLIC_KEY="$(env_get .env DISCORD_PUBLIC_KEY || true)"
+if printf '%s' "$ROOT_PUBLIC_KEY" | grep -Eq '^[0-9A-Fa-f]{64}$'; then
+  ok "DISCORD_PUBLIC_KEY має коректний Ed25519 hex-формат"
+else
+  problem "DISCORD_PUBLIC_KEY у .env має бути рівно 64 hex-символи"
+fi
+
+SESSION_SECRET_VALUE="$(env_get dashboard/.env.production SESSION_SECRET || true)"
+if [ "${#SESSION_SECRET_VALUE}" -lt 32 ]; then
+  problem "SESSION_SECRET має бути не коротший 32 символів; згенеруйте: openssl rand -hex 32"
+else
+  ok "SESSION_SECRET має достатню довжину"
+fi
+
+PUBLIC_URL_VALUE="$(env_get .env DASHBOARD_PUBLIC_URL || true)"
+case "$PUBLIC_URL_VALUE" in
+  https://*) ok "DASHBOARD_PUBLIC_URL використовує HTTPS" ;;
+  *) problem "DASHBOARD_PUBLIC_URL у production має починатися з https://" ;;
+esac
+
+POSTGRES_PASSWORD_VALUE="$(env_get .env POSTGRES_PASSWORD || true)"
+if [ "${#POSTGRES_PASSWORD_VALUE}" -lt 16 ]; then
+  warn "POSTGRES_PASSWORD коротший 16 символів. Не міняйте його лише в .env для існуючого тому — спочатку змініть пароль ролі у PostgreSQL."
+else
+  ok "POSTGRES_PASSWORD має достатню довжину"
+fi
+
+LIVE_SYNC_VALUE="$(env_get dashboard/.env.production SESSION_LIVE_ACCESS_SYNC_ENABLED || true)"
+case "${LIVE_SYNC_VALUE,,}" in
+  0|false|off|no) warn "SESSION_LIVE_ACCESS_SYNC_ENABLED вимкнено — відкликані Discord-ролі можуть діяти до завершення сесії" ;;
+  *) ok "live-перевірка Discord-доступу не вимкнена" ;;
+esac
+
+CF_MODE_VALUE="$(env_get dashboard/.env.production SECURITY_REQUIRE_CLOUDFLARE || true)"
+case "${CF_MODE_VALUE,,}" in
+  strict) ok "Cloudflare origin policy: strict" ;;
+  *) warn "SECURITY_REQUIRE_CLOUDFLARE не strict. Після перевірки, що DNS proxy увімкнений і origin не використовується напряму, рекомендовано strict." ;;
+esac
+
+NEXT_SECURITY_VALUE="$(env_get .env NEXT_SECURITY_VERSION || true)"
+NEXT_SECURITY_VALUE="${NEXT_SECURITY_VALUE:-16.3.5}"
+if awk -v v="$NEXT_SECURITY_VALUE" 'BEGIN { split(v,a,"."); if (a[1] > 16 || (a[1] == 16 && (a[2] > 3 || (a[2] == 3 && a[3] >= 3)))) exit 0; exit 1 }'; then
+  ok "Next.js security overlay: $NEXT_SECURITY_VALUE"
+else
+  problem "NEXT_SECURITY_VERSION=$NEXT_SECURITY_VALUE застарілий; потрібно >= 16.3.3"
+fi
+
 # --- Типова помилка з хостом бази ------------------------------------------
 DB_URL="$(env_get dashboard/.env.production DATABASE_URL || true)"
 case "$DB_URL" in

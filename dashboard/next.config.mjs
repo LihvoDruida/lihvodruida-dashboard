@@ -23,6 +23,11 @@ const nextConfig = {
   output: "standalone",
   poweredByHeader: false,
   reactStrictMode: true,
+  // Keep the framework memory cache bounded on the 4-GB VPS. This still
+  // preserves hot route/data entries without letting burst traffic grow it
+  // to the default 50 MB plus application caches.
+  cacheMaxMemorySize: 32 * 1024 * 1024,
+  productionBrowserSourceMaps: false,
   experimental: {
     cpus: Number(process.env.NEXT_BUILD_CPUS || 2),
   },

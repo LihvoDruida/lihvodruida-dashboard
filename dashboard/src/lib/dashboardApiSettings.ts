@@ -67,7 +67,7 @@ const DEFAULT_RAID_LIST_CACHE_TTL_MS = 60_000;
 const DEFAULT_ECO_RAID_LIST_CACHE_TTL_MS = 300_000;
 const DEFAULT_RAID_ITEM_CACHE_TTL_MS = 60_000;
 const DEFAULT_ECO_RAID_ITEM_CACHE_TTL_MS = 180_000;
-const DEFAULT_RAID_DISCORD_DELETE_AFTER_START_HOURS = 4;
+const DEFAULT_RAID_DISCORD_DELETE_AFTER_START_HOURS = 24;
 const DEFAULT_GUILD_ROSTER_RECORDS_CHUNK_SIZE = 64;
 const DEFAULT_GUILD_ROSTER_READ_LEGACY_MEMBER_DOCS = false;
 const DEFAULT_GUILD_ROSTER_WRITE_LEGACY_MEMBER_DOCS = false;
@@ -297,7 +297,9 @@ function envRaidItemCacheTtlMs() {
 }
 
 function envRaidDiscordDeleteAfterStartHours() {
-  return integerEnv("RAID_DISCORD_DELETE_AFTER_START_HOURS", DEFAULT_RAID_DISCORD_DELETE_AFTER_START_HOURS, 0, 168);
+  // Fixed product rule: the primary Discord raid message stays for exactly
+  // 24 hours after raid start. The legacy env knob is intentionally ignored.
+  return DEFAULT_RAID_DISCORD_DELETE_AFTER_START_HOURS;
 }
 
 function envGuildRosterRecordsChunkSize() {
@@ -496,7 +498,7 @@ function normalizeSettings(
     profileCharacterLinksCacheTtlMs: integerValue(data?.profileCharacterLinksCacheTtlMs, fallback.profileCharacterLinksCacheTtlMs, 30_000, 600_000),
     raidListCacheTtlMs: integerValue(data?.raidListCacheTtlMs, fallback.raidListCacheTtlMs, 30_000, 300_000),
     raidItemCacheTtlMs: integerValue(data?.raidItemCacheTtlMs, fallback.raidItemCacheTtlMs, 10_000, 300_000),
-    raidDiscordDeleteAfterStartHours: integerValue(data?.raidDiscordDeleteAfterStartHours, fallback.raidDiscordDeleteAfterStartHours, 0, 168),
+    raidDiscordDeleteAfterStartHours: DEFAULT_RAID_DISCORD_DELETE_AFTER_START_HOURS,
     guildRosterRecordsChunkSize: integerValue(data?.guildRosterRecordsChunkSize, fallback.guildRosterRecordsChunkSize, 25, 120),
     guildRosterReadLegacyMemberDocs: booleanValue(data?.guildRosterReadLegacyMemberDocs, fallback.guildRosterReadLegacyMemberDocs),
     guildRosterWriteLegacyMemberDocs: booleanValue(data?.guildRosterWriteLegacyMemberDocs, fallback.guildRosterWriteLegacyMemberDocs),
@@ -694,7 +696,7 @@ export async function getSiteRuntimeSettings() {
 export function dashboardApiSettingsSummary(settings: DashboardApiSettings) {
   const rosterSync = `Guild roster: ${settings.guildRosterName}-${settings.guildRosterRealm}-${settings.guildRosterRegion}; ${settings.guildRosterMemberLimit} перс.; Battle.net крок ${settings.guildRosterBattleNetStepSize}; Raider.IO крок ${settings.guildRosterRaiderIoStepSize}; cooldown ${settings.raiderIoRateLimitCooldownSeconds}с; кеш ${settings.guildRosterCacheTtlSeconds}с; бюджет ${settings.guildRosterRefreshStepBudgetMs}мс; client ${settings.guildRosterClientDrivenSyncEnabled ? "ON" : "OFF"}`;
   const apiDiagnostics = `API diagnostics: debug ${settings.dashboardApiDebugAuditLogs ? "ON" : "OFF"}, warnings ${settings.dashboardApiWarningAuditLogs ? "ON" : "OFF"}`;
-  return `Оновлення: ${Math.round(settings.backgroundRefreshMinSeconds / 60)} хв; Discord-рейди закриваються через ${settings.raidDiscordDeleteAfterStartHours} год після старту; персонажі: ${Math.round(settings.profileViewRefreshMinSeconds / 60)} хв; batch: ${settings.profileExternalRefreshBatchLimit}; ${apiDiagnostics}; ${rosterSync}; chunks ${settings.guildRosterRecordsChunkSize}; legacy read ${settings.guildRosterReadLegacyMemberDocs ? "ON" : "OFF"}; legacy write ${settings.guildRosterWriteLegacyMemberDocs ? "ON" : "OFF"}.`;
+  return `Оновлення: ${Math.round(settings.backgroundRefreshMinSeconds / 60)} хв; Discord-повідомлення рейду зберігається ${settings.raidDiscordDeleteAfterStartHours} год після старту; персонажі: ${Math.round(settings.profileViewRefreshMinSeconds / 60)} хв; batch: ${settings.profileExternalRefreshBatchLimit}; ${apiDiagnostics}; ${rosterSync}; chunks ${settings.guildRosterRecordsChunkSize}; legacy read ${settings.guildRosterReadLegacyMemberDocs ? "ON" : "OFF"}; legacy write ${settings.guildRosterWriteLegacyMemberDocs ? "ON" : "OFF"}.`;
 }
 
 export function dashboardApiSettingsMinBackgroundRefreshSeconds() {

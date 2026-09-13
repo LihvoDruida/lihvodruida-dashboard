@@ -28,10 +28,12 @@ function lifecycleGuard() {
 
 function lifecycleMinIntervalMs() {
   const eco = envFlag(["FIREBASE_ECO_MODE", "FIRESTORE_ECO_MODE", "DASHBOARD_ECO_MODE"], false);
-  const fallback = eco ? 10 * 60_000 : 5 * 60_000;
+  // Lifecycle runs once per minute so 15-minute reminders and exact
+  // registration deadlines are not delayed by a 5–10 minute polling window.
+  const fallback = eco ? 60_000 : 45_000;
   const value = Number(process.env.RAID_LIFECYCLE_MIN_INTERVAL_MS || process.env.DASHBOARD_RAID_LIFECYCLE_MIN_INTERVAL_MS || fallback);
   if (!Number.isFinite(value)) return fallback;
-  return Math.max(60_000, Math.min(Math.floor(value), 60 * 60_000));
+  return Math.max(30_000, Math.min(Math.floor(value), 60 * 60_000));
 }
 
 function lifecycleDefaultLimit() {
@@ -41,6 +43,11 @@ function lifecycleDefaultLimit() {
 function wantsForceRun(request: NextRequest) {
   const url = new URL(request.url);
   return url.searchParams.get("force") === "1" || request.headers.get("x-force-lifecycle") === "1";
+}
+
+function wantsFullSweep(request: NextRequest) {
+  const url = new URL(request.url);
+  return url.searchParams.get("sweep") === "1" || request.headers.get("x-lifecycle-sweep") === "1";
 }
 
 export async function GET(request: NextRequest) {
@@ -78,7 +85,8 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const limit = integerParam(url.searchParams.get("limit"), lifecycleDefaultLimit(), 1, 50);
     guard.lastStartedAt = now;
-    const promise = syncRaidLifecycleBatch(limit);
+    const fullSweep = wantsFullSweep(request);
+    const promise = syncRaidLifecycleBatch(limit, { fullSweep });
     guard.inFlight = promise;
     const result = await promise;
     guard.lastResult = result as Record<string, unknown>;
@@ -92,4 +100,8 @@ export async function GET(request: NextRequest) {
     const guard = lifecycleGuard();
     guard.inFlight = undefined;
   }
+}
+
+export async function POST(request: NextRequest) {
+  return GET(request);
 }

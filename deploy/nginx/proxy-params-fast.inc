@@ -18,10 +18,18 @@ proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 proxy_set_header X-Forwarded-Proto $scheme;
 proxy_set_header X-Forwarded-Host $host;
 
-# Країна для geo-політики. Cloudflare ставить CF-IPCountry сам; якщо
-# Cloudflare немає, розкоментуй GeoIP2-варіант і підключи модуль.
-proxy_set_header CF-IPCountry $http_cf_ipcountry;
-# proxy_set_header X-GeoIP-Country $geoip2_data_country_code;
+# Never pass browser-provided Cloudflare metadata through unchanged. The map
+# variables are produced from the actual TCP peer in nginx.conf.
+proxy_set_header CF-Connecting-IP $remote_addr;
+proxy_set_header CF-IPCountry $mistblossom_cf_country;
+proxy_set_header CF-Ray $mistblossom_cf_ray;
+proxy_set_header X-Mistblossom-Trusted-Proxy $mistblossom_trusted_proxy;
+proxy_set_header X-Mistblossom-Country $mistblossom_cf_country;
+# Strip common client-spoofable geo headers. If GeoIP2 is enabled later, map
+# its trusted value into X-Mistblossom-Country instead.
+proxy_set_header X-GeoIP-Country "";
+proxy_set_header X-Country-Code "";
+proxy_set_header CloudFront-Viewer-Country "";
 
 proxy_connect_timeout 5s;
 proxy_send_timeout 5s;

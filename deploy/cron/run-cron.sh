@@ -11,7 +11,7 @@
 #
 # Задачі та розклад:
 #   */2  * * * *  /api/guild/sync             — Battle.net + Raider.IO + raid progress у БД
-#   */10 * * * *  /api/raids/lifecycle        — публікація й закриття рейдів
+#   *    * * * *  /api/raids/lifecycle        — дедлайни, 15-хв нагадування, Discord cleanup
 #   */5  * * * *  /api/polls/close-due?force=1 — scheduled-публікація + автозакриття/повтор
 #   */30 * * * *  /api/dashboard/logs/maintenance — retention/budget журналу
 #   */15 * * * *  /api/dashboard/profiles/orphan-cleanup — scheduler перевірки/очищення акаунтів
@@ -57,7 +57,14 @@ while true; do
   # Власний VPS дозволяє тримати склад актуальним без browser-driven sync.
   # Endpoint сам застосовує TTL, короткі батчі та Raider.IO cooldown.
   [ $((minute % 2)) -eq 0 ] && call "/api/guild/sync"
-  [ $((minute % 10)) -eq 0 ] && call "/api/raids/lifecycle"
+  # Швидкий minute tick читає лише вузьке вікно дат. На початку кожної
+  # години робимо bounded full sweep, щоб дочистити повідомлення після
+  # тривалого Discord/мережевого збою, не навантажуючи БД щохвилини.
+  if [ "$minute" -eq 0 ]; then
+    call "/api/raids/lifecycle?sweep=1&limit=100"
+  else
+    call "/api/raids/lifecycle"
+  fi
   [ $((minute % 5)) -eq 0 ] && call "/api/polls/close-due?force=1"
   [ $((minute % 30)) -eq 0 ] && call "/api/dashboard/logs/maintenance"
 

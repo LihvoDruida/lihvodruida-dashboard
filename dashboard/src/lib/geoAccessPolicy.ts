@@ -4,10 +4,10 @@ import { FieldValue } from "@/lib/db/firestoreCompat";
 import { NextRequest, NextResponse } from "next/server";
 import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
 import type { DashboardSession } from "@/lib/auth";
-import { logDashboardEvent, noStoreHeaders, applyNoStoreHeaders } from "@/lib/security";
+import { isTrustedCloudflareRequest, logDashboardEvent, noStoreHeaders, applyNoStoreHeaders } from "@/lib/security";
 import { resilientRead } from "@/lib/runtimeResilience";
 import { firebaseWrite } from "@/lib/firebaseAccess";
-import { envFlag, timestampToIso } from "@/lib/values";
+import { dashboardPublicOrigin, envFlag, timestampToIso } from "@/lib/values";
 
 const SETTINGS_COLLECTION = "dashboardSettings";
 const GEO_ACCESS_DOC_ID = "geoAccessPolicy";
@@ -209,17 +209,30 @@ export async function setGeoAccessPolicy(input: {
 }
 
 export function getRequestCountryCode(request: Request | NextRequest) {
-  // Порядок: Cloudflare (він перед нашим Nginx), далі заголовок, який
-  // ставить сам Nginx із модулем GeoIP2, далі загальновживані варіанти
-  // від інших проксі. Заголовок Vercel прибрано разом із платформою.
-  const headerCountry =
-    request.headers.get("cf-ipcountry") ||
-    request.headers.get("x-geoip-country") ||
-    request.headers.get("x-country-code") ||
-    request.headers.get("cloudfront-viewer-country") ||
-    "";
-  const country = normalizeCountryCode(headerCountry);
+  // Production trusts only a country value that our nginx generated after
+  // verifying the actual Cloudflare edge socket. Raw CF-IPCountry and common
+  // proxy headers are attacker-controlled on a direct-origin request.
+  const canonical = request.headers.get("x-mistblossom-country") || "";
+  let country = normalizeCountryCode(canonical);
   if (country && country !== "XX" && country !== "T1") return country;
+
+  if (isTrustedCloudflareRequest(request)) {
+    country = normalizeCountryCode(request.headers.get("cf-ipcountry") || "");
+    if (country && country !== "XX" && country !== "T1") return country;
+  }
+
+  // Local development may run without nginx/Cloudflare. These fallbacks are
+  // intentionally disabled in production so a browser cannot spoof geo data.
+  if (process.env.NODE_ENV !== "production") {
+    const fallback =
+      request.headers.get("x-geoip-country") ||
+      request.headers.get("x-country-code") ||
+      request.headers.get("cloudfront-viewer-country") ||
+      "";
+    country = normalizeCountryCode(fallback);
+    if (country && country !== "XX" && country !== "T1") return country;
+  }
+
   return "";
 }
 
@@ -279,7 +292,7 @@ export function geoAccessDeniedResponse(request: NextRequest, decision: GeoAcces
     return NextResponse.json({ ok: false, error, message }, { status: 403, headers: noStoreHeaders() });
   }
 
-  const response = NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(error)}`, url.origin), 303);
+  const response = NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(error)}`, dashboardPublicOrigin()), 303);
   applyNoStoreHeaders(response);
   return response;
 }

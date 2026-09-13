@@ -175,7 +175,7 @@ function SignupAvatar({ item }: { item?: RaidSignup | null }) {
 }
 
 function raidStatusLabel(raid: RaidItem) {
-  if (isRaidClosed(raid)) return "Закрито";
+  if (isRaidClosed(raid)) return "Запис закрито";
   return raid.status === "published" ? "Опубліковано" : "Чернетка";
 }
 
@@ -601,11 +601,11 @@ export function RaidAttendanceActions({
     needsLogin ||
     needsDiscordLogin ||
     needsCharacter;
-  const skipDisabled = closed || !canSubmitAnyAction;
+  const skipDisabled = closed || registrationLocked || !canSubmitAnyAction;
   const title = closed
     ? "Запис на цей рейд уже вимкнено."
     : registrationLocked
-      ? "Запис і зміна персонажа вже заблоковані за дедлайном рейду."
+      ? "Запис закрито: усі кнопки й зміни складу заблоковані."
       : needsLogin
         ? "Спочатку увійди через Discord."
         : needsDiscordLogin
@@ -756,7 +756,7 @@ export function RaidAnnouncementPreview({
           </div>
           {closed ? (
             <div className="raid-closed-banner">
-              🔒 Рейд закрито. Запис і Discord-кнопки неактивні.
+              🔒 Запис закрито. Усі кнопки на сайті й у Discord неактивні.
             </div>
           ) : null}
         </div>
@@ -850,7 +850,7 @@ export function RaidAnnouncementPreview({
         >
           🔐 Блокування запису: <strong>{registrationLock.label}</strong>.{" "}
           {registrationLock.locked
-            ? "Запис і зміна персонажа вже недоступні."
+            ? "Запис закрито: усі дії з реєстрацією недоступні."
             : registrationLock.detail}
         </div>
       ) : null}
@@ -1304,7 +1304,7 @@ export function RaidForm({
               />
               <span>
                 <strong>Закривати запис до старту</strong>
-                <small>Залишає “Пропустити” доступним до початку рейду.</small>
+                <small>Після дедлайну всі кнопки запису стають неактивними на сайті й у Discord.</small>
               </span>
             </label>
             <label className="field-label raid-dependent-field">

@@ -14,9 +14,14 @@
 # ---------------------------------------------------------------------------
 
 ARG NODE_VERSION=24-bookworm-slim
+# Pinned security overlay. package-lock stays the reproducible baseline, then
+# the production image replaces only Next.js with the currently approved
+# patched release before build. CI below verifies that the overlay happened.
+ARG NEXT_SECURITY_VERSION=16.3.5
 
 # --- 1. Залежності -----------------------------------------------------------
 FROM node:${NODE_VERSION} AS deps
+ARG NEXT_SECURITY_VERSION
 WORKDIR /repo/dashboard
 
 # Локальний vendor-пакет підміняє node-domexception (див. overrides у
@@ -29,14 +34,18 @@ COPY dashboard/vendor ./vendor
 # npm ci відтворює lock-файл байт у байт. `--ignore-scripts` не ставимо:
 # sharp качає нативний бінарник саме в postinstall.
 RUN --mount=type=cache,target=/root/.npm,sharing=locked \
-    npm ci --no-audit --no-fund
+    npm ci --no-audit --no-fund \
+    && npm install --no-save --package-lock=false --no-audit --no-fund "next@${NEXT_SECURITY_VERSION}" \
+    && node -e "const v=require('next/package.json').version; const e=process.argv[1]; if(v!==e) throw new Error('Next security overlay failed: '+v+' != '+e)" "${NEXT_SECURITY_VERSION}"
 
 # --- 2. Збірка ---------------------------------------------------------------
 FROM node:${NODE_VERSION} AS builder
+ARG NEXT_SECURITY_VERSION
 WORKDIR /repo/dashboard
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV MISTBLOSSOM_EXPECTED_NEXT_VERSION=${NEXT_SECURITY_VERSION}
 
 # Build preset for a 2-vCPU / 4-GB VPS.  The heap cap prevents a Next/Turbopack
 # build from pushing the host into heavy swap, which is much slower than a
@@ -57,6 +66,10 @@ COPY dashboard/ ./
 # until they are explicitly copied. Copy only this non-secret deployment
 # script for build-time validation; it is not copied into the runtime image.
 COPY deploy/cron/run-cron.sh /repo/deploy/cron/run-cron.sh
+COPY deploy/nginx/nginx.conf /repo/deploy/nginx/nginx.conf
+COPY deploy/nginx/dashboard.conf /repo/deploy/nginx/dashboard.conf
+COPY deploy/nginx/proxy-params.inc /repo/deploy/nginx/proxy-params.inc
+COPY deploy/nginx/proxy-params-fast.inc /repo/deploy/nginx/proxy-params-fast.inc
 
 # The shared site footer shows the bot package version, and its CI invariant also
 # checks that the bot health endpoint exposes the same package version. These two
@@ -113,7 +126,11 @@ COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/.next/static ./dashboa
 # імпортуються з застосунку), а без них `docker compose exec dashboard node
 # dashboard/scripts/db-init.mjs` падає з MODULE_NOT_FOUND. Кілька кілобайт,
 # але позбавляє потреби мати чекаут репозиторію поруч із контейнером.
-COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/scripts ./dashboard/scripts
+# Runtime gets only the maintenance entrypoints actually invoked on the VPS;
+# CI/audit/build scripts stay in the builder stage and never reach production.
+COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/scripts/db-init.mjs ./dashboard/scripts/db-init.mjs
+COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/scripts/discord-storage-diagnose.mjs ./dashboard/scripts/discord-storage-diagnose.mjs
+COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/scripts/migrate-firestore-to-postgres.mjs ./dashboard/scripts/migrate-firestore-to-postgres.mjs
 COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/src/lib/db/schema.sql ./dashboard/src/lib/db/schema.sql
 
 USER nextjs

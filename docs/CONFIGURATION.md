@@ -29,6 +29,7 @@
 | `LETSENCRYPT_EMAIL` | так | адреса для сповіщень про закінчення сертифіката |
 | `IMAGE_TAG` | ні | тег образів, типово `latest` |
 | `BOT_LOG_LEVEL` | ні | `info` / `debug` |
+| `NEXT_SECURITY_VERSION` | ні | security-patched Next.js для production Docker build; релізний preset `16.3.5` |
 
 ---
 
@@ -50,7 +51,10 @@
 | Змінна | Обовʼязкова | Призначення |
 |--------|-------------|-------------|
 | `DATABASE_URL` | так | `postgresql://mistblossom:пароль@postgres:5432/mistblossom` |
-| `DATABASE_POOL_SIZE` | ні | розмір пулу, типово 10. Має бути помітно меншим за `max_connections` бази |
+| `DATABASE_POOL_SIZE` | ні | розмір пулу, preset для 4 GB VPS — `8`. Має бути помітно меншим за `max_connections` бази |
+| `DATABASE_STATEMENT_TIMEOUT_MS` | ні | максимум часу одного SQL-запиту, типово `20000` мс |
+| `DATABASE_LOCK_TIMEOUT_MS` | ні | максимум очікування блокування, типово `5000` мс |
+| `DATABASE_IDLE_TX_TIMEOUT_MS` | ні | закриває завислу idle-транзакцію, типово `30000` мс |
 | `DATABASE_SSL` | ні | `require` для віддаленої бази. Для локальної не потрібно |
 
 > **Хост у `DATABASE_URL` — це `postgres`**, імʼя сервісу в docker-мережі.
@@ -76,6 +80,20 @@
 | `INTERNAL_API_TOKEN` | через `.env` | канонічний root token; контейнер `cron` отримує його як `INTERNAL_CRON_TOKEN` |
 | `INTERNAL_PROFILE_LOOKUP_TOKEN` | ні | окремий legacy/інтеграційний token для `/api/profile/discord-lookup`, якщо цей endpoint використовується напряму |
 
+
+### Безпека сесій і edge
+
+| Змінна | Типово | Призначення |
+|--------|--------|-------------|
+| `SESSION_LIVE_ACCESS_SYNC_ENABLED` | `1` у production | регулярно перевіряє актуальні Discord-ролі, щоб відкликана роль не жила до кінця 7-денної cookie |
+| `DISCORD_LIVE_ACCESS_GRACE_SECONDS` | `600` | максимум довіри до останньої успішної Discord-перевірки під час збою API; після цього підвищені ролі деградують до member |
+| `RATE_LIMIT_MAX_BUCKETS` | `20000` | верхня межа in-memory rate-limit ключів; захист від memory growth на flood унікальними ключами |
+| `SECURITY_REQUIRE_CLOUDFLARE` | `warn` | `strict` блокує публічний трафік, що не пройшов через довірений Cloudflare edge; вмикайте після перевірки DNS/origin |
+
+Nginx сам формує `X-Mistblossom-Trusted-Proxy` та `X-Mistblossom-Country` лише
+коли фактичний TCP peer належить Cloudflare. Клієнтські `CF-*`/geo headers напряму
+не є джерелом довіри.
+
 ### Зовнішні API
 
 | Змінна | Обовʼязкова | Призначення |
@@ -94,7 +112,7 @@
 | `PUBLIC_CACHE_TTL_SECONDS` | 120 | кеш публічних даних у памʼяті процесу |
 | `PUBLIC_CACHE_DISABLED` | — | `1` вимикає кеш повністю (для діагностики) |
 | `GUILD_ROSTER_CACHE_TTL_SECONDS` | 1800 | кеш складу гільдії |
-| `RAID_LIFECYCLE_MIN_INTERVAL_MS` | 600000 | мінімальний інтервал між прогонами життєвого циклу рейдів |
+| `RAID_LIFECYCLE_MIN_INTERVAL_MS` | 45000 | мінімальний інтервал між хвилинними прогонами lifecycle рейдів; захищає від дубльованих запусків |
 | `RAID_POLL_CLOSE_DUE_SCAN_LIMIT` | 20 | скільки пулів сканувати за один прохід |
 
 ---

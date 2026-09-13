@@ -113,7 +113,7 @@ function raidTitle(raid: Pick<RaidItem, "title" | "difficulty">) {
 }
 
 function raidStatusLabel(raid: Pick<RaidItem, "status">) {
-  if (raid.status === "closed") return "Закрито";
+  if (raid.status === "closed") return "Запис закрито";
   return raid.status === "published" ? "Опубліковано" : "Чернетка";
 }
 
@@ -922,7 +922,7 @@ export default function RaidEditorLivePreview({
         />
         <div>
           <div className="raid-preview-title-row">
-            <h2>{closed ? `${raidTitle(raid)} • Закрито` : raidTitle(raid)}</h2>
+            <h2>{closed ? `${raidTitle(raid)} • Запис закрито` : raidTitle(raid)}</h2>
             <em className="raid-state raid-state--draft">Live preview</em>
           </div>
           <div className="raid-description-markdown">
@@ -930,7 +930,7 @@ export default function RaidEditorLivePreview({
           </div>
           {closed ? (
             <div className="raid-closed-banner">
-              🔒 Рейд закрито. Запис і Discord-кнопки неактивні.
+              🔒 Запис закрито. Усі кнопки на сайті й у Discord неактивні.
             </div>
           ) : null}
         </div>

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { appBaseUrl } from "@/lib/apiRoute";
 import { getSession, setSession } from "@/lib/auth";
 import { applyAccessGroupToSession, recordAdminAudit, resolveAccessGroupFromDiscord } from "@/lib/accessGroups";
 import { fetchDiscordGuildMemberSnapshot, fetchDiscordGuildSnapshot } from "@/lib/discordAdmin";
@@ -12,7 +13,7 @@ export const revalidate = 0;
 export async function POST(request: NextRequest) {
   const session = await getSession();
   if (!session?.impersonatedBy || session.provider !== "discord") {
-    return NextResponse.redirect(new URL("/", request.url), { status: 303, headers: noStoreHeaders() });
+    return NextResponse.redirect(new URL("/", appBaseUrl(request)), { status: 303, headers: noStoreHeaders() });
   }
 
   try {
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
     }).catch(() => false);
   }
 
-  const response = NextResponse.redirect(new URL("/dashboard/groups", request.url), { status: 303, headers: noStoreHeaders() });
+  const response = NextResponse.redirect(new URL("/dashboard/groups", appBaseUrl(request)), { status: 303, headers: noStoreHeaders() });
   response.headers.append("Set-Cookie", dashboardToastCookie({ tone: "success", title: "Перегляд завершено", message: "Повернули реальні права твого акаунта." }));
   return response;
 }

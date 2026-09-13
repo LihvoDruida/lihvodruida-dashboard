@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { appBaseUrl } from "@/lib/apiRoute";
 import { getSession } from "@/lib/auth";
 import { removeProfileCharacter } from "@/lib/profiles";
 import { characterRemoveStatusFromError } from "@/lib/profileCharacterStatus";
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
   if (tooLarge) return tooLarge;
 
   const session = await getSession();
-  if (!session?.profileId) return NextResponse.redirect(new URL("/login", request.url), 303);
+  if (!session?.profileId) return NextResponse.redirect(new URL("/login", appBaseUrl(request)), 303);
 
   const ip = getClientIp(request);
   const limit = checkRateLimit(`profile-character-remove:${session.profileId}:${ip}`, 20, 10 * 60 * 1000);

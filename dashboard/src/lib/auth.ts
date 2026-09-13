@@ -97,6 +97,25 @@ function liveDiscordAccessSyncTtlMs() {
   return Math.max(15, Math.min(900, Math.floor(parsed))) * 1000;
 }
 
+
+function liveDiscordAccessGraceMs() {
+  const parsed = Number(process.env.DISCORD_LIVE_ACCESS_GRACE_SECONDS || 600);
+  if (!Number.isFinite(parsed)) return 600_000;
+  return Math.max(60, Math.min(3600, Math.floor(parsed))) * 1000;
+}
+
+function safeDiscordAccessFallback(
+  session: DashboardSession,
+  cached: LiveDiscordAccessCacheEntry | undefined,
+) {
+  const now = Date.now();
+  if (cached && now - cached.checkedAt <= liveDiscordAccessGraceMs()) {
+    return cached.session;
+  }
+  return isSensitiveDashboardRole(session.role)
+    ? downgradeToSafeMemberSession(session)
+    : session;
+}
 function canRefreshDiscordAccess(
   session: DashboardSession | null | undefined,
 ): session is DashboardSession & { provider: "discord"; id: string } {
@@ -190,7 +209,7 @@ async function refreshDiscordAccess(
   if (cached && Date.now() - cached.checkedAt < ttlMs) return cached.session;
 
   if (runtimeCircuitOpen("discord-live-access")) {
-    return cached?.session ?? session;
+    return safeDiscordAccessFallback(session, cached);
   }
 
   return singleFlight(`discord-live-access:${cacheKey}`, async () => {
@@ -287,9 +306,12 @@ async function refreshDiscordAccess(
 
       if (isQuotaOrResourceError(error) || isTimeoutLikeError(error)) {
         openRuntimeCircuit("discord-live-access", error, 120_000);
-        const fallbackSession = cached?.session ?? session;
+        const fallbackSession = safeDiscordAccessFallback(session, cached);
+        // Keep the original validation timestamp when reusing a cached
+        // elevated session; otherwise repeated outages could extend trust
+        // forever simply by refreshing checkedAt on each failed request.
         cache.set(cacheKey, {
-          checkedAt: Date.now(),
+          checkedAt: cached?.checkedAt ?? Date.now(),
           session: fallbackSession,
         });
         return fallbackSession;
@@ -629,7 +651,10 @@ export async function getSession(
     : session;
 
   const liveAccessEnabled =
-    options.live ?? authEnvFlag("SESSION_LIVE_ACCESS_SYNC_ENABLED", false);
+    options.live ?? authEnvFlag(
+      "SESSION_LIVE_ACCESS_SYNC_ENABLED",
+      process.env.NODE_ENV === "production",
+    );
   return liveAccessEnabled ? refreshDiscordAccess(gatedSession) : gatedSession;
 }
 

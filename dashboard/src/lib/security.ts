@@ -5,6 +5,33 @@ import type { StructuredLogCategory } from "@/lib/structuredLogs";
 
 const DEFAULT_MAX_BODY_BYTES = 8 * 1024 * 1024;
 const inMemoryBuckets = new Map<string, { count: number; resetAt: number }>();
+let rateLimitOperations = 0;
+
+function rateLimitBucketCap() {
+  const configured = Number(process.env.RATE_LIMIT_MAX_BUCKETS || 20_000);
+  if (!Number.isFinite(configured)) return 20_000;
+  return Math.max(2_000, Math.min(100_000, Math.floor(configured)));
+}
+
+function pruneRateLimitBuckets(now = Date.now(), force = false) {
+  // Expired buckets are useless state. Prune periodically and whenever an
+  // attacker pushes the map near its cap, so unique-key floods cannot grow
+  // process memory without bound.
+  if (!force && inMemoryBuckets.size < rateLimitBucketCap() && rateLimitOperations % 256 !== 0) return;
+
+  for (const [key, bucket] of inMemoryBuckets) {
+    if (bucket.resetAt <= now) inMemoryBuckets.delete(key);
+  }
+
+  const cap = rateLimitBucketCap();
+  if (inMemoryBuckets.size <= cap) return;
+  const overflow = inMemoryBuckets.size - cap;
+  const oldest = [...inMemoryBuckets.entries()]
+    .sort((a, b) => a[1].resetAt - b[1].resetAt)
+    .slice(0, overflow);
+  for (const [key] of oldest) inMemoryBuckets.delete(key);
+}
+
 
 type LogLevel = "debug" | "info" | "warn" | "error";
 
@@ -71,7 +98,11 @@ function redactLogValue(value: unknown, depth = 0): unknown {
     return value
       .replace(/ghp_[A-Za-z0-9_]+/g, "[redacted]")
       .replace(/github_pat_[A-Za-z0-9_]+/g, "[redacted]")
-      .replace(/Bot\s+[A-Za-z0-9._-]+/g, "Bot [redacted]")
+      .replace(/mfa\.[A-Za-z0-9_-]+/g, "[redacted]")
+      .replace(/[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{20,}/g, "[redacted]")
+      .replace(/Bot\s+[A-Za-z0-9._-]+/gi, "Bot [redacted]")
+      .replace(/Bearer\s+[A-Za-z0-9._~+\/-]+/gi, "Bearer [redacted]")
+      .replace(/(postgres(?:ql)?:\/\/[^:\s/]+:)[^@\s/]+(@)/gi, "$1[redacted]$2")
       .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, "[email]")
       .slice(0, 500);
   }
@@ -173,14 +204,26 @@ export function isAllowedHost(host: string) {
   });
 }
 
+export function isTrustedCloudflareRequest(request: Request | NextRequest) {
+  return String(request.headers.get("x-mistblossom-trusted-proxy") || "")
+    .trim()
+    .toLowerCase() === "cloudflare";
+}
+
 export function getClientIp(request: Request | NextRequest) {
-  const cfIp = request.headers.get("cf-connecting-ip");
-  if (cfIp) return cfIp;
+  // Nginx pins X-Real-IP to the socket-derived client address after real_ip
+  // processing. Never trust a raw CF-Connecting-IP from the browser: direct
+  // origin requests can forge it unless the edge marker was set by our nginx.
+  const realIp = request.headers.get("x-real-ip")?.trim();
+  if (realIp) return realIp;
+
+  const cfIp = request.headers.get("cf-connecting-ip")?.trim();
+  if (cfIp && isTrustedCloudflareRequest(request)) return cfIp;
 
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) return forwarded.split(",")[0]?.trim() || "unknown";
 
-  return request.headers.get("x-real-ip") || "unknown";
+  return "unknown";
 }
 
 export function requestContext(request: Request | NextRequest) {
@@ -286,9 +329,27 @@ export function logDashboardEvent(
 
 export function checkRateLimit(key: string, limit: number, windowMs: number) {
   const now = Date.now();
+  rateLimitOperations += 1;
+  pruneRateLimitBuckets(now);
+
   const bucket = inMemoryBuckets.get(key);
 
   if (!bucket || bucket.resetAt <= now) {
+    if (inMemoryBuckets.size >= rateLimitBucketCap()) pruneRateLimitBuckets(now, true);
+    // If every bucket is still live, evict the one that expires first rather
+    // than allowing memory to grow. The request remains rate-limited normally
+    // under its new bucket; only stale limiter history is sacrificed.
+    if (inMemoryBuckets.size >= rateLimitBucketCap()) {
+      let oldestKey = "";
+      let oldestReset = Number.POSITIVE_INFINITY;
+      for (const [candidateKey, candidate] of inMemoryBuckets) {
+        if (candidate.resetAt < oldestReset) {
+          oldestReset = candidate.resetAt;
+          oldestKey = candidateKey;
+        }
+      }
+      if (oldestKey) inMemoryBuckets.delete(oldestKey);
+    }
     inMemoryBuckets.set(key, { count: 1, resetAt: now + windowMs });
     return { ok: true, remaining: Math.max(0, limit - 1), resetAt: now + windowMs };
   }

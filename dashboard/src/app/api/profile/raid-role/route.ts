@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { appBaseUrl } from "@/lib/apiRoute";
 import { getSession } from "@/lib/auth";
 import { setProfileRaidRolePreference } from "@/lib/profiles";
 import { normalizeWowRole } from "@/lib/wowRoles";
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
   if (tooLarge) return tooLarge;
 
   const session = await getSession();
-  if (!session?.profileId) return NextResponse.redirect(new URL("/login", request.url), 303);
+  if (!session?.profileId) return NextResponse.redirect(new URL("/login", appBaseUrl(request)), 303);
 
   const ip = getClientIp(request);
   const limit = checkRateLimit(`profile-raid-role:${session.profileId}:${ip}`, 30, 10 * 60 * 1000);

@@ -143,6 +143,8 @@ function contentSecurityPolicy(nonce: string) {
     "font-src 'self' data:",
     "connect-src 'self' https://discord.com https://discordapp.com https://cdn.discordapp.com https://media.discordapp.net https://api.github.com https://raider.io https://*.raider.io https://render.worldofwarcraft.com",
     "worker-src 'self' blob:",
+    "frame-src 'none'",
+    "child-src 'none'",
     "manifest-src 'self'",
     "media-src 'self' https:",
     "object-src 'none'",
@@ -171,11 +173,11 @@ function getCloudflareProxyMode(host: string): CloudflareProxyMode {
 }
 
 function hasCloudflareSignal(request: NextRequest) {
-  return Boolean(
-    request.headers.get("cf-ray") ||
-    request.headers.get("cf-connecting-ip") ||
-    request.headers.get("cf-visitor"),
-  );
+  // This marker is overwritten by our nginx from the actual peer address.
+  // Browser-supplied CF-* headers are not proof that a request traversed CF.
+  return String(request.headers.get("x-mistblossom-trusted-proxy") || "")
+    .trim()
+    .toLowerCase() === "cloudflare";
 }
 
 /**
@@ -397,7 +399,6 @@ export function proxy(request: NextRequest) {
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("Content-Security-Policy", csp);
-  response.headers.set("X-Nonce", nonce);
   response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
   response.headers.set(
     "Cache-Control",
@@ -415,13 +416,10 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    {
-      source:
-        "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)",
-      missing: [
-        { type: "header", key: "next-router-prefetch" },
-        { type: "header", key: "purpose", value: "prefetch" },
-      ],
-    },
+    // Do not exempt router-prefetch headers here. Authorization and CSP must
+    // run for every dynamic route; older Next.js proxy-bypass bugs specifically
+    // abused alternate prefetch/segment paths. Static immutable assets remain
+    // excluded for performance.
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)",
   ],
 };
