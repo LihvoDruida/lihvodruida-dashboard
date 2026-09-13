@@ -25,8 +25,10 @@ const enhancer = read('src/components/DashboardFormEnhancer.tsx');
 const cron = read('deploy/cron/run-cron.sh', repo);
 const css = read('src/app/styles/admin.css');
 const management = read('src/lib/discordMemberManagement.ts');
+const legacyCleanup = read('scripts/cleanup-legacy.cjs');
 
 assert(!exists('src/app/api/dashboard/discord/nicknames/cleanup/route.ts'), 'legacy role-changing nickname cleanup route must be removed');
+assert(legacyCleanup.includes('src/app/api/dashboard/discord/nicknames/cleanup'), 'legacy cleanup must delete stale nickname cleanup routes left by archive-over-archive deploys');
 assert(!management.includes('removeRolesFromMembersWithInvalidNicknames'), 'nickname mismatch must no longer mutate Discord roles');
 assert(!policy.includes('roleRemoveConcurrency') && !page.includes('Авто зняття ролей'), 'legacy automatic role-removal controls must be removed completely');
 assert(page.includes('Ролі, доступи й нік не змінюються.'), 'UI must state that nickname automation only warns');

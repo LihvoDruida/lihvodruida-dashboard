@@ -14,6 +14,10 @@ const legacyPaths = [
   'src/components/HomeUpcomingRaidList.tsx',
   'src/components/SectionIcon.tsx',
   'src/lib/dashboardAuditNotifications.ts',
+  // v3.6.2 removed the old nickname cleanup endpoint. Deploys are often
+  // unpacked over the existing checkout, so the deleted route can survive on
+  // disk and break TypeScript before the invariant check gets a chance to run.
+  'src/app/api/dashboard/discord/nicknames/cleanup',
   'public/ui-icons',
 ];
 
