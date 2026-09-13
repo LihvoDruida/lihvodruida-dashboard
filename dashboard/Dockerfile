@@ -44,7 +44,7 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked \
       "react@${REACT_SECURITY_VERSION}" \
       "react-dom@${REACT_SECURITY_VERSION}" \
       "sharp@${SHARP_SECURITY_VERSION}" \
-    && node -e "const checks=[['next',process.argv[1]],['react',process.argv[2]],['react-dom',process.argv[2]],['sharp',process.argv[3]]]; for (const [pkg,expected] of checks) { const actual=require(pkg+'/package.json').version; if(actual!==expected) throw new Error(pkg+' security overlay failed: '+actual+' != '+expected); }" "${NEXT_SECURITY_VERSION}" "${REACT_SECURITY_VERSION}" "${SHARP_SECURITY_VERSION}"
+    && node -e "const fs=require('node:fs'); const path=require('node:path'); const checks=[['next',process.argv[1]],['react',process.argv[2]],['react-dom',process.argv[2]],['sharp',process.argv[3]]]; for (const [pkg,expected] of checks) { const manifest=path.join(process.cwd(),'node_modules',pkg,'package.json'); const actual=JSON.parse(fs.readFileSync(manifest,'utf8')).version; if(actual!==expected) throw new Error(pkg+' security overlay failed: '+actual+' != '+expected); }" "${NEXT_SECURITY_VERSION}" "${REACT_SECURITY_VERSION}" "${SHARP_SECURITY_VERSION}"
 
 # --- 2. Збірка ---------------------------------------------------------------
 FROM node:${NODE_VERSION} AS builder
