@@ -16,20 +16,26 @@ export async function POST(request: NextRequest) {
     const form = await request.formData();
     const policy = await setGuildDiscordManagementSettings({
       template: form.get("template"),
-      roleRemoveConcurrency: form.get("roleRemoveConcurrency"),
-      roleRemoveMaxConcurrency: form.get("roleRemoveMaxConcurrency"),
       nicknameCleanupConcurrency: form.get("nicknameCleanupConcurrency"),
       nicknameCleanupMaxConcurrency: form.get("nicknameCleanupMaxConcurrency"),
+      nicknameReminderEnabled: form.get("nicknameReminderEnabled"),
+      nicknameReminderIntervalHours: form.get("nicknameReminderIntervalHours"),
+      nicknameReminderCooldownHours: form.get("nicknameReminderCooldownHours"),
+      nicknameReminderBatchLimit: form.get("nicknameReminderBatchLimit"),
+      nicknameReminderChannelId: form.get("nicknameReminderChannelId"),
     }, guard.session);
 
     await auditDiscordAdmin("discord.management_settings.update", guard.session, {
       status: "success",
       summary: `Оновлено Discord-налаштування. Шаблон: ${policy.template}`,
       template: policy.template,
-      roleRemoveConcurrency: policy.roleRemoveConcurrency,
-      roleRemoveMaxConcurrency: policy.roleRemoveMaxConcurrency,
       nicknameCleanupConcurrency: policy.nicknameCleanupConcurrency,
       nicknameCleanupMaxConcurrency: policy.nicknameCleanupMaxConcurrency,
+      nicknameReminderEnabled: policy.nicknameReminderEnabled,
+      nicknameReminderIntervalHours: policy.nicknameReminderIntervalHours,
+      nicknameReminderCooldownHours: policy.nicknameReminderCooldownHours,
+      nicknameReminderBatchLimit: policy.nicknameReminderBatchLimit,
+      nicknameReminderChannelId: policy.nicknameReminderChannelId,
     });
 
     return adminDiscordResponse(request, {

@@ -241,12 +241,12 @@ function actionText(action: string) {
       title: "Перевіряємо ніки Discord",
       message: "Звіряємо серверні ніки з глобальним шаблоном.",
     };
-  if (action.includes("/api/dashboard/discord/nicknames/cleanup"))
+  if (action.includes("/api/dashboard/discord/nicknames/notify"))
     return {
-      label: "Застосовуємо...",
-      title: "Застосовуємо ролі за неправильний серверний нік",
+      label: "Попереджаємо...",
+      title: "Попереджаємо про неправильний серверний нік",
       message:
-        "Перевіряємо серверні ніки за шаблоном, знімаємо вибрані ролі й видаємо ролі з правого списку.",
+        "Перевіряємо нік, спочатку надсилаємо DM, а якщо приватні повідомлення недоступні — використовуємо fallback-канал.",
     };
   if (action.includes("/discord/embeds"))
     return {

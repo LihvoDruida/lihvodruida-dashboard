@@ -6,6 +6,7 @@ import DashboardIdentity from "@/components/DashboardIdentity";
 import { getSession } from "@/lib/auth";
 import {
   fetchDiscordRoleControlSnapshot,
+  fetchDiscordTextChannels,
   getDiscordGuildId,
   type DiscordManageableRoleOption,
 } from "@/lib/discordAdmin";
@@ -14,6 +15,7 @@ import { documentStoreMode, hasFirebaseCredentials } from "@/lib/firebaseAdmin";
 import { canManageDiscordMembers } from "@/lib/permissions";
 import { buildPageMetadata } from "@/lib/seo";
 import { getAccountCleanupAutomationSettings, nextAccountCleanupAt, type AccountCleanupRunStatus } from "@/lib/accountCleanupAutomation";
+import { getNicknameWarningAutomationState } from "@/lib/discordNicknameWarnings";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -123,10 +125,12 @@ export default async function AdminDiscordPage() {
     throw new Error("Access denied");
   }
 
-  const [policy, control, cleanupAutomation] = await Promise.all([
+  const [policy, control, cleanupAutomation, nicknameWarningState, textChannels] = await Promise.all([
     getGuildNicknamePolicy(),
     fetchDiscordRoleControlSnapshot(),
     getAccountCleanupAutomationSettings(),
+    getNicknameWarningAutomationState(),
+    fetchDiscordTextChannels().catch(() => ({ guild: null, channels: [], suggestedChannelId: "", suggestedRulesChannelId: "", warning: "Discord channels unavailable" })),
   ]);
   const roles = control.roles;
   const manageableRoles = control.manageableRoles;
@@ -265,7 +269,7 @@ export default async function AdminDiscordPage() {
             <SectionHeader
               eyebrow="Конфігурація"
               title="Глобальні правила Discord"
-              description="Спільний шаблон серверного ніку та ліміти масових операцій."
+              description="Шаблон серверного ніку, паралельність Discord-запитів і автоматичні попередження учасникам."
             />
           </div>
           <form className="panel discord-management-card discord-management-card--settings discord-settings-card" action="/api/dashboard/discord/settings" method="post" data-dashboard-action-form="true" data-dashboard-live-submit="true">
@@ -275,29 +279,52 @@ export default async function AdminDiscordPage() {
                 <small>Змінні: <code>{"{name}"}</code>, <code>{"{main}"}</code>, <code>{"{alt}"}</code>. Приклад: {nicknameTemplateExample(policy.template)}.</small>
               </label>
               <div className="discord-settings-summary" aria-label="Поточна конфігурація Discord-дій">
-                <InfoChip title={String(policy.roleRemoveConcurrency || "Авто")} text="зняття ролей" />
-                <InfoChip title={String(policy.nicknameCleanupConcurrency || "Авто")} text="перевірка ніків" />
+                <InfoChip title={String(policy.nicknameCleanupConcurrency || "Авто")} text="попередження ніків" />
               </div>
             </div>
             <div className="discord-settings-card__limits">
               <div className="discord-settings-grid" aria-label="Паралельність Discord-дій">
-                <label className="field-label">Зняття ролей
-                  <input className="input" name="roleRemoveConcurrency" type="number" min="0" max={policy.roleRemoveMaxConcurrency} defaultValue={policy.roleRemoveConcurrency} />
-                  <small>0 = автоматично</small>
-                </label>
-                <label className="field-label">Макс. зняття
-                  <input className="input" name="roleRemoveMaxConcurrency" type="number" min="1" max="5" defaultValue={policy.roleRemoveMaxConcurrency} />
-                  <small>1–5 одночасно</small>
-                </label>
-                <label className="field-label">Перевірка ніків
+                <label className="field-label">Попередження ніків
                   <input className="input" name="nicknameCleanupConcurrency" type="number" min="0" max={policy.nicknameCleanupMaxConcurrency} defaultValue={policy.nicknameCleanupConcurrency} />
                   <small>0 = автоматично</small>
                 </label>
-                <label className="field-label">Макс. перевірка
+                <label className="field-label">Макс. паралельно
                   <input className="input" name="nicknameCleanupMaxConcurrency" type="number" min="1" max="4" defaultValue={policy.nicknameCleanupMaxConcurrency} />
-                  <small>1–4 одночасно</small>
+                  <small>1–4 Discord-запити</small>
                 </label>
               </div>
+              <section className="nickname-warning-settings" aria-label="Автоматичні попередження про серверні ніки">
+                <div className="nickname-warning-settings__head">
+                  <div><span className="eyebrow">Автоматизація ніків</span><h3>DM → fallback-канал</h3></div>
+                  <label className="settings-toggle-row">
+                    <input name="nicknameReminderEnabled" type="checkbox" defaultChecked={policy.nicknameReminderEnabled} />
+                    <span><strong>Автоматично попереджати</strong><small>Ніколи не змінює ролі чи нік — лише надсилає повідомлення.</small></span>
+                  </label>
+                </div>
+                <div className="nickname-warning-settings__grid">
+                  <label className="field-label">Інтервал перевірки
+                    <input className="input" name="nicknameReminderIntervalHours" type="number" min="1" max="168" defaultValue={policy.nicknameReminderIntervalHours} />
+                    <small>годин між автоматичними проходами</small>
+                  </label>
+                  <label className="field-label">Cooldown учасника
+                    <input className="input" name="nicknameReminderCooldownHours" type="number" min="1" max="720" defaultValue={policy.nicknameReminderCooldownHours} />
+                    <small>повторно не турбувати з тією самою помилкою</small>
+                  </label>
+                  <label className="field-label">Макс. за прохід
+                    <input className="input" name="nicknameReminderBatchLimit" type="number" min="1" max="500" defaultValue={policy.nicknameReminderBatchLimit} />
+                    <small>захист від масової розсилки за один запуск</small>
+                  </label>
+                  <label className="field-label">Fallback-канал
+                    <select className="input" name="nicknameReminderChannelId" defaultValue={policy.nicknameReminderChannelId}>
+                      <option value="">Без fallback-каналу</option>
+                      {policy.nicknameReminderChannelId && !textChannels.channels.some((channel) => channel.id === policy.nicknameReminderChannelId) ? <option value={policy.nicknameReminderChannelId}>Поточний канал ({policy.nicknameReminderChannelId})</option> : null}
+                      {textChannels.channels.map((channel) => <option key={channel.id} value={channel.id}># {channel.name}</option>)}
+                    </select>
+                    <small>Якщо DM закриті — бот тегне учасника тут.</small>
+                  </label>
+                </div>
+                <p className="nickname-warning-settings__hint">Порядок доставки фіксований: спочатку приватне повідомлення. Тільки якщо Discord не дозволив DM — публічне попередження у вибраному каналі.</p>
+              </section>
               <button className="btn primary" type="submit">Зберегти налаштування</button>
             </div>
           </form>
@@ -361,7 +388,7 @@ export default async function AdminDiscordPage() {
             <SectionHeader
               eyebrow="Синхронізація"
               title="Масові Discord-операції"
-              description="Автоматизовані дії, які звіряють актуальний стан перед кожною зміною."
+              description="Синхронізація ролей і безпечні попередження учасникам із повторною перевіркою актуального Discord-стану."
             />
           </div>
           <div className="discord-automation-grid">
@@ -385,34 +412,54 @@ export default async function AdminDiscordPage() {
               </div>
             </form>
 
-            <form className="panel discord-management-card discord-management-card--action" action="/api/dashboard/discord/nicknames/cleanup" method="post" data-dashboard-action-form="true" data-dashboard-live-submit="true">
+            <article className="panel discord-management-card discord-management-card--action nickname-warning-card">
               <div className="profile-card-head profile-card-head--inline">
-                <div><span className="eyebrow">Серверні ніки</span><h2>Ролі за неправильний нік</h2></div>
-                <span className="status-pill warning">member.nick</span>
+                <div><span className="eyebrow">Серверні ніки</span><h2>Попередження про неправильний нік</h2></div>
+                <span className={`status-pill ${policy.nicknameReminderEnabled ? "good" : "subtle"}`}>{policy.nicknameReminderEnabled ? "Автоматично" : "Ручний режим"}</span>
               </div>
               <div className="discord-management-card__body">
-                <p className="profile-card-lead">Перевіряє серверний нік і змінює тільки вибрані керовані ролі. Перед записом учасник перечитується з Discord.</p>
-                <input type="hidden" name="apply" value="1" />
-                <label className="field-label discord-management-limit-field">Скільки учасників перевірити
-                  <input className="input" name="limit" type="number" min="0" max="50000" defaultValue="0" />
-                  <small>0 = весь сервер</small>
-                </label>
-                <div className="discord-cleanup-role-grid" aria-label="Ролі для масової дії за серверним ніком">
-                  <section className="discord-cleanup-role-column">
-                    <div className="discord-role-column-head"><span className="eyebrow">Зняти</span><h3>Прибрати ролі</h3></div>
-                    <RoleCheckboxes roles={manageableRoles} fieldName="removeRoleIds" density="compact" />
-                  </section>
-                  <section className="discord-cleanup-role-column">
-                    <div className="discord-role-column-head"><span className="eyebrow">Видати</span><h3>Додати ролі</h3></div>
-                    <RoleCheckboxes roles={manageableRoles} fieldName="addRoleIds" density="compact" />
-                  </section>
+                <p className="profile-card-lead">Перевіряє <code>member.nick</code> за глобальним шаблоном. <strong>Ролі, доступи й нік не змінюються.</strong> Некоректному учаснику бот спочатку пише в DM; якщо приватні повідомлення недоступні — тегне у fallback-каналі.</p>
+                <div className="nickname-warning-status-grid">
+                  <InfoChip title={nicknameWarningState.lastRunAt ? formatCleanupDate(nicknameWarningState.lastRunAt) : "Ще не було"} text="останній запуск" />
+                  <InfoChip title={String(nicknameWarningState.lastInvalid)} text="некоректних" />
+                  <InfoChip title={`${nicknameWarningState.lastDm} / ${nicknameWarningState.lastChannel}`} text="DM / канал" />
+                  <InfoChip title={String(nicknameWarningState.lastFailed)} text="помилок" />
                 </div>
-                <div className="form-actions form-actions--split">
-                  <button className="btn subtle" formAction="/api/dashboard/discord/nicknames/inspect" formMethod="post" type="submit">Тільки перевірити</button>
-                  <button className="btn danger" name="mode" value="apply" type="submit" disabled={!hasManageableRoles} data-confirm-message="Перечитати учасників із Discord і змінити вибрані ролі тим, у кого server nickname не відповідає шаблону?">Застосувати ролі</button>
-                </div>
+                {nicknameWarningState.lastError ? <div className="discord-inline-warning"><strong>Остання помилка:</strong> {nicknameWarningState.lastError}</div> : null}
+                <form action="/api/dashboard/discord/nicknames/notify" method="post" data-dashboard-action-form="true" data-dashboard-live-submit="true">
+                  <label className="field-label discord-management-limit-field">Скільки учасників перевірити
+                    <input className="input" name="limit" type="number" min="0" max="50000" defaultValue="0" />
+                    <small>0 = весь сервер. За один запуск буде надіслано не більше {policy.nicknameReminderBatchLimit} попереджень.</small>
+                  </label>
+                  <div className="nickname-warning-flow" aria-label="Логіка сповіщення">
+                    <span><b>1</b><strong>Перевірка</strong><small>member.nick → шаблон</small></span>
+                    <span><b>2</b><strong>DM</strong><small>пріоритетний канал</small></span>
+                    <span><b>3</b><strong>Fallback</strong><small>{policy.nicknameReminderChannelId ? `# ${textChannels.channels.find((channel) => channel.id === policy.nicknameReminderChannelId)?.name || policy.nicknameReminderChannelId}` : "не налаштований"}</small></span>
+                    <span><b>4</b><strong>Cooldown</strong><small>{policy.nicknameReminderCooldownHours} год</small></span>
+                  </div>
+                  <div className="form-actions form-actions--split">
+                    <button className="btn subtle" formAction="/api/dashboard/discord/nicknames/inspect" formMethod="post" type="submit">Тільки перевірити</button>
+                    <button className="btn primary" type="submit" data-confirm-message="Перевірити серверні ніки й надіслати попередження учасникам із неправильним ніком? Ролі та ніки автоматично не змінюватимуться.">Перевірити й попередити</button>
+                  </div>
+                </form>
+                {nicknameWarningState.recentRuns.length ? (
+                  <details className="discord-management-details nickname-warning-history">
+                    <summary>Останні запуски ({nicknameWarningState.recentRuns.length})</summary>
+                    <div className="nickname-warning-history__list">
+                      {nicknameWarningState.recentRuns.map((run) => (
+                        <div className={`nickname-warning-history__row is-${run.status}`} key={run.id}>
+                          <span><strong>{run.source === "automatic" ? "Автоматично" : "Вручну"}</strong><small>{formatCleanupDate(run.completedAt)}</small></span>
+                          <span>перевірено <b>{run.checked}</b></span>
+                          <span>некоректних <b>{run.invalid}</b></span>
+                          <span>попереджено <b>{run.notified}</b></span>
+                          <span>помилок <b>{run.failed}</b></span>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                ) : null}
               </div>
-            </form>
+            </article>
           </div>
         </section>
 

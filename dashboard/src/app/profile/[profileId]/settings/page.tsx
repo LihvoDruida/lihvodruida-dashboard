@@ -498,10 +498,13 @@ export default async function ProfileSettingsPage({
       );
       return {
         template: "{name} [{main}, {alt}, {alt}]",
-        roleRemoveConcurrency: 0,
-        roleRemoveMaxConcurrency: 5,
         nicknameCleanupConcurrency: 0,
         nicknameCleanupMaxConcurrency: 4,
+        nicknameReminderEnabled: false,
+        nicknameReminderIntervalHours: 24,
+        nicknameReminderCooldownHours: 72,
+        nicknameReminderBatchLimit: 100,
+        nicknameReminderChannelId: "",
         updatedAt: null,
         updatedBy: null,
       };

@@ -15,6 +15,7 @@
 #   */5  * * * *  /api/polls/close-due?force=1 — scheduled-публікація + автозакриття/повтор
 #   */30 * * * *  /api/dashboard/logs/maintenance — retention/budget журналу
 #   */15 * * * *  /api/dashboard/profiles/orphan-cleanup — scheduler перевірки/очищення акаунтів
+#   */15 * * * *  /api/dashboard/discord/nicknames/automation — перевірка ніків + DM/fallback-попередження
 # ---------------------------------------------------------------------------
 
 set -eu
@@ -63,6 +64,7 @@ while true; do
   # Scheduler акаунтів сам читає збережені налаштування і вирішує,
   # чи настав час dry-run перевірки або реального очищення.
   [ $((minute % 15)) -eq 0 ] && call "/api/dashboard/profiles/orphan-cleanup"
+  [ $((minute % 15)) -eq 0 ] && call "/api/dashboard/discord/nicknames/automation"
 
   # Спимо до початку наступної хвилини, а не рівно 60 секунд:
   # інакше дрейф поступово зсуває задачі повз потрібну хвилину.

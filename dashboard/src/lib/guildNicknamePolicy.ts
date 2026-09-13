@@ -8,10 +8,12 @@ import type { DashboardSession } from "@/lib/auth";
 import { timestampToIso } from "@/lib/values";
 
 export const DEFAULT_NICKNAME_TEMPLATE = "{name} [{main}, {alt}, {alt}]";
-export const DEFAULT_ROLE_REMOVE_CONCURRENCY = 0;
-export const DEFAULT_ROLE_REMOVE_MAX_CONCURRENCY = 5;
 export const DEFAULT_NICKNAME_CLEANUP_CONCURRENCY = 0;
 export const DEFAULT_NICKNAME_CLEANUP_MAX_CONCURRENCY = 4;
+export const DEFAULT_NICKNAME_REMINDER_ENABLED = false;
+export const DEFAULT_NICKNAME_REMINDER_INTERVAL_HOURS = 24;
+export const DEFAULT_NICKNAME_REMINDER_COOLDOWN_HOURS = 72;
+export const DEFAULT_NICKNAME_REMINDER_BATCH_LIMIT = 100;
 
 const SETTINGS_COLLECTION = "dashboardSettings";
 const POLICY_DOC_ID = "discordNicknamePolicy";
@@ -37,10 +39,13 @@ function setNicknamePolicyCache(policy: GuildNicknamePolicy) {
 
 export type GuildNicknamePolicy = {
   template: string;
-  roleRemoveConcurrency: number;
-  roleRemoveMaxConcurrency: number;
   nicknameCleanupConcurrency: number;
   nicknameCleanupMaxConcurrency: number;
+  nicknameReminderEnabled: boolean;
+  nicknameReminderIntervalHours: number;
+  nicknameReminderCooldownHours: number;
+  nicknameReminderBatchLimit: number;
+  nicknameReminderChannelId: string;
   updatedAt?: string | null;
   updatedBy?: string | null;
 };
@@ -75,6 +80,19 @@ function normalizeStoredTemplate(value: unknown, fallbackTemplate = DEFAULT_NICK
   return isSupportedNicknameTemplate(template) ? template : fallbackTemplate;
 }
 
+function cleanBoolSetting(value: unknown, fallback: boolean) {
+  if (typeof value === "boolean") return value;
+  const text = String(value ?? "").trim().toLowerCase();
+  if (["1", "true", "yes", "on", "enabled", "увімкнено"].includes(text)) return true;
+  if (["0", "false", "no", "off", "disabled", "вимкнено"].includes(text)) return false;
+  return fallback;
+}
+
+function cleanChannelId(value: unknown) {
+  const text = String(value || "").trim();
+  return /^\d{16,25}$/.test(text) ? text : "";
+}
+
 function cleanIntegerSetting(value: unknown, fallback: number, min: number, max: number) {
   if (value === null || value === undefined || value === "") return fallback;
   const number = Number(value);
@@ -85,10 +103,13 @@ function cleanIntegerSetting(value: unknown, fallback: number, min: number, max:
 function normalizePolicyData(data: Record<string, unknown> | null | undefined, fallbackTemplate = DEFAULT_NICKNAME_TEMPLATE): GuildNicknamePolicy {
   return {
     template: normalizeStoredTemplate(data?.template, fallbackTemplate),
-    roleRemoveConcurrency: cleanIntegerSetting(data?.roleRemoveConcurrency, DEFAULT_ROLE_REMOVE_CONCURRENCY, 0, 5),
-    roleRemoveMaxConcurrency: cleanIntegerSetting(data?.roleRemoveMaxConcurrency, DEFAULT_ROLE_REMOVE_MAX_CONCURRENCY, 1, 5),
     nicknameCleanupConcurrency: cleanIntegerSetting(data?.nicknameCleanupConcurrency, DEFAULT_NICKNAME_CLEANUP_CONCURRENCY, 0, 4),
     nicknameCleanupMaxConcurrency: cleanIntegerSetting(data?.nicknameCleanupMaxConcurrency, DEFAULT_NICKNAME_CLEANUP_MAX_CONCURRENCY, 1, 4),
+    nicknameReminderEnabled: cleanBoolSetting(data?.nicknameReminderEnabled, DEFAULT_NICKNAME_REMINDER_ENABLED),
+    nicknameReminderIntervalHours: cleanIntegerSetting(data?.nicknameReminderIntervalHours, DEFAULT_NICKNAME_REMINDER_INTERVAL_HOURS, 1, 168),
+    nicknameReminderCooldownHours: cleanIntegerSetting(data?.nicknameReminderCooldownHours, DEFAULT_NICKNAME_REMINDER_COOLDOWN_HOURS, 1, 720),
+    nicknameReminderBatchLimit: cleanIntegerSetting(data?.nicknameReminderBatchLimit, DEFAULT_NICKNAME_REMINDER_BATCH_LIMIT, 1, 500),
+    nicknameReminderChannelId: cleanChannelId(data?.nicknameReminderChannelId),
     updatedAt: timestampToIso(data?.updatedAt),
     updatedBy: typeof data?.updatedBy === "string" ? data.updatedBy : null,
   };
@@ -170,16 +191,22 @@ export async function setGuildNicknamePolicy(templateInput: unknown, actor?: Das
 
 export async function setGuildDiscordManagementSettings(input: {
   template?: unknown;
-  roleRemoveConcurrency?: unknown;
-  roleRemoveMaxConcurrency?: unknown;
   nicknameCleanupConcurrency?: unknown;
   nicknameCleanupMaxConcurrency?: unknown;
+  nicknameReminderEnabled?: unknown;
+  nicknameReminderIntervalHours?: unknown;
+  nicknameReminderCooldownHours?: unknown;
+  nicknameReminderBatchLimit?: unknown;
+  nicknameReminderChannelId?: unknown;
 }, actor?: DashboardSession | null) {
   const template = cleanNicknameTemplate(input.template);
-  const roleRemoveMaxConcurrency = cleanIntegerSetting(input.roleRemoveMaxConcurrency, DEFAULT_ROLE_REMOVE_MAX_CONCURRENCY, 1, 5);
   const nicknameCleanupMaxConcurrency = cleanIntegerSetting(input.nicknameCleanupMaxConcurrency, DEFAULT_NICKNAME_CLEANUP_MAX_CONCURRENCY, 1, 4);
-  const roleRemoveConcurrency = cleanIntegerSetting(input.roleRemoveConcurrency, DEFAULT_ROLE_REMOVE_CONCURRENCY, 0, roleRemoveMaxConcurrency);
   const nicknameCleanupConcurrency = cleanIntegerSetting(input.nicknameCleanupConcurrency, DEFAULT_NICKNAME_CLEANUP_CONCURRENCY, 0, nicknameCleanupMaxConcurrency);
+  const nicknameReminderEnabled = cleanBoolSetting(input.nicknameReminderEnabled, false);
+  const nicknameReminderIntervalHours = cleanIntegerSetting(input.nicknameReminderIntervalHours, DEFAULT_NICKNAME_REMINDER_INTERVAL_HOURS, 1, 168);
+  const nicknameReminderCooldownHours = cleanIntegerSetting(input.nicknameReminderCooldownHours, DEFAULT_NICKNAME_REMINDER_COOLDOWN_HOURS, 1, 720);
+  const nicknameReminderBatchLimit = cleanIntegerSetting(input.nicknameReminderBatchLimit, DEFAULT_NICKNAME_REMINDER_BATCH_LIMIT, 1, 500);
+  const nicknameReminderChannelId = cleanChannelId(input.nicknameReminderChannelId);
 
   if (!hasFirebaseProfileConfig()) throw new Error("Firebase не налаштований для збереження Discord-налаштувань.");
   await firebaseWrite(
@@ -187,10 +214,13 @@ export async function setGuildDiscordManagementSettings(input: {
     "guild-discord-management:save",
     () => getFirebaseAdminDb().collection(SETTINGS_COLLECTION).doc(POLICY_DOC_ID).set({
       template,
-      roleRemoveConcurrency,
-      roleRemoveMaxConcurrency,
       nicknameCleanupConcurrency,
       nicknameCleanupMaxConcurrency,
+      nicknameReminderEnabled,
+      nicknameReminderIntervalHours,
+      nicknameReminderCooldownHours,
+      nicknameReminderBatchLimit,
+      nicknameReminderChannelId,
       updatedAt: FieldValue.serverTimestamp(),
       updatedBy: actor?.name || actor?.login || actor?.id || null,
     }, { merge: true }),
@@ -200,10 +230,13 @@ export async function setGuildDiscordManagementSettings(input: {
   return setNicknamePolicyCache({
     ...normalizePolicyData({
       template,
-      roleRemoveConcurrency,
-      roleRemoveMaxConcurrency,
       nicknameCleanupConcurrency,
       nicknameCleanupMaxConcurrency,
+      nicknameReminderEnabled,
+      nicknameReminderIntervalHours,
+      nicknameReminderCooldownHours,
+      nicknameReminderBatchLimit,
+      nicknameReminderChannelId,
     }),
     updatedAt: new Date().toISOString(),
     updatedBy: actor?.name || actor?.login || actor?.id || null,
