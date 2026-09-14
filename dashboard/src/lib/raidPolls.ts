@@ -710,9 +710,18 @@ export type RaidPollRecommendationContext = Pick<RaidPollItem, "id" | "title" | 
 
 const RAID_POLL_MAX_SLOT_RECOMMENDATIONS = RAID_POLL_DAYS.length * RAID_POLL_TIMES.length;
 const RAID_POLL_WEEKEND_DAYS = new Set<RaidPollDay>(["sat", "sun"]);
+/**
+ * Європейський WoW-тиждень Mistblossom: reset у середу о 07:00.
+ * Усі доступні рейдові слоти починаються о 20:00+, тому середа завжди вже
+ * належить новому WoW-тижню, а вівторок — його останній рейдовий вечір.
+ */
+export const RAID_POLL_WOW_WEEK_RESET_HOUR = 7;
+export const RAID_POLL_WOW_WEEK_DAYS: RaidPollDay[] = ["wed", "thu", "fri", "sat", "sun", "mon", "tue"];
+export const RAID_POLL_WOW_WEEK_LABEL = `Ср ${String(RAID_POLL_WOW_WEEK_RESET_HOUR).padStart(2, "0")}:00 → наступна Ср 06:59`;
 
-function raidPollDayIndex(day: RaidPollDay) {
-  return RAID_POLL_DAYS.findIndex((item) => item.value === day);
+function raidPollWowWeekDayIndex(day: RaidPollDay) {
+  const index = RAID_POLL_WOW_WEEK_DAYS.indexOf(day);
+  return index >= 0 ? index : RAID_POLL_WOW_WEEK_DAYS.length;
 }
 
 /**
@@ -728,7 +737,7 @@ function compareRaidPollSlotRecommendations(a: RaidPollSlotRecommendation, b: Ra
     b.total - a.total ||
     b.effectiveDps - a.effectiveDps ||
     a.unknown - b.unknown ||
-    raidPollDayIndex(a.day) - raidPollDayIndex(b.day) ||
+    raidPollWowWeekDayIndex(a.day) - raidPollWowWeekDayIndex(b.day) ||
     RAID_POLL_TIMES.indexOf(a.time) - RAID_POLL_TIMES.indexOf(b.time);
 }
 
@@ -869,8 +878,32 @@ function raidPollWeekendCandidateMakesSense(
   if (!isRaidPollWeekendDay(candidate.day)) return false;
   if (!candidate.coreReady) return false;
   const bestTotal = Math.max(0, Math.floor(Number(best?.total || 0)));
-  const minimumMeaningfulTotal = Math.max(5, Math.ceil(bestTotal * 0.65));
+  // Вихідний не мусить бути абсолютним #1, але не рекомендуємо його лише
+  // заради календаря, якщо явка суттєво гірша за найкращий день.
+  const minimumMeaningfulTotal = Math.max(4, Math.ceil(bestTotal * 0.6));
   return candidate.total >= minimumMeaningfulTotal;
+}
+
+function raidPollExtraCandidateMakesSense(
+  candidate: RaidPollSlotRecommendation,
+  best: RaidPollSlotRecommendation | null | undefined,
+) {
+  if (!candidate.coreReady) return false;
+  const bestTotal = Math.max(0, Math.floor(Number(best?.total || 0)));
+  // Третій рейд — добровільний bonus day. Він з'являється тільки коли має
+  // реальний склад і хоча б 60% явки від найсильнішого слота.
+  const minimumMeaningfulTotal = Math.max(4, Math.ceil(bestTotal * 0.6));
+  return candidate.total >= minimumMeaningfulTotal;
+}
+
+function compareRaidPollExtraCandidates(
+  a: { pollOrder: number; candidate: RaidPollUniqueDayRecommendation },
+  b: { pollOrder: number; candidate: RaidPollUniqueDayRecommendation },
+) {
+  // Додатковий рейд свідомо тягнемо ближче до reset: Вт → Пн → Нд → ...
+  // Але до цього фільтру вже потрапили лише слоти з життєздатним складом.
+  return raidPollWowWeekDayIndex(b.candidate.day) - raidPollWowWeekDayIndex(a.candidate.day) ||
+    comparePollCandidate(a, b);
 }
 
 function assignPollRecommendationCandidate(
@@ -909,7 +942,7 @@ function raidPollPlanCacheKey(polls: RaidPollRecommendationContext[], limitPerPo
   return `${limitPerPoll}|${parts.join(";")}`;
 }
 
-export function raidPollUniqueDayRecommendationPlan(polls: RaidPollRecommendationContext[], limitPerPoll = 2): Record<string, RaidPollUniqueDayRecommendation[]> {
+export function raidPollUniqueDayRecommendationPlan(polls: RaidPollRecommendationContext[], limitPerPoll = 3): Record<string, RaidPollUniqueDayRecommendation[]> {
   const cacheKey = raidPollPlanCacheKey(polls, limitPerPoll);
   const cached = raidPollPlanCache.get(cacheKey);
   if (cached) {
@@ -928,7 +961,7 @@ export function raidPollUniqueDayRecommendationPlan(polls: RaidPollRecommendatio
   return plan;
 }
 
-function computeRaidPollUniqueDayRecommendationPlan(polls: RaidPollRecommendationContext[], limitPerPoll = 2): Record<string, RaidPollUniqueDayRecommendation[]> {
+function computeRaidPollUniqueDayRecommendationPlan(polls: RaidPollRecommendationContext[], limitPerPoll = 3): Record<string, RaidPollUniqueDayRecommendation[]> {
   const normalized = polls.map(normalizePollRecommendationContext);
   const perPollLimit = Math.max(1, Math.min(RAID_POLL_DAYS.length, Math.floor(limitPerPoll)));
   const plan: Record<string, RaidPollUniqueDayRecommendation[]> = {};
@@ -965,7 +998,11 @@ function computeRaidPollUniqueDayRecommendationPlan(polls: RaidPollRecommendatio
     assignPollRecommendationCandidate(plan, usedDays, row.pollId, row.candidate, perPollLimit);
   }
 
-  for (let round = 0; round < perPollLimit; round += 1) {
+  // Спочатку формуємо рівно два ОСНОВНІ рейди для кожного пулу. Weekend
+  // reservation вище вже може займати один із цих двох слотів. Третій день
+  // не має права забрати сильний день у другого основного рейду іншого пулу.
+  const primaryTargetCount = Math.min(2, perPollLimit);
+  for (let round = 0; round < primaryTargetCount; round += 1) {
     const roundCandidates: Array<{ pollId: string; pollOrder: number; candidate: RaidPollUniqueDayRecommendation }> = [];
     orderedPolls.forEach((item, pollOrder) => {
       const assigned = plan[item.poll.id] || [];
@@ -981,22 +1018,57 @@ function computeRaidPollUniqueDayRecommendationPlan(polls: RaidPollRecommendatio
     let changed = false;
     for (const row of roundCandidates) {
       const assigned = plan[row.pollId] || [];
-      if (assigned.length > round || assigned.length >= perPollLimit) continue;
-      if (assignPollRecommendationCandidate(plan, usedDays, row.pollId, row.candidate, perPollLimit)) {
+      if (assigned.length > round || assigned.length >= primaryTargetCount) continue;
+      if (assignPollRecommendationCandidate(plan, usedDays, row.pollId, row.candidate, primaryTargetCount)) {
         changed = true;
       }
     }
     if (!changed) break;
   }
 
+  // Третій слот — ДОДАТКОВИЙ рейд. Шукаємо його лише після того, як усі
+  // активні пули отримали шанс на два основні дні. Серед життєздатних
+  // кандидатів пріоритет має кінець WoW-тижня (Вт/Пн/Нд), тобто ближче до
+  // reset у середу 07:00. Якщо нормального третього дня немає — не вигадуємо.
+  if (perPollLimit >= 3) {
+    const extraCandidates: Array<{ pollId: string; pollOrder: number; candidate: RaidPollUniqueDayRecommendation }> = [];
+    orderedPolls.forEach((item, pollOrder) => {
+      const assigned = plan[item.poll.id] || [];
+      if (assigned.length < primaryTargetCount || assigned.length >= perPollLimit) return;
+      for (const candidate of candidatesByPoll.get(item.poll.id) || []) {
+        if (usedDays.has(candidate.day)) continue;
+        if (assigned.some((slot) => slot.day === candidate.day)) continue;
+        if (!raidPollExtraCandidateMakesSense(candidate, item.best)) continue;
+        extraCandidates.push({ pollId: item.poll.id, pollOrder, candidate });
+      }
+    });
+
+    extraCandidates.sort(compareRaidPollExtraCandidates);
+    for (const row of extraCandidates) {
+      const assigned = plan[row.pollId] || [];
+      if (assigned.length < primaryTargetCount || assigned.length >= perPollLimit) continue;
+      assignPollRecommendationCandidate(plan, usedDays, row.pollId, row.candidate, perPollLimit);
+    }
+  }
+
   for (const pollId of Object.keys(plan)) {
-    plan[pollId] = plan[pollId].sort(compareRaidPollSlotRecommendations);
+    const assigned = plan[pollId];
+    if (assigned.length <= primaryTargetCount) {
+      plan[pollId] = assigned.sort(compareRaidPollSlotRecommendations);
+      continue;
+    }
+    // Перші два — основні й сортуються за силою. Третій лишається третім,
+    // бо його семантика — саме додатковий рейд, а не ще один основний.
+    plan[pollId] = [
+      ...assigned.slice(0, primaryTargetCount).sort(compareRaidPollSlotRecommendations),
+      ...assigned.slice(primaryTargetCount),
+    ];
   }
 
   return plan;
 }
 
-export function raidPollUniqueDayRecommendations(poll: RaidPollRecommendationContext, allPolls: RaidPollRecommendationContext[] = [poll], limit = 2): RaidPollUniqueDayRecommendation[] {
+export function raidPollUniqueDayRecommendations(poll: RaidPollRecommendationContext, allPolls: RaidPollRecommendationContext[] = [poll], limit = 3): RaidPollUniqueDayRecommendation[] {
   const pollId = cleanString(poll.id, 80);
   if (!pollId) {
     return raidPollDayRecommendations(poll, limit).map((slot) => ({ ...slot, pollId: "", pollTitle: cleanString(poll.title, 160) || "Raid poll" }));
@@ -1157,6 +1229,11 @@ function activeRecommendationPolls(current: RaidPollItem, relatedPolls: RaidPoll
   for (const poll of relatedPolls) {
     const id = cleanString(poll.id, 80);
     if (!id) continue;
+    // Закриті пули — історія, вони не повинні резервувати дні нового плану.
+    // Поточний пул додається нижче окремо, щоб його фінальний embed усе ще
+    // міг показати власний результат після ручного/автоматичного закриття.
+    if (id !== current.id && poll.status === "closed") continue;
+    if (poll.status === "scheduled") continue;
     if (!isRaidPollPublishedToDiscordContext(poll, current.id)) continue;
     byId.set(id, { ...poll, id });
   }
@@ -1165,8 +1242,10 @@ function activeRecommendationPolls(current: RaidPollItem, relatedPolls: RaidPoll
 }
 
 function topDaySummary(poll: RaidPollItem, relatedPolls: RaidPollRecommendationContext[] = [poll]) {
-  const slots = raidPollUniqueDayRecommendations(poll, activeRecommendationPolls(poll, relatedPolls), 2);
-  return slots.length ? slots.map((slot, index) => `${index + 1}) ${raidPollSlotSummary(slot)}`).join("\n") : raidPollSlotSummary(null);
+  const slots = raidPollUniqueDayRecommendations(poll, activeRecommendationPolls(poll, relatedPolls), 3);
+  return slots.length
+    ? slots.map((slot, index) => `${index + 1}) ${index === 2 ? "🧩 **Додатковий** • " : ""}${raidPollSlotSummary(slot)}`).join("\n")
+    : raidPollSlotSummary(null);
 }
 
 function pollActiveDays(poll: Pick<RaidPollItem, "days">) {
@@ -1251,7 +1330,7 @@ export function buildRaidPollDiscordPayload(poll: RaidPollItem, relatedPolls: Ra
     { name: "⏰ Голоси за часом", value: timeCountsDiscordValue(poll), inline: true },
     { name: "🎭 Ролі", value: roleCountsDiscordValue(poll), inline: true },
     { name: "👥 Проголосували", value: `${counts.total}`, inline: false },
-    { name: "🧠 2 рекомендовані дні/час", value: topDaySummary(poll, relatedPolls), inline: false },
+    { name: "🧠 Рекомендовані дні/час · 2 основні + додатковий", value: topDaySummary(poll, relatedPolls), inline: false },
     { name: "🧾 Останні 5 голосів", value: votersDiscordValue(poll), inline: false },
   ];
 

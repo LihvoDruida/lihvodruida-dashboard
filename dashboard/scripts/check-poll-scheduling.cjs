@@ -45,6 +45,15 @@ const checks = [
   ['lifecycle degraded result preserves scheduled counters', lifecycle.includes('scheduledChecked: 0') && lifecycle.includes('scheduledPublished: 0')],
   ['VPS cron script is available to the scheduling CI audit', cron.length > 0],
   ['VPS cron forces the five-minute lifecycle tick so cooldown cannot miss an hourly schedule', cron.includes('/api/polls/close-due?force=1')],
+  ['recommendations use the WoW week that resets Wednesday at 07:00', polls.includes('RAID_POLL_WOW_WEEK_RESET_HOUR = 7') && polls.includes('["wed", "thu", "fri", "sat", "sun", "mon", "tue"]')],
+  ['recommendation planner defaults to three slots', polls.includes('limitPerPoll = 3') && polls.includes('limit = 3')],
+  ['planner reserves two primary slots before any optional extra raid', polls.includes('const primaryTargetCount = Math.min(2, perPollLimit)') && polls.includes('Третій слот — ДОДАТКОВИЙ рейд')],
+  ['weekend recommendation is explicitly attempted before primary allocation', polls.indexOf('weekendCandidates.sort(comparePollCandidate)') < polls.indexOf('const primaryTargetCount = Math.min(2, perPollLimit)')],
+  ['optional third raid requires a viable core and meaningful turnout', polls.includes('raidPollExtraCandidateMakesSense') && polls.includes('Math.ceil(bestTotal * 0.6)')],
+  ['optional third raid prefers the end of the WoW week', polls.includes('compareRaidPollExtraCandidates') && polls.includes('raidPollWowWeekDayIndex(b.candidate.day) - raidPollWowWeekDayIndex(a.candidate.day)')],
+  ['Discord output presents two primary recommendations plus an optional extra', polls.includes('2 основні + додатковий') && polls.includes('🧩 **Додатковий**')],
+  ['dashboard poll UI requests three recommendations and explains the WoW reset', (views.match(/raidPollUniqueDayRecommendations\(poll, relatedPolls, 3\)/g) || []).length >= 2 && views.includes('RAID_POLL_WOW_WEEK_LABEL') && views.includes('3-й додатковий рейд')],
+  ['closed historical polls no longer reserve recommendation days', polls.includes('id !== current.id && poll.status === "closed"') && polls.includes('poll.status === "scheduled"')],
 ];
 
 const failed = checks.filter(([, ok]) => !ok);

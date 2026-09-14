@@ -17,6 +17,7 @@ import {
   raidPollDifficultyLabel,
   raidPollRoleLabel,
   raidPollRoleShortLabel,
+  RAID_POLL_WOW_WEEK_LABEL,
   raidPollSlotSummary,
   raidPollUniqueDayRecommendations,
   raidPollStatusLabel,
@@ -117,9 +118,9 @@ function pollCloseLabel(poll: RaidPollItem) {
 }
 
 function bestDaySummary(poll: RaidPollItem, relatedPolls: RaidPollItem[] = [poll]) {
-  const recommendations = raidPollUniqueDayRecommendations(poll, relatedPolls, 2);
+  const recommendations = raidPollUniqueDayRecommendations(poll, relatedPolls, 3);
   if (!recommendations.length) return raidPollSlotSummary(null);
-  return recommendations.map((slot, index) => `${index + 1}) ${raidPollSlotSummary(slot)}`).join(" / ");
+  return recommendations.map((slot, index) => `${index + 1}) ${index === 2 ? "Дод.: " : ""}${raidPollSlotSummary(slot)}`).join(" / ");
 }
 
 function roleBreakdown(poll: RaidPollItem) {
@@ -219,7 +220,7 @@ function VoteIdentityBadge({ vote }: { vote: RaidPollItem["votes"][number] }) {
 export function RaidPollResults({ poll, canManage = false, relatedPolls = [poll] }: { poll: RaidPollItem; canManage?: boolean; relatedPolls?: RaidPollItem[] }) {
   const counts = pollVoteCounts(poll);
   const activeDays = pollDays(poll);
-  const recommendations = raidPollUniqueDayRecommendations(poll, relatedPolls, 2);
+  const recommendations = raidPollUniqueDayRecommendations(poll, relatedPolls, 3);
   const bestSlot = recommendations[0] || null;
   const state = raidPollStateKey(poll);
   const roles = roleBreakdown(poll);
@@ -322,9 +323,9 @@ export function RaidPollResults({ poll, canManage = false, relatedPolls = [poll]
           <ol className="poll-recommendation__list">
             {recommendations.length
               ? recommendations.map((slot, index) => (
-                  <li key={`${slot.day}:${slot.time}`} className={index === 0 ? "is-best" : undefined}>
+                  <li key={`${slot.day}:${slot.time}`} className={index === 0 ? "is-best" : index === 2 ? "is-extra" : undefined}>
                     <b>{index + 1}</b>
-                    <span>{raidPollSlotSummary(slot)}</span>
+                    <span>{index === 2 ? `Додатковий рейд • ${raidPollSlotSummary(slot)}` : raidPollSlotSummary(slot)}</span>
                   </li>
                 ))
               : <li className="is-empty"><span>Поки немає доступних унікальних слотів.</span></li>}
@@ -334,15 +335,21 @@ export function RaidPollResults({ poll, canManage = false, relatedPolls = [poll]
         <details className="poll-recommendation__how">
           <summary>Як рахується пріоритет</summary>
           <p>
-            Найраніший зручний час означає доступність і на всі пізніші слоти дня. Активні голосування
-            розводяться по різних днях: один день не пропонується двом рейд-пулам.
+            WoW-тиждень рахується як <b>{RAID_POLL_WOW_WEEK_LABEL}</b>. Найраніший зручний час означає
+            доступність і на всі пізніші слоти дня. Активні голосування розводяться по різних днях: один
+            день не пропонується двом рейд-пулам.
           </p>
           <p>
-            Порядок пріоритету, зверху вниз: <b>зібране ядро</b> (1 танк, 1 хіл, 3 ДД) → <b>два танки</b> →
-            <b> хіли</b> до потрібної кількості, далі бонус за запасних (максимум +2) → <b>загальна кількість
-            гравців</b> → ДД → штраф за голоси без вибраної ролі. Кожен рівень важливіший за всі нижчі
-            разом: день із двома танками виграє в дня з одним, а між двома рівноцінними днями завжди
-            перемагає той, де людей більше. Класи й спеки не враховуються — пул питає лише про час і роль.
+            Система спочатку формує <b>2 основні рейди</b> і намагається включити хоча б одну
+            <b> суботу або неділю</b>, якщо там є життєздатне ядро й явка не просідає більш ніж приблизно
+            на 40% від найсильнішого дня. Після цього може зʼявитися <b>3-й додатковий рейд</b>: він не
+            обовʼязковий і серед придатних слотів отримує пріоритет ближче до кінця WoW-тижня — Пн/Вт
+            перед reset у середу.
+          </p>
+          <p>
+            Усередині кожного рівня пріоритету враховуються: <b>зібране ядро</b> → танки → хіли →
+            загальна кількість гравців → ДД → штраф за голоси без вибраної ролі. Класи й спеки не
+            враховуються — пул питає лише про час і роль.
           </p>
         </details>
       </section>
