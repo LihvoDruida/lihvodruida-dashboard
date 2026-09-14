@@ -42,10 +42,20 @@ function forward(level, message, context) {
   const token = String(process.env.INTERNAL_API_TOKEN || "").trim();
   if (!url || !token || pending >= MAX_PENDING) return;
 
+  const clean = safeContext(context);
+  const category = securityLike(message) || clean.category === "security" ? "security" : "discord";
+  const requestedEvent = typeof clean.eventName === "string" ? clean.eventName.trim() : "";
+  const event = /^[a-z0-9_.:-]{3,180}$/i.test(requestedEvent)
+    ? requestedEvent
+    : `bot.${category}.runtime`;
+  const details = { ...clean };
+  delete details.eventName;
+  delete details.category;
+  for (const key of ["requestId", "method", "path", "statusCode", "durationMs", "ip"]) delete details[key];
+
   pending += 1;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 2500);
-  const category = securityLike(message) ? "security" : "discord";
   fetch(url, {
     method: "POST",
     headers: {
@@ -56,9 +66,15 @@ function forward(level, message, context) {
       source: "bot",
       level: level === "warn" ? "warning" : level,
       category,
-      event: `bot.${category}.runtime`,
+      event,
       message: String(message || "").slice(0, 1500),
-      details: safeContext(context),
+      requestId: typeof clean.requestId === "string" ? clean.requestId : undefined,
+      method: typeof clean.method === "string" ? clean.method : undefined,
+      path: typeof clean.path === "string" ? clean.path : undefined,
+      statusCode: typeof clean.statusCode === "number" ? clean.statusCode : undefined,
+      durationMs: typeof clean.durationMs === "number" ? clean.durationMs : undefined,
+      ip: typeof clean.ip === "string" ? clean.ip : undefined,
+      details,
     }),
     signal: controller.signal,
   }).catch(() => null).finally(() => {

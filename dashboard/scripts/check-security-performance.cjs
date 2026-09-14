@@ -55,6 +55,10 @@ const securityAuditScript = read('deploy/scripts/security-audit.sh');
 const hostHardenScript = read('deploy/scripts/harden-host.sh');
 const makefile = read('Makefile');
 const content = read('dashboard/src/lib/content.ts');
+const botServer = read('bot/src/server.mjs');
+const botSignature = read('bot/src/signature.mjs');
+const botLogger = read('bot/src/logger.mjs');
+const interactionRoute = read('dashboard/src/app/api/discord/interactions/route.ts');
 const logsExplorer = read('dashboard/src/components/StructuredLogsExplorer.tsx');
 const logsPage = read('dashboard/src/app/dashboard/logs/page.tsx');
 const packageJson = JSON.parse(read('dashboard/package.json'));
@@ -88,6 +92,7 @@ ok(
   'dashboard builder must copy deployment hardening inputs consumed by the security audit',
 );
 ok(dockerfile.includes('COPY bot/Dockerfile /repo/bot/Dockerfile'), 'dashboard builder must copy bot/Dockerfile consumed by check:security-performance');
+ok(dockerfile.includes('COPY bot/src /repo/bot/src'), 'dashboard builder must copy the bot source tree consumed by signature/logging security checks');
 ok(versionAtLeast(pinnedNext, '16.3.3'), `Docker Next.js security overlay must be >=16.3.3 (found ${pinnedNext || 'missing'})`);
 ok(versionAtLeast(pinnedReact, '19.2.8'), `Docker React security overlay must be >=19.2.8 (found ${pinnedReact || 'missing'})`);
 ok(versionAtLeast(pinnedSharp, '0.35.4'), `Docker Sharp security overlay must be >=0.35.4 (found ${pinnedSharp || 'missing'})`);
@@ -161,6 +166,10 @@ ok(security.includes('RATE_LIMIT_MAX_BUCKETS') && security.includes('pruneRateLi
 ok(security.includes('Bearer [redacted]') && security.includes('postgres(?:ql)?'), 'structured logs must redact bearer/database credentials in free-form messages');
 ok(content.includes('DANGEROUS_RAW_HTML_TAGS') && content.includes('INLINE_EVENT_HANDLER') && content.includes('DANGEROUS_DATA_URI'), 'managed Markdown must reject active raw HTML/event handlers/dangerous URI schemes');
 ok(content.includes('imageSignatureMatches') && content.includes('RIFF') && content.includes('GIF89a') && content.includes('0x89, 0x50, 0x4e, 0x47'), 'managed image uploads must verify file signatures instead of trusting Content-Type');
+ok(botSignature.includes('inspectDiscordSignature') && botSignature.includes('timestamp_out_of_window') && botSignature.includes('ed25519_verification_failed'), 'bot signature verification must expose bounded non-secret diagnostic reasons');
+ok(botServer.includes('bot.security.invalid_discord_signature') && botServer.includes('ed25519Present') && botServer.includes('timestampSkewSec') && botServer.includes('requestDiagnosticContext'), 'invalid Discord signatures must log request metadata and verification diagnostics without logging the signature');
+ok(botLogger.includes('requestId: typeof clean.requestId') && botLogger.includes('method: typeof clean.method') && botLogger.includes('ip: typeof clean.ip') && botLogger.includes('eventName'), 'bot log sink must preserve request correlation, method/path/IP and explicit diagnostic event names');
+ok(interactionRoute.includes('discord.interaction.signature_rejected') && interactionRoute.includes('discordSignatureDiagnostics') && interactionRoute.includes('ed25519Length'), 'dashboard interaction verifier must persist non-secret rejection diagnostics for defense-in-depth');
 ok(auth.includes('expected.length < 32') && auth.includes('provided.length < 32'), 'emergency administrator token must reject weak short secrets');
 ok(security.includes('x-real-ip') && security.includes('isTrustedCloudflareRequest'), 'client IP must prefer proxy-pinned X-Real-IP and trust CF IP only with marker');
 ok(geo.includes('x-mistblossom-country') && geo.includes('isTrustedCloudflareRequest'), 'geo policy must consume trusted proxy country metadata');

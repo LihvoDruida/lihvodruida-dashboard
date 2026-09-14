@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
+import { randomUUID } from "node:crypto";
 import botPackage from "../package.json" with { type: "json" };
-import { verifyDiscordSignature } from "./signature.mjs";
+import { inspectDiscordSignature } from "./signature.mjs";
 import { completeInteraction } from "./dashboardClient.mjs";
 import { logger } from "./logger.mjs";
 import {
@@ -158,6 +159,40 @@ function requestPath(request) {
   return String(request.url || "/").split("?")[0];
 }
 
+function headerValue(request, name, max = 240) {
+  const value = request.headers[String(name || "").toLowerCase()];
+  const text = Array.isArray(value) ? value[0] : value;
+  return String(text || "").trim().slice(0, max);
+}
+
+function requestIp(request) {
+  // Nginx overwrites CF-Connecting-IP/X-Real-IP with the trusted real client IP.
+  // The bot port is not published to the host, so a browser cannot bypass this
+  // proxy normalization from the public internet.
+  const fromProxy = headerValue(request, "cf-connecting-ip", 80)
+    || headerValue(request, "x-real-ip", 80);
+  if (fromProxy) return fromProxy;
+  return String(request.socket?.remoteAddress || "unknown").replace(/^::ffff:/, "").slice(0, 80);
+}
+
+function requestDiagnosticContext(request, path, extra = {}) {
+  const contentLengthRaw = headerValue(request, "content-length", 32);
+  const contentLength = /^\d+$/.test(contentLengthRaw) ? Number(contentLengthRaw) : null;
+  return {
+    requestId: randomUUID(),
+    method: String(request.method || "POST").slice(0, 12),
+    path: String(path || "/").slice(0, 500),
+    ip: requestIp(request),
+    host: headerValue(request, "host", 180),
+    userAgent: headerValue(request, "user-agent", 240) || "unknown",
+    contentType: headerValue(request, "content-type", 120) || null,
+    contentLength,
+    cfRay: headerValue(request, "cf-ray", 120) || null,
+    trustedProxy: headerValue(request, "x-mistblossom-trusted-proxy", 16) || null,
+    ...extra,
+  };
+}
+
 const server = createServer(async (request, response) => {
   const path = requestPath(request);
 
@@ -181,6 +216,13 @@ const server = createServer(async (request, response) => {
   try {
     rawBody = await readBody(request);
   } catch {
+    logger.warn("Відхилено Discord interaction: тіло запиту завелике", requestDiagnosticContext(request, path, {
+      eventName: "bot.security.discord_payload_too_large",
+      category: "security",
+      statusCode: 413,
+      reason: "payload_too_large",
+      maxBodyBytes: MAX_BODY_BYTES,
+    }));
     return json(response, 413, { error: "payload_too_large" });
   }
 
@@ -188,8 +230,24 @@ const server = createServer(async (request, response) => {
   // потрапляти навіть у JSON.parse.
   const signature = String(request.headers["x-signature-ed25519"] || "");
   const timestamp = String(request.headers["x-signature-timestamp"] || "");
-  if (!verifyDiscordSignature(rawBody, signature, timestamp)) {
-    logger.warn("Відхилено запит із некоректним підписом");
+  const verification = inspectDiscordSignature(rawBody, signature, timestamp);
+  if (!verification.ok) {
+    logger.warn("Відхилено Discord interaction: підпис не пройшов перевірку", requestDiagnosticContext(request, path, {
+      eventName: "bot.security.invalid_discord_signature",
+      category: "security",
+      statusCode: 401,
+      reason: verification.reason,
+      publicKeyConfigured: verification.publicKeyConfigured,
+      publicKeyValid: verification.publicKeyValid,
+      ed25519Present: verification.ed25519Present,
+      ed25519Length: verification.ed25519Length,
+      ed25519FormatValid: verification.ed25519FormatValid,
+      timestampPresent: verification.timestampPresent,
+      timestampNumeric: verification.timestampNumeric,
+      timestampAgeSec: verification.timestampAgeSec,
+      timestampSkewSec: verification.timestampSkewSec,
+      bodyBytes: verification.bodyBytes,
+    }));
     return json(response, 401, { error: "invalid_signature" });
   }
 
@@ -197,6 +255,13 @@ const server = createServer(async (request, response) => {
   try {
     interaction = JSON.parse(rawBody);
   } catch {
+    logger.warn("Відхилено Discord interaction: після валідного підпису отримано некоректний JSON", requestDiagnosticContext(request, path, {
+      eventName: "bot.discord.invalid_json",
+      category: "discord",
+      statusCode: 400,
+      reason: "invalid_json",
+      bodyBytes: Buffer.byteLength(rawBody, "utf8"),
+    }));
     return json(response, 400, { error: "invalid_json" });
   }
 

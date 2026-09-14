@@ -180,14 +180,58 @@ function mainCharacterLabel(character: any) {
   return name ? `${name}${realm ? ` • ${realm}` : ""}` : "мейн-персонаж не знайдений";
 }
 
+function discordSignatureDiagnostics(request: NextRequest, rawBody: string, fallbackReason = "ed25519_verification_failed") {
+  const ed25519 = String(request.headers.get("x-signature-ed25519") || "").trim();
+  const timestamp = String(request.headers.get("x-signature-timestamp") || "").trim();
+  const ed25519Present = ed25519.length > 0;
+  const ed25519FormatValid = /^[0-9a-f]{128}$/i.test(ed25519);
+  const timestampPresent = timestamp.length > 0;
+  const sent = Number(timestamp);
+  const timestampNumeric = timestampPresent && Number.isFinite(sent);
+  const timestampAgeSec = timestampNumeric ? Math.floor(Date.now() / 1000) - sent : null;
+  const reason = !ed25519Present
+    ? "missing_ed25519"
+    : !ed25519FormatValid
+      ? "invalid_ed25519_format"
+      : !timestampPresent
+        ? "missing_timestamp"
+        : !timestampNumeric
+          ? "invalid_timestamp"
+          : fallbackReason;
+
+  return {
+    statusCode: 401,
+    reason,
+    ed25519Present,
+    ed25519Length: ed25519.length,
+    ed25519FormatValid,
+    timestampPresent,
+    timestampNumeric,
+    timestampAgeSec,
+    timestampSkewSec: typeof timestampAgeSec === "number" ? Math.abs(timestampAgeSec) : null,
+    bodyBytes: Buffer.byteLength(rawBody, "utf8"),
+    contentType: request.headers.get("content-type") || null,
+    contentLength: request.headers.get("content-length") || null,
+    cfRay: request.headers.get("cf-ray") || null,
+    trustedProxy: request.headers.get("x-mistblossom-trusted-proxy") || null,
+  };
+}
+
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
 
   try {
     const verified = await verifyDiscordInteractionSignature(request, rawBody);
-    if (!verified) return new NextResponse("invalid request signature", { status: 401, headers: noStoreHeaders() });
+    if (!verified) {
+      logDashboardEvent("warn", "discord.interaction.signature_rejected", request,
+        discordSignatureDiagnostics(request, rawBody), { category: "security" });
+      return new NextResponse("invalid request signature", { status: 401, headers: noStoreHeaders() });
+    }
   } catch (error) {
-    logDashboardEvent("error", "discord.interaction.signature_failed", request, { message: safeErrorMessage(error) });
+    logDashboardEvent("error", "discord.interaction.signature_failed", request, {
+      ...discordSignatureDiagnostics(request, rawBody, "verification_error"),
+      message: safeErrorMessage(error),
+    }, { category: "security" });
     return new NextResponse("invalid request signature", { status: 401, headers: noStoreHeaders() });
   }
 

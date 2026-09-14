@@ -103,7 +103,7 @@ COPY .dockerignore /repo/.dockerignore
 # They are used only by TypeScript/CI/Next build and are not copied to runner.
 COPY bot/package.json /repo/bot/package.json
 COPY bot/Dockerfile /repo/bot/Dockerfile
-COPY bot/src/server.mjs /repo/bot/src/server.mjs
+COPY bot/src /repo/bot/src
 
 # Змінні, які Next вшиває у клієнтський бандл на етапі збірки.
 # Решта конфігурації читається під час старту з оточення контейнера.

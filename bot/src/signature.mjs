@@ -11,7 +11,7 @@ import { verify, createPublicKey } from "node:crypto";
 const DISCORD_PUBLIC_KEY = () => String(process.env.DISCORD_PUBLIC_KEY || "").trim();
 
 /** Наскільки старий підпис ще приймаємо. Захист від повторного відтворення. */
-const MAX_TIMESTAMP_SKEW_SECONDS = 60 * 5;
+export const MAX_TIMESTAMP_SKEW_SECONDS = 60 * 5;
 
 let cachedKey = null;
 let cachedKeyHex = "";
@@ -40,28 +40,66 @@ function publicKey() {
   }
 }
 
-export function verifyDiscordSignature(rawBody, signature, timestamp) {
+/**
+ * Діагностика verification без витоку самого підпису/ключа.
+ *
+ * Поля навмисно названі `ed25519*`, а не `signature*`: structured logger
+ * редагує будь-які ключі зі словом signature, щоб випадково не зберегти
+ * секретний header. Тут зберігаємо лише boolean/length/reason.
+ */
+export function inspectDiscordSignature(rawBody, signature, timestamp, nowMs = Date.now()) {
+  const body = String(rawBody || "");
+  const signatureHex = String(signature || "").trim();
+  const timestampValue = String(timestamp || "").trim();
+  const configuredKey = DISCORD_PUBLIC_KEY();
   const key = publicKey();
-  if (!key) return false;
-
-  const signatureHex = String(signature || "");
-  const timestampValue = String(timestamp || "");
-  if (!/^[0-9a-f]{128}$/i.test(signatureHex) || !timestampValue) return false;
-
-  // Свіжість перевіряємо до криптографії: відкидати старі запити дешевше.
+  const ed25519Present = signatureHex.length > 0;
+  const ed25519FormatValid = /^[0-9a-f]{128}$/i.test(signatureHex);
+  const timestampPresent = timestampValue.length > 0;
   const sent = Number(timestampValue);
-  if (!Number.isFinite(sent)) return false;
-  const skew = Math.abs(Math.floor(Date.now() / 1000) - sent);
-  if (skew > MAX_TIMESTAMP_SKEW_SECONDS) return false;
+  const timestampNumeric = timestampPresent && Number.isFinite(sent);
+  const nowSeconds = Math.floor(Number(nowMs) / 1000);
+  const timestampAgeSec = timestampNumeric ? nowSeconds - sent : null;
+  const timestampSkewSec = timestampNumeric ? Math.abs(timestampAgeSec) : null;
+
+  const base = {
+    ok: false,
+    reason: "unknown",
+    publicKeyConfigured: configuredKey.length > 0,
+    publicKeyValid: Boolean(key),
+    ed25519Present,
+    ed25519Length: signatureHex.length,
+    ed25519FormatValid,
+    timestampPresent,
+    timestampNumeric,
+    timestampAgeSec,
+    timestampSkewSec,
+    bodyBytes: Buffer.byteLength(body, "utf8"),
+  };
+
+  if (!configuredKey) return { ...base, reason: "public_key_missing" };
+  if (!key) return { ...base, reason: "public_key_invalid" };
+  if (!ed25519Present) return { ...base, reason: "missing_ed25519" };
+  if (!ed25519FormatValid) return { ...base, reason: "invalid_ed25519_format" };
+  if (!timestampPresent) return { ...base, reason: "missing_timestamp" };
+  if (!timestampNumeric) return { ...base, reason: "invalid_timestamp" };
+  if (timestampSkewSec > MAX_TIMESTAMP_SKEW_SECONDS) {
+    return { ...base, reason: "timestamp_out_of_window" };
+  }
 
   try {
-    return verify(
+    const ok = verify(
       null,
-      Buffer.from(timestampValue + rawBody, "utf8"),
+      Buffer.from(timestampValue + body, "utf8"),
       key,
       Buffer.from(signatureHex, "hex"),
     );
+    return { ...base, ok, reason: ok ? "ok" : "ed25519_verification_failed" };
   } catch {
-    return false;
+    return { ...base, reason: "verification_error" };
   }
+}
+
+export function verifyDiscordSignature(rawBody, signature, timestamp) {
+  return inspectDiscordSignature(rawBody, signature, timestamp).ok;
 }
