@@ -47,6 +47,9 @@ export async function POST(request: NextRequest) {
     const discordEvent = result.discordAction === "updated" ? "raids.discord.updated" : "raids.discord.created";
     const toastTitle = result.discordAction === "updated" ? "Discord-оголошення оновлено" : "Discord-оголошення опубліковано";
     const scheduledEvent = result.scheduledEvent;
+    if (!scheduledEvent) {
+      throw new Error("Discord-публікація завершилась без результату синхронізації Scheduled Event.");
+    }
     const scheduledEventLabel =
       scheduledEvent.action === "created"
         ? "Discord-подію створено"
