@@ -47,46 +47,6 @@
   box-shadow: none;
 }
 
-/* Вибір ролей для пінгу — сітка чекбоксів-карток */
-.roster-role-picker {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
-  gap: var(--space-xs);
-  max-height: 280px;
-  overflow-y: auto;
-  padding: var(--space-2xs);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-}
-
-.roster-role-check {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-  min-height: 40px;
-  padding: var(--space-2xs) var(--space-sm);
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  background: var(--surface);
-  cursor: pointer;
-  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
-}
-
-.roster-role-check:hover {
-  border-color: var(--border-strong);
-  background: var(--surface-hover);
-}
-
-.roster-role-check > span {
-  min-width: 0;
-  font-size: 0.82rem;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 /* Дія публікації відділена рискою — це кінець форми */
 .roster-create-form__submit {
   display: flex;
@@ -368,11 +328,6 @@
   .roster-create-form__submit .btn {
     width: 100%;
     min-width: 0;
-  }
-
-  .roster-role-picker {
-    grid-template-columns: minmax(0, 1fr);
-    max-height: 240px;
   }
 
   .roster-coverage-grid,

@@ -68,6 +68,7 @@ const semanticControlTokens = [
   'dashboard-user__button',
   'raid-action',
   'discord-preview-mode-button',
+  'discord-role-chip',
 ];
 
 const semanticActionLinkTokens = [

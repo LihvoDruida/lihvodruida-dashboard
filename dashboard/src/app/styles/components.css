@@ -1331,8 +1331,7 @@ input[type="radio"] {
     inset: 6px;
   }
 
-  .inline-check,
-.roster-role-check {
+  .inline-check {
     min-height: 44px;
   }
 }
