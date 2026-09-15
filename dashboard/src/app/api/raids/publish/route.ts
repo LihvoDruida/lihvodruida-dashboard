@@ -46,6 +46,17 @@ export async function POST(request: NextRequest) {
     const result = await saveAndMaybePublishRaid(form, user, profile);
     const discordEvent = result.discordAction === "updated" ? "raids.discord.updated" : "raids.discord.created";
     const toastTitle = result.discordAction === "updated" ? "Discord-оголошення оновлено" : "Discord-оголошення опубліковано";
+    const scheduledEvent = result.scheduledEvent;
+    const scheduledEventLabel =
+      scheduledEvent.action === "created"
+        ? "Discord-подію створено"
+        : scheduledEvent.action === "updated"
+          ? "Discord-подію оновлено"
+          : scheduledEvent.action === "deleted"
+            ? "Discord-подію видалено"
+            : scheduledEvent.action === "failed"
+              ? "Discord-подію не синхронізовано"
+              : "Discord-подія без змін";
 
     logDashboardEvent("info", discordEvent, request, {
       raidId: result.raid.id,
@@ -54,7 +65,22 @@ export async function POST(request: NextRequest) {
       messageUrl: result.published || "",
       channelId: result.raid.channelId || "",
       messageId: result.raid.messageId || "",
+      scheduledEventAction: scheduledEvent.action,
+      scheduledEventId: scheduledEvent.eventId || "",
+      scheduledEventUrl: scheduledEvent.eventUrl || "",
+      scheduledEventError: scheduledEvent.error || "",
     });
+    logDashboardEvent(
+      scheduledEvent.action === "failed" ? "warn" : "info",
+      `raids.discord_event.${scheduledEvent.action}`,
+      request,
+      {
+        raidId: result.raid.id,
+        eventId: scheduledEvent.eventId || "",
+        eventUrl: scheduledEvent.eventUrl || "",
+        error: scheduledEvent.error || "",
+      },
+    );
 
     await recordAdminAudit("raids.discord.publish", user, {
       status: "success",
@@ -66,15 +92,21 @@ export async function POST(request: NextRequest) {
       channelId: result.raid.channelId || null,
       messageId: result.raid.messageId || null,
       messageUrl: result.published || null,
+      scheduledEventAction: scheduledEvent.action,
+      scheduledEventId: scheduledEvent.eventId || null,
+      scheduledEventUrl: scheduledEvent.eventUrl || null,
+      scheduledEventError: scheduledEvent.error || null,
     }).catch((auditError) => {
       logDashboardEvent("warn", "raids.discord.publish.audit_failed", request, { raidId: result.raid.id, message: auditError instanceof Error ? auditError.message : String(auditError || "unknown") });
     });
 
     return redirectWithToast(request, `/raids/${encodeURIComponent(result.raid.id)}/edit`, {
-      tone: "success",
-      title: toastTitle,
-      message: result.published || "Discord-повідомлення оброблено.",
-      ttl: 7600,
+      tone: scheduledEvent.action === "failed" ? "warning" : "success",
+      title: scheduledEvent.action === "failed" ? `${toastTitle}, але подія потребує уваги` : toastTitle,
+      message: scheduledEvent.error
+        ? `${scheduledEventLabel}: ${scheduledEvent.error}`
+        : `${scheduledEventLabel}${scheduledEvent.eventUrl ? ` · ${scheduledEvent.eventUrl}` : ""}`,
+      ttl: scheduledEvent.action === "failed" ? 10000 : 7600,
     });
   } catch (error) {
     const message = safeErrorMessage(error);

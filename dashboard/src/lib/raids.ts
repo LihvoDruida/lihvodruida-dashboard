@@ -4,7 +4,7 @@ import {
   defaultRaidThumbnailPath,
   normalizeRaidThumbnailDifficulty,
 } from "@/lib/raidThumbnailAssets";
-import {  } from "@/lib/security";
+import { getCanonicalDashboardOrigin } from "@/lib/security";
 import { mapConcurrentSettled } from "@/lib/concurrency";
 import {
   getRuntimeCachedValue,
@@ -49,9 +49,13 @@ import {
   wowSpecFullName,
 } from "@/lib/wowClassCatalog";
 import {
+  createDiscordGuildScheduledEvent,
   createDiscordRaidMessage,
+  deleteDiscordGuildScheduledEvent,
   deleteDiscordRaidMessage,
   discordMessageUrl,
+  discordScheduledEventUrl,
+  editDiscordGuildScheduledEvent,
   editDiscordRaidMessage,
   fetchDiscordGuildMemberSnapshot,
   getDiscordDefaultChannelId,
@@ -161,6 +165,12 @@ export type RaidItem = {
   channelId?: string | null;
   messageId?: string | null;
   messageUrl?: string | null;
+  discordEventEnabled?: boolean | null;
+  discordEventDurationMinutes?: number | null;
+  discordEventId?: string | null;
+  discordEventUrl?: string | null;
+  discordEventSyncedAt?: string | null;
+  discordEventLastError?: string | null;
   discordDeletedAt?: string | null;
   discordDeleteReason?: "manual" | "auto" | null;
   discordCloseSyncedAt?: string | null;
@@ -239,6 +249,9 @@ const RAID_BENCH_PRIORITY_DOCUMENT = "globalBenchPriority";
 const RAID_BENCH_PRIORITY_CACHE_KEY = "raids:bench-priority:global";
 const RAID_ACTION_PREFIX = "mbv1:raid";
 const DEFAULT_RAID_REGISTRATION_LOCK_MINUTES = 60;
+const DEFAULT_RAID_DISCORD_EVENT_DURATION_MINUTES = 180;
+const MIN_RAID_DISCORD_EVENT_DURATION_MINUTES = 60;
+const MAX_RAID_DISCORD_EVENT_DURATION_MINUTES = 12 * 60;
 const MAX_RAID_REGISTRATION_LOCK_MINUTES = 7 * 24 * 60;
 const DIFFICULTY_LABELS: Record<RaidDifficulty, string> = {
   normal: "Нормал",
@@ -1112,6 +1125,22 @@ function normalizeRaid(id: string, data: Record<string, unknown>): RaidItem {
     channelId: cleanString(data.channelId, 32) || null,
     messageId: cleanString(data.messageId, 32) || null,
     messageUrl: cleanUrl(data.messageUrl),
+    discordEventEnabled: raidDiscordEventEnabledValue(
+      data.discordEventEnabled ?? data.discord_event_enabled,
+      true,
+    ),
+    discordEventDurationMinutes: cleanRaidDiscordEventDurationMinutes(
+      data.discordEventDurationMinutes ?? data.discord_event_duration_minutes,
+    ),
+    discordEventId:
+      cleanString(data.discordEventId || data.discord_event_id, 32) || null,
+    discordEventUrl:
+      cleanUrl(data.discordEventUrl || data.discord_event_url),
+    discordEventSyncedAt: timestampToIso(
+      data.discordEventSyncedAt || data.discord_event_synced_at,
+    ),
+    discordEventLastError:
+      cleanString(data.discordEventLastError || data.discord_event_last_error, 400) || null,
     discordDeletedAt: timestampToIso(
       data.discordDeletedAt || data.discord_deleted_at,
     ),
@@ -1847,6 +1876,7 @@ async function syncRaidClosedDiscordState(raid: RaidItem) {
         closedAt: raid.closedAt || new Date().toISOString(),
       },
       raid.channelId,
+      { syncScheduledEvent: false },
     );
     return true;
   } catch (error) {
@@ -2667,7 +2697,7 @@ export async function closeRaid(raidId: string) {
   let discordSynced = true;
   if (closed.channelId && closed.messageId && !closed.discordDeletedAt) {
     try {
-      await publishOrUpdateRaid(closed, closed.channelId);
+      await publishOrUpdateRaid(closed, closed.channelId, { syncScheduledEvent: false });
     } catch (error) {
       discordSynced = false;
       console.warn(
@@ -2699,6 +2729,29 @@ export async function deleteRaid(raidId: string) {
 
   let discordDeleted = false;
   let discordDeleteFailed = false;
+  let discordEventDeleted = false;
+  let discordEventDeleteFailed = false;
+
+  if (raid.discordEventId) {
+    try {
+      await deleteDiscordGuildScheduledEvent({
+        eventId: raid.discordEventId,
+        auditReason: `Raid scheduled event manually deleted with raid: ${raid.id}`,
+      });
+      discordEventDeleted = true;
+    } catch (error) {
+      if (isMissingDiscordScheduledEventError(error)) {
+        discordEventDeleted = true;
+      } else {
+        discordEventDeleteFailed = true;
+        console.warn("[raids] Failed to delete Discord scheduled event during manual raid deletion", {
+          raidId: raid.id,
+          eventId: raid.discordEventId,
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+  }
   if (raid.reminderMessageId) {
     const reminderChannelId = cleanString(raid.reminderChannelId || raid.channelId, 32);
     if (reminderChannelId) {
@@ -2756,7 +2809,13 @@ export async function deleteRaid(raidId: string) {
       message: error instanceof Error ? error.message : String(error),
     });
   });
-  return { ...raid, discordDeleted, discordDeleteFailed };
+  return {
+    ...raid,
+    discordDeleted,
+    discordDeleteFailed,
+    discordEventDeleted,
+    discordEventDeleteFailed,
+  };
 }
 
 export const deleteDraftRaid = deleteRaid;
@@ -3071,7 +3130,7 @@ export async function removeRaidSignupsForAccounts(input: {
       const nextRaid = { ...item.raid, signups: item.nextSignups, updatedAt: new Date().toISOString() };
       if (!nextRaid.channelId || !nextRaid.messageId || nextRaid.discordDeletedAt) continue;
       try {
-        await publishOrUpdateRaid(nextRaid, nextRaid.channelId);
+        await publishOrUpdateRaid(nextRaid, nextRaid.channelId, { syncScheduledEvent: false });
         discordSynced += 1;
       } catch (error) {
         discordFailed += 1;
@@ -3157,7 +3216,25 @@ export function formRaidPayload(
     lootMode: cleanLootMode(form.get("lootMode")),
     composition: normalizeComposition(composition),
     channelId: cleanSnowflake(form.get("channelId")),
+    discordEventEnabled: cleanBoolean(form.get("discordEventEnabled")),
+    discordEventDurationMinutes: cleanRaidDiscordEventDurationMinutes(
+      form.get("discordEventDurationMinutes"),
+    ),
   };
+}
+
+function cleanRaidDiscordEventDurationMinutes(value: unknown) {
+  const numeric = Math.floor(Number(value));
+  if (!Number.isFinite(numeric)) return DEFAULT_RAID_DISCORD_EVENT_DURATION_MINUTES;
+  return Math.max(
+    MIN_RAID_DISCORD_EVENT_DURATION_MINUTES,
+    Math.min(MAX_RAID_DISCORD_EVENT_DURATION_MINUTES, numeric),
+  );
+}
+
+function raidDiscordEventEnabledValue(value: unknown, fallback = true) {
+  if (value === undefined || value === null || value === "") return fallback;
+  return cleanBoolean(value);
 }
 
 function isValidRaidDate(value: string) {
@@ -4704,9 +4781,186 @@ function isMissingDiscordMessageError(error: unknown) {
   return /404|unknown message|10008/i.test(message);
 }
 
+function isMissingDiscordScheduledEventError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || "");
+  return /404|unknown guild scheduled event|scheduled event.*not found|10070/i.test(message);
+}
+
+function raidDiscordEventDurationMinutes(raid: Pick<RaidItem, "discordEventDurationMinutes">) {
+  return cleanRaidDiscordEventDurationMinutes(raid.discordEventDurationMinutes);
+}
+
+function raidDashboardUrl(raidId: string) {
+  try {
+    return `${getCanonicalDashboardOrigin()}/raids/${encodeURIComponent(raidId)}`;
+  } catch {
+    return "";
+  }
+}
+
+function raidDiscordScheduledEventDescription(raid: RaidItem, messageUrl: string) {
+  const pieces = [
+    raid.description.trim(),
+    raid.raidLeaderName ? `РЛ: ${raid.raidLeaderName}` : "",
+    messageUrl ? `Оголошення: ${messageUrl}` : "",
+    raidDashboardUrl(raid.id) ? `Сторінка рейду: ${raidDashboardUrl(raid.id)}` : "",
+  ].filter(Boolean);
+  return Array.from(pieces.join("\n\n")).slice(0, 1000).join("");
+}
+
+function raidDiscordScheduledEventLocation(raid: RaidItem, messageUrl: string) {
+  const primary = messageUrl || raidDashboardUrl(raid.id) || "Mistblossom Vanguard • Discord";
+  return Array.from(primary).slice(0, 100).join("");
+}
+
+export type RaidDiscordScheduledEventSyncResult = {
+  action: "created" | "updated" | "deleted" | "skipped" | "failed";
+  eventId: string | null;
+  eventUrl: string | null;
+  error: string | null;
+};
+
+async function persistRaidDiscordScheduledEventState(
+  raidId: string,
+  patch: Record<string, unknown>,
+) {
+  await firebaseWrite(
+    "raid",
+    `raid:${raidId}:discord-event-state`,
+    async () => {
+      await getFirebaseAdminDb()
+        .collection(RAID_COLLECTION)
+        .doc(raidId)
+        .set({ ...patch, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      clearRaidRuntimeCaches(raidId);
+    },
+    { timeoutMs: 3_000, bypassCircuit: true, logEvent: "raids.discord_event_state_write_failed" },
+  );
+}
+
+async function syncRaidDiscordScheduledEvent(
+  raid: RaidItem,
+  messageUrl: string,
+): Promise<RaidDiscordScheduledEventSyncResult> {
+  const enabled = raid.discordEventEnabled !== false;
+  const existingEventId = cleanSnowflake(raid.discordEventId);
+
+  if (!enabled) {
+    if (!existingEventId) {
+      await persistRaidDiscordScheduledEventState(raid.id, {
+        discordEventEnabled: false,
+        discordEventId: null,
+        discordEventUrl: null,
+        discordEventSyncedAt: FieldValue.serverTimestamp(),
+        discordEventLastError: null,
+      });
+      return { action: "skipped", eventId: null, eventUrl: null, error: null };
+    }
+    try {
+      await deleteDiscordGuildScheduledEvent({
+        eventId: existingEventId,
+        auditReason: `Raid scheduled event disabled: ${raid.id}`,
+      });
+      await persistRaidDiscordScheduledEventState(raid.id, {
+        discordEventEnabled: false,
+        discordEventId: null,
+        discordEventUrl: null,
+        discordEventSyncedAt: FieldValue.serverTimestamp(),
+        discordEventLastError: null,
+      });
+      return { action: "deleted", eventId: null, eventUrl: null, error: null };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error || "Discord event delete failed");
+      await persistRaidDiscordScheduledEventState(raid.id, {
+        discordEventLastError: message.slice(0, 400),
+      }).catch(() => false);
+      return { action: "failed", eventId: existingEventId, eventUrl: raid.discordEventUrl || null, error: message };
+    }
+  }
+
+  const startMs = raidDateTimeToUtcMs(raid);
+  if (startMs === null) {
+    return { action: "failed", eventId: existingEventId || null, eventUrl: raid.discordEventUrl || null, error: "Некоректна дата або час рейду для Discord-події." };
+  }
+
+  // Discord не дозволяє створити нову заплановану подію для часу, який уже минув.
+  // Існуючу подію при цьому не чіпаємо: Discord сам завершує EXTERNAL events за end time.
+  if (!existingEventId && startMs <= Date.now()) {
+    return { action: "skipped", eventId: null, eventUrl: null, error: null };
+  }
+
+  const endMs = startMs + raidDiscordEventDurationMinutes(raid) * 60_000;
+  const params = {
+    name: raidTitle(raid),
+    description: raidDiscordScheduledEventDescription(raid, messageUrl),
+    scheduledStartTime: new Date(startMs).toISOString(),
+    scheduledEndTime: new Date(endMs).toISOString(),
+    location: raidDiscordScheduledEventLocation(raid, messageUrl),
+  };
+
+  try {
+    let event: { id?: string } | null = null;
+    let action: "created" | "updated" = existingEventId ? "updated" : "created";
+    if (existingEventId) {
+      try {
+        event = await editDiscordGuildScheduledEvent({
+          eventId: existingEventId,
+          ...params,
+          auditReason: `Raid scheduled event updated: ${raid.id}`,
+        });
+      } catch (error) {
+        if (!isMissingDiscordScheduledEventError(error)) throw error;
+        action = "created";
+        event = await createDiscordGuildScheduledEvent({
+          ...params,
+          auditReason: `Raid scheduled event recreated: ${raid.id}`,
+        });
+      }
+    } else {
+      event = await createDiscordGuildScheduledEvent({
+        ...params,
+        auditReason: `Raid scheduled event created: ${raid.id}`,
+      });
+    }
+
+    const eventId = cleanSnowflake(event?.id || existingEventId);
+    if (!eventId) throw new Error("Discord не повернув ID запланованої події.");
+    const eventUrl = discordScheduledEventUrl(eventId);
+    try {
+      await persistRaidDiscordScheduledEventState(raid.id, {
+        discordEventEnabled: true,
+        discordEventDurationMinutes: raidDiscordEventDurationMinutes(raid),
+        discordEventId: eventId,
+        discordEventUrl: eventUrl || null,
+        discordEventSyncedAt: FieldValue.serverTimestamp(),
+        discordEventLastError: null,
+      });
+    } catch (stateError) {
+      // Якщо щойно створили подію, але не змогли зберегти її ID, прибираємо
+      // її назад із Discord. Інакше наступна публікація створила б дублікат.
+      if (action === "created") {
+        await deleteDiscordGuildScheduledEvent({
+          eventId,
+          auditReason: `Rollback orphan raid scheduled event: ${raid.id}`,
+        }).catch(() => false);
+      }
+      throw stateError;
+    }
+    return { action, eventId, eventUrl: eventUrl || null, error: null };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error || "Discord scheduled event sync failed");
+    await persistRaidDiscordScheduledEventState(raid.id, {
+      discordEventEnabled: true,
+      discordEventLastError: message.slice(0, 400),
+    }).catch(() => false);
+    return { action: "failed", eventId: existingEventId || null, eventUrl: raid.discordEventUrl || null, error: message };
+  }
+}
+
 export async function publishOrUpdateRaid(
   raid: RaidItem,
   channelId?: string | null,
+  options?: { syncScheduledEvent?: boolean },
 ) {
   const closed = isRaidClosed(raid);
   // A draft becomes published as part of this operation. Build the public
@@ -4851,7 +5105,29 @@ export async function publishOrUpdateRaid(
     });
   });
 
-  return { channelId: nextChannelId, messageId: nextMessageId, messageUrl };
+  const scheduledEvent = options?.syncScheduledEvent === false
+    ? {
+        action: "skipped" as const,
+        eventId: raid.discordEventId || null,
+        eventUrl: raid.discordEventUrl || null,
+        error: raid.discordEventLastError || null,
+      }
+    : await syncRaidDiscordScheduledEvent(
+        {
+          ...publishedRaid,
+          channelId: nextChannelId,
+          messageId: nextMessageId,
+          messageUrl,
+        },
+        messageUrl,
+      );
+
+  return {
+    channelId: nextChannelId,
+    messageId: nextMessageId,
+    messageUrl,
+    scheduledEvent,
+  };
 }
 
 export async function saveAndMaybePublishRaid(
@@ -4885,12 +5161,18 @@ export async function saveAndMaybePublishRaid(
         status: nextStatus,
         closedReason: shouldAutoClose ? ("auto" as const) : null,
         closedAt: shouldAutoClose ? new Date().toISOString() : null,
-        ...result,
+        channelId: result.channelId,
+        messageId: result.messageId,
+        messageUrl: result.messageUrl,
+        discordEventId: result.scheduledEvent.eventId,
+        discordEventUrl: result.scheduledEvent.eventUrl,
+        discordEventLastError: result.scheduledEvent.error,
       },
       published: result.messageUrl,
       discordAction: wasDiscordPublished
         ? ("updated" as const)
         : ("created" as const),
+      scheduledEvent: result.scheduledEvent,
     };
   }
   return { raid, published: null, discordAction: null };

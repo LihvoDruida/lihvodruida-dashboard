@@ -1291,6 +1291,112 @@ export async function deleteDiscordRaidMessage(params: {
   });
 }
 
+
+export type DiscordGuildScheduledEvent = {
+  id: string;
+  guild_id?: string;
+  name?: string;
+  description?: string | null;
+  scheduled_start_time?: string;
+  scheduled_end_time?: string | null;
+  status?: number;
+  entity_type?: number;
+  entity_metadata?: { location?: string | null } | null;
+};
+
+function cleanScheduledEventText(value: unknown, max: number) {
+  return Array.from(String(value || "").normalize("NFC")).slice(0, max).join("").trim();
+}
+
+export function discordScheduledEventUrl(eventIdInput: string, guildIdInput = getDiscordGuildId()) {
+  const guildId = cleanSnowflake(guildIdInput);
+  const eventId = cleanSnowflake(eventIdInput);
+  return guildId && eventId ? `https://discord.com/events/${guildId}/${eventId}` : "";
+}
+
+export async function createDiscordGuildScheduledEvent(params: {
+  name: string;
+  description?: string | null;
+  scheduledStartTime: string;
+  scheduledEndTime: string;
+  location: string;
+  auditReason?: string;
+}) {
+  const guildId = cleanSnowflake(getDiscordGuildId());
+  if (!guildId) throw new Error("Discord-сервер не підключений до панелі.");
+  const name = cleanScheduledEventText(params.name, 100);
+  const description = cleanScheduledEventText(params.description, 1000);
+  const location = cleanScheduledEventText(params.location, 100);
+  if (!name) throw new Error("Discord-подія потребує назву.");
+  if (!location) throw new Error("Discord-подія потребує локацію або посилання.");
+
+  return discordApi<DiscordGuildScheduledEvent>(`/guilds/${guildId}/scheduled-events`, {
+    method: "POST",
+    body: JSON.stringify({
+      channel_id: null,
+      entity_metadata: { location },
+      name,
+      privacy_level: 2,
+      scheduled_start_time: params.scheduledStartTime,
+      scheduled_end_time: params.scheduledEndTime,
+      description: description || undefined,
+      entity_type: 3,
+    }),
+    auditReason: params.auditReason || "Raid scheduled event created from dashboard",
+  });
+}
+
+export async function editDiscordGuildScheduledEvent(params: {
+  eventId: string;
+  name: string;
+  description?: string | null;
+  scheduledStartTime: string;
+  scheduledEndTime: string;
+  location: string;
+  auditReason?: string;
+}) {
+  const guildId = cleanSnowflake(getDiscordGuildId());
+  const eventId = cleanSnowflake(params.eventId);
+  if (!guildId || !eventId) throw new Error("Discord Scheduled Event ID невалідний.");
+  const name = cleanScheduledEventText(params.name, 100);
+  const description = cleanScheduledEventText(params.description, 1000);
+  const location = cleanScheduledEventText(params.location, 100);
+  if (!name || !location) throw new Error("Discord-подія має невалідні параметри.");
+
+  return discordApi<DiscordGuildScheduledEvent>(`/guilds/${guildId}/scheduled-events/${eventId}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      channel_id: null,
+      entity_metadata: { location },
+      name,
+      privacy_level: 2,
+      scheduled_start_time: params.scheduledStartTime,
+      scheduled_end_time: params.scheduledEndTime,
+      description: description || null,
+      entity_type: 3,
+    }),
+    auditReason: params.auditReason || "Raid scheduled event updated from dashboard",
+  });
+}
+
+export async function deleteDiscordGuildScheduledEvent(params: {
+  eventId: string;
+  auditReason?: string;
+}) {
+  const guildId = cleanSnowflake(getDiscordGuildId());
+  const eventId = cleanSnowflake(params.eventId);
+  if (!guildId || !eventId) return { ok: true, skipped: true };
+  await discordApi<void>(`/guilds/${guildId}/scheduled-events/${eventId}`, {
+    method: "DELETE",
+    expectedStatuses: [404],
+    auditReason: params.auditReason || "Raid scheduled event deleted from dashboard",
+  }).catch((error) => {
+    if (/Discord API 404/i.test(String((error as Error)?.message || error))) return;
+    throw error;
+  });
+  return { ok: true, skipped: false };
+}
+
 function readComponentCustomIds(components: unknown): string[] {
   if (!Array.isArray(components)) return [];
   const ids: string[] = [];

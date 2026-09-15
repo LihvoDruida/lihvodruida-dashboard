@@ -834,6 +834,9 @@ export function RaidAnnouncementPreview({
         <span><b>Розхідники</b> {raidConsumablesLabel(raid.consumables)}</span>
         <span><b>Лут</b> {raidLootLabel(raid.lootMode)}</span>
         <span><b>Створив</b> {raid.createdByName}{raid.createdByMain ? ` · ${raid.createdByMain}` : ""}</span>
+        {raid.discordEventUrl ? (
+          <a className="raid-message-link" href={raid.discordEventUrl} target="_blank" rel="noreferrer">📅 Discord-подія</a>
+        ) : null}
       </div>
 
       {mainRosterFull && !closed ? (
@@ -1019,7 +1022,7 @@ export function RaidListCard({
                 data-confirm-message={
                   raid.status === "draft"
                     ? "Видалити чернетку рейду?"
-                    : "Видалити рейд із панелі? Повʼязане Discord-повідомлення також буде прибране, якщо це можливо."
+                    : "Видалити рейд із панелі? Повʼязані Discord-повідомлення та Scheduled Event також будуть прибрані, якщо це можливо."
                 }
               >
                 <button
@@ -1388,6 +1391,52 @@ export function RaidForm({
               <small>Саме в цей канал піде нове або оновлене оголошення.</small>
             )}
           </label>
+
+          <div className="raid-setting-card raid-field--wide">
+            <div className="raid-setting-card__head">
+              <strong>Discord-подія</strong>
+              <span>Scheduled Event сервера</span>
+            </div>
+            <label className="raid-checkbox-line raid-checkbox-line--primary">
+              <input
+                type="checkbox"
+                name="discordEventEnabled"
+                value="1"
+                defaultChecked={raid?.discordEventEnabled !== false}
+              />
+              <span>
+                <strong>Створювати подію разом із рейдом</strong>
+                <small>Під час публікації Dashboard створить або оновить Discord Scheduled Event за датою й часом рейду.</small>
+              </span>
+            </label>
+            <label className="field-label raid-dependent-field">
+              Тривалість події
+              <select
+                className="select"
+                name="discordEventDurationMinutes"
+                defaultValue={String(raid?.discordEventDurationMinutes || 180)}
+              >
+                <option value="120">2 години</option>
+                <option value="180">3 години</option>
+                <option value="240">4 години</option>
+                <option value="300">5 годин</option>
+                <option value="360">6 годин</option>
+              </select>
+              <small>External event автоматично стартує й завершується в Discord за цим інтервалом.</small>
+            </label>
+            {raid?.discordEventLastError ? (
+              <span className="raid-setting-status is-warning">
+                ⚠ Остання синхронізація події: {raid.discordEventLastError}
+              </span>
+            ) : raid?.discordEventUrl ? (
+              <a className="raid-message-link" href={raid.discordEventUrl} target="_blank" rel="noreferrer">
+                📅 Відкрити Discord-подію
+              </a>
+            ) : (
+              <span className="raid-setting-status">Подія буде створена під час публікації рейду.</span>
+            )}
+          </div>
+
           <label className="field-label">
             Розхідники
             <select
@@ -1539,6 +1588,16 @@ export function RaidForm({
                 Відкрити Discord-повідомлення
               </a>
             ) : null}
+            {raid?.discordEventUrl ? (
+              <a
+                className="raid-message-link"
+                href={raid.discordEventUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Відкрити Discord-подію
+              </a>
+            ) : null}
           </div>
         </section>
       </form>
@@ -1671,6 +1730,8 @@ export function makePreviewRaid(
     registrationLockEnabled: false,
     registrationLockMinutesBefore: null,
     mentionRoleIds: [],
+    discordEventEnabled: true,
+    discordEventDurationMinutes: 180,
     status: "draft",
     signups: [],
   };

@@ -31,28 +31,32 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     logDashboardEvent("info", "raids.delete.start", request, { raidId, actorId: user.id, actorRole: user.role });
     const result = await deleteRaid(raidId);
     logDashboardEvent("info", "raids.delete.done", request, { raidId: result.id, actorId: user.id, actorRole: user.role });
+    const discordCleanupFailed = result.discordDeleteFailed || result.discordEventDeleteFailed;
     await recordAdminAudit("raids.delete", user, {
-      status: result.discordDeleteFailed ? "warning" : "success",
-      summary: result.discordDeleteFailed ? `Рейд видалено з панелі, але Discord-повідомлення не видалилось: ${result.title || result.id}.` : `Рейд видалено: ${result.title || result.id}.`,
+      status: discordCleanupFailed ? "warning" : "success",
+      summary: discordCleanupFailed ? `Рейд видалено з панелі, але не всі Discord-ресурси вдалося прибрати: ${result.title || result.id}.` : `Рейд видалено: ${result.title || result.id}.`,
       raidId: result.id,
       title: result.title || null,
       raidStatus: result.status,
       discordDeleted: Boolean(result.discordDeleted),
       discordDeleteFailed: Boolean(result.discordDeleteFailed),
+      discordEventDeleted: Boolean(result.discordEventDeleted),
+      discordEventDeleteFailed: Boolean(result.discordEventDeleteFailed),
+      discordEventId: result.discordEventId || null,
       channelId: result.channelId || null,
       messageId: result.messageId || null,
     }).catch((auditError) => {
       logDashboardEvent("warn", "raids.delete.audit_failed", request, { raidId: result.id, message: auditError instanceof Error ? auditError.message : String(auditError || "unknown") });
     });
     return redirectWithToast(request, "/raids", {
-      tone: result.discordDeleteFailed ? "warning" : "success",
+      tone: discordCleanupFailed ? "warning" : "success",
       title: result.status === "draft" ? "Чернетку видалено" : "Рейд видалено",
-      message: result.discordDeleteFailed
-        ? "Рейд видалено з панелі, але Discord-повідомлення не вдалося прибрати автоматично. Перевір його в Discord вручну."
-        : result.discordDeleted
-          ? "Рейд прибрано з панелі, а Discord-повідомлення видалено."
+      message: discordCleanupFailed
+        ? "Рейд видалено з панелі, але один із Discord-ресурсів (повідомлення або подію) не вдалося прибрати автоматично. Перевір Discord вручну."
+        : result.discordDeleted || result.discordEventDeleted
+          ? "Рейд прибрано з панелі разом із повʼязаними Discord-ресурсами."
           : "Рейд прибрано зі списку.",
-      ttl: result.discordDeleteFailed ? 9800 : 6200,
+      ttl: discordCleanupFailed ? 9800 : 6200,
     });
   } catch (error) {
     const message = safeErrorMessage(error);
