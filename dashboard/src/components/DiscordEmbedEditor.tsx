@@ -426,9 +426,15 @@ export function RolePicker({ roles, selectedRoleIds, onChange, fieldName = "role
   const pickerId = useId();
   const normalizedSelectedRoleIds = uniqueIds(selectedRoleIds);
   const selected = new Set(normalizedSelectedRoleIds);
-  const filteredRoles = roles.filter((role) => role.name.toLowerCase().includes(query.trim().toLowerCase()));
-  const visibleRoleIds = new Set(filteredRoles.map((role) => role.id));
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredRoles = roles.filter((role) => role.name.toLowerCase().includes(normalizedQuery));
+  const orderedRoles = [
+    ...filteredRoles.filter((role) => selected.has(role.id)),
+    ...filteredRoles.filter((role) => !selected.has(role.id)),
+  ];
+  const visibleRoleIds = new Set(orderedRoles.map((role) => role.id));
   const hiddenSelectedRoleIds = normalizedSelectedRoleIds.filter((roleId) => !visibleRoleIds.has(roleId));
+  const selectedRoles = roles.filter((role) => selected.has(role.id));
 
   function toggleRole(roleId: string) {
     if (selected.has(roleId)) {
@@ -443,45 +449,82 @@ export function RolePicker({ roles, selectedRoleIds, onChange, fieldName = "role
       {hiddenSelectedRoleIds.map((roleId) => (
         <input key={`hidden-${roleId}`} type="hidden" name={fieldName} value={roleId} />
       ))}
-      <div className="discord-role-selected" aria-label={ariaLabel}>
-        {normalizedSelectedRoleIds.length === 0 ? <span className="discord-role-placeholder">{emptyLabel}</span> : null}
-        {roles.filter((role) => selected.has(role.id)).map((role) => (
-          <span className="discord-role-chip" key={role.id}>
-            <span className="discord-role-dot" style={{ backgroundColor: roleColor(role.color) }} />
-            {role.name}
-          </span>
-        ))}
+
+      <div className="discord-role-selected-shell">
+        <div className="discord-role-selected-head">
+          <strong>Вибрано</strong>
+          <span>{selectedRoles.length ? `${selectedRoles.length} рол.` : "Нічого"}</span>
+        </div>
+
+        <div className="discord-role-selected" aria-label={ariaLabel}>
+          {selectedRoles.length === 0 ? <span className="discord-role-placeholder">{emptyLabel}</span> : null}
+          {selectedRoles.map((role) => (
+            <button
+              key={role.id}
+              type="button"
+              className="discord-role-chip"
+              onClick={() => toggleRole(role.id)}
+              aria-label={`Прибрати роль ${role.name}`}
+            >
+              <span className="discord-role-dot" style={{ backgroundColor: roleColor(role.color) }} />
+              <span className="discord-role-chip__label">{role.name}</span>
+              <span className="discord-role-chip__remove" aria-hidden="true">×</span>
+            </button>
+          ))}
+        </div>
       </div>
 
-      <input
-        id={`${pickerId}-search`}
-        className="input discord-role-search"
-        type="search"
-        value={query}
-        placeholder="Пошук ролі..."
-        onChange={(event) => setQuery(event.currentTarget.value)}
-      />
+      <label className="discord-role-search-shell" htmlFor={`${pickerId}-search`}>
+        <span className="discord-role-search-icon" aria-hidden="true">⌕</span>
+        <input
+          id={`${pickerId}-search`}
+          className="input discord-role-search"
+          type="search"
+          value={query}
+          placeholder="Пошук ролі..."
+          onChange={(event) => setQuery(event.currentTarget.value)}
+        />
+      </label>
 
-      <div className="discord-role-list" role="listbox" aria-label={ariaLabel}>
-        {filteredRoles.length === 0 ? (
+      <div className="discord-role-picker-list" role="listbox" aria-label={ariaLabel}>
+        {orderedRoles.length === 0 ? (
           <div className="discord-role-empty">Нічого не знайдено. Очисти пошук або перевір список ролей.</div>
         ) : null}
-        {filteredRoles.map((role) => (
-          <label className="discord-role-option" key={role.id} data-selected={selected.has(role.id) ? "true" : "false"}>
-            <input
-              type="checkbox"
-              name={fieldName}
-              value={role.id}
-              checked={selected.has(role.id)}
-              onChange={() => toggleRole(role.id)}
-            />
-            <span className="discord-role-dot" style={{ backgroundColor: roleColor(role.color) }} />
-            <span>{role.name}</span>
-            {selected.has(role.id) ? <strong>Вибрано</strong> : null}
-          </label>
-        ))}
+        {orderedRoles.map((role) => {
+          const active = selected.has(role.id);
+          return (
+            <label
+              className="discord-role-picker-option"
+              key={role.id}
+              data-selected={active ? "true" : "false"}
+              aria-selected={active}
+            >
+              <input
+                className="sr-only"
+                type="checkbox"
+                name={fieldName}
+                value={role.id}
+                checked={active}
+                onChange={() => toggleRole(role.id)}
+              />
+              <span className="discord-role-picker-option__control" aria-hidden="true">
+                {active ? <span>✓</span> : null}
+              </span>
+              <span className="discord-role-picker-option__body">
+                <span className="discord-role-picker-option__title">
+                  <span className="discord-role-dot" style={{ backgroundColor: roleColor(role.color) }} />
+                  <span className="discord-role-picker-option__name">{role.name}</span>
+                </span>
+                <span className="discord-role-picker-option__hint">
+                  {active ? "Додано до вибору" : "Натисни, щоб вибрати"}
+                </span>
+              </span>
+              <span className="discord-role-picker-option__badge">{active ? "Вибрано" : "Обрати"}</span>
+            </label>
+          );
+        })}
       </div>
-      <small>{helperText}</small>
+      <small className="discord-role-picker__help">{helperText}</small>
     </div>
   );
 }

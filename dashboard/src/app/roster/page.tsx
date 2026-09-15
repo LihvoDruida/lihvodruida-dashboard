@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import DashboardIdentity from "@/components/DashboardIdentity";
+import RaidRoleMentionPicker from "@/components/RaidRoleMentionPicker";
 import { getSession } from "@/lib/auth";
 import { resolveAuthorIdentity } from "@/lib/authorIdentity";
 import { canManageRaids } from "@/lib/permissions";
@@ -36,11 +37,6 @@ export const metadata = buildPageMetadata({
 
 type ChannelOption = { id: string; name: string; type: number };
 type RoleOption = { id: string; name: string; color: number; position: number };
-
-function roleHex(color: number) {
-  if (!color) return "#94a3b8";
-  return `#${color.toString(16).padStart(6, "0")}`;
-}
 
 /* -------------------------------------------------------------------------- */
 
@@ -372,14 +368,13 @@ export default async function RosterFormationPage() {
                 <strong>Кого тегати</strong>
                 <small>Ці ролі отримають пінг при публікації (необовʼязково).</small>
               </div>
-              <div className="roster-role-picker" role="group" aria-label="Ролі для згадки">
-                {roles.slice(0, 40).map((role) => (
-                  <label key={role.id} className="inline-check roster-role-check">
-                    <input type="checkbox" name="mentionRoleIds" value={role.id} />
-                    <span style={{ color: roleHex(role.color) }}>@ {role.name}</span>
-                  </label>
-                ))}
-              </div>
+              <RaidRoleMentionPicker
+                roles={roles.slice(0, 40)}
+                selectedRoleIds={[]}
+                ariaLabel="Ролі для згадки у формуванні складу"
+                emptyLabel="Теги ролей ще не вибрані"
+                helperText="Обрані ролі будуть тегнуті над Discord embed формування складу так само, як у рейдах і рейд-пулах."
+              />
             </div>
           ) : null}
 
