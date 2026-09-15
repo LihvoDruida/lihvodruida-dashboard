@@ -55,10 +55,12 @@ import {
   deleteDiscordRaidMessage,
   discordMessageUrl,
   discordScheduledEventUrl,
+  discordChannelUrl,
   editDiscordGuildScheduledEvent,
   editDiscordRaidMessage,
   fetchDiscordGuildMemberSnapshot,
   getDiscordDefaultChannelId,
+  sendDiscordDirectMessage,
   normalizeDiscordEmbed,
   type DiscordMessageRef,
 } from "@/lib/discordAdmin";
@@ -109,6 +111,9 @@ export type RaidSignup = {
   discordId: string;
   signupNumber?: number | null;
   discordName: string;
+  discordNickname?: string | null;
+  discordUsername?: string | null;
+  discordGlobalName?: string | null;
   profileId?: string | null;
   characterKey?: string | null;
   status: RaidSignupStatus;
@@ -163,6 +168,7 @@ export type RaidItem = {
   composition: RaidComposition;
   status: "draft" | "published" | "closed";
   channelId?: string | null;
+  voiceChannelId?: string | null;
   messageId?: string | null;
   messageUrl?: string | null;
   discordEventEnabled?: boolean | null;
@@ -178,6 +184,9 @@ export type RaidItem = {
   reminderMessageId?: string | null;
   reminderSentAt?: string | null;
   reminderDeletedAt?: string | null;
+  reminderDmAttemptedAt?: string | null;
+  reminderDmSentCount?: number | null;
+  reminderDmFailedCount?: number | null;
   signups: RaidSignup[];
   benchPriority?: RaidBenchPrioritySettings | null;
   createdAt?: string | null;
@@ -185,6 +194,14 @@ export type RaidItem = {
   publishedAt?: string | null;
   closedAt?: string | null;
   closedReason?: "manual" | "auto" | null;
+};
+
+export type RaidEditorDefaults = {
+  accountDiscordId: string;
+  accountName: string;
+  channelId?: string | null;
+  voiceChannelId?: string | null;
+  updatedAt?: string | null;
 };
 
 export type RaidParty = {
@@ -247,6 +264,7 @@ const RAID_COLLECTION = "dashboardRaids";
 const RAID_SETTINGS_COLLECTION = "dashboardRaidSettings";
 const RAID_BENCH_PRIORITY_DOCUMENT = "globalBenchPriority";
 const RAID_BENCH_PRIORITY_CACHE_KEY = "raids:bench-priority:global";
+const RAID_EDITOR_DEFAULTS_PREFIX = "editorDefaults";
 const RAID_ACTION_PREFIX = "mbv1:raid";
 const DEFAULT_RAID_REGISTRATION_LOCK_MINUTES = 60;
 const DEFAULT_RAID_DISCORD_EVENT_DURATION_MINUTES = 180;
@@ -821,6 +839,74 @@ function raidRegistrationAvailableSlots(
   return Math.max(0, limit - activeCount + replaceableCount);
 }
 
+function raidEditorDefaultsDocumentId(user: DashboardSession) {
+  const provider = cleanString(user.provider, 24).replace(/[^a-z0-9_-]/gi, "") || "user";
+  const account = cleanString(user.id, 96).replace(/[^a-z0-9_-]/gi, "") || "unknown";
+  return `${RAID_EDITOR_DEFAULTS_PREFIX}_${provider}_${account}`.slice(0, 180);
+}
+
+function normalizeRaidEditorDefaults(data: Record<string, unknown>): RaidEditorDefaults {
+  return {
+    accountDiscordId: cleanSnowflake(data.accountDiscordId || data.account_discord_id),
+    accountName: cleanString(data.accountName || data.account_name, 120),
+    channelId: cleanSnowflake(data.channelId || data.channel_id) || null,
+    voiceChannelId: cleanSnowflake(data.voiceChannelId || data.voice_channel_id) || null,
+    updatedAt: timestampToIso(data.updatedAt || data.updated_at),
+  };
+}
+
+export async function getRaidEditorDefaults(user: DashboardSession): Promise<RaidEditorDefaults> {
+  const empty: RaidEditorDefaults = {
+    accountDiscordId: user.provider === "discord" ? cleanSnowflake(user.id) : "",
+    accountName: user.name || user.login || "",
+    channelId: null,
+    voiceChannelId: null,
+    updatedAt: null,
+  };
+  if (!hasRaidStorage()) return empty;
+  const docId = raidEditorDefaultsDocumentId(user);
+  return firebaseRead<RaidEditorDefaults>(
+    "raid",
+    `raids:editor-defaults:${docId}`,
+    async () => {
+      const snapshot = await getFirebaseAdminDb().collection(RAID_SETTINGS_COLLECTION).doc(docId).get();
+      return snapshot.exists ? normalizeRaidEditorDefaults(snapshot.data() || {}) : empty;
+    },
+    {
+      ttlMs: 30_000,
+      timeoutMs: 2_000,
+      fallback: () => empty,
+      logEvent: "raids.editor_defaults_read_failed",
+    },
+  );
+}
+
+async function saveRaidEditorDefaults(
+  user: DashboardSession,
+  payload: Pick<RaidItem, "channelId" | "voiceChannelId">,
+) {
+  if (!hasRaidStorage()) return;
+  const docId = raidEditorDefaultsDocumentId(user);
+  await firebaseWrite(
+    "raid",
+    `raids:editor-defaults:${docId}:save`,
+    async () => {
+      await getFirebaseAdminDb().collection(RAID_SETTINGS_COLLECTION).doc(docId).set(
+        {
+          accountDiscordId: user.provider === "discord" ? cleanSnowflake(user.id) : "",
+          accountName: user.name || user.login || user.id || "",
+          channelId: cleanSnowflake(payload.channelId) || null,
+          voiceChannelId: cleanSnowflake(payload.voiceChannelId) || null,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+      clearRuntimeCachedValue(`raids:editor-defaults:${docId}`);
+    },
+    { timeoutMs: 2_500, fallback: () => undefined, logEvent: "raids.editor_defaults_write_failed" },
+  );
+}
+
 export async function getRaidBenchPrioritySettings(
   options: { bypassCache?: boolean } = {},
 ): Promise<RaidBenchPrioritySettings> {
@@ -994,6 +1080,12 @@ function normalizeSignup(value: unknown): RaidSignup | null {
         item.signupOrder,
     ),
     discordName: cleanString(item.discordName, 100) || "Discord user",
+    discordNickname:
+      cleanString(item.discordNickname || item.discord_nickname, 100) || null,
+    discordUsername:
+      cleanString(item.discordUsername || item.discord_username, 100) || null,
+    discordGlobalName:
+      cleanString(item.discordGlobalName || item.discord_global_name, 100) || null,
     profileId: cleanString(item.profileId, 80) || null,
     characterKey:
       normalizeCharacterKey(item.characterKey || item.character_key) || null,
@@ -1123,6 +1215,8 @@ function normalizeRaid(id: string, data: Record<string, unknown>): RaidItem {
     composition: normalizeComposition(data.composition),
     status,
     channelId: cleanString(data.channelId, 32) || null,
+    voiceChannelId:
+      cleanString(data.voiceChannelId || data.voice_channel_id, 32) || null,
     messageId: cleanString(data.messageId, 32) || null,
     messageUrl: cleanUrl(data.messageUrl),
     discordEventEnabled: raidDiscordEventEnabledValue(
@@ -1160,6 +1254,15 @@ function normalizeRaid(id: string, data: Record<string, unknown>): RaidItem {
     reminderDeletedAt: timestampToIso(
       data.reminderDeletedAt || data.reminder_deleted_at,
     ),
+    reminderDmAttemptedAt: timestampToIso(
+      data.reminderDmAttemptedAt || data.reminder_dm_attempted_at,
+    ),
+    reminderDmSentCount: Number.isFinite(Number(data.reminderDmSentCount ?? data.reminder_dm_sent_count))
+      ? Math.max(0, Math.floor(Number(data.reminderDmSentCount ?? data.reminder_dm_sent_count)))
+      : null,
+    reminderDmFailedCount: Number.isFinite(Number(data.reminderDmFailedCount ?? data.reminder_dm_failed_count))
+      ? Math.max(0, Math.floor(Number(data.reminderDmFailedCount ?? data.reminder_dm_failed_count)))
+      : null,
     signups,
     createdAt: timestampToIso(data.createdAt),
     updatedAt: timestampToIso(data.updatedAt),
@@ -1765,32 +1868,53 @@ export async function getRaid(raidId: string): Promise<RaidItem | null> {
   return attachRaidBenchPrioritySettings(raid);
 }
 
+function raidDiscordMessageLink(raid: Pick<RaidItem, "channelId" | "messageId" | "messageUrl">) {
+  return raid.messageUrl || (raid.channelId && raid.messageId ? discordMessageUrl(raid.channelId, raid.messageId) : null);
+}
+
+function raidVoiceChannelLink(raid: Pick<RaidItem, "voiceChannelId">) {
+  return raid.voiceChannelId ? discordChannelUrl(raid.voiceChannelId) : null;
+}
+
 function buildRaidReminderPayload(raid: RaidItem) {
   const startsAt = raidDateTimeToUtcMs(raid);
   const unix = startsAt === null ? null : Math.floor(startsAt / 1000);
   const roster = raidActiveRosterSize(raid);
+  const messageLink = raidDiscordMessageLink(raid);
+  const voiceLink = raidVoiceChannelLink(raid);
+  const fields: Array<{ name: string; value: string; inline?: boolean }> = [
+    {
+      name: "🕒 Початок",
+      value: unix ? `<t:${unix}:f> • <t:${unix}:R>` : discordDateTimeLabel(raid),
+      inline: true,
+    },
+    {
+      name: "👥 Записано",
+      value: `${roster}`,
+      inline: true,
+    },
+    {
+      name: "📌 Статус",
+      value: isRaidClosed(raid) ? "🔒 Запис закрито" : "🔓 Запис відкрито",
+      inline: true,
+    },
+  ];
+  if (raid.raidLeaderName) {
+    fields.push({ name: "🧭 РЛ", value: raid.raidLeaderName, inline: true });
+  }
+  if (voiceLink) {
+    fields.push({ name: "🔊 Голосовий канал", value: `[Відкрити канал](${voiceLink})`, inline: true });
+  }
+  if (messageLink) {
+    fields.push({ name: "🔗 Рейд у Discord", value: `[Відкрити запис](${messageLink})`, inline: false });
+  }
+
   const embed = normalizeDiscordEmbed({
     title: `⏰ Рейд через ${RAID_REMINDER_BEFORE_START_MINUTES} хвилин`,
-    url: dashboardRaidUrl(raid.id),
+    url: messageLink || dashboardRaidUrl(raid.id),
     description: `**${raidTitle(raid)}**\nПідготуйте персонажа, розхідники та зайдіть у голосовий канал завчасно.`,
     color: DIFFICULTY_COLORS[raid.difficulty],
-    fields: [
-      {
-        name: "🕒 Початок",
-        value: unix ? `<t:${unix}:f> • <t:${unix}:R>` : discordDateTimeLabel(raid),
-        inline: true,
-      },
-      {
-        name: "👥 Записано",
-        value: `${roster}`,
-        inline: true,
-      },
-      {
-        name: "📌 Статус",
-        value: isRaidClosed(raid) ? "🔒 Запис закрито" : "🔓 Запис відкрито",
-        inline: true,
-      },
-    ],
+    fields,
     footer: {
       text: `Нагадування автоматично видалиться через ${RAID_REMINDER_DELETE_AFTER_START_HOURS} год після старту рейду.`,
     },
@@ -1800,6 +1924,68 @@ function buildRaidReminderPayload(raid: RaidItem) {
     content: "",
     embed,
     mentionRoleIds: raid.mentionRoleIds || [],
+  };
+}
+
+function raidSignupStatusLabel(status: RaidSignupStatus) {
+  if (status === "tentative") return "50/50";
+  if (status === "late") return "Затримаюсь";
+  if (status === "skipped") return "Пропускаю";
+  return "Буду";
+}
+
+function buildRaidReminderDirectMessage(raid: RaidItem, signup: RaidSignup) {
+  const startsAt = raidDateTimeToUtcMs(raid);
+  const unix = startsAt === null ? null : Math.floor(startsAt / 1000);
+  const messageLink = raidDiscordMessageLink(raid);
+  const voiceLink = raidVoiceChannelLink(raid);
+  const displayName = cleanString(signup.discordNickname || signup.discordGlobalName || signup.discordUsername || signup.discordName, 100);
+  const lines = [
+    `⏰ **Нагадування: рейд через ${RAID_REMINDER_BEFORE_START_MINUTES} хвилин**`,
+    displayName ? `Привіт, **${displayName}**.` : null,
+    `**${raidTitle(raid)}**`,
+    unix ? `🕒 Початок: <t:${unix}:f> • <t:${unix}:R>` : `🕒 Початок: ${discordDateTimeLabel(raid)}`,
+    raid.raidLeaderName ? `🧭 РЛ: **${raid.raidLeaderName}**` : null,
+    voiceLink ? `🔊 Голосовий канал: ${voiceLink}` : null,
+    messageLink ? `🔗 Рейд у Discord: ${messageLink}` : null,
+    `Статус запису: **${raidSignupStatusLabel(signup.status)}**${signup.characterName ? ` • ${signup.characterName}` : ""}.`,
+  ].filter(Boolean);
+  return lines.join("\n");
+}
+
+async function sendRaidReminderDirectMessages(raid: RaidItem) {
+  const targets = Array.from(
+    new Map(
+      raid.signups
+        .filter((signup) => isActiveSignupStatus(signup.status) && /^\d{16,25}$/.test(signup.discordId))
+        .map((signup) => [signup.discordId, signup] as const),
+    ).values(),
+  );
+  if (!targets.length) return { attempted: 0, sent: 0, failed: 0 };
+
+  const settled = await mapConcurrentSettled(
+    targets,
+    async (signup) =>
+      sendDiscordDirectMessage({
+        userId: signup.discordId,
+        content: buildRaidReminderDirectMessage(raid, signup),
+      }),
+    { profile: "external-api", min: 1, max: 4 },
+  );
+
+  for (const result of settled.results) {
+    if (result.ok) continue;
+    console.warn("[raids] Failed to send raid reminder DM", {
+      raidId: raid.id,
+      discordId: result.item.discordId,
+      discordNickname: result.item.discordNickname || result.item.discordName,
+      message: result.error instanceof Error ? result.error.message : String(result.error),
+    });
+  }
+  return {
+    attempted: targets.length,
+    sent: settled.results.filter((result) => result.ok).length,
+    failed: settled.results.filter((result) => !result.ok).length,
   };
 }
 
@@ -1972,6 +2158,15 @@ async function syncRaidReminder(raid: RaidItem) {
     return false;
   }
 
+  // Приватне нагадування отримує кожен активний запис (going / 50-50 / late),
+  // включно з лавою запасних. "Пропускаю" навмисно не є адресатом.
+  const dmDelivery = await sendRaidReminderDirectMessages({
+    ...raid,
+    channelId,
+    messageId,
+    messageUrl: raidDiscordMessageLink(raid),
+  });
+
   let persisted = false;
   await firebaseWrite(
     "raid",
@@ -1984,6 +2179,9 @@ async function syncRaidReminder(raid: RaidItem) {
           reminderSentAt: FieldValue.serverTimestamp(),
           reminderDeletedAt: null,
           reminderClaimedAt: null,
+          reminderDmAttemptedAt: FieldValue.serverTimestamp(),
+          reminderDmSentCount: dmDelivery.sent,
+          reminderDmFailedCount: dmDelivery.failed,
           updatedAt: FieldValue.serverTimestamp(),
         },
         { merge: true },
@@ -3216,6 +3414,7 @@ export function formRaidPayload(
     lootMode: cleanLootMode(form.get("lootMode")),
     composition: normalizeComposition(composition),
     channelId: cleanSnowflake(form.get("channelId")),
+    voiceChannelId: cleanSnowflake(form.get("voiceChannelId")),
     discordEventEnabled: cleanBoolean(form.get("discordEventEnabled")),
     discordEventDurationMinutes: cleanRaidDiscordEventDurationMinutes(
       form.get("discordEventDurationMinutes"),
@@ -3303,16 +3502,25 @@ export async function saveRaidFromForm(
       const nextStatus = snapshot.exists
         ? existingRaid?.status || "draft"
         : "draft";
+      const effectivePayload = existingRaid
+        ? {
+            ...payload,
+            createdByDiscordId: existingRaid.createdByDiscordId,
+            createdByName: existingRaid.createdByName,
+            createdByMain: existingRaid.createdByMain,
+          }
+        : payload;
       const reminderScheduleChanged = Boolean(
         existingRaid &&
-          (existingRaid.date !== payload.date ||
-            existingRaid.time !== payload.time ||
-            cleanSnowflake(existingRaid.channelId) !== cleanSnowflake(payload.channelId)),
+          (existingRaid.date !== effectivePayload.date ||
+            existingRaid.time !== effectivePayload.time ||
+            cleanSnowflake(existingRaid.channelId) !== cleanSnowflake(effectivePayload.channelId) ||
+            cleanSnowflake(existingRaid.voiceChannelId) !== cleanSnowflake(effectivePayload.voiceChannelId)),
       );
 
       await ref.set(
         {
-          ...payload,
+          ...effectivePayload,
           status: nextStatus,
           ...(reminderScheduleChanged
             ? {
@@ -3321,6 +3529,9 @@ export async function saveRaidFromForm(
                 reminderSentAt: null,
                 reminderDeletedAt: null,
                 reminderClaimedAt: null,
+                reminderDmAttemptedAt: null,
+                reminderDmSentCount: null,
+                reminderDmFailedCount: null,
               }
             : {}),
           ...(nextStatus === "closed"
@@ -3361,12 +3572,20 @@ export async function saveRaidFromForm(
     },
     { timeoutMs: 6_000, logEvent: "raids.save_write_failed" },
   );
-  await reconcileRaidLifecycleTasksForRaid(savedRaid).catch((error) => {
-    console.warn("[raids] Failed to reconcile lifecycle tasks after raid save", {
-      raidId: savedRaid.id,
-      message: error instanceof Error ? error.message : String(error),
-    });
-  });
+  await Promise.all([
+    reconcileRaidLifecycleTasksForRaid(savedRaid).catch((error) => {
+      console.warn("[raids] Failed to reconcile lifecycle tasks after raid save", {
+        raidId: savedRaid.id,
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }),
+    saveRaidEditorDefaults(user, savedRaid).catch((error) => {
+      console.warn("[raids] Failed to remember raid editor defaults", {
+        raidId: savedRaid.id,
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }),
+  ]);
   return savedRaid;
 }
 
@@ -4802,6 +5021,7 @@ function raidDiscordScheduledEventDescription(raid: RaidItem, messageUrl: string
   const pieces = [
     raid.description.trim(),
     raid.raidLeaderName ? `РЛ: ${raid.raidLeaderName}` : "",
+    raidVoiceChannelLink(raid) ? `Голосовий канал: ${raidVoiceChannelLink(raid)}` : "",
     messageUrl ? `Оголошення: ${messageUrl}` : "",
     raidDashboardUrl(raid.id) ? `Сторінка рейду: ${raidDashboardUrl(raid.id)}` : "",
   ].filter(Boolean);
@@ -4809,7 +5029,7 @@ function raidDiscordScheduledEventDescription(raid: RaidItem, messageUrl: string
 }
 
 function raidDiscordScheduledEventLocation(raid: RaidItem, messageUrl: string) {
-  const primary = messageUrl || raidDashboardUrl(raid.id) || "Mistblossom Vanguard • Discord";
+  const primary = raidVoiceChannelLink(raid) || messageUrl || raidDashboardUrl(raid.id) || "Mistblossom Vanguard • Discord";
   return Array.from(primary).slice(0, 100).join("");
 }
 
@@ -5418,6 +5638,9 @@ function signupFromManualSelection(
     // Саме гільдійний нік, а не глобальне імʼя Discord: userName приходить
     // із interaction.member.nick, який специфічний для сервера гільдії.
     discordName: userName || "Discord user",
+    discordNickname: userName || null,
+    discordUsername: null,
+    discordGlobalName: null,
     profileId: profile?.profileId || null,
     characterKey: null,
     status,
@@ -5466,6 +5689,9 @@ function signupFromProfile(
     discordName: profile
       ? getProfilePublicName(profile)
       : userName || "Discord user",
+    discordNickname: userName || null,
+    discordUsername: null,
+    discordGlobalName: null,
     profileId: profile?.profileId || null,
     characterKey: character?.key || null,
     status,
@@ -5505,6 +5731,26 @@ function signupFromProfile(
   };
 }
 
+async function enrichRaidSignupDiscordIdentity(signup: RaidSignup): Promise<RaidSignup> {
+  const fallbackNickname = cleanString(signup.discordNickname || signup.discordName, 100) || null;
+  try {
+    const member = await fetchDiscordGuildMemberSnapshot(signup.discordId);
+    return {
+      ...signup,
+      discordNickname: cleanString(member.nick || member.displayName || fallbackNickname, 100) || null,
+      discordUsername: cleanString(member.username || signup.discordUsername, 100) || null,
+      discordGlobalName: cleanString(member.globalName || signup.discordGlobalName, 100) || null,
+    };
+  } catch {
+    return {
+      ...signup,
+      discordNickname: fallbackNickname,
+      discordUsername: cleanString(signup.discordUsername, 100) || null,
+      discordGlobalName: cleanString(signup.discordGlobalName, 100) || null,
+    };
+  }
+}
+
 export async function recordRaidSignup(
   raidId: string,
   signup: RaidSignup,
@@ -5514,13 +5760,18 @@ export async function recordRaidSignup(
   if (!id || !hasRaidStorage())
     throw new Error("Рейд не знайдено або збереження тимчасово недоступне.");
 
+  // Єдина точка запису для сайту, Discord-кнопок і ручного class/spec signup.
+  // Тут непомітно фіксуємо актуальний серверний нік та username Discord;
+  // DM надалі адресуються стабільному discordId, а нік лишається snapshot для діагностики.
+  const persistedSignup = await enrichRaidSignupDiscordIdentity(signup);
+
   const benchPriority = await getRaidBenchPrioritySettings().catch(
     () => ({ ...EMPTY_RAID_BENCH_PRIORITY_SETTINGS }),
   );
 
   const updated = await firebaseWrite<RaidItem>(
     "raid",
-    `raid:${id}:signup:${signup.discordId}`,
+    `raid:${id}:signup:${persistedSignup.discordId}`,
     async () => {
       const db = getFirebaseAdminDb();
       const ref = db.collection(RAID_COLLECTION).doc(id);
@@ -5535,26 +5786,26 @@ export async function recordRaidSignup(
           throw new Error("Рейд уже закритий, запис вимкнено.");
         if (raid.status !== "published")
           throw new Error("Запис доступний тільки для опублікованого рейду.");
-        const lockBlock = raidRegistrationLockBlockMessage(raid, signup.status);
+        const lockBlock = raidRegistrationLockBlockMessage(raid, persistedSignup.status);
         if (lockBlock) throw new Error(lockBlock);
-        const block = raidMinItemLevelBlockMessage(raid, signup);
+        const block = raidMinItemLevelBlockMessage(raid, persistedSignup);
         if (block) throw new Error(block);
         const fullBlock = raidRegistrationFullMessage(
           raid,
-          signup.discordId,
-          signup.status,
-          signup,
+          persistedSignup.discordId,
+          persistedSignup.status,
+          persistedSignup,
         );
         if (fullBlock) throw new Error(fullBlock);
         const existingSignup =
-          raid.signups.find((item) => item.discordId === signup.discordId) ||
+          raid.signups.find((item) => item.discordId === persistedSignup.discordId) ||
           null;
         const nextSignups = raid.signups.filter(
-          (item) => item.discordId !== signup.discordId,
+          (item) => item.discordId !== persistedSignup.discordId,
         );
         const now = new Date().toISOString();
-        const becomesActive = isActiveSignupStatus(signup.status);
-        const signupCharacterKey = normalizeCharacterKey(signup.characterKey);
+        const becomesActive = isActiveSignupStatus(persistedSignup.status);
+        const signupCharacterKey = normalizeCharacterKey(persistedSignup.characterKey);
         if (becomesActive && signupCharacterKey) {
           const duplicate = nextSignups.find(
             (item) =>
@@ -5563,7 +5814,7 @@ export async function recordRaidSignup(
           );
           if (duplicate) {
             throw new Error(
-              `Персонаж ${signup.characterName || duplicate.characterName || "уже"} вже записаний на цей рейд. Один персонаж не може бути записаний двічі.`,
+              `Персонаж ${persistedSignup.characterName || duplicate.characterName || "уже"} вже записаний на цей рейд. Один персонаж не може бути записаний двічі.`,
             );
           }
         }
@@ -5576,11 +5827,11 @@ export async function recordRaidSignup(
         const signedAt =
           existingSignup &&
           (isActiveSignupStatus(existingSignup.status) || existingNumber)
-            ? existingSignup.signedAt || signup.signedAt || now
-            : signup.signedAt || now;
+            ? existingSignup.signedAt || persistedSignup.signedAt || now
+            : persistedSignup.signedAt || now;
 
         nextSignups.push({
-          ...signup,
+          ...persistedSignup,
           signupNumber,
           signedAt,
           updatedAt: now,

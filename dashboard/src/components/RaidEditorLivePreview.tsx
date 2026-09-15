@@ -802,6 +802,8 @@ function readRaidFromForm(
   const imageUrl = cleanText(formData.get("imageUrl"), "") || null;
   const channelId =
     cleanText(formData.get("channelId"), initialRaid.channelId || "") || null;
+  const voiceChannelId =
+    cleanText(formData.get("voiceChannelId"), initialRaid.voiceChannelId || "") || null;
 
   return {
     ...initialRaid,
@@ -816,6 +818,7 @@ function readRaidFromForm(
     thumbnailUrl,
     imageUrl,
     channelId,
+    voiceChannelId,
     mentionRoleIds,
     raidLeaderName: cleanText(formData.get("raidLeaderName"), "") || null,
     consumables: cleanConsumables(formData.get("consumables")),

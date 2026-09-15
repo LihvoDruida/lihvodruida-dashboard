@@ -1062,13 +1062,21 @@ export function RaidListCard({
 export function RaidForm({
   raid,
   channels,
+  voiceChannels = [],
   roles = [],
   discordEnabled = true,
+  defaultChannelId = "",
+  defaultVoiceChannelId = "",
+  editorAccountName = "",
 }: {
   raid?: RaidItem | null;
   channels: RaidChannelOption[];
+  voiceChannels?: RaidChannelOption[];
   roles?: RaidRoleOption[];
   discordEnabled?: boolean;
+  defaultChannelId?: string;
+  defaultVoiceChannelId?: string;
+  editorAccountName?: string;
 }) {
   const defaultComposition = raid
     ? raidAutoCompositionLabel(raid).replace(/\s/g, "")
@@ -1078,6 +1086,13 @@ export function RaidForm({
     !channels.some((channel) => channel.id === raid.channelId)
       ? [{ id: raid.channelId, name: "поточний канал" }, ...channels]
       : channels;
+  const voiceChannelOptions =
+    raid?.voiceChannelId &&
+    !voiceChannels.some((channel) => channel.id === raid.voiceChannelId)
+      ? [{ id: raid.voiceChannelId, name: "поточний голосовий канал" }, ...voiceChannels]
+      : voiceChannels;
+  const selectedChannelId = raid?.channelId || defaultChannelId || channelOptions[0]?.id || "";
+  const selectedVoiceChannelId = raid?.voiceChannelId || defaultVoiceChannelId || voiceChannelOptions[0]?.id || "";
   const selectedMentionRoleIds = Array.from(
     new Set((raid?.mentionRoleIds || []).filter(Boolean)),
   );
@@ -1359,7 +1374,7 @@ export function RaidForm({
               <select
                 className="select"
                 name="channelId"
-                defaultValue={raid?.channelId || channelOptions[0]?.id || ""}
+                defaultValue={selectedChannelId}
                 disabled={!discordEnabled}
               >
                 {channelOptions.map((channel) => (
@@ -1375,7 +1390,7 @@ export function RaidForm({
                 inputMode="numeric"
                 pattern="[0-9]{16,25}"
                 placeholder="ID текстового каналу Discord"
-                defaultValue={raid?.channelId || ""}
+                defaultValue={selectedChannelId}
                 disabled={!discordEnabled}
                 required={discordEnabled}
               />
@@ -1390,6 +1405,39 @@ export function RaidForm({
             ) : (
               <small>Саме в цей канал піде нове або оновлене оголошення.</small>
             )}
+          </label>
+
+          <label className="field-label raid-field--wide">
+            Голосовий канал рейду
+            {voiceChannelOptions.length ? (
+              <select
+                className="select"
+                name="voiceChannelId"
+                defaultValue={selectedVoiceChannelId}
+                disabled={!discordEnabled}
+              >
+                <option value="">Не вибрано</option>
+                {voiceChannelOptions.map((channel) => (
+                  <option key={channel.id} value={channel.id}>
+                    🔊 {channel.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                className="input"
+                name="voiceChannelId"
+                inputMode="numeric"
+                pattern="[0-9]{16,25}"
+                placeholder="ID голосового каналу Discord (необов’язково)"
+                defaultValue={selectedVoiceChannelId}
+                disabled={!discordEnabled}
+              />
+            )}
+            <small>
+              Використовується в нагадуванні за 15 хвилин і в приватних повідомленнях учасникам.
+              {editorAccountName ? ` Останній вибір запам’ятовується для акаунта ${editorAccountName}.` : ""}
+            </small>
           </label>
 
           <div className="raid-setting-card raid-field--wide">

@@ -176,6 +176,8 @@ export type DiscordTextChannel = {
   parent_id?: string | null;
 };
 
+export type DiscordVoiceChannel = DiscordTextChannel;
+
 export type DiscordRoleOption = {
   id: string;
   name: string;
@@ -250,6 +252,13 @@ export type DiscordTextChannelsSnapshot = {
   warning?: string | null;
 };
 
+export type DiscordVoiceChannelsSnapshot = {
+  guild: DiscordGuildSnapshot | null;
+  channels: DiscordVoiceChannel[];
+  suggestedChannelId: string;
+  warning?: string | null;
+};
+
 type DiscordChannelsCacheEntry = {
   checkedAt: number;
   snapshot: DiscordTextChannelsSnapshot;
@@ -260,6 +269,8 @@ declare global {
   var __mistblossomDiscordRolesCache: Map<string, DiscordRolesCacheEntry> | undefined;
   // eslint-disable-next-line no-var
   var __mistblossomDiscordChannelsCache: Map<string, DiscordChannelsCacheEntry> | undefined;
+  // eslint-disable-next-line no-var
+  var __mistblossomDiscordVoiceChannelsCache: Map<string, { checkedAt: number; snapshot: DiscordVoiceChannelsSnapshot }> | undefined;
   // eslint-disable-next-line no-var
   var __mistblossomDiscordRouteCooldowns: Map<string, number> | undefined;
 }
@@ -740,6 +751,62 @@ export async function fetchDiscordTextChannels(): Promise<DiscordTextChannelsSna
     if (fallback.channels.length) return fallback;
     throw error;
   }
+}
+
+export async function fetchDiscordVoiceChannels(): Promise<DiscordVoiceChannelsSnapshot> {
+  const guildId = getDiscordGuildId();
+  const cacheKey = `${getBotToken() ? "bot" : "fallback"}:${guildId || "no-guild"}`;
+  const cache = globalThis.__mistblossomDiscordVoiceChannelsCache || new Map<string, { checkedAt: number; snapshot: DiscordVoiceChannelsSnapshot }>();
+  globalThis.__mistblossomDiscordVoiceChannelsCache = cache;
+  const cached = cache.get(cacheKey);
+  const ttlMs = discordChannelsCacheTtlMs();
+  if (cached && Date.now() - cached.checkedAt < ttlMs) return cached.snapshot;
+
+  try {
+    if (!getBotToken() || !guildId) {
+      return { guild: null, channels: [], suggestedChannelId: "", warning: "Discord voice channels unavailable." };
+    }
+
+    const [guild, rawChannels] = await Promise.all([
+      fetchDiscordGuildSnapshot().catch(() => null),
+      discordApi<any[]>(`/guilds/${guildId}/channels`),
+    ]);
+    const channels: DiscordVoiceChannel[] = (Array.isArray(rawChannels) ? rawChannels : [])
+      .filter((channel) => channel && (channel.type === 2 || channel.type === 13))
+      .map((channel) => ({
+        id: String(channel.id || ""),
+        name: String(channel.name || "voice"),
+        type: Number(channel.type || 2),
+        position: Number(channel.position || 0),
+        parent_id: channel.parent_id ? String(channel.parent_id) : null,
+      }))
+      .filter((channel) => cleanSnowflake(channel.id))
+      .sort((a, b) => a.position - b.position || a.name.localeCompare(b.name, "uk"));
+
+    const suggested = channels.find((channel) => {
+      const name = channel.name.toLowerCase();
+      return name.includes("raid") || name.includes("рейд") || name.includes("голос") || name.includes("voice");
+    });
+    const snapshot: DiscordVoiceChannelsSnapshot = {
+      guild,
+      channels,
+      suggestedChannelId: suggested?.id || channels[0]?.id || "",
+      warning: null,
+    };
+    cache.set(cacheKey, { checkedAt: Date.now(), snapshot });
+    return snapshot;
+  } catch (error) {
+    const warning = error instanceof Error ? error.message : String(error || "Discord voice channels unavailable");
+    if (cached?.snapshot?.channels?.length) return { ...cached.snapshot, warning };
+    return { guild: null, channels: [], suggestedChannelId: "", warning };
+  }
+}
+
+export function discordChannelUrl(channelIdInput: string, guildIdInput = getDiscordGuildId()) {
+  const guildId = cleanSnowflake(guildIdInput);
+  const channelId = cleanSnowflake(channelIdInput);
+  if (!guildId || !channelId) return null;
+  return `https://discord.com/channels/${guildId}/${channelId}`;
 }
 
 function normalizeDiscordTextChannels(

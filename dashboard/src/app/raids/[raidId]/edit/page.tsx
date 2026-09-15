@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { fetchDiscordRoles, fetchDiscordTextChannels, hasDiscordEmbedConfig } from "@/lib/discordAdmin";
+import { fetchDiscordRoles, fetchDiscordTextChannels, fetchDiscordVoiceChannels, hasDiscordEmbedConfig } from "@/lib/discordAdmin";
 import { canManageRaids } from "@/lib/permissions";
 import { getRaid, hasRaidStorage } from "@/lib/raids";
 import { RaidForm, RaidPageShell, RaidUnavailableState, RosterSideList, StatusNotice } from "@/components/RaidViews";
@@ -30,11 +30,14 @@ export default async function EditRaidPage({
   const raid = await getRaid(raidId);
   const discordEnabled = hasDiscordEmbedConfig();
   let channels: Array<{ id: string; name: string }> = [];
+  let voiceChannels: Array<{ id: string; name: string }> = [];
   let roles: Array<{ id: string; name: string; color: number; position: number; managed: boolean }> = [];
   let channelWarning = "";
+  let voiceChannelWarning = "";
   if (discordEnabled) {
-    const [channelsResult, roleData] = await Promise.all([
+    const [channelsResult, voiceResult, roleData] = await Promise.all([
       fetchDiscordTextChannels().catch(() => null),
+      fetchDiscordVoiceChannels().catch(() => null),
       fetchDiscordRoles().catch(() => []),
     ]);
     const suggestedChannelId = channelsResult?.suggestedChannelId || "";
@@ -46,6 +49,8 @@ export default async function EditRaidPage({
         ]
       : rawChannels;
     channelWarning = channelsResult?.warning || "";
+    voiceChannelWarning = voiceResult?.warning || "";
+    voiceChannels = voiceResult?.channels || [];
     roles = roleData;
   }
 
@@ -59,10 +64,11 @@ export default async function EditRaidPage({
       {!hasRaidStorage() ? <div className="notice panel error-note raid-notice">Збереження рейдів тимчасово недоступне. Спробуй пізніше або звернись до гільдмайстра.</div> : null}
       {!discordEnabled ? <div className="notice panel error-note raid-notice">Публікація в Discord тимчасово недоступна. Зміни можна зберегти й опублікувати пізніше.</div> : null}
       {discordEnabled && channelWarning ? <div className="notice panel warning-note raid-notice">Список Discord-каналів прочитано з попередженням: {channelWarning}</div> : null}
+      {discordEnabled && voiceChannelWarning ? <div className="notice panel warning-note raid-notice">Список голосових каналів прочитано з попередженням: {voiceChannelWarning}</div> : null}
 
       {raid ? (
         <section className="raid-editor-layout">
-          <RaidForm raid={raid} channels={channels} roles={roles} discordEnabled={discordEnabled} />
+          <RaidForm raid={raid} channels={channels} voiceChannels={voiceChannels} roles={roles} discordEnabled={discordEnabled} editorAccountName={user.name || user.login || ""} />
           <div className="raid-preview-column">
             <RaidEditorLivePreview initialRaid={raid} />
             <RosterSideList raid={raid} />
