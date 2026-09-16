@@ -28,6 +28,40 @@ const ROLE = "tank|healer|dps";
 const CHARACTER_KEY = "[A-Za-z0-9._-]{1,64}";
 const WEEKDAY = "mon|tue|wed|thu|fri|sat|sun";
 
+const APPLICATION_ACTION_PATTERN = new RegExp(
+  `^${CUSTOM_ID_NAMESPACE}:application:(accept|decline):(\\d{1,10})$`,
+);
+const LEGACY_APPLICATION_ACTION_PATTERN = /^guild_application:(accepted|declined):(\d{1,10})$/;
+
+export function buildApplicationCustomId(action, issueNumber) {
+  const normalizedAction = String(action || "").trim().toLowerCase();
+  const number = Number(issueNumber);
+  if (!["accept", "decline"].includes(normalizedAction) || !Number.isInteger(number) || number <= 0) {
+    throw new Error("Invalid application moderation custom_id");
+  }
+  return `${CUSTOM_ID_NAMESPACE}:application:${normalizedAction}:${number}`;
+}
+
+export function decodeApplicationCustomId(customId) {
+  const value = String(customId || "").trim();
+  const match = value.match(APPLICATION_ACTION_PATTERN);
+  if (match) {
+    const issueNumber = Number(match[2]);
+    if (!Number.isInteger(issueNumber) || issueNumber <= 0) return null;
+    return { action: match[1], issueNumber, legacy: false };
+  }
+
+  const legacy = value.match(LEGACY_APPLICATION_ACTION_PATTERN);
+  if (!legacy) return null;
+  const issueNumber = Number(legacy[2]);
+  if (!Number.isInteger(issueNumber) || issueNumber <= 0) return null;
+  return {
+    action: legacy[1] === "accepted" ? "accept" : "decline",
+    issueNumber,
+    legacy: true,
+  };
+}
+
 /* ------------------------------------------------------------------ *
  * Рейд-пули
  * ------------------------------------------------------------------ */
@@ -147,6 +181,7 @@ export const INTERACTION_DOMAINS = Object.freeze({
 });
 
 const DOMAIN_PREFIXES = [
+  [`${CUSTOM_ID_NAMESPACE}:application:`, INTERACTION_DOMAINS.APPLICATION],
   [`${CUSTOM_ID_NAMESPACE}:poll_`, INTERACTION_DOMAINS.RAID_POLL],
   // Current roster UI uses mbv1:roster_<action>:..., keep the old colon form too.
   [`${CUSTOM_ID_NAMESPACE}:roster_`, INTERACTION_DOMAINS.ROSTER],
@@ -174,6 +209,7 @@ const DOMAIN_PREFIXES = [
  */
 export function interactionDomainFor(customId) {
   const value = String(customId || "").trim();
+  if (LEGACY_APPLICATION_ACTION_PATTERN.test(value)) return INTERACTION_DOMAINS.APPLICATION;
   if (!value.startsWith(`${CUSTOM_ID_NAMESPACE}:`)) return null;
 
   // Compact decline IDs have no trailing delimiter, so match them exactly rather

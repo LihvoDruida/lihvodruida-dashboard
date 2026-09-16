@@ -16,11 +16,25 @@ export async function moderateApplication(params: {
   status: ApplicationStatus;
   moderator: string;
   source: "dashboard" | "discord";
+  requireReview?: boolean;
 }) {
   const issueNumber = Number(params.issueNumber);
   const status = normalizeStatus(params.status);
   const issue = await getIssue(issueNumber);
   const previousStatus = getIssueStatusFromLabels(issue.labels || []);
+
+  if (params.requireReview && previousStatus !== "review") {
+    return {
+      ok: true,
+      issueNumber,
+      status: previousStatus,
+      previousStatus,
+      changed: false,
+      alreadyModerated: true,
+      github: null,
+      discord: { edited: null, notified: null },
+    };
+  }
 
   const github = await setIssueStatus({
     issueNumber,

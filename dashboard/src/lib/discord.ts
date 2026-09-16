@@ -7,6 +7,29 @@ import {
 } from "./github";
 import { discordApi, getDiscordDefaultChannelId } from "@/lib/discordAdmin";
 import { getGuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
+import { buildApplicationCustomId } from "@mistblossom/discord-contract";
+
+function buildApplicationModerationComponents(issueNumber: number) {
+  return [{
+    type: 1,
+    components: [
+      {
+        type: 2,
+        style: 3,
+        label: "Прийняти",
+        emoji: { name: "✅" },
+        custom_id: buildApplicationCustomId("accept", issueNumber),
+      },
+      {
+        type: 2,
+        style: 4,
+        label: "Відхилити",
+        emoji: { name: "❌" },
+        custom_id: buildApplicationCustomId("decline", issueNumber),
+      },
+    ],
+  }];
+}
 
 function cleanText(value: unknown, max = 200) {
   return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
@@ -214,6 +237,7 @@ export async function notifyDiscordNewApplication(params: {
           footer: { text: "Mistblossom Vanguard • Applications" },
           timestamp: new Date().toISOString(),
         }],
+        components: buildApplicationModerationComponents(params.issueNumber),
       }),
     });
 

@@ -1110,11 +1110,11 @@
 .profile-nickname-character-option {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  gap: var(--space-sm);
+  align-items: center;
+  gap: 9px;
   min-width: 0;
-  min-height: 64px;
-  padding: var(--space-sm) var(--space-md);
+  min-height: 60px;
+  padding: 9px 11px;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   background: var(--surface-sunken);
@@ -1303,8 +1303,8 @@
   .profile-gender-option,
 .profile-raid-role-option,
 .profile-nickname-character-option {
-    min-height: 72px;
-    padding: var(--space-sm);
+    min-height: 56px;
+    padding: 8px 10px;
   }
 
   .rules-onboarding-summary > span:last-child {

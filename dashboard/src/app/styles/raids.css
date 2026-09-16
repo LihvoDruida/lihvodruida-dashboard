@@ -1102,8 +1102,8 @@
 
 .raid-discord-role-block {
   display: grid;
-  gap: var(--space-sm);
-  padding-top: var(--space-sm);
+  gap: 8px;
+  padding-top: 10px;
   border-top: 1px solid var(--border-subtle);
 }
 
@@ -1112,7 +1112,7 @@
   flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--space-xs);
+  gap: 6px 10px;
 }
 
 .raid-discord-role-block__head strong {

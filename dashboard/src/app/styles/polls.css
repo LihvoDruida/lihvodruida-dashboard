@@ -1094,16 +1094,16 @@
 .raid-poll-publication-options {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-sm);
+  gap: 8px;
 }
 
 .raid-poll-publication-option {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  align-items: flex-start;
-  gap: var(--space-sm);
-  min-height: 92px;
-  padding: var(--space-md);
+  align-items: center;
+  gap: 9px;
+  min-height: 64px;
+  padding: 9px 11px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface-raised);
@@ -1330,13 +1330,14 @@
   font-size: 0.76rem;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 640px) {
   .raid-poll-publication-options {
     grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
   }
 
   .raid-poll-publication-option {
-    min-height: 0;
-    padding: var(--space-sm);
+    min-height: 54px;
+    padding: 8px 10px;
   }
 }

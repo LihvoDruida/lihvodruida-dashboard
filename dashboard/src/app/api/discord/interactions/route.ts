@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   buildRulesDeclineCustomId,
   decodeRulesCustomId,
+  fetchDiscordGuildSnapshot,
   getDiscordGuildId,
   kickGuildMember,
   verifyDiscordInteractionSignature,
@@ -12,9 +13,11 @@ import { buildRaidManualSpecComponents, dashboardProfileUrl, dashboardRaidRulesU
 import { handleRaidPollDiscordVote } from "@/lib/raidPolls";
 // Розбір custom_id — зі спільного пакета: бот користується тим самим кодом,
 // тому нова дія не може «загубитись» на одній зі сторін.
-import { decodeRaidPollCustomId } from "@mistblossom/discord-contract";
+import { decodeApplicationCustomId, decodeRaidPollCustomId } from "@mistblossom/discord-contract";
 import { decodeRosterCustomId, handleRosterFormationDiscordAction } from "@/lib/rosterFormation";
 import { assertRequestBodySize, logDashboardEvent, noStoreHeaders, safeErrorMessage, verifyInternalBearerToken } from "@/lib/security";
+import { resolveAccessGroupFromDiscord } from "@/lib/accessGroups";
+import { moderateApplication } from "@/lib/moderation";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -286,8 +289,9 @@ export async function POST(request: NextRequest) {
   const raidAction = raidSubmitAction || raidRoleAction || raidSelectAction || raidManualSpec || decodeRaidAttendanceCustomId(customId);
   const pollAction = raidAction || raidManualClass ? null : decodeRaidPollCustomId(customId, interaction?.data?.values);
   const rosterAction = raidAction || raidManualClass || pollAction ? null : decodeRosterCustomId(customId, interaction?.data?.values);
-  const parsed = raidAction || raidManualClass || pollAction || rosterAction ? null : decodeRulesCustomId(customId);
-  if (!raidAction && !raidManualClass && !pollAction && !rosterAction && !parsed) {
+  const applicationAction = raidAction || raidManualClass || pollAction || rosterAction ? null : decodeApplicationCustomId(customId);
+  const parsed = raidAction || raidManualClass || pollAction || rosterAction || applicationAction ? null : decodeRulesCustomId(customId);
+  if (!raidAction && !raidManualClass && !pollAction && !rosterAction && !applicationAction && !parsed) {
     logDashboardEvent("warn", "discord.rules.unknown_custom_id", request, { customId: customId.slice(0, 24) });
     return ephemeral("Ця кнопка не належить панелі Mistblossom або вже застаріла.");
   }
@@ -295,6 +299,69 @@ export async function POST(request: NextRequest) {
   const guildId = String(interaction?.guild_id || getDiscordGuildId() || "");
   const userId = getInteractionUserId(interaction);
   const userName = getInteractionUserName(interaction);
+
+  if (applicationAction) {
+    try {
+      if (!/^\d{16,25}$/.test(userId)) {
+        logDashboardEvent("warn", "discord.application.user_missing", request, { issueNumber: applicationAction.issueNumber });
+        return ephemeral("❌ Discord не передав коректний userId. Спробуй ще раз.");
+      }
+
+      const roleIds = Array.isArray(interaction?.member?.roles)
+        ? interaction.member.roles.map((roleId: unknown) => String(roleId || "").trim()).filter(Boolean)
+        : [];
+      const guildSnapshot = await fetchDiscordGuildSnapshot().catch(() => null);
+      const access = await resolveAccessGroupFromDiscord(roleIds, userId, guildSnapshot?.ownerId || null);
+      const canModerate = access.isServerOwner || access.group.permissions.includes("applications.manage");
+
+      if (!canModerate) {
+        logDashboardEvent("warn", "discord.application.forbidden", request, {
+          issueNumber: applicationAction.issueNumber,
+          userId,
+          groupId: access.group.id,
+        }, { category: "security" });
+        return ephemeral("⛔ У тебе немає права модерувати заявки.");
+      }
+
+      const targetStatus = applicationAction.action === "accept" ? "accepted" : "declined";
+      const moderator = `${userName} (${access.isServerOwner ? "Власник сервера" : access.group.name})`;
+      const result = await moderateApplication({
+        issueNumber: applicationAction.issueNumber,
+        status: targetStatus,
+        moderator,
+        source: "discord",
+        requireReview: true,
+      });
+
+      if ((result as { alreadyModerated?: boolean }).alreadyModerated) {
+        logDashboardEvent("info", "discord.application.already_moderated", request, {
+          issueNumber: applicationAction.issueNumber,
+          userId,
+          status: result.status,
+        });
+        return ephemeral(`ℹ️ Заявку #${applicationAction.issueNumber} уже оброблено. Поточний статус: **${result.status === "accepted" ? "Прийнято" : "Відхилено"}**.`);
+      }
+
+      logDashboardEvent("info", "discord.application.moderated", request, {
+        issueNumber: applicationAction.issueNumber,
+        userId,
+        action: applicationAction.action,
+        status: targetStatus,
+        groupId: access.group.id,
+      });
+      return ephemeral(
+        `${targetStatus === "accepted" ? "✅" : "❌"} Заявку #${applicationAction.issueNumber} **${targetStatus === "accepted" ? "прийнято" : "відхилено"}**.\nМодератор: **${userName}**.`,
+      );
+    } catch (error) {
+      logDashboardEvent("error", "discord.application.moderation_failed", request, {
+        message: safeErrorMessage(error),
+        issueNumber: applicationAction.issueNumber,
+        userId,
+        action: applicationAction.action,
+      });
+      return ephemeral("❌ Не вдалося обробити заявку. Спробуй ще раз або скористайся панеллю.");
+    }
+  }
 
   if (rosterAction) {
     try {
