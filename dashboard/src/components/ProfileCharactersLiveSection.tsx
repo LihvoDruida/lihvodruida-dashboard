@@ -177,6 +177,10 @@ function CharacterCard({ character, profileId, canManage, showMainBadge, returnT
             <h3>{character.name}</h3>
             <p>{realmLabel}</p>
           </div>
+          <span className={`profile-character-mobile-badge profile-character-badge profile-character-badge--${guildBadge.modifier}`}>
+            <CharacterInlineIcon kind={guildBadge.icon} />
+            <span>{character.verifiedGuild ? "Гільдійний" : "Інший"}</span>
+          </span>
         </div>
 
         <div className="profile-character-meta" aria-label="Характеристики персонажа">

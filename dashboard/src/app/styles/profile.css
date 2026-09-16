@@ -2905,3 +2905,232 @@
     grid-column: 1;
   }
 }
+
+
+/* =========================================================
+   20. PROFILE MOBILE POLISH — v3.8.20
+
+   Тільки вузькі екрани. Desktop-профіль і desktop інших сторінок
+   залишаються без змін. Виправляє видимість локального меню профілю,
+   компоновку картки персонажа й положення guild/other badge.
+   ========================================================= */
+.profile-character-mobile-badge {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  /* Меню профілю завжди видиме: 2x2, іконка + підпис. Раніше підпис
+     ховався через clip-path, тому на темній темі меню виглядало порожнім. */
+  .profile-account-sidebar__nav {
+    display: grid;
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    width: 100%;
+    padding-top: 9px;
+    overflow: visible;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .profile-account-sidebar__nav a {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 11px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--surface-sunken);
+    color: var(--text-soft);
+  }
+
+  .profile-account-sidebar__nav a:hover,
+  .profile-account-sidebar__nav a:focus-visible {
+    border-color: var(--border-strong);
+    background: var(--surface-hover);
+    color: var(--text-strong);
+  }
+
+  .profile-account-sidebar__nav a[aria-current="page"] {
+    border-color: color-mix(in srgb, var(--c-accent-400) 34%, var(--border-strong));
+    background: var(--accent-soft);
+    color: var(--c-accent-200);
+  }
+
+  .profile-account-sidebar__nav a[aria-current="page"]::before {
+    display: none;
+  }
+
+  .profile-account-sidebar__nav a .profile-account-sidebar__nav-label,
+  .profile-account-sidebar__nav a > span:not(:where(.profile-account-sidebar__nav-count, .profile-ui-icon)) {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    clip: auto;
+    clip-path: none;
+    white-space: nowrap;
+    color: inherit;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .profile-account-sidebar__nav .profile-ui-icon {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+    opacity: 1;
+    color: currentColor;
+    background-color: currentColor;
+  }
+
+  .profile-account-sidebar__nav-count {
+    position: static;
+    width: auto;
+    min-width: 18px;
+    height: 18px;
+    margin: 0 0 0 auto;
+    padding-inline: 5px;
+    background: var(--surface-raised);
+    color: var(--text-muted);
+    font-size: 0.58rem;
+  }
+
+  .profile-account-sidebar__footer {
+    margin-top: 0;
+    padding-top: 9px;
+  }
+
+  /* Персонаж: менше порожнього арту, чітка шапка і badge праворуч
+     від імені/realm, а не поверх зображення. */
+  .profile-character-card {
+    overflow: hidden;
+  }
+
+  .profile-character-artwork {
+    height: 148px;
+  }
+
+  .profile-character-badges--art {
+    display: none;
+  }
+
+  .profile-character-body {
+    gap: 9px;
+    padding: 11px 12px 12px;
+  }
+
+  .profile-character-title-row--stacked {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 8px;
+  }
+
+  .profile-character-title-copy {
+    min-width: 0;
+  }
+
+  .profile-character-title-copy h3 {
+    overflow: hidden;
+    font-size: 1rem;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .profile-character-title-copy p {
+    overflow: hidden;
+    margin-top: 2px;
+    font-size: 0.7rem;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .profile-character-mobile-badge {
+    display: inline-flex;
+    align-self: start;
+    justify-self: end;
+    max-width: 112px;
+    min-height: 26px;
+    padding: 3px 8px;
+    font-size: 0.62rem;
+    line-height: 1.2;
+  }
+
+  .profile-character-mobile-badge > span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .profile-character-meta {
+    gap: 4px 10px;
+    padding-bottom: 1px;
+    font-size: 0.7rem;
+    line-height: 1.35;
+  }
+
+  .profile-character-meta > span {
+    font-size: 0.7rem;
+  }
+
+  .profile-character-stats-grid {
+    gap: 0;
+  }
+
+  .profile-character-stats-row {
+    padding-top: 8px;
+  }
+
+  .profile-character-stat__copy strong {
+    font-size: 1rem;
+  }
+
+  .profile-character-stats-divider {
+    height: 30px;
+  }
+
+  .profile-character-actions {
+    gap: 7px;
+    padding-top: 9px;
+  }
+
+  .profile-character-action {
+    min-height: 40px;
+    padding-inline: 9px;
+    font-size: 0.74rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .profile-account-sidebar__nav {
+    gap: 6px;
+  }
+
+  .profile-account-sidebar__nav a {
+    min-height: 42px;
+    padding-inline: 9px;
+  }
+
+  .profile-account-sidebar__nav a .profile-account-sidebar__nav-label {
+    font-size: 0.68rem;
+  }
+
+  .profile-character-artwork {
+    height: 136px;
+  }
+
+  .profile-character-mobile-badge {
+    max-width: 102px;
+    padding-inline: 7px;
+  }
+}

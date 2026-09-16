@@ -3,10 +3,13 @@ const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
 const page = fs.readFileSync(path.join(root, "src/app/profile/[profileId]/page.tsx"), "utf8");
+const characters = fs.readFileSync(path.join(root, "src/components/ProfileCharactersLiveSection.tsx"), "utf8");
 const css = fs.readFileSync(path.join(root, "src/app/styles/profile.css"), "utf8");
 const desktop = fs.readFileSync(path.join(root, "src/app/styles/desktop.css"), "utf8");
 const mobileStart = css.indexOf("19. PROFILE UI NORMALIZATION — v3.8.19");
 const normalized = mobileStart >= 0 ? css.slice(mobileStart) : "";
+const polishStart = css.indexOf("20. PROFILE MOBILE POLISH — v3.8.20");
+const polish = polishStart >= 0 ? css.slice(polishStart) : "";
 
 const checks = [
   [mobileStart >= 0, "profile normalization layer exists"],
@@ -24,6 +27,15 @@ const checks = [
   [normalized.includes(".profile-raid-card {\n    grid-template-columns: minmax(0, 1fr);"), "raid cards collapse to one column on mobile"],
   [normalized.includes(".profile-raid-meta-item--character {\n    grid-column: 1 / -1;"), "mobile character metadata gets full card width"],
   [desktop.includes("@media (min-width: 1001px)"), "global desktop stylesheet remains independently scoped"],
+  [polishStart >= 0, "v3.8.20 profile mobile polish layer exists"],
+  [characters.includes('profile-character-mobile-badge'), "character markup exposes a dedicated mobile guild-state badge"],
+  [polish.includes('.profile-character-badges--art {\n    display: none;'), "art-overlay guild badge is removed on mobile"],
+  [polish.includes('.profile-character-title-row--stacked') && polish.includes('grid-template-columns: minmax(0, 1fr) auto;'), "mobile character title reserves the far-right badge column"],
+  [polish.includes('.profile-character-mobile-badge {\n    display: inline-flex;') && polish.includes('justify-self: end;'), "guild/other badge is visible at the right edge on mobile"],
+  [polish.includes('.profile-account-sidebar__nav {') && polish.includes('grid-template-columns: repeat(2, minmax(0, 1fr));'), "mobile profile menu is an explicit 2-column grid"],
+  [polish.includes('.profile-account-sidebar__nav a .profile-account-sidebar__nav-label') && polish.includes('position: static;'), "mobile profile menu labels are always visible"],
+  [polish.includes('.profile-account-sidebar__nav-count {\n    position: static;'), "mobile profile menu counter no longer floats over invisible controls"],
+  [polish.includes('.profile-character-artwork {\n    height: 148px;'), "mobile character artwork is compacted further"],
 ];
 
 let failed = 0;
