@@ -128,3 +128,21 @@ test("більше пʼяти рядків — не ок", () => {
   const rows = Array.from({ length: 6 }, (_, i) => ({ components: [{ custom_id: `mbv1:poll_role:${POLL}${i}` }] }));
   assert.equal(validateInteractionComponents(rows).ok, false);
 });
+
+
+test("рядок Discord не може містити шість кнопок", () => {
+  const row = [{ components: Array.from({ length: 6 }, (_, i) => ({ type: 2, custom_id: `mbv1:btn:${i}` })) }];
+  const result = validateInteractionComponents(row);
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.invalidRows, [0]);
+});
+
+test("select menu займає Action Row самостійно", () => {
+  const row = [{ components: [
+    { type: 3, custom_id: "mbv1:select:a" },
+    { type: 3, custom_id: "mbv1:select:b" },
+  ] }];
+  const result = validateInteractionComponents(row);
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.invalidRows, [0]);
+});

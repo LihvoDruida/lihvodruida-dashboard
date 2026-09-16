@@ -46,4 +46,4 @@ export declare function interactionDomainFor(customId: string): string | null;
 
 export declare function validateInteractionComponents(
   rows: unknown,
-): { ok: boolean; duplicates: string[]; tooLong: string[]; rows: number };
+): { ok: boolean; duplicates: string[]; tooLong: string[]; invalidRows: number[]; rows: number };

@@ -142,7 +142,7 @@ function ProfileRaidMetaItem({
     <span className={`profile-raid-meta-item ${className}`.trim()}>
       <small>{label}</small>
       <strong>{value}</strong>
-      {detail ? <em>{detail}</em> : null}
+      {detail ? <span className="profile-raid-meta-item__detail">{detail}</span> : null}
     </span>
   );
 }
@@ -182,7 +182,7 @@ function ProfileRaidSignupCard({ item }: { item: ProfileRaidSignup }) {
         <span className="profile-raid-card__title">
           <strong>{raidTitle(item.raid)}</strong>
           <small>{dateLabel}</small>
-          <em>{difficultyLabel}</em>
+          <em className="profile-raid-card__difficulty">{difficultyLabel}</em>
         </span>
       </a>
 

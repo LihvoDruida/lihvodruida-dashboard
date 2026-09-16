@@ -418,34 +418,55 @@ export class PgQuery {
     const conditions: string[] = ["collection = $1"];
 
     for (const clause of this.state.wheres) {
+      const normalized = normalizeQueryValue(clause.value);
       if (clause.field === "__name__") {
-        values.push(String(clause.value));
-        conditions.push(`doc_id = $${values.length}`);
+        values.push(String(normalized ?? ""));
+        const operator = clause.op === "==" ? "=" : clause.op;
+        conditions.push(`doc_id ${operator} $${values.length}`);
         continue;
       }
-      const jsonPath = jsonAccessor(clause.field);
       if (clause.op === "==") {
-        values.push(JSON.stringify(buildContainment(clause.field, clause.value)));
+        values.push(JSON.stringify(buildContainment(clause.field, normalized)));
         conditions.push(`data @> $${values.length}::jsonb`);
         continue;
       }
-      values.push(Number(clause.value));
-      conditions.push(`(${jsonPath})::numeric ${clause.op} $${values.length}`);
+      const expression = queryOrderExpression(clause.field, normalized);
+      values.push(normalized);
+      conditions.push(`${expression} ${clause.op} $${values.length}`);
     }
 
-    const orderParts = this.state.orders.map(
-      (order) => `(${jsonAccessor(order.field)}) ${order.direction === "desc" ? "DESC" : "ASC"}`,
-    );
-    // Стабільний хвіст сортування: без нього рядки з однаковим значенням
-    // поля можуть приходити в різному порядку, і startAfter почне
-    // пропускати або дублювати записи між сторінками.
-    orderParts.push("doc_id ASC");
+    const orderParts = this.state.orders.map((order) => {
+      const direction = order.direction === "desc" ? "DESC" : "ASC";
+      return `${queryOrderExpression(order.field)} ${direction}`;
+    });
+    // Firestore implicitly stabilizes ordering with the document id. Keep the
+    // same invariant here so pagination cannot skip/duplicate equal values.
+    const tailDirection = this.state.orders.at(-1)?.direction === "desc" ? "DESC" : "ASC";
+    if (!this.state.orders.some((order) => order.field === "__name__")) {
+      orderParts.push(`doc_id ${tailDirection}`);
+    }
 
     if (this.state.startAfter && this.state.orders.length) {
       const order = this.state.orders[0];
-      values.push(String(this.state.startAfter[0] ?? ""));
+      const rawCursor = this.state.startAfter[0];
+      const snapshotCursor = rawCursor instanceof PgDocumentSnapshot ? rawCursor : null;
+      const cursorValue = snapshotCursor
+        ? (order.field === "__name__" ? snapshotCursor.id : snapshotCursor.get(order.field))
+        : rawCursor;
+      const normalizedCursor = normalizeQueryValue(cursorValue);
       const comparison = order.direction === "desc" ? "<" : ">";
-      conditions.push(`(${jsonAccessor(order.field)}) ${comparison} $${values.length}`);
+      const expression = queryOrderExpression(order.field, normalizedCursor);
+      values.push(normalizedCursor);
+      const valueParam = `$${values.length}`;
+
+      if (snapshotCursor && order.field !== "__name__") {
+        values.push(snapshotCursor.id);
+        const idParam = `$${values.length}`;
+        const equal = `${expression} = ${valueParam}`;
+        conditions.push(`(${expression} ${comparison} ${valueParam} OR (${equal} AND doc_id ${comparison} ${idParam}))`);
+      } else {
+        conditions.push(`${expression} ${comparison} ${valueParam}`);
+      }
     }
 
     let sql = `SELECT doc_id, data FROM documents WHERE ${conditions.join(" AND ")} ORDER BY ${orderParts.join(", ")}`;
@@ -462,6 +483,31 @@ export class PgQuery {
       )),
     );
   }
+}
+
+
+function normalizeQueryValue(value: unknown): unknown {
+  if (value instanceof Timestamp) return value.toJSON();
+  if (value instanceof Date) return value.toISOString();
+  return value;
+}
+
+function isNumericQueryField(field: string, sample?: unknown) {
+  if (typeof sample === "number" && Number.isFinite(sample)) return true;
+  return /(?:^|\.)(?:[^.]*AtMs|[^.]*Ms)$/.test(field);
+}
+
+/**
+ * PostgreSQL JSON text values need type-aware ordering. Millisecond fields are
+ * numbers; ISO/date fields deliberately remain text because ISO-8601 sorts in
+ * chronological order. `__name__` maps to the real primary-key column rather
+ * than to a nonexistent JSON property.
+ */
+function queryOrderExpression(field: string, sample?: unknown) {
+  if (field === "__name__") return "doc_id";
+  const accessor = jsonAccessor(field);
+  if (isNumericQueryField(field, sample)) return `NULLIF(${accessor}, '')::numeric`;
+  return accessor;
 }
 
 /** `data -> 'a' ->> 'b'` для крапкового шляху. */

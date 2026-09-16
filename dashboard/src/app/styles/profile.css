@@ -2251,3 +2251,657 @@
     max-width: none;
   }
 }
+
+
+/* =========================================================
+   19. PROFILE UI NORMALIZATION — v3.8.19
+
+   Один набір локальних profile-токенів керує ритмом профілю на
+   телефоні. Desktop-каркас інших сторінок не зачіпається.
+   Рейдові картки нижче навмисно оновлені і для desktop, і для mobile.
+   ========================================================= */
+.profile-account-page {
+  --profile-ui-gap: var(--space-md);
+  --profile-ui-gap-compact: var(--space-sm);
+  --profile-ui-pad-mobile: 14px;
+  --profile-ui-radius: var(--radius-lg);
+}
+
+/* ---------- Рейдові записи: новий desktop + mobile card pattern ---------- */
+.profile-card--raids-modern {
+  overflow: hidden;
+}
+
+.profile-card-head--raids {
+  align-items: center;
+}
+
+.profile-count-pill--raid-count {
+  min-width: 34px;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-card-lead--raids {
+  max-width: 760px;
+  margin: 0;
+}
+
+.profile-raid-list {
+  gap: var(--profile-ui-gap-compact);
+}
+
+.profile-raid-card {
+  grid-template-columns: minmax(230px, 0.82fr) minmax(0, 1.55fr);
+  gap: var(--space-lg);
+  padding: var(--space-md);
+  border-left-width: 3px;
+  border-radius: var(--profile-ui-radius);
+  background: color-mix(in srgb, var(--surface-sunken) 88%, transparent);
+}
+
+.profile-raid-card--going {
+  border-left-color: var(--c-success);
+}
+
+.profile-raid-card--tentative {
+  border-left-color: var(--c-warning);
+}
+
+.profile-raid-card--late {
+  border-left-color: var(--c-info);
+}
+
+.profile-raid-card--skipped {
+  border-left-color: var(--c-ink-500);
+}
+
+.profile-raid-card__main {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-content: start;
+  align-items: start;
+  gap: var(--space-sm);
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.profile-raid-card__main:hover .profile-raid-card__title strong {
+  color: var(--c-accent-200);
+}
+
+.profile-raid-card__icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--c-accent-300);
+  font-size: 1rem;
+}
+
+.profile-raid-card__icon--tank {
+  color: var(--c-role-tank);
+  border-color: color-mix(in srgb, var(--c-role-tank) 30%, var(--border-subtle));
+  background: color-mix(in srgb, var(--c-role-tank) 9%, var(--surface-raised));
+}
+
+.profile-raid-card__icon--healer {
+  color: var(--c-role-healer);
+  border-color: color-mix(in srgb, var(--c-role-healer) 30%, var(--border-subtle));
+  background: color-mix(in srgb, var(--c-role-healer) 9%, var(--surface-raised));
+}
+
+.profile-raid-card__icon--dps {
+  color: var(--c-role-dps);
+  border-color: color-mix(in srgb, var(--c-role-dps) 30%, var(--border-subtle));
+  background: color-mix(in srgb, var(--c-role-dps) 9%, var(--surface-raised));
+}
+
+.profile-raid-card__title {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  color: inherit;
+}
+
+.profile-raid-card__title strong {
+  min-width: 0;
+  color: var(--text-strong);
+  font-size: 0.98rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.profile-raid-card__title small {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
+.profile-raid-card__difficulty {
+  justify-self: start;
+  margin-top: 2px;
+  padding: 2px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  color: var(--text-soft);
+  font-size: 0.66rem;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.profile-raid-card__body {
+  display: grid;
+  align-content: start;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.profile-raid-card__headline {
+  justify-content: flex-start;
+  gap: var(--space-2xs);
+}
+
+.profile-raid-status-chip,
+.profile-raid-role-chip {
+  min-height: 28px;
+  padding-inline: var(--space-sm);
+  font-size: 0.68rem;
+}
+
+.profile-raid-role-chip--tank {
+  --tone: var(--c-role-tank);
+}
+
+.profile-raid-role-chip--healer {
+  --tone: var(--c-role-healer);
+}
+
+.profile-raid-role-chip--dps {
+  --tone: var(--c-role-dps);
+}
+
+.profile-raid-card__meta {
+  display: grid;
+  grid-template-columns: minmax(74px, 0.58fr) minmax(180px, 1.55fr) minmax(120px, 0.9fr) minmax(120px, 1fr);
+  gap: var(--space-xs);
+  min-width: 0;
+  color: inherit;
+  font-size: inherit;
+}
+
+.profile-raid-meta-item {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface-raised) 58%, transparent);
+  white-space: normal;
+}
+
+.profile-raid-meta-item small {
+  color: var(--text-faint);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.profile-raid-meta-item strong {
+  min-width: 0;
+  color: var(--text-strong);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.profile-raid-meta-item__detail {
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.profile-raid-meta-item--character,
+.profile-raid-meta-item--order {
+  white-space: normal;
+}
+
+.profile-raid-card__actions {
+  justify-content: flex-end;
+}
+
+.profile-raid-card__action {
+  min-width: 132px;
+  justify-content: center;
+}
+
+.profile-raid-skipped {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--profile-ui-radius);
+  background: color-mix(in srgb, var(--surface-sunken) 72%, transparent);
+}
+
+.profile-raid-skipped > summary {
+  cursor: pointer;
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* ---------- Mobile profile normalization ---------- */
+@media (max-width: 760px) {
+  .profile-account-page {
+    --profile-ui-gap: 12px;
+    --profile-ui-gap-compact: 8px;
+  }
+
+  .profile-account-layout,
+  .profile-account-main,
+  .profile-grid,
+  .profile-character-list {
+    gap: var(--profile-ui-gap);
+  }
+
+  /* Compact identity card: avatar remains beside the name even on phones. */
+  .profile-account-sidebar {
+    gap: 10px;
+    padding: var(--profile-ui-pad-mobile);
+    border-radius: var(--profile-ui-radius);
+    text-align: left;
+  }
+
+  .profile-account-sidebar__identity {
+    grid-template-columns: 56px minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    column-gap: 12px;
+    row-gap: 2px;
+    justify-items: stretch;
+    align-items: center;
+    text-align: left;
+  }
+
+  .profile-account-sidebar__identity > .profile-account-sidebar__avatar {
+    grid-column: 1;
+    grid-row: 1 / 4;
+    width: 56px;
+    height: 56px;
+  }
+
+  .profile-account-sidebar__identity > strong {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .profile-account-sidebar__identity > span:not(.profile-account-sidebar__pills) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .profile-account-sidebar__pills {
+    grid-column: 2;
+    grid-row: 3;
+    justify-content: flex-start;
+    gap: 5px;
+    min-width: 0;
+  }
+
+  .profile-account-sidebar__pills .status-pill {
+    padding: 2px 8px;
+    font-size: 0.64rem;
+  }
+
+  .profile-account-sidebar__facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    padding: 0;
+    border: 0;
+  }
+
+  .profile-account-sidebar__facts > div {
+    display: grid;
+    gap: 2px;
+    padding: 8px 10px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--surface-sunken);
+  }
+
+  .profile-account-sidebar__facts dt {
+    font-size: 0.58rem;
+  }
+
+  .profile-account-sidebar__facts dd {
+    font-size: 0.78rem;
+  }
+
+  .profile-account-sidebar__nav {
+    gap: 5px;
+    padding-top: 9px;
+  }
+
+  .profile-account-sidebar__nav a {
+    min-height: 42px;
+    min-width: 42px;
+  }
+
+  .profile-account-sidebar__footer {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 8px;
+  }
+
+  .profile-account-sidebar__footer > *,
+  .profile-account-sidebar__footer .profile-account-logout,
+  .profile-account-sidebar__footer .profile-account-logout > .btn {
+    width: auto;
+  }
+
+  .profile-account-header {
+    display: grid;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .profile-account-header h1 {
+    margin-block: 5px;
+    font-size: clamp(1.7rem, 8vw, 2rem);
+    line-height: 1.08;
+  }
+
+  .profile-account-header p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.83rem;
+    line-height: 1.5;
+  }
+
+  .profile-account-header__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: 8px;
+  }
+
+  .profile-account-header__actions .btn {
+    min-width: 0;
+    justify-content: center;
+  }
+
+  /* Four overview cards no longer form a long single-column tower. */
+  .profile-account-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .profile-account-overview-card {
+    min-height: 66px;
+    gap: 9px;
+    padding: 10px 11px;
+    border-left-width: 1px;
+    border-radius: var(--radius-md);
+  }
+
+  .profile-account-overview-card:first-child,
+  .profile-account-overview-card--success {
+    grid-column: 1 / -1;
+  }
+
+  .profile-account-overview-card__icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .profile-account-overview-card small {
+    font-size: 0.58rem;
+    letter-spacing: 0.09em;
+  }
+
+  .profile-account-overview-card strong {
+    font-size: 0.9rem;
+    line-height: 1.25;
+  }
+
+  .profile-account-overview-card__meta {
+    font-size: 0.65rem !important;
+  }
+
+  .profile-card {
+    border-radius: var(--profile-ui-radius);
+  }
+
+  .profile-card--characters,
+  .profile-card--raids-modern {
+    gap: 12px;
+    padding: var(--profile-ui-pad-mobile);
+  }
+
+  .profile-card-head {
+    gap: 8px;
+    padding-bottom: 10px;
+  }
+
+  .profile-card-lead {
+    font-size: 0.79rem;
+    line-height: 1.5;
+  }
+
+  .profile-card-toolbar--compact {
+    gap: 7px;
+  }
+
+  .profile-card-toolbar--compact > span {
+    padding: 8px 9px;
+  }
+
+  .profile-card-toolbar--compact > span > strong {
+    font-size: 0.92rem;
+  }
+
+  .profile-card-toolbar--compact > span > small {
+    font-size: 0.56rem;
+  }
+
+  /* Character cards remain portrait-style, but consume much less height. */
+  .profile-character-list--single-flow {
+    gap: 10px;
+  }
+
+  .profile-character-card {
+    border-radius: var(--profile-ui-radius);
+  }
+
+  .profile-character-artwork {
+    height: 172px;
+  }
+
+  .profile-character-body {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .profile-character-title-copy h3 {
+    font-size: 1.05rem;
+  }
+
+  .profile-character-title-copy p,
+  .profile-character-meta {
+    font-size: 0.74rem;
+  }
+
+  .profile-character-stats-row {
+    padding-top: 9px;
+  }
+
+  .profile-character-stat__copy strong {
+    font-size: 1.08rem;
+  }
+
+  .profile-character-stat__copy small {
+    font-size: 0.56rem;
+  }
+
+  .profile-character-actions {
+    gap: 8px;
+    padding-top: 10px;
+  }
+
+  .profile-character-actions__row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .profile-character-actions__row.is-single {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-character-actions__row > *,
+  .profile-character-actions__row form,
+  .profile-character-actions__row .profile-character-action {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .profile-character-action {
+    justify-content: center;
+    min-height: 42px;
+  }
+
+  .profile-bnet-status {
+    gap: 9px;
+    padding: 10px;
+  }
+
+  .profile-bnet-cta {
+    gap: 10px;
+    padding: 14px 12px;
+  }
+
+  .profile-bnet-cta p {
+    margin: 0;
+    max-width: 34rem;
+    font-size: 0.8rem;
+    line-height: 1.5;
+  }
+
+  /* Raid cards switch from desktop split layout to compact mobile stack. */
+  .profile-card-head--raids {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .profile-card-head--raids > div {
+    min-width: 0;
+  }
+
+  .profile-card-lead--raids {
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .profile-raid-card {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px;
+    border-radius: var(--profile-ui-radius);
+  }
+
+  .profile-raid-card__main {
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .profile-raid-card__icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  .profile-raid-card__title strong {
+    font-size: 0.92rem;
+  }
+
+  .profile-raid-card__title small {
+    font-size: 0.7rem;
+  }
+
+  .profile-raid-card__headline {
+    gap: 6px;
+  }
+
+  .profile-raid-card__meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .profile-raid-meta-item {
+    padding: 8px 9px;
+  }
+
+  .profile-raid-meta-item--character {
+    grid-column: 1 / -1;
+  }
+
+  .profile-raid-card__actions {
+    justify-content: stretch;
+  }
+
+  .profile-raid-card__action {
+    width: 100%;
+    min-height: 40px;
+  }
+
+  .profile-raid-skipped {
+    padding: 10px;
+  }
+}
+
+@media (max-width: 430px) {
+  .profile-account-header__actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-account-overview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-account-overview-card,
+  .profile-account-overview-card:first-child,
+  .profile-account-overview-card--success {
+    grid-column: 1;
+  }
+
+  .profile-account-overview-card {
+    min-height: 58px;
+  }
+
+  .profile-character-artwork {
+    height: 156px;
+  }
+
+  .profile-raid-card__meta {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-raid-meta-item--character {
+    grid-column: 1;
+  }
+}

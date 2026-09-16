@@ -620,6 +620,18 @@
   color: #ffad66;
 }
 
+/* Mobile identity is intentionally absent from the desktop table.
+   It replaces the two wide identity columns only on narrow screens. */
+.mobileIdentity {
+  display: none;
+}
+
+.mobileIdentityCopy,
+.mobileIdentityName,
+.mobileClassLine {
+  min-width: 0;
+}
+
 .emptyRows,
 .emptyState {
   display: grid;
@@ -692,15 +704,42 @@
 }
 
 @media (max-width: 760px) {
+  /* Mobile-only layout. Desktop declarations above this breakpoint stay unchanged. */
   .pageHero {
-    padding: 18px;
+    gap: 14px;
+    padding: 14px;
+  }
+
+  .heroCopy h1 {
+    margin-block: 6px;
+    font-size: clamp(1.65rem, 8vw, 2rem);
+  }
+
+  .heroCopy p {
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  .heroBadges {
+    gap: 6px;
+    margin-top: 12px;
+  }
+
+  .heroBadge {
+    min-height: 28px;
+    padding-inline: 9px;
+    font-size: 0.7rem;
+  }
+
+  .summary {
+    gap: 10px;
+    padding: 12px;
   }
 
   .summaryTop,
   .summaryBottom,
   .toolbarTitle,
-  .searchRow,
-  .footer {
+  .searchRow {
     align-items: stretch;
     flex-direction: column;
   }
@@ -709,44 +748,155 @@
     text-align: left;
   }
 
-  .summaryMetrics,
-  .metrics {
+  .summaryMetrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .metrics > div {
-    border-right: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.045);
+  .summaryMetric {
+    padding: 9px 10px;
+  }
+
+  .summaryBottom {
+    gap: 8px;
+  }
+
+  .autoStatus {
+    align-items: flex-start;
+    line-height: 1.45;
+  }
+
+  .rosterPanel {
+    border-radius: 14px;
+  }
+
+  .toolbar {
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .toolbarTitle {
+    gap: 8px;
+  }
+
+  .toolbarTitle h2 {
+    font-size: 1.05rem;
+  }
+
+  .resultCount {
+    align-self: flex-start;
+  }
+
+  .searchRow {
+    gap: 9px;
+  }
+
+  /* Important: flex-basis:340px on a column flexbox was turning the search
+     into a ~340px-tall empty panel on phones. */
+  .searchBox {
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: 0;
+    height: 46px;
   }
 
   .quickRoles {
     width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .quickRoles::-webkit-scrollbar {
+    display: none;
   }
 
   .quickRoles button {
-    flex: 1 1 0;
+    flex: 1 0 auto;
+    min-width: 64px;
+    height: 38px;
+    padding-inline: 12px;
   }
 
   .filtersButton {
     width: 100%;
+    min-height: 42px;
+  }
+
+  /* Compact one-line stats rail instead of four tall rows. */
+  .metrics {
+    display: flex;
+    grid-template-columns: none;
+    gap: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .metrics::-webkit-scrollbar {
+    display: none;
+  }
+
+  .metrics > div {
+    flex: 0 0 118px;
+    min-height: 64px;
+    padding: 10px 12px;
+    border-right: 1px solid rgba(255, 255, 255, 0.055);
+    border-bottom: 0;
+    scroll-snap-align: start;
+  }
+
+  .metrics span {
+    font-size: 0.57rem;
+  }
+
+  .metrics strong {
+    margin-top: 5px;
+    font-size: 0.98rem;
   }
 
   .filtersPanel {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 14px;
   }
 
   .filterActions {
-    grid-column: auto;
+    grid-column: 1 / -1;
     align-items: stretch;
     flex-direction: column;
+    gap: 8px;
+  }
+
+  .filterActions small {
+    padding-bottom: 0;
+  }
+
+  .rangeField {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+
+  .syncLine {
+    min-height: 0;
+    padding: 10px 14px;
+    line-height: 1.45;
   }
 
   .syncSource {
     display: none;
   }
 
+  .tableScroll {
+    overflow: visible;
+  }
+
   .table {
+    display: grid;
     min-width: 0;
+    gap: 10px;
+    padding: 10px;
   }
 
   .tableHead {
@@ -755,32 +905,277 @@
 
   .tableRow {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px 14px;
-    padding: 14px;
+    gap: 8px;
+    min-height: 0;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.075);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.018);
+    overflow: hidden;
   }
 
+  .tableRow:last-child {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.075);
+  }
+
+  .tableRow:focus-visible {
+    outline: 2px solid rgba(255, 156, 71, 0.5);
+    outline-offset: 2px;
+  }
+
+  /* Desktop identity columns are replaced by one compact mobile header. */
   .characterCell,
-  .classCell {
-    grid-column: 1 / -1;
+  .classCell,
+  .roleCell {
+    display: none;
   }
 
-  .tableRow > div::before {
+  .mobileIdentity {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: 48px minmax(0, 1fr);
+    align-items: center;
+    gap: 11px;
+    min-width: 0;
+    padding-bottom: 11px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .mobileIdentity::before {
+    display: none !important;
+  }
+
+  .mobileIdentity .avatarWrap {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+  }
+
+  .mobileIdentityCopy {
+    display: grid;
+    gap: 3px;
+  }
+
+  .mobileIdentityCopy > small {
+    overflow: hidden;
+    color: #746c64;
+    font-size: 0.66rem;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .mobileIdentityName {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .mobileIdentityName > strong {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 0.94rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobileIdentityName .rolePill {
+    flex: 0 0 auto;
+    min-width: 44px;
+    min-height: 24px;
+    padding-inline: 7px;
+  }
+
+  .mobileClassLine {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    margin-top: 5px;
+  }
+
+  .mobileClassLine .classMark {
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    font-size: 0.64rem;
+  }
+
+  .mobileClassLine > span:last-child {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .mobileClassLine strong {
+    overflow: hidden;
+    color: #ded5cb;
+    font-size: 0.74rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobileClassLine small {
+    overflow: hidden;
+    color: #756c63;
+    font-size: 0.66rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* The remaining cells become compact stat tiles. */
+  .tableRow > div[role="cell"]:not(.mobileIdentity):not(.characterCell):not(.classCell):not(.roleCell):not(.linksCell) {
+    min-width: 0;
+    padding: 9px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.018);
+  }
+
+  .tableRow > div[role="cell"]::before {
     display: block;
-    margin-bottom: 4px;
+    margin-bottom: 5px;
     color: #6f675f;
     content: attr(data-label);
-    font-size: 0.58rem;
+    font-size: 0.56rem;
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
 
-  .characterCell::before,
-  .classCell::before {
-    display: none !important;
+  .numericCell strong,
+  .scoreCell strong,
+  .raidCell strong {
+    font-size: 0.82rem;
+  }
+
+  .scoreCell small,
+  .raidCell small {
+    margin-top: 2px;
+    font-size: 0.61rem;
+    line-height: 1.35;
+    white-space: normal;
   }
 
   .linksCell {
     grid-column: 1 / -1;
+    gap: 8px;
+    padding-top: 2px;
+  }
+
+  .linksCell::before {
+    display: none !important;
+  }
+
+  .linksCell a {
+    flex: 1 1 0;
+    min-height: 38px;
+    justify-content: center;
+    padding-inline: 12px;
+    border-radius: 10px;
+    font-size: 0.72rem;
+  }
+
+  .footer {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 10px 12px;
+    min-height: 0;
+    padding: 12px 14px;
+  }
+
+  .footer > small {
+    justify-self: end;
+    text-align: right;
+    line-height: 1.4;
+  }
+
+  .pagination {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .pagination button {
+    flex: 1 1 0;
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 520px) {
+  .heroBadges {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .heroBadges::-webkit-scrollbar {
+    display: none;
+  }
+
+  .heroBadge {
+    flex: 0 0 auto;
+  }
+
+  .summaryMetrics {
+    gap: 7px;
+  }
+
+  .filtersPanel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .filterActions {
+    grid-column: auto;
+  }
+
+  .rangeField {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+
+  .table {
+    padding: 8px;
+  }
+
+  .tableRow {
+    gap: 7px;
+    padding: 10px;
+  }
+
+  .mobileIdentity {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .mobileIdentity .avatarWrap {
+    width: 44px;
+    height: 44px;
+  }
+
+  .tableRow > div[role="cell"]:not(.mobileIdentity):not(.characterCell):not(.classCell):not(.roleCell):not(.linksCell) {
+    padding: 8px 9px;
+  }
+
+  .footer {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pageSize,
+  .footer > small,
+  .pagination {
+    grid-column: 1;
+    width: 100%;
+  }
+
+  .pageSize {
+    justify-content: space-between;
+  }
+
+  .footer > small {
+    justify-self: stretch;
+    text-align: center;
   }
 }

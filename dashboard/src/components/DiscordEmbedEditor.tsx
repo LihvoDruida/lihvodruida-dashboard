@@ -486,7 +486,7 @@ export function RolePicker({ roles, selectedRoleIds, onChange, fieldName = "role
         />
       </label>
 
-      <div className="discord-role-picker-list" role="listbox" aria-label={ariaLabel}>
+      <div className="discord-role-picker-list" role="group" aria-label={ariaLabel}>
         {orderedRoles.length === 0 ? (
           <div className="discord-role-empty">Нічого не знайдено. Очисти пошук або перевір список ролей.</div>
         ) : null}
@@ -497,7 +497,6 @@ export function RolePicker({ roles, selectedRoleIds, onChange, fieldName = "role
               className="discord-role-picker-option"
               key={role.id}
               data-selected={active ? "true" : "false"}
-              aria-selected={active}
             >
               <input
                 className="sr-only"

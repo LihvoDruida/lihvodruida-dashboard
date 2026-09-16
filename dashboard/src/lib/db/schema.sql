@@ -42,6 +42,12 @@ CREATE INDEX IF NOT EXISTS documents_due_at_idx
   ON documents (collection, ((data ->> 'dueAtMs')::numeric))
   WHERE data ? 'dueAtMs';
 
+-- Рейди часто вибираються діапазоном по YYYY-MM-DD. ISO-дата коректно
+-- сортується як text, тому окремий expression index прибирає full scan.
+CREATE INDEX IF NOT EXISTS documents_date_idx
+  ON documents (collection, (data ->> 'date'))
+  WHERE data ? 'date';
+
 CREATE INDEX IF NOT EXISTS documents_updated_at_idx
   ON documents (collection, updated_at DESC);
 

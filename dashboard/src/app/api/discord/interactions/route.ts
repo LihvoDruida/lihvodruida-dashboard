@@ -14,7 +14,7 @@ import { handleRaidPollDiscordVote } from "@/lib/raidPolls";
 // тому нова дія не може «загубитись» на одній зі сторін.
 import { decodeRaidPollCustomId } from "@mistblossom/discord-contract";
 import { decodeRosterCustomId, handleRosterFormationDiscordAction } from "@/lib/rosterFormation";
-import { logDashboardEvent, noStoreHeaders, safeErrorMessage } from "@/lib/security";
+import { assertRequestBodySize, logDashboardEvent, noStoreHeaders, safeErrorMessage, verifyInternalBearerToken } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -189,6 +189,7 @@ function discordSignatureDiagnostics(request: NextRequest, rawBody: string, fall
   const sent = Number(timestamp);
   const timestampNumeric = timestampPresent && Number.isFinite(sent);
   const timestampAgeSec = timestampNumeric ? Math.floor(Date.now() / 1000) - sent : null;
+  const timestampSkewSec = typeof timestampAgeSec === "number" ? Math.abs(timestampAgeSec) : null;
   const reason = !ed25519Present
     ? "missing_ed25519"
     : !ed25519FormatValid
@@ -197,7 +198,9 @@ function discordSignatureDiagnostics(request: NextRequest, rawBody: string, fall
         ? "missing_timestamp"
         : !timestampNumeric
           ? "invalid_timestamp"
-          : fallbackReason;
+          : timestampSkewSec !== null && timestampSkewSec > 300
+            ? "timestamp_out_of_window"
+            : fallbackReason;
 
   return {
     statusCode: 401,
@@ -208,7 +211,7 @@ function discordSignatureDiagnostics(request: NextRequest, rawBody: string, fall
     timestampPresent,
     timestampNumeric,
     timestampAgeSec,
-    timestampSkewSec: typeof timestampAgeSec === "number" ? Math.abs(timestampAgeSec) : null,
+    timestampSkewSec,
     bodyBytes: Buffer.byteLength(rawBody, "utf8"),
     contentType: request.headers.get("content-type") || null,
     contentLength: request.headers.get("content-length") || null,
@@ -218,7 +221,26 @@ function discordSignatureDiagnostics(request: NextRequest, rawBody: string, fall
 }
 
 export async function POST(request: NextRequest) {
+  const oversized = assertRequestBodySize(request, 256 * 1024);
+  if (oversized) return oversized;
+
+  const serviceAuth = await verifyInternalBearerToken(request, ["INTERNAL_API_TOKEN"], { minLength: 24 });
+  if (!serviceAuth.ok) {
+    logDashboardEvent("warn", "discord.interaction.service_auth_rejected", request, {
+      reason: serviceAuth.reason,
+      statusCode: 401,
+    }, { category: "security" });
+    return new NextResponse("unauthorized", { status: 401, headers: noStoreHeaders() });
+  }
+
   const rawBody = await request.text();
+  if (Buffer.byteLength(rawBody, "utf8") > 256 * 1024) {
+    logDashboardEvent("warn", "discord.interaction.body_too_large", request, {
+      bodyBytes: Buffer.byteLength(rawBody, "utf8"),
+      statusCode: 413,
+    }, { category: "security" });
+    return new NextResponse("payload too large", { status: 413, headers: noStoreHeaders() });
+  }
 
   try {
     const verified = await verifyDiscordInteractionSignature(request, rawBody);

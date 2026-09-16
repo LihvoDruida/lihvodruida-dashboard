@@ -743,6 +743,28 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
                 onClick={(event) => openProfileCard(event, ownerProfileHref)}
                 onKeyDown={(event) => openProfileCardWithKeyboard(event, ownerProfileHref)}
               >
+                <div className={styles.mobileIdentity} role="cell" data-label="Персонаж">
+                  <span className={styles.avatarWrap}>
+                    {member.avatarUrl ? <img src={member.avatarUrl} alt="" loading="lazy" /> : <span>{member.name.charAt(0).toUpperCase()}</span>}
+                  </span>
+                  <span className={styles.mobileIdentityCopy}>
+                    <span className={styles.mobileIdentityName}>
+                      <strong style={{ color: classColor(member.className) }}>{member.name}</strong>
+                      <span className={`${styles.rolePill} ${roleStyleClass(member.role)}`}>{roleShort(member.role)}</span>
+                    </span>
+                    <small>{member.realmName || member.realmSlug}</small>
+                    <span className={styles.mobileClassLine}>
+                      <span className={styles.classMark} style={{ "--guild-class-color": classColor(member.className) } as CSSProperties}>
+                        {(member.className || "?").trim().charAt(0).toUpperCase() || "?"}
+                      </span>
+                      <span>
+                        <strong>{member.className || "—"}</strong>
+                        <small>{member.specName || "—"}</small>
+                      </span>
+                    </span>
+                  </span>
+                </div>
+
                 <div className={styles.characterCell} role="cell" data-label="Персонаж">
                   <span className={styles.avatarWrap}>
                     {member.avatarUrl ? <img src={member.avatarUrl} alt="" loading="lazy" /> : <span>{member.name.charAt(0).toUpperCase()}</span>}
@@ -760,7 +782,7 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
                   <span><strong>{member.className || "—"}</strong><small>{member.specName || "—"}</small></span>
                 </div>
 
-                <div role="cell" data-label="Роль"><span className={`${styles.rolePill} ${roleStyleClass(member.role)}`}>{roleShort(member.role)}</span></div>
+                <div className={styles.roleCell} role="cell" data-label="Роль"><span className={`${styles.rolePill} ${roleStyleClass(member.role)}`}>{roleShort(member.role)}</span></div>
                 <div className={styles.numericCell} role="cell" data-label="ILVL"><strong>{member.itemLevel || "—"}</strong></div>
                 <div className={styles.scoreCell} role="cell" data-label="RIO">
                   <strong style={member.scoreColors?.[segment] ? { color: member.scoreColors[segment] } : undefined}>{formatNumber(score, 1)}</strong>

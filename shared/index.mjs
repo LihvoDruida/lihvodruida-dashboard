@@ -204,22 +204,43 @@ export function validateInteractionComponents(rows) {
   const seen = new Set();
   const duplicates = [];
   const tooLong = [];
+  const invalidRows = [];
   const list = Array.isArray(rows) ? rows : [];
+  const selectTypes = new Set([3, 5, 6, 7, 8]);
 
-  for (const row of list) {
-    for (const component of row?.components || []) {
+  list.forEach((row, rowIndex) => {
+    const components = Array.isArray(row?.components) ? row.components : [];
+    const types = components.map((component) => Number(component?.type || 0));
+    const hasSelect = types.some((type) => selectTypes.has(type));
+    const hasButton = types.some((type) => type === 2);
+    const hasTextInput = types.some((type) => type === 4);
+
+    // Discord message action rows allow up to five buttons OR exactly one
+    // select menu. Modal text inputs likewise occupy a row on their own.
+    if (
+      components.length === 0 ||
+      components.length > 5 ||
+      (hasSelect && components.length !== 1) ||
+      (hasTextInput && components.length !== 1) ||
+      (hasButton && types.some((type) => type !== 2))
+    ) {
+      invalidRows.push(rowIndex);
+    }
+
+    for (const component of components) {
       const customId = typeof component?.custom_id === "string" ? component.custom_id : "";
       if (!customId) continue;
       if (customId.length > CUSTOM_ID_MAX_LENGTH) tooLong.push(customId);
       if (seen.has(customId)) duplicates.push(customId);
       seen.add(customId);
     }
-  }
+  });
 
   return {
-    ok: duplicates.length === 0 && tooLong.length === 0 && list.length <= 5,
+    ok: duplicates.length === 0 && tooLong.length === 0 && invalidRows.length === 0 && list.length <= 5,
     duplicates,
     tooLong,
+    invalidRows,
     rows: list.length,
   };
 }

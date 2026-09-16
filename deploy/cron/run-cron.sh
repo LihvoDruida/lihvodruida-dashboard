@@ -31,21 +31,28 @@ log() {
 
 call() {
   path="$1"
+  body_file="/tmp/cron-body"
+  : > "$body_file"
   # --max-time тримає задачу в межах хвилини: якщо ендпоїнт завис,
-  # наступний тік не має накладатися на попередній.
-  code=$(curl --silent --show-error --output /tmp/cron-body \
+  # наступний тік не має накладатися на попередній. HTTP code не дублюємо:
+  # curl при transport failure уже друкує 000 через --write-out.
+  set +e
+  code=$(curl --silent --show-error --output "$body_file" \
               --write-out '%{http_code}' \
               --max-time 55 \
               --request POST \
               --header "Authorization: Bearer ${TOKEN}" \
               --header "Content-Type: application/json" \
               --data '{"source":"self-hosted-cron"}' \
-              "${BASE}${path}" || echo "000")
+              "${BASE}${path}")
+  curl_status=$?
+  set -e
+  [ "$curl_status" -eq 0 ] || code="000"
 
   if [ "$code" = "200" ]; then
     log "OK   ${path}"
   else
-    log "FAIL ${path} -> HTTP ${code}: $(head -c 200 /tmp/cron-body 2>/dev/null || true)"
+    log "FAIL ${path} -> HTTP ${code}: $(head -c 200 "$body_file" 2>/dev/null || true)"
   fi
 }
 

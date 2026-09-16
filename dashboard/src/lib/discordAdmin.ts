@@ -1784,6 +1784,11 @@ export async function verifyDiscordInteractionSignature(request: Request, rawBod
   const timestamp = request.headers.get("x-signature-timestamp") || "";
   if (!signature || !timestamp) return false;
 
+  const sentAtSeconds = Number(timestamp);
+  if (!Number.isFinite(sentAtSeconds)) return false;
+  const timestampSkewSeconds = Math.abs(Math.floor(Date.now() / 1000) - sentAtSeconds);
+  if (timestampSkewSeconds > 300) return false;
+
   const keyBytes = hexToBytes(publicKey);
   const signatureBytes = hexToBytes(signature);
   const bodyBytes = new TextEncoder().encode(`${timestamp}${rawBody}`);
