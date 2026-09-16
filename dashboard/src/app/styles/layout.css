@@ -513,8 +513,9 @@ main .dashboard-shell {
 
 /* =========================================================
    СТАНИ ЗАВАНТАЖЕННЯ / ПОМИЛКИ
-   Portal loader: GPU-friendly CSS + one throttled canvas.
-   Без великих blur/filter шарів і без DOM-ферми частинок.
+   Mistblossom Waygate: адаптивний WoW-inspired loader.
+   Canvas має обмежений DPR/FPS, CSS-анімації працюють через
+   transform/opacity, mobile layout не успадковує desktop-геометрію.
    ========================================================= */
 .app-state-shell,
 .access-denied-shell {
@@ -533,7 +534,7 @@ main .dashboard-shell {
   position: relative;
   width: 100%;
   max-width: none;
-  min-height: clamp(620px, 76vh, 900px);
+  min-height: max(640px, 100svh);
   overflow: clip;
   isolation: isolate;
 }
@@ -549,41 +550,48 @@ main .dashboard-shell {
 .app-loading-page::before {
   inset: 0;
   background:
-    radial-gradient(circle at 25% 42%, rgba(111, 255, 112, 0.055), transparent 26%),
-    radial-gradient(circle at 31% 48%, rgba(133, 77, 255, 0.07), transparent 34%),
-    linear-gradient(180deg, rgba(12, 10, 7, 0.16), rgba(12, 10, 7, 0.72));
+    radial-gradient(circle at 24% 42%, rgba(76, 183, 116, 0.1), transparent 24%),
+    radial-gradient(circle at 35% 48%, rgba(42, 119, 102, 0.08), transparent 35%),
+    radial-gradient(circle at 73% 45%, rgba(218, 141, 72, 0.055), transparent 28%),
+    linear-gradient(180deg, rgba(13, 11, 8, 0.18), rgba(10, 8, 6, 0.82));
 }
 
 .app-loading-page::after {
   left: 50%;
-  top: 48%;
-  width: min(920px, 86vw);
-  height: 1px;
+  top: 50%;
+  width: min(1080px, 92vw);
+  height: min(620px, 72vh);
   transform: translate(-50%, -50%);
-  background: linear-gradient(90deg, transparent, rgba(146, 255, 120, 0.18), rgba(149, 86, 255, 0.24), transparent);
-  opacity: 0.72;
+  border: 1px solid rgba(211, 158, 99, 0.055);
+  border-radius: 50%;
+  background:
+    linear-gradient(90deg, transparent 49.8%, rgba(105, 213, 139, 0.08) 50%, transparent 50.2%),
+    linear-gradient(0deg, transparent 49.8%, rgba(230, 159, 84, 0.055) 50%, transparent 50.2%);
+  opacity: 0.78;
 }
 
 .app-loading-shell {
-  width: min(1100px, 100%);
-  min-height: clamp(620px, 76vh, 860px);
+  width: min(1120px, 100%);
+  min-height: max(620px, 100svh);
   align-content: center;
-  gap: clamp(18px, 3vw, 30px);
+  gap: clamp(14px, 2.2vw, 24px);
+  padding-block: clamp(28px, 6vh, 64px);
 }
 
 .app-loading-stage {
   display: grid;
-  grid-template-columns: minmax(300px, 0.92fr) minmax(360px, 1.08fr);
+  grid-template-columns: minmax(310px, 0.9fr) minmax(390px, 1.1fr);
   align-items: center;
-  gap: clamp(26px, 6vw, 76px);
+  gap: clamp(30px, 6vw, 82px);
   width: 100%;
 }
 
+/* ---------- Waygate ---------- */
 .app-loading-portal {
   position: relative;
   display: grid;
   place-items: center;
-  min-height: 360px;
+  min-height: 382px;
   contain: layout paint style;
 }
 
@@ -595,9 +603,54 @@ main .dashboard-shell {
   pointer-events: none;
 }
 
+.app-loading-waygate-frame {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(230px, 27vw, 304px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, transparent 0 68%, rgba(93, 72, 50, 0.42) 68.5% 71%, transparent 71.5%),
+    conic-gradient(from 18deg, rgba(224, 159, 84, 0.08), rgba(92, 195, 134, 0.15), rgba(224, 159, 84, 0.08));
+  box-shadow:
+    inset 0 0 0 1px rgba(228, 170, 103, 0.12),
+    0 0 0 1px rgba(72, 55, 41, 0.28);
+  animation: app-waygate-breathe 4.8s var(--ease-in-out) infinite;
+}
+
+.app-loading-waygate-node {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 1px solid rgba(255, 185, 101, 0.65);
+  transform: rotate(45deg);
+  background: #cf7f37;
+  box-shadow: 0 0 0 4px rgba(207, 127, 55, 0.075);
+  animation: app-waygate-node-pulse 2.4s var(--ease-in-out) infinite;
+}
+
+.app-loading-waygate-node--a {
+  top: 8.5%;
+  left: 50%;
+  margin-left: -6px;
+}
+
+.app-loading-waygate-node--b {
+  right: 13%;
+  bottom: 20%;
+  animation-delay: -0.8s;
+}
+
+.app-loading-waygate-node--c {
+  left: 13%;
+  bottom: 20%;
+  animation-delay: -1.6s;
+}
+
 .app-loading-rift {
   position: relative;
-  width: clamp(182px, 24vw, 252px);
+  width: 78%;
   aspect-ratio: 1;
   border-radius: 50%;
   transform: translateZ(0);
@@ -616,22 +669,22 @@ main .dashboard-shell {
 .app-loading-rift::before {
   inset: 10%;
   background:
-    radial-gradient(circle at 46% 44%, rgba(210, 255, 198, 0.9) 0 3%, transparent 4%),
-    radial-gradient(circle at 50% 50%, rgba(72, 255, 102, 0.92) 0 17%, rgba(70, 216, 95, 0.54) 28%, rgba(67, 28, 109, 0.52) 54%, rgba(8, 8, 12, 0.94) 72%);
+    radial-gradient(circle at 46% 44%, rgba(232, 255, 219, 0.92) 0 3%, transparent 4%),
+    radial-gradient(circle at 50% 50%, rgba(84, 221, 119, 0.9) 0 17%, rgba(49, 157, 117, 0.58) 29%, rgba(16, 76, 70, 0.62) 53%, rgba(7, 11, 10, 0.96) 73%);
   box-shadow:
-    inset 0 0 22px rgba(125, 255, 108, 0.38),
-    inset 0 0 46px rgba(126, 62, 255, 0.34),
-    0 0 24px rgba(105, 255, 116, 0.16);
+    inset 0 0 24px rgba(111, 237, 139, 0.34),
+    inset 0 0 48px rgba(43, 149, 125, 0.3),
+    0 0 26px rgba(92, 217, 130, 0.14);
   animation: app-portal-core-pulse 2.9s var(--ease-in-out) infinite;
 }
 
 .app-loading-rift::after {
   inset: 3%;
-  border: 1px solid rgba(175, 255, 151, 0.32);
+  border: 1px solid rgba(174, 245, 170, 0.28);
   box-shadow:
-    inset 0 0 0 7px rgba(128, 255, 111, 0.028),
-    0 0 0 8px rgba(130, 73, 255, 0.035),
-    0 0 28px rgba(113, 255, 112, 0.12);
+    inset 0 0 0 7px rgba(128, 235, 139, 0.025),
+    0 0 0 8px rgba(61, 151, 127, 0.035),
+    0 0 28px rgba(101, 220, 130, 0.1);
 }
 
 .app-loading-rift-ring {
@@ -647,36 +700,36 @@ main .dashboard-shell {
   background: conic-gradient(
     from 12deg,
     transparent 0 5%,
-    rgba(123, 255, 113, 0.92) 7% 9%,
+    rgba(112, 226, 135, 0.92) 7% 9%,
     transparent 12% 22%,
-    rgba(162, 82, 255, 0.82) 24% 27%,
+    rgba(224, 153, 80, 0.78) 24% 27%,
     transparent 30% 45%,
-    rgba(102, 228, 255, 0.66) 48% 50%,
+    rgba(91, 195, 177, 0.72) 48% 50%,
     transparent 53% 68%,
-    rgba(129, 255, 114, 0.82) 71% 74%,
+    rgba(117, 230, 139, 0.82) 71% 74%,
     transparent 78% 91%,
-    rgba(172, 88, 255, 0.78) 94% 96%,
+    rgba(222, 152, 79, 0.72) 94% 96%,
     transparent 98%
   );
   -webkit-mask: radial-gradient(circle, transparent 0 66%, #000 67% 74%, transparent 75%);
   mask: radial-gradient(circle, transparent 0 66%, #000 67% 74%, transparent 75%);
-  animation: app-portal-spin 5.8s linear infinite;
+  animation: app-portal-spin 6.4s linear infinite;
 }
 
 .app-loading-rift-ring--inner {
   inset: 8%;
-  border: 2px solid rgba(129, 255, 115, 0.2);
-  border-left-color: rgba(156, 82, 255, 0.78);
-  border-right-color: rgba(105, 232, 255, 0.56);
-  animation: app-portal-spin-reverse 4.1s linear infinite;
+  border: 2px solid rgba(129, 229, 144, 0.18);
+  border-left-color: rgba(227, 157, 82, 0.72);
+  border-right-color: rgba(91, 202, 181, 0.62);
+  animation: app-portal-spin-reverse 4.4s linear infinite;
 }
 
 .app-loading-rift-core {
   position: absolute;
   inset: 29%;
   border-radius: 47% 53% 58% 42%;
-  background: radial-gradient(circle at 44% 40%, rgba(233, 255, 221, 0.92), rgba(92, 255, 104, 0.56) 19%, rgba(103, 46, 165, 0.58) 52%, rgba(6, 6, 12, 0.96) 76%);
-  opacity: 0.92;
+  background: radial-gradient(circle at 44% 40%, rgba(239, 255, 226, 0.94), rgba(88, 221, 116, 0.62) 19%, rgba(30, 117, 99, 0.66) 52%, rgba(6, 11, 10, 0.97) 77%);
+  opacity: 0.94;
   transform: translateZ(0);
   animation: app-portal-core-warp 3.2s var(--ease-in-out) infinite alternate;
 }
@@ -688,7 +741,7 @@ main .dashboard-shell {
   height: 2px;
   width: 72%;
   transform-origin: 0 50%;
-  background: linear-gradient(90deg, rgba(190, 255, 178, 0.9), rgba(153, 78, 255, 0.22), transparent);
+  background: linear-gradient(90deg, rgba(194, 255, 187, 0.82), rgba(228, 158, 83, 0.28), transparent);
   opacity: 0.55;
 }
 
@@ -702,44 +755,120 @@ main .dashboard-shell {
   animation: app-portal-slice-b 4.4s var(--ease-in-out) infinite;
 }
 
+.app-loading-waygate-seal {
+  position: absolute;
+  left: 50%;
+  bottom: -2px;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(224, 157, 82, 0.38);
+  border-radius: 50%;
+  background: rgba(16, 13, 10, 0.94);
+  box-shadow: 0 0 0 5px rgba(11, 9, 7, 0.42);
+  animation: app-waygate-seal-pulse 3.2s var(--ease-in-out) infinite;
+}
+
+.app-loading-waygate-seal img {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 .app-loading-portal-caption {
   position: absolute;
-  bottom: 12px;
+  bottom: 2px;
   left: 50%;
   transform: translateX(-50%);
   white-space: nowrap;
-  color: rgba(177, 255, 169, 0.64);
-  font: 600 0.62rem/1.2 var(--font-mono);
-  letter-spacing: 0.15em;
+  color: rgba(166, 216, 174, 0.62);
+  font: 650 0.6rem/1.2 var(--font-mono);
+  letter-spacing: 0.14em;
 }
 
+/* ---------- Information panel ---------- */
 .app-loading-card {
   position: relative;
   overflow: hidden;
   min-width: 0;
   padding: clamp(24px, 4vw, 38px);
-  border-color: rgba(156, 111, 83, 0.28);
+  border-color: rgba(184, 129, 78, 0.3);
   background:
-    linear-gradient(135deg, rgba(29, 23, 18, 0.88), rgba(17, 14, 13, 0.9)),
+    linear-gradient(135deg, rgba(34, 27, 20, 0.92), rgba(16, 14, 12, 0.94)),
     var(--surface);
   box-shadow: var(--shadow-lg);
+  animation: app-loading-card-enter 420ms var(--ease-out) both;
+}
+
+.app-loading-card::before,
+.app-loading-card::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
 }
 
 .app-loading-card::before {
-  content: "";
-  position: absolute;
   inset: 0 0 auto;
   height: 2px;
-  background: linear-gradient(90deg, rgba(113, 255, 115, 0.06), rgba(113, 255, 115, 0.62), rgba(155, 77, 255, 0.76), rgba(93, 217, 255, 0.08));
+  background: linear-gradient(90deg, rgba(226, 153, 79, 0.08), rgba(226, 153, 79, 0.82), rgba(94, 211, 142, 0.72), rgba(93, 190, 176, 0.08));
   transform-origin: 0 50%;
   animation: app-loading-scanline 2.8s var(--ease-in-out) infinite;
 }
 
+.app-loading-card::after {
+  right: 18px;
+  bottom: 18px;
+  width: 54px;
+  height: 54px;
+  border-right: 1px solid rgba(225, 157, 82, 0.16);
+  border-bottom: 1px solid rgba(225, 157, 82, 0.16);
+  border-radius: 0 0 10px 0;
+}
+
 .app-loading-copy {
-  display: grid;
-  gap: 12px;
   position: relative;
   z-index: 1;
+  display: grid;
+  gap: 12px;
+}
+
+.app-loading-brandline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 13px;
+  border-bottom: 1px solid rgba(220, 157, 91, 0.1);
+}
+
+.app-loading-brandline img {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 3px rgba(223, 155, 83, 0.075);
+}
+
+.app-loading-brandline > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app-loading-brandline strong {
+  color: var(--text-strong);
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.app-loading-brandline small {
+  color: var(--text-muted);
+  font-size: 0.69rem;
 }
 
 .app-loading-kicker-row {
@@ -755,7 +884,7 @@ main .dashboard-shell {
   align-items: center;
   gap: 7px;
   color: var(--text-soft);
-  font: 700 0.64rem/1 var(--font-mono);
+  font: 700 0.62rem/1 var(--font-mono);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -764,17 +893,18 @@ main .dashboard-shell {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #78f585;
-  box-shadow: 0 0 0 4px rgba(120, 245, 133, 0.09);
+  background: #71d88b;
+  box-shadow: 0 0 0 4px rgba(113, 216, 139, 0.09);
   animation: app-loading-status-pulse 1.6s var(--ease-in-out) infinite;
 }
 
 .app-loading-card h1 {
   margin: 0;
-  max-width: 17ch;
-  font-size: clamp(1.75rem, 3.2vw, 2.65rem);
+  max-width: 18ch;
+  color: #f3ece3;
+  font-size: clamp(1.75rem, 3.2vw, 2.7rem);
   line-height: 1.02;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.04em;
 }
 
 .app-loading-card p {
@@ -787,53 +917,100 @@ main .dashboard-shell {
   display: flex;
   align-items: center;
   gap: 10px;
-  width: fit-content;
-  max-width: 100%;
+  width: 100%;
+  min-width: 0;
   margin-top: 4px;
-  padding: 9px 12px;
-  border: 1px solid rgba(130, 255, 117, 0.13);
-  border-radius: var(--radius-sm);
-  background: rgba(84, 255, 103, 0.045);
+  padding: 11px 12px;
+  border: 1px solid rgba(118, 218, 139, 0.14);
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(90deg, rgba(73, 174, 108, 0.075), rgba(73, 174, 108, 0.025)),
+    rgba(8, 13, 10, 0.24);
   color: var(--text-body);
-  font: 650 0.76rem/1.35 var(--font-mono);
+}
+
+.app-loading-current > span:last-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app-loading-current strong {
+  color: #dce9d8;
+  font: 750 0.76rem/1.25 var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.app-loading-current small {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
 }
 
 .app-loading-current-pulse {
   flex: 0 0 auto;
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  background: #8bf784;
-  box-shadow: 0 0 0 4px rgba(139, 247, 132, 0.08);
+  background: #74dd8e;
+  box-shadow: 0 0 0 4px rgba(116, 221, 142, 0.08);
   animation: app-loading-status-pulse 1.35s var(--ease-in-out) infinite;
 }
 
 .app-loading-note {
   padding-top: 2px;
   color: var(--text-faint) !important;
-  font-size: 0.75rem;
-  line-height: 1.55;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+/* ---------- Determinate staged progress ---------- */
+.app-loading-progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  color: var(--text-muted);
+  font: 650 0.62rem/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.app-loading-progress-head strong {
+  color: #d9a165;
+  font-size: 0.68rem;
 }
 
 .app-loading-progress {
   position: relative;
   width: 100%;
-  height: 5px;
-  border: 1px solid rgba(255, 226, 196, 0.06);
+  height: 7px;
+  border: 1px solid rgba(255, 226, 196, 0.07);
   border-radius: var(--radius-pill);
-  background: rgba(6, 7, 9, 0.52);
+  background: rgba(5, 8, 7, 0.58);
   overflow: hidden;
 }
 
 .app-loading-progress span {
   position: absolute;
   inset: 0 auto 0 0;
-  width: 34%;
+  width: var(--app-loading-progress, 18%);
   border-radius: inherit;
-  background: linear-gradient(90deg, rgba(111, 255, 116, 0.15), #73f379 42%, #9e5cff 72%, rgba(101, 220, 255, 0.3));
-  transform: translateX(-110%);
-  will-change: transform;
-  animation: app-loading-slide 1.55s var(--ease-in-out) infinite;
+  background: linear-gradient(90deg, #3e9566, #79d98d 52%, #d89550 100%);
+  box-shadow: 0 0 16px rgba(100, 203, 132, 0.16);
+  transition: width 440ms var(--ease-out);
+}
+
+.app-loading-progress span::after {
+  content: "";
+  position: absolute;
+  inset: 0 -22px 0 auto;
+  width: 42px;
+  background: linear-gradient(90deg, transparent, rgba(255, 239, 207, 0.34), transparent);
+  transform: skewX(-18deg);
+  animation: app-loading-progress-glint 1.6s linear infinite;
 }
 
 .app-loading-steps {
@@ -852,31 +1029,51 @@ main .dashboard-shell {
   gap: 10px;
   align-items: start;
   min-width: 0;
-  padding: 12px;
+  min-height: 68px;
+  padding: 11px 12px;
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  background: rgba(17, 14, 12, 0.66);
+  border-radius: var(--radius-md);
+  background: rgba(17, 14, 12, 0.68);
   color: var(--text-faint);
-  transition: border-color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+  transition:
+    border-color 220ms var(--ease-out),
+    background-color 220ms var(--ease-out),
+    color 220ms var(--ease-out),
+    transform 220ms var(--ease-out);
 }
 
 .app-loading-steps li.is-active {
-  border-color: rgba(126, 255, 117, 0.25);
-  background: rgba(84, 255, 104, 0.05);
+  border-color: rgba(105, 214, 136, 0.28);
+  background: rgba(62, 148, 97, 0.075);
   color: var(--text-body);
+  transform: translateY(-2px);
 }
 
 .app-loading-steps li.is-done {
+  border-color: rgba(217, 153, 85, 0.14);
   color: var(--text-soft);
 }
 
 .app-loading-step-index {
-  color: rgba(154, 90, 255, 0.72);
-  font: 700 0.68rem/1.35 var(--font-mono);
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  border: 1px solid rgba(215, 151, 82, 0.12);
+  border-radius: 50%;
+  color: rgba(218, 154, 83, 0.72);
+  font: 750 0.62rem/1 var(--font-mono);
 }
 
 .app-loading-steps li.is-active .app-loading-step-index {
-  color: #8cf48a;
+  border-color: rgba(108, 218, 139, 0.32);
+  background: rgba(75, 167, 104, 0.12);
+  color: #8be1a0;
+}
+
+.app-loading-steps li.is-done .app-loading-step-index {
+  background: rgba(213, 147, 78, 0.08);
+  color: #d99b59;
 }
 
 .app-loading-step-copy {
@@ -887,37 +1084,46 @@ main .dashboard-shell {
 
 .app-loading-step-copy strong {
   color: inherit;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   line-height: 1.25;
 }
 
 .app-loading-step-copy > span {
   color: var(--text-faint);
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   line-height: 1.35;
 }
 
+/* real client telemetry: device/network/viewport/route */
 .app-loading-telemetry {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   width: 100%;
-  color: rgba(156, 148, 138, 0.48);
-  font: 600 0.58rem/1 var(--font-mono);
-  letter-spacing: 0.12em;
+  color: rgba(155, 146, 136, 0.56);
+  font: 650 0.56rem/1 var(--font-mono);
+  letter-spacing: 0.08em;
+}
+
+.app-loading-telemetry > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.app-loading-telemetry b {
+  color: rgba(217, 154, 85, 0.62);
+  font: inherit;
 }
 
 .app-loading-telemetry i {
   width: 3px;
   height: 3px;
+  flex: 0 0 auto;
   border-radius: 50%;
-  background: rgba(133, 255, 119, 0.42);
-}
-
-@keyframes app-loading-slide {
-  0% { transform: translateX(-110%); }
-  58%, 100% { transform: translateX(390%); }
+  background: rgba(104, 211, 136, 0.42);
 }
 
 @keyframes app-portal-spin {
@@ -963,26 +1169,54 @@ main .dashboard-shell {
   50% { opacity: 1; transform: scale(1); }
 }
 
+@keyframes app-waygate-breathe {
+  0%, 100% { transform: scale(0.99); opacity: 0.94; }
+  50% { transform: scale(1.01); opacity: 1; }
+}
+
+@keyframes app-waygate-node-pulse {
+  0%, 100% { opacity: 0.45; transform: rotate(45deg) scale(0.82); }
+  50% { opacity: 1; transform: rotate(45deg) scale(1); }
+}
+
+@keyframes app-waygate-seal-pulse {
+  0%, 100% { transform: translateX(-50%) scale(0.97); }
+  50% { transform: translateX(-50%) scale(1.03); }
+}
+
+@keyframes app-loading-progress-glint {
+  0% { transform: translateX(-85%) skewX(-18deg); opacity: 0; }
+  35% { opacity: 0.7; }
+  100% { transform: translateX(85%) skewX(-18deg); opacity: 0; }
+}
+
+@keyframes app-loading-card-enter {
+  from { opacity: 0; transform: translate3d(18px, 0, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
 @media (max-width: 860px) {
   .app-loading-shell {
-    min-height: 680px;
+    width: min(680px, 100%);
+    min-height: max(640px, 100svh);
+    align-content: center;
   }
 
   .app-loading-stage {
     grid-template-columns: minmax(0, 1fr);
-    gap: 6px;
+    gap: 4px;
   }
 
   .app-loading-portal {
-    min-height: 286px;
+    min-height: 258px;
   }
 
-  .app-loading-rift {
-    width: clamp(168px, 42vw, 220px);
+  .app-loading-waygate-frame {
+    width: clamp(190px, 38vw, 232px);
   }
 
   .app-loading-portal-caption {
-    bottom: 5px;
+    bottom: -1px;
   }
 
   .app-loading-card {
@@ -995,51 +1229,212 @@ main .dashboard-shell {
   }
 }
 
-@media (max-width: 520px) {
+@media (max-width: 560px) {
+  .app-state-shell,
+  .access-denied-shell {
+    padding-inline: 14px;
+  }
+
   .app-loading-page {
-    min-height: 700px;
+    min-height: 100svh;
+  }
+
+  .app-loading-page::after {
+    width: 94vw;
+    height: 72vw;
   }
 
   .app-loading-shell {
-    align-content: start;
-    min-height: 700px;
-    padding-top: 34px;
-    padding-bottom: 34px;
+    min-height: 100svh;
+    gap: 10px;
+    padding-top: 18px;
+    padding-bottom: 22px;
+  }
+
+  .app-loading-stage {
+    gap: 0;
   }
 
   .app-loading-portal {
-    min-height: 246px;
+    min-height: 180px;
+  }
+
+  .app-loading-waygate-frame {
+    width: 154px;
+  }
+
+  .app-loading-waygate-node {
+    width: 9px;
+    height: 9px;
+  }
+
+  .app-loading-waygate-seal {
+    width: 38px;
+    height: 38px;
+  }
+
+  .app-loading-waygate-seal img {
+    width: 27px;
+    height: 27px;
   }
 
   .app-loading-portal-caption {
-    font-size: 0.54rem;
-    letter-spacing: 0.1em;
+    bottom: 0;
+    font-size: 0.49rem;
+    letter-spacing: 0.08em;
   }
 
   .app-loading-card {
-    padding: 22px 18px;
+    padding: 17px 16px 18px;
+    border-radius: var(--radius-lg);
+  }
+
+  .app-loading-brandline {
+    gap: 9px;
+    padding-bottom: 10px;
+  }
+
+  .app-loading-brandline img {
+    width: 32px;
+    height: 32px;
+  }
+
+  .app-loading-brandline strong {
+    font-size: 0.76rem;
+  }
+
+  .app-loading-brandline small {
+    font-size: 0.63rem;
+  }
+
+  .app-loading-kicker-row {
+    gap: 7px;
+  }
+
+  .app-loading-link-state {
+    font-size: 0.56rem;
   }
 
   .app-loading-card h1 {
-    font-size: clamp(1.55rem, 8vw, 2.1rem);
+    max-width: 100%;
+    font-size: clamp(1.42rem, 7.3vw, 1.9rem);
+  }
+
+  .app-loading-card > .app-loading-copy > p:not(.app-loading-note) {
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+
+  .app-loading-card .app-loading-current {
+    padding: 9px 10px;
+  }
+
+  .app-loading-current strong {
+    font-size: 0.69rem;
+  }
+
+  .app-loading-current small {
+    font-size: 0.65rem;
+  }
+
+  .app-loading-note {
+    display: none;
+  }
+
+  .app-loading-progress-head {
+    margin-top: 2px;
+    font-size: 0.56rem;
+  }
+
+  .app-loading-progress {
+    height: 6px;
   }
 
   .app-loading-steps {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .app-loading-steps li {
+    min-height: 58px;
+    gap: 7px;
+    padding: 8px;
+  }
+
+  .app-loading-step-index {
+    min-width: 21px;
+    height: 21px;
+    font-size: 0.56rem;
+  }
+
+  .app-loading-step-copy strong {
+    font-size: 0.68rem;
+  }
+
+  .app-loading-step-copy > span {
+    font-size: 0.59rem;
   }
 
   .app-loading-telemetry {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding-top: 2px;
+  }
+
+  .app-loading-telemetry > span {
+    justify-content: center;
+    min-width: 0;
+    overflow: hidden;
+    padding: 6px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.045);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.14);
+    text-overflow: ellipsis;
+  }
+
+  .app-loading-telemetry i {
+    display: none;
+  }
+}
+
+@media (max-width: 380px) {
+  .app-loading-shell {
+    padding-inline: 10px;
+  }
+
+  .app-loading-portal {
+    min-height: 164px;
+  }
+
+  .app-loading-waygate-frame {
+    width: 140px;
+  }
+
+  .app-loading-card {
+    padding-inline: 14px;
+  }
+
+  .app-loading-steps li {
+    min-height: 54px;
+  }
+
+  .app-loading-step-copy > span {
     display: none;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .app-loading-waygate-frame,
+  .app-loading-waygate-node,
+  .app-loading-waygate-seal,
   .app-loading-rift,
   .app-loading-rift-ring,
   .app-loading-rift-core,
   .app-loading-rift-slice,
+  .app-loading-card,
   .app-loading-card::before,
-  .app-loading-progress span,
+  .app-loading-progress span::after,
   .app-loading-link-state i,
   .app-loading-current-pulse {
     animation: none !important;
@@ -1048,9 +1443,4 @@ main .dashboard-shell {
   .app-loading-rift-ring--outer {
     transform: rotate(18deg);
   }
-
-  .app-loading-progress span {
-    transform: translateX(92%);
-  }
 }
-

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { usePathname } from "next/navigation";
 import { resolveLoadingState } from "@/lib/pageState";
 
@@ -15,7 +15,23 @@ type PortalFragment = {
   tone: 0 | 1 | 2;
 };
 
-const PORTAL_PALETTE = ["108,255,128", "152,92,255", "92,216,255"] as const;
+type ClientTelemetry = {
+  device: string;
+  network: string;
+  viewport: string;
+};
+
+type NavigatorWithConnection = Navigator & {
+  deviceMemory?: number;
+  connection?: {
+    effectiveType?: string;
+    saveData?: boolean;
+  };
+};
+
+const PORTAL_PALETTE = ["117,224,137", "92,194,178", "240,168,86"] as const;
+const STAGE_DELAYS = [0, 420, 980, 1600] as const;
+const STAGE_PROGRESS = [18, 43, 72, 94] as const;
 
 function createFragment(index: number, count: number): PortalFragment {
   const spread = index / Math.max(1, count);
@@ -43,9 +59,9 @@ function PortalParticleField() {
 
     const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     const compactQuery = window.matchMedia("(max-width: 640px)");
-    const nav = navigator as Navigator & { deviceMemory?: number };
+    const nav = navigator as NavigatorWithConnection;
     const lowPower = (nav.hardwareConcurrency || 4) <= 4 || (nav.deviceMemory || 4) <= 4;
-    const particleCount = motionQuery.matches ? 12 : lowPower || compactQuery.matches ? 24 : 40;
+    const particleCount = motionQuery.matches ? 10 : lowPower || compactQuery.matches ? 22 : 38;
     const targetFps = motionQuery.matches ? 1 : lowPower ? 24 : 30;
     const frameInterval = 1000 / targetFps;
     const fragments = Array.from({ length: particleCount }, (_, index) => createFragment(index, particleCount));
@@ -168,9 +184,66 @@ function PortalParticleField() {
   return <canvas ref={canvasRef} className="app-loading-particles" aria-hidden="true" />;
 }
 
+function useLoadingStage(pathname: string, stepCount: number) {
+  const [activeStage, setActiveStage] = useState(0);
+
+  useEffect(() => {
+    setActiveStage(0);
+    const timers = STAGE_DELAYS.slice(1, Math.min(stepCount, STAGE_DELAYS.length)).map((delay, index) =>
+      window.setTimeout(() => setActiveStage(index + 1), delay),
+    );
+    return () => timers.forEach((timer) => window.clearTimeout(timer));
+  }, [pathname, stepCount]);
+
+  return Math.min(activeStage, Math.max(0, stepCount - 1));
+}
+
+function useClientTelemetry(): ClientTelemetry {
+  const [telemetry, setTelemetry] = useState<ClientTelemetry>({
+    device: "CLIENT",
+    network: "CONNECT",
+    viewport: "—",
+  });
+
+  useEffect(() => {
+    const update = () => {
+      const nav = navigator as NavigatorWithConnection;
+      const isMobile = window.matchMedia("(max-width: 640px)").matches;
+      const effectiveType = nav.connection?.effectiveType?.trim().toUpperCase();
+      const network = !navigator.onLine
+        ? "OFFLINE"
+        : nav.connection?.saveData
+          ? "DATA SAVER"
+          : effectiveType || "ONLINE";
+
+      setTelemetry({
+        device: isMobile ? "MOBILE" : "DESKTOP",
+        network,
+        viewport: `${window.innerWidth}×${window.innerHeight}`,
+      });
+    };
+
+    update();
+    window.addEventListener("resize", update, { passive: true });
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+    };
+  }, []);
+
+  return telemetry;
+}
+
 export default function AppLoadingScreen() {
-  const pathname = usePathname();
-  const copy = resolveLoadingState(pathname);
+  const pathname = usePathname() || "/";
+  const copy = useMemo(() => resolveLoadingState(pathname), [pathname]);
+  const activeStage = useLoadingStage(pathname, copy.steps.length);
+  const telemetry = useClientTelemetry();
+  const progress = STAGE_PROGRESS[Math.min(activeStage, STAGE_PROGRESS.length - 1)] || 18;
+  const activeStep = copy.steps[activeStage] || copy.steps[0];
 
   return (
     <main className="app-state-page app-loading-page" aria-busy="true" aria-live="polite">
@@ -178,56 +251,90 @@ export default function AppLoadingScreen() {
         <div className="app-loading-stage">
           <div className="app-loading-portal" aria-hidden="true">
             <PortalParticleField />
-            <div className="app-loading-rift">
-              <span className="app-loading-rift-ring app-loading-rift-ring--outer" />
-              <span className="app-loading-rift-ring app-loading-rift-ring--inner" />
-              <span className="app-loading-rift-core" />
-              <span className="app-loading-rift-slice app-loading-rift-slice--a" />
-              <span className="app-loading-rift-slice app-loading-rift-slice--b" />
+            <div className="app-loading-waygate-frame">
+              <span className="app-loading-waygate-node app-loading-waygate-node--a" />
+              <span className="app-loading-waygate-node app-loading-waygate-node--b" />
+              <span className="app-loading-waygate-node app-loading-waygate-node--c" />
+              <div className="app-loading-rift">
+                <span className="app-loading-rift-ring app-loading-rift-ring--outer" />
+                <span className="app-loading-rift-ring app-loading-rift-ring--inner" />
+                <span className="app-loading-rift-core" />
+                <span className="app-loading-rift-slice app-loading-rift-slice--a" />
+                <span className="app-loading-rift-slice app-loading-rift-slice--b" />
+              </div>
+              <span className="app-loading-waygate-seal">
+                <img src="/mistblossom-icon.png" alt="" />
+              </span>
             </div>
-            <span className="app-loading-portal-caption">VOID LINK · SECURE TRANSIT</span>
+            <span className="app-loading-portal-caption">MISTBLOSSOM WAYGATE · LEYLINE STABLE</span>
           </div>
 
           <article className="panel app-loading-card">
             <div className="app-loading-copy">
+              <div className="app-loading-brandline">
+                <img src="/mistblossom-icon.png" alt="" />
+                <span>
+                  <strong>Mistblossom Vanguard</strong>
+                  <small>Смарагдовий шлях до панелі</small>
+                </span>
+              </div>
+
               <div className="app-loading-kicker-row">
                 <span className="app-state-eyebrow app-loading-eyebrow">{copy.eyebrow}</span>
-                <span className="app-loading-link-state"><i aria-hidden="true" /> Канал активний</span>
+                <span className="app-loading-link-state"><i aria-hidden="true" /> Канал стабільний</span>
               </div>
               <h1>{copy.title}</h1>
               <p>{copy.message}</p>
 
-              <div className="app-loading-current" aria-label={copy.activeLabel}>
+              <div className="app-loading-current" aria-label={`${activeStep.label}: ${activeStep.detail}`}>
                 <span className="app-loading-current-pulse" aria-hidden="true" />
-                <span>{copy.activeLabel.replace(/^Зараз:\s*/i, "")}</span>
+                <span>
+                  <strong>{activeStep.label}</strong>
+                  <small>{activeStep.detail}</small>
+                </span>
               </div>
 
               <p className="app-loading-note">
-                Захищений перехід існує лише поки сервер перевіряє дані. Анімація не затримує відкриття сторінки.
+                Етапи мають коротку візуальну затримку, щоб стан завантаження читався природно. Готовий маршрут не утримується після фактичного завершення серверної роботи.
               </p>
             </div>
           </article>
         </div>
 
-        <div className="app-loading-progress" aria-hidden="true"><span /></div>
+        <div className="app-loading-progress-head">
+          <span>Етап {activeStage + 1} / {copy.steps.length}</span>
+          <strong>{progress}%</strong>
+        </div>
+        <div
+          className="app-loading-progress"
+          aria-hidden="true"
+          style={{ "--app-loading-progress": `${progress}%` } as CSSProperties}
+        >
+          <span />
+        </div>
 
         <ol className="app-loading-steps" aria-label="Етапи завантаження">
-          {copy.steps.map((step, index) => (
-            <li key={`${step.label}:${step.detail}`} className={`is-${step.state}`}>
-              <span className="app-loading-step-index" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-              <span className="app-loading-step-copy">
-                <strong>{step.label}</strong>
-                <span>{step.detail}</span>
-              </span>
-            </li>
-          ))}
+          {copy.steps.map((step, index) => {
+            const state = index < activeStage ? "done" : index === activeStage ? "active" : "next";
+            return (
+              <li key={`${step.label}:${step.detail}`} className={`is-${state}`}>
+                <span className="app-loading-step-index" aria-hidden="true">
+                  {state === "done" ? "✓" : String(index + 1).padStart(2, "0")}
+                </span>
+                <span className="app-loading-step-copy">
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </span>
+              </li>
+            );
+          })}
         </ol>
 
-        <div className="app-loading-telemetry" aria-hidden="true">
-          <span>SESSION GATE</span><i />
-          <span>ROLE MATRIX</span><i />
-          <span>DATA STREAM</span><i />
-          <span>UI PHASE</span>
+        <div className="app-loading-telemetry" aria-label="Поточне середовище клієнта">
+          <span><b>DEVICE</b>{telemetry.device}</span><i />
+          <span><b>NETWORK</b>{telemetry.network}</span><i />
+          <span><b>VIEWPORT</b>{telemetry.viewport}</span><i />
+          <span><b>ROUTE</b>{pathname === "/" ? "HOME" : pathname.split("/").filter(Boolean)[0]?.toUpperCase() || "HOME"}</span>
         </div>
       </section>
     </main>

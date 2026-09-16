@@ -88,8 +88,8 @@ const baseSteps: LoadingStep[] = [
     state: "active",
   },
   {
-    label: "Firebase",
-    detail: "читаємо потрібні записи без зайвих запитів",
+    label: "База даних",
+    detail: "читаємо потрібні записи з серверного сховища",
     state: "next",
   },
   {
@@ -138,12 +138,12 @@ function loadingCopyForPath(pathname: string): LoadingStateCopy {
     };
   }
 
-  if (pathname.startsWith("/profile")) {
+  if (pathname === "/profile" || pathname.startsWith("/profile/")) {
     return {
       eyebrow: "Профіль",
       title: "Відкриваємо профіль",
       message: "Перевіряємо сесію, читаємо профіль і підтягуємо персонажів.",
-      activeLabel: "Зараз: читаємо профіль з Firebase",
+      activeLabel: "Зараз: читаємо профіль із серверної бази",
       steps: withActiveStep([
         baseSteps[0],
         {
@@ -158,6 +158,133 @@ function loadingCopyForPath(pathname: string): LoadingStateCopy {
         },
         baseSteps[3],
       ], 1),
+    };
+  }
+
+
+  if (pathname.startsWith("/profiles")) {
+    return {
+      eyebrow: "Профілі гільдії",
+      title: "Збираємо каталог профілів",
+      message: "Читаємо профілі, мейнів, Discord-привʼязки та готуємо фільтри каталогу.",
+      activeLabel: "Зараз: формуємо каталог профілів",
+      steps: withActiveStep([
+        baseSteps[0],
+        {
+          label: "Профілі",
+          detail: "читаємо доступні профілі та мейнів",
+          state: "active",
+        },
+        {
+          label: "Фільтри",
+          detail: "готуємо ролі, Battle.net і сортування",
+          state: "next",
+        },
+        baseSteps[3],
+      ], 1),
+    };
+  }
+
+  if (pathname.startsWith("/applications")) {
+    return {
+      eyebrow: "Заявки",
+      title: "Відкриваємо журнал заявок",
+      message: "Перевіряємо доступ, читаємо актуальні заявки та збираємо статуси Discord.",
+      activeLabel: "Зараз: читаємо заявки",
+      steps: withActiveStep([
+        baseSteps[0],
+        baseSteps[1],
+        {
+          label: "Заявки",
+          detail: "завантажуємо записи та поточні статуси",
+          state: "active",
+        },
+        baseSteps[3],
+      ], 2),
+    };
+  }
+
+  if (pathname.startsWith("/polls")) {
+    return {
+      eyebrow: "Рейд-пули",
+      title: "Готуємо голосування",
+      message: "Читаємо розклад, голоси, Discord-публікацію та доступні дії.",
+      activeLabel: "Зараз: синхронізуємо дані рейд-пулу",
+      steps: withActiveStep([
+        baseSteps[0],
+        {
+          label: "Розклад",
+          detail: "читаємо дні, час і стан публікації",
+          state: "active",
+        },
+        {
+          label: "Голоси",
+          detail: "збираємо відповіді учасників",
+          state: "next",
+        },
+        baseSteps[3],
+      ], 1),
+    };
+  }
+
+  if (pathname.startsWith("/roster")) {
+    return {
+      eyebrow: "Формування складу",
+      title: "Готуємо склад рейду",
+      message: "Читаємо актуальне формування, класи, ролі та Discord-параметри оголошення.",
+      activeLabel: "Зараз: формуємо матрицю складу",
+      steps: withActiveStep([
+        baseSteps[0],
+        {
+          label: "Склад",
+          detail: "читаємо зайняті класи та ролі",
+          state: "active",
+        },
+        {
+          label: "Discord",
+          detail: "готуємо канал, теги та публікацію",
+          state: "next",
+        },
+        baseSteps[3],
+      ], 1),
+    };
+  }
+
+  if (pathname.startsWith("/discord")) {
+    return {
+      eyebrow: "Discord",
+      title: "Відкриваємо Discord-інструменти",
+      message: "Перевіряємо інтеграцію, доступні ролі, канали та стан керування повідомленнями.",
+      activeLabel: "Зараз: звіряємо Discord-інтеграцію",
+      steps: withActiveStep([
+        baseSteps[0],
+        baseSteps[1],
+        {
+          label: "Discord API",
+          detail: "читаємо канали, ролі та конфігурацію",
+          state: "active",
+        },
+        baseSteps[3],
+      ], 2),
+    };
+  }
+
+  if (pathname.startsWith("/content")) {
+    return {
+      eyebrow: "Контент",
+      title: "Готуємо редактор контенту",
+      message: "Читаємо матеріали, таксономію та доступні медіа перед відкриттям редактора.",
+      activeLabel: "Зараз: завантажуємо бібліотеку контенту",
+      steps: withActiveStep([
+        baseSteps[0],
+        baseSteps[1],
+        {
+          label: "Матеріали",
+          detail: "читаємо записи, категорії та медіа",
+          state: "active",
+        },
+        baseSteps[3],
+      ], 2),
     };
   }
 
@@ -208,12 +335,12 @@ function loadingCopyForPath(pathname: string): LoadingStateCopy {
       eyebrow: "Склад гільдії",
       title: "Завантажуємо склад",
       message: "Беремо оптимізовані записи складу чанками, без масового читання учасників.",
-      activeLabel: "Зараз: читаємо оптимізовані guild records",
+      activeLabel: "Зараз: читаємо оптимізовані записи складу",
       steps: withActiveStep([
         baseSteps[0],
         {
           label: "Склад",
-          detail: "читаємо memberChunks",
+          detail: "читаємо оптимізовані записи складу",
           state: "active",
         },
         {
