@@ -2,6 +2,23 @@ export declare const CUSTOM_ID_NAMESPACE: "mbv1";
 export declare const CUSTOM_ID_MAX_LENGTH: 100;
 export declare const RAID_POLL_ACTION_PREFIX: string;
 
+export type ApplicationModerationAction = "accept" | "decline";
+
+export type DecodedApplicationCustomId = Readonly<{
+  action: ApplicationModerationAction;
+  issueNumber: number;
+  legacy: boolean;
+}>;
+
+export declare function buildApplicationCustomId(
+  action: ApplicationModerationAction,
+  issueNumber: number | string,
+): string;
+
+export declare function decodeApplicationCustomId(
+  customId: string,
+): DecodedApplicationCustomId | null;
+
 export type RaidPollDiscordVoteKind =
   | "vote_prompt"
   | "character_prompt"

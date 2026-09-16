@@ -4,6 +4,7 @@ const path = require("path");
 const root = path.join(__dirname, "..");
 const read = (rel) => fs.readFileSync(path.join(root, rel), "utf8");
 const shared = read("../shared/index.mjs");
+const sharedTypes = read("../shared/index.d.mts");
 const discord = read("src/lib/discord.ts");
 const interactions = read("src/app/api/discord/interactions/route.ts");
 const moderation = read("src/lib/moderation.ts");
@@ -12,6 +13,8 @@ const failures = [];
 const check = (condition, message) => { if (!condition) failures.push(message); };
 
 check(shared.includes("decodeApplicationCustomId"), "shared contract must decode application custom_id");
+check(sharedTypes.includes("buildApplicationCustomId"), "shared contract types must export buildApplicationCustomId");
+check(sharedTypes.includes("decodeApplicationCustomId"), "shared contract types must export decodeApplicationCustomId");
 check(shared.includes('`${CUSTOM_ID_NAMESPACE}:application:`'), "application domain prefix must be registered");
 check(shared.includes("guild_application:(accepted|declined)"), "legacy application custom_id must stay supported");
 check(discord.includes('label: "Прийняти"'), "new application must include accept button");
@@ -29,4 +32,4 @@ if (failures.length) {
   for (const failure of failures) console.error(`- ${failure}`);
   process.exit(1);
 }
-console.log("Application Discord regression checks passed (12/12).");
+console.log("Application Discord regression checks passed (14/14).");
