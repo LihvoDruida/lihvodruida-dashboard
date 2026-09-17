@@ -569,10 +569,21 @@ export async function runDiscordNewcomerOnboarding(options: {
     let members: DiscordGuildMemberModerationItem[];
     if (priorityMode) {
       const resolved = await Promise.allSettled(priorityUserIds.map((userId) => fetchDiscordGuildMemberSnapshot(userId)));
+      const unresolved = resolved
+        .map((item, index) => ({ item, userId: priorityUserIds[index] }))
+        .filter(({ item }) => item.status === "rejected" || !item.value?.joinedAt);
+      if (unresolved.length) {
+        const details = unresolved.slice(0, 5).map(({ item, userId }) => {
+          const reason = item.status === "rejected"
+            ? safeErrorMessage(item.reason, "member snapshot failed")
+            : "member snapshot has no joined_at";
+          return `${userId}: ${reason}`;
+        }).join("; ");
+        throw new Error(`Priority Discord member snapshot unresolved (${unresolved.length}/${priorityUserIds.length}): ${details}`);
+      }
       members = resolved
         .filter((item): item is PromiseFulfilledResult<DiscordGuildMemberModerationItem> => item.status === "fulfilled")
-        .map((item) => item.value)
-        .filter((member) => Boolean(member.joinedAt));
+        .map((item) => item.value);
     } else {
       members = await fetchDiscordGuildMembers(0);
     }

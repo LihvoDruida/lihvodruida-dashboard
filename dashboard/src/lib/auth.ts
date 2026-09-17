@@ -226,7 +226,7 @@ async function refreshDiscordAccess(
         "discord live access",
       );
       let liveRoleIds = member.roleIds || [];
-      if (liveRoleIds.length === 0) {
+      {
         const bootstrap = await ensureDiscordNewcomerBootstrapRole({
           userId: session.id,
           roleIds: liveRoleIds,
@@ -234,7 +234,7 @@ async function refreshDiscordAccess(
           source: "live_session",
         }).catch(() => null);
         if (bootstrap?.assigned && bootstrap.roleId) {
-          liveRoleIds = [bootstrap.roleId];
+          liveRoleIds = Array.from(new Set([...liveRoleIds, bootstrap.roleId]));
           await ensureAuthAccessRequiredRole(bootstrap.roleId).catch(() => null);
         }
       }

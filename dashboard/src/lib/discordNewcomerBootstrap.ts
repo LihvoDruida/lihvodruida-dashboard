@@ -29,8 +29,8 @@ export type NewcomerBootstrapRoleResult = {
 
 /**
  * Last-resort access bootstrap used by auth and priority onboarding.
- * It only touches a fresh member that has zero explicit Discord roles, so it
- * cannot silently undo a moderator's role configuration on established users.
+ * It only adds the configured bootstrap role to a recent join when that exact
+ * role is missing. Existing Discord roles are preserved; nothing is removed.
  */
 export async function ensureDiscordNewcomerBootstrapRole(params: {
   userId: unknown;
@@ -41,13 +41,13 @@ export async function ensureDiscordNewcomerBootstrapRole(params: {
   const userId = cleanSnowflake(params.userId);
   const currentRoles = Array.from(new Set((params.roleIds || []).map(cleanSnowflake).filter(Boolean)));
   if (!userId) return { attempted: false, assigned: false, roleId: null, reason: "invalid_user" };
-  if (currentRoles.length > 0) return { attempted: false, assigned: false, roleId: null, reason: "already_has_roles" };
   if (!recentJoin(params.joinedAt)) return { attempted: false, assigned: false, roleId: null, reason: "not_recent_join" };
 
   const settings = await getDiscordWelcomeCardSettings();
   const roleId = cleanSnowflake(settings.defaultRoleId);
   const guildId = cleanSnowflake(getDiscordGuildId());
   if (!roleId) return { attempted: false, assigned: false, roleId: null, reason: "default_role_not_configured" };
+  if (currentRoles.includes(roleId)) return { attempted: false, assigned: false, roleId, reason: "already_has_default_role" };
   if (!guildId) return { attempted: false, assigned: false, roleId, reason: "guild_not_configured" };
 
   const control = await fetchDiscordRoleControlSnapshotCachedForUi(60_000);

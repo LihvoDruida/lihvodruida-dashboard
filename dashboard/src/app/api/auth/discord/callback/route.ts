@@ -377,8 +377,9 @@ export async function GET(request: NextRequest) {
 
     // Fail-safe for the exact race seen in production: OAuth may arrive before
     // the minute recovery scan or gateway worker has issued the bootstrap role.
-    // Only fresh members with zero explicit roles are eligible for this repair.
-    if (discordRoleIds.length === 0) {
+    // Only a recent member missing the configured bootstrap role is eligible;
+    // unrelated Discord roles are preserved and never replaced.
+    {
       const bootstrap = await ensureDiscordNewcomerBootstrapRole({
         userId: user.id,
         roleIds: discordRoleIds,
@@ -386,7 +387,7 @@ export async function GET(request: NextRequest) {
         source: "auth_callback",
       }).catch(() => null);
       if (bootstrap?.assigned && bootstrap.roleId) {
-        discordRoleIds = [bootstrap.roleId];
+        discordRoleIds = Array.from(new Set([...discordRoleIds, bootstrap.roleId]));
         await ensureAuthAccessRequiredRole(bootstrap.roleId).catch(() => null);
       }
     }

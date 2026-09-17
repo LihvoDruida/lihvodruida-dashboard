@@ -31,6 +31,7 @@ const checks = [
   ['card number is the real server join-order position, not a hash', !card.includes('function welcomeNumber') && !/% 9000/.test(card) && artifact.includes('resolveDiscordMemberJoinNumber(member)')],
   ['join number counts bots like Discord member counter and orders by joined_at then snowflake', joinNumber.includes('/members?limit=${PAGE_SIZE}&after=${after}') && !joinNumber.includes('user.bot') && joinNumber.includes('compareSnowflakes') && joinNumber.includes('joinedAtMs')],
   ['join timeline is cached, promise-deduplicated and refresh-bounded for join bursts', joinNumber.includes('TIMELINE_TTL_MS') && joinNumber.includes('TIMELINE_MIN_REFRESH_MS') && joinNumber.includes('cache.promise') && joinNumber.includes('mustContainUserId')],
+  ['burst joins are provisionally inserted to avoid duplicate member numbers between refreshes', joinNumber.includes('timeline.entries.set(userId, target)') && joinNumber.includes('The next real refresh replaces provisional data')],
   ['test lab number defaults to the real join number', !testing.includes('|| "4086"') && !page.includes('|| "4086"') && page.includes('resolveDiscordMemberJoinNumber')],
   ['bundled WoW-style OFL fonts ship with licenses', ['SpectralSC-Bold.ttf', 'SpectralSC-ExtraBold.ttf', 'Philosopher-Bold.ttf', 'OFL-SpectralSC.txt', 'OFL-Philosopher.txt'].every((file) => exists(`assets/fonts/welcome/${file}`))],
   ['runtime image copies welcome fonts next to the standalone server', read('Dockerfile').includes('/repo/dashboard/assets/fonts/welcome ./dashboard/assets/fonts/welcome')],

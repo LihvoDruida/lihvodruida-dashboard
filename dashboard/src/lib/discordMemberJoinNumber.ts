@@ -117,10 +117,12 @@ export async function resolveDiscordMemberJoinNumber(member: { userId: string; j
 
   const listed = userId ? timeline.entries.get(userId) : undefined;
   const fallbackJoinedAtMs = parseJoinedAt(member.joinedAt) ?? Date.now();
-  // Someone not in the list (a test member, or a user who already left) gets
-  // the position they would have by their join time — for "now" that is the
-  // next free number.
+  // If Discord's cached member page predates this join, remember the newcomer
+  // provisionally in the shared timeline. This makes burst joins unique and
+  // correctly ordered without forcing a full member-list refresh for every
+  // GUILD_MEMBER_ADD. The next real refresh replaces provisional data.
   const target: JoinTimelineEntry = listed || { userId: userId || "9".repeat(25), joinedAtMs: fallbackJoinedAtMs };
+  if (userId && !listed) timeline.entries.set(userId, target);
 
   let before = 0;
   for (const entry of timeline.entries.values()) {

@@ -14,8 +14,9 @@ import { validateInteractionComponents } from "@mistblossom/discord-contract";
  * Discord дає 3 секунди на ACK і 15 хвилин на результат, але результат
  * хтось має надіслати. Раніше це робив Cloudflare Worker — тепер бот.
  *
- * Токен бота тут НЕ потрібен: редагування відповіді на взаємодію
- * авторизується самим interaction token, який Discord прислав у запиті.
+ * Для редагування interaction-відповіді bot token не потрібен: Discord
+ * авторизує її interaction token-ом. Водночас сам bot container тепер має
+ * DISCORD_BOT_TOKEN окремо для Gateway bridge (GUILD_MEMBER_ADD).
  */
 
 const DASHBOARD_URL = () => String(process.env.DASHBOARD_INTERNAL_URL || "http://dashboard:3000").replace(/\/+$/, "");

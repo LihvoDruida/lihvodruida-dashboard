@@ -198,6 +198,8 @@ require_var .env DASHBOARD_PUBLIC_URL
 require_var .env POSTGRES_PASSWORD
 require_var .env DISCORD_PUBLIC_KEY
 require_var .env INTERNAL_API_TOKEN
+require_var .env DISCORD_BOT_TOKEN
+require_var .env DISCORD_GUILD_ID
 
 require_var dashboard/.env.production DATABASE_URL
 require_var dashboard/.env.production SESSION_SECRET
@@ -240,6 +242,8 @@ compare_with_root INTERNAL_API_TOKEN dashboard/.env.production
 compare_with_root INTERNAL_API_TOKEN bot/.env.production
 compare_with_root DISCORD_PUBLIC_KEY dashboard/.env.production
 compare_with_root DISCORD_PUBLIC_KEY bot/.env.production
+compare_with_root DISCORD_BOT_TOKEN dashboard/.env.production
+compare_with_root DISCORD_GUILD_ID dashboard/.env.production
 ROOT_INTERNAL_TOKEN="$(env_get .env INTERNAL_API_TOKEN || true)"
 if [ "${#ROOT_INTERNAL_TOKEN}" -lt 24 ]; then
   problem "INTERNAL_API_TOKEN у .env має бути не коротший 24 символів (verifyInternalBearerToken відхилить коротший)"

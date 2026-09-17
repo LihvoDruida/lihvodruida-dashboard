@@ -30,9 +30,9 @@ printf '%sDiscord Interactions Endpoint%s\n' "$BOLD" "$RESET"
 printf '  Очікується: %s\n' "$EXPECTED"
 
 set +e
-# DISCORD_BOT_TOKEN навмисно НЕ передається bot-контейнеру: після видалення
-# recruitment gateway він йому не потрібен. Endpoint application керує dashboard,
-# де bot token уже потрібен для ролей/рейдів/адміністрування Discord.
+# Application endpoint перевіряємо через dashboard. Bot-контейнер теж отримує
+# DISCORD_BOT_TOKEN, бо тримає Gateway bridge для миттєвого GUILD_MEMBER_ADD.
+# Сам PATCH interactions endpoint лишається тут, щоб не дублювати application-адмінку.
 OUTPUT="$(docker compose exec -T -e EXPECTED_INTERACTIONS_ENDPOINT="$EXPECTED" -e ENDPOINT_MODE="$MODE" dashboard node --input-type=module - <<'NODE'
 const token = String(process.env.DISCORD_BOT_TOKEN || '').trim();
 const expected = String(process.env.EXPECTED_INTERACTIONS_ENDPOINT || '').trim();

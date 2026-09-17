@@ -9,6 +9,7 @@ const GUILD_ID = () => String(process.env.DISCORD_GUILD_ID || "").trim();
 const ENABLED = () => String(process.env.DISCORD_GATEWAY_ENABLED ?? "1").trim() !== "0";
 const MAX_QUEUE = Math.max(32, Math.min(1000, Number(process.env.DISCORD_GATEWAY_MEMBER_QUEUE_MAX || 250)));
 const WORKERS = Math.max(1, Math.min(4, Number(process.env.DISCORD_GATEWAY_MEMBER_WORKERS || 2)));
+const STARVATION_GUARD_MS = Math.max(5_000, Math.min(60_000, Number(process.env.DISCORD_GATEWAY_MEMBER_STARVATION_MS || 15_000)));
 
 const state = {
   connected: false,
@@ -162,15 +163,25 @@ async function processQueueItem(item) {
   }
 }
 
-function nextQueueItem() {
-  const now = Date.now();
-  const ready = [...state.queue.values()]
+export function rankGatewayQueueItems(items, now = Date.now()) {
+  return [...items]
     .filter((item) => item.queuedAt <= now)
     .sort((a, b) => {
+      const aAge = now - (Date.parse(a.joinedAt || "") || a.queuedAt);
+      const bAge = now - (Date.parse(b.joinedAt || "") || b.queuedAt);
+      const aStarving = aAge >= STARVATION_GUARD_MS;
+      const bStarving = bAge >= STARVATION_GUARD_MS;
+      if (aStarving !== bStarving) return aStarving ? -1 : 1;
+      if (aStarving && bStarving) return bAge - aAge; // oldest overdue first
       const aJoined = Date.parse(a.joinedAt || "") || a.queuedAt;
       const bJoined = Date.parse(b.joinedAt || "") || b.queuedAt;
-      return bJoined - aJoined; // newest first
+      return bJoined - aJoined; // newest first while nobody is starving
     });
+}
+
+function nextQueueItem() {
+  const now = Date.now();
+  const ready = rankGatewayQueueItems(state.queue.values(), now);
   const item = ready[0];
   if (!item) return null;
   state.queue.delete(item.userId);
@@ -198,6 +209,7 @@ function handleDispatch(packet) {
     state.resumeUrl = String(packet.d?.resume_gateway_url || "") || null;
     state.ready = true;
     state.lastError = null;
+    state.reconnects = 0;
     logger.info("Discord Gateway готовий", {
       eventName: "bot.gateway.ready",
       guildId: GUILD_ID(),
@@ -208,6 +220,7 @@ function handleDispatch(packet) {
   if (packet.t === "RESUMED") {
     state.ready = true;
     state.lastError = null;
+    state.reconnects = 0;
     logger.info("Discord Gateway session відновлена", { eventName: "bot.gateway.resumed" });
     return;
   }

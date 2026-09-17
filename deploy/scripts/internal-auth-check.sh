@@ -30,6 +30,40 @@ else
   fail "bot → dashboard: INTERNAL_API_TOKEN не збігається"
 fi
 
+# Gateway bridge is a separate critical path from interaction auth. Verify that
+# the bot actually received its token/guild config and surface privileged-intent
+# failures immediately instead of waiting for the next real recruit.
+if docker compose exec -T bot node --input-type=module - <<'NODE'
+let gateway = null;
+for (let attempt = 0; attempt < 8; attempt += 1) {
+  const r = await fetch('http://127.0.0.1:8080/health', { signal: AbortSignal.timeout(5000) });
+  if (!r.ok) process.exit(2);
+  const data = await r.json();
+  gateway = data?.gateway || {};
+  if (!gateway.enabled) {
+    console.error('Discord Gateway disabled by DISCORD_GATEWAY_ENABLED');
+    process.exit(3);
+  }
+  if (!gateway.configured) {
+    console.error('Discord Gateway missing DISCORD_BOT_TOKEN or DISCORD_GUILD_ID');
+    process.exit(4);
+  }
+  const error = String(gateway.lastError || '');
+  if (/fatal close (4004|4010|4011|4013|4014)|\b4014\b/i.test(error)) {
+    console.error(`Discord Gateway fatal: ${error}`);
+    process.exit(5);
+  }
+  if (gateway.ready) break;
+  if (attempt < 7) await new Promise((resolve) => setTimeout(resolve, 500));
+}
+console.log(JSON.stringify(gateway));
+NODE
+then
+  ok "bot Gateway: конфігурація newcomer bridge присутня"
+else
+  fail "bot Gateway не готовий до newcomer events; перевір DISCORD_BOT_TOKEN, DISCORD_GUILD_ID і Server Members Intent"
+fi
+
 # Cron uses curl and INTERNAL_CRON_TOKEN; Compose maps it from the same root token.
 if docker compose exec -T cron sh -lc \
   'curl --silent --show-error --fail --max-time 5 --header "Authorization: Bearer $INTERNAL_CRON_TOKEN" http://dashboard:3000/api/internal/health >/dev/null'
