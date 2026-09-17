@@ -1929,7 +1929,11 @@ export async function removeGuildMemberRoles(params: {
   );
 }
 
-export async function sendDiscordDirectMessage(params: { userId: string; content: string }) {
+export async function sendDiscordDirectMessage(params: {
+  userId: string;
+  content: string;
+  components?: unknown[];
+}) {
   const userId = cleanSnowflake(params.userId);
   const content = String(params.content || "").trim().slice(0, 1900);
   if (!userId) throw new Error("Discord user ID невалідний.");
@@ -1942,12 +1946,17 @@ export async function sendDiscordDirectMessage(params: { userId: string; content
   const channelId = cleanSnowflake(channel?.id);
   if (!channelId) throw new Error("Discord не повернув DM-канал для користувача.");
 
+  const body: Record<string, unknown> = {
+    content,
+    allowed_mentions: { parse: [] },
+  };
+  if (Array.isArray(params.components) && params.components.length) {
+    body.components = params.components.slice(0, 5);
+  }
+
   const message = await discordApi<any>(`/channels/${channelId}/messages`, {
     method: "POST",
-    body: JSON.stringify({
-      content,
-      allowed_mentions: { parse: [] },
-    }),
+    body: JSON.stringify(body),
   });
   return { channelId, messageId: cleanSnowflake(message?.id) || null };
 }

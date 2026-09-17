@@ -21,6 +21,7 @@ import {
 } from "@/lib/rulesOnboarding";
 import { getGuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
 import { processNewcomerNicknameRoleGrant } from "@/lib/discordNicknameWarnings";
+import { markDiscordNewcomerRulesAccepted } from "@/lib/discordNewcomerOnboarding";
 import { checkGeoAccess } from "@/lib/geoAccessPolicy";
 import { recordRulesDecision } from "@/lib/discordRulesStats";
 import {
@@ -158,6 +159,12 @@ async function completeAuthenticatedRulesOnboarding(params: {
         message: safeErrorMessage(error),
       });
     });
+    await markDiscordNewcomerRulesAccepted(profile.providerUserId).catch((error) => {
+      logDashboardEvent("warn", "rules.onboarding.newcomer_state_failed", request, {
+        profileId: profile.profileId,
+        message: safeErrorMessage(error),
+      });
+    });
     await markRulesOnboardingCompleted(profile.profileId, {
       roleIds,
       nickname: nicknameSynced ? nickname : null,
@@ -251,6 +258,12 @@ async function completePublicRulesAcceptance(params: {
     });
     await processNewcomerNicknameRoleGrant({ userId: discordUserId, grantedRoleIds: roleIds }).catch((error) => {
       logDashboardEvent("warn", "rules.public.nickname_gate_failed", request, {
+        userId: discordUserId,
+        message: safeErrorMessage(error),
+      });
+    });
+    await markDiscordNewcomerRulesAccepted(discordUserId).catch((error) => {
+      logDashboardEvent("warn", "rules.public.newcomer_state_failed", request, {
         userId: discordUserId,
         message: safeErrorMessage(error),
       });

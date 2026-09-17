@@ -15,6 +15,7 @@
 #   */5  * * * *  /api/polls/close-due?force=1 — scheduled-публікація + автозакриття/повтор
 #   */30 * * * *  /api/dashboard/logs/maintenance — retention/budget журналу
 #   */15 * * * *  /api/dashboard/profiles/orphan-cleanup — scheduler перевірки/очищення акаунтів
+#   *    * * * *  /api/dashboard/discord/onboarding/automation — welcome DM для нових Discord-учасників
 #   */15 * * * *  /api/dashboard/discord/nicknames/automation — перевірка ніків + DM/fallback-попередження
 # ---------------------------------------------------------------------------
 
@@ -77,9 +78,14 @@ while true; do
   last_tick="$tick"
   minute=$(date -u +%-M)
 
-  # Найчутливіша до часу задача завжди йде першою. Звичайний tick читає
-  # тільки dueAtMs із task queue; hourly sweep лише ремонтує/звіряє task plan
-  # для legacy або пропущених записів і потім обробляє due tasks.
+  # Новий учасник має отримати приватний onboarding максимально швидко.
+  # Endpoint сам тримає baseline/ідемпотентний стан, тому повторний tick не
+  # дублює DM і не запускає повторну первинну перевірку ніку.
+  call "/api/dashboard/discord/onboarding/automation"
+
+  # Найчутливіша до часу рейдова задача. Звичайний tick читає тільки dueAtMs
+  # із task queue; hourly sweep лише ремонтує/звіряє task plan для legacy або
+  # пропущених записів і потім обробляє due tasks.
   if [ "$minute" -eq 0 ]; then
     call "/api/raids/lifecycle?sweep=1&limit=100"
   else

@@ -10,6 +10,7 @@ import { canViewGuildRoster } from "@/lib/permissions";
 import { buildPageMetadata } from "@/lib/seo";
 import { getDashboardApiSettings } from "@/lib/dashboardApiSettings";
 import { recordDashboardSystemLog } from "@/lib/dashboardSystemLogs";
+import { MISTBLOSSOM_DISCORD_CHANNELS, discordGuildChannelUrl } from "@/lib/discordGuildLinks";
 import rosterStyles from "@/components/GuildRoster.module.css";
 
 export const dynamic = "force-dynamic";
@@ -151,6 +152,56 @@ export default async function GuildRosterPage() {
             }}
           />
         </header>
+
+        <section className={`panel ${rosterStyles.guildGuide}`} aria-labelledby="guild-discord-guide-title">
+          <div className={rosterStyles.guildGuideHead}>
+            <div>
+              <div className="eyebrow">Discord • Швидка навігація</div>
+              <h2 id="guild-discord-guide-title">Що доступно учаснику гільдії</h2>
+              <p>
+                Основні канали Mistblossom Vanguard в одному місці. Нові учасники спочатку приймають правила,
+                після чого відкривається основний чат і далі працюють звичайні гільдійні ролі та системи панелі.
+              </p>
+            </div>
+            <span className={rosterStyles.guildGuideStatus}>4 ключові канали</span>
+          </div>
+
+          <div className={rosterStyles.guildGuideGrid}>
+            <a className={rosterStyles.guildGuideCard} href={discordGuildChannelUrl(MISTBLOSSOM_DISCORD_CHANNELS.rules.id)} target="_blank" rel="noreferrer">
+              <span className={rosterStyles.guildGuideIcon} aria-hidden="true">📜</span>
+              <span>
+                <strong>{MISTBLOSSOM_DISCORD_CHANNELS.rules.label}</strong>
+                <small>{MISTBLOSSOM_DISCORD_CHANNELS.rules.description}</small>
+              </span>
+              <b aria-hidden="true">↗</b>
+            </a>
+            <a className={rosterStyles.guildGuideCard} href={discordGuildChannelUrl(MISTBLOSSOM_DISCORD_CHANNELS.announcements.id)} target="_blank" rel="noreferrer">
+              <span className={rosterStyles.guildGuideIcon} aria-hidden="true">📣</span>
+              <span>
+                <strong>{MISTBLOSSOM_DISCORD_CHANNELS.announcements.label}</strong>
+                <small>{MISTBLOSSOM_DISCORD_CHANNELS.announcements.description}</small>
+              </span>
+              <b aria-hidden="true">↗</b>
+            </a>
+            <a className={rosterStyles.guildGuideCard} href={discordGuildChannelUrl(MISTBLOSSOM_DISCORD_CHANNELS.raids.id)} target="_blank" rel="noreferrer">
+              <span className={rosterStyles.guildGuideIcon} aria-hidden="true">🐉</span>
+              <span>
+                <strong>{MISTBLOSSOM_DISCORD_CHANNELS.raids.label}</strong>
+                <small>{MISTBLOSSOM_DISCORD_CHANNELS.raids.description}</small>
+              </span>
+              <b aria-hidden="true">↗</b>
+            </a>
+            <a className={rosterStyles.guildGuideCard} href={discordGuildChannelUrl(MISTBLOSSOM_DISCORD_CHANNELS.general.id)} target="_blank" rel="noreferrer">
+              <span className={rosterStyles.guildGuideIcon} aria-hidden="true">💬</span>
+              <span>
+                <strong>{MISTBLOSSOM_DISCORD_CHANNELS.general.label}</strong>
+                <small>{MISTBLOSSOM_DISCORD_CHANNELS.general.description}</small>
+              </span>
+              <b aria-hidden="true">↗</b>
+            </a>
+          </div>
+        </section>
+
         <GuildRosterExplorer
           members={members}
           stats={roster.stats}
