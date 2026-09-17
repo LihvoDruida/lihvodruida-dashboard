@@ -666,7 +666,13 @@ async function renderUncached(
       renderStyledText(label, LABEL_STYLE),
     ]);
 
-    const layers: sharp.OverlayOptions[] = [
+    type CompositeLayer = {
+      input: Buffer;
+      top?: number;
+      left?: number;
+      raw?: { width: number; height: number; channels: 4 };
+    };
+    const layers: CompositeLayer[] = [
       { input: avatarPng, top: AVATAR_TOP_Y, left: Math.round(AVATAR_CENTER_X - AVATAR_SIZE / 2) },
     ];
     if (labelLayer) {

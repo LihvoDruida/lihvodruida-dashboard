@@ -42,6 +42,7 @@ const checks = [
   ['static frame, divider and rounded mask are baked into prepared background', card.includes('{ input: FRAME_SVG },') && card.includes('{ input: ROUNDED_MASK_SVG, blend: "dest-in" },') && !card.includes('{ input: textSvg(')],
   ['user text is escaped before Pango markup', card.includes('text: escapeXml(text)')],
   ['card renderer supports server-side test overrides', card.includes('greetingOverride') && card.includes('numberOverride')],
+  ['Sharp composite typing does not depend on an unavailable sharp namespace', !card.includes('sharp.OverlayOptions') && card.includes('type CompositeLayer =') && card.includes('const layers: CompositeLayer[]')],
   ['final generated PNG has 16px rounded corners', card.includes('const CARD_RADIUS = 16') && card.includes('ROUNDED_MASK_SVG') && card.includes('blend: "dest-in"')],
   ['welcome settings persist enable time and default newcomer role activation time', settings.includes('enabledAt') && settings.includes('defaultRoleId') && settings.includes('defaultRoleConfiguredAt')],
   ['channel welcome is integrated into newcomer automation', onboarding.includes('sendChannelWelcome') && onboarding.includes('channelWelcomeEligible') && onboarding.includes('channelWelcomeSentAt')],
