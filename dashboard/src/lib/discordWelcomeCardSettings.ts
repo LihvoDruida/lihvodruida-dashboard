@@ -29,6 +29,7 @@ export type DiscordWelcomeCardSettings = {
   enabledAt?: string | null;
   channelId: string;
   defaultRoleId: string;
+  defaultRoleConfiguredAt?: string | null;
   messageTemplate: string;
   greetings: string[];
   labelPrefix: string;
@@ -100,6 +101,7 @@ function normalizeSettings(data: Record<string, unknown> | null | undefined): Di
     enabledAt: timestampToIso(data?.enabledAt),
     channelId: cleanSnowflake(data?.channelId),
     defaultRoleId: cleanSnowflake(data?.defaultRoleId),
+    defaultRoleConfiguredAt: timestampToIso(data?.defaultRoleConfiguredAt),
     messageTemplate: cleanMultilineText(data?.messageTemplate, 600) || DEFAULT_MESSAGE_TEMPLATE,
     greetings: parseGreetings(data?.greetings),
     labelPrefix: cleanText(data?.labelPrefix, 24) || DEFAULT_LABEL_PREFIX,
@@ -181,6 +183,9 @@ export async function setDiscordWelcomeCardSettings(input: {
   const enabledAt = enabled ? (current.enabled ? current.enabledAt || now : now) : null;
   const channelId = cleanSnowflake(input.channelId);
   const defaultRoleId = cleanSnowflake(input.defaultRoleId);
+  const defaultRoleConfiguredAt = defaultRoleId
+    ? (current.defaultRoleId === defaultRoleId ? current.defaultRoleConfiguredAt || current.updatedAt || now : now)
+    : null;
   const messageTemplate = cleanMultilineText(input.messageTemplate, 600) || DEFAULT_MESSAGE_TEMPLATE;
   const greetings = parseGreetings(input.greetings);
   const labelPrefix = cleanText(input.labelPrefix, 24) || DEFAULT_LABEL_PREFIX;
@@ -202,6 +207,7 @@ export async function setDiscordWelcomeCardSettings(input: {
       enabledAt,
       channelId,
       defaultRoleId,
+      defaultRoleConfiguredAt,
       messageTemplate,
       greetings,
       labelPrefix,
@@ -217,6 +223,7 @@ export async function setDiscordWelcomeCardSettings(input: {
     enabledAt,
     channelId,
     defaultRoleId,
+    defaultRoleConfiguredAt,
     messageTemplate,
     greetings,
     labelPrefix,

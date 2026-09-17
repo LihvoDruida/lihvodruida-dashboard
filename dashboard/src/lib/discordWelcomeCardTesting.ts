@@ -2,6 +2,45 @@ import "server-only";
 
 import { fetchDiscordGuildMemberSnapshot, type DiscordGuildMemberModerationItem } from "@/lib/discordAdmin";
 
+
+const TEST_MEMBER_CACHE_TTL_MS = 60_000;
+const TEST_MEMBER_CACHE_MAX = 32;
+
+type TestMemberCacheEntry = {
+  expiresAt: number;
+  promise: Promise<DiscordGuildMemberModerationItem>;
+};
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __mistblossomWelcomeTestMemberCache: Map<string, TestMemberCacheEntry> | undefined;
+}
+
+function testMemberCache() {
+  const cache = globalThis.__mistblossomWelcomeTestMemberCache || new Map<string, TestMemberCacheEntry>();
+  globalThis.__mistblossomWelcomeTestMemberCache = cache;
+  const now = Date.now();
+  for (const [key, entry] of cache) if (entry.expiresAt <= now) cache.delete(key);
+  while (cache.size > TEST_MEMBER_CACHE_MAX) {
+    const first = cache.keys().next().value as string | undefined;
+    if (!first) break;
+    cache.delete(first);
+  }
+  return cache;
+}
+
+async function fetchCachedTestMember(userId: string) {
+  const cache = testMemberCache();
+  const cached = cache.get(userId);
+  if (cached && cached.expiresAt > Date.now()) return cached.promise;
+  const promise = fetchDiscordGuildMemberSnapshot(userId).catch((error) => {
+    cache.delete(userId);
+    throw error;
+  });
+  cache.set(userId, { expiresAt: Date.now() + TEST_MEMBER_CACHE_TTL_MS, promise });
+  return promise;
+}
+
 export type DiscordWelcomeCardTestInput = {
   userId: string;
   displayName: string;
@@ -37,38 +76,51 @@ export function normalizeDiscordWelcomeCardTestInput(input: Record<string, unkno
   };
 }
 
+export function buildDiscordWelcomeCardTestMember(input: DiscordWelcomeCardTestInput): DiscordGuildMemberModerationItem {
+  const fallbackId = input.userId || "1000000000004086";
+  const displayName = input.displayName || input.username || "Новий мандрівник";
+  const username = input.username || "mistblossom.recruit";
+  return {
+    userId: fallbackId,
+    username,
+    globalName: displayName,
+    displayName,
+    nick: displayName,
+    avatarUrl: null,
+    defaultAvatarUrl: null,
+    joinedAt: new Date().toISOString(),
+    roleIds: [],
+  };
+}
+
 export async function resolveDiscordWelcomeCardTestMember(input: DiscordWelcomeCardTestInput): Promise<{
   member: DiscordGuildMemberModerationItem;
   liveMember: boolean;
   lookupError: string | null;
 }> {
-  let live: DiscordGuildMemberModerationItem | null = null;
-  let lookupError: string | null = null;
+  const fallback = buildDiscordWelcomeCardTestMember(input);
+  if (!input.userId) return { member: fallback, liveMember: false, lookupError: null };
 
-  if (input.userId) {
-    try {
-      live = await fetchDiscordGuildMemberSnapshot(input.userId);
-    } catch (error) {
-      lookupError = error instanceof Error ? error.message : String(error || "Не вдалося прочитати Discord-учасника.");
-    }
+  try {
+    const live = await fetchCachedTestMember(input.userId);
+    const manualDisplayName = input.displayName === "Новий мандрівник" ? "" : input.displayName;
+    const manualUsername = input.username === "mistblossom.recruit" ? "" : input.username;
+    return {
+      member: {
+        ...live,
+        username: manualUsername || live.username || fallback.username,
+        globalName: live.globalName || manualDisplayName || fallback.globalName,
+        displayName: manualDisplayName || live.displayName || fallback.displayName,
+        nick: manualDisplayName || live.nick || fallback.nick,
+      },
+      liveMember: true,
+      lookupError: null,
+    };
+  } catch (error) {
+    return {
+      member: fallback,
+      liveMember: false,
+      lookupError: error instanceof Error ? error.message : String(error || "Не вдалося прочитати Discord-учасника."),
+    };
   }
-
-  const fallbackId = input.userId || "1000000000004086";
-  const manualDisplayName = input.displayName === "Новий мандрівник" ? "" : input.displayName;
-  const manualUsername = input.username === "mistblossom.recruit" ? "" : input.username;
-  const fallbackDisplayName = manualDisplayName || live?.displayName || manualUsername || "Новий мандрівник";
-  const fallbackUsername = manualUsername || live?.username || "mistblossom.recruit";
-  const member: DiscordGuildMemberModerationItem = {
-    userId: fallbackId,
-    username: fallbackUsername,
-    globalName: live?.globalName || fallbackDisplayName,
-    displayName: manualDisplayName || live?.displayName || fallbackDisplayName,
-    nick: manualDisplayName || live?.nick || fallbackDisplayName,
-    avatarUrl: live?.avatarUrl || null,
-    defaultAvatarUrl: live?.defaultAvatarUrl || null,
-    joinedAt: live?.joinedAt || new Date().toISOString(),
-    roleIds: live?.roleIds || [],
-  };
-
-  return { member, liveMember: Boolean(live), lookupError };
 }

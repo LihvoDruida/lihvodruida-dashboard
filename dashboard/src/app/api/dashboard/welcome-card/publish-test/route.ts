@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
 
 import { adminDiscordResponse, auditDiscordAdmin, discordAdminError, requireDiscordAdmin } from "@/lib/dashboardDiscordRoute";
-import { sendDiscordChannelMessageWithAttachment } from "@/lib/discordAdmin";
-import { renderDiscordWelcomeCard } from "@/lib/discordWelcomeCard";
-import { getDiscordWelcomeCardSettings, renderDiscordWelcomeMessageTemplate } from "@/lib/discordWelcomeCardSettings";
+import { fetchDiscordTextChannels, sendDiscordChannelMessageWithAttachment } from "@/lib/discordAdmin";
+import { createDiscordWelcomeArtifact } from "@/lib/discordWelcomeArtifact";
+import { getDiscordWelcomeCardSettings } from "@/lib/discordWelcomeCardSettings";
 import { cleanWelcomeTestUserId, normalizeDiscordWelcomeCardTestInput, resolveDiscordWelcomeCardTestMember } from "@/lib/discordWelcomeCardTesting";
 
 export const runtime = "nodejs";
@@ -30,9 +30,14 @@ export async function POST(request: NextRequest) {
 
   try {
     const form = await request.formData();
-    const settings = await getDiscordWelcomeCardSettings({ bypassCache: true });
+    const settings = await getDiscordWelcomeCardSettings();
     const channelId = cleanSnowflake(form.get("channelId")) || settings.channelId;
     if (!channelId) throw new Error("Вибери канал для тестової публікації.");
+
+    const channels = await fetchDiscordTextChannels();
+    if (!channels.channels.some((channel) => channel.id === channelId)) {
+      throw new Error("Вибраний канал не знайдений серед доступних текстових каналів цього Discord-сервера.");
+    }
 
     const testInput = normalizeDiscordWelcomeCardTestInput({
       testUserId: form.get("testUserId"),
@@ -43,27 +48,21 @@ export async function POST(request: NextRequest) {
       testNickname: form.get("testNickname"),
     });
     const resolved = await resolveDiscordWelcomeCardTestMember(testInput);
-    const rendered = await renderDiscordWelcomeCard(resolved.member, settings, {
+    const mentionUserId = resolved.liveMember ? cleanWelcomeTestUserId(testInput.userId) : "";
+    const messageTemplateOverride = String(form.get("testMessageTemplate") || settings.messageTemplate || "").slice(0, 600);
+    const artifact = await createDiscordWelcomeArtifact(resolved.member, settings, {
       greetingOverride: testInput.greeting || settings.greetings[0] || "Ishnu-alah!",
       numberOverride: testInput.number,
-    });
-
-    const mentionUserId = resolved.liveMember ? cleanWelcomeTestUserId(testInput.userId) : "";
-    const testMessageTemplate = String(form.get("testMessageTemplate") || settings.messageTemplate || "").slice(0, 600);
-    const content = renderDiscordWelcomeMessageTemplate(testMessageTemplate, {
-      mention: mentionUserId ? `<@${mentionUserId}>` : "@тестовий-учасник",
-      username: resolved.member.username || testInput.username,
-      displayName: resolved.member.displayName,
-      greeting: rendered.greeting,
-      label: rendered.label,
+      messageTemplateOverride,
+      mentionOverride: mentionUserId ? `<@${mentionUserId}>` : "@тестовий-учасник",
     });
 
     const sent = await sendDiscordChannelMessageWithAttachment({
       channelId,
-      content: `🧪 **Тест welcome-системи**\n${content}`,
-      fileName: rendered.fileName,
-      fileBuffer: rendered.buffer,
-      contentType: rendered.contentType,
+      content: `🧪 **Тест welcome-системи**\n${artifact.content}`,
+      fileName: artifact.fileName,
+      fileBuffer: artifact.buffer,
+      contentType: artifact.contentType,
       auditReason: `Mistblossom welcome-card test by ${guard.session.name || guard.session.id}`,
       allowedUserMentions: mentionUserId ? [mentionUserId] : [],
     });

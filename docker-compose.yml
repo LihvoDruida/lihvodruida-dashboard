@@ -182,6 +182,12 @@ services:
       BOT_LOG_SINK_LEVEL: ${BOT_LOG_SINK_LEVEL:-info}
       # Public Key перевіряє interaction-підпис.
       DISCORD_PUBLIC_KEY: ${DISCORD_PUBLIC_KEY:?треба задати DISCORD_PUBLIC_KEY}
+      # Gateway bridge ловить GUILD_MEMBER_ADD одразу, без очікування хвилинного cron.
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:?треба задати DISCORD_BOT_TOKEN}
+      DISCORD_GUILD_ID: ${DISCORD_GUILD_ID:?треба задати DISCORD_GUILD_ID}
+      DISCORD_GATEWAY_ENABLED: ${DISCORD_GATEWAY_ENABLED:-1}
+      DISCORD_GATEWAY_MEMBER_WORKERS: ${DISCORD_GATEWAY_MEMBER_WORKERS:-2}
+      DISCORD_GATEWAY_MEMBER_QUEUE_MAX: ${DISCORD_GATEWAY_MEMBER_QUEUE_MAX:-250}
       # Панель доступна ботові тільки внутрішньою мережею — жодних
       # публічних URL між нашими ж сервісами.
       DASHBOARD_URL: http://dashboard:3000

@@ -5,9 +5,12 @@ import AdminTabs from "@/components/AdminTabs";
 import DashboardIdentity from "@/components/DashboardIdentity";
 import AdminPageHeader from "@/components/AdminPageHeader";
 import { getSession } from "@/lib/auth";
-import { fetchDiscordRoleControlSnapshot, fetchDiscordTextChannels } from "@/lib/discordAdmin";
-import { getDiscordWelcomeCardSettings, renderDiscordWelcomeMessageTemplate } from "@/lib/discordWelcomeCardSettings";
-import { normalizeDiscordWelcomeCardTestInput, resolveDiscordWelcomeCardTestMember } from "@/lib/discordWelcomeCardTesting";
+import { fetchDiscordRoleControlSnapshotCachedForUi, fetchDiscordTextChannels } from "@/lib/discordAdmin";
+import { buildDiscordWelcomeContent } from "@/lib/discordWelcomeArtifact";
+import { getDiscordWelcomeCardSettings } from "@/lib/discordWelcomeCardSettings";
+import { getDiscordGatewayHealth } from "@/lib/discordGatewayHealth";
+import { inspectRolelessDiscordMembers } from "@/lib/discordNewcomerRecovery";
+import { buildDiscordWelcomeCardTestMember, normalizeDiscordWelcomeCardTestInput } from "@/lib/discordWelcomeCardTesting";
 import { explainNicknameValidation } from "@/lib/guildNicknamePolicy";
 import { buildPageMetadata } from "@/lib/seo";
 
@@ -39,12 +42,16 @@ export default async function WelcomeCardDashboardPage({
   if (!user.isServerOwner) redirect("/access-denied?reason=owner-only&from=/dashboard/welcome");
 
   const params = (await searchParams) || {};
-  const [settings, textChannels, roleControl] = await Promise.all([
+  const [settings, textChannels, roleControl, gatewayHealth] = await Promise.all([
     getDiscordWelcomeCardSettings(),
     fetchDiscordTextChannels().catch(() => ({ guild: null, channels: [], suggestedChannelId: "", suggestedRulesChannelId: "", warning: "Discord channels unavailable" })),
-    fetchDiscordRoleControlSnapshot().catch(() => ({ manageableRoles: [], roles: [], error: "Discord roles unavailable" })),
+    fetchDiscordRoleControlSnapshotCachedForUi().catch(() => ({ manageableRoles: [], roles: [], error: "Discord roles unavailable" })),
+    getDiscordGatewayHealth(),
   ]);
   const manageableRoles = roleControl.manageableRoles || [];
+  const repairPreview = paramValue(params, "repairPreview") === "1"
+    ? await inspectRolelessDiscordMembers().catch(() => null)
+    : null;
 
   const testInput = normalizeDiscordWelcomeCardTestInput({
     testUserId: paramValue(params, "testUserId"),
@@ -55,17 +62,18 @@ export default async function WelcomeCardDashboardPage({
     testNickname: paramValue(params, "testNickname") || "Дмитро [Khayen]",
   });
   const testMessageTemplate = paramValue(params, "testMessageTemplate") || settings.messageTemplate;
-  const resolvedTestMember = await resolveDiscordWelcomeCardTestMember(testInput);
   const nicknameDiagnosis = explainNicknameValidation(testInput.nickname);
   const testGreeting = testInput.greeting || settings.greetings[0] || "Ishnu-alah!";
   const testLabel = `${settings.labelPrefix} №${testInput.number}`;
-  const generatedText = renderDiscordWelcomeMessageTemplate(testMessageTemplate, {
-    mention: testInput.userId ? `<@${testInput.userId}>` : "@тестовий-учасник",
-    username: resolvedTestMember.member.username || testInput.username,
-    displayName: resolvedTestMember.member.displayName,
+  const testMember = buildDiscordWelcomeCardTestMember(testInput);
+  const generatedText = buildDiscordWelcomeContent({
+    member: testMember,
+    settings,
     greeting: testGreeting,
     label: testLabel,
-  });
+    messageTemplateOverride: testMessageTemplate,
+    mentionOverride: testInput.userId ? `<@${testInput.userId}>` : "@тестовий-учасник",
+  }).content;
 
   const previewParams = new URLSearchParams({
     testUserId: testInput.userId,
@@ -89,9 +97,24 @@ export default async function WelcomeCardDashboardPage({
             { label: "Канал", value: settings.channelId ? `#${textChannels.channels.find((item) => item.id === settings.channelId)?.name || settings.channelId}` : "не вибрано", tone: settings.channelId ? "good" : "warning" },
             { label: "Стартова роль", value: settings.defaultRoleId ? (manageableRoles.find((item) => item.id === settings.defaultRoleId)?.name || settings.defaultRoleId) : "не задано", tone: settings.defaultRoleId ? "good" : "warning" },
             { label: "Статус", value: settings.enabled ? "Увімкнено" : "Вимкнено", tone: settings.enabled ? "good" : "warning" },
+            { label: "Gateway", value: gatewayHealth.ready ? "Live" : "Fallback", note: gatewayHealth.ready ? `черга ${gatewayHealth.queueSize}` : (gatewayHealth.lastError || "cron recovery"), tone: gatewayHealth.ready ? "good" : "warning" },
           ]}
         />
         <AdminTabs active="welcome" user={user} />
+
+        <section className={`panel ${gatewayHealth.ready ? "is-ok" : "is-warning"}`} aria-label="Discord Gateway newcomer worker">
+          <div className="discord-management-section-head discord-management-section-head--inline">
+            <div>
+              <span className="eyebrow">Priority worker</span>
+              <h2>{gatewayHealth.ready ? "Discord Gateway активний" : "Discord Gateway не активний — працює cron recovery"}</h2>
+              <p>{gatewayHealth.ready
+                ? `Нові GUILD_MEMBER_ADD обробляються одразу. Активних worker-ів: ${gatewayHealth.activeWorkers}; у черзі: ${gatewayHealth.queueSize}.`
+                : `Миттєвий newcomer worker недоступний. ${gatewayHealth.lastError || "Перевір bot container та Server Members Intent у Discord Developer Portal."}`}</p>
+            </div>
+            <span className={`status-pill ${gatewayHealth.ready ? "good" : "warning"}`}>{gatewayHealth.ready ? "LIVE" : "FALLBACK"}</span>
+          </div>
+          {!gatewayHealth.ready ? <small>Для миттєвого GUILD_MEMBER_ADD увімкни Server Members Intent у Discord Developer Portal. Навіть без нього хвилинний cron лишається резервним механізмом.</small> : null}
+        </section>
 
         <section className="panel" aria-label="Welcome-картки Discord">
           <div className="discord-management-section-head discord-management-section-head--inline">
@@ -168,6 +191,48 @@ export default async function WelcomeCardDashboardPage({
           </form>
         </section>
 
+        <section className="panel" aria-label="Відновлення ролей нових учасників">
+          <div className="discord-management-section-head discord-management-section-head--inline">
+            <div>
+              <span className="eyebrow">Recovery • Owner only</span>
+              <h2>Відновлення стартової ролі</h2>
+              <p>Перевіряє учасників, у яких немає жодної явної Discord-ролі, і може повторно видати роль, вибрану у Welcome-системі. Власник сервера автоматично виключається.</p>
+            </div>
+            <span className={`status-pill ${repairPreview?.manageable ? "good" : "warning"}`}>{repairPreview ? `${repairPreview.rolelessCount} без ролей` : "Не скановано"}</span>
+          </div>
+
+          <div className="form-actions">
+            <a className="btn btn-secondary" href="/dashboard/welcome?repairPreview=1">Перевірити учасників без ролей</a>
+            <form action="/api/dashboard/welcome-card/repair-roleless" method="post" data-dashboard-action-form="true" data-dashboard-live-submit="true">
+              <button className="btn" type="submit" disabled={!repairPreview?.manageable || !repairPreview?.rolelessCount}>Видати стартову роль усім без ролей</button>
+            </form>
+            <form action="/api/dashboard/welcome-card/run-onboarding" method="post" data-dashboard-action-form="true" data-dashboard-live-submit="true">
+              <button className="btn subtle" type="submit">Запустити onboarding зараз</button>
+            </form>
+          </div>
+
+          {repairPreview ? (
+            <div className="nickname-warning-settings__group">
+              {repairPreview.warning ? <div className="panel is-warning"><strong>⚠ {repairPreview.warning}</strong></div> : null}
+              <div className="panel">
+                <strong>Стартова роль: {repairPreview.roleName || repairPreview.roleId || "не задано"}</strong>
+                <p>Учасників у Discord: {repairPreview.totalMembers}. Без явних ролей: {repairPreview.rolelessCount}.</p>
+                {repairPreview.members.length ? (
+                  <div style={{ display: "grid", gap: ".45rem", marginTop: ".75rem" }}>
+                    {repairPreview.members.slice(0, 25).map((member) => (
+                      <div key={member.userId} style={{ display: "flex", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+                        <span><strong>{member.displayName}</strong> <code>{member.userId}</code></span>
+                        <small>{member.joinedAt ? new Date(member.joinedAt).toLocaleString("uk-UA") : "час вступу невідомий"}</small>
+                      </div>
+                    ))}
+                    {repairPreview.rolelessCount > 25 ? <small>Показано перші 25. Відновлення застосовується до всіх актуальних roleless-учасників.</small> : null}
+                  </div>
+                ) : <p>Учасників без ролей не знайдено.</p>}
+              </div>
+            </div>
+          ) : null}
+        </section>
+
         <section className="panel" aria-label="Тест welcome-системи">
           <div className="discord-management-section-head discord-management-section-head--inline">
             <div>
@@ -234,9 +299,9 @@ export default async function WelcomeCardDashboardPage({
               <p>{nicknameDiagnosis.message}</p>
             </div>
             {testInput.userId ? (
-              <div className={`panel ${resolvedTestMember.liveMember ? "is-ok" : "is-warning"}`}>
-                <strong>{resolvedTestMember.liveMember ? "Discord-профіль знайдено" : "Discord-профіль не підтягнуто"}</strong>
-                <p>{resolvedTestMember.liveMember ? `Preview використовує реальний аватар ${resolvedTestMember.member.displayName}.` : (resolvedTestMember.lookupError || "Використано тестові дані.")}</p>
+              <div className="panel is-ok">
+                <strong>Реальний Discord-профіль перевіряється тільки renderer-ом</strong>
+                <p>Сторінка не робить зайвий Discord API-запит. Preview і тестова публікація самі підтягнуть аватар цього ID на сервері; при помилці використають тестові дані.</p>
               </div>
             ) : null}
           </div>
@@ -252,15 +317,36 @@ export default async function WelcomeCardDashboardPage({
             <a className="btn btn-secondary" href={previewUrl} target="_blank" rel="noreferrer">Відкрити PNG</a>
           </div>
 
-          <div className="panel preview-panel">
-            <Image
-              src={previewUrl}
-              alt="Серверний preview welcome-картки"
-              width={1600}
-              height={900}
-              unoptimized
-              priority
-            />
+          <div className="panel preview-panel" style={{ padding: "1rem", display: "grid", justifyItems: "start" }}>
+            <div
+              aria-label="Discord-sized preview frame"
+              style={{
+                width: "100%",
+                maxWidth: "640px",
+                padding: "12px",
+                borderRadius: "16px",
+                background: "rgba(32, 34, 37, 0.88)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)",
+              }}
+            >
+              <Image
+                src={previewUrl}
+                alt="Серверний preview welcome-картки"
+                width={1600}
+                height={900}
+                unoptimized
+                priority
+                style={{
+                  display: "block",
+                  width: "100%",
+                  height: "auto",
+                  maxWidth: "616px",
+                  borderRadius: "16px",
+                }}
+              />
+            </div>
+            <p className="text-muted" style={{ margin: 0 }}>Preview у панелі обмежений до приблизного desktop-розміру вкладення в Discord, щоб візуально збігатися з публікацією в каналі.</p>
           </div>
 
           <div className="nickname-warning-settings__group">

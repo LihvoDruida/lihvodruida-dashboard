@@ -16,6 +16,7 @@ import { buildProfileDiscordNicknamePlan, getProfileByDiscordUserId } from "@/li
 import { resilientRead } from "@/lib/runtimeResilience";
 import { dashboardPublicOrigin, timestampToIso } from "@/lib/values";
 import { logDashboardEvent, safeErrorMessage } from "@/lib/security";
+import { loadDiscordNewcomerRulesAccepted, discordNewcomerRulesAccepted } from "@/lib/discordNewcomerState";
 
 const STATE_COLLECTION = "dashboardSettings";
 const STATE_DOC_ID = "discordNicknameWarningAutomation";
@@ -421,7 +422,7 @@ async function patchAutomationState(patch: Partial<NicknameWarningAutomationStat
 }
 
 
-type NewcomerGateStatus = "baseline" | "waiting_role" | "qualified";
+type NewcomerGateStatus = "baseline" | "waiting_role" | "waiting_rules" | "qualified";
 
 type NewcomerGateRecord = {
   userId: string;
@@ -456,9 +457,11 @@ function normalizeNewcomerGateRecord(doc: any, roleId: string): NewcomerGateReco
   const gateStatusText = String(data.gateStatus || "");
   const gateStatus: NewcomerGateStatus = gateStatusText === "qualified"
     ? "qualified"
-    : gateStatusText === "waiting_role"
-      ? "waiting_role"
-      : "baseline";
+    : gateStatusText === "waiting_rules"
+      ? "waiting_rules"
+      : gateStatusText === "waiting_role"
+        ? "waiting_role"
+        : "baseline";
   const validationText = String(data.validationStatus || "");
   const validationStatus: NicknameCheckStatus | null = validationText === "valid" || validationText === "invalid" ? validationText : null;
   return {
@@ -570,6 +573,7 @@ export async function syncNicknameNewcomerRoleGate(input: {
     completeSnapshot = true;
   }
   const existing = roleChanged ? new Map<string, NewcomerGateRecord>() : await loadNewcomerGateRecords(roleId);
+  const rulesAccepted = roleChanged ? new Map<string, string | null>() : await loadDiscordNewcomerRulesAccepted(members.map((member) => member.userId));
 
   if (roleChanged) {
     const baselineRecords = members.map((member): NewcomerGateRecord => ({
@@ -616,7 +620,7 @@ export async function syncNicknameNewcomerRoleGate(input: {
     const hasRole = member.roleIds.includes(roleId);
 
     if (!previous) {
-      if (hasRole) {
+      if (hasRole && rulesAccepted.get(member.userId)) {
         qualifiedMembers.push(member);
         eligibleUserIds.add(member.userId);
         nextRecords.push({
@@ -631,6 +635,20 @@ export async function syncNicknameNewcomerRoleGate(input: {
           firstSeenAt: nowIso,
           lastSeenAt: nowIso,
           qualifiedAt: nowIso,
+        });
+      } else if (hasRole) {
+        nextRecords.push({
+          userId: member.userId,
+          displayName: member.displayName,
+          joinedAt: member.joinedAt || null,
+          roleId,
+          baseline: false,
+          hasRole: true,
+          gateStatus: "waiting_rules",
+          validationStatus: null,
+          firstSeenAt: nowIso,
+          lastSeenAt: nowIso,
+          qualifiedAt: null,
         });
       } else {
         nextRecords.push({
@@ -662,7 +680,7 @@ export async function syncNicknameNewcomerRoleGate(input: {
       continue;
     }
 
-    if (hasRole && !previous.hasRole) {
+    if (hasRole && rulesAccepted.get(member.userId) && previous.gateStatus !== "qualified") {
       const validationStatus: NicknameCheckStatus = invalidMember(member, policy.template) ? "invalid" : "valid";
       qualifiedMembers.push(member);
       eligibleUserIds.add(member.userId);
@@ -679,6 +697,11 @@ export async function syncNicknameNewcomerRoleGate(input: {
       continue;
     }
 
+    if (hasRole && !rulesAccepted.get(member.userId)) {
+      nextRecords.push({ ...previous, displayName: member.displayName, joinedAt: member.joinedAt || previous.joinedAt, hasRole: true, gateStatus: "waiting_rules", lastSeenAt: nowIso });
+      continue;
+    }
+
     nextRecords.push({ ...previous, displayName: member.displayName, joinedAt: member.joinedAt || previous.joinedAt, hasRole, lastSeenAt: nowIso });
   }
 
@@ -692,7 +715,7 @@ export async function syncNicknameNewcomerRoleGate(input: {
   }
   await writeNewcomerGateRecords(nextRecords, { cleanupMissing: completeSnapshot });
 
-  const waitingRole = nextRecords.filter((record) => !record.baseline && record.gateStatus === "waiting_role").length;
+  const waitingRole = nextRecords.filter((record) => !record.baseline && (record.gateStatus === "waiting_role" || record.gateStatus === "waiting_rules")).length;
   const qualified = nextRecords.filter((record) => !record.baseline && record.gateStatus === "qualified").length;
   const invalidAdded = qualifiedMembers.filter((member) => invalidMember(member, policy.template)).length;
   await patchAutomationState({
@@ -740,6 +763,10 @@ export async function processNewcomerNicknameRoleGrant(input: {
   const grantedRoleIds = Array.from(new Set((input.grantedRoleIds || []).map((value) => String(value || "").trim()).filter(Boolean)));
   if (!policy.nicknameNewcomerGateEnabled || !roleId || !grantedRoleIds.includes(roleId) || !/^\d{16,25}$/.test(String(input.userId || ""))) {
     return { skipped: true as const, reason: "role_not_matched" as const };
+  }
+
+  if (!await discordNewcomerRulesAccepted(input.userId)) {
+    return { skipped: true as const, reason: "rules_not_accepted" as const };
   }
 
   // Ensure the gate has a baseline before turning this explicit role grant into

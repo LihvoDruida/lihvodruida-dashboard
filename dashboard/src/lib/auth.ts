@@ -21,9 +21,11 @@ import {
   withTimeout,
 } from "@/lib/runtimeResilience";
 import {
+  ensureAuthAccessRequiredRole,
   evaluateAuthAccessPolicy,
   getAuthAccessPolicy,
 } from "@/lib/authAccessPolicy";
+import { ensureDiscordNewcomerBootstrapRole } from "@/lib/discordNewcomerBootstrap";
 
 export type DashboardRole = "admin" | "moderator" | "mentor" | "member";
 
@@ -223,10 +225,24 @@ async function refreshDiscordAccess(
         3_500,
         "discord live access",
       );
-      const authDecision = evaluateAuthAccessPolicy(authPolicy, {
+      let liveRoleIds = member.roleIds || [];
+      if (liveRoleIds.length === 0) {
+        const bootstrap = await ensureDiscordNewcomerBootstrapRole({
+          userId: session.id,
+          roleIds: liveRoleIds,
+          joinedAt: member.joinedAt,
+          source: "live_session",
+        }).catch(() => null);
+        if (bootstrap?.assigned && bootstrap.roleId) {
+          liveRoleIds = [bootstrap.roleId];
+          await ensureAuthAccessRequiredRole(bootstrap.roleId).catch(() => null);
+        }
+      }
+      const effectiveAuthPolicy = liveRoleIds.length ? await getAuthAccessPolicy({ bypassCache: true }) : authPolicy;
+      const authDecision = evaluateAuthAccessPolicy(effectiveAuthPolicy, {
         userId: session.id,
         ownerId: guild?.ownerId || null,
-        roleIds: member.roleIds || [],
+        roleIds: liveRoleIds,
       });
       if (!authDecision.allowed) {
         logDashboardEvent(
@@ -257,7 +273,7 @@ async function refreshDiscordAccess(
       }
 
       const resolved = await resolveAccessGroupFromDiscord(
-        member.roleIds || [],
+        liveRoleIds,
         session.id,
         guild?.ownerId || null,
       );

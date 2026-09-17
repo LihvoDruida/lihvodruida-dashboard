@@ -4,6 +4,7 @@ import botPackage from "../package.json" with { type: "json" };
 import { inspectDiscordSignature } from "./signature.mjs";
 import { completeInteraction } from "./dashboardClient.mjs";
 import { logger } from "./logger.mjs";
+import { startDiscordGatewayBridge, discordGatewayHealth } from "./gateway.mjs";
 import {
   INTERACTION_DOMAINS,
   interactionDomainFor,
@@ -202,6 +203,7 @@ const server = createServer(async (request, response) => {
       service: "mistblossom-bot",
       version: String(botPackage.version || "unknown"),
       uptimeSeconds: Math.round(process.uptime()),
+      gateway: discordGatewayHealth(),
     });
   }
 
@@ -279,14 +281,17 @@ const server = createServer(async (request, response) => {
   }
 });
 
+const stopGateway = startDiscordGatewayBridge();
+
 server.listen(PORT, HOST, () => {
   logger.info("Бот слухає", { host: HOST, port: PORT });
 });
 
 // Без цього Docker чекав би 10 секунд таймауту на кожен рестарт.
 for (const signal of ["SIGTERM", "SIGINT"]) {
-  process.on(signal, () => {
+  process.once(signal, () => {
     logger.info("Зупинка", { signal });
+    try { stopGateway?.(); } catch {}
     server.close(() => process.exit(0));
     setTimeout(() => process.exit(0), 5000).unref();
   });

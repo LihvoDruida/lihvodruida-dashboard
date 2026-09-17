@@ -32,8 +32,8 @@ export async function POST(request: NextRequest) {
 
   globalThis.__mistblossomDiscordNewcomerOnboardingInFlight = true;
   try {
-    const result = await runDiscordNewcomerOnboarding();
-    if (result.initialized || result.newcomers || result.failed) {
+    const result = await runDiscordNewcomerOnboarding({ source: "cron" });
+    if (result.initialized || result.newcomers || result.failed || result.defaultRoleFailed || result.channelFailed || result.persistenceFailed) {
       logDashboardEvent(result.failed ? "warn" : "info", "discord.newcomer_onboarding.automation_completed", request, result, { category: "action" });
     }
     return NextResponse.json({ ok: true, result }, { headers: noStoreHeaders() });

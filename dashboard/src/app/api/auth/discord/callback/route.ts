@@ -34,9 +34,11 @@ import {
 } from "@/lib/security";
 import { checkGeoAccess, geoAccessDeniedResponse } from "@/lib/geoAccessPolicy";
 import {
+  ensureAuthAccessRequiredRole,
   evaluateAuthAccessPolicy,
   getAuthAccessPolicy,
 } from "@/lib/authAccessPolicy";
+import { ensureDiscordNewcomerBootstrapRole } from "@/lib/discordNewcomerBootstrap";
 import {
   findProfileCharacterConflicts,
   getProfileById,
@@ -367,13 +369,30 @@ export async function GET(request: NextRequest) {
       size: 256,
     });
 
-    const discordRoleIds = Array.isArray(member.roles)
+    let discordRoleIds = Array.isArray(member.roles)
       ? member.roles
           .map((roleId: unknown) => String(roleId || "").trim())
           .filter(Boolean)
       : [];
+
+    // Fail-safe for the exact race seen in production: OAuth may arrive before
+    // the minute recovery scan or gateway worker has issued the bootstrap role.
+    // Only fresh members with zero explicit roles are eligible for this repair.
+    if (discordRoleIds.length === 0) {
+      const bootstrap = await ensureDiscordNewcomerBootstrapRole({
+        userId: user.id,
+        roleIds: discordRoleIds,
+        joinedAt: String(member?.joined_at || "") || null,
+        source: "auth_callback",
+      }).catch(() => null);
+      if (bootstrap?.assigned && bootstrap.roleId) {
+        discordRoleIds = [bootstrap.roleId];
+        await ensureAuthAccessRequiredRole(bootstrap.roleId).catch(() => null);
+      }
+    }
+
     const guild = await fetchDiscordGuildSnapshot().catch(() => null);
-    const authPolicy = await getAuthAccessPolicy();
+    const authPolicy = await getAuthAccessPolicy({ bypassCache: discordRoleIds.length > 0 });
     const authDecision = evaluateAuthAccessPolicy(authPolicy, {
       userId: String(user.id),
       ownerId: guild?.ownerId || null,

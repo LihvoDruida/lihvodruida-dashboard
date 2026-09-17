@@ -199,3 +199,21 @@ export function evaluateAuthAccessPolicy(policy: AuthAccessPolicy, params: {
     matchedRoleIds,
   };
 }
+
+/**
+ * Keeps the bootstrap/newcomer role compatible with the dashboard auth gate.
+ * We only append; we never remove an administrator-selected access role.
+ */
+export async function ensureAuthAccessRequiredRole(roleIdInput: unknown, actor?: DashboardSession | null) {
+  const roleId = cleanDiscordRoleIds([roleIdInput])[0] || "";
+  if (!roleId) return getAuthAccessPolicy();
+  const policy = await getAuthAccessPolicy({ bypassCache: true });
+  if (policy.requiredRoleIds.includes(roleId)) return policy;
+  return setAuthAccessPolicy({
+    enabled: policy.enabled,
+    requireConfiguredRole: policy.requireConfiguredRole,
+    allowServerOwner: policy.allowServerOwner,
+    allowEmergencyTokenLogin: policy.allowEmergencyTokenLogin,
+    requiredRoleIds: [...policy.requiredRoleIds, roleId],
+  }, actor);
+}

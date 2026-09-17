@@ -1,21 +1,27 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
+
 import {
+  addGuildMemberRoles,
   buildRulesAcceptCustomId,
+  fetchDiscordGuildMemberSnapshot,
   fetchDiscordGuildMembers,
   fetchDiscordGuildSnapshot,
+  fetchDiscordRoleControlSnapshotCachedForUi,
+  getDiscordGuildId,
   listRulesEmbedMessages,
   sendDiscordChannelMessageWithAttachment,
   sendDiscordDirectMessage,
   type DiscordGuildMemberModerationItem,
 } from "@/lib/discordAdmin";
-import { addDiscordMemberRoles } from "@/lib/discordMemberManagement";
-import { renderDiscordWelcomeCard } from "@/lib/discordWelcomeCard";
-import { getDiscordWelcomeCardSettings, renderDiscordWelcomeMessageTemplate } from "@/lib/discordWelcomeCardSettings";
+import { createDiscordWelcomeArtifact } from "@/lib/discordWelcomeArtifact";
+import { mapConcurrent } from "@/lib/concurrency";
+import { getDiscordWelcomeCardSettings, type DiscordWelcomeCardSettings } from "@/lib/discordWelcomeCardSettings";
 import { MISTBLOSSOM_DISCORD_CHANNELS, discordGuildChannelUrl } from "@/lib/discordGuildLinks";
 import { firebaseWrite } from "@/lib/firebaseAccess";
 import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
-import { getGuildNicknamePolicy, nicknameMatchesTemplate, VALID_NICKNAME_STRUCTURES } from "@/lib/guildNicknamePolicy";
+import { getGuildNicknamePolicy, nicknameMatchesTemplate, VALID_NICKNAME_STRUCTURES, type GuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
 import { logDashboardEvent, safeErrorMessage } from "@/lib/security";
 import { timestampToIso } from "@/lib/values";
 
@@ -23,7 +29,26 @@ const STATE_COLLECTION = "dashboardSettings";
 const STATE_DOC_ID = "discordNewcomerOnboardingAutomation";
 const MEMBER_COLLECTION = "discordNewcomerOnboardingMembers";
 const RULES_CHANNEL_ID = String(process.env.DISCORD_GUILD_RULES_CHANNEL_ID || MISTBLOSSOM_DISCORD_CHANNELS.rules.id).trim();
-const MAX_SENDS_PER_RUN = 25;
+const RETRY_DELAY_MS = 15 * 60_000;
+const RULE_IDS_CACHE_TTL_MS = 5 * 60_000;
+const ONBOARDING_LEASE_TTL_MS = 75_000;
+const RECORD_CACHE_TTL_MS = 30 * 60_000;
+const DEFAULT_BATCH_LIMIT = 32;
+const DEFAULT_CONCURRENCY = 3;
+
+function envInteger(name: string, fallback: number, min: number, max: number) {
+  const parsed = Number(process.env[name]);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(min, Math.min(max, Math.floor(parsed)));
+}
+
+function onboardingBatchLimit() {
+  return envInteger("DISCORD_ONBOARDING_BATCH_LIMIT", DEFAULT_BATCH_LIMIT, 1, 100);
+}
+
+function onboardingConcurrency(total: number) {
+  return Math.min(Math.max(1, total), envInteger("DISCORD_ONBOARDING_CONCURRENCY", DEFAULT_CONCURRENCY, 1, 6));
+}
 
 type OnboardingMemberRecord = {
   userId: string;
@@ -63,15 +88,46 @@ export type DiscordNewcomerOnboardingResult = {
   failed: number;
   deferred: number;
   roleIds: string[];
+  defaultRoleAssigned: number;
+  defaultRoleFailed: number;
   channelSent: number;
   channelFailed: number;
+  processed: number;
+  durationMs: number;
+  concurrency: number;
+  recordCacheHits: number;
+  recordDbReads: number;
+  persistenceFailed: number;
+  skippedReason?: "distributed_lease" | null;
 };
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __mistblossomRulesRoleIdsCache: { roleIds: string[]; cachedAt: number } | undefined;
+  // eslint-disable-next-line no-var
+  var __mistblossomOnboardingRecordCache: { records: Map<string, OnboardingMemberRecord>; refreshedAt: number; version: string | null } | undefined;
+}
 
 function cleanNickname(value: unknown) {
   return Array.from(String(value || "").normalize("NFC").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim()).slice(0, 32).join("");
 }
 
+function validTime(value?: string | null) {
+  const parsed = value ? Date.parse(value) : Number.NaN;
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function retryDue(lastErrorAt: string | null, nowMs: number) {
+  const failedAt = validTime(lastErrorAt);
+  return failedAt === null || nowMs - failedAt >= RETRY_DELAY_MS;
+}
+
+function isRejoin(member: DiscordGuildMemberModerationItem, previous?: OnboardingMemberRecord | null) {
+  return Boolean(member.joinedAt && previous?.joinedAt && member.joinedAt !== previous.joinedAt);
+}
+
 function normalizeRecord(doc: any): OnboardingMemberRecord | null {
+  if (!doc || doc.exists === false) return null;
   const data = doc?.data?.() || {};
   const userId = String(data.userId || doc?.id || "").trim();
   if (!/^\d{16,25}$/.test(userId)) return null;
@@ -107,31 +163,76 @@ function normalizeRecord(doc: any): OnboardingMemberRecord | null {
 }
 
 async function loadState() {
-  if (!hasFirebaseProfileConfig()) return { initializedAt: null as string | null };
-  const snapshot = await getFirebaseAdminDb().collection(STATE_COLLECTION).doc(STATE_DOC_ID).get().catch(() => null);
-  const data = snapshot?.exists ? snapshot.data() || {} : {};
-  return { initializedAt: timestampToIso(data.initializedAt) };
+  if (!hasFirebaseProfileConfig()) return { initializedAt: null as string | null, recordVersion: null as string | null };
+  const snapshot = await getFirebaseAdminDb().collection(STATE_COLLECTION).doc(STATE_DOC_ID).get();
+  const data = snapshot.exists ? snapshot.data() || {} : {};
+  return { initializedAt: timestampToIso(data.initializedAt), recordVersion: typeof data.recordVersion === "string" ? data.recordVersion : null };
 }
 
-async function loadRecords(memberIds: string[]) {
-  const map = new Map<string, OnboardingMemberRecord>();
-  if (!hasFirebaseProfileConfig() || !memberIds.length) return map;
-  const db = getFirebaseAdminDb();
+function onboardingRecordCache() {
+  const cache = globalThis.__mistblossomOnboardingRecordCache || {
+    records: new Map<string, OnboardingMemberRecord>(),
+    refreshedAt: 0,
+    version: null,
+  };
+  globalThis.__mistblossomOnboardingRecordCache = cache;
+  return cache;
+}
+
+function cacheOnboardingRecord(record: OnboardingMemberRecord) {
+  const cache = onboardingRecordCache();
+  cache.records.set(record.userId, { ...record });
+}
+
+async function loadRecords(memberIds: string[], expectedVersion: string | null) {
+  const records = new Map<string, OnboardingMemberRecord>();
+  if (!hasFirebaseProfileConfig() || !memberIds.length) return { records, cacheHits: 0, dbReads: 0 };
+
   const cleanIds = Array.from(new Set(memberIds.filter((value) => /^\d{16,25}$/.test(String(value || "")))));
-  for (let index = 0; index < cleanIds.length; index += 250) {
-    const refs = cleanIds.slice(index, index + 250).map((id) => db.collection(MEMBER_COLLECTION).doc(id));
-    const snapshots = await db.getAll(...refs).catch(() => []);
-    for (const doc of snapshots as any[]) {
-      const record = normalizeRecord(doc);
-      if (record) map.set(record.userId, record);
+  const cache = onboardingRecordCache();
+  const cacheFresh = Date.now() - cache.refreshedAt < RECORD_CACHE_TTL_MS && cache.version === expectedVersion;
+  let cacheHits = 0;
+  let dbReads = 0;
+
+  if (cacheFresh) {
+    for (const id of cleanIds) {
+      const cached = cache.records.get(id);
+      if (!cached) continue;
+      records.set(id, { ...cached });
+      cacheHits += 1;
     }
   }
-  return map;
+
+  const idsToRead = cacheFresh ? cleanIds.filter((id) => !records.has(id)) : cleanIds;
+  if (!idsToRead.length) return { records, cacheHits, dbReads };
+
+  const db = getFirebaseAdminDb();
+  const refreshed = cacheFresh ? cache.records : new Map<string, OnboardingMemberRecord>();
+  for (let index = 0; index < idsToRead.length; index += 250) {
+    const ids = idsToRead.slice(index, index + 250);
+    const refs = ids.map((id) => db.collection(MEMBER_COLLECTION).doc(id));
+    // Deliberately no silent catch here. A failed state read must abort the run;
+    // treating an outage as "no records" can mass-message the whole guild.
+    const snapshots = await db.getAll(...refs);
+    dbReads += snapshots.length;
+    for (const doc of snapshots as any[]) {
+      const record = normalizeRecord(doc);
+      if (!record) continue;
+      records.set(record.userId, record);
+      refreshed.set(record.userId, { ...record });
+    }
+  }
+
+  cache.records = refreshed;
+  cache.refreshedAt = Date.now();
+  cache.version = expectedVersion;
+  return { records, cacheHits, dbReads };
 }
 
 async function writeRecords(records: OnboardingMemberRecord[]) {
   if (!hasFirebaseProfileConfig() || !records.length) return;
   const db = getFirebaseAdminDb();
+  for (const record of records) cacheOnboardingRecord(record);
   await firebaseWrite(
     "settings",
     "discord-newcomer-onboarding:members",
@@ -148,7 +249,24 @@ async function writeRecords(records: OnboardingMemberRecord[]) {
   );
 }
 
-async function markInitialized(at: string, memberCount: number) {
+async function writeRecord(record: OnboardingMemberRecord) {
+  if (!hasFirebaseProfileConfig()) return;
+  // Keep the process-local state optimistic even if the backing write has a
+  // transient failure. This prevents an immediate duplicate burst on the next
+  // cron tick; the error still propagates and is logged.
+  cacheOnboardingRecord(record);
+  await firebaseWrite(
+    "settings",
+    `discord-newcomer-onboarding:member:${record.userId}`,
+    () => getFirebaseAdminDb().collection(MEMBER_COLLECTION).doc(record.userId).set(
+      { ...record, updatedAt: record.lastSeenAt },
+      { merge: true },
+    ),
+    { timeoutMs: 4_500, logEvent: "discord.newcomer_onboarding.member_write_failed" },
+  );
+}
+
+async function markInitialized(at: string, memberCount: number, recordVersion: string) {
   if (!hasFirebaseProfileConfig()) return;
   await firebaseWrite(
     "settings",
@@ -157,6 +275,7 @@ async function markInitialized(at: string, memberCount: number) {
       initializedAt: at,
       lastScanAt: at,
       lastMemberCount: memberCount,
+      recordVersion,
       updatedAt: at,
     }, { merge: true }),
     { timeoutMs: 4_000, logEvent: "discord.newcomer_onboarding.state_write_failed" },
@@ -174,63 +293,107 @@ async function patchState(patch: Record<string, unknown>) {
   );
 }
 
-async function resolveRulesRoleIds() {
+async function acquireOnboardingLease(owner: string) {
+  if (!hasFirebaseProfileConfig()) return false;
+  const db = getFirebaseAdminDb();
+  const ref = db.collection(STATE_COLLECTION).doc(STATE_DOC_ID);
+  const nowMs = Date.now();
+  return db.runTransaction(async (transaction: any) => {
+    const snapshot = await transaction.get(ref);
+    const data = snapshot.exists ? snapshot.data() || {} : {};
+    const leaseUntilMs = Number(data.leaseUntilMs || 0);
+    const leaseOwner = String(data.leaseOwner || "");
+    if (Number.isFinite(leaseUntilMs) && leaseUntilMs > nowMs && leaseOwner && leaseOwner !== owner) return false;
+    transaction.set(ref, {
+      leaseOwner: owner,
+      leaseUntilMs: nowMs + ONBOARDING_LEASE_TTL_MS,
+      leaseStartedAt: new Date(nowMs).toISOString(),
+      updatedAt: new Date(nowMs).toISOString(),
+    }, { merge: true });
+    return true;
+  });
+}
+
+async function releaseOnboardingLease(owner: string) {
+  if (!hasFirebaseProfileConfig()) return;
+  const db = getFirebaseAdminDb();
+  const ref = db.collection(STATE_COLLECTION).doc(STATE_DOC_ID);
+  await db.runTransaction(async (transaction: any) => {
+    const snapshot = await transaction.get(ref);
+    const data = snapshot.exists ? snapshot.data() || {} : {};
+    if (String(data.leaseOwner || "") !== owner) return;
+    transaction.set(ref, {
+      leaseOwner: null,
+      leaseUntilMs: 0,
+      leaseReleasedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+  });
+}
+
+async function resolveRulesRoleIds(policy?: GuildNicknamePolicy | null) {
+  const cached = globalThis.__mistblossomRulesRoleIdsCache;
+  if (cached && Date.now() - cached.cachedAt < RULE_IDS_CACHE_TTL_MS && cached.roleIds.length) return cached.roleIds;
+
   const messages = await listRulesEmbedMessages(RULES_CHANNEL_ID, 50).catch(() => []);
   const rulesMessage = messages.find((message) => message.rulesType === "guild" && message.roleIds.length > 0);
-  if (rulesMessage?.roleIds.length) return rulesMessage.roleIds;
+  if (rulesMessage?.roleIds.length) {
+    globalThis.__mistblossomRulesRoleIdsCache = { roleIds: rulesMessage.roleIds, cachedAt: Date.now() };
+    return rulesMessage.roleIds;
+  }
 
-  const policy = await getGuildNicknamePolicy({ bypassCache: true });
-  if (policy.nicknameNewcomerRoleId) return [policy.nicknameNewcomerRoleId];
-  return [];
+  const currentPolicy = policy || await getGuildNicknamePolicy();
+  const fallback = currentPolicy.nicknameNewcomerRoleId ? [currentPolicy.nicknameNewcomerRoleId] : [];
+  if (fallback.length) globalThis.__mistblossomRulesRoleIdsCache = { roleIds: fallback, cachedAt: Date.now() };
+  return fallback;
 }
 
 function nicknameStatus(member: DiscordGuildMemberModerationItem, template: string) {
   const nickname = cleanNickname(member.nick) || null;
-  return {
-    nickname,
-    valid: Boolean(nickname && nicknameMatchesTemplate(nickname, template)),
-  };
+  return { nickname, valid: Boolean(nickname && nicknameMatchesTemplate(nickname, template)) };
 }
 
 function welcomeDeliveryPermanentlyBlocked(record: OnboardingMemberRecord) {
   return Boolean(record.lastError && /Discord API 403|\b50007\b|cannot send messages to this user/i.test(record.lastError));
 }
 
-function failedWelcomeRetryDue(record: OnboardingMemberRecord, nowMs = Date.now()) {
+function privateWelcomeDue(record: OnboardingMemberRecord, nowMs: number) {
   if (record.baseline || record.welcomeSentAt || record.rulesAcceptedAt || welcomeDeliveryPermanentlyBlocked(record)) return false;
-  const failedAt = record.lastErrorAt ? Date.parse(record.lastErrorAt) : Number.NaN;
-  return !Number.isFinite(failedAt) || nowMs - failedAt >= 15 * 60_000;
+  return retryDue(record.lastErrorAt, nowMs);
 }
 
-function defaultRoleEligible(record: OnboardingMemberRecord, settings: { defaultRoleId: string }, member: DiscordGuildMemberModerationItem) {
-  if (record.baseline) return false;
-  const roleId = String(settings.defaultRoleId || "").trim();
-  if (!roleId) return false;
-  return !member.roleIds.includes(roleId) || record.defaultRoleId !== roleId || !record.defaultRoleAssignedAt;
-}
-
-function defaultRoleAttemptDue(record: OnboardingMemberRecord, settings: { defaultRoleId: string }, member: DiscordGuildMemberModerationItem, nowMs = Date.now()) {
-  if (!defaultRoleEligible(record, settings, member)) return false;
-  const roleId = String(settings.defaultRoleId || "").trim();
-  if (!roleId) return false;
-  if (record.defaultRoleId && record.defaultRoleId !== roleId) return true;
-  const failedAt = record.defaultRoleLastErrorAt ? Date.parse(record.defaultRoleLastErrorAt) : Number.NaN;
-  if (Number.isFinite(failedAt) && nowMs - failedAt < 15 * 60_000) return false;
-  return true;
-}
-
-function channelWelcomeEligible(record: OnboardingMemberRecord, settings: { enabled: boolean; enabledAt?: string | null }) {
+function channelWelcomeEligible(record: OnboardingMemberRecord, settings: DiscordWelcomeCardSettings) {
   if (!settings.enabled || record.baseline) return false;
-  const enabledAt = settings.enabledAt ? Date.parse(settings.enabledAt) : Number.NaN;
-  const firstSeenAt = record.firstSeenAt ? Date.parse(record.firstSeenAt) : Number.NaN;
-  if (!Number.isFinite(enabledAt) || !Number.isFinite(firstSeenAt)) return true;
-  return firstSeenAt >= enabledAt;
+  const enabledAt = validTime(settings.enabledAt);
+  if (enabledAt === null) return true;
+  const joinedAt = validTime(record.joinedAt) ?? validTime(record.firstSeenAt);
+  return joinedAt === null || joinedAt >= enabledAt;
 }
 
-function failedChannelWelcomeRetryDue(record: OnboardingMemberRecord, settings: { enabled: boolean; enabledAt?: string | null }, nowMs = Date.now()) {
+function channelWelcomeDue(record: OnboardingMemberRecord, settings: DiscordWelcomeCardSettings, nowMs: number) {
   if (!channelWelcomeEligible(record, settings) || record.channelWelcomeSentAt || record.channelWelcomeSkippedAt) return false;
-  const failedAt = record.channelWelcomeLastErrorAt ? Date.parse(record.channelWelcomeLastErrorAt) : Number.NaN;
-  return !Number.isFinite(failedAt) || nowMs - failedAt >= 15 * 60_000;
+  return retryDue(record.channelWelcomeLastErrorAt, nowMs);
+}
+
+function defaultRoleAppliesToJoin(record: OnboardingMemberRecord, settings: DiscordWelcomeCardSettings) {
+  const roleId = String(settings.defaultRoleId || "").trim();
+  if (!roleId || record.baseline) return false;
+  if (record.defaultRoleId === roleId && record.defaultRoleLastError) return true;
+  const configuredAt = validTime(settings.defaultRoleConfiguredAt) ?? validTime(settings.updatedAt);
+  const joinedAt = validTime(record.joinedAt) ?? validTime(record.firstSeenAt);
+  return configuredAt === null || joinedAt === null || joinedAt >= configuredAt;
+}
+
+function defaultRoleEligible(record: OnboardingMemberRecord, settings: DiscordWelcomeCardSettings, member: DiscordGuildMemberModerationItem) {
+  const roleId = String(settings.defaultRoleId || "").trim();
+  return Boolean(roleId && defaultRoleAppliesToJoin(record, settings) && !member.roleIds.includes(roleId));
+}
+
+function defaultRoleDue(record: OnboardingMemberRecord, settings: DiscordWelcomeCardSettings, member: DiscordGuildMemberModerationItem, nowMs: number, retryDelayMs = RETRY_DELAY_MS) {
+  if (!defaultRoleEligible(record, settings, member)) return false;
+  if (record.defaultRoleAssignedAt && record.defaultRoleId === settings.defaultRoleId) return false;
+  const failedAt = validTime(record.defaultRoleLastErrorAt);
+  return failedAt === null || nowMs - failedAt >= retryDelayMs;
 }
 
 export function buildNewcomerWelcomeMessage(input: {
@@ -244,7 +407,6 @@ export function buildNewcomerWelcomeMessage(input: {
   const nicknameLine = input.nicknameValid
     ? `✅ Твій серверний нік уже відповідає формату: \`${String(input.nickname).replace(/`/g, "ˋ")}\`.`
     : `⚠️ Твій серверний нік ${input.nickname ? `\`${String(input.nickname).replace(/`/g, "ˋ")}\`` : "ще не встановлено"} не відповідає формату гільдії.`;
-
   const formats = VALID_NICKNAME_STRUCTURES.map((item) => `• \`${item.replace(/\{name\}/g, "Імʼя").replace(/\{main\}/g, "Мейн").replace(/\{alt\}/g, "Альт")}\``).join("\n");
 
   return [
@@ -273,12 +435,7 @@ export function buildNewcomerWelcomeMessage(input: {
 function acceptButton(roleIds: string[]) {
   return [{
     type: 1,
-    components: [{
-      type: 2,
-      style: 3,
-      label: "Прийняти правила",
-      custom_id: buildRulesAcceptCustomId(roleIds),
-    }],
+    components: [{ type: 2, style: 3, label: "Прийняти правила", custom_id: buildRulesAcceptCustomId(roleIds) }],
   }];
 }
 
@@ -298,276 +455,497 @@ async function sendPrivateWelcome(params: {
   return sendDiscordDirectMessage({ userId: params.member.userId, content, components: acceptButton(params.roleIds) });
 }
 
-async function sendChannelWelcome(member: DiscordGuildMemberModerationItem, settings: Awaited<ReturnType<typeof getDiscordWelcomeCardSettings>>) {
+async function sendChannelWelcome(member: DiscordGuildMemberModerationItem, settings: DiscordWelcomeCardSettings) {
   if (!settings.enabled || !settings.channelId) return null;
-
-  const rendered = await renderDiscordWelcomeCard(member, settings);
-  const content = renderDiscordWelcomeMessageTemplate(settings.messageTemplate, {
-    mention: `<@${member.userId}>`,
-    username: member.username || member.displayName,
-    displayName: member.displayName,
-    greeting: rendered.greeting,
-    label: rendered.label,
-  });
+  const artifact = await createDiscordWelcomeArtifact(member, settings);
   const sent = await sendDiscordChannelMessageWithAttachment({
     channelId: settings.channelId,
-    content,
-    fileName: rendered.fileName,
-    fileBuffer: rendered.buffer,
-    contentType: rendered.contentType,
+    content: artifact.content,
+    fileName: artifact.fileName,
+    fileBuffer: artifact.buffer,
+    contentType: artifact.contentType,
     auditReason: `Welcome card for ${member.displayName}`,
     allowedUserMentions: [member.userId],
   });
-  return { ...sent, greeting: rendered.greeting, label: rendered.label, channelId: settings.channelId };
+  return { ...sent, greeting: artifact.greeting, label: artifact.label, channelId: settings.channelId };
 }
 
-export async function runDiscordNewcomerOnboarding(): Promise<DiscordNewcomerOnboardingResult> {
+function baselineRecord(member: DiscordGuildMemberModerationItem, now: string, settings: DiscordWelcomeCardSettings): OnboardingMemberRecord {
+  return {
+    userId: member.userId,
+    joinedAt: member.joinedAt || null,
+    displayName: member.displayName,
+    firstSeenAt: now,
+    lastSeenAt: now,
+    baseline: true,
+    welcomeSentAt: null,
+    welcomeMessageId: null,
+    welcomeChannelId: null,
+    nicknameCheckedAt: null,
+    nicknameValid: null,
+    nicknameAtCheck: null,
+    rulesAcceptedAt: null,
+    lastError: null,
+    lastErrorAt: null,
+    defaultRoleAssignedAt: null,
+    defaultRoleId: settings.defaultRoleId || null,
+    defaultRoleLastError: null,
+    defaultRoleLastErrorAt: null,
+    channelWelcomeSentAt: null,
+    channelWelcomeSkippedAt: null,
+    channelWelcomeMessageId: null,
+    channelWelcomeChannelId: null,
+    channelWelcomeGreeting: null,
+    channelWelcomeLabel: null,
+    channelWelcomeLastError: null,
+    channelWelcomeLastErrorAt: null,
+  };
+}
+
+function workingRecord(member: DiscordGuildMemberModerationItem, previous: OnboardingMemberRecord | undefined, now: string, settings: DiscordWelcomeCardSettings) {
+  const rejoin = isRejoin(member, previous);
+  if (!previous || rejoin) {
+    return {
+      ...baselineRecord(member, now, settings),
+      baseline: false,
+      firstSeenAt: previous?.firstSeenAt || now,
+      joinedAt: member.joinedAt || now,
+    } satisfies OnboardingMemberRecord;
+  }
+  return {
+    ...previous,
+    displayName: member.displayName,
+    joinedAt: member.joinedAt || previous.joinedAt,
+    lastSeenAt: now,
+  };
+}
+
+export async function runDiscordNewcomerOnboarding(options: {
+  priorityUserIds?: string[];
+  source?: "cron" | "gateway" | "manual" | "auth_self_heal";
+} = {}): Promise<DiscordNewcomerOnboardingResult> {
   if (!hasFirebaseProfileConfig()) throw new Error("Сховище стану onboarding не налаштоване.");
 
-  const now = new Date().toISOString();
-  const [members, state, guild, policy, welcomeCardSettings] = await Promise.all([
-    fetchDiscordGuildMembers(0),
-    loadState(),
-    fetchDiscordGuildSnapshot(),
-    getGuildNicknamePolicy(),
-    getDiscordWelcomeCardSettings(),
-  ]);
-  const existing = await loadRecords(members.map((member) => member.userId));
-
-  if (!state.initializedAt) {
-    const baseline = members.map((member): OnboardingMemberRecord => ({
-      userId: member.userId,
-      joinedAt: member.joinedAt || null,
-      displayName: member.displayName,
-      firstSeenAt: now,
-      lastSeenAt: now,
-      baseline: true,
-      welcomeSentAt: null,
-      welcomeMessageId: null,
-      welcomeChannelId: null,
-      nicknameCheckedAt: null,
-      nicknameValid: null,
-      nicknameAtCheck: null,
-      rulesAcceptedAt: null,
-      lastError: null,
-      lastErrorAt: null,
-      defaultRoleAssignedAt: null,
-      defaultRoleId: welcomeCardSettings.defaultRoleId || null,
-      defaultRoleLastError: null,
-      defaultRoleLastErrorAt: null,
-      channelWelcomeSentAt: null,
-      channelWelcomeSkippedAt: null,
-      channelWelcomeMessageId: null,
-      channelWelcomeChannelId: null,
-      channelWelcomeGreeting: null,
-      channelWelcomeLabel: null,
-      channelWelcomeLastError: null,
-      channelWelcomeLastErrorAt: null,
-    }));
-    await writeRecords(baseline);
-    await markInitialized(now, members.length);
-    logDashboardEvent("info", "discord.newcomer_onboarding.initialized", undefined, { members: members.length }, { category: "action" });
-    return { initialized: true, checked: members.length, newcomers: 0, sent: 0, failed: 0, deferred: 0, roleIds: [], channelSent: 0, channelFailed: 0 };
-  }
-
-  const nowMs = Date.now();
-  const newcomers = members.filter((member) => {
-    const previous = existing.get(member.userId);
-    if (!previous) return true;
-    const privateRetry = failedWelcomeRetryDue(previous, nowMs);
-    const defaultRoleRetry = defaultRoleAttemptDue(previous, welcomeCardSettings, member, nowMs);
-    const channelRetry = failedChannelWelcomeRetryDue(previous, welcomeCardSettings, nowMs);
-    if (privateRetry || defaultRoleRetry || channelRetry) return true;
-    const currentJoinedAt = member.joinedAt || null;
-    return Boolean(currentJoinedAt && previous.joinedAt && currentJoinedAt !== previous.joinedAt);
-  });
-  const roleIds = newcomers.length ? await resolveRulesRoleIds() : [];
-  if (newcomers.length && !roleIds.length) {
-    throw new Error("Не знайдено роль, яка має видаватися після прийняття правил. Перевір повідомлення правил або newcomer role у Discord-налаштуваннях.");
-  }
-
-  const targets = newcomers.slice(0, MAX_SENDS_PER_RUN);
-  const updates: OnboardingMemberRecord[] = [];
-  let sentCount = 0;
-  let failed = 0;
-  let channelSent = 0;
-  let channelFailed = 0;
-
-  for (const member of targets) {
-    const previous = existing.get(member.userId);
-    const check = nicknameStatus(member, policy.template);
-    const record: OnboardingMemberRecord = {
-      userId: member.userId,
-      joinedAt: member.joinedAt || previous?.joinedAt || null,
-      displayName: member.displayName,
-      firstSeenAt: previous?.firstSeenAt || now,
-      lastSeenAt: now,
-      baseline: false,
-      welcomeSentAt: previous?.welcomeSentAt || null,
-      welcomeMessageId: previous?.welcomeMessageId || null,
-      welcomeChannelId: previous?.welcomeChannelId || null,
-      nicknameCheckedAt: now,
-      nicknameValid: check.valid,
-      nicknameAtCheck: check.nickname,
-      rulesAcceptedAt: previous?.rulesAcceptedAt || null,
-      lastError: previous?.lastError || null,
-      lastErrorAt: previous?.lastErrorAt || null,
-      defaultRoleAssignedAt: previous?.defaultRoleAssignedAt || null,
-      defaultRoleId: previous?.defaultRoleId || welcomeCardSettings.defaultRoleId || null,
-      defaultRoleLastError: previous?.defaultRoleLastError || null,
-      defaultRoleLastErrorAt: previous?.defaultRoleLastErrorAt || null,
-      channelWelcomeSentAt: previous?.channelWelcomeSentAt || null,
-      channelWelcomeSkippedAt: previous?.channelWelcomeSkippedAt || null,
-      channelWelcomeMessageId: previous?.channelWelcomeMessageId || null,
-      channelWelcomeChannelId: previous?.channelWelcomeChannelId || null,
-      channelWelcomeGreeting: previous?.channelWelcomeGreeting || null,
-      channelWelcomeLabel: previous?.channelWelcomeLabel || null,
-      channelWelcomeLastError: previous?.channelWelcomeLastError || null,
-      channelWelcomeLastErrorAt: previous?.channelWelcomeLastErrorAt || null,
+  const startedAt = Date.now();
+  const leaseOwner = randomUUID();
+  const leaseAcquired = await acquireOnboardingLease(leaseOwner);
+  if (!leaseAcquired) {
+    return {
+      initialized: false,
+      checked: 0,
+      newcomers: 0,
+      sent: 0,
+      failed: 0,
+      deferred: 0,
+      roleIds: [],
+      defaultRoleAssigned: 0,
+      defaultRoleFailed: 0,
+      channelSent: 0,
+      channelFailed: 0,
+      processed: 0,
+      durationMs: Date.now() - startedAt,
+      concurrency: 0,
+      recordCacheHits: 0,
+      recordDbReads: 0,
+      persistenceFailed: 0,
+      skippedReason: "distributed_lease",
     };
+  }
 
-    try {
-      if (!record.welcomeSentAt || failedWelcomeRetryDue(record, nowMs)) {
-        const result = await sendPrivateWelcome({
-          member,
-          roleIds,
-          guildName: guild.name || "Mistblossom Vanguard",
-          nickname: check.nickname,
-          nicknameValid: check.valid,
-        });
-        record.welcomeSentAt = now;
-        record.welcomeMessageId = result.messageId;
-        record.welcomeChannelId = result.channelId;
-        record.lastError = null;
-        record.lastErrorAt = null;
-        sentCount += 1;
-        logDashboardEvent("info", "discord.newcomer_onboarding.welcome_sent", undefined, {
-          userId: member.userId,
-          displayName: member.displayName,
-          nickname: check.nickname,
-          nicknameValid: check.valid,
-          roleIds,
+  try {
+    const now = new Date().toISOString();
+    const nowMs = Date.now();
+    const priorityUserIds = Array.from(new Set((options.priorityUserIds || [])
+      .map((value) => String(value || "").trim())
+      .filter((value) => /^\d{16,25}$/.test(value))))
+      .slice(0, 25);
+    const priorityMode = priorityUserIds.length > 0;
+    const defaultRoleRetryDelayMs = priorityMode ? 3_000 : RETRY_DELAY_MS;
+    const [state, welcomeCardSettings] = await Promise.all([
+      loadState(),
+      getDiscordWelcomeCardSettings(),
+    ]);
+
+    let members: DiscordGuildMemberModerationItem[];
+    if (priorityMode) {
+      const resolved = await Promise.allSettled(priorityUserIds.map((userId) => fetchDiscordGuildMemberSnapshot(userId)));
+      members = resolved
+        .filter((item): item is PromiseFulfilledResult<DiscordGuildMemberModerationItem> => item.status === "fulfilled")
+        .map((item) => item.value)
+        .filter((member) => Boolean(member.joinedAt));
+    } else {
+      members = await fetchDiscordGuildMembers(0);
+    }
+
+    if (!state.initializedAt) {
+      if (priorityMode) {
+        const allMembers = await fetchDiscordGuildMembers(0);
+        const prioritySet = new Set(priorityUserIds);
+        const baselineMembers = allMembers.filter((member) => !prioritySet.has(member.userId));
+        await writeRecords(baselineMembers.map((member) => baselineRecord(member, now, welcomeCardSettings)));
+        await markInitialized(now, allMembers.length, leaseOwner);
+        onboardingRecordCache().version = leaseOwner;
+        logDashboardEvent("info", "discord.newcomer_onboarding.initialized_from_priority_event", undefined, {
+          members: allMembers.length,
+          priorityUsers: priorityUserIds,
+          source: options.source || "gateway",
+        }, { category: "action" });
+      } else {
+        await writeRecords(members.map((member) => baselineRecord(member, now, welcomeCardSettings)));
+        await markInitialized(now, members.length, leaseOwner);
+        onboardingRecordCache().version = leaseOwner;
+        logDashboardEvent("info", "discord.newcomer_onboarding.initialized", undefined, { members: members.length }, { category: "action" });
+        return {
+          initialized: true,
+          checked: members.length,
+          newcomers: 0,
+          sent: 0,
+          failed: 0,
+          deferred: 0,
+          roleIds: [],
+          defaultRoleAssigned: 0,
+          defaultRoleFailed: 0,
+          channelSent: 0,
+          channelFailed: 0,
+          processed: 0,
+          durationMs: Date.now() - startedAt,
+          concurrency: 0,
+          recordCacheHits: 0,
+          recordDbReads: 0,
+          persistenceFailed: 0,
+          skippedReason: null,
+        };
+      }
+    }
+
+    const effectiveState = state.initializedAt ? state : { ...state, initializedAt: now, recordVersion: leaseOwner };
+    const loadedRecords = await loadRecords(members.map((member) => member.userId), effectiveState.recordVersion);
+    const existing = loadedRecords.records;
+
+    const candidates = members.filter((member) => {
+      const previous = existing.get(member.userId);
+      if (!previous || isRejoin(member, previous)) return true;
+      return privateWelcomeDue(previous, nowMs)
+        || defaultRoleDue(previous, welcomeCardSettings, member, nowMs, defaultRoleRetryDelayMs)
+        || channelWelcomeDue(previous, welcomeCardSettings, nowMs);
+    }).sort((a, b) => {
+      const aPrevious = existing.get(a.userId);
+      const bPrevious = existing.get(b.userId);
+      const aFresh = !aPrevious || isRejoin(a, aPrevious);
+      const bFresh = !bPrevious || isRejoin(b, bPrevious);
+      if (aFresh !== bFresh) return aFresh ? -1 : 1;
+      const aRoleless = a.roleIds.length === 0;
+      const bRoleless = b.roleIds.length === 0;
+      if (aRoleless !== bRoleless) return aRoleless ? -1 : 1;
+      const aJoined = validTime(a.joinedAt) || 0;
+      const bJoined = validTime(b.joinedAt) || 0;
+      if (aJoined !== bJoined) return bJoined - aJoined;
+      return a.userId.localeCompare(b.userId);
+    });
+    const batchLimit = onboardingBatchLimit();
+    const targets = candidates.slice(0, batchLimit);
+    const nextRecordVersion = targets.length ? leaseOwner : effectiveState.recordVersion;
+    if (targets.length) {
+      // Invalidate other process-local caches only when member records can
+      // actually change. Quiet cron ticks keep the same generation and avoid
+      // forcing a full Firestore reread on another dashboard instance.
+      await patchState({ recordVersion: leaseOwner, runStartedAt: now });
+      onboardingRecordCache().version = leaseOwner;
+    }
+    const targetRecords = new Map(
+      targets.map((member) => [member.userId, workingRecord(member, existing.get(member.userId), now, welcomeCardSettings)] as const),
+    );
+
+    const needsPrivateContext = targets.some((member) => privateWelcomeDue(targetRecords.get(member.userId)!, nowMs));
+    const needsNicknameContext = targets.some((member) => !targetRecords.get(member.userId)!.nicknameCheckedAt);
+    const needsRoleContext = targets.some((member) => defaultRoleDue(targetRecords.get(member.userId)!, welcomeCardSettings, member, nowMs, defaultRoleRetryDelayMs));
+
+    let policy: GuildNicknamePolicy | null = null;
+    let roleIds: string[] = [];
+    let guildName = "Mistblossom Vanguard";
+    let defaultRoleManageable = true;
+    const guildId = getDiscordGuildId();
+
+    if (needsPrivateContext || needsNicknameContext) {
+      policy = await getGuildNicknamePolicy();
+    }
+
+    if (needsPrivateContext) {
+      [roleIds, guildName] = await Promise.all([
+        resolveRulesRoleIds(policy),
+        fetchDiscordGuildSnapshot().then((guild) => guild.name || guildName).catch(() => guildName),
+      ]);
+    }
+
+    if (needsRoleContext && welcomeCardSettings.defaultRoleId) {
+      const control = await fetchDiscordRoleControlSnapshotCachedForUi(120_000);
+      defaultRoleManageable = control.manageableRoles.some((role) => role.id === welcomeCardSettings.defaultRoleId);
+      if (!defaultRoleManageable) {
+        logDashboardEvent("warn", "discord.newcomer_onboarding.default_role_unmanageable", undefined, {
+          roleId: welcomeCardSettings.defaultRoleId,
+          error: control.error || null,
         }, { category: "action" });
       }
-    } catch (error) {
-      failed += 1;
-      const message = safeErrorMessage(error, "Welcome DM failed");
-      record.lastError = message;
-      record.lastErrorAt = now;
-      logDashboardEvent("warn", "discord.newcomer_onboarding.welcome_failed", undefined, {
-        userId: member.userId,
-        displayName: member.displayName,
-        message,
-      }, { category: "action" });
     }
 
-    try {
-      const desiredRoleId = String(welcomeCardSettings.defaultRoleId || "").trim();
-      if (desiredRoleId) {
-        if (member.roleIds.includes(desiredRoleId)) {
-          record.defaultRoleAssignedAt = record.defaultRoleAssignedAt || now;
-          record.defaultRoleId = desiredRoleId;
-          record.defaultRoleLastError = null;
-          record.defaultRoleLastErrorAt = null;
-        } else if (defaultRoleAttemptDue(record, welcomeCardSettings, member, nowMs)) {
-          const roleResult = await addDiscordMemberRoles({
-            userId: member.userId,
-            roleIds: [desiredRoleId],
-            reason: `Mistblossom newcomer default role for ${member.displayName}`,
-          });
-          record.defaultRoleAssignedAt = now;
-          record.defaultRoleId = desiredRoleId;
-          record.defaultRoleLastError = null;
-          record.defaultRoleLastErrorAt = null;
-          logDashboardEvent("info", "discord.newcomer_onboarding.default_role_assigned", undefined, {
+    const concurrency = onboardingConcurrency(targets.length);
+    const mapped = await mapConcurrent(
+      targets,
+      async (member) => {
+        const record = targetRecords.get(member.userId)!;
+        const result = {
+          sent: 0,
+          failed: 0,
+          defaultRoleAssigned: 0,
+          defaultRoleFailed: 0,
+          channelSent: 0,
+          channelFailed: 0,
+          persistenceFailed: 0,
+        };
+
+        try {
+          // Lifecycle priority: role first. Everything else may depend on access
+          // opened by this role, so no DM/image/nickname side effect should run
+          // ahead of the access bootstrap.
+          const desiredRoleId = String(welcomeCardSettings.defaultRoleId || "").trim();
+          if (desiredRoleId && member.roleIds.includes(desiredRoleId) && defaultRoleAppliesToJoin(record, welcomeCardSettings)) {
+            record.defaultRoleAssignedAt = record.defaultRoleAssignedAt || now;
+            record.defaultRoleId = desiredRoleId;
+            record.defaultRoleLastError = null;
+            record.defaultRoleLastErrorAt = null;
+          } else if (defaultRoleDue(record, welcomeCardSettings, member, nowMs, defaultRoleRetryDelayMs)) {
+            if (!defaultRoleManageable || !guildId) {
+              result.defaultRoleFailed += 1;
+              record.defaultRoleId = desiredRoleId || null;
+              record.defaultRoleLastError = !guildId
+                ? "Discord guild ID не налаштований."
+                : "Стартова роль більше не керована ботом. Перевір ієрархію ролей і Manage Roles.";
+              record.defaultRoleLastErrorAt = now;
+            } else {
+              try {
+                await addGuildMemberRoles({
+                  guildId,
+                  userId: member.userId,
+                  roleIds: [desiredRoleId],
+                  reason: `Mistblossom newcomer default role for ${member.displayName}`,
+                  concurrency: 1,
+                  maxConcurrency: 1,
+                });
+                if (!member.roleIds.includes(desiredRoleId)) member.roleIds.push(desiredRoleId);
+                record.defaultRoleAssignedAt = now;
+                record.defaultRoleId = desiredRoleId;
+                record.defaultRoleLastError = null;
+                record.defaultRoleLastErrorAt = null;
+                result.defaultRoleAssigned += 1;
+                logDashboardEvent("info", "discord.newcomer_onboarding.default_role_assigned", undefined, {
+                  userId: member.userId,
+                  displayName: member.displayName,
+                  roleId: desiredRoleId,
+                  source: options.source || (priorityMode ? "gateway" : "cron"),
+                }, { category: "action" });
+              } catch (error) {
+                result.defaultRoleFailed += 1;
+                const message = safeErrorMessage(error, "Default newcomer role failed");
+                record.defaultRoleId = desiredRoleId || null;
+                record.defaultRoleLastError = message;
+                record.defaultRoleLastErrorAt = now;
+                logDashboardEvent("warn", "discord.newcomer_onboarding.default_role_failed", undefined, {
+                  userId: member.userId,
+                  displayName: member.displayName,
+                  roleId: record.defaultRoleId,
+                  source: options.source || (priorityMode ? "gateway" : "cron"),
+                  message,
+                }, { category: "action" });
+              }
+            }
+          }
+
+          // Initial nickname check is informational and runs once per join. It
+          // never gets to block the bootstrap role or public welcome.
+          if (!record.nicknameCheckedAt) {
+            if (!policy) throw new Error("Політика Discord-ніків недоступна для первинної перевірки.");
+            const check = nicknameStatus(member, policy.template);
+            record.nicknameCheckedAt = now;
+            record.nicknameValid = check.valid;
+            record.nicknameAtCheck = check.nickname;
+          }
+
+          if (privateWelcomeDue(record, nowMs)) {
+            if (!roleIds.length) {
+              result.failed += 1;
+              record.lastError = "Не знайдено роль для кнопки прийняття правил. Перевір повідомлення правил або newcomer role.";
+              record.lastErrorAt = now;
+            } else {
+              try {
+                const privateResult = await sendPrivateWelcome({
+                  member,
+                  roleIds,
+                  guildName,
+                  nickname: record.nicknameAtCheck,
+                  nicknameValid: Boolean(record.nicknameValid),
+                });
+                record.welcomeSentAt = now;
+                record.welcomeMessageId = privateResult.messageId;
+                record.welcomeChannelId = privateResult.channelId;
+                record.lastError = null;
+                record.lastErrorAt = null;
+                result.sent += 1;
+                logDashboardEvent("info", "discord.newcomer_onboarding.welcome_sent", undefined, {
+                  userId: member.userId,
+                  displayName: member.displayName,
+                  nickname: record.nicknameAtCheck,
+                  nicknameValid: record.nicknameValid,
+                  roleIds,
+                  source: options.source || (priorityMode ? "gateway" : "cron"),
+                }, { category: "action" });
+              } catch (error) {
+                result.failed += 1;
+                const message = safeErrorMessage(error, "Welcome DM failed");
+                record.lastError = message;
+                record.lastErrorAt = now;
+                logDashboardEvent("warn", "discord.newcomer_onboarding.welcome_failed", undefined, {
+                  userId: member.userId,
+                  displayName: member.displayName,
+                  message,
+                }, { category: "action" });
+              }
+            }
+          }
+
+          if (!channelWelcomeEligible(record, welcomeCardSettings)) {
+            if (!record.channelWelcomeSentAt && !record.channelWelcomeSkippedAt) record.channelWelcomeSkippedAt = now;
+          } else if (channelWelcomeDue(record, welcomeCardSettings, nowMs)) {
+            try {
+              const channelResult = await sendChannelWelcome(member, welcomeCardSettings);
+              if (channelResult) {
+                record.channelWelcomeSentAt = now;
+                record.channelWelcomeMessageId = channelResult.messageId;
+                record.channelWelcomeChannelId = channelResult.channelId;
+                record.channelWelcomeGreeting = channelResult.greeting;
+                record.channelWelcomeLabel = channelResult.label;
+                record.channelWelcomeLastError = null;
+                record.channelWelcomeLastErrorAt = null;
+                result.channelSent += 1;
+                logDashboardEvent("info", "discord.newcomer_onboarding.channel_welcome_sent", undefined, {
+                  userId: member.userId,
+                  displayName: member.displayName,
+                  channelId: channelResult.channelId,
+                  greeting: channelResult.greeting,
+                  label: channelResult.label,
+                }, { category: "action" });
+              }
+            } catch (error) {
+              result.channelFailed += 1;
+              const message = safeErrorMessage(error, "Welcome channel card failed");
+              record.channelWelcomeLastError = message;
+              record.channelWelcomeLastErrorAt = now;
+              logDashboardEvent("warn", "discord.newcomer_onboarding.channel_welcome_failed", undefined, {
+                userId: member.userId,
+                displayName: member.displayName,
+                message,
+              }, { category: "action" });
+            }
+          }
+        } catch (error) {
+          result.failed += 1;
+          const message = safeErrorMessage(error, "Newcomer processing failed");
+          logDashboardEvent("error", "discord.newcomer_onboarding.member_processing_failed", undefined, {
             userId: member.userId,
             displayName: member.displayName,
-            roleId: desiredRoleId,
-            changed: roleResult.changed,
+            message,
           }, { category: "action" });
         }
-      }
-    } catch (error) {
-      const message = safeErrorMessage(error, "Default newcomer role failed");
-      record.defaultRoleId = String(welcomeCardSettings.defaultRoleId || "").trim() || null;
-      record.defaultRoleLastError = message;
-      record.defaultRoleLastErrorAt = now;
-      logDashboardEvent("warn", "discord.newcomer_onboarding.default_role_failed", undefined, {
-        userId: member.userId,
-        displayName: member.displayName,
-        roleId: record.defaultRoleId,
-        message,
-      }, { category: "action" });
-    }
 
-    try {
-      if (!channelWelcomeEligible(record, welcomeCardSettings)) {
-        if (!record.channelWelcomeSentAt && !record.channelWelcomeSkippedAt) record.channelWelcomeSkippedAt = now;
-      } else if (failedChannelWelcomeRetryDue(record, welcomeCardSettings, nowMs)) {
-        const channelResult = await sendChannelWelcome(member, welcomeCardSettings);
-        if (channelResult) {
-          record.channelWelcomeSentAt = now;
-          record.channelWelcomeMessageId = channelResult.messageId;
-          record.channelWelcomeChannelId = channelResult.channelId;
-          record.channelWelcomeGreeting = channelResult.greeting;
-          record.channelWelcomeLabel = channelResult.label;
-          record.channelWelcomeLastError = null;
-          record.channelWelcomeLastErrorAt = null;
-          channelSent += 1;
-          logDashboardEvent("info", "discord.newcomer_onboarding.channel_welcome_sent", undefined, {
+        try {
+          await writeRecord(record);
+        } catch (error) {
+          result.persistenceFailed += 1;
+          logDashboardEvent("error", "discord.newcomer_onboarding.member_persist_failed", undefined, {
             userId: member.userId,
             displayName: member.displayName,
-            channelId: channelResult.channelId,
-            greeting: channelResult.greeting,
-            label: channelResult.label,
+            message: safeErrorMessage(error, "Onboarding state persist failed"),
           }, { category: "action" });
         }
-      }
-    } catch (error) {
-      channelFailed += 1;
-      const message = safeErrorMessage(error, "Welcome channel card failed");
-      record.channelWelcomeLastError = message;
-      record.channelWelcomeLastErrorAt = now;
-      logDashboardEvent("warn", "discord.newcomer_onboarding.channel_welcome_failed", undefined, {
-        userId: member.userId,
-        displayName: member.displayName,
-        message,
+        return result;
+      },
+      {
+        profile: "external-api",
+        concurrency,
+        min: 1,
+        max: 6,
+        failFast: false,
+      },
+    );
+
+    const totals = mapped.results.reduce((acc, item) => {
+      if (!item) return acc;
+      acc.sent += item.sent;
+      acc.failed += item.failed;
+      acc.defaultRoleAssigned += item.defaultRoleAssigned;
+      acc.defaultRoleFailed += item.defaultRoleFailed;
+      acc.channelSent += item.channelSent;
+      acc.channelFailed += item.channelFailed;
+      acc.persistenceFailed += item.persistenceFailed;
+      return acc;
+    }, {
+      sent: 0,
+      failed: 0,
+      defaultRoleAssigned: 0,
+      defaultRoleFailed: 0,
+      channelSent: 0,
+      channelFailed: 0,
+      persistenceFailed: 0,
+    });
+
+    const durationMs = Date.now() - startedAt;
+    await patchState({
+      lastScanAt: now,
+      lastMemberCount: members.length,
+      lastNewcomers: candidates.length,
+      lastProcessed: targets.length,
+      lastDeferred: Math.max(0, candidates.length - targets.length),
+      lastSent: totals.sent,
+      lastFailed: totals.failed,
+      lastDefaultRoleAssigned: totals.defaultRoleAssigned,
+      lastDefaultRoleFailed: totals.defaultRoleFailed,
+      lastChannelSent: totals.channelSent,
+      lastChannelFailed: totals.channelFailed,
+      lastPersistenceFailed: totals.persistenceFailed,
+      lastDurationMs: durationMs,
+      lastConcurrency: concurrency,
+      lastRecordCacheHits: loadedRecords.cacheHits,
+      lastRecordDbReads: loadedRecords.dbReads,
+      recordVersion: nextRecordVersion,
+    });
+    onboardingRecordCache().version = nextRecordVersion;
+
+    return {
+      initialized: false,
+      checked: members.length,
+      newcomers: candidates.length,
+      sent: totals.sent,
+      failed: totals.failed,
+      deferred: Math.max(0, candidates.length - targets.length),
+      roleIds,
+      defaultRoleAssigned: totals.defaultRoleAssigned,
+      defaultRoleFailed: totals.defaultRoleFailed,
+      channelSent: totals.channelSent,
+      channelFailed: totals.channelFailed,
+      processed: targets.length,
+      durationMs,
+      concurrency,
+      recordCacheHits: loadedRecords.cacheHits,
+      recordDbReads: loadedRecords.dbReads,
+      persistenceFailed: totals.persistenceFailed,
+      skippedReason: null,
+    };
+  } finally {
+    await releaseOnboardingLease(leaseOwner).catch((error) => {
+      logDashboardEvent("warn", "discord.newcomer_onboarding.lease_release_failed", undefined, {
+        message: safeErrorMessage(error, "Onboarding lease release failed"),
       }, { category: "action" });
-    }
-
-    updates.push(record);
+    });
   }
-
-  const currentIds = new Set(updates.map((record) => record.userId));
-  for (const member of members) {
-    if (currentIds.has(member.userId)) continue;
-    const previous = existing.get(member.userId);
-    if (!previous) continue;
-    updates.push({ ...previous, displayName: member.displayName, joinedAt: member.joinedAt || previous.joinedAt, lastSeenAt: now });
-  }
-
-  await writeRecords(updates);
-  await patchState({
-    lastScanAt: now,
-    lastMemberCount: members.length,
-    lastNewcomers: newcomers.length,
-    lastSent: sentCount,
-    lastFailed: failed,
-    lastChannelSent: channelSent,
-    lastChannelFailed: channelFailed,
-  });
-
-  return {
-    initialized: false,
-    checked: members.length,
-    newcomers: newcomers.length,
-    sent: sentCount,
-    failed,
-    deferred: Math.max(0, newcomers.length - targets.length),
-    roleIds,
-    channelSent,
-    channelFailed,
-  };
 }
 
 export async function markDiscordNewcomerRulesAccepted(userIdInput: string) {
@@ -584,4 +962,7 @@ export async function markDiscordNewcomerRulesAccepted(userIdInput: string) {
     }, { merge: true }),
     { timeoutMs: 3_500, logEvent: "discord.newcomer_onboarding.accept_write_failed" },
   );
+  const cache = globalThis.__mistblossomOnboardingRecordCache;
+  const cached = cache?.records.get(userId);
+  if (cached) cache!.records.set(userId, { ...cached, rulesAcceptedAt: now });
 }

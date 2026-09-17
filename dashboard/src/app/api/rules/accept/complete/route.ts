@@ -153,14 +153,14 @@ async function completeAuthenticatedRulesOnboarding(params: {
       roleIds,
       reason: `Rules onboarding completed by ${profile.displayName || profile.providerUserId}`,
     });
-    await processNewcomerNicknameRoleGrant({ userId: profile.providerUserId, grantedRoleIds: roleIds }).catch((error) => {
-      logDashboardEvent("warn", "rules.onboarding.nickname_gate_failed", request, {
+    await markDiscordNewcomerRulesAccepted(profile.providerUserId).catch((error) => {
+      logDashboardEvent("warn", "rules.onboarding.newcomer_state_failed", request, {
         profileId: profile.profileId,
         message: safeErrorMessage(error),
       });
     });
-    await markDiscordNewcomerRulesAccepted(profile.providerUserId).catch((error) => {
-      logDashboardEvent("warn", "rules.onboarding.newcomer_state_failed", request, {
+    await processNewcomerNicknameRoleGrant({ userId: profile.providerUserId, grantedRoleIds: roleIds }).catch((error) => {
+      logDashboardEvent("warn", "rules.onboarding.nickname_gate_failed", request, {
         profileId: profile.profileId,
         message: safeErrorMessage(error),
       });
@@ -256,14 +256,14 @@ async function completePublicRulesAcceptance(params: {
       roleIds,
       reason: `Rules accepted without dashboard auth by ${member.displayName || discordUserId}`,
     });
-    await processNewcomerNicknameRoleGrant({ userId: discordUserId, grantedRoleIds: roleIds }).catch((error) => {
-      logDashboardEvent("warn", "rules.public.nickname_gate_failed", request, {
+    await markDiscordNewcomerRulesAccepted(discordUserId).catch((error) => {
+      logDashboardEvent("warn", "rules.public.newcomer_state_failed", request, {
         userId: discordUserId,
         message: safeErrorMessage(error),
       });
     });
-    await markDiscordNewcomerRulesAccepted(discordUserId).catch((error) => {
-      logDashboardEvent("warn", "rules.public.newcomer_state_failed", request, {
+    await processNewcomerNicknameRoleGrant({ userId: discordUserId, grantedRoleIds: roleIds }).catch((error) => {
+      logDashboardEvent("warn", "rules.public.nickname_gate_failed", request, {
         userId: discordUserId,
         message: safeErrorMessage(error),
       });

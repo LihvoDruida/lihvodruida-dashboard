@@ -183,3 +183,50 @@ export async function completeInteraction({ rawBody, signature, timestamp, inter
     }).catch(() => null);
   }
 }
+
+export async function notifyDiscordMemberJoined(event) {
+  const token = INTERNAL_TOKEN();
+  if (!token) throw new Error("INTERNAL_API_TOKEN не задано");
+  const url = `${DASHBOARD_URL()}/api/internal/discord/member-joined`;
+  const payload = {
+    guildId: String(event?.guildId || "").trim(),
+    userId: String(event?.userId || "").trim(),
+    joinedAt: String(event?.joinedAt || "").trim() || null,
+    eventId: String(event?.eventId || "").trim() || null,
+    source: "discord_gateway",
+  };
+
+  let lastError = null;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      const response = await fetchWithTimeout(url, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${token}`,
+          "x-mistblossom-source": "bot-gateway",
+        },
+        body: JSON.stringify(payload),
+      }, Math.max(8_000, DASHBOARD_TIMEOUT_MS));
+
+      const body = await response.json().catch(() => null);
+      if (response.ok && !body?.retry) return body;
+      if (response.status === 202 || response.status === 409 || body?.retry) {
+        lastError = new Error(body?.reason || body?.error || `dashboard_retry_${response.status}`);
+      } else if (response.status >= 400 && response.status < 500) {
+        throw new Error(`Панель відхилила member-joined ${response.status}: ${JSON.stringify(body || {}).slice(0, 220)}`);
+      } else {
+        lastError = new Error(`Панель member-joined відповіла ${response.status}`);
+      }
+    } catch (error) {
+      if (error instanceof Error && /відхилила member-joined 4/.test(error.message)) throw error;
+      lastError = error;
+    }
+
+    if (attempt < 4) {
+      const delay = Math.min(8_000, 500 * (2 ** attempt)) + Math.floor(Math.random() * 250);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("member-joined не доставлено в панель");
+}
