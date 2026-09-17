@@ -680,7 +680,7 @@ export async function syncNicknameNewcomerRoleGate(input: {
       continue;
     }
 
-    if (hasRole && rulesAccepted.get(member.userId) && previous.gateStatus !== "qualified") {
+    if (hasRole && rulesAccepted.get(member.userId)) {
       const validationStatus: NicknameCheckStatus = invalidMember(member, policy.template) ? "invalid" : "valid";
       qualifiedMembers.push(member);
       eligibleUserIds.add(member.userId);
