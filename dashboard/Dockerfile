@@ -87,6 +87,7 @@ COPY deploy/scripts/db-backup.sh /repo/deploy/scripts/db-backup.sh
 COPY deploy/scripts/db-restore.sh /repo/deploy/scripts/db-restore.sh
 COPY deploy/scripts/security-audit.sh /repo/deploy/scripts/security-audit.sh
 COPY deploy/scripts/harden-host.sh /repo/deploy/scripts/harden-host.sh
+COPY deploy/scripts/internal-auth-check.sh /repo/deploy/scripts/internal-auth-check.sh
 COPY Makefile /repo/Makefile
 
 # Source-level security/performance audit reads a small set of root deployment

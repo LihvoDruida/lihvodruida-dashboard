@@ -20,6 +20,7 @@ const compose = read('docker-compose.yml');
 const cron = read('deploy/cron/run-cron.sh');
 const start = read('deploy/scripts/start.sh');
 const internalAuth = read('deploy/scripts/internal-auth-check.sh');
+const dockerfile = read('dashboard/Dockerfile');
 
 check('priority member snapshot failures are retried instead of silently dropped', onboarding.includes('Priority Discord member snapshot unresolved'));
 check('gateway targeted route calls priority onboarding', internal.includes('priorityUserIds: [userId]') && internal.includes('source: "gateway"'));
@@ -34,6 +35,7 @@ check('bot receives Discord token and guild id in compose', compose.includes('DI
 check('bot receives starvation guard configuration', compose.includes('DISCORD_GATEWAY_MEMBER_STARVATION_MS'));
 check('deployment preflight requires root gateway credentials', start.includes('require_var .env DISCORD_BOT_TOKEN') && start.includes('require_var .env DISCORD_GUILD_ID'));
 check('post-deploy internal auth check probes Gateway configuration/fatal intent errors', internalAuth.includes('gateway.ready') && internalAuth.includes('4014') && internalAuth.includes('DISCORD_GATEWAY_ENABLED'));
+check('dashboard builder copies internal auth check used by lifecycle CI', dockerfile.includes('COPY deploy/scripts/internal-auth-check.sh /repo/deploy/scripts/internal-auth-check.sh'));
 check('cron retains newcomer recovery fallback', cron.includes('/api/dashboard/discord/onboarding/automation'));
 check('cron runs newcomer recovery before lower-priority sync', cron.indexOf('call "/api/dashboard/discord/onboarding/automation"') < cron.indexOf('call "/api/guild/sync"'));
 check('distributed onboarding lease remains enabled', onboarding.includes('acquireOnboardingLease') && onboarding.includes('releaseOnboardingLease'));
