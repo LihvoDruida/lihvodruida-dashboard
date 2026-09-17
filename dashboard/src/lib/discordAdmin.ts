@@ -1993,7 +1993,13 @@ export async function sendDiscordChannelMessageWithAttachment(params: {
 
   const channelId = cleanSnowflake(params.channelId);
   const fileName = cleanText(params.fileName, 80) || "attachment.png";
-  const content = cleanText(params.content, 1800);
+  const content = Array.from(String(params.content || "")
+    .normalize("NFC")
+    .replace(/\r\n/g, "\n")
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, " ")
+    .trim())
+    .slice(0, 1800)
+    .join("");
   const contentType = String(params.contentType || "application/octet-stream").trim() || "application/octet-stream";
   const allowedUsers = Array.isArray(params.allowedUserMentions)
     ? Array.from(new Set(params.allowedUserMentions.map(cleanSnowflake).filter(Boolean))).slice(0, 25)

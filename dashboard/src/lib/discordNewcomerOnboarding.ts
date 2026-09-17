@@ -9,6 +9,7 @@ import {
   sendDiscordDirectMessage,
   type DiscordGuildMemberModerationItem,
 } from "@/lib/discordAdmin";
+import { addDiscordMemberRoles } from "@/lib/discordMemberManagement";
 import { renderDiscordWelcomeCard } from "@/lib/discordWelcomeCard";
 import { getDiscordWelcomeCardSettings, renderDiscordWelcomeMessageTemplate } from "@/lib/discordWelcomeCardSettings";
 import { MISTBLOSSOM_DISCORD_CHANNELS, discordGuildChannelUrl } from "@/lib/discordGuildLinks";
@@ -40,6 +41,10 @@ type OnboardingMemberRecord = {
   rulesAcceptedAt: string | null;
   lastError: string | null;
   lastErrorAt: string | null;
+  defaultRoleAssignedAt: string | null;
+  defaultRoleId: string | null;
+  defaultRoleLastError: string | null;
+  defaultRoleLastErrorAt: string | null;
   channelWelcomeSentAt: string | null;
   channelWelcomeSkippedAt: string | null;
   channelWelcomeMessageId: string | null;
@@ -86,6 +91,10 @@ function normalizeRecord(doc: any): OnboardingMemberRecord | null {
     rulesAcceptedAt: timestampToIso(data.rulesAcceptedAt),
     lastError: data.lastError ? String(data.lastError).slice(0, 500) : null,
     lastErrorAt: timestampToIso(data.lastErrorAt),
+    defaultRoleAssignedAt: timestampToIso(data.defaultRoleAssignedAt),
+    defaultRoleId: data.defaultRoleId ? String(data.defaultRoleId).slice(0, 25) : null,
+    defaultRoleLastError: data.defaultRoleLastError ? String(data.defaultRoleLastError).slice(0, 500) : null,
+    defaultRoleLastErrorAt: timestampToIso(data.defaultRoleLastErrorAt),
     channelWelcomeSentAt: timestampToIso(data.channelWelcomeSentAt),
     channelWelcomeSkippedAt: timestampToIso(data.channelWelcomeSkippedAt),
     channelWelcomeMessageId: data.channelWelcomeMessageId ? String(data.channelWelcomeMessageId).slice(0, 25) : null,
@@ -191,6 +200,23 @@ function failedWelcomeRetryDue(record: OnboardingMemberRecord, nowMs = Date.now(
   if (record.baseline || record.welcomeSentAt || record.rulesAcceptedAt || welcomeDeliveryPermanentlyBlocked(record)) return false;
   const failedAt = record.lastErrorAt ? Date.parse(record.lastErrorAt) : Number.NaN;
   return !Number.isFinite(failedAt) || nowMs - failedAt >= 15 * 60_000;
+}
+
+function defaultRoleEligible(record: OnboardingMemberRecord, settings: { defaultRoleId: string }, member: DiscordGuildMemberModerationItem) {
+  if (record.baseline) return false;
+  const roleId = String(settings.defaultRoleId || "").trim();
+  if (!roleId) return false;
+  return !member.roleIds.includes(roleId) || record.defaultRoleId !== roleId || !record.defaultRoleAssignedAt;
+}
+
+function defaultRoleAttemptDue(record: OnboardingMemberRecord, settings: { defaultRoleId: string }, member: DiscordGuildMemberModerationItem, nowMs = Date.now()) {
+  if (!defaultRoleEligible(record, settings, member)) return false;
+  const roleId = String(settings.defaultRoleId || "").trim();
+  if (!roleId) return false;
+  if (record.defaultRoleId && record.defaultRoleId !== roleId) return true;
+  const failedAt = record.defaultRoleLastErrorAt ? Date.parse(record.defaultRoleLastErrorAt) : Number.NaN;
+  if (Number.isFinite(failedAt) && nowMs - failedAt < 15 * 60_000) return false;
+  return true;
 }
 
 function channelWelcomeEligible(record: OnboardingMemberRecord, settings: { enabled: boolean; enabledAt?: string | null }) {
@@ -325,6 +351,10 @@ export async function runDiscordNewcomerOnboarding(): Promise<DiscordNewcomerOnb
       rulesAcceptedAt: null,
       lastError: null,
       lastErrorAt: null,
+      defaultRoleAssignedAt: null,
+      defaultRoleId: welcomeCardSettings.defaultRoleId || null,
+      defaultRoleLastError: null,
+      defaultRoleLastErrorAt: null,
       channelWelcomeSentAt: null,
       channelWelcomeSkippedAt: null,
       channelWelcomeMessageId: null,
@@ -345,8 +375,9 @@ export async function runDiscordNewcomerOnboarding(): Promise<DiscordNewcomerOnb
     const previous = existing.get(member.userId);
     if (!previous) return true;
     const privateRetry = failedWelcomeRetryDue(previous, nowMs);
+    const defaultRoleRetry = defaultRoleAttemptDue(previous, welcomeCardSettings, member, nowMs);
     const channelRetry = failedChannelWelcomeRetryDue(previous, welcomeCardSettings, nowMs);
-    if (privateRetry || channelRetry) return true;
+    if (privateRetry || defaultRoleRetry || channelRetry) return true;
     const currentJoinedAt = member.joinedAt || null;
     return Boolean(currentJoinedAt && previous.joinedAt && currentJoinedAt !== previous.joinedAt);
   });
@@ -381,6 +412,10 @@ export async function runDiscordNewcomerOnboarding(): Promise<DiscordNewcomerOnb
       rulesAcceptedAt: previous?.rulesAcceptedAt || null,
       lastError: previous?.lastError || null,
       lastErrorAt: previous?.lastErrorAt || null,
+      defaultRoleAssignedAt: previous?.defaultRoleAssignedAt || null,
+      defaultRoleId: previous?.defaultRoleId || welcomeCardSettings.defaultRoleId || null,
+      defaultRoleLastError: previous?.defaultRoleLastError || null,
+      defaultRoleLastErrorAt: previous?.defaultRoleLastErrorAt || null,
       channelWelcomeSentAt: previous?.channelWelcomeSentAt || null,
       channelWelcomeSkippedAt: previous?.channelWelcomeSkippedAt || null,
       channelWelcomeMessageId: previous?.channelWelcomeMessageId || null,
@@ -422,6 +457,45 @@ export async function runDiscordNewcomerOnboarding(): Promise<DiscordNewcomerOnb
       logDashboardEvent("warn", "discord.newcomer_onboarding.welcome_failed", undefined, {
         userId: member.userId,
         displayName: member.displayName,
+        message,
+      }, { category: "action" });
+    }
+
+    try {
+      const desiredRoleId = String(welcomeCardSettings.defaultRoleId || "").trim();
+      if (desiredRoleId) {
+        if (member.roleIds.includes(desiredRoleId)) {
+          record.defaultRoleAssignedAt = record.defaultRoleAssignedAt || now;
+          record.defaultRoleId = desiredRoleId;
+          record.defaultRoleLastError = null;
+          record.defaultRoleLastErrorAt = null;
+        } else if (defaultRoleAttemptDue(record, welcomeCardSettings, member, nowMs)) {
+          const roleResult = await addDiscordMemberRoles({
+            userId: member.userId,
+            roleIds: [desiredRoleId],
+            reason: `Mistblossom newcomer default role for ${member.displayName}`,
+          });
+          record.defaultRoleAssignedAt = now;
+          record.defaultRoleId = desiredRoleId;
+          record.defaultRoleLastError = null;
+          record.defaultRoleLastErrorAt = null;
+          logDashboardEvent("info", "discord.newcomer_onboarding.default_role_assigned", undefined, {
+            userId: member.userId,
+            displayName: member.displayName,
+            roleId: desiredRoleId,
+            changed: roleResult.changed,
+          }, { category: "action" });
+        }
+      }
+    } catch (error) {
+      const message = safeErrorMessage(error, "Default newcomer role failed");
+      record.defaultRoleId = String(welcomeCardSettings.defaultRoleId || "").trim() || null;
+      record.defaultRoleLastError = message;
+      record.defaultRoleLastErrorAt = now;
+      logDashboardEvent("warn", "discord.newcomer_onboarding.default_role_failed", undefined, {
+        userId: member.userId,
+        displayName: member.displayName,
+        roleId: record.defaultRoleId,
         message,
       }, { category: "action" });
     }

@@ -28,6 +28,7 @@ export type DiscordWelcomeCardSettings = {
   enabled: boolean;
   enabledAt?: string | null;
   channelId: string;
+  defaultRoleId: string;
   messageTemplate: string;
   greetings: string[];
   labelPrefix: string;
@@ -98,6 +99,7 @@ function normalizeSettings(data: Record<string, unknown> | null | undefined): Di
     enabled: cleanBool(data?.enabled, false),
     enabledAt: timestampToIso(data?.enabledAt),
     channelId: cleanSnowflake(data?.channelId),
+    defaultRoleId: cleanSnowflake(data?.defaultRoleId),
     messageTemplate: cleanMultilineText(data?.messageTemplate, 600) || DEFAULT_MESSAGE_TEMPLATE,
     greetings: parseGreetings(data?.greetings),
     labelPrefix: cleanText(data?.labelPrefix, 24) || DEFAULT_LABEL_PREFIX,
@@ -167,6 +169,7 @@ export async function getDiscordWelcomeCardSettings(options: { bypassCache?: boo
 export async function setDiscordWelcomeCardSettings(input: {
   enabled?: unknown;
   channelId?: unknown;
+  defaultRoleId?: unknown;
   messageTemplate?: unknown;
   greetings?: unknown;
   labelPrefix?: unknown;
@@ -177,6 +180,7 @@ export async function setDiscordWelcomeCardSettings(input: {
   const now = new Date().toISOString();
   const enabledAt = enabled ? (current.enabled ? current.enabledAt || now : now) : null;
   const channelId = cleanSnowflake(input.channelId);
+  const defaultRoleId = cleanSnowflake(input.defaultRoleId);
   const messageTemplate = cleanMultilineText(input.messageTemplate, 600) || DEFAULT_MESSAGE_TEMPLATE;
   const greetings = parseGreetings(input.greetings);
   const labelPrefix = cleanText(input.labelPrefix, 24) || DEFAULT_LABEL_PREFIX;
@@ -197,6 +201,7 @@ export async function setDiscordWelcomeCardSettings(input: {
       enabled,
       enabledAt,
       channelId,
+      defaultRoleId,
       messageTemplate,
       greetings,
       labelPrefix,
@@ -211,6 +216,7 @@ export async function setDiscordWelcomeCardSettings(input: {
     enabled,
     enabledAt,
     channelId,
+    defaultRoleId,
     messageTemplate,
     greetings,
     labelPrefix,

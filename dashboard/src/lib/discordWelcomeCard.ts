@@ -174,9 +174,9 @@ export type DiscordWelcomeCardRenderResult = {
   label: string;
 };
 
-export async function renderDiscordWelcomeCard(member: DiscordGuildMemberModerationItem, settings: DiscordWelcomeCardSettings): Promise<DiscordWelcomeCardRenderResult> {
-  const greeting = pickDeterministic(settings.greetings, `${member.userId}:${member.joinedAt || ""}`, "Ishnu-alah!");
-  const number = welcomeNumber(member.userId);
+export async function renderDiscordWelcomeCard(member: DiscordGuildMemberModerationItem, settings: DiscordWelcomeCardSettings, options: { greetingOverride?: string | null; numberOverride?: string | null } = {}): Promise<DiscordWelcomeCardRenderResult> {
+  const greeting = cleanText(options.greetingOverride || pickDeterministic(settings.greetings, `${member.userId}:${member.joinedAt || ""}`, "Ishnu-alah!"), 80) || "Ishnu-alah!";
+  const number = cleanText(options.numberOverride || welcomeNumber(member.userId), 8) || welcomeNumber(member.userId);
   const label = `${settings.labelPrefix} №${number}`;
   const nickname = cleanText(member.displayName || member.username || member.userId, 40) || `Discord ${member.userId.slice(-6)}`;
 
