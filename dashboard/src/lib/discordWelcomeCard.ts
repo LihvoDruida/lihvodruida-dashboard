@@ -17,7 +17,7 @@ const AVATAR_TOP_Y = 150;
 const GREETING_Y = 470;
 const NICKNAME_Y = 600;
 const LABEL_Y = 680;
-const BACKGROUND_ASSET = path.join(process.cwd(), "public", "assets", "discord-welcome-card-night-elf-base.png");
+const BACKGROUND_FILE_NAME = "discord-welcome-card-night-elf-base.png";
 
 function escapeXml(value: string) {
   return String(value || "")
@@ -54,13 +54,26 @@ function pickDeterministic<T>(items: readonly T[], seed: string, fallback: T): T
 }
 
 function welcomeNumber(userId: string) {
-  const digits = String(userId || "").replace(/\D/g, "");
-  const tail = digits.slice(-4);
-  return tail.padStart(4, "0");
+  return String(1000 + (hashString(String(userId || "member")) % 9000));
 }
 
 async function loadBackground() {
-  return fs.readFile(BACKGROUND_ASSET);
+  // In local/Next build cwd is normally dashboard/, while the standalone
+  // Docker runtime starts from /app and keeps public beside dashboard/server.js.
+  // Probe both layouts instead of coupling card generation to one cwd.
+  const candidates = [
+    path.join(process.cwd(), "public", "assets", BACKGROUND_FILE_NAME),
+    path.join(process.cwd(), "dashboard", "public", "assets", BACKGROUND_FILE_NAME),
+  ];
+  let lastError: unknown = null;
+  for (const candidate of candidates) {
+    try {
+      return await fs.readFile(candidate);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw new Error(`Welcome-card background is missing: ${lastError instanceof Error ? lastError.message : "asset not found"}`);
 }
 
 async function fetchAvatarBuffer(url: string | null) {

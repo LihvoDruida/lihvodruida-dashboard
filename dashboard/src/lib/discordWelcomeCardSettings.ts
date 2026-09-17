@@ -26,6 +26,7 @@ const DEFAULT_FILE_NAME = "mistblossom-welcome.png";
 
 export type DiscordWelcomeCardSettings = {
   enabled: boolean;
+  enabledAt?: string | null;
   channelId: string;
   messageTemplate: string;
   greetings: string[];
@@ -95,6 +96,7 @@ function parseGreetings(value: unknown) {
 function normalizeSettings(data: Record<string, unknown> | null | undefined): DiscordWelcomeCardSettings {
   return {
     enabled: cleanBool(data?.enabled, false),
+    enabledAt: timestampToIso(data?.enabledAt),
     channelId: cleanSnowflake(data?.channelId),
     messageTemplate: cleanMultilineText(data?.messageTemplate, 600) || DEFAULT_MESSAGE_TEMPLATE,
     greetings: parseGreetings(data?.greetings),
@@ -171,6 +173,9 @@ export async function setDiscordWelcomeCardSettings(input: {
   fileName?: unknown;
 }, actor?: DashboardSession | null) {
   const enabled = cleanBool(input.enabled, false);
+  const current = await getDiscordWelcomeCardSettings({ bypassCache: true });
+  const now = new Date().toISOString();
+  const enabledAt = enabled ? (current.enabled ? current.enabledAt || now : now) : null;
   const channelId = cleanSnowflake(input.channelId);
   const messageTemplate = cleanMultilineText(input.messageTemplate, 600) || DEFAULT_MESSAGE_TEMPLATE;
   const greetings = parseGreetings(input.greetings);
@@ -190,6 +195,7 @@ export async function setDiscordWelcomeCardSettings(input: {
     "discord-welcome-card-settings:save",
     () => getFirebaseAdminDb().collection(SETTINGS_COLLECTION).doc(SETTINGS_DOC_ID).set({
       enabled,
+      enabledAt,
       channelId,
       messageTemplate,
       greetings,
@@ -203,6 +209,7 @@ export async function setDiscordWelcomeCardSettings(input: {
 
   return setCache({
     enabled,
+    enabledAt,
     channelId,
     messageTemplate,
     greetings,

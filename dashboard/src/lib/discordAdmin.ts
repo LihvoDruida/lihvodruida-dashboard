@@ -2012,7 +2012,12 @@ export async function sendDiscordChannelMessageWithAttachment(params: {
 
   const form = new FormData();
   form.append("payload_json", JSON.stringify(payload));
-  form.append("files[0]", new Blob([params.fileBuffer], { type: contentType }), fileName);
+  // Node 24 + TypeScript 6 types Buffer as Uint8Array<ArrayBufferLike>, while
+  // the DOM Blob constructor accepts only ArrayBuffer-backed views. Copying
+  // into a fresh Uint8Array guarantees a real ArrayBuffer and keeps multipart
+  // upload compatible with both Node fetch and the strict BlobPart typings.
+  const fileBytes = Uint8Array.from(params.fileBuffer);
+  form.append("files[0]", new Blob([fileBytes], { type: contentType }), fileName);
 
   const headers = new Headers({ Authorization: `Bot ${token}` });
   const auditReason = encodeAuditReason(params.auditReason);

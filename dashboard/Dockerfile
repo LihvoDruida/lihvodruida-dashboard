@@ -123,6 +123,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
+# SVG welcome-картки рендеряться через sharp/librsvg. Мінімальний Node image
+# не гарантує кириличні шрифти, тому ставимо компактний DejaVu набір, щоб
+# українські привітання не перетворювались на порожні квадрати.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends fonts-dejavu-core \
+  && rm -rf /var/lib/apt/lists/*
+
 # Непривілейований користувач: контейнер не має причин працювати від root.
 RUN groupadd --system --gid 1001 nodejs \
   && useradd --system --uid 1001 --gid nodejs nextjs

@@ -41,6 +41,7 @@ type OnboardingMemberRecord = {
   lastError: string | null;
   lastErrorAt: string | null;
   channelWelcomeSentAt: string | null;
+  channelWelcomeSkippedAt: string | null;
   channelWelcomeMessageId: string | null;
   channelWelcomeChannelId: string | null;
   channelWelcomeGreeting: string | null;
@@ -86,6 +87,7 @@ function normalizeRecord(doc: any): OnboardingMemberRecord | null {
     lastError: data.lastError ? String(data.lastError).slice(0, 500) : null,
     lastErrorAt: timestampToIso(data.lastErrorAt),
     channelWelcomeSentAt: timestampToIso(data.channelWelcomeSentAt),
+    channelWelcomeSkippedAt: timestampToIso(data.channelWelcomeSkippedAt),
     channelWelcomeMessageId: data.channelWelcomeMessageId ? String(data.channelWelcomeMessageId).slice(0, 25) : null,
     channelWelcomeChannelId: data.channelWelcomeChannelId ? String(data.channelWelcomeChannelId).slice(0, 25) : null,
     channelWelcomeGreeting: data.channelWelcomeGreeting ? String(data.channelWelcomeGreeting).slice(0, 120) : null,
@@ -191,8 +193,16 @@ function failedWelcomeRetryDue(record: OnboardingMemberRecord, nowMs = Date.now(
   return !Number.isFinite(failedAt) || nowMs - failedAt >= 15 * 60_000;
 }
 
-function failedChannelWelcomeRetryDue(record: OnboardingMemberRecord, nowMs = Date.now()) {
-  if (record.baseline || record.channelWelcomeSentAt) return false;
+function channelWelcomeEligible(record: OnboardingMemberRecord, settings: { enabled: boolean; enabledAt?: string | null }) {
+  if (!settings.enabled || record.baseline) return false;
+  const enabledAt = settings.enabledAt ? Date.parse(settings.enabledAt) : Number.NaN;
+  const firstSeenAt = record.firstSeenAt ? Date.parse(record.firstSeenAt) : Number.NaN;
+  if (!Number.isFinite(enabledAt) || !Number.isFinite(firstSeenAt)) return true;
+  return firstSeenAt >= enabledAt;
+}
+
+function failedChannelWelcomeRetryDue(record: OnboardingMemberRecord, settings: { enabled: boolean; enabledAt?: string | null }, nowMs = Date.now()) {
+  if (!channelWelcomeEligible(record, settings) || record.channelWelcomeSentAt || record.channelWelcomeSkippedAt) return false;
   const failedAt = record.channelWelcomeLastErrorAt ? Date.parse(record.channelWelcomeLastErrorAt) : Number.NaN;
   return !Number.isFinite(failedAt) || nowMs - failedAt >= 15 * 60_000;
 }
@@ -262,8 +272,7 @@ async function sendPrivateWelcome(params: {
   return sendDiscordDirectMessage({ userId: params.member.userId, content, components: acceptButton(params.roleIds) });
 }
 
-async function sendChannelWelcome(member: DiscordGuildMemberModerationItem) {
-  const settings = await getDiscordWelcomeCardSettings();
+async function sendChannelWelcome(member: DiscordGuildMemberModerationItem, settings: Awaited<ReturnType<typeof getDiscordWelcomeCardSettings>>) {
   if (!settings.enabled || !settings.channelId) return null;
 
   const rendered = await renderDiscordWelcomeCard(member, settings);
@@ -290,11 +299,12 @@ export async function runDiscordNewcomerOnboarding(): Promise<DiscordNewcomerOnb
   if (!hasFirebaseProfileConfig()) throw new Error("Сховище стану onboarding не налаштоване.");
 
   const now = new Date().toISOString();
-  const [members, state, guild, policy] = await Promise.all([
+  const [members, state, guild, policy, welcomeCardSettings] = await Promise.all([
     fetchDiscordGuildMembers(0),
     loadState(),
     fetchDiscordGuildSnapshot(),
     getGuildNicknamePolicy(),
+    getDiscordWelcomeCardSettings(),
   ]);
   const existing = await loadRecords(members.map((member) => member.userId));
 
@@ -316,6 +326,7 @@ export async function runDiscordNewcomerOnboarding(): Promise<DiscordNewcomerOnb
       lastError: null,
       lastErrorAt: null,
       channelWelcomeSentAt: null,
+      channelWelcomeSkippedAt: null,
       channelWelcomeMessageId: null,
       channelWelcomeChannelId: null,
       channelWelcomeGreeting: null,
@@ -334,7 +345,7 @@ export async function runDiscordNewcomerOnboarding(): Promise<DiscordNewcomerOnb
     const previous = existing.get(member.userId);
     if (!previous) return true;
     const privateRetry = failedWelcomeRetryDue(previous, nowMs);
-    const channelRetry = failedChannelWelcomeRetryDue(previous, nowMs);
+    const channelRetry = failedChannelWelcomeRetryDue(previous, welcomeCardSettings, nowMs);
     if (privateRetry || channelRetry) return true;
     const currentJoinedAt = member.joinedAt || null;
     return Boolean(currentJoinedAt && previous.joinedAt && currentJoinedAt !== previous.joinedAt);
@@ -371,6 +382,7 @@ export async function runDiscordNewcomerOnboarding(): Promise<DiscordNewcomerOnb
       lastError: previous?.lastError || null,
       lastErrorAt: previous?.lastErrorAt || null,
       channelWelcomeSentAt: previous?.channelWelcomeSentAt || null,
+      channelWelcomeSkippedAt: previous?.channelWelcomeSkippedAt || null,
       channelWelcomeMessageId: previous?.channelWelcomeMessageId || null,
       channelWelcomeChannelId: previous?.channelWelcomeChannelId || null,
       channelWelcomeGreeting: previous?.channelWelcomeGreeting || null,
@@ -415,8 +427,10 @@ export async function runDiscordNewcomerOnboarding(): Promise<DiscordNewcomerOnb
     }
 
     try {
-      if (!record.channelWelcomeSentAt || failedChannelWelcomeRetryDue(record, nowMs)) {
-        const channelResult = await sendChannelWelcome(member);
+      if (!channelWelcomeEligible(record, welcomeCardSettings)) {
+        if (!record.channelWelcomeSentAt && !record.channelWelcomeSkippedAt) record.channelWelcomeSkippedAt = now;
+      } else if (failedChannelWelcomeRetryDue(record, welcomeCardSettings, nowMs)) {
+        const channelResult = await sendChannelWelcome(member, welcomeCardSettings);
         if (channelResult) {
           record.channelWelcomeSentAt = now;
           record.channelWelcomeMessageId = channelResult.messageId;
