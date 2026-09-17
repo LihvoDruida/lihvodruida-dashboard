@@ -1978,3 +1978,62 @@ export async function sendDiscordChannelUserWarning(params: { channelId: string;
   });
   return { channelId, messageId: cleanSnowflake(message?.id) || null };
 }
+
+export async function sendDiscordChannelMessageWithAttachment(params: {
+  channelId: string;
+  content?: string;
+  fileName: string;
+  fileBuffer: Buffer;
+  contentType?: string;
+  auditReason?: string;
+  allowedUserMentions?: string[];
+}) {
+  const token = getBotToken();
+  if (!token) throw new Error("Discord bot token не налаштований. Дії з каналом недоступні.");
+
+  const channelId = cleanSnowflake(params.channelId);
+  const fileName = cleanText(params.fileName, 80) || "attachment.png";
+  const content = cleanText(params.content, 1800);
+  const contentType = String(params.contentType || "application/octet-stream").trim() || "application/octet-stream";
+  const allowedUsers = Array.isArray(params.allowedUserMentions)
+    ? Array.from(new Set(params.allowedUserMentions.map(cleanSnowflake).filter(Boolean))).slice(0, 25)
+    : [];
+
+  if (!channelId) throw new Error("Discord channel ID невалідний.");
+  if (!params.fileBuffer || !Buffer.isBuffer(params.fileBuffer) || !params.fileBuffer.length) {
+    throw new Error("Вкладення Discord порожнє.");
+  }
+
+  const payload = {
+    ...(content ? { content } : {}),
+    allowed_mentions: allowedUsers.length ? { parse: [] as string[], users: allowedUsers } : { parse: [] as string[] },
+    attachments: [{ id: 0, filename: fileName }],
+  };
+
+  const form = new FormData();
+  form.append("payload_json", JSON.stringify(payload));
+  form.append("files[0]", new Blob([params.fileBuffer], { type: contentType }), fileName);
+
+  const headers = new Headers({ Authorization: `Bot ${token}` });
+  const auditReason = encodeAuditReason(params.auditReason);
+  if (auditReason) headers.set("X-Audit-Log-Reason", auditReason);
+
+  const response = await fetch(`${DISCORD_API_BASE}/channels/${channelId}/messages`, {
+    method: "POST",
+    headers,
+    body: form,
+    cache: "no-store",
+  });
+
+  const raw = await response.text().catch(() => "");
+  const json = raw ? tryParseJson(raw) : null;
+  if (!response.ok) {
+    const detail = typeof json?.message === "string" ? json.message : raw || `HTTP ${response.status}`;
+    throw new Error(`Discord API ${response.status}: ${String(detail).slice(0, 220)}`);
+  }
+
+  return {
+    channelId: cleanSnowflake((json as any)?.channel_id) || channelId,
+    messageId: cleanSnowflake((json as any)?.id) || null,
+  };
+}
