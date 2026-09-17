@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 
 import { adminDiscordResponse, auditDiscordAdmin, discordAdminError, requireDiscordAdmin } from "@/lib/dashboardDiscordRoute";
 import { fetchDiscordTextChannels, sendDiscordChannelMessageWithAttachment } from "@/lib/discordAdmin";
+import { formatDiscordMemberJoinNumber, resolveDiscordMemberJoinNumber } from "@/lib/discordMemberJoinNumber";
 import { createDiscordWelcomeArtifact } from "@/lib/discordWelcomeArtifact";
 import { getDiscordWelcomeCardSettings } from "@/lib/discordWelcomeCardSettings";
 import { cleanWelcomeTestUserId, normalizeDiscordWelcomeCardTestInput, resolveDiscordWelcomeCardTestMember } from "@/lib/discordWelcomeCardTesting";
@@ -13,6 +14,17 @@ export const revalidate = 0;
 function cleanSnowflake(value: unknown) {
   const text = String(value || "").trim();
   return /^\d{16,25}$/.test(text) ? text : "";
+}
+
+
+/**
+ * A synthetic test member (no real Discord ID) previews the next free member
+ * number. Resolved without a user ID so it never forces a member-list refresh;
+ * A live member returns "" so the artifact resolves its real join-order number.
+ */
+async function synthesizedTestMemberNumber(liveMember: boolean) {
+  if (liveMember) return "";
+  return formatDiscordMemberJoinNumber(await resolveDiscordMemberJoinNumber({ userId: "", joinedAt: new Date().toISOString() }));
 }
 
 export async function POST(request: NextRequest) {
@@ -52,7 +64,7 @@ export async function POST(request: NextRequest) {
     const messageTemplateOverride = String(form.get("testMessageTemplate") || settings.messageTemplate || "").slice(0, 600);
     const artifact = await createDiscordWelcomeArtifact(resolved.member, settings, {
       greetingOverride: testInput.greeting || settings.greetings[0] || "Ishnu-alah!",
-      numberOverride: testInput.number,
+      numberOverride: testInput.number || await synthesizedTestMemberNumber(resolved.liveMember),
       messageTemplateOverride,
       mentionOverride: mentionUserId ? `<@${mentionUserId}>` : "@тестовий-учасник",
     });

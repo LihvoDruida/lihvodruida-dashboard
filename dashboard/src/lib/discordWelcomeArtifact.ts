@@ -2,6 +2,7 @@ import "server-only";
 
 import type { DiscordGuildMemberModerationItem } from "@/lib/discordAdmin";
 import { renderDiscordWelcomeCard, type DiscordWelcomeCardRenderResult } from "@/lib/discordWelcomeCard";
+import { formatDiscordMemberJoinNumber, resolveDiscordMemberJoinNumber } from "@/lib/discordMemberJoinNumber";
 import { renderDiscordWelcomeMessageTemplate, type DiscordWelcomeCardSettings } from "@/lib/discordWelcomeCardSettings";
 
 export type DiscordWelcomeArtifactOptions = {
@@ -57,9 +58,13 @@ export async function createDiscordWelcomeArtifact(
   settings: DiscordWelcomeCardSettings,
   options: DiscordWelcomeArtifactOptions = {},
 ): Promise<DiscordWelcomeArtifact> {
+  // Manual number only comes from the owner test lab; every real card shows
+  // the member's actual position in the server join order.
+  const manualNumber = cleanText(options.numberOverride, 8);
+  const number = manualNumber || formatDiscordMemberJoinNumber(await resolveDiscordMemberJoinNumber(member));
   const rendered = await renderDiscordWelcomeCard(member, settings, {
     greetingOverride: options.greetingOverride,
-    numberOverride: options.numberOverride,
+    numberOverride: number,
   });
   const text = buildDiscordWelcomeContent({
     member,

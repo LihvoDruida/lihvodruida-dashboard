@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
+import { formatDiscordMemberJoinNumber, resolveDiscordMemberJoinNumber } from "@/lib/discordMemberJoinNumber";
 import { createDiscordWelcomeArtifact } from "@/lib/discordWelcomeArtifact";
 import { getDiscordWelcomeCardSettings } from "@/lib/discordWelcomeCardSettings";
 import { normalizeDiscordWelcomeCardTestInput, resolveDiscordWelcomeCardTestMember } from "@/lib/discordWelcomeCardTesting";
@@ -9,6 +10,17 @@ import { checkRateLimit, getClientIp, noStoreHeaders, safeErrorMessage } from "@
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+
+/**
+ * A synthetic test member (no real Discord ID) previews the next free member
+ * number. Resolved without a user ID so it never forces a member-list refresh;
+ * A live member returns "" so the artifact resolves its real join-order number.
+ */
+async function synthesizedTestMemberNumber(liveMember: boolean) {
+  if (liveMember) return "";
+  return formatDiscordMemberJoinNumber(await resolveDiscordMemberJoinNumber({ userId: "", joinedAt: new Date().toISOString() }));
+}
 
 export async function GET(request: NextRequest) {
   const session = await getSession();
@@ -41,7 +53,7 @@ export async function GET(request: NextRequest) {
 
     const artifact = await createDiscordWelcomeArtifact(resolved.member, settings, {
       greetingOverride: testInput.greeting || settings.greetings[0] || "Ishnu-alah!",
-      numberOverride: testInput.number,
+      numberOverride: testInput.number || await synthesizedTestMemberNumber(resolved.liveMember),
       mentionOverride: resolved.liveMember && testInput.userId ? `<@${testInput.userId}>` : "@тестовий-учасник",
     });
 

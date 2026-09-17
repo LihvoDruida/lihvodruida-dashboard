@@ -123,9 +123,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-# SVG welcome-картки рендеряться через sharp/librsvg. Мінімальний Node image
-# не гарантує кириличні шрифти, тому ставимо компактний DejaVu набір, щоб
-# українські привітання не перетворювались на порожні квадрати.
+# Welcome-картки рендеряться через sharp (librsvg + Pango). Основні шрифти
+# картки лежать у dashboard/assets/fonts/welcome; DejaVu лишається fallback
+# для символів, яких там немає, і для аварійного режиму без bundled-шрифтів.
 RUN apt-get update \
   && apt-get install -y --no-install-recommends fonts-dejavu-core \
   && rm -rf /var/lib/apt/lists/*
@@ -155,6 +155,11 @@ RUN groupadd --system --gid 1001 nodejs \
 COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/.next/standalone/ ./
 COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/public ./dashboard/public
 COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/.next/static ./dashboard/.next/static
+
+# Bundled OFL fonts for server-rendered welcome cards (Spectral SC, Philosopher).
+# Not in public/: they are a renderer input, not a web asset. Sharp loads them
+# via fontfile, so no fc-cache step is needed; DejaVu above stays the fallback.
+COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/assets/fonts/welcome ./dashboard/assets/fonts/welcome
 
 # Обслуговчі скрипти й схема бази. Standalone-збірка їх не тягне (вони не
 # імпортуються з застосунку), а без них `docker compose exec dashboard node

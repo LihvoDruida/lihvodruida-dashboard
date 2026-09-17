@@ -15,12 +15,83 @@ import { logDashboardEvent } from "@/lib/security";
 export const WELCOME_CARD_WIDTH = 1280;
 export const WELCOME_CARD_HEIGHT = 720;
 const CARD_RADIUS = 16;
-const AVATAR_SIZE = 194;
-const AVATAR_CENTER_X = 640;
-const AVATAR_TOP_Y = 120;
-const GREETING_Y = 376;
-const NICKNAME_Y = 480;
-const LABEL_Y = 544;
+const CENTER_X = 640;
+
+// Vertical rhythm, top → bottom: portrait, gold greeting, ornament divider,
+// hero nickname, number plaque. The block sits on a dark scrim in the portal
+// so the text stays readable on the bright teal background; the stairs and
+// foliage below stay visible.
+const AVATAR_SIZE = 176;
+const AVATAR_CENTER_X = CENTER_X;
+const AVATAR_CENTER_Y = 176;
+const AVATAR_TOP_Y = AVATAR_CENTER_Y - AVATAR_SIZE / 2;
+const GREETING_CENTER_Y = 334;
+const DIVIDER_Y = 383;
+const NICKNAME_CENTER_Y = 440;
+const LABEL_CENTER_Y = 528;
+const LABEL_PLAQUE_HEIGHT = 56;
+const LABEL_PLAQUE_PADDING_X = 34;
+
+type WelcomeTextRole = "greeting" | "nickname" | "label";
+
+// Bundled OFL fonts (see assets/fonts/welcome/OFL-*.txt). Spectral SC gives the
+// carved small-caps look of WoW titles, Philosopher is close to the WoW UI
+// face; both have full Ukrainian Cyrillic and the № sign.
+const WELCOME_FONTS: Record<WelcomeTextRole, { file: string; family: string; fallbackFamily: string }> = {
+  greeting: { file: "SpectralSC-Bold.ttf", family: "Spectral SC Bold", fallbackFamily: "DejaVu Serif Bold" },
+  nickname: { file: "SpectralSC-ExtraBold.ttf", family: "Spectral SC ExtraBold", fallbackFamily: "DejaVu Serif Bold" },
+  label: { file: "Philosopher-Bold.ttf", family: "Philosopher Bold", fallbackFamily: "DejaVu Sans Bold" },
+};
+
+type TextStyle = {
+  role: WelcomeTextRole;
+  size: number;
+  minSize: number;
+  maxWidth: number;
+  /** Vertical gradient stops (0..1) or one solid colour. */
+  fill: Array<[number, string]>;
+  strokeWidth: number;
+  shadowBlur: number;
+  shadowOffsetY: number;
+  shadowOpacity: number;
+};
+
+const GREETING_STYLE: TextStyle = {
+  role: "greeting",
+  size: 52,
+  minSize: 32,
+  maxWidth: 1000,
+  fill: [[0, "#fff6d8"], [0.5, "#f2cd72"], [1, "#c38b2c"]],
+  strokeWidth: 3,
+  shadowBlur: 7,
+  shadowOffsetY: 3,
+  shadowOpacity: 0.9,
+};
+
+const NICKNAME_STYLE: TextStyle = {
+  role: "nickname",
+  size: 76,
+  minSize: 38,
+  maxWidth: 960,
+  fill: [[0, "#ffffff"], [1, "#d9f4ff"]],
+  strokeWidth: 4,
+  shadowBlur: 9,
+  shadowOffsetY: 4,
+  shadowOpacity: 0.95,
+};
+
+const LABEL_STYLE: TextStyle = {
+  role: "label",
+  size: 33,
+  minSize: 22,
+  maxWidth: 520,
+  fill: [[0, "#f8e7b4"]],
+  strokeWidth: 2,
+  shadowBlur: 4,
+  shadowOffsetY: 2,
+  shadowOpacity: 0.8,
+};
+
 const BACKGROUND_FILE_NAME = "discord-welcome-card-night-elf-base.png";
 const AVATAR_CACHE_TTL_MS = 10 * 60_000;
 const AVATAR_NEGATIVE_CACHE_TTL_MS = 45_000;
@@ -28,6 +99,18 @@ const AVATAR_CACHE_MAX = 128;
 const RENDER_CACHE_TTL_MS = 60_000;
 const RENDER_CACHE_MAX = 8;
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+
+// Final Discord attachment encoding. Strictly lossless: no palette, no
+// quantization, every RGBA pixel survives the round-trip byte-for-byte.
+// Adaptive per-row filtering is what actually shrinks a photographic card
+// (~2.4 MB → ~1.6 MB at 1280×720). Levels 8–9 win <0.3% over 7 while costing
+// 1.5–3× CPU, which matters on the 2 vCPU host; level 7 is the sweet spot.
+const WELCOME_CARD_PNG_OPTIONS = {
+  compressionLevel: 7,
+  adaptiveFiltering: true,
+  palette: false,
+  force: true,
+} as const;
 
 type PreparedBackground = {
   data: Buffer;
@@ -59,6 +142,8 @@ declare global {
   var __mistblossomWelcomeRenderActive: number | undefined;
   // eslint-disable-next-line no-var
   var __mistblossomWelcomeRenderQueue: Array<() => void> | undefined;
+  // eslint-disable-next-line no-var
+  var __mistblossomWelcomeFontsPromise: Promise<ResolvedWelcomeFonts> | undefined;
 }
 
 function escapeXml(value: string) {
@@ -95,10 +180,6 @@ function pickDeterministic<T>(items: readonly T[], seed: string, fallback: T): T
   return items[index] ?? fallback;
 }
 
-function welcomeNumber(userId: string) {
-  return String(1000 + (hashString(String(userId || "member")) % 9000));
-}
-
 function backgroundCandidates() {
   return [
     path.join(process.cwd(), "public", "assets", BACKGROUND_FILE_NAME),
@@ -106,15 +187,81 @@ function backgroundCandidates() {
   ];
 }
 
+// Static readability layer, baked into the background once per process:
+// soft top/bottom vignette, a dark elliptical scrim behind the text block and
+// a teal halo behind the portrait.
 const GLOW_SVG = Buffer.from(`
   <svg width="${WELCOME_CARD_WIDTH}" height="${WELCOME_CARD_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
-        <feGaussianBlur stdDeviation="14" result="blur" />
-      </filter>
+      <linearGradient id="vignette" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#02060c" stop-opacity="0.35" />
+        <stop offset="0.22" stop-color="#02060c" stop-opacity="0" />
+        <stop offset="0.78" stop-color="#02060c" stop-opacity="0" />
+        <stop offset="1" stop-color="#02060c" stop-opacity="0.45" />
+      </linearGradient>
+      <radialGradient id="scrim" cx="0.5" cy="0.5" r="0.5">
+        <stop offset="0" stop-color="#030a14" stop-opacity="0.66" />
+        <stop offset="0.5" stop-color="#030a14" stop-opacity="0.5" />
+        <stop offset="0.82" stop-color="#030a14" stop-opacity="0.16" />
+        <stop offset="1" stop-color="#030a14" stop-opacity="0" />
+      </radialGradient>
+      <radialGradient id="halo" cx="${AVATAR_CENTER_X}" cy="${AVATAR_CENTER_Y}" r="150" gradientUnits="userSpaceOnUse">
+        <stop offset="0.55" stop-color="#9ff3ff" stop-opacity="0.35" />
+        <stop offset="1" stop-color="#9ff3ff" stop-opacity="0" />
+      </radialGradient>
     </defs>
-    <circle cx="${AVATAR_CENTER_X}" cy="${AVATAR_TOP_Y + AVATAR_SIZE / 2}" r="${AVATAR_SIZE / 2 + 15}" fill="rgba(167,244,255,0.28)" filter="url(#softGlow)" />
-    <ellipse cx="${AVATAR_CENTER_X}" cy="456" rx="256" ry="144" fill="rgba(24,11,56,0.16)" filter="url(#softGlow)" />
+    <rect width="${WELCOME_CARD_WIDTH}" height="${WELCOME_CARD_HEIGHT}" fill="url(#vignette)" />
+    <ellipse cx="${CENTER_X}" cy="420" rx="640" ry="230" fill="url(#scrim)" />
+    <circle cx="${AVATAR_CENTER_X}" cy="${AVATAR_CENTER_Y}" r="150" fill="url(#halo)" />
+  </svg>
+`);
+
+// Portrait frame and ornament divider never overlap dynamic content, so they
+// are baked into the prepared background as well.
+const FRAME_SVG = (() => {
+  const r = AVATAR_SIZE / 2;
+  const cy = AVATAR_CENTER_Y;
+  const cx = AVATAR_CENTER_X;
+  return Buffer.from(`
+    <svg width="${WELCOME_CARD_WIDTH}" height="${WELCOME_CARD_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="gold" x1="0" y1="${cy - r - 12}" x2="0" y2="${cy + r + 12}" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#fff0bd" />
+          <stop offset="0.45" stop-color="#e6b85a" />
+          <stop offset="1" stop-color="#9c6a22" />
+        </linearGradient>
+        <linearGradient id="lineLeft" x1="0" x2="1">
+          <stop offset="0" stop-color="#e9c170" stop-opacity="0" />
+          <stop offset="1" stop-color="#f3d58e" />
+        </linearGradient>
+        <linearGradient id="lineRight" x1="1" x2="0">
+          <stop offset="0" stop-color="#e9c170" stop-opacity="0" />
+          <stop offset="1" stop-color="#f3d58e" />
+        </linearGradient>
+        <filter id="frameShadow" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#02060c" flood-opacity="0.8" />
+        </filter>
+      </defs>
+      <g filter="url(#frameShadow)">
+        <circle cx="${cx}" cy="${cy}" r="${r + 9}" fill="none" stroke="url(#gold)" stroke-width="7" />
+      </g>
+      <circle cx="${cx}" cy="${cy}" r="${r + 3}" fill="none" stroke="#0b1a26" stroke-width="3" />
+      <circle cx="${cx}" cy="${cy}" r="${r + 15}" fill="none" stroke="#bff6ff" stroke-opacity="0.55" stroke-width="1.5" />
+      <path d="M${cx} ${cy + r + 4} l9 11 l-9 11 l-9 -11 z" fill="url(#gold)" stroke="#3a2708" stroke-width="1.5" />
+      <g>
+        <rect x="${CENTER_X - 250}" y="${DIVIDER_Y - 1}" width="226" height="2" fill="url(#lineLeft)" />
+        <rect x="${CENTER_X + 24}" y="${DIVIDER_Y - 1}" width="226" height="2" fill="url(#lineRight)" />
+        <path d="M${CENTER_X} ${DIVIDER_Y - 9} l9 9 l-9 9 l-9 -9 z" fill="#f3d58e" stroke="#3a2708" stroke-width="1.2" />
+        <circle cx="${CENTER_X - 18}" cy="${DIVIDER_Y}" r="2.6" fill="#f3d58e" />
+        <circle cx="${CENTER_X + 18}" cy="${DIVIDER_Y}" r="2.6" fill="#f3d58e" />
+      </g>
+    </svg>
+  `);
+})();
+
+const ROUNDED_MASK_SVG = Buffer.from(`
+  <svg width="${WELCOME_CARD_WIDTH}" height="${WELCOME_CARD_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="0" width="${WELCOME_CARD_WIDTH}" height="${WELCOME_CARD_HEIGHT}" rx="${CARD_RADIUS}" ry="${CARD_RADIUS}" fill="#fff" />
   </svg>
 `);
 
@@ -135,10 +282,23 @@ async function prepareBackground(): Promise<PreparedBackground> {
 
   // Static resize + glow is paid once per Node process. Per-card work only adds
   // avatar, ring, dynamic text and the final 16px mask.
-  const prepared = await sharp(source)
+  const lit = await sharp(source)
     .resize(WELCOME_CARD_WIDTH, WELCOME_CARD_HEIGHT, { fit: "cover", position: "centre", fastShrinkOnLoad: true })
     .ensureAlpha()
     .composite([{ input: GLOW_SVG }])
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  // Second pass: frame/divider and the transparent 16px rounded corners.
+  // Dynamic layers stay inside the safe area, so per-card renders no longer
+  // rasterize full-canvas SVGs at all.
+  const prepared = await sharp(lit.data, {
+    raw: { width: lit.info.width, height: lit.info.height, channels: 4 },
+  })
+    .composite([
+      { input: FRAME_SVG },
+      { input: ROUNDED_MASK_SVG, blend: "dest-in" },
+    ])
     .raw()
     .toBuffer({ resolveWithObject: true });
 
@@ -283,53 +443,187 @@ async function fetchAvatarCircle(url: string | null) {
   return promise;
 }
 
-const FRAME_SVG = (() => {
-  const size = AVATAR_SIZE + 13;
-  const centerY = AVATAR_TOP_Y + AVATAR_SIZE / 2;
-  return Buffer.from(`
-    <svg width="${WELCOME_CARD_WIDTH}" height="${WELCOME_CARD_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <filter id="ringGlow" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#b8fdff" flood-opacity="0.85" />
-        </filter>
-      </defs>
-      <circle cx="${AVATAR_CENTER_X}" cy="${centerY}" r="${size / 2}" fill="none" stroke="#eefeff" stroke-width="6" filter="url(#ringGlow)" />
-      <circle cx="${AVATAR_CENTER_X}" cy="${centerY}" r="${size / 2 - 6}" fill="none" stroke="rgba(102,229,255,0.65)" stroke-width="3" />
+function welcomeFontDirCandidates() {
+  return [
+    path.join(process.cwd(), "assets", "fonts", "welcome"),
+    path.join(process.cwd(), "dashboard", "assets", "fonts", "welcome"),
+  ];
+}
+
+type ResolvedWelcomeFont = { family: string; fontfile: string | null };
+type ResolvedWelcomeFonts = Record<WelcomeTextRole, ResolvedWelcomeFont>;
+
+async function resolveWelcomeFonts(): Promise<ResolvedWelcomeFonts> {
+  const resolved = {} as ResolvedWelcomeFonts;
+  const missing: string[] = [];
+  for (const role of Object.keys(WELCOME_FONTS) as WelcomeTextRole[]) {
+    const font = WELCOME_FONTS[role];
+    let fontfile: string | null = null;
+    for (const dir of welcomeFontDirCandidates()) {
+      const candidate = path.join(dir, font.file);
+      try {
+        await fs.access(candidate);
+        fontfile = candidate;
+        break;
+      } catch {
+        // try next layout
+      }
+    }
+    if (!fontfile) missing.push(font.file);
+    resolved[role] = fontfile ? { family: font.family, fontfile } : { family: font.fallbackFamily, fontfile: null };
+  }
+  if (missing.length) {
+    // A missing bundled font must not block a newcomer's welcome: fall back to
+    // the DejaVu faces installed in the runtime image and make it visible.
+    logDashboardEvent("warn", "discord.welcome_card_fonts_missing", undefined, { missing });
+  }
+  return resolved;
+}
+
+function loadWelcomeFonts() {
+  globalThis.__mistblossomWelcomeFontsPromise ||= resolveWelcomeFonts();
+  return globalThis.__mistblossomWelcomeFontsPromise;
+}
+
+type RawLayer = { data: Buffer; width: number; height: number };
+
+/** Single-channel coverage mask of one line of text, shrunk to fit maxWidth. */
+async function renderTextMask(text: string, font: ResolvedWelcomeFont, style: TextStyle): Promise<RawLayer | null> {
+  if (!text) return null;
+  let size = style.size;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const rendered = await sharp({
+      text: {
+        text: escapeXml(text),
+        font: `${font.family} ${size}`,
+        ...(font.fontfile ? { fontfile: font.fontfile } : {}),
+        dpi: 72,
+        wrap: "none",
+      },
+    })
+      .extractChannel(0)
+      .toColourspace("b-w")
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    if (rendered.info.width <= style.maxWidth || size <= style.minSize) {
+      return { data: rendered.data, width: rendered.info.width, height: rendered.info.height };
+    }
+    size = Math.max(style.minSize, Math.floor((size * style.maxWidth) / rendered.info.width));
+  }
+  return null;
+}
+
+function hexToRgb(hex: string) {
+  const value = Number.parseInt(hex.replace("#", ""), 16);
+  return { r: (value >> 16) & 255, g: (value >> 8) & 255, b: value & 255 };
+}
+
+async function colorizeMask(mask: Buffer, width: number, height: number, fill: Array<[number, string]>, fillTop: number, fillBottom: number) {
+  const alpha = { raw: { width, height, channels: 1 as const } };
+  if (fill.length === 1) {
+    return sharp({ create: { width, height, channels: 3, background: hexToRgb(fill[0][1]) } })
+      .joinChannel(mask, alpha)
+      .raw()
+      .toBuffer();
+  }
+  const stops = fill.map(([offset, color]) => `<stop offset="${offset}" stop-color="${color}" />`).join("");
+  const gradient = await sharp(Buffer.from(`
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="fill" x1="0" y1="${fillTop}" x2="0" y2="${fillBottom}" gradientUnits="userSpaceOnUse">${stops}</linearGradient></defs>
+      <rect width="${width}" height="${height}" fill="url(#fill)" />
     </svg>
-  `);
-})();
+  `))
+    .removeAlpha()
+    .raw()
+    .toBuffer();
+  return sharp(gradient, { raw: { width, height, channels: 3 } })
+    .joinChannel(mask, alpha)
+    .raw()
+    .toBuffer();
+}
 
-const ROUNDED_MASK_SVG = Buffer.from(`
-  <svg width="${WELCOME_CARD_WIDTH}" height="${WELCOME_CARD_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
-    <rect x="0" y="0" width="${WELCOME_CARD_WIDTH}" height="${WELCOME_CARD_HEIGHT}" rx="${CARD_RADIUS}" ry="${CARD_RADIUS}" fill="#fff" />
-  </svg>
-`);
+type StyledTextLayer = RawLayer & { textWidth: number; textHeight: number; padding: number };
 
-function textSvg(params: { greeting: string; nickname: string; label: string }) {
-  const greeting = escapeXml(cleanText(params.greeting, 80));
-  const nickname = escapeXml(cleanText(params.nickname, 48));
-  const label = escapeXml(cleanText(params.label, 40));
+/**
+ * Readable text on a busy painting: soft dark drop shadow, dark outline
+ * (dilated coverage) and a vertical colour gradient fill.
+ */
+async function renderStyledText(text: string, style: TextStyle): Promise<StyledTextLayer | null> {
+  const fonts = await loadWelcomeFonts();
+  const mask = await renderTextMask(text, fonts[style.role], style);
+  if (!mask) return null;
 
-  return Buffer.from(`
-    <svg width="${WELCOME_CARD_WIDTH}" height="${WELCOME_CARD_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <filter id="textShadow" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#07111f" flood-opacity="0.9" />
-        </filter>
-      </defs>
-      <g text-anchor="middle" filter="url(#textShadow)">
-        <text x="${AVATAR_CENTER_X}" y="${GREETING_Y}" fill="#f4fbff" font-size="59" font-family="DejaVu Serif, Georgia, 'Times New Roman', serif" font-weight="700">${greeting}</text>
-        <text x="${AVATAR_CENTER_X}" y="${NICKNAME_Y}" fill="#f8fbff" font-size="45" font-family="DejaVu Serif, Georgia, 'Times New Roman', serif" font-weight="600">${nickname}</text>
-        <text x="${AVATAR_CENTER_X}" y="${LABEL_Y}" fill="rgba(232,244,255,0.92)" font-size="30" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-weight="500">${label}</text>
-      </g>
-      <g stroke="rgba(214,252,255,0.92)" fill="none" stroke-width="2">
-        <path d="M442 395 C464 381, 481 380, 498 390" />
-        <path d="M838 395 C816 381, 799 380, 782 390" />
-        <path d="M504 428 H776" />
-        <path d="M622 431 q18 22 37 0" />
-      </g>
-    </svg>
-  `);
+  const padding = Math.ceil(style.shadowBlur * 3 + style.strokeWidth + style.shadowOffsetY + 4);
+  const width = mask.width + padding * 2;
+  const height = mask.height + padding * 2;
+  const single = { raw: { width, height, channels: 1 as const } };
+
+  // Every single-band step ends with toColourspace("b-w"): libvips otherwise
+  // promotes raw output to 3-band sRGB and the buffers stop lining up.
+  const fillMask = await sharp(mask.data, { raw: { width: mask.width, height: mask.height, channels: 1 } })
+    .extend({ top: padding, bottom: padding, left: padding, right: padding, background: "#000000" })
+    .toColourspace("b-w")
+    .raw()
+    .toBuffer();
+  // Soft outline = blurred coverage boosted back to opaque. Unlike morphology
+  // this is anti-aliased and does not depend on dilate/erode semantics, which
+  // differ between Sharp releases.
+  const strokeMask = await sharp(fillMask, single)
+    .blur(0.4 + style.strokeWidth * 0.55)
+    .linear(3.6, 0)
+    .toColourspace("b-w")
+    .raw()
+    .toBuffer();
+  const shadowMask = await sharp(strokeMask, single)
+    .blur(style.shadowBlur)
+    .linear(style.shadowOpacity, 0)
+    .toColourspace("b-w")
+    .raw()
+    .toBuffer();
+  const strokeAlpha = await sharp(strokeMask, single).linear(0.92, 0).toColourspace("b-w").raw().toBuffer();
+
+  const [shadowLayer, strokeLayer, fillLayer] = await Promise.all([
+    colorizeMask(shadowMask, width, height, [[0, "#02060c"]], 0, height),
+    colorizeMask(strokeAlpha, width, height, [[0, "#08101a"]], 0, height),
+    colorizeMask(fillMask, width, height, style.fill, padding, padding + mask.height),
+  ]);
+  const rgba = { raw: { width, height, channels: 4 as const } };
+  const data = await sharp({ create: { width, height, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+    .composite([
+      // Padding is larger than the offset, so the shifted shadow never clips.
+      { input: shadowLayer, ...rgba, top: style.shadowOffsetY, left: 0 },
+      { input: strokeLayer, ...rgba, top: 0, left: 0 },
+      { input: fillLayer, ...rgba, top: 0, left: 0 },
+    ])
+    .raw()
+    .toBuffer();
+
+  return { data, width, height, textWidth: mask.width, textHeight: mask.height, padding };
+}
+
+function centeredLayer(layer: RawLayer, centerY: number) {
+  return {
+    input: layer.data,
+    raw: { width: layer.width, height: layer.height, channels: 4 as const },
+    left: Math.round(CENTER_X - layer.width / 2),
+    top: Math.round(centerY - layer.height / 2),
+  };
+}
+
+function labelPlaqueSvg(textWidth: number) {
+  const width = Math.min(WELCOME_CARD_WIDTH - 80, Math.max(180, Math.ceil(textWidth + LABEL_PLAQUE_PADDING_X * 2)));
+  const height = LABEL_PLAQUE_HEIGHT;
+  const radius = height / 2;
+  return {
+    width,
+    height,
+    svg: Buffer.from(`
+      <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="${width - 2}" height="${height - 2}" rx="${radius - 1}" fill="#06111c" fill-opacity="0.74" stroke="#e2b95f" stroke-opacity="0.9" stroke-width="1.6" />
+        <rect x="6" y="6" width="${width - 12}" height="${height - 12}" rx="${radius - 6}" fill="none" stroke="#bff6ff" stroke-opacity="0.22" stroke-width="1" />
+      </svg>
+    `),
+  };
 }
 
 export type DiscordWelcomeCardRenderResult = {
@@ -359,23 +653,41 @@ async function renderUncached(
   number: string,
   nickname: string,
 ): Promise<DiscordWelcomeCardRenderResult> {
-  const label = `${settings.labelPrefix} №${number}`;
+  const label = number ? `${settings.labelPrefix} №${number}` : settings.labelPrefix;
   const [background, avatarPng] = await Promise.all([
     loadPreparedBackground(),
     fetchAvatarCircle(member.avatarUrl || member.defaultAvatarUrl || null),
   ]);
 
-  const buffer = await withRenderSlot(() => sharp(background.data, {
-    raw: { width: background.width, height: background.height, channels: background.channels },
-  })
-    .composite([
+  const buffer = await withRenderSlot(async () => {
+    const [greetingLayer, nicknameLayer, labelLayer] = await Promise.all([
+      renderStyledText(greeting, GREETING_STYLE),
+      renderStyledText(nickname, NICKNAME_STYLE),
+      renderStyledText(label, LABEL_STYLE),
+    ]);
+
+    const layers: sharp.OverlayOptions[] = [
       { input: avatarPng, top: AVATAR_TOP_Y, left: Math.round(AVATAR_CENTER_X - AVATAR_SIZE / 2) },
-      { input: FRAME_SVG },
-      { input: textSvg({ greeting, nickname, label }) },
-      { input: ROUNDED_MASK_SVG, blend: "dest-in" },
-    ])
-    .png({ compressionLevel: 3, adaptiveFiltering: false })
-    .toBuffer());
+    ];
+    if (labelLayer) {
+      const plaque = labelPlaqueSvg(labelLayer.textWidth);
+      layers.push({
+        input: plaque.svg,
+        left: Math.round(CENTER_X - plaque.width / 2),
+        top: Math.round(LABEL_CENTER_Y - plaque.height / 2),
+      });
+    }
+    if (greetingLayer) layers.push(centeredLayer(greetingLayer, GREETING_CENTER_Y));
+    if (nicknameLayer) layers.push(centeredLayer(nicknameLayer, NICKNAME_CENTER_Y));
+    if (labelLayer) layers.push(centeredLayer(labelLayer, LABEL_CENTER_Y));
+
+    return sharp(background.data, {
+      raw: { width: background.width, height: background.height, channels: background.channels },
+    })
+      .composite(layers)
+      .png(WELCOME_CARD_PNG_OPTIONS)
+      .toBuffer();
+  });
 
   return {
     buffer,
@@ -395,7 +707,9 @@ export async function renderDiscordWelcomeCard(
     options.greetingOverride || pickDeterministic(settings.greetings, `${member.userId}:${member.joinedAt || ""}`, "Ishnu-alah!"),
     80,
   ) || "Ishnu-alah!";
-  const number = cleanText(options.numberOverride || welcomeNumber(member.userId), 8) || welcomeNumber(member.userId);
+  // The member number is resolved upstream (server join order, see
+  // discordMemberJoinNumber.ts). The renderer never invents one.
+  const number = cleanText(options.numberOverride, 8);
   const nickname = cleanText(member.displayName || member.username || member.userId, 40) || `Discord ${member.userId.slice(-6)}`;
   const key = renderCacheKey(member, settings, greeting, number, nickname);
   const cache = renderCache();

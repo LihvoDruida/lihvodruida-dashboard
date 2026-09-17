@@ -71,7 +71,7 @@ export function normalizeDiscordWelcomeCardTestInput(input: Record<string, unkno
     displayName: cleanText(input.displayName || input.testDisplayName, 40),
     username: cleanText(input.username || input.testUsername, 32),
     greeting: cleanText(input.greeting || input.testGreeting, 80),
-    number: cleanText(input.number || input.testNumber, 8).replace(/[^0-9A-Za-zА-Яа-яІіЇїЄєҐґ-]/g, "").slice(0, 8) || "4086",
+    number: cleanText(input.number || input.testNumber, 8).replace(/[^0-9A-Za-zА-Яа-яІіЇїЄєҐґ-]/g, "").slice(0, 8),
     nickname: cleanText(input.nickname || input.testNickname, 96),
   };
 }

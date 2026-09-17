@@ -6,6 +6,7 @@ import DashboardIdentity from "@/components/DashboardIdentity";
 import AdminPageHeader from "@/components/AdminPageHeader";
 import { getSession } from "@/lib/auth";
 import { fetchDiscordRoleControlSnapshotCachedForUi, fetchDiscordTextChannels } from "@/lib/discordAdmin";
+import { formatDiscordMemberJoinNumber, resolveDiscordMemberJoinNumber } from "@/lib/discordMemberJoinNumber";
 import { buildDiscordWelcomeContent } from "@/lib/discordWelcomeArtifact";
 import { getDiscordWelcomeCardSettings } from "@/lib/discordWelcomeCardSettings";
 import { getDiscordGatewayHealth } from "@/lib/discordGatewayHealth";
@@ -58,14 +59,20 @@ export default async function WelcomeCardDashboardPage({
     testDisplayName: paramValue(params, "testDisplayName") || "Новий мандрівник",
     testUsername: paramValue(params, "testUsername") || "mistblossom.recruit",
     testGreeting: paramValue(params, "testGreeting") || settings.greetings[0] || "Ishnu-alah!",
-    testNumber: paramValue(params, "testNumber") || "4086",
+    testNumber: paramValue(params, "testNumber"),
     testNickname: paramValue(params, "testNickname") || "Дмитро [Khayen]",
   });
   const testMessageTemplate = paramValue(params, "testMessageTemplate") || settings.messageTemplate;
   const nicknameDiagnosis = explainNicknameValidation(testInput.nickname);
   const testGreeting = testInput.greeting || settings.greetings[0] || "Ishnu-alah!";
-  const testLabel = `${settings.labelPrefix} №${testInput.number}`;
   const testMember = buildDiscordWelcomeCardTestMember(testInput);
+  // Empty test number = the real server join-order number (same resolver as
+  // production cards; the member timeline is cached, so this is cheap).
+  const autoTestNumber = testInput.number
+    ? ""
+    : await resolveDiscordMemberJoinNumber({ userId: testInput.userId, joinedAt: testMember.joinedAt }).then(formatDiscordMemberJoinNumber).catch(() => "");
+  const testNumberShown = testInput.number || autoTestNumber;
+  const testLabel = testNumberShown ? `${settings.labelPrefix} №${testNumberShown}` : settings.labelPrefix;
   const generatedText = buildDiscordWelcomeContent({
     member: testMember,
     settings,
@@ -162,7 +169,7 @@ export default async function WelcomeCardDashboardPage({
 
               <label className="field-label">Підпис під номером
                 <input className="input" name="labelPrefix" defaultValue={settings.labelPrefix} maxLength={24} />
-                <small>«Мурлок» → «Мурлок №4086».</small>
+                <small>«Мурлок» → «Мурлок №128», де 128 — порядковий номер учасника на сервері.</small>
               </label>
 
               <label className="field-label">Назва PNG-файлу
@@ -259,9 +266,13 @@ export default async function WelcomeCardDashboardPage({
                 <input className="input" name="testUsername" defaultValue={testInput.username} maxLength={32} />
               </label>
 
-              <label className="field-label">Номер
-                <input className="input" name="testNumber" defaultValue={testInput.number} maxLength={8} />
-                <small>Наприклад 4086 → «{settings.labelPrefix} №4086».</small>
+              <label className="field-label">Номер (необов’язково)
+                <input className="input" name="testNumber" defaultValue={testInput.number} maxLength={8} placeholder={autoTestNumber ? `Авто: ${autoTestNumber}` : "Авто"} inputMode="numeric" />
+                <small>{testInput.number
+                  ? `Ручний номер для тесту → «${settings.labelPrefix} №${testInput.number}».`
+                  : autoTestNumber
+                    ? `Порожньо — справжній номер учасника на сервері: «${settings.labelPrefix} №${autoTestNumber}». Без User ID — номер наступного учасника.`
+                    : "Порожньо — справжній номер учасника на сервері за порядком вступу."}</small>
               </label>
             </div>
 
