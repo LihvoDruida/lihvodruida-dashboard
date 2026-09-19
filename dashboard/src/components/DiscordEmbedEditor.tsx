@@ -841,12 +841,13 @@ function DiscordEmbedEditorInner({
 
       if (isRules && loaded.rulesType !== "raid") {
         setRoleIds(Array.isArray(loaded.roleIds) ? uniqueIds(loaded.roleIds.map((roleId) => String(roleId))) : []);
+      } else if (!isRules) {
+        setRoleIds(Array.isArray(loaded.roleIds) ? uniqueIds(loaded.roleIds.map((roleId) => String(roleId))) : []);
       }
       if (isRaidRules) {
         setRoleIds([]);
       }
       if (isAutoroles) {
-        setRoleIds([]);
         setAutoroleButtons(normalizeAutoroleButtonList(loaded.autoroleButtons));
       }
 
@@ -926,7 +927,7 @@ function DiscordEmbedEditorInner({
   const normalizedColor = normalizeHexColor(colorHex);
   const generatedEmbedJson = useMemo(() => JSON.stringify(embed), [embed]);
   const selectedRoleIdSet = new Set(uniqueIds(roleIds));
-  const selectedMentionRoles = !isRules && !isAutoroles ? roles.filter((role) => selectedRoleIdSet.has(role.id)) : [];
+  const selectedMentionRoles = !isRules ? roles.filter((role) => selectedRoleIdSet.has(role.id)) : [];
   const selectedRolesCount = selectedRoleIdSet.size;
   const diagnostics = useMemo(() => buildDiscordDiagnostics({
     content,
@@ -1166,7 +1167,7 @@ function DiscordEmbedEditorInner({
               <EmbedFieldEditor fields={fields} onChange={setFields} />
             </div>
 
-            {!isRules && !isAutoroles && roles.length > 0 ? (
+            {!isRules && roles.length > 0 ? (
               <div className="content-form-section discord-visual-section discord-visual-section--roles">
                 <div className="content-form-section-head">
                   <strong>Теги ролей</strong>
@@ -1178,7 +1179,7 @@ function DiscordEmbedEditorInner({
                   onChange={setRoleIds}
                   ariaLabel="Ролі для згадки в Discord-повідомленні"
                   emptyLabel="Без тегів ролей"
-                  helperText="Ролі згадуються над повідомленням; ping дозволений тільки для них."
+                  helperText={isAutoroles ? "Необовʼязкові згадки ролей над autorole-повідомленням. Вони не повʼязані з ролями, які видають кнопки." : "Ролі згадуються над повідомленням; ping дозволений тільки для них."}
                 />
               </div>
             ) : null}

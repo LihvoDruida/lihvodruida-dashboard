@@ -63,6 +63,7 @@ export default async function DiscordAutorolesPage({
   let content = "";
   let messageLink = messageParam;
   let autoroleButtons: DiscordAutoroleButtonOption[] = [];
+  let selectedMentionRoleIds: string[] = [];
 
   if (hasDiscordEmbedConfig()) {
     try {
@@ -82,6 +83,7 @@ export default async function DiscordAutorolesPage({
         messageLink = message.url || messageParam;
         suggestedChannelId = message.channelId || suggestedChannelId;
         autoroleButtons = extractAutoroleButtonsFromMessage({ components: message.components });
+        selectedMentionRoleIds = message.roleIds || [];
         for (const button of autoroleButtons) {
           if (!roles.some((role) => role.id === button.roleId)) {
             roles.push({ id: button.roleId, name: `Видалена роль ${button.roleId.slice(-6)}`, color: 0, position: 0, managed: true, manageable: false, blockedReason: "Роль більше не існує або недоступна боту." });
@@ -130,6 +132,7 @@ export default async function DiscordAutorolesPage({
               defaultContent={content}
               defaultMessageLink={messageLink}
               defaultAutoroleButtons={autoroleButtons}
+              selectedRoleIds={selectedMentionRoleIds}
               authorSuggestions={authorIdentity.suggestions}
               defaultAuthorName={authorIdentity.primaryName}
               returnTo="/discord/autoroles"

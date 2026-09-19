@@ -18,6 +18,9 @@ const checks = [
   ['autorole editor cannot overwrite rules messages', read('dashboard/src/app/api/discord/embeds/publish/route.ts').includes('currentMessage.isRules && isAutoroles')],
   ['autorole interaction exposes safe actionable errors', read('dashboard/src/lib/discordAutoroles.ts').includes('explainAutoroleInteractionError') && read('dashboard/src/app/api/discord/interactions/route.ts').includes('explainAutoroleInteractionError(error)')],
   ['autorole editor blocks roles bot cannot manage', read('dashboard/src/components/DiscordEmbedEditor.tsx').includes('role?.manageable !== false') && read('dashboard/src/components/DiscordEmbedEditor.tsx').includes('blockedReason')],
+  ['autoroles expose standard role mentions', read('dashboard/src/components/DiscordEmbedEditor.tsx').includes('{!isRules && roles.length > 0 ? (') && read('dashboard/src/components/DiscordEmbedEditor.tsx').includes('isAutoroles ? \"Необовʼязкові згадки ролей')],
+  ['autorole page restores mention roles when editing', read('dashboard/src/app/discord/autoroles/page.tsx').includes('selectedMentionRoleIds = message.roleIds || []') && read('dashboard/src/app/discord/autoroles/page.tsx').includes('selectedRoleIds={selectedMentionRoleIds}')],
+  ['non-rules editor restores role mentions from message', read('dashboard/src/components/DiscordEmbedEditor.tsx').includes('} else if (!isRules) {') && read('dashboard/src/components/DiscordEmbedEditor.tsx').includes('setRoleIds(Array.isArray(loaded.roleIds)')],
 ];
 let failed = 0;
 for (const [name, ok] of checks) { console.log(`${ok ? '✓' : '✗'} ${name}`); if (!ok) failed++; }

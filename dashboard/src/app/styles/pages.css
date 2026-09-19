@@ -494,8 +494,8 @@
 }
 
 .discord-role-picker {
-  --role-picker-gap: 8px;
-  --role-picker-card-height: 58px;
+  --role-picker-gap: 6px;
+  --role-picker-card-height: 40px;
   display: grid;
   gap: var(--role-picker-gap);
   min-width: 0;
@@ -503,8 +503,8 @@
 
 .discord-role-selected-shell {
   display: grid;
-  gap: 6px;
-  padding: 10px 12px;
+  gap: 4px;
+  padding: 7px 9px;
   border: 1px solid color-mix(in srgb, var(--border-subtle) 88%, transparent);
   border-radius: var(--radius-lg);
   background: color-mix(in srgb, var(--surface-raised) 78%, var(--surface-sunken));
@@ -534,15 +534,15 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  min-height: 28px;
+  min-height: 24px;
 }
 
 .discord-role-chip {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  min-height: 28px;
-  padding: 3px 9px;
+  min-height: 24px;
+  padding: 2px 8px;
   border: 1px solid color-mix(in srgb, var(--border-strong) 72%, transparent);
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--c-accent-500) 10%, var(--surface-raised));
@@ -588,8 +588,8 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
-  min-height: 40px;
-  padding-inline: 11px;
+  min-height: 36px;
+  padding-inline: 9px;
   border: 1px solid color-mix(in srgb, var(--border-subtle) 88%, transparent);
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--surface-sunken) 72%, transparent);
@@ -611,7 +611,7 @@
 .discord-role-search {
   width: 100%;
   max-width: none;
-  min-height: 36px;
+  min-height: 32px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -625,19 +625,19 @@
 .discord-role-picker-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
   align-items: start;
 }
 
 .discord-role-picker-option {
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) auto;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
   grid-template-areas: "control body badge";
   align-items: center;
-  gap: 9px;
+  gap: 7px;
   min-width: 0;
   min-height: var(--role-picker-card-height);
-  padding: 8px 10px;
+  padding: 5px 8px;
   border: 1px solid color-mix(in srgb, var(--border-subtle) 88%, transparent);
   border-radius: var(--radius-lg);
   background: color-mix(in srgb, var(--surface-raised) 76%, var(--surface-sunken));
@@ -661,8 +661,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   border: 1px solid color-mix(in srgb, var(--border-strong) 72%, transparent);
   border-radius: 999px;
   background: transparent;
@@ -681,7 +681,7 @@
 .discord-role-picker-option__body {
   grid-area: body;
   display: grid;
-  gap: 2px;
+  gap: 0;
   min-width: 0;
 }
 
@@ -695,7 +695,7 @@
 .discord-role-picker-option__name {
   min-width: 0;
   color: var(--text-strong);
-  font-size: 0.86rem;
+  font-size: 0.82rem;
   font-weight: 700;
   line-height: 1.2;
   overflow: hidden;
@@ -704,12 +704,7 @@
 }
 
 .discord-role-picker-option__hint {
-  color: var(--text-muted);
-  font-size: 0.67rem;
-  line-height: 1.2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: none;
 }
 
 .discord-role-picker-option__badge {
@@ -717,14 +712,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 66px;
-  min-height: 28px;
-  padding: 0 9px;
+  min-width: 58px;
+  min-height: 24px;
+  padding: 0 8px;
   border: 1px solid color-mix(in srgb, var(--border-subtle) 72%, transparent);
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--surface-sunken) 72%, transparent);
   color: var(--text-muted);
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   font-weight: 700;
   line-height: 1;
   text-align: center;
@@ -781,44 +776,44 @@
    але самі картки залишаються низькими й не перетворюються на вертикальні блоки. */
 @media (max-width: 640px) {
   .discord-role-picker {
-    --role-picker-gap: 7px;
-    --role-picker-card-height: 52px;
+    --role-picker-gap: 6px;
+    --role-picker-card-height: 44px;
   }
 
   .discord-role-selected-shell {
-    padding: 8px 10px;
+    padding: 7px 9px;
   }
 
   .discord-role-selected {
-    min-height: 24px;
+    min-height: 22px;
   }
 
   .discord-role-search-shell {
-    min-height: 38px;
-    padding-inline: 10px;
+    min-height: 36px;
+    padding-inline: 9px;
   }
 
   .discord-role-search {
-    min-height: 34px;
+    min-height: 32px;
   }
 
   .discord-role-picker-list {
     grid-template-columns: minmax(0, 1fr);
-    gap: 7px;
+    gap: 6px;
   }
 
   .discord-role-picker-option {
-    grid-template-columns: 22px minmax(0, 1fr) auto;
+    grid-template-columns: 20px minmax(0, 1fr) auto;
     grid-template-areas: "control body badge";
     align-items: center;
-    gap: 8px;
-    padding: 7px 9px;
+    gap: 7px;
+    padding: 5px 8px;
     border-radius: var(--radius-md);
   }
 
   .discord-role-picker-option__control {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
   }
 
   .discord-role-picker-option__hint {
@@ -826,9 +821,9 @@
   }
 
   .discord-role-picker-option__badge {
-    min-width: 60px;
-    min-height: 26px;
-    padding-inline: 8px;
+    min-width: 56px;
+    min-height: 24px;
+    padding-inline: 7px;
     font-size: 0.65rem;
   }
 
@@ -2059,6 +2054,64 @@
   }
 }
 
+
+
+/* Embed editor density normalization — shared by general embeds, rules and autoroles. */
+.discord-builder-form .content-form-section {
+  padding: clamp(14px, 1.15vw, 18px);
+}
+
+.discord-builder-form .input:not(textarea),
+.discord-builder-form .select,
+.discord-builder-form .modern-select,
+.discord-builder-form .discord-color-picker,
+.discord-builder-form .btn {
+  min-height: 42px;
+}
+
+.discord-builder-form .content-field > span:first-child {
+  margin-bottom: 4px;
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+
+.discord-builder-form .content-field small,
+.discord-builder-form .limit-counter {
+  line-height: 1.25;
+}
+
+.discord-builder-form .discord-builder-textarea {
+  min-height: 124px;
+}
+
+.discord-builder-form .discord-description-area {
+  min-height: 146px;
+}
+
+.discord-builder-form .discord-author-footer-grid,
+.discord-builder-form .discord-footer-grid,
+.discord-builder-form .discord-builder-grid,
+.discord-builder-form .discord-autorole-grid {
+  gap: 12px;
+}
+
+.discord-builder-form .discord-autorole-card,
+.discord-builder-form .discord-field-row {
+  padding: 12px;
+}
+
+.discord-builder-form .discord-builder-actions .btn {
+  min-height: 44px;
+}
+
+@media (max-width: 640px) {
+  .discord-builder-form .input:not(textarea),
+  .discord-builder-form .select,
+  .discord-builder-form .modern-select,
+  .discord-builder-form .btn {
+    min-height: 44px;
+  }
+}
 
 /* =========================================================
    DISCORD AUTOROLES
