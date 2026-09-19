@@ -114,6 +114,39 @@ export async function assertAutoroleRolesAllowed(roleIdsInput: unknown[]) {
   return roleIds;
 }
 
+
+export function explainAutoroleInteractionError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || "");
+  if (/Керувати ролями|Manage Roles|немає дозволу/i.test(message)) {
+    return "❌ Бот не має дозволу **Керувати ролями (Manage Roles)**. Гільдмайстер має увімкнути цей дозвіл для ролі бота.";
+  }
+  if (/вище або на одному рівні|вище.*роль.*бот|ієрарх/i.test(message)) {
+    return "❌ Ця роль зараз недоступна боту через ієрархію Discord. Перемісти роль **Mistblossom Guild System** вище за роль, яку має видавати кнопка.";
+  }
+  if (/managed|integration роль|керована Discord\/integration/i.test(message)) {
+    return "❌ Ця роль керується Discord або інтеграцією й не може бути автороллю. Обери звичайну серверну роль.";
+  }
+  if (/Роль не знайдено|більше не існує|Unknown Role|10011/i.test(message)) {
+    return "❌ Роль цієї кнопки більше не існує або недоступна. Гільдмайстер має оновити повідомлення авторолей.";
+  }
+  if (/власник сервера|owner/i.test(message)) {
+    return "❌ Discord не дозволяє боту змінювати ролі власника сервера.";
+  }
+  if (/Unknown Member|учасника не знайдено|10007|404/i.test(message)) {
+    return "❌ Discord не бачить тебе як учасника цього сервера. Онови Discord і спробуй кнопку ще раз.";
+  }
+  if (/Missing Access|50001/i.test(message)) {
+    return "❌ Бот не має доступу до керування ролями на сервері. Перевір дозволи та роль бота.";
+  }
+  if (/rate.?limit|429/i.test(message)) {
+    return "⏳ Discord тимчасово обмежив кількість змін ролей. Спробуй ще раз за кілька секунд.";
+  }
+  if (/системні ролі доступу|стартова onboarding/i.test(message)) {
+    return "⛔ Ця роль зарезервована системою доступу Mistblossom і не може видаватися через авторолі.";
+  }
+  return "❌ Не вдалося змінити роль через Discord API. Гільдмайстер може перевірити точну причину в логах системи.";
+}
+
 export function buildAutoroleComponents(buttonsInput: unknown) {
   const buttons = normalizeAutoroleButtons(buttonsInput);
   if (!buttons.length) throw new Error("Додай хоча б одну кнопку авторолі.");

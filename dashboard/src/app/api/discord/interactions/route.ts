@@ -18,7 +18,7 @@ import { decodeRosterCustomId, handleRosterFormationDiscordAction } from "@/lib/
 import { assertRequestBodySize, logDashboardEvent, noStoreHeaders, safeErrorMessage, verifyInternalBearerToken } from "@/lib/security";
 import { resolveAccessGroupFromDiscord } from "@/lib/accessGroups";
 import { moderateApplication } from "@/lib/moderation";
-import { handleAutoroleInteraction } from "@/lib/discordAutoroles";
+import { explainAutoroleInteractionError, handleAutoroleInteraction } from "@/lib/discordAutoroles";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -357,7 +357,7 @@ export async function POST(request: NextRequest) {
         group: autoroleAction.group || null,
         message: safeErrorMessage(error),
       });
-      return ephemeral("❌ Не вдалося змінити роль. Перевір права бота та ієрархію ролей або звернись до гільдмайстра.");
+      return ephemeral(explainAutoroleInteractionError(error));
     }
   }
 

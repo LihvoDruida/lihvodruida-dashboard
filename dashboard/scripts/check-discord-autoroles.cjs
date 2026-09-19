@@ -16,6 +16,8 @@ const checks = [
   ['duplicate Discord custom ids are rejected', read('dashboard/src/lib/discordAutoroles.ts').includes('validation.duplicates.length')],
   ['generic editor cannot erase autorole components', read('dashboard/src/app/api/discord/embeds/publish/route.ts').includes('currentAutoroleButtons.length > 0 && !isAutoroles')],
   ['autorole editor cannot overwrite rules messages', read('dashboard/src/app/api/discord/embeds/publish/route.ts').includes('currentMessage.isRules && isAutoroles')],
+  ['autorole interaction exposes safe actionable errors', read('dashboard/src/lib/discordAutoroles.ts').includes('explainAutoroleInteractionError') && read('dashboard/src/app/api/discord/interactions/route.ts').includes('explainAutoroleInteractionError(error)')],
+  ['autorole editor blocks roles bot cannot manage', read('dashboard/src/components/DiscordEmbedEditor.tsx').includes('role?.manageable !== false') && read('dashboard/src/components/DiscordEmbedEditor.tsx').includes('blockedReason')],
 ];
 let failed = 0;
 for (const [name, ok] of checks) { console.log(`${ok ? '✓' : '✗'} ${name}`); if (!ok) failed++; }
