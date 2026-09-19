@@ -2076,7 +2076,7 @@
 }
 
 .discord-builder-form .content-field small,
-.discord-builder-form .limit-counter {
+.discord-builder-form .discord-limit-counter {
   line-height: 1.25;
 }
 
