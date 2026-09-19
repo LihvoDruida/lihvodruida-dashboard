@@ -331,6 +331,43 @@ export async function resolveRaidSeasonSnapshot(options: ResolverOptions = {}): 
   }
 
   const currentSeason = seasons.find((season) => season.current) || null;
+  if (currentSeason && currentSeason.raids.length === 0) {
+    const currentExpansionRaids = Object.values(catalog).filter((raid) => raid.expansionId === activeExpansionId);
+    let fallback = currentExpansionRaids.filter((raid) => raid.activeNow);
+
+    if (!fallback.length && battleNet?.raidNames?.length) {
+      const battleNetNames = new Set(battleNet.raidNames.map((name) => norm(name)));
+      fallback = currentExpansionRaids.filter((raid) => {
+        const raidNames = [raid.name, raid.shortName].map((value) => norm(value)).filter(Boolean);
+        return raidNames.some((name) => battleNetNames.has(name));
+      });
+    }
+
+    if (!fallback.length) {
+      const seasonStart = timeNumber(currentSeason.startsAt);
+      const seasonEnd = timeNumber(currentSeason.endsAt);
+      fallback = currentExpansionRaids.filter((raid) => {
+        const raidStart = timeNumber(raid.startsAt);
+        return Number.isFinite(raidStart) && (!Number.isFinite(seasonStart) || raidStart >= seasonStart) && (!Number.isFinite(seasonEnd) || raidStart < seasonEnd);
+      });
+    }
+
+    if (!fallback.length) {
+      const started = currentExpansionRaids
+        .filter((raid) => Number.isFinite(timeNumber(raid.startsAt)) && timeNumber(raid.startsAt) <= now)
+        .sort((a, b) => timeNumber(b.startsAt) - timeNumber(a.startsAt));
+      const newestStart = started.length ? timeNumber(started[0]?.startsAt) : Number.NaN;
+      if (Number.isFinite(newestStart)) {
+        fallback = started.filter((raid) => Math.abs(timeNumber(raid.startsAt) - newestStart) < 7 * 24 * 60 * 60 * 1000);
+      }
+    }
+
+    currentSeason.raids = Array.from(new Set(fallback.map((raid) => raid.slug).filter(Boolean)));
+    for (const slug of currentSeason.raids) {
+      if (catalog[slug]) catalog[slug] = { ...catalog[slug], currentSeason: true };
+    }
+  }
+
   return {
     detectedAt: new Date().toISOString(),
     source: battleNet ? "battlenet+raiderio" : "raiderio",

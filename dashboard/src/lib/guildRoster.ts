@@ -34,6 +34,7 @@ import {
   resolveRaidSeasonSnapshot,
   type RaidSeasonSnapshot,
 } from "@/lib/raidSeasonResolver";
+import { writeCharacterRaidSeasonSnapshot, writeGuildCharacterDataRecords } from "@/lib/characterDataStore";
 import {
   listCharacterProfileLinksForKeys,
   type CharacterProfileLink,
@@ -2105,6 +2106,13 @@ async function writeCachedRoster(
       "guild-roster-cache-write",
       async () => {
         await writeGuildRosterRecords(cache, options);
+        await writeCharacterRaidSeasonSnapshot(cache.stats.raidSeasonSnapshot || null);
+        await writeGuildCharacterDataRecords(
+          cache.members,
+          cache.stats.raidSeasonSnapshot || null,
+          options.fullMemberRewrite ? undefined : options.changedMemberKeys,
+          Boolean(options.fullMemberRewrite),
+        );
         const doc = getFirebaseAdminDb()
           .collection(CACHE_COLLECTION)
           .doc(CACHE_DOCUMENT);

@@ -15,6 +15,7 @@ import type {
   GuildScoreSegment,
 } from "@/lib/guildRoster";
 import { useDashboardApiResource } from "@/lib/dashboardBackgroundApi";
+import { currentSeasonRaidProgress, currentSeasonRaidSlugs, primaryCurrentRaidProgress } from "@/lib/characterRaidProgress";
 import { formatStableNumber, stableTextCompare } from "@/lib/stableUiText";
 import styles from "./GuildRoster.module.css";
 
@@ -149,24 +150,17 @@ function normalizedRaidProgress(member: GuildRosterMember) {
   return Array.isArray(member.raidProgression) ? member.raidProgression : [];
 }
 
-function raidWeight(raid: GuildRaidProgress | null) {
-  if (!raid) return 0;
-  return (
-    raid.mythicKills * 1_000_000 +
-    raid.heroicKills * 10_000 +
-    raid.normalKills * 100 +
-    raid.totalBosses
-  );
-}
-
-function bestRaid(member: GuildRosterMember, raidSlug = "all") {
+function bestRaid(member: GuildRosterMember, snapshot: GuildRosterStats["raidSeasonSnapshot"], raidSlug = "all") {
   const raids = normalizedRaidProgress(member);
   if (raidSlug !== "all") {
     return raids.find((raid) => raid.slug === raidSlug) || null;
   }
-  // Raider.IO повертає агрегат поточного tier як `tier-*`; він важливіший
-  // за вже закриті старі рейди, інакше дефолтний список показував би історію.
-  return raids.find((raid) => /^tier-/i.test(raid.slug)) || raids[0] || null;
+  return primaryCurrentRaidProgress(raids, snapshot);
+}
+
+function raidWeight(raid: GuildRaidProgress | null) {
+  if (!raid) return 0;
+  return raid.mythicKills * 1_000_000 + raid.heroicKills * 10_000 + raid.normalKills * 100 + raid.totalBosses;
 }
 
 function raidIsClear(raid: GuildRaidProgress | null, difficulty: "normal" | "heroic" | "mythic") {
@@ -389,9 +383,13 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
 
   const options = useMemo(() => {
     const raidMap = new Map<string, string>();
+    for (const slug of currentSeasonRaidSlugs(liveStats.raidSeasonSnapshot)) {
+      const catalog = liveStats.raidSeasonSnapshot?.catalog?.[slug];
+      raidMap.set(slug, catalog?.name || catalog?.shortName || slug);
+    }
     for (const member of liveMembers) {
-      for (const raid of normalizedRaidProgress(member)) {
-        if (raid.slug) raidMap.set(raid.slug, raid.name || raid.slug);
+      for (const raid of currentSeasonRaidProgress(normalizedRaidProgress(member), liveStats.raidSeasonSnapshot)) {
+        if (raid.slug && !/^tier-/i.test(raid.slug)) raidMap.set(raid.slug, raid.name || raid.slug);
       }
     }
     return {
@@ -404,7 +402,7 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
       factions: uniqueSorted(liveMembers.map((member) => member.faction)),
       raids: Array.from(raidMap.entries()).sort((a, b) => stableTextCompare(a[1], b[1])),
     };
-  }, [liveMembers, classFilter]);
+  }, [liveMembers, liveStats.raidSeasonSnapshot, classFilter]);
 
   useEffect(() => {
     if (specFilter !== "all" && !options.specs.includes(specFilter)) setSpecFilter("all");
@@ -415,14 +413,14 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
     let heroicClears = 0;
     let mythicClears = 0;
     for (const member of liveMembers) {
-      const raids = normalizedRaidProgress(member);
+      const raids = currentSeasonRaidProgress(normalizedRaidProgress(member), liveStats.raidSeasonSnapshot);
       if (raids.length) profiles += 1;
-      const raid = bestRaid(member);
+      const raid = bestRaid(member, liveStats.raidSeasonSnapshot);
       if (raidIsClear(raid, "heroic")) heroicClears += 1;
       if (raidIsClear(raid, "mythic")) mythicClears += 1;
     }
     return { profiles, heroicClears, mythicClears };
-  }, [liveMembers]);
+  }, [liveMembers, liveStats.raidSeasonSnapshot]);
 
   const filteredMembers = useMemo(() => {
     const search = query.trim().toLowerCase();
@@ -443,13 +441,13 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
         if (linkFilter === "profile" && !member.ownerProfileId) return false;
         if (linkFilter === "raiderio" && !member.profileUrl) return false;
 
-        const raid = bestRaid(member, raidFilter);
+        const raid = bestRaid(member, liveStats.raidSeasonSnapshot, raidFilter);
         if (raidFilter !== "all" && !raid) return false;
         if (raidClearFilter === "progress" && !raidHasProgress(raid)) return false;
         if (raidClearFilter === "normal-clear" && !raidIsClear(raid, "normal")) return false;
         if (raidClearFilter === "heroic-clear" && !raidIsClear(raid, "heroic")) return false;
         if (raidClearFilter === "mythic-clear" && !raidIsClear(raid, "mythic")) return false;
-        if (raidClearFilter === "no-raid" && normalizedRaidProgress(member).length > 0) return false;
+        if (raidClearFilter === "no-raid" && currentSeasonRaidProgress(normalizedRaidProgress(member), liveStats.raidSeasonSnapshot).length > 0) return false;
 
         if (!search) return true;
         const raidText = normalizedRaidProgress(member)
@@ -470,7 +468,7 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
       .sort((a, b) => {
         if (sort === "rio-asc") return (a.scores[segment] || 0) - (b.scores[segment] || 0) || stableTextCompare(a.name, b.name);
         if (sort === "ilvl-desc") return b.itemLevel - a.itemLevel || (b.scores[segment] || 0) - (a.scores[segment] || 0);
-        if (sort === "raid-desc") return raidWeight(bestRaid(b, raidFilter)) - raidWeight(bestRaid(a, raidFilter)) || (b.scores[segment] || 0) - (a.scores[segment] || 0);
+        if (sort === "raid-desc") return raidWeight(bestRaid(b, liveStats.raidSeasonSnapshot, raidFilter)) - raidWeight(bestRaid(a, liveStats.raidSeasonSnapshot, raidFilter)) || (b.scores[segment] || 0) - (a.scores[segment] || 0);
         if (sort === "name-asc") return stableTextCompare(a.name, b.name);
         if (sort === "rank-asc") return (a.rank ?? 999) - (b.rank ?? 999) || stableTextCompare(a.name, b.name);
         return (b.scores[segment] || 0) - (a.scores[segment] || 0) || b.itemLevel - a.itemLevel || stableTextCompare(a.name, b.name);
@@ -491,6 +489,7 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
     itemLevelMin,
     itemLevelMax,
     sort,
+    liveStats.raidSeasonSnapshot,
   ]);
 
   const activeFilterCount = useMemo(() => [
@@ -651,9 +650,9 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
           />
           <FilterSelect
             id="guild-raid"
-            label="Рейд"
+            label="Рейд поточного сезону"
             value={raidFilter}
-            options={[{ value: "all", label: "Усі актуальні рейди" }, ...options.raids.map(([value, label]) => ({ value, label }))]}
+            options={[{ value: "all", label: "Основний рейд поточного сезону" }, ...options.raids.map(([value, label]) => ({ value, label }))]}
             onChange={setRaidFilter}
           />
           <FilterSelect
@@ -732,7 +731,7 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
             const ownerProfileHref = member.ownerProfileId
               ? `/profile/${encodeURIComponent(member.ownerProfileId)}`
               : null;
-            const raid = bestRaid(member, raidFilter);
+            const raid = bestRaid(member, liveStats.raidSeasonSnapshot, raidFilter);
             const raidView = raidSummary(raid);
             return (
               <article
@@ -788,7 +787,7 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
                   <strong style={member.scoreColors?.[segment] ? { color: member.scoreColors[segment] } : undefined}>{formatNumber(score, 1)}</strong>
                   <small>{SEGMENT_LABELS[segment]}</small>
                 </div>
-                <div className={styles.raidCell} role="cell" data-label="Рейд" title={raid ? `${raid.name}: ${raidView.detail}` : undefined}>
+                <div className={styles.raidCell} role="cell" data-label="Рейд поточного сезону" title={raid ? `${raid.name}: ${raidView.detail}` : undefined}>
                   <strong>{raidView.main}</strong>
                   <small>{raid ? compactRaidName(raid.name) : raidView.detail}</small>
                 </div>

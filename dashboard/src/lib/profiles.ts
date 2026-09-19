@@ -12,6 +12,7 @@ import {
 } from "@/lib/concurrency";
 import { getDashboardApiSettings, getSiteRuntimeSettings } from "@/lib/dashboardApiSettings";
 import {
+  buildRaiderIoCharacterDetails,
   fetchRaiderIoCharacterProfile,
   stripRaiderIoRaw,
   type RaiderIoCharacterSnapshot,
@@ -51,6 +52,15 @@ import { resilientRead, resilientWrite, getRuntimeCachedValue, clearRuntimeCache
 import { firebaseWrite, firebaseUnavailableMessage } from "@/lib/firebaseAccess";
 import { timestampToIso } from "@/lib/values";
 import { resolveDiscordInteractionProfileDocument } from "@/lib/discordInteractionStorage";
+import { currentSeasonRaidProgress, primaryCurrentRaidProgress } from "@/lib/characterRaidProgress";
+import {
+  readCanonicalCharacterDataMany,
+  readCharacterRaidSeasonSnapshot,
+  readExternalCharacterData,
+  readGuildCharacterData,
+  writeExternalCharacterData,
+  type CanonicalCharacterData,
+} from "@/lib/characterDataStore";
 
 export {
   deleteDashboardProfileById,
@@ -627,6 +637,52 @@ function normalizeCharacters(value: unknown, mainCharacterKey?: string | null) {
   return normalizeCharacterList(value, mainCharacterKey);
 }
 
+
+function mergeCanonicalCharacter(current: ProfileCharacter, canonical: CanonicalCharacterData): ProfileCharacter {
+  const normalized = normalizeCharacter({
+    ...current,
+    key: current.key,
+    region: canonical.region || current.region,
+    name: canonical.name || current.name,
+    normalizedName: canonical.normalizedName || current.normalizedName,
+    realmSlug: canonical.realmSlug || current.realmSlug,
+    realmName: canonical.realmName || current.realmName,
+    className: canonical.className || current.className,
+    activeSpecName: canonical.specName || current.activeSpecName,
+    activeSpecId: canonical.activeSpecId ?? current.activeSpecId,
+    activeSpecRole: canonical.role || current.activeSpecRole,
+    raceName: canonical.raceName || current.raceName,
+    genderName: canonical.genderName || current.genderName,
+    faction: canonical.faction || current.faction,
+    guildName: canonical.guildName || current.guildName,
+    guildRealmSlug: canonical.guildRealmSlug || current.guildRealmSlug,
+    guildRank: canonical.guildRank ?? current.guildRank,
+    verifiedGuild: canonical.scope === "guild",
+    itemLevel: canonical.itemLevel ?? current.itemLevel ?? null,
+    avatarUrl: canonical.avatarUrl || current.avatarUrl,
+    renderUrl: canonical.renderUrl || current.renderUrl,
+    mediaUrl: canonical.mediaUrl || current.mediaUrl,
+    profileUrl: canonical.profileUrl || current.profileUrl || "#",
+    raiderIo: canonical.raiderIo || current.raiderIo || null,
+    lastSeenAt: canonical.updatedAt || current.lastSeenAt,
+  }, current.isMain ? current.key : null);
+  return normalized ? { ...normalized, addedAt: current.addedAt || normalized.addedAt, isMain: current.isMain } : current;
+}
+
+async function hydrateProfilesFromCanonicalCharacterData(profiles: DashboardProfile[]) {
+  const keys = profiles.flatMap((profile) => profile.characters.map((character) => character.key));
+  if (!keys.length) return profiles;
+  const canonical = await readCanonicalCharacterDataMany(keys).catch(() => new Map<string, CanonicalCharacterData>());
+  if (!canonical.size) return profiles;
+  return profiles.map((profile) => ({
+    ...profile,
+    characters: profile.characters.map((character) => {
+      const record = canonical.get(character.key);
+      return record ? mergeCanonicalCharacter(character, record) : character;
+    }),
+  }));
+}
+
 function normalizeBattleNetCandidateCharacters(
   battlenetRaw: Record<string, unknown> | null,
 ) {
@@ -1103,7 +1159,8 @@ export async function getProfileById(profileId: string) {
       }
 
       const profile = normalizeProfile(profileId, data);
-      return resolveProfileAccessForCurrentGroups(profile);
+      const [hydrated] = await hydrateProfilesFromCanonicalCharacterData([profile]);
+      return resolveProfileAccessForCurrentGroups(hydrated || profile);
     },
     {
       ttlMs: Math.max(30_000, Math.min(300_000, Number((await getSiteRuntimeSettings().catch(() => null))?.profileReadCacheTtlMs || process.env.PROFILE_READ_CACHE_TTL_MS || 60_000))),
@@ -1239,7 +1296,8 @@ export async function listDashboardProfiles(params: {
     ),
     listAccessGroups().catch(() => [] as AccessGroup[]),
   ]);
-  const profiles: DashboardProfile[] = profilesFromStore
+  const hydratedProfiles = await hydrateProfilesFromCanonicalCharacterData(profilesFromStore);
+  const profiles: DashboardProfile[] = hydratedProfiles
     .map((profile: DashboardProfile) =>
       groups.length ? applyCurrentProfileGroup(profile, groups) : profile,
     )
@@ -2262,6 +2320,51 @@ function mergeFreshCharacter(
 }
 
 async function refreshCharacterSnapshot(current: ProfileCharacter) {
+  // Guild characters never fan out to Battle.net/Raider.IO from profile refresh.
+  // The guild sync is the single writer for their canonical metrics.
+  const canonicalGuild = await readGuildCharacterData(current.key).catch(() => null);
+  if (canonicalGuild) {
+    return normalizeCharacter(
+      {
+        ...current,
+        key: current.key,
+        region: canonicalGuild.region || current.region,
+        name: canonicalGuild.name || current.name,
+        normalizedName: canonicalGuild.normalizedName || current.normalizedName,
+        realmSlug: canonicalGuild.realmSlug || current.realmSlug,
+        realmName: canonicalGuild.realmName || current.realmName,
+        className: canonicalGuild.className || current.className,
+        activeSpecName: canonicalGuild.specName || current.activeSpecName,
+        activeSpecId: canonicalGuild.activeSpecId ?? current.activeSpecId,
+        activeSpecRole: canonicalGuild.role || current.activeSpecRole,
+        raceName: canonicalGuild.raceName || current.raceName,
+        genderName: canonicalGuild.genderName || current.genderName,
+        faction: canonicalGuild.faction || current.faction,
+        guildName: canonicalGuild.guildName || current.guildName,
+        guildRealmSlug: canonicalGuild.guildRealmSlug || current.guildRealmSlug,
+        guildRank: canonicalGuild.guildRank ?? current.guildRank,
+        verifiedGuild: true,
+        itemLevel: canonicalGuild.itemLevel ?? current.itemLevel ?? null,
+        avatarUrl: canonicalGuild.avatarUrl || current.avatarUrl,
+        renderUrl: canonicalGuild.renderUrl || current.renderUrl,
+        mediaUrl: canonicalGuild.mediaUrl || current.mediaUrl,
+        profileUrl: canonicalGuild.profileUrl || current.profileUrl || "#",
+        raiderIo: canonicalGuild.raiderIo || current.raiderIo || null,
+        lastSeenAt: canonicalGuild.updatedAt || current.lastSeenAt || new Date().toISOString(),
+      },
+      current.isMain ? current.key : null,
+    );
+  }
+
+  const canonicalExternal = await readExternalCharacterData(current.key).catch(() => null);
+  if (canonicalExternal) {
+    const updated = Date.parse(canonicalExternal.updatedAt || "");
+    const maxAgeMs = Math.max(60_000, Math.min(30 * 60_000, Number(process.env.EXTERNAL_CHARACTER_CANONICAL_TTL_MS || 5 * 60_000)));
+    if (Number.isFinite(updated) && Date.now() - updated < maxAgeMs) {
+      return mergeCanonicalCharacter(current, canonicalExternal);
+    }
+  }
+
   const characterRegion = current.region || "eu";
   const characterName = current.normalizedName || current.name;
   const [battleNetSnapshot, raiderIoSnapshot] = await Promise.all([
@@ -2276,12 +2379,13 @@ async function refreshCharacterSnapshot(current: ProfileCharacter) {
   if (!battleNetSnapshot && !raiderIoSnapshot) return null;
 
   const source = battleNetSnapshot || current;
+  const strippedRaider = stripRaiderIoRaw(raiderIoSnapshot) || current.raiderIo || null;
   const normalized = normalizeCharacter(
     {
       ...source,
       key: current.key,
       isMain: current.isMain,
-      raiderIo: stripRaiderIoRaw(raiderIoSnapshot) || current.raiderIo || null,
+      raiderIo: strippedRaider,
       itemLevel:
         battleNetSnapshot?.itemLevel ??
         raiderIoSnapshot?.itemLevelEquipped ??
@@ -2305,6 +2409,47 @@ async function refreshCharacterSnapshot(current: ProfileCharacter) {
     },
     current.isMain ? current.key : null,
   );
+
+  if (normalized && !normalized.verifiedGuild) {
+    const details = buildRaiderIoCharacterDetails(raiderIoSnapshot);
+    const raidSeasonSnapshot = await readCharacterRaidSeasonSnapshot().catch(() => null);
+    const currentRaidProgression = currentSeasonRaidProgress(details.raidProgression, raidSeasonSnapshot);
+    const externalRecord: CanonicalCharacterData = {
+      key: normalized.key,
+      scope: "external",
+      region: normalized.region,
+      name: normalized.name,
+      normalizedName: normalized.normalizedName,
+      realmSlug: normalized.realmSlug,
+      realmName: normalized.realmName,
+      className: normalized.className,
+      specName: normalized.activeSpecName,
+      activeSpecId: normalized.activeSpecId,
+      role: normalized.activeSpecRole,
+      raceName: normalized.raceName,
+      genderName: normalized.genderName,
+      faction: normalized.faction,
+      guildName: normalized.guildName,
+      guildRealmSlug: normalized.guildRealmSlug,
+      guildRank: normalized.guildRank,
+      verifiedGuild: false,
+      itemLevel: normalized.itemLevel ?? null,
+      avatarUrl: normalized.avatarUrl,
+      renderUrl: normalized.renderUrl,
+      mediaUrl: normalized.mediaUrl,
+      profileUrl: normalized.profileUrl,
+      raiderIo: strippedRaider as Record<string, unknown> | null,
+      raidProgression: details.raidProgression,
+      currentSeasonRaidProgression: currentRaidProgression,
+      primaryRaidProgress: primaryCurrentRaidProgress(details.raidProgression, raidSeasonSnapshot),
+      currentSeasonId: raidSeasonSnapshot?.currentSeasonId || null,
+      currentSeasonSlug: raidSeasonSnapshot?.currentSeasonSlug || null,
+      battleNetUpdatedAt: battleNetSnapshot?.lastSeenAt || null,
+      raiderIoUpdatedAt: raiderIoSnapshot?.updatedAt || null,
+      updatedAt: new Date().toISOString(),
+    };
+    await writeExternalCharacterData(externalRecord).catch(() => false);
+  }
 
   return normalized;
 }
