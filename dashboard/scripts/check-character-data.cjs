@@ -19,6 +19,7 @@ const checks = [
   ['fresh external canonical records prevent duplicate upstream fanout', profiles.includes('readExternalCharacterData(current.key)') && profiles.includes('EXTERNAL_CHARACTER_CANONICAL_TTL_MS')],
   ['profile reads hydrate character metrics from canonical databases', profiles.includes('hydrateProfilesFromCanonicalCharacterData') && profiles.includes('readCanonicalCharacterDataMany')],
   ['current season raid selection is centralized', raids.includes('currentSeasonRaidProgress') && raids.includes('primaryCurrentRaidProgress')],
+  ['nullable Raider.IO raid counters are normalized before canonical storage', raids.includes('normalizeCharacterRaidProgress') && raids.includes('raidCounter(raid?.totalBosses)') && profiles.includes('normalizeCharacterRaidProgress(details.raidProgression)') && profiles.includes('raidProgression: normalizedRaidProgression')],
   ['guild roster UI no longer uses first raid/tier heuristic directly', !explorer.includes('raids.find((raid) => /^tier-/i.test(raid.slug)) || raids[0]')],
   ['guild roster UI uses server season snapshot', explorer.includes('liveStats.raidSeasonSnapshot') && explorer.includes('primaryCurrentRaidProgress')],
   ['raid filters are limited to current season', explorer.includes('currentSeasonRaidProgress(normalizedRaidProgress(member), liveStats.raidSeasonSnapshot)')],

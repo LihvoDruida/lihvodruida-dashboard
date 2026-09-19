@@ -336,7 +336,7 @@ export async function resolveRaidSeasonSnapshot(options: ResolverOptions = {}): 
     let fallback = currentExpansionRaids.filter((raid) => raid.activeNow);
 
     if (!fallback.length && battleNet?.raidNames?.length) {
-      const battleNetNames = new Set(battleNet.raidNames.map((name) => norm(name)));
+      const battleNetNames = new Set(battleNet.raidNames.map((name: unknown) => norm(name)));
       fallback = currentExpansionRaids.filter((raid) => {
         const raidNames = [raid.name, raid.shortName].map((value) => norm(value)).filter(Boolean);
         return raidNames.some((name) => battleNetNames.has(name));

@@ -52,7 +52,11 @@ import { resilientRead, resilientWrite, getRuntimeCachedValue, clearRuntimeCache
 import { firebaseWrite, firebaseUnavailableMessage } from "@/lib/firebaseAccess";
 import { timestampToIso } from "@/lib/values";
 import { resolveDiscordInteractionProfileDocument } from "@/lib/discordInteractionStorage";
-import { currentSeasonRaidProgress, primaryCurrentRaidProgress } from "@/lib/characterRaidProgress";
+import {
+  currentSeasonRaidProgress,
+  normalizeCharacterRaidProgress,
+  primaryCurrentRaidProgress,
+} from "@/lib/characterRaidProgress";
 import {
   readCanonicalCharacterDataMany,
   readCharacterRaidSeasonSnapshot,
@@ -2412,8 +2416,9 @@ async function refreshCharacterSnapshot(current: ProfileCharacter) {
 
   if (normalized && !normalized.verifiedGuild) {
     const details = buildRaiderIoCharacterDetails(raiderIoSnapshot);
+    const normalizedRaidProgression = normalizeCharacterRaidProgress(details.raidProgression);
     const raidSeasonSnapshot = await readCharacterRaidSeasonSnapshot().catch(() => null);
-    const currentRaidProgression = currentSeasonRaidProgress(details.raidProgression, raidSeasonSnapshot);
+    const currentRaidProgression = currentSeasonRaidProgress(normalizedRaidProgression, raidSeasonSnapshot);
     const externalRecord: CanonicalCharacterData = {
       key: normalized.key,
       scope: "external",
@@ -2439,9 +2444,9 @@ async function refreshCharacterSnapshot(current: ProfileCharacter) {
       mediaUrl: normalized.mediaUrl,
       profileUrl: normalized.profileUrl,
       raiderIo: strippedRaider as Record<string, unknown> | null,
-      raidProgression: details.raidProgression,
+      raidProgression: normalizedRaidProgression,
       currentSeasonRaidProgression: currentRaidProgression,
-      primaryRaidProgress: primaryCurrentRaidProgress(details.raidProgression, raidSeasonSnapshot),
+      primaryRaidProgress: primaryCurrentRaidProgress(normalizedRaidProgression, raidSeasonSnapshot),
       currentSeasonId: raidSeasonSnapshot?.currentSeasonId || null,
       currentSeasonSlug: raidSeasonSnapshot?.currentSeasonSlug || null,
       battleNetUpdatedAt: battleNetSnapshot?.lastSeenAt || null,

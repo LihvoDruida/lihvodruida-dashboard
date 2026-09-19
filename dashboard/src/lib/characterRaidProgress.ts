@@ -10,8 +10,36 @@ export type CharacterRaidProgressLike = {
   mythicKills: number;
 };
 
+export type CharacterRaidProgressInput = {
+  slug?: unknown;
+  name?: unknown;
+  summary?: unknown;
+  totalBosses?: number | null;
+  normalKills?: number | null;
+  heroicKills?: number | null;
+  mythicKills?: number | null;
+};
+
 function clean(value: unknown) {
   return String(value || "").trim();
+}
+
+function raidCounter(value: number | null | undefined) {
+  const numeric = Number(value ?? 0);
+  return Number.isFinite(numeric) ? Math.max(0, Math.floor(numeric)) : 0;
+}
+
+export function normalizeCharacterRaidProgress(raids: readonly CharacterRaidProgressInput[] | null | undefined): CharacterRaidProgressLike[] {
+  if (!Array.isArray(raids)) return [];
+  return raids.map((raid) => ({
+    slug: clean(raid?.slug),
+    name: clean(raid?.name),
+    summary: clean(raid?.summary) || null,
+    totalBosses: raidCounter(raid?.totalBosses),
+    normalKills: raidCounter(raid?.normalKills),
+    heroicKills: raidCounter(raid?.heroicKills),
+    mythicKills: raidCounter(raid?.mythicKills),
+  })).filter((raid) => Boolean(raid.slug));
 }
 
 function progressWeight(raid: CharacterRaidProgressLike) {
