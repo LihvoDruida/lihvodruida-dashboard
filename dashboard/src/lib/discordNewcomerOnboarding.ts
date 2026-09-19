@@ -17,7 +17,7 @@ import {
 import { createDiscordWelcomeArtifact } from "@/lib/discordWelcomeArtifact";
 import { mapConcurrent } from "@/lib/concurrency";
 import { getDiscordWelcomeCardSettings, type DiscordWelcomeCardSettings } from "@/lib/discordWelcomeCardSettings";
-import { discordGuildChannelUrl } from "@/lib/discordGuildLinks";
+import { MISTBLOSSOM_DISCORD_CHANNELS, discordGuildChannelUrl } from "@/lib/discordGuildLinks";
 import { firebaseWrite } from "@/lib/firebaseAccess";
 import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
 import { getGuildNicknamePolicy, nicknameMatchesTemplate, VALID_NICKNAME_STRUCTURES, type GuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
