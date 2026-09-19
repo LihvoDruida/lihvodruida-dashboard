@@ -57,8 +57,8 @@ export default async function DiscordHubPage({
   const discordEnabled = hasDiscordEmbedConfig();
 
   return (
-    <main className="container app-page">
-      <section className="dashboard-shell content-shell discord-shell app-page-stack" aria-label="Панель Discord-дій Mistblossom Vanguard">
+    <main className="container app-page discord-hub-page">
+      <section className="dashboard-shell content-shell discord-shell discord-hub-shell app-page-stack" aria-label="Панель Discord-дій Mistblossom Vanguard">
         <DashboardIdentity user={user} activeSection="discord" />
         <header className="hero panel dashboard-hero content-dashboard-hero discord-dashboard-hero">
           <div className="hero-copy dashboard-hero__copy content-dashboard-hero__copy">
@@ -78,6 +78,7 @@ export default async function DiscordHubPage({
 
           <HeroSidePanel
             ariaLabel="Огляд Discord-повідомлень"
+            className="discord-dashboard-hero__side"
             summary={[
               { label: "ДОСТУП", value: hierarchyTitle(user.role), note: "Дії залежать від ролі" },
               { label: "РОЗДІЛ", value: canCreateRaidPolls ? "Пули + повідомлення" : canViewRules ? "Правила + повідомлення" : "Повідомлення", note: discordEnabled ? "Discord API налаштовано" : "Discord API недоступний" },
@@ -95,48 +96,51 @@ export default async function DiscordHubPage({
       ) : !discordEnabled ? (
         <div className="notice panel error-note">Публікація в Discord тимчасово недоступна.</div>
       ) : (
-        <section className={`discord-hub-grid discord-hub-grid--compact ${canViewRules || canCreateRaidPolls ? "" : "discord-hub-grid--single"}`} aria-label="Розділи Discord-повідомлень">
-          {canViewRules ? (
-            <a className="panel discord-hub-card discord-hub-card--rules" href="/discord/rules">
-              <span className="eyebrow">Статистика правил • {hierarchyTitle(user.role)}</span>
-              <strong>{canEditRules ? "Правила сервера" : "Статистика правил"}</strong>
-              <p>{canEditRules ? "Правила, статистика і ролі кнопки прийняття." : "Статистика звичайних правил і список підписантів правил рейду."}</p>
-              <span className="btn primary">{canEditRules ? "Відкрити правила" : "Відкрити статистику"}</span>
+        <section className="discord-hub-sections" aria-label="Розділи Discord-повідомлень">
+          <div className="discord-hub-section-group discord-hub-section-group--primary" aria-label="Основні Discord-дії">
+            {canViewRules ? (
+              <a className="panel discord-hub-card discord-hub-card--featured discord-hub-card--rules" href="/discord/rules">
+                <span className="eyebrow">Статистика правил • {hierarchyTitle(user.role)}</span>
+                <strong>{canEditRules ? "Правила сервера" : "Статистика правил"}</strong>
+                <p>{canEditRules ? "Правила, статистика і ролі кнопки прийняття." : "Статистика звичайних правил і список підписантів правил рейду."}</p>
+                <span className="btn primary">{canEditRules ? "Відкрити правила" : "Відкрити статистику"}</span>
+              </a>
+            ) : null}
+
+            <a className="panel discord-hub-card discord-hub-card--featured discord-hub-card--raid" href="/raids">
+              <span className="eyebrow">Рейди • {hierarchyTitle(user.role)}</span>
+              <strong>Рейдові оголошення</strong>
+              <p>Створення рейдів, кнопки запису й автоматична побудова паті.</p>
+              <span className="btn primary">Відкрити рейди</span>
             </a>
-          ) : null}
+          </div>
 
-          <a className="panel discord-hub-card discord-hub-card--raid" href="/raids">
-            <span className="eyebrow">Рейди • {hierarchyTitle(user.role)}</span>
-            <strong>Рейдові оголошення</strong>
-            <p>Створення рейдів, кнопки запису й автоматична побудова паті.</p>
-            <span className="btn primary">Відкрити рейди</span>
-          </a>
+          <div className="discord-hub-section-group discord-hub-section-group--tools" aria-label="Інструменти Discord">
+            {canCreateRaidPolls ? (
+              <a className="panel discord-hub-card discord-hub-card--tool discord-hub-card--poll" href="/polls">
+                <span className="eyebrow">Рейд-голосування • {hierarchyTitle(user.role)}</span>
+                <strong>Raid Polls</strong>
+                <p>Створення голосування за дні та час рейду з публікацією в Discord і результатами на сайті.</p>
+                <span className="btn subtle">Відкрити пули</span>
+              </a>
+            ) : null}
 
-          {canCreateRaidPolls ? (
-            <a className="panel discord-hub-card discord-hub-card--poll" href="/polls">
-              <span className="eyebrow">Рейд-голосування • {hierarchyTitle(user.role)}</span>
-              <strong>Raid Polls</strong>
-              <p>Створення голосування за дні та час рейду з публікацією в Discord і результатами на сайті.</p>
-              <span className="btn subtle">Відкрити пули</span>
+            {canManageAutoroles ? (
+              <a className="panel discord-hub-card discord-hub-card--tool discord-hub-card--autoroles" href="/discord/autoroles">
+                <span className="eyebrow">Авторолі • {hierarchyTitle(user.role)}</span>
+                <strong>Кнопки видачі ролей</strong>
+                <p>Створення embed-повідомлень із кнопками, які видають, знімають або перемикають Discord-ролі.</p>
+                <span className="btn primary">Відкрити авторолі</span>
+              </a>
+            ) : null}
+
+            <a className="panel discord-hub-card discord-hub-card--tool discord-hub-card--embed" href="/discord/embed">
+              <span className="eyebrow">Звичайні повідомлення • {hierarchyTitle(user.role)}</span>
+              <strong>Звичайні повідомлення</strong>
+              <p>Повідомлення, редагування за посиланням і теги ролей.</p>
+              <span className="btn subtle">Відкрити редактор</span>
             </a>
-          ) : null}
-
-
-          {canManageAutoroles ? (
-            <a className="panel discord-hub-card discord-hub-card--autoroles" href="/discord/autoroles">
-              <span className="eyebrow">Авторолі • {hierarchyTitle(user.role)}</span>
-              <strong>Кнопки видачі ролей</strong>
-              <p>Створення embed-повідомлень із кнопками, які видають, знімають або перемикають Discord-ролі.</p>
-              <span className="btn primary">Відкрити авторолі</span>
-            </a>
-          ) : null}
-
-          <a className="panel discord-hub-card" href="/discord/embed">
-            <span className="eyebrow">Звичайні повідомлення • {hierarchyTitle(user.role)}</span>
-            <strong>Звичайні повідомлення</strong>
-            <p>Повідомлення, редагування за посиланням і теги ролей.</p>
-            <span className="btn subtle">Відкрити редактор</span>
-          </a>
+          </div>
         </section>
       )}
 
