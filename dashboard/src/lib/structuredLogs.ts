@@ -85,7 +85,10 @@ function redact(value: unknown, depth = 0): unknown {
     return value
       .replace(/ghp_[A-Za-z0-9_]+/g, "[redacted]")
       .replace(/github_pat_[A-Za-z0-9_]+/g, "[redacted]")
-      .replace(/Bot\s+[A-Za-z0-9._-]+/g, "Bot [redacted]")
+      .replace(/Bot\s+[A-Za-z0-9._~+\/-]+/gi, "Bot [redacted]")
+      .replace(/Bearer\s+[A-Za-z0-9._~+\/-]+/gi, "Bearer [redacted]")
+      .replace(/(postgres(?:ql)?:\/\/[^:\s/]+:)[^@\s/]+(@)/gi, "$1[redacted]$2")
+      .replace(/(token|secret|password|client_secret)=([^&\s]+)/gi, "$1=[redacted]")
       .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, "[email]")
       .replace(/-----BEGIN [^-]+-----[\s\S]*?-----END [^-]+-----/g, "[redacted-private-key]")
       .slice(0, depth === 0 ? 1500 : 700);
@@ -144,7 +147,7 @@ function toRecord(input: StructuredLogInput): StructuredLogRecord & { fingerprin
     category,
     source: input.source || "dashboard",
     event: cleanText(input.event, 180) || "system.event",
-    message: cleanText(input.message, 1500),
+    message: cleanText(redact(input.message), 1500),
     actorId: cleanText(input.actorId, 120),
     actorName: cleanText(input.actorName, 160),
     actorGroupId: cleanText(input.actorGroupId, 120),

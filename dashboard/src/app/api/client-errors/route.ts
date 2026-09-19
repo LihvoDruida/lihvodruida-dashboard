@@ -7,6 +7,8 @@ import {
   logDashboardEvent,
   noStoreHeaders,
   safeErrorMessage,
+  verifyTrustedOrigin,
+  forbiddenResponse,
 } from "@/lib/security";
 
 export const runtime = "nodejs";
@@ -43,6 +45,7 @@ function isIgnorableClientErrorMessage(message: string, stack = "", filename = "
 }
 
 export async function POST(request: NextRequest) {
+  if (!verifyTrustedOrigin(request)) return forbiddenResponse("Недовірене джерело client-error report.");
   const tooLarge = assertRequestBodySize(request, 12 * 1024);
   if (tooLarge) return tooLarge;
 
@@ -63,7 +66,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const data = await request.json().catch(() => ({}));
+    const rawBody = await request.text();
+    if (Buffer.byteLength(rawBody, "utf8") > 12 * 1024) {
+      return NextResponse.json({ ok: false, error: "Payload too large." }, { status: 413, headers: noStoreHeaders() });
+    }
+    const data = (() => { try { return JSON.parse(rawBody); } catch { return {}; } })();
     const message = clean(data?.message, 500);
     if (!message)
       return NextResponse.json(

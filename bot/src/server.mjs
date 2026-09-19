@@ -5,6 +5,7 @@ import { inspectDiscordSignature } from "./signature.mjs";
 import { completeInteraction } from "./dashboardClient.mjs";
 import { logger } from "./logger.mjs";
 import { startDiscordGatewayBridge, discordGatewayHealth } from "./gateway.mjs";
+import { claimDiscordInteractionId } from "./replayGuard.mjs";
 import {
   INTERACTION_DOMAINS,
   interactionDomainFor,
@@ -265,6 +266,23 @@ const server = createServer(async (request, response) => {
       bodyBytes: Buffer.byteLength(rawBody, "utf8"),
     }));
     return json(response, 400, { error: "invalid_json" });
+  }
+
+  if (interaction?.type !== InteractionType.PING) {
+    const interactionId = String(interaction?.id || "").trim();
+    if (!claimDiscordInteractionId(interactionId)) {
+      logger.warn("Повторний Discord interaction заблоковано", requestDiagnosticContext(request, path, {
+        eventName: "bot.security.discord_interaction_replay",
+        category: "security",
+        statusCode: 200,
+        interactionIdValid: /^\d{16,25}$/.test(interactionId),
+      }));
+      const customId = String(interaction?.data?.custom_id || "");
+      const duplicateAck = /^\d{16,25}$/.test(interactionId)
+        ? deferredResponseFor(interaction, customId)
+        : { type: CallbackType.CHANNEL_MESSAGE, data: { flags: EPHEMERAL, content: "⚠️ Некоректний Discord interaction id." } };
+      return json(response, 200, duplicateAck);
+    }
   }
 
   try {

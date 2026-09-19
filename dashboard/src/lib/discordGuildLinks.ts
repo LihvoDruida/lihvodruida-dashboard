@@ -26,3 +26,23 @@ export const MISTBLOSSOM_DISCORD_CHANNELS = {
 export function discordGuildChannelUrl(channelId: string) {
   return `https://discord.com/channels/${MISTBLOSSOM_DISCORD_GUILD_ID}/${channelId}`;
 }
+
+
+export function safeDiscordMessageUrl(value: unknown) {
+  const text = String(value || "").trim();
+  if (!text || text.length > 300) return "";
+  try {
+    const url = new URL(text);
+    const host = url.hostname.toLowerCase();
+    if (url.protocol !== "https:" || (host !== "discord.com" && host !== "discordapp.com")) return "";
+    if (url.username || url.password || url.port || url.search || url.hash) return "";
+    const parts = url.pathname.split("/").filter(Boolean);
+    if (parts.length !== 4 || parts[0] !== "channels") return "";
+    const [guildId, channelId, messageId] = parts.slice(1);
+    if (guildId !== MISTBLOSSOM_DISCORD_GUILD_ID) return "";
+    if (![guildId, channelId, messageId].every((part) => /^\d{16,25}$/.test(part))) return "";
+    return `https://discord.com/channels/${guildId}/${channelId}/${messageId}`;
+  } catch {
+    return "";
+  }
+}

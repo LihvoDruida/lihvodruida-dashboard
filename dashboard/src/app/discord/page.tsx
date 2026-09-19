@@ -6,6 +6,7 @@ import { canManageGeneralEmbeds, canManageRaids, canManageRulesEmbeds, canViewRu
 import { hasDiscordEmbedConfig } from "@/lib/discordAdmin";
 import { getOwnProfilePath } from "@/lib/profiles";
 import { buildPageMetadata } from "@/lib/seo";
+import { safeDiscordMessageUrl } from "@/lib/discordGuildLinks";
 
 export const metadata = buildPageMetadata({
   title: "Discord-повідомлення",
@@ -18,18 +19,20 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 function StatusNotice({ params }: { params: Record<string, string | undefined> }) {
-  if (params.published) {
+  const published = safeDiscordMessageUrl(params.published);
+  const updated = safeDiscordMessageUrl(params.updated);
+  if (published) {
     return (
       <div className="notice panel success discord-notice">
-        Опубліковано Discord-повідомлення: <a href={params.published} target="_blank" rel="noreferrer">відкрити</a>
+        Опубліковано Discord-повідомлення: <a href={published} target="_blank" rel="noreferrer">відкрити</a>
       </div>
     );
   }
 
-  if (params.updated) {
+  if (updated) {
     return (
       <div className="notice panel success discord-notice">
-        Оновлено Discord-повідомлення: <a href={params.updated} target="_blank" rel="noreferrer">відкрити</a>
+        Оновлено Discord-повідомлення: <a href={updated} target="_blank" rel="noreferrer">відкрити</a>
       </div>
     );
   }

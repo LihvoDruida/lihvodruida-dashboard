@@ -20,6 +20,7 @@ import {
   rulesOnboardingStatus,
 } from "@/lib/rulesOnboarding";
 import { getGuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
+import { tokenRulesRolesAreCurrentlyAllowed } from "@/lib/discordRulesRolePolicy";
 import { processNewcomerNicknameRoleGrant } from "@/lib/discordNicknameWarnings";
 import { markDiscordNewcomerRulesAccepted } from "@/lib/discordNewcomerOnboarding";
 import { checkGeoAccess } from "@/lib/geoAccessPolicy";
@@ -310,6 +311,20 @@ export async function POST(request: NextRequest) {
   }
 
   if (!roleIds.length) return redirectToToken(request, token, "missing_role_token");
+
+  const roleTokenAllowed = await tokenRulesRolesAreCurrentlyAllowed(roleIds).catch((error) => {
+    logDashboardEvent("error", "rules.onboarding.role_policy_unavailable", request, {
+      message: safeErrorMessage(error),
+    }, { category: "security" });
+    return false;
+  });
+  if (!roleTokenAllowed) {
+    logDashboardEvent("warn", "rules.onboarding.role_token_rejected", request, {
+      roleCount: roleIds.length,
+      reason: "not_currently_configured",
+    }, { category: "security" });
+    return redirectToToken(request, token, "discord_role_not_allowed");
+  }
 
   const configuredGuildId = getDiscordGuildId();
   if (

@@ -57,8 +57,8 @@ export const LEGACY_OAUTH_STATE_COOKIE = "mistblossom_oauth_state";
 /**
  * `__Host-` + Secure cookies are mandatory in production. Plain HTTP
  * development on 0.0.0.0 cannot reliably store them in browsers, so dev uses
- * the existing legacy cookie names without Secure. Both names are always read
- * and cleared, keeping upgrades/downgrades predictable.
+ * the existing legacy cookie names without Secure. Production reads only the
+ * host-only Secure names; legacy names are still cleared during transitions.
  */
 export function secureAuthCookiesEnabled() {
   return process.env.NODE_ENV === "production";
@@ -635,8 +635,14 @@ export async function verifySessionToken(
 
 export async function getStoredSession(): Promise<DashboardSession | null> {
   const store = await cookies();
-  const token =
-    store.get(SESSION_COOKIE)?.value || store.get(LEGACY_SESSION_COOKIE)?.value;
+  // Production accepts only the host-only Secure cookie. Reading the legacy
+  // cookie as a fallback would allow a sibling subdomain to plant a valid
+  // session token (for example an attacker's own token) and cause session
+  // swapping. Legacy cookies remain development-only and are still cleared
+  // during normal auth/session writes.
+  const token = secureAuthCookiesEnabled()
+    ? store.get(SESSION_COOKIE)?.value || ""
+    : store.get(LEGACY_SESSION_COOKIE)?.value || "";
   return verifySessionToken(token);
 }
 
@@ -662,7 +668,7 @@ export async function getSession(
                 : String(error || "unknown"),
           },
         );
-        return session;
+        return process.env.NODE_ENV === "production" ? null : session;
       })
     : session;
 

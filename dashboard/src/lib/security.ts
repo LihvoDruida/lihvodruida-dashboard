@@ -213,18 +213,46 @@ export function isTrustedCloudflareRequest(request: Request | NextRequest) {
     .toLowerCase() === "cloudflare";
 }
 
+function normalizeClientIp(value?: string | null) {
+  let text = String(value || "").trim().replace(/^::ffff:/i, "");
+  if (!text || text.length > 80) return "";
+
+  // IPv4: reject octal-ish/overflow values instead of merely checking shape.
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(text)) {
+    const parts = text.split(".").map(Number);
+    return parts.every((part) => Number.isInteger(part) && part >= 0 && part <= 255)
+      ? parts.join(".")
+      : "";
+  }
+
+  // IPv6 as emitted by nginx/Cloudflare. Zone identifiers are unnecessary on
+  // the public edge and are rejected to keep rate-limit/log keys canonical.
+  text = text.toLowerCase();
+  if (text.includes(":") && /^[0-9a-f:]+$/.test(text) && !text.includes(":::")) {
+    const groups = text.split(":");
+    if (groups.length <= 9 && groups.every((group) => group.length <= 4)) return text;
+  }
+  return "";
+}
+
 export function getClientIp(request: Request | NextRequest) {
-  // Nginx pins X-Real-IP to the socket-derived client address after real_ip
-  // processing. Never trust a raw CF-Connecting-IP from the browser: direct
-  // origin requests can forge it unless the edge marker was set by our nginx.
-  const realIp = request.headers.get("x-real-ip")?.trim();
+  // In production forwarded client-IP headers are trusted only when nginx has
+  // stamped the request from an actual Cloudflare peer. Internal bot/cron
+  // calls do not need a public client IP and deliberately resolve to unknown.
+  const trustedProxy = isTrustedCloudflareRequest(request) || process.env.NODE_ENV !== "production";
+  if (!trustedProxy) return "unknown";
+
+  const realIp = normalizeClientIp(request.headers.get("x-real-ip"));
   if (realIp) return realIp;
 
-  const cfIp = request.headers.get("cf-connecting-ip")?.trim();
-  if (cfIp && isTrustedCloudflareRequest(request)) return cfIp;
+  const cfIp = normalizeClientIp(request.headers.get("cf-connecting-ip"));
+  if (cfIp) return cfIp;
 
   const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0]?.trim() || "unknown";
+  if (forwarded) {
+    const first = normalizeClientIp(forwarded.split(",")[0]);
+    if (first) return first;
+  }
 
   return "unknown";
 }
@@ -461,10 +489,13 @@ export function verifyTrustedOrigin(request: Request | NextRequest) {
     return reject("cross_site_fetch", { host, originHost: origin.host, refererHost: referer.host });
   }
 
-  if (fetchSite === "same-origin" || fetchSite === "same-site" || fetchSite === "none") {
+  if (fetchSite === "same-origin" || fetchSite === "none") {
     return true;
   }
 
+  // `same-site` is not the same security boundary as same-origin: a compromised
+  // sibling subdomain is same-site too. Require an explicit trusted
+  // Origin/Referer before accepting that class of mutation.
   if (origin.trusted || referer.trusted) return true;
 
   // A custom dashboard header cannot be sent by a normal cross-site form, and a
@@ -479,7 +510,13 @@ export function verifyTrustedOrigin(request: Request | NextRequest) {
     return true;
   }
 
-  return reject(fetchSite ? `missing_trusted_metadata_${fetchSite}` : "missing_trusted_metadata", { host });
+  const trustedEdge = String(request.headers.get("x-mistblossom-trusted-proxy") || "").trim().toLowerCase();
+  return reject(fetchSite ? `missing_browser_provenance_${fetchSite}` : "missing_browser_provenance", {
+    host,
+    trustedEdge: trustedEdge || null,
+    originPresent: Boolean(originHeader),
+    refererPresent: Boolean(refererHeader),
+  });
 }
 
 export function forbiddenResponse(message = "Запит заблоковано політикою безпеки.") {
@@ -530,7 +567,10 @@ export function safeErrorMessage(error: unknown, fallback = "Операція н
   const redacted = message
     .replace(/ghp_[A-Za-z0-9_]+/g, "[redacted]")
     .replace(/github_pat_[A-Za-z0-9_]+/g, "[redacted]")
-    .replace(/Bot\s+[A-Za-z0-9._-]+/g, "Bot [redacted]")
+    .replace(/Bot\s+[A-Za-z0-9._~+\/-]+/gi, "Bot [redacted]")
+    .replace(/Bearer\s+[A-Za-z0-9._~+\/-]+/gi, "Bearer [redacted]")
+    .replace(/(postgres(?:ql)?:\/\/[^:\s/]+:)[^@\s/]+(@)/gi, "$1[redacted]$2")
+    .replace(/(token|secret|password|client_secret)=([^&\s]+)/gi, "$1=[redacted]")
     .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, "[email]")
     .slice(0, 240);
 

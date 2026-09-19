@@ -12,10 +12,30 @@ import {
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 
-const SESSION_COOKIE_NAMES = [
-  "__Host-mistblossom_dashboard_session",
-  "mistblossom_dashboard_session",
-];
+const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+function isKnownLegacyPageMutation(request: NextRequest, pathname: string) {
+  if (request.method !== "POST") return false;
+  if (pathname === "/dashboard/discord") return true;
+  return /^\/raids\/[^/]+$/.test(pathname) && request.nextUrl.searchParams.has("nxtPraidId");
+}
+
+function isUnsupportedPageMutation(request: NextRequest, pathname: string) {
+  const method = String(request.method || "GET").toUpperCase();
+  if (!UNSAFE_METHODS.has(method)) return false;
+  if (pathname.startsWith("/api/")) return false;
+
+  // Next.js Server Actions POST to the page URL and carry the opaque Next-Action
+  // header. They still pass through verifyTrustedOrigin below; this only filters
+  // meaningless scanner/probe mutations such as POST /.
+  if (request.headers.get("next-action")) return false;
+  if (isKnownLegacyPageMutation(request, pathname)) return false;
+  return true;
+}
+
+const SESSION_COOKIE_NAMES = isDevelopment
+  ? ["__Host-mistblossom_dashboard_session", "mistblossom_dashboard_session"]
+  : ["__Host-mistblossom_dashboard_session"];
 
 function hasDashboardSessionCookie(request: NextRequest) {
   return SESSION_COOKIE_NAMES.some((name) =>
@@ -274,6 +294,22 @@ export function proxy(request: NextRequest) {
   const isDiscordInteractionEndpoint =
     pathname === "/api/discord/interactions";
   const isPublicSiteBridgeRequest = isPublicSiteBridgePath(pathname);
+
+  // A mutation to a normal page URL is not a valid application request unless
+  // it is a real Next Server Action (or one of our explicitly supported legacy
+  // migration POSTs). Reject scanner/probe traffic here before CSRF/origin
+  // validation so POST / does not become a noisy security incident in Discord.
+  if (isUnsupportedPageMutation(request, pathname)) {
+    logDashboardEvent("debug", "proxy.unsupported_page_method", request, {
+      method: request.method,
+      path: pathname,
+      statusCode: 405,
+    });
+    return new NextResponse("Method Not Allowed", {
+      status: 405,
+      headers: noStoreHeaders({ Allow: "GET, HEAD" }),
+    });
+  }
 
   // Main Site (`lihvodruida.pp.ua`) є окремим origin. Загальна Dashboard
   // same-origin перевірка не може застосовуватись до bridge endpoint-ів, інакше

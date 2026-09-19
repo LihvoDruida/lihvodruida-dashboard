@@ -235,6 +235,12 @@ export async function POST(request: NextRequest) {
     }, { category: "security" });
     return new NextResponse("unauthorized", { status: 401, headers: noStoreHeaders() });
   }
+  if (String(request.headers.get("x-mistblossom-source") || "").trim() !== "bot") {
+    logDashboardEvent("warn", "discord.interaction.source_rejected", request, {
+      source: String(request.headers.get("x-mistblossom-source") || "").slice(0, 40),
+    }, { category: "security" });
+    return new NextResponse("forbidden", { status: 403, headers: noStoreHeaders() });
+  }
 
   const rawBody = await request.text();
   if (Buffer.byteLength(rawBody, "utf8") > 256 * 1024) {
@@ -268,6 +274,16 @@ export async function POST(request: NextRequest) {
     return new NextResponse("bad request", { status: 400, headers: noStoreHeaders() });
   }
 
+  const forwardedInteractionId = String(request.headers.get("x-interaction-id") || "").trim();
+  const interactionId = String(interaction?.id || "").trim();
+  if (interaction?.type !== 1 && (!/^\d{16,25}$/.test(interactionId) || forwardedInteractionId !== interactionId)) {
+    logDashboardEvent("warn", "discord.interaction.id_mismatch", request, {
+      bodyIdValid: /^\d{16,25}$/.test(interactionId),
+      headerPresent: Boolean(forwardedInteractionId),
+    }, { category: "security" });
+    return new NextResponse("interaction id mismatch", { status: 400, headers: noStoreHeaders() });
+  }
+
   if (interaction?.type === 1) {
     logDashboardEvent("debug", "discord.interaction.ping", request);
     return json({ type: 1 });
@@ -276,6 +292,17 @@ export async function POST(request: NextRequest) {
   if (interaction?.type !== 3) {
     logDashboardEvent("warn", "discord.interaction.unsupported_type", request, { interactionType: interaction?.type });
     return ephemeral("Цей тип Discord interaction не підтримується цією панеллю.");
+  }
+
+  const configuredGuildId = String(getDiscordGuildId() || "").trim();
+  const interactionGuildId = String(interaction?.guild_id || "").trim();
+  if (!configuredGuildId || interactionGuildId !== configuredGuildId) {
+    logDashboardEvent("warn", "discord.interaction.guild_rejected", request, {
+      configuredGuild: Boolean(configuredGuildId),
+      interactionGuildPresent: Boolean(interactionGuildId),
+      guildMatches: Boolean(configuredGuildId && interactionGuildId === configuredGuildId),
+    }, { category: "security" });
+    return ephemeral("⛔ Ця взаємодія не належить Discord-серверу Mistblossom Vanguard.");
   }
 
   const customId = String(interaction?.data?.custom_id || "");
@@ -296,7 +323,7 @@ export async function POST(request: NextRequest) {
     return ephemeral("Ця кнопка не належить панелі Mistblossom або вже застаріла.");
   }
 
-  const guildId = String(interaction?.guild_id || getDiscordGuildId() || "");
+  const guildId = interactionGuildId;
   const userId = getInteractionUserId(interaction);
   const userName = getInteractionUserName(interaction);
 

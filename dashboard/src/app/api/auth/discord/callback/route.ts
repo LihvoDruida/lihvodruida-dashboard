@@ -177,13 +177,17 @@ export async function GET(request: NextRequest) {
   const state = url.searchParams.get("state") || "";
 
   const store = await cookies();
-  const rawStateCookie =
-    store.get(OAUTH_STATE_COOKIE)?.value ||
-    store.get(LEGACY_OAUTH_STATE_COOKIE)?.value ||
-    "";
+  const rawStateCookie = secureAuthCookiesEnabled()
+    ? store.get(OAUTH_STATE_COOKIE)?.value || ""
+    : store.get(LEGACY_OAUTH_STATE_COOKIE)?.value || "";
   const rememberedNonces = parseRememberedOAuthNonces(rawStateCookie);
   const parsedState = await parseOAuthStateToken(state);
-  const legacyStateMatches = Boolean(state && rememberedNonces.includes(state));
+  // Unsigned legacy state is development-only. In production accepting a raw
+  // cookie value as OAuth state would reintroduce login-CSRF/session swapping
+  // if a sibling host could plant the legacy cookie.
+  const legacyStateMatches = Boolean(
+    !secureAuthCookiesEnabled() && state && rememberedNonces.includes(state),
+  );
   const nonceMatches = Boolean(
     parsedState?.nonce && rememberedNonces.includes(parsedState.nonce),
   );

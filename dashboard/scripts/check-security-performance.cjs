@@ -142,6 +142,9 @@ for (const [pkg, minimum, expected] of installedRequirements) {
 ok(packageJson.scripts?.['security:runtime'] === 'node scripts/check-runtime-security.cjs' && packageJson.scripts?.['build:ci']?.includes('npm run security:runtime'), 'Docker build:ci must refuse known-vulnerable installed runtime packages');
 
 ok(!proxy.includes('next-router-prefetch') && !proxy.includes('purpose:'), 'proxy matcher must not skip auth/security for prefetch requests');
+ok(proxy.includes('isUnsupportedPageMutation') && proxy.includes('proxy.unsupported_page_method') && proxy.includes('status: 405'), 'invalid unsafe methods on ordinary page URLs must be rejected before trusted-origin security logging');
+ok(proxy.includes('request.headers.get("next-action")') && proxy.includes('isKnownLegacyPageMutation'), 'page-method guard must preserve real Next Server Actions and explicit legacy migration POSTs');
+ok(security.includes('missing_browser_provenance') && security.includes('trustedEdge'), 'trusted-origin diagnostics must distinguish missing browser provenance from trusted edge metadata');
 ok(logsExplorer.includes('timeZone: LOG_TIME_ZONE') && logsExplorer.includes('Europe/Kyiv'), 'logs client timestamps must use an explicit timezone so SSR and browser hydration render identical text');
 ok(logsExplorer.includes('useState(initialNow)') && !logsExplorer.includes('useState(() => new Date().toISOString())'), 'logs client must hydrate from a server-serialized timestamp instead of calling Date during initial render');
 ok(logsPage.includes('initialNow={initialNow}') && logsPage.includes('const initialNow = new Date().toISOString()'), 'logs page must serialize one initial timestamp into the client boundary');

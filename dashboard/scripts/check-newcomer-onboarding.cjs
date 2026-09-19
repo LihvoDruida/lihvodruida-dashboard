@@ -13,6 +13,7 @@ const assert = (condition, message) => {
 };
 
 const onboarding = read('src/lib/discordNewcomerOnboarding.ts');
+const rulesRolePolicy = read('src/lib/discordRulesRolePolicy.ts');
 const dmApi = read('src/lib/discordAdmin.ts');
 const route = read('src/app/api/dashboard/discord/onboarding/automation/route.ts');
 const rulesComplete = read('src/app/api/rules/accept/complete/route.ts');
@@ -30,7 +31,8 @@ assert(onboarding.includes('if (!state.initializedAt)') && onboarding.includes('
 assert(onboarding.includes('buildRulesAcceptCustomId') && onboarding.includes('custom_id: buildRulesAcceptCustomId(roleIds)') && onboarding.includes('label: "Прийняти правила"'), 'welcome DM must reuse the existing rules interaction contract');
 assert(rulesComplete.includes('markDiscordNewcomerRulesAccepted'), 'rules completion must update newcomer onboarding state');
 assert(onboarding.includes('nicknameMatchesTemplate') && onboarding.includes('nicknameCheckedAt'), 'nickname must be checked and recorded once in newcomer onboarding');
-assert(onboarding.includes('listRulesEmbedMessages') && onboarding.includes('nicknameNewcomerRoleId'), 'role resolution must reuse existing rules/newcomer configuration');
+assert(onboarding.includes('resolveConfiguredRulesRoleIds'), 'newcomer onboarding must use the shared rules-role policy');
+assert(rulesRolePolicy.includes('listRulesEmbedMessages') && rulesRolePolicy.includes('nicknameNewcomerRoleId'), 'shared role resolution must reuse existing rules/newcomer configuration');
 assert(dmApi.includes('components?: unknown[]') && dmApi.includes('body.components = params.components.slice(0, 5)'), 'DM transport must support Discord buttons without changing existing callers');
 assert(route.includes('verifyInternalBearerToken') && route.includes('__mistblossomDiscordNewcomerOnboardingInFlight'), 'automation route must be bearer-protected and guarded against overlap');
 assert(proxy.includes('pathname === "/api/dashboard/discord/onboarding/automation"'), 'internal Docker host gate must allow the onboarding scheduler route');

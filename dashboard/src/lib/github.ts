@@ -959,11 +959,11 @@ async function allocateApplicationNumber() {
   });
 }
 
-function publicApplicationFields(item: ApplicationItem): ApplicationItem {
+function publicApplicationFields(item: ApplicationItem, options: { includeTracking?: boolean } = {}): ApplicationItem {
   return {
     number: item.number,
     application_number: item.application_number || item.number,
-    tracking_number: item.tracking_number || "",
+    tracking_number: options.includeTracking ? item.tracking_number || "" : "",
     title: item.title,
     state: item.state,
     html_url: "",
@@ -992,12 +992,12 @@ function publicApplicationFields(item: ApplicationItem): ApplicationItem {
   };
 }
 
-export function sanitizeApplicationForPublicSite(item: ApplicationItem): ApplicationItem {
-  return publicApplicationFields(item);
+export function sanitizeApplicationForPublicSite(item: ApplicationItem, options: { includeTracking?: boolean } = {}): ApplicationItem {
+  return publicApplicationFields(item, options);
 }
 
 export function sanitizeApplicationsForPublicSite(items: ApplicationItem[]): ApplicationItem[] {
-  return items.map(publicApplicationFields);
+  return items.map((item) => publicApplicationFields(item));
 }
 
 export function filterStoredApplications(items: ApplicationItem[], params?: URLSearchParams) {

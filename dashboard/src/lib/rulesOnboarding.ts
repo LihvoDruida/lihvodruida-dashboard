@@ -29,37 +29,46 @@ export type RulesOnboardingStep = {
   href?: string;
 };
 
-const TOKEN_VERSION = 1;
+const TOKEN_VERSION = 2;
+const TOKEN_AUDIENCE = "mistblossom-rules-onboarding";
 const DEFAULT_RULES_TOKEN_SECRET = "mistblossom-rules-onboarding-dev-secret";
+const DEFAULT_RULES_TOKEN_TTL_SECONDS = 24 * 60 * 60;
 
 function cleanSecret(value: unknown) {
   const text = String(value || "").trim();
-  return text.length >= 16 ? text : "";
+  if (process.env.NODE_ENV === "production" && text === DEFAULT_RULES_TOKEN_SECRET) return "";
+  return text.length >= 32 ? text : "";
+}
+
+function rulesTokenTtlSeconds() {
+  const parsed = Number(process.env.RULES_TOKEN_TTL_SECONDS || DEFAULT_RULES_TOKEN_TTL_SECONDS);
+  if (!Number.isFinite(parsed)) return DEFAULT_RULES_TOKEN_TTL_SECONDS;
+  return Math.max(15 * 60, Math.min(7 * 24 * 60 * 60, Math.floor(parsed)));
 }
 
 function rulesTokenSecretCandidates() {
-  return Array.from(
-    new Set(
-      [
-        process.env.DASHBOARD_RULES_TOKEN_SECRET,
-        process.env.RULES_TOKEN_SECRET,
-        process.env.DISCORD_INTERACTIONS_SHARED_SECRET,
-        process.env.DISCORD_INTERACTION_SECRET,
-        process.env.DISCORD_BOT_TOKEN,
-        process.env.DASHBOARD_SESSION_SECRET,
-        process.env.SESSION_SECRET,
-        process.env.NEXTAUTH_SECRET,
-        process.env.AUTH_SECRET,
-        DEFAULT_RULES_TOKEN_SECRET,
-      ]
-        .map(cleanSecret)
-        .filter(Boolean),
-    ),
-  );
+  const candidates = [
+    process.env.DASHBOARD_RULES_TOKEN_SECRET,
+    process.env.RULES_TOKEN_SECRET,
+    process.env.SESSION_SECRET,
+    process.env.NEXTAUTH_SECRET,
+    process.env.AUTH_SECRET,
+    process.env.DASHBOARD_RULES_TOKEN_SECRET_PREVIOUS,
+    process.env.RULES_TOKEN_SECRET_PREVIOUS,
+  ];
+  // The fixed development key exists only so a local checkout can render the
+  // onboarding page before secrets are provisioned. Production must never
+  // accept a signature that an attacker can reproduce from source code.
+  if (process.env.NODE_ENV !== "production") candidates.push(DEFAULT_RULES_TOKEN_SECRET);
+  return Array.from(new Set(candidates.map(cleanSecret).filter(Boolean)));
 }
 
 function secret() {
-  return rulesTokenSecretCandidates()[0] || DEFAULT_RULES_TOKEN_SECRET;
+  const value = rulesTokenSecretCandidates()[0];
+  if (!value) {
+    throw new Error("Rules onboarding token secret is not configured (32+ characters required).");
+  }
+  return value;
 }
 
 function cleanRoleIds(roleIds: unknown) {
@@ -139,9 +148,12 @@ export function createRulesRoleToken(
   const discordGlobalName = cleanShortText(options.discordGlobalName, 80);
   const discordDisplayName = cleanShortText(options.discordDisplayName, 80);
   const discordAvatarUrl = cleanOptionalUrl(options.discordAvatarUrl);
+  const issuedAt = Math.floor(Date.now() / 1000);
   const payload = base64UrlJson({
     v: TOKEN_VERSION,
-    iat: Math.floor(Date.now() / 1000),
+    aud: TOKEN_AUDIENCE,
+    iat: issuedAt,
+    exp: issuedAt + rulesTokenTtlSeconds(),
     r: roleIds,
     ...(discordUserId ? { u: discordUserId } : {}),
     ...(discordGuildId ? { g: discordGuildId } : {}),
@@ -180,9 +192,23 @@ export function parseRulesRoleTokenDetails(tokenInput: unknown): ParsedRulesRole
   }
   try {
     const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
-    if (Number(parsed?.v) !== TOKEN_VERSION) {
+    const version = Number(parsed?.v);
+    if (version !== 1 && version !== TOKEN_VERSION) return emptyRulesRoleToken();
+    if (version === TOKEN_VERSION && parsed?.aud !== TOKEN_AUDIENCE) return emptyRulesRoleToken();
+
+    const issuedAt = Number(parsed?.iat || 0);
+    const expiresAt = Number(parsed?.exp || 0);
+    const now = Math.floor(Date.now() / 1000);
+    if (!Number.isFinite(issuedAt) || issuedAt <= 0 || issuedAt > now + 60) return emptyRulesRoleToken();
+    if (version === TOKEN_VERSION) {
+      if (!Number.isFinite(expiresAt) || expiresAt <= now || expiresAt < issuedAt) return emptyRulesRoleToken();
+      if (expiresAt - issuedAt > 7 * 24 * 60 * 60 + 60) return emptyRulesRoleToken();
+    } else if (now - issuedAt > rulesTokenTtlSeconds()) {
+      // Legacy v1 tokens are accepted only during a bounded migration window
+      // and only when signed with one of the current strong secrets above.
       return emptyRulesRoleToken();
     }
+
     const discordUserId = cleanDiscordUserId(parsed?.u);
     const memberRoleIds = cleanRoleIds(parsed?.mr || []);
     const discordUser = discordUserId

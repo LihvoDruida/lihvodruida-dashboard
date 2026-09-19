@@ -18,22 +18,40 @@ function sinkUrl() {
   return base ? `${base}/api/dashboard/logs/ingest` : "";
 }
 
+
+function safeString(value, max = 1500) {
+  return String(value ?? "")
+    .replace(/Bot\s+[A-Za-z0-9._~+\/-]+/gi, "Bot [redacted]")
+    .replace(/Bearer\s+[A-Za-z0-9._~+\/-]+/gi, "Bearer [redacted]")
+    .replace(/(postgres(?:ql)?:\/\/[^:\s/]+:)[^@\s/]+(@)/gi, "$1[redacted]$2")
+    .replace(/(token|secret|password|client_secret)=([^&\s]+)/gi, "$1=[redacted]")
+    .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, "[email]")
+    .slice(0, max);
+}
+
 function securityLike(message) {
   return /signature|підпис|unauthor|неавториз|forbidden|заблок|відхилен|security|rate.?limit/i.test(String(message || ""));
 }
 
+function safeValue(value, depth = 0) {
+  if (value == null || typeof value === "number" || typeof value === "boolean") return value;
+  if (typeof value === "string") return safeString(value, depth === 0 ? 700 : 400);
+  if (depth >= 4) return "[max-depth]";
+  if (Array.isArray(value)) return value.slice(0, 24).map((item) => safeValue(item, depth + 1));
+  if (typeof value === "object") {
+    const out = {};
+    for (const [key, child] of Object.entries(value).slice(0, 32)) {
+      if (/token|secret|password|authorization|cookie|signature|raw.?body|stack|private.?key/i.test(key)) out[key] = "[redacted]";
+      else out[key] = safeValue(child, depth + 1);
+    }
+    return out;
+  }
+  return safeString(value, 300);
+}
+
 function safeContext(context) {
   if (!context || typeof context !== "object" || Array.isArray(context)) return {};
-  const out = {};
-  for (const [key, value] of Object.entries(context).slice(0, 32)) {
-    if (/token|secret|password|authorization|cookie|signature|raw.?body|stack/i.test(key)) out[key] = "[redacted]";
-    else if (typeof value === "string") out[key] = value.slice(0, 700);
-    else if (typeof value === "number" || typeof value === "boolean" || value == null) out[key] = value;
-    else {
-      try { out[key] = JSON.parse(JSON.stringify(value)); } catch { out[key] = String(value).slice(0, 300); }
-    }
-  }
-  return out;
+  return safeValue(context, 0);
 }
 
 function forward(level, message, context) {
@@ -61,13 +79,14 @@ function forward(level, message, context) {
     headers: {
       authorization: `Bearer ${token}`,
       "content-type": "application/json",
+      "x-mistblossom-source": "bot",
     },
     body: JSON.stringify({
       source: "bot",
       level: level === "warn" ? "warning" : level,
       category,
       event,
-      message: String(message || "").slice(0, 1500),
+      message: safeString(message, 1500),
       requestId: typeof clean.requestId === "string" ? clean.requestId : undefined,
       method: typeof clean.method === "string" ? clean.method : undefined,
       path: typeof clean.path === "string" ? clean.path : undefined,
@@ -90,7 +109,7 @@ function emit(level, message, context) {
     ts: new Date().toISOString(),
     level,
     service: "mistblossom-bot",
-    message,
+    message: safeString(message, 1500),
     ...(Object.keys(clean).length ? { context: clean } : {}),
   };
   const target = level === "error" || level === "warn" ? process.stderr : process.stdout;

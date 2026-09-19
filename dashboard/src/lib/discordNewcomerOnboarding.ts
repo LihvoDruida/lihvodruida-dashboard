@@ -10,7 +10,6 @@ import {
   fetchDiscordGuildSnapshot,
   fetchDiscordRoleControlSnapshotCachedForUi,
   getDiscordGuildId,
-  listRulesEmbedMessages,
   sendDiscordChannelMessageWithAttachment,
   sendDiscordDirectMessage,
   type DiscordGuildMemberModerationItem,
@@ -18,19 +17,18 @@ import {
 import { createDiscordWelcomeArtifact } from "@/lib/discordWelcomeArtifact";
 import { mapConcurrent } from "@/lib/concurrency";
 import { getDiscordWelcomeCardSettings, type DiscordWelcomeCardSettings } from "@/lib/discordWelcomeCardSettings";
-import { MISTBLOSSOM_DISCORD_CHANNELS, discordGuildChannelUrl } from "@/lib/discordGuildLinks";
+import { discordGuildChannelUrl } from "@/lib/discordGuildLinks";
 import { firebaseWrite } from "@/lib/firebaseAccess";
 import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
 import { getGuildNicknamePolicy, nicknameMatchesTemplate, VALID_NICKNAME_STRUCTURES, type GuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
 import { logDashboardEvent, safeErrorMessage } from "@/lib/security";
 import { timestampToIso } from "@/lib/values";
+import { resolveConfiguredRulesRoleIds } from "@/lib/discordRulesRolePolicy";
 
 const STATE_COLLECTION = "dashboardSettings";
 const STATE_DOC_ID = "discordNewcomerOnboardingAutomation";
 const MEMBER_COLLECTION = "discordNewcomerOnboardingMembers";
-const RULES_CHANNEL_ID = String(process.env.DISCORD_GUILD_RULES_CHANNEL_ID || MISTBLOSSOM_DISCORD_CHANNELS.rules.id).trim();
 const RETRY_DELAY_MS = 15 * 60_000;
-const RULE_IDS_CACHE_TTL_MS = 5 * 60_000;
 const ONBOARDING_LEASE_TTL_MS = 75_000;
 const RECORD_CACHE_TTL_MS = 30 * 60_000;
 const DEFAULT_BATCH_LIMIT = 32;
@@ -329,23 +327,6 @@ async function releaseOnboardingLease(owner: string) {
       updatedAt: new Date().toISOString(),
     }, { merge: true });
   });
-}
-
-async function resolveRulesRoleIds(policy?: GuildNicknamePolicy | null) {
-  const cached = globalThis.__mistblossomRulesRoleIdsCache;
-  if (cached && Date.now() - cached.cachedAt < RULE_IDS_CACHE_TTL_MS && cached.roleIds.length) return cached.roleIds;
-
-  const messages = await listRulesEmbedMessages(RULES_CHANNEL_ID, 50).catch(() => []);
-  const rulesMessage = messages.find((message) => message.rulesType === "guild" && message.roleIds.length > 0);
-  if (rulesMessage?.roleIds.length) {
-    globalThis.__mistblossomRulesRoleIdsCache = { roleIds: rulesMessage.roleIds, cachedAt: Date.now() };
-    return rulesMessage.roleIds;
-  }
-
-  const currentPolicy = policy || await getGuildNicknamePolicy();
-  const fallback = currentPolicy.nicknameNewcomerRoleId ? [currentPolicy.nicknameNewcomerRoleId] : [];
-  if (fallback.length) globalThis.__mistblossomRulesRoleIdsCache = { roleIds: fallback, cachedAt: Date.now() };
-  return fallback;
 }
 
 function nicknameStatus(member: DiscordGuildMemberModerationItem, template: string) {
@@ -683,7 +664,7 @@ export async function runDiscordNewcomerOnboarding(options: {
 
     if (needsPrivateContext) {
       [roleIds, guildName] = await Promise.all([
-        resolveRulesRoleIds(policy),
+        resolveConfiguredRulesRoleIds(policy),
         fetchDiscordGuildSnapshot().then((guild) => guild.name || guildName).catch(() => guildName),
       ]);
     }

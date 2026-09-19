@@ -265,6 +265,17 @@ else
   ok "SESSION_SECRET має достатню довжину"
 fi
 
+RULES_TOKEN_SECRET_VALUE="$(env_get dashboard/.env.production DASHBOARD_RULES_TOKEN_SECRET || true)"
+if [ -n "$RULES_TOKEN_SECRET_VALUE" ] && [ "${#RULES_TOKEN_SECRET_VALUE}" -lt 32 ]; then
+  problem "DASHBOARD_RULES_TOKEN_SECRET заданий, але коротший 32 символів"
+elif [ "$RULES_TOKEN_SECRET_VALUE" = "mistblossom-rules-onboarding-dev-secret" ]; then
+  problem "DASHBOARD_RULES_TOKEN_SECRET не може використовувати відомий dev-secret у production"
+elif [ -n "$RULES_TOKEN_SECRET_VALUE" ]; then
+  ok "DASHBOARD_RULES_TOKEN_SECRET має достатню довжину"
+else
+  ok "Rules token HMAC використовує захищений fallback SESSION_SECRET"
+fi
+
 ADMIN_TOKEN_VALUE="$(env_get dashboard/.env.production ADMIN_DASHBOARD_TOKEN || true)"
 if [ -n "$ADMIN_TOKEN_VALUE" ]; then
   if [ "${#ADMIN_TOKEN_VALUE}" -lt 32 ]; then

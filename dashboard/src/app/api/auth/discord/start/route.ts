@@ -78,9 +78,11 @@ export async function GET(request: NextRequest) {
     isEnabled(url.searchParams.get("reauth"));
   const state = await createOAuthStateToken(nextPath);
   const store = await cookies();
+  const secureAuthCookies = secureAuthCookiesEnabled();
   const remembered = parseRememberedOAuthNonces(
-    store.get(OAUTH_STATE_COOKIE)?.value ||
-      store.get(LEGACY_OAUTH_STATE_COOKIE)?.value,
+    secureAuthCookies
+      ? store.get(OAUTH_STATE_COOKIE)?.value || ""
+      : store.get(LEGACY_OAUTH_STATE_COOKIE)?.value || "",
   );
   const nonces = [...remembered, state.nonce].slice(-MAX_PARALLEL_OAUTH_FLOWS);
 
@@ -90,7 +92,6 @@ export async function GET(request: NextRequest) {
   );
   applyNoStoreHeaders(response);
 
-  const secureAuthCookies = secureAuthCookiesEnabled();
   const oauthCookieName = secureAuthCookies ? OAUTH_STATE_COOKIE : LEGACY_OAUTH_STATE_COOKIE;
   response.cookies.set(
     oauthCookieName,

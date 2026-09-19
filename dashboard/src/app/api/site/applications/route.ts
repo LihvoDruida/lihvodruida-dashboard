@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
       duplicate: result.duplicate,
       character: item.character_name,
     });
-    const publicItem = sanitizeApplicationForPublicSite(item);
+    const publicItem = sanitizeApplicationForPublicSite(item, { includeTracking: true });
     return json(request, {
       ok: true,
       duplicate: result.duplicate,

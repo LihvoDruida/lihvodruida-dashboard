@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const TOKENS = ["INTERNAL_API_TOKEN", "CRON_SECRET"];
+const TOKENS = ["INTERNAL_API_TOKEN"];
 const CATEGORIES = new Set<StructuredLogCategory>(["security", "api", "action", "auth", "discord", "database", "integration", "system"]);
 const LEVELS = new Set<StructuredLogLevel>(["debug", "info", "success", "warning", "error"]);
 
@@ -42,6 +42,9 @@ export async function POST(request: NextRequest) {
   const auth = await verifyInternalBearerToken(request, TOKENS);
   if (!auth.ok) {
     return NextResponse.json({ ok: false, error: auth.reason }, { status: 401, headers: noStoreHeaders() });
+  }
+  if (String(request.headers.get("x-mistblossom-source") || "").trim() !== "bot") {
+    return NextResponse.json({ ok: false, error: "invalid_source" }, { status: 403, headers: noStoreHeaders() });
   }
   const tooLarge = assertRequestBodySize(request, 24 * 1024);
   if (tooLarge) return tooLarge;

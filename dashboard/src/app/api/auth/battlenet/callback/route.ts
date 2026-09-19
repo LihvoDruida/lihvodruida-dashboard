@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { getSession } from "@/lib/auth";
+import { getSession, secureAuthCookiesEnabled } from "@/lib/auth";
 import { getDashboardUrl } from "@/lib/oauth";
 import {
   BNET_OAUTH_STATE_COOKIE,
@@ -112,10 +112,9 @@ export async function GET(request: NextRequest) {
   const state = url.searchParams.get("state") || "";
 
   const store = await cookies();
-  const expectedState =
-    store.get(BNET_OAUTH_STATE_COOKIE)?.value ||
-    store.get(LEGACY_BNET_OAUTH_STATE_COOKIE)?.value ||
-    "";
+  const expectedState = secureAuthCookiesEnabled()
+    ? store.get(BNET_OAUTH_STATE_COOKIE)?.value || ""
+    : store.get(LEGACY_BNET_OAUTH_STATE_COOKIE)?.value || "";
   store.set(BNET_OAUTH_STATE_COOKIE, "", {
     httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 0,
   });

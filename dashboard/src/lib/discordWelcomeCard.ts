@@ -401,9 +401,32 @@ async function fallbackAvatar() {
   return globalThis.__mistblossomWelcomeFallbackAvatarPromise;
 }
 
+function safeDiscordAvatarUrl(value: unknown) {
+  const text = String(value || "").trim();
+  if (!text || text.length > 500) return "";
+  try {
+    const url = new URL(text);
+    const host = url.hostname.toLowerCase();
+    if (url.protocol !== "https:") return "";
+    if (host !== "cdn.discordapp.com" && host !== "media.discordapp.net") return "";
+    if (url.username || url.password || url.port) return "";
+    return url.toString();
+  } catch {
+    return "";
+  }
+}
+
 async function fetchAvatarCircle(url: string | null) {
-  const safeUrl = String(url || "").trim();
-  if (!safeUrl) return fallbackAvatar();
+  const rawUrl = String(url || "").trim();
+  const safeUrl = safeDiscordAvatarUrl(rawUrl);
+  if (!safeUrl) {
+    if (rawUrl) {
+      logDashboardEvent("warn", "discord.welcome_card_avatar_url_rejected", undefined, {
+        host: (() => { try { return new URL(rawUrl).hostname.slice(0, 120); } catch { return "invalid"; } })(),
+      }, { category: "security" });
+    }
+    return fallbackAvatar();
+  }
 
   const cache = avatarCache();
   pruneCache(cache, AVATAR_CACHE_MAX);
@@ -414,6 +437,7 @@ async function fetchAvatarCircle(url: string | null) {
     try {
       const response = await fetch(safeUrl, {
         cache: "no-store",
+        redirect: "error",
         signal: AbortSignal.timeout(4_000),
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);

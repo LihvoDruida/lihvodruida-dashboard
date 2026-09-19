@@ -17,6 +17,7 @@ import {
   type DiscordTextChannel,
 } from "@/lib/discordAdmin";
 import { buildPageMetadata } from "@/lib/seo";
+import { safeDiscordMessageUrl } from "@/lib/discordGuildLinks";
 import { getOwnProfilePath } from "@/lib/profiles";
 import { canManageRulesEmbeds, canViewRulesStats } from "@/lib/permissions";
 import styles from "./rules-page.module.css";
@@ -32,11 +33,13 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 function StatusNotice({ params }: { params: Record<string, string | undefined> }) {
-  if (params.published) {
-    return <div className="notice panel success discord-notice">Опубліковано правила: <a href={params.published} target="_blank" rel="noreferrer">відкрити</a></div>;
+  const published = safeDiscordMessageUrl(params.published);
+  const updated = safeDiscordMessageUrl(params.updated);
+  if (published) {
+    return <div className="notice panel success discord-notice">Опубліковано правила: <a href={published} target="_blank" rel="noreferrer">відкрити</a></div>;
   }
-  if (params.updated) {
-    return <div className="notice panel success discord-notice">Оновлено правила: <a href={params.updated} target="_blank" rel="noreferrer">відкрити</a></div>;
+  if (updated) {
+    return <div className="notice panel success discord-notice">Оновлено правила: <a href={updated} target="_blank" rel="noreferrer">відкрити</a></div>;
   }
   if (params.error) return <div className="notice panel error-note discord-notice">{params.error}</div>;
   return null;

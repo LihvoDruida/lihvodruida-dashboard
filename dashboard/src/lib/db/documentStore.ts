@@ -1,5 +1,6 @@
 import "server-only";
 
+import { randomBytes } from "node:crypto";
 import type { PoolClient } from "pg";
 import { pgQuery, pgTransaction } from "@/lib/db/pgPool";
 
@@ -554,13 +555,12 @@ export class PgCollectionRef extends PgQuery {
 }
 
 function randomDocId() {
-  // 20 символів у тому ж алфавіті, що й авто-ідентифікатори Firestore, —
-  // старі й нові документи виглядають однаково.
+  // Document ids are not credentials, but they still need collision-resistant
+  // generation under concurrent writes. Avoid Math.random() for persistent IDs.
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const bytes = randomBytes(20);
   let id = "";
-  for (let i = 0; i < 20; i += 1) {
-    id += alphabet[Math.floor(Math.random() * alphabet.length)];
-  }
+  for (const byte of bytes) id += alphabet[byte % alphabet.length];
   return id;
 }
 
