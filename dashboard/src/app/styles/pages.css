@@ -1720,3 +1720,110 @@
     width: 100%;
   }
 }
+
+/* =========================================================
+   DISCORD AUTOROLES
+   Shared embed foundation + Discord component editor
+   ========================================================= */
+.discord-hub-card--autoroles {
+  border-color: color-mix(in srgb, var(--c-success) 32%, var(--border-subtle));
+}
+
+.discord-autorole-editor {
+  display: grid;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.discord-autorole-toolbar,
+.discord-autorole-card__head,
+.discord-autorole-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.discord-autorole-toolbar > div {
+  display: grid;
+  gap: var(--space-3xs);
+}
+
+.discord-autorole-toolbar small,
+.discord-autorole-card small {
+  color: var(--text-muted);
+}
+
+.discord-autorole-list {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.discord-autorole-card {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+
+.discord-autorole-card__actions .btn {
+  min-width: 0;
+  padding-inline: 0.7rem;
+}
+
+.discord-autorole-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.discord-preview-components {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.discord-preview-component-button {
+  appearance: none;
+  border: 0;
+  border-radius: 4px;
+  min-height: 32px;
+  padding: 2px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font: inherit;
+  font-weight: 650;
+  line-height: 1;
+  color: #fff;
+  cursor: default;
+}
+
+.discord-preview-component-button--1 { background: #5865f2; }
+.discord-preview-component-button--2 { background: #4e5058; }
+.discord-preview-component-button--3 { background: #248046; }
+.discord-preview-component-button--4 { background: #da373c; }
+.discord-preview-component-button.is-disabled { opacity: 0.5; }
+
+@media (max-width: 760px) {
+  .discord-autorole-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .discord-autorole-toolbar,
+  .discord-autorole-card__head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .discord-autorole-card__actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}

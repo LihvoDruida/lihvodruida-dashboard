@@ -57,6 +57,7 @@ export declare const INTERACTION_DOMAINS: Readonly<{
   ROSTER: "roster";
   RULES: "rules";
   APPLICATION: "application";
+  AUTOROLE: "autorole";
 }>;
 
 export declare function interactionDomainFor(customId: string): string | null;
@@ -64,3 +65,6 @@ export declare function interactionDomainFor(customId: string): string | null;
 export declare function validateInteractionComponents(
   rows: unknown,
 ): { ok: boolean; duplicates: string[]; tooLong: string[]; invalidRows: number[]; rows: number };
+
+export declare function buildAutoroleCustomId(action: "add" | "remove" | "toggle" | string, roleId: string, group?: string): string;
+export declare function decodeAutoroleCustomId(customId: string): { action: "add" | "remove" | "toggle"; roleId: string; group: string } | null;

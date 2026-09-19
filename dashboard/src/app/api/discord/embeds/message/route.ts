@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { canManageGeneralEmbeds, canManageRulesEmbeds } from "@/lib/permissions";
+import { canManageDiscordMembers, canManageGeneralEmbeds, canManageRulesEmbeds } from "@/lib/permissions";
 import {
   checkRateLimit,
   getClientIp,
@@ -12,6 +12,7 @@ import {
   fetchDiscordEditableMessage,
   parseDiscordMessageRef,
 } from "@/lib/discordAdmin";
+import { extractAutoroleButtonsFromMessage } from "@/lib/discordAutoroles";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,14 +25,18 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
 export async function GET(request: NextRequest) {
   const session = await getSession();
   const url = new URL(request.url);
-  const mode = String(url.searchParams.get("mode") || "general").trim() === "rules" ? "rules" : "general";
+  const rawMode = String(url.searchParams.get("mode") || "general").trim();
+  const mode = rawMode === "rules" ? "rules" : rawMode === "autoroles" ? "autoroles" : "general";
 
-  if (!session || !canManageGeneralEmbeds(session)) {
-    return jsonResponse({ error: "Ця дія доступна тільки гільдмайстеру або офіцеру." }, 403);
+  if (!session || (!canManageGeneralEmbeds(session) && !(mode === "autoroles" && canManageDiscordMembers(session)))) {
+    return jsonResponse({ error: "Ця дія недоступна для поточної ролі." }, 403);
   }
 
   if (mode === "rules" && !canManageRulesEmbeds(session)) {
     return jsonResponse({ error: "Редагування правил доступне тільки гільдмайстеру." }, 403);
+  }
+  if (mode === "autoroles" && !canManageDiscordMembers(session)) {
+    return jsonResponse({ error: "Авторолі доступні тільки гільдмайстеру." }, 403);
   }
 
   const ip = getClientIp(request);
@@ -69,9 +74,21 @@ export async function GET(request: NextRequest) {
       return jsonResponse({ error: "Це повідомлення правил. Офіцер не може відкривати або редагувати правила." }, 403);
     }
 
+    const autoroleButtons = extractAutoroleButtonsFromMessage({ components: message.components });
+    if (mode === "general" && message.isRules) {
+      return jsonResponse({ error: "Це повідомлення правил. Відкрий його через розділ «Правила», щоб не стерти кнопки прийняття." }, 409);
+    }
+    if (mode !== "autoroles" && autoroleButtons.length > 0) {
+      return jsonResponse({ error: "Це повідомлення авторолей. Відкрий його через /discord/autoroles, щоб не втратити кнопки ролей." }, 409);
+    }
+    if (mode === "autoroles" && message.isRules) {
+      return jsonResponse({ error: "Це повідомлення правил. Його не можна редагувати як авторолі." }, 409);
+    }
     const warning = mode === "rules" && !message.isRules
       ? "Це повідомлення не схоже на повідомлення правил із кнопками цієї панелі. Контент завантажено, але ролі можуть бути порожніми."
-      : "";
+      : mode === "autoroles" && autoroleButtons.length === 0
+        ? "У цьому повідомленні немає кнопок авторолей Mistblossom. Embed завантажено, але список кнопок порожній."
+        : "";
 
     logDashboardEvent("info", "discord.embed.message_loaded", request, {
       actorId: session.id,
@@ -101,6 +118,7 @@ export async function GET(request: NextRequest) {
         rulesType: message.rulesType,
         createdAt: message.createdAt,
         editedAt: message.editedAt,
+        autoroleButtons,
       },
     });
   } catch (error) {

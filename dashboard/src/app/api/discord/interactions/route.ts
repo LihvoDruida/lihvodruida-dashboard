@@ -13,11 +13,12 @@ import { buildRaidManualSpecComponents, dashboardProfileUrl, dashboardRaidRulesU
 import { handleRaidPollDiscordVote } from "@/lib/raidPolls";
 // Розбір custom_id — зі спільного пакета: бот користується тим самим кодом,
 // тому нова дія не може «загубитись» на одній зі сторін.
-import { decodeApplicationCustomId, decodeRaidPollCustomId } from "@mistblossom/discord-contract";
+import { decodeApplicationCustomId, decodeAutoroleCustomId, decodeRaidPollCustomId } from "@mistblossom/discord-contract";
 import { decodeRosterCustomId, handleRosterFormationDiscordAction } from "@/lib/rosterFormation";
 import { assertRequestBodySize, logDashboardEvent, noStoreHeaders, safeErrorMessage, verifyInternalBearerToken } from "@/lib/security";
 import { resolveAccessGroupFromDiscord } from "@/lib/accessGroups";
 import { moderateApplication } from "@/lib/moderation";
+import { handleAutoroleInteraction } from "@/lib/discordAutoroles";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -316,9 +317,10 @@ export async function POST(request: NextRequest) {
   const raidAction = raidSubmitAction || raidRoleAction || raidSelectAction || raidManualSpec || decodeRaidAttendanceCustomId(customId);
   const pollAction = raidAction || raidManualClass ? null : decodeRaidPollCustomId(customId, interaction?.data?.values);
   const rosterAction = raidAction || raidManualClass || pollAction ? null : decodeRosterCustomId(customId, interaction?.data?.values);
-  const applicationAction = raidAction || raidManualClass || pollAction || rosterAction ? null : decodeApplicationCustomId(customId);
-  const parsed = raidAction || raidManualClass || pollAction || rosterAction || applicationAction ? null : decodeRulesCustomId(customId);
-  if (!raidAction && !raidManualClass && !pollAction && !rosterAction && !applicationAction && !parsed) {
+  const autoroleAction = raidAction || raidManualClass || pollAction || rosterAction ? null : decodeAutoroleCustomId(customId);
+  const applicationAction = raidAction || raidManualClass || pollAction || rosterAction || autoroleAction ? null : decodeApplicationCustomId(customId);
+  const parsed = raidAction || raidManualClass || pollAction || rosterAction || autoroleAction || applicationAction ? null : decodeRulesCustomId(customId);
+  if (!raidAction && !raidManualClass && !pollAction && !rosterAction && !autoroleAction && !applicationAction && !parsed) {
     logDashboardEvent("warn", "discord.rules.unknown_custom_id", request, { customId: customId.slice(0, 24) });
     return ephemeral("Ця кнопка не належить панелі Mistblossom або вже застаріла.");
   }
@@ -326,6 +328,38 @@ export async function POST(request: NextRequest) {
   const guildId = interactionGuildId;
   const userId = getInteractionUserId(interaction);
   const userName = getInteractionUserName(interaction);
+
+  if (autoroleAction) {
+    try {
+      const memberRoleIds = Array.isArray(interaction?.member?.roles)
+        ? interaction.member.roles.map((roleId: unknown) => String(roleId || "").trim()).filter(Boolean)
+        : [];
+      const result = await handleAutoroleInteraction({
+        customId,
+        userId,
+        userName,
+        memberRoleIds,
+        messageComponents: interaction?.message?.components,
+      });
+      logDashboardEvent(result.ok ? "info" : "warn", "discord.autorole.action", request, {
+        userId,
+        action: autoroleAction.action,
+        roleId: autoroleAction.roleId,
+        group: autoroleAction.group || null,
+        ok: result.ok,
+      });
+      return ephemeral(result.content);
+    } catch (error) {
+      logDashboardEvent("error", "discord.autorole.action_failed", request, {
+        userId,
+        action: autoroleAction.action,
+        roleId: autoroleAction.roleId,
+        group: autoroleAction.group || null,
+        message: safeErrorMessage(error),
+      });
+      return ephemeral("❌ Не вдалося змінити роль. Перевір права бота та ієрархію ролей або звернись до гільдмайстра.");
+    }
+  }
 
   if (applicationAction) {
     try {

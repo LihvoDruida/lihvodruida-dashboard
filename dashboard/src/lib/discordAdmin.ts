@@ -1574,6 +1574,7 @@ export type DiscordEditableMessage = {
   roleIds: string[];
   isRules: boolean;
   rulesType: DiscordRulesType | "general";
+  components: unknown[];
 };
 
 export function normalizeDiscordMessageForEditor(message: Record<string, unknown>, channelIdFallback?: string): DiscordEditableMessage {
@@ -1603,6 +1604,7 @@ export function normalizeDiscordMessageForEditor(message: Record<string, unknown
     roleIds,
     isRules,
     rulesType,
+    components: Array.isArray(message.components) ? message.components : [],
   };
 }
 

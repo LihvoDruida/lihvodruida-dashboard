@@ -18,6 +18,8 @@ export type DiscordRoleOption = {
   color: number;
   position: number;
   managed?: boolean;
+  manageable?: boolean;
+  blockedReason?: string | null;
 };
 
 type EmbedObject = Record<string, any>;
@@ -29,8 +31,19 @@ type EmbedFieldState = {
   inline: boolean;
 };
 
+export type DiscordAutoroleButtonOption = {
+  id: string;
+  label: string;
+  emoji: string;
+  style: 1 | 2 | 3 | 4;
+  roleId: string;
+  behavior: "add" | "remove" | "toggle";
+  group: string;
+  disabled: boolean;
+};
+
 type DiscordEmbedEditorProps = {
-  mode: "rules" | "general";
+  mode: "rules" | "general" | "autoroles";
   ruleType?: "guild" | "raid";
   editorMode: "create" | "edit";
   channels: DiscordChannelOption[];
@@ -42,6 +55,7 @@ type DiscordEmbedEditorProps = {
   selectedRoleIds?: string[];
   authorSuggestions?: AuthorNameSuggestion[];
   defaultAuthorName?: string;
+  defaultAutoroleButtons?: DiscordAutoroleButtonOption[];
   returnTo: string;
 };
 
@@ -311,11 +325,35 @@ function DiscordDiagnostics({ total, warnings }: { total: number; warnings: stri
   );
 }
 
+function normalizeAutoroleButtonState(value: unknown, index: number): DiscordAutoroleButtonOption {
+  const item = value && typeof value === "object" ? value as Record<string, unknown> : {};
+  const style = Number(item.style);
+  const behavior = String(item.behavior || "toggle");
+  return {
+    id: safeText(item.id, 40) || `autorole-${index + 1}`,
+    label: safeText(item.label, 80),
+    emoji: safeText(item.emoji, 80),
+    style: style === 1 || style === 2 || style === 3 || style === 4 ? style : 2,
+    roleId: safeText(item.roleId, 25),
+    behavior: behavior === "add" || behavior === "remove" ? behavior : "toggle",
+    group: safeText(item.group, 16).replace(/[^A-Za-z0-9_-]/g, ""),
+    disabled: Boolean(item.disabled),
+  };
+}
+
+function normalizeAutoroleButtonList(values: unknown): DiscordAutoroleButtonOption[] {
+  return Array.isArray(values) ? values.slice(0, 25).map(normalizeAutoroleButtonState) : [];
+}
+
+function createAutoroleButton(index: number): DiscordAutoroleButtonOption {
+  return { id: `autorole-${Date.now()}-${index}`, label: "Нова роль", emoji: "", style: 2, roleId: "", behavior: "toggle", group: "", disabled: false };
+}
+
 function formatPreviewTimestamp(date = new Date()) {
   return new Intl.DateTimeFormat("uk-UA", { timeZone: "Europe/Kyiv", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(date);
 }
 
-function DiscordPreview({ embed, content, isValid, mentionRoles = [], previewMode = "desktop", onPreviewModeChange }: { embed: EmbedObject; content: string; isValid: boolean; mentionRoles?: DiscordRoleOption[]; previewMode?: PreviewMode; onPreviewModeChange?: (mode: PreviewMode) => void }) {
+function DiscordPreview({ embed, content, isValid, mentionRoles = [], actionButtons = [], previewMode = "desktop", onPreviewModeChange }: { embed: EmbedObject; content: string; isValid: boolean; mentionRoles?: DiscordRoleOption[]; actionButtons?: DiscordAutoroleButtonOption[]; previewMode?: PreviewMode; onPreviewModeChange?: (mode: PreviewMode) => void }) {
   const [previewNow, setPreviewNow] = useState({ label: "зараз", iso: "" });
 
   useEffect(() => {
@@ -400,6 +438,17 @@ function DiscordPreview({ embed, content, isValid, mentionRoles = [], previewMod
               </div>
               {image ? <img className="discord-preview-image" src={image} alt="" /> : null}
             </article>
+
+            {actionButtons.length > 0 ? (
+              <div className="discord-preview-components" aria-label="Preview кнопок авторолей">
+                {actionButtons.map((button) => (
+                  <span key={button.id} className={`discord-preview-component-button discord-preview-component-button--${button.style}${button.disabled ? " is-disabled" : ""}`} aria-disabled={button.disabled}>
+                    {button.emoji ? <span aria-hidden="true">{button.emoji}</span> : null}
+                    <span>{button.label || "Кнопка"}</span>
+                  </span>
+                ))}
+              </div>
+            ) : null}
 
             {!isValid ? <div className="discord-preview-error">Повідомлення порожнє або код кольору невалідний. Додай заголовок, опис, зображення або поле.</div> : null}
           </div>
@@ -584,6 +633,58 @@ function EmbedFieldEditor({ fields, onChange }: {
   );
 }
 
+function AutoroleButtonEditor({ buttons, roles, onChange }: { buttons: DiscordAutoroleButtonOption[]; roles: DiscordRoleOption[]; onChange: (buttons: DiscordAutoroleButtonOption[]) => void }) {
+  function patch(id: string, update: Partial<DiscordAutoroleButtonOption>) {
+    onChange(buttons.map((button) => button.id === id ? { ...button, ...update } : button));
+  }
+  function move(index: number, delta: number) {
+    const target = index + delta;
+    if (target < 0 || target >= buttons.length) return;
+    const next = [...buttons];
+    const current = next[index];
+    const destination = next[target];
+    if (!current || !destination) return;
+    next[index] = destination;
+    next[target] = current;
+    onChange(next);
+  }
+  return (
+    <div className="discord-autorole-editor">
+      <div className="discord-autorole-toolbar">
+        <div>
+          <strong>Кнопки авторолей</strong>
+          <small>{buttons.length}/25 • Discord дозволяє максимум 5 кнопок у рядку</small>
+        </div>
+        <button className="btn subtle" type="button" disabled={buttons.length >= 25} onClick={() => onChange([...buttons, createAutoroleButton(buttons.length + 1)])}>+ Додати кнопку</button>
+      </div>
+      {buttons.length === 0 ? <div className="notice panel">Додай хоча б одну кнопку. Кожна кнопка привʼязується до однієї керованої Discord-ролі.</div> : null}
+      <div className="discord-autorole-list">
+        {buttons.map((button, index) => (
+          <article className="discord-autorole-card" key={button.id}>
+            <div className="discord-autorole-card__head">
+              <strong>Кнопка {index + 1}</strong>
+              <div className="discord-autorole-card__actions">
+                <button type="button" className="btn subtle" disabled={index === 0} onClick={() => move(index, -1)}>↑</button>
+                <button type="button" className="btn subtle" disabled={index === buttons.length - 1} onClick={() => move(index, 1)}>↓</button>
+                <button type="button" className="btn danger" onClick={() => onChange(buttons.filter((item) => item.id !== button.id))}>Видалити</button>
+              </div>
+            </div>
+            <div className="discord-autorole-grid">
+              <label className="content-field"><span>Текст кнопки</span><input className="input" value={button.label} maxLength={80} onChange={(e) => patch(button.id, { label: e.currentTarget.value })} /></label>
+              <label className="content-field"><span>Emoji</span><input className="input" value={button.emoji} maxLength={80} placeholder="🌿 або <:name:id>" onChange={(e) => patch(button.id, { emoji: e.currentTarget.value })} /></label>
+              <label className="content-field"><span>Discord-роль</span><select className="select modern-select" value={button.roleId} onChange={(e) => patch(button.id, { roleId: e.currentTarget.value })}><option value="">Вибери роль</option>{roles.map((role) => <option key={role.id} value={role.id} disabled={role.manageable === false}>@ {role.name}{role.manageable === false ? " • недоступна" : ""}</option>)}</select></label>
+              <label className="content-field"><span>Поведінка</span><select className="select modern-select" value={button.behavior} onChange={(e) => patch(button.id, { behavior: e.currentTarget.value as DiscordAutoroleButtonOption["behavior"] })}><option value="toggle">Toggle: видати / зняти</option><option value="add">Тільки видати</option><option value="remove">Тільки зняти</option></select></label>
+              <label className="content-field"><span>Стиль кнопки</span><select className="select modern-select" value={button.style} onChange={(e) => patch(button.id, { style: Number(e.currentTarget.value) as 1 | 2 | 3 | 4 })}><option value={1}>Primary • синя</option><option value={2}>Secondary • сіра</option><option value={3}>Success • зелена</option><option value={4}>Danger • червона</option></select></label>
+              <label className="content-field"><span>Exclusive group</span><input className="input" value={button.group} maxLength={16} placeholder="class / faction / spec" onChange={(e) => patch(button.id, { group: e.currentTarget.value.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 16) })} /><small>Кнопки з однаковою групою взаємовиключні: нова роль зніме інші ролі цієї групи.</small></label>
+            </div>
+            <label className="inline-check discord-inline-check"><input type="checkbox" checked={button.disabled} onChange={(e) => patch(button.id, { disabled: e.currentTarget.checked })} /><span>Кнопка вимкнена</span></label>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function DiscordEmbedEditorInner({
   mode,
   ruleType = "guild",
@@ -597,6 +698,7 @@ function DiscordEmbedEditorInner({
   selectedRoleIds = [],
   authorSuggestions = [],
   defaultAuthorName = "",
+  defaultAutoroleButtons = [],
   returnTo,
 }: DiscordEmbedEditorProps) {
   const initialEmbed = useMemo(() => parseInitialEmbed(defaultEmbedJson), [defaultEmbedJson]);
@@ -626,6 +728,7 @@ function DiscordEmbedEditorInner({
   const [footerIconUrl, setFooterIconUrl] = useState(text(footer.icon_url));
   const [timestampEnabled, setTimestampEnabled] = useState(Boolean(initialEmbed.timestamp));
   const [fields, setFields] = useState<EmbedFieldState[]>(initialFields(initialEmbed.fields));
+  const [autoroleButtons, setAutoroleButtons] = useState<DiscordAutoroleButtonOption[]>(normalizeAutoroleButtonList(defaultAutoroleButtons));
   const [previewMode, setPreviewMode] = useState<PreviewMode>("desktop");
   const [messageLoadState, setMessageLoadState] = useState<"idle" | "loading" | "loaded" | "error">("idle");
   const [messageLoadText, setMessageLoadText] = useState("");
@@ -635,6 +738,7 @@ function DiscordEmbedEditorInner({
   const channelsKey = channels.map((channel) => channel.id).join("|");
   const selectedRoleIdsKey = uniqueIds(selectedRoleIds).join("|");
   const isRules = mode === "rules";
+  const isAutoroles = mode === "autoroles";
   const isRaidRules = isRules && ruleType === "raid";
 
   useEffect(() => {
@@ -659,12 +763,13 @@ function DiscordEmbedEditorInner({
     setFooterIconUrl(text(nextFooter.icon_url));
     setTimestampEnabled(Boolean(nextEmbed.timestamp));
     setFields(initialFields(nextEmbed.fields));
+    setAutoroleButtons(normalizeAutoroleButtonList(defaultAutoroleButtons));
     const normalizedDefaultMessageLink = normalizeMessageLink(defaultMessageLink);
     lastLoadedMessageLinkRef.current = normalizedDefaultMessageLink;
     setLoadedMessageLink(normalizedDefaultMessageLink);
     setMessageLoadState("idle");
     setMessageLoadText("");
-  }, [defaultEmbedJson, defaultContent, defaultMessageLink, suggestedChannelId, channelsKey, selectedRoleIdsKey, fallbackAuthorName]);
+  }, [defaultEmbedJson, defaultContent, defaultMessageLink, suggestedChannelId, channelsKey, selectedRoleIdsKey, fallbackAuthorName, defaultAutoroleButtons]);
 
   function applyEmbedToEditor(nextEmbed: EmbedObject) {
     const nextAuthor = objectFrom(nextEmbed.author);
@@ -740,6 +845,10 @@ function DiscordEmbedEditorInner({
       if (isRaidRules) {
         setRoleIds([]);
       }
+      if (isAutoroles) {
+        setRoleIds([]);
+        setAutoroleButtons(normalizeAutoroleButtonList(loaded.autoroleButtons));
+      }
 
       const nextLink = normalizeMessageLink(text(loaded.url) || rawLink);
       lastLoadedMessageLinkRef.current = nextLink;
@@ -785,7 +894,7 @@ function DiscordEmbedEditorInner({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [messageLink, mode, ruleType, isRules, isRaidRules]);
+  }, [messageLink, mode, ruleType, isRules, isRaidRules, isAutoroles]);
 
   const normalizedCurrentMessageLink = normalizeMessageLink(messageLink);
   const normalizedLoadedMessageLink = normalizeMessageLink(loadedMessageLink);
@@ -817,7 +926,7 @@ function DiscordEmbedEditorInner({
   const normalizedColor = normalizeHexColor(colorHex);
   const generatedEmbedJson = useMemo(() => JSON.stringify(embed), [embed]);
   const selectedRoleIdSet = new Set(uniqueIds(roleIds));
-  const selectedMentionRoles = !isRules ? roles.filter((role) => selectedRoleIdSet.has(role.id)) : [];
+  const selectedMentionRoles = !isRules && !isAutoroles ? roles.filter((role) => selectedRoleIdSet.has(role.id)) : [];
   const selectedRolesCount = selectedRoleIdSet.size;
   const diagnostics = useMemo(() => buildDiscordDiagnostics({
     content,
@@ -828,11 +937,12 @@ function DiscordEmbedEditorInner({
     fields,
   }), [content, titleValue, descriptionValue, authorName, footerText, fields]);
   const hasHardLimitError = diagnostics.total > DISCORD_LIMITS.embedTotal || content.length > DISCORD_LIMITS.content || titleValue.length > DISCORD_LIMITS.title || descriptionValue.length > DISCORD_LIMITS.description || authorName.length > DISCORD_LIMITS.authorName || footerText.length > DISCORD_LIMITS.footerText || fields.some((field) => field.name.length > DISCORD_LIMITS.fieldName || field.value.length > DISCORD_LIMITS.fieldValue);
-  const isValid = hasVisibleEmbedContent(embed) && Boolean(normalizedColor) && !hasHardLimitError;
-  const title = isRaidRules ? "Редактор правил рейду" : isRules ? "Редактор правил" : "Редактор Discord-повідомлення";
+  const autorolesValid = !isAutoroles || (autoroleButtons.length > 0 && autoroleButtons.every((button) => Boolean(button.label.trim()) && /^\d{16,25}$/.test(button.roleId)));
+  const isValid = hasVisibleEmbedContent(embed) && Boolean(normalizedColor) && !hasHardLimitError && autorolesValid;
+  const title = isAutoroles ? "Редактор авторолей" : isRaidRules ? "Редактор правил рейду" : isRules ? "Редактор правил" : "Редактор Discord-повідомлення";
   const actionLabel = effectiveSubmitAction === "edit"
     ? hasLoadedEditableMessage && editorMode !== "edit" ? "Оновити підтягнуте повідомлення" : editorMode !== "edit" ? "Оновити повідомлення за посиланням" : "Зберегти зміни"
-    : isRaidRules ? "Опублікувати правила рейду" : isRules ? "Опублікувати правила" : "Опублікувати повідомлення";
+    : isAutoroles ? "Опублікувати авторолі" : isRaidRules ? "Опублікувати правила рейду" : isRules ? "Опублікувати правила" : "Опублікувати повідомлення";
 
   function updateColorFromText(value: string) {
     setColorHex(value.startsWith("#") ? value : `#${value}`);
@@ -842,15 +952,15 @@ function DiscordEmbedEditorInner({
     <div className="discord-builder-shell discord-builder-shell--site">
       <section className="discord-builder-panel panel" aria-label={title}>
         <div className="discord-builder-titlebar">
-          <span>{isRaidRules ? "Правила рейду" : isRules ? "Правила" : "Звичайне повідомлення"}</span>
+          <span>{isAutoroles ? "Авторолі" : isRaidRules ? "Правила рейду" : isRules ? "Правила" : "Звичайне повідомлення"}</span>
           <small>{isValid ? "Валідно" : "Потрібен контент"}</small>
         </div>
         <div className="discord-builder-body">
           <div className="discord-builder-head">
             <div>
-              <span className="eyebrow">{isRules ? "Правила" : "Звичайне повідомлення"} • {editorMode === "edit" ? "Редагування" : "Створення"}</span>
+              <span className="eyebrow">{isAutoroles ? "Авторолі" : isRules ? "Правила" : "Звичайне повідомлення"} • {editorMode === "edit" ? "Редагування" : "Створення"}</span>
               <h2>{title}</h2>
-              <p>{isRaidRules ? "Канал, оформлення і кнопка підпису з перевіркою профілю та мейн-персонажа." : isRules ? "Канал, оформлення і ролі для кнопки прийняття правил." : "Канал, оформлення, згадки ролей і редагування за посиланням."}</p>
+              <p>{isAutoroles ? "Спільний Embed-редактор плюс керовані кнопки видачі, зняття або toggle Discord-ролей." : isRaidRules ? "Канал, оформлення і кнопка підпису з перевіркою профілю та мейн-персонажа." : isRules ? "Канал, оформлення і ролі для кнопки прийняття правил." : "Канал, оформлення, згадки ролей і редагування за посиланням."}</p>
             </div>
             <span className="discord-mode-pill">{effectiveSubmitAction === "edit" ? hasLoadedEditableMessage && editorMode !== "edit" ? "Редагуємо підтягнуте" : editorMode !== "edit" ? "Редагуємо за посиланням" : "Редагування" : "Створення"}</span>
           </div>
@@ -863,6 +973,7 @@ function DiscordEmbedEditorInner({
             <input type="hidden" name="messageLink" value={messageLink} />
             <input type="hidden" name="embedJson" value={generatedEmbedJson} />
             <input type="hidden" name="fieldsJson" value={JSON.stringify(fields)} />
+            {isAutoroles ? <input type="hidden" name="autoroleButtonsJson" value={JSON.stringify(autoroleButtons)} /> : null}
 
             <div className="content-form-section discord-visual-section discord-visual-section--edit">
               <div className="content-form-section-head">
@@ -1052,7 +1163,7 @@ function DiscordEmbedEditorInner({
               <EmbedFieldEditor fields={fields} onChange={setFields} />
             </div>
 
-            {!isRules && roles.length > 0 ? (
+            {!isRules && !isAutoroles && roles.length > 0 ? (
               <div className="content-form-section discord-visual-section discord-visual-section--roles">
                 <div className="content-form-section-head">
                   <strong>Теги ролей</strong>
@@ -1085,6 +1196,16 @@ function DiscordEmbedEditorInner({
               </div>
             ) : null}
 
+            {isAutoroles ? (
+              <div className="content-form-section discord-visual-section discord-visual-section--autoroles">
+                <div className="content-form-section-head">
+                  <strong>Авторолі</strong>
+                  <small>Кожна кнопка використовує спільний Discord interaction pipeline бота.</small>
+                </div>
+                <AutoroleButtonEditor buttons={autoroleButtons} roles={roles} onChange={setAutoroleButtons} />
+              </div>
+            ) : null}
+
             {isRaidRules ? (
               <div className="content-form-section discord-visual-section discord-visual-section--raid-rules">
                 <div className="content-form-section-head">
@@ -1100,14 +1221,14 @@ function DiscordEmbedEditorInner({
             <DiscordDiagnostics total={diagnostics.total} warnings={diagnostics.warnings} />
 
             <div className="discord-builder-actions">
-              <a className="btn subtle" href={returnTo || (isRules ? "/discord/rules" : "/discord")}>Скасувати</a>
+              <a className="btn subtle" href={returnTo || (isAutoroles ? "/discord/autoroles" : isRules ? "/discord/rules" : "/discord")}>Скасувати</a>
               <button className="btn primary" type="submit" disabled={!isValid || hasInvalidMessageLink || isSubmitting || messageLoadState === "loading"} aria-busy={isSubmitting} title={!isValid ? "Перевір контент, HEX-колір і Discord-ліміти." : hasInvalidMessageLink ? "Виправ посилання на повідомлення або очисти поле." : undefined}>{isSubmitting ? "Виконуємо..." : actionLabel}</button>
             </div>
           </form>
         </div>
       </section>
 
-      <DiscordPreview embed={embed} content={content} isValid={isValid} mentionRoles={selectedMentionRoles} previewMode={previewMode} onPreviewModeChange={setPreviewMode} />
+      <DiscordPreview embed={embed} content={content} isValid={isValid} mentionRoles={selectedMentionRoles} actionButtons={isAutoroles ? autoroleButtons : []} previewMode={previewMode} onPreviewModeChange={setPreviewMode} />
     </div>
   );
 }

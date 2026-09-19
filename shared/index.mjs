@@ -163,6 +163,33 @@ export const RULES_CUSTOM_ID_PATTERN = new RegExp(
   `^${CUSTOM_ID_NAMESPACE}:(?:a:[0-9a-z.]{1,90}|c:a:[0-9a-z.]{1,88}|d|c:d|r:(?:s|c:s))$`,
 );
 
+
+/* ------------------------------------------------------------------ *
+ * Авторолі
+ * ------------------------------------------------------------------ */
+
+const AUTOROLE_PATTERN = new RegExp(
+  `^${CUSTOM_ID_NAMESPACE}:ar:(add|remove|toggle):(\\d{16,25})(?::([A-Za-z0-9_-]{1,16}))?$`,
+);
+
+export function buildAutoroleCustomId(action, roleId, group = "") {
+  const normalizedAction = String(action || "").trim().toLowerCase();
+  const normalizedRoleId = String(roleId || "").trim();
+  const normalizedGroup = String(group || "").trim().replace(/[^A-Za-z0-9_-]/g, "").slice(0, 16);
+  if (!["add", "remove", "toggle"].includes(normalizedAction) || !/^\d{16,25}$/.test(normalizedRoleId)) {
+    throw new Error("Invalid autorole custom_id");
+  }
+  const customId = `${CUSTOM_ID_NAMESPACE}:ar:${normalizedAction}:${normalizedRoleId}${normalizedGroup ? `:${normalizedGroup}` : ""}`;
+  if (customId.length > CUSTOM_ID_MAX_LENGTH) throw new Error("Autorole custom_id is too long");
+  return customId;
+}
+
+export function decodeAutoroleCustomId(customId) {
+  const match = String(customId || "").trim().match(AUTOROLE_PATTERN);
+  if (!match) return null;
+  return { action: match[1], roleId: match[2], group: match[3] || "" };
+}
+
 /* ------------------------------------------------------------------ *
  * Маршрутизація для бота
  * ------------------------------------------------------------------ */
@@ -178,9 +205,11 @@ export const INTERACTION_DOMAINS = Object.freeze({
   ROSTER: "roster",
   RULES: "rules",
   APPLICATION: "application",
+  AUTOROLE: "autorole",
 });
 
 const DOMAIN_PREFIXES = [
+  [`${CUSTOM_ID_NAMESPACE}:ar:`, INTERACTION_DOMAINS.AUTOROLE],
   [`${CUSTOM_ID_NAMESPACE}:application:`, INTERACTION_DOMAINS.APPLICATION],
   [`${CUSTOM_ID_NAMESPACE}:poll_`, INTERACTION_DOMAINS.RAID_POLL],
   // Current roster UI uses mbv1:roster_<action>:..., keep the old colon form too.

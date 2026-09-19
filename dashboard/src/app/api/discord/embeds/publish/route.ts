@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { resolveAuthorIdentity } from "@/lib/authorIdentity";
-import { canManageGeneralEmbeds, canManageRulesEmbeds, hierarchyTitle } from "@/lib/permissions";
+import { canManageDiscordMembers, canManageGeneralEmbeds, canManageRulesEmbeds, hierarchyTitle } from "@/lib/permissions";
 import {
   assertRequestBodySize,
   checkRateLimit,
@@ -19,6 +19,7 @@ import {
   parseDiscordMessageRef,
   parseEmbedJson,
 } from "@/lib/discordAdmin";
+import { assertAutoroleRolesAllowed, buildAutoroleComponents, extractAutoroleButtonsFromMessage, parseAutoroleButtonsJson } from "@/lib/discordAutoroles";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -169,8 +170,8 @@ export async function POST(request: NextRequest) {
   if (tooLarge) return tooLarge;
 
   const session = await getSession();
-  if (!session || !canManageGeneralEmbeds(session)) {
-    return respondTo(request, { error: "Ця дія доступна тільки гільдмайстеру або офіцеру." }, "/discord", 403);
+  if (!session) {
+    return respondTo(request, { error: "Потрібна авторизація." }, "/discord", 403);
   }
 
   const ip = getClientIp(request);
@@ -182,7 +183,8 @@ export async function POST(request: NextRequest) {
   try {
     const form = await request.formData();
     returnTo = safeReturnTo(form.get("returnTo"));
-    const mode = String(form.get("mode") || "general") === "rules" ? "rules" : "general";
+    const rawMode = String(form.get("mode") || "general");
+    const mode = rawMode === "rules" ? "rules" : rawMode === "autoroles" ? "autoroles" : "general";
     const ruleType = mode === "rules" && String(form.get("ruleType") || "guild") === "raid" ? "raid" : "guild";
     const action = String(form.get("action") || "publish");
     const channelId = String(form.get("channelId") || "").trim();
@@ -190,6 +192,16 @@ export async function POST(request: NextRequest) {
     const content = String(form.get("content") || "").trim();
     const embed = embedFromEditableForm(form);
     const isRules = mode === "rules";
+    const isAutoroles = mode === "autoroles";
+    if (isAutoroles ? !canManageDiscordMembers(session) : !canManageGeneralEmbeds(session)) {
+      return respondTo(request, { error: isAutoroles ? "Авторолі доступні тільки гільдмайстеру." : "Ця дія доступна тільки гільдмайстеру або офіцеру." }, returnTo, 403);
+    }
+    const autoroleButtons = isAutoroles ? parseAutoroleButtonsJson(form.get("autoroleButtonsJson")) : [];
+    if (isAutoroles && autoroleButtons.length === 0) {
+      return respondTo(request, { error: "Додай хоча б одну кнопку авторолі з роллю та текстом." }, returnTo, 400);
+    }
+    if (isAutoroles) await assertAutoroleRolesAllowed(autoroleButtons.map((button) => button.roleId));
+    const autoroleComponents = isAutoroles ? buildAutoroleComponents(autoroleButtons) : undefined;
     const selectedRoles = selectedRoleIds(form);
     const roleIds = isRules && ruleType === "guild" ? selectedRoles : [];
     const mentionRoleIds = isRules ? [] : selectedRoles;
@@ -197,7 +209,7 @@ export async function POST(request: NextRequest) {
     const shouldEdit = action === "edit" || Boolean(editRef);
     const effectiveAction = shouldEdit ? "edit" : "publish";
     const actor = (await resolveAuthorIdentity(session)).primaryName || session.name || session.login || session.id;
-    const auditReason = `Mistblossom panel: ${isRules ? ruleType === "raid" ? "raid rules" : "rules" : "embed"} ${effectiveAction} by ${actor} (${hierarchyTitle(session.role)})`;
+    const auditReason = `Mistblossom panel: ${isAutoroles ? "autoroles" : isRules ? ruleType === "raid" ? "raid rules" : "rules" : "embed"} ${effectiveAction} by ${actor} (${hierarchyTitle(session.role)})`;
 
     logDashboardEvent("info", "discord.embed.submit", request, {
       mode,
@@ -210,6 +222,7 @@ export async function POST(request: NextRequest) {
       contentLength: content.length,
       roleCount: roleIds.length,
       mentionRoleCount: mentionRoleIds.length,
+      autoroleButtonCount: autoroleButtons.length,
       actorId: session.id,
       actorRole: session.role,
     });
@@ -235,18 +248,23 @@ export async function POST(request: NextRequest) {
         return respondTo(request, { error: "Для редагування встав посилання на Discord-повідомлення." }, returnTo, 400);
       }
 
-      if (!canManageRulesEmbeds(session)) {
-        const currentMessage = await fetchDiscordEditableMessage(editRef);
-        if (currentMessage.isRules) {
-          logDashboardEvent("warn", "discord.embed.validation_failed", request, {
-            reason: "officer_tried_to_edit_rules_embed",
-            actorId: session.id,
-            actorRole: session.role,
-            channelId: editRef.channelId,
-            messageId: editRef.messageId,
-          });
-          return respondTo(request, { error: "Це повідомлення правил. Офіцер може редагувати тільки звичайні Discord-повідомлення." }, returnTo, 403);
-        }
+      const currentMessage = await fetchDiscordEditableMessage(editRef);
+      const currentAutoroleButtons = extractAutoroleButtonsFromMessage({ components: currentMessage.components });
+      if (currentMessage.isRules && isAutoroles) {
+        return respondTo(request, { error: "Повідомлення правил не можна перетворювати на авторолі. Відкрий окреме повідомлення або створи нове." }, returnTo, 409);
+      }
+      if (currentAutoroleButtons.length > 0 && !isAutoroles) {
+        return respondTo(request, { error: "Це повідомлення авторолей. Редагуй його через розділ «Авторолі», щоб не стерти кнопки ролей." }, returnTo, 409);
+      }
+      if (!canManageRulesEmbeds(session) && currentMessage.isRules) {
+        logDashboardEvent("warn", "discord.embed.validation_failed", request, {
+          reason: "officer_tried_to_edit_rules_embed",
+          actorId: session.id,
+          actorRole: session.role,
+          channelId: editRef.channelId,
+          messageId: editRef.messageId,
+        });
+        return respondTo(request, { error: "Це повідомлення правил. Офіцер може редагувати тільки звичайні Discord-повідомлення." }, returnTo, 403);
       }
 
       await editDiscordEmbedMessage({
@@ -257,6 +275,7 @@ export async function POST(request: NextRequest) {
         mentionRoleIds,
         withRulesButtons: isRules,
         rulesType: ruleType,
+        components: autoroleComponents,
         auditReason,
       });
 
@@ -282,6 +301,7 @@ export async function POST(request: NextRequest) {
       mentionRoleIds,
       withRulesButtons: isRules,
       rulesType: ruleType,
+      components: autoroleComponents,
       auditReason,
     });
 

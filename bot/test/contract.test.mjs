@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  buildAutoroleCustomId,
+  decodeAutoroleCustomId,
   decodeRaidPollCustomId,
   interactionDomainFor,
   isRaidPollPromptKind,
@@ -48,6 +50,9 @@ test("домени визначаються за реальними custom_id, �
   assert.equal(interactionDomainFor(`mbv1:poll_role:${POLL}`), INTERACTION_DOMAINS.RAID_POLL);
   assert.equal(interactionDomainFor(`mbv1:raid:${POLL}:going`), INTERACTION_DOMAINS.RAID);
   assert.equal(interactionDomainFor(`mbv1:rss:${POLL}:going:key:dps`), INTERACTION_DOMAINS.RAID);
+  const autorole = buildAutoroleCustomId("toggle", "123456789012345678", "class");
+  assert.equal(interactionDomainFor(autorole), INTERACTION_DOMAINS.AUTOROLE);
+  assert.deepEqual(decodeAutoroleCustomId(autorole), { action: "toggle", roleId: "123456789012345678", group: "class" });
 
   // rosterFormation.ts -> mbv1:roster_<action>:...
   assert.equal(interactionDomainFor(`mbv1:roster_pick:${POLL}`), INTERACTION_DOMAINS.ROSTER);

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import DashboardIdentity from "@/components/DashboardIdentity";
 import HeroSidePanel from "@/components/HeroSidePanel";
 import { getSession } from "@/lib/auth";
-import { canManageGeneralEmbeds, canManageRaids, canManageRulesEmbeds, canViewRulesStats, hierarchyTitle } from "@/lib/permissions";
+import { canManageDiscordMembers, canManageGeneralEmbeds, canManageRaids, canManageRulesEmbeds, canViewRulesStats, hierarchyTitle } from "@/lib/permissions";
 import { hasDiscordEmbedConfig } from "@/lib/discordAdmin";
 import { getOwnProfilePath } from "@/lib/profiles";
 import { buildPageMetadata } from "@/lib/seo";
@@ -51,7 +51,8 @@ export default async function DiscordHubPage({
   const canEditRules = canManageRulesEmbeds(user);
   const canViewRules = canViewRulesStats(user);
   const canCreateRaidPolls = canManageRaids(user);
-  if (!canUseGeneralEmbeds && !canViewRules && !canCreateRaidPolls) redirect(await getOwnProfilePath(user));
+  const canManageAutoroles = canManageDiscordMembers(user);
+  if (!canUseGeneralEmbeds && !canViewRules && !canCreateRaidPolls && !canManageAutoroles) redirect(await getOwnProfilePath(user));
 
   const discordEnabled = hasDiscordEmbedConfig();
 
@@ -89,7 +90,7 @@ export default async function DiscordHubPage({
           />
         </header>
       <StatusNotice params={params} />
-      {!canUseGeneralEmbeds && !canCreateRaidPolls ? (
+      {!canUseGeneralEmbeds && !canCreateRaidPolls && !canManageAutoroles ? (
         <div className="notice panel">Твоя роль не має доступу до Discord-дій.</div>
       ) : !discordEnabled ? (
         <div className="notice panel error-note">Публікація в Discord тимчасово недоступна.</div>
@@ -117,6 +118,16 @@ export default async function DiscordHubPage({
               <strong>Raid Polls</strong>
               <p>Створення голосування за дні та час рейду з публікацією в Discord і результатами на сайті.</p>
               <span className="btn subtle">Відкрити пули</span>
+            </a>
+          ) : null}
+
+
+          {canManageAutoroles ? (
+            <a className="panel discord-hub-card discord-hub-card--autoroles" href="/discord/autoroles">
+              <span className="eyebrow">Авторолі • {hierarchyTitle(user.role)}</span>
+              <strong>Кнопки видачі ролей</strong>
+              <p>Створення embed-повідомлень із кнопками, які видають, знімають або перемикають Discord-ролі.</p>
+              <span className="btn primary">Відкрити авторолі</span>
             </a>
           ) : null}
 
