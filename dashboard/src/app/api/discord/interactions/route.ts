@@ -350,12 +350,14 @@ export async function POST(request: NextRequest) {
       });
       return ephemeral(result.content);
     } catch (error) {
-      logDashboardEvent("error", "discord.autorole.action_failed", request, {
+      const message = safeErrorMessage(error);
+      const expectedOwnerLimitation = /власник сервера|server owner|owner/i.test(message);
+      logDashboardEvent(expectedOwnerLimitation ? "info" : "error", expectedOwnerLimitation ? "discord.autorole.owner_unsupported" : "discord.autorole.action_failed", request, {
         userId,
         action: autoroleAction.action,
         roleId: autoroleAction.roleId,
         group: autoroleAction.group || null,
-        message: safeErrorMessage(error),
+        message,
       });
       return ephemeral(explainAutoroleInteractionError(error));
     }

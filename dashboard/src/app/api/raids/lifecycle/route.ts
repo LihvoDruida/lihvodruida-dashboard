@@ -50,6 +50,16 @@ function wantsFullSweep(request: NextRequest) {
   return url.searchParams.get("sweep") === "1" || request.headers.get("x-lifecycle-sweep") === "1";
 }
 
+function lifecycleHasActivity(result: Record<string, unknown>, fullSweep: boolean) {
+  if (fullSweep) return true;
+  const counters = [
+    "total", "failed", "checked", "scanned", "autoClosed", "notClaimed", "staleTasks",
+    "tasksChanged", "tasksPlanned", "remindersSent", "discordDeleted", "remindersDeleted",
+    "discordClosuresSynced",
+  ];
+  return counters.some((key) => Number(result[key] || 0) > 0);
+}
+
 export async function GET(request: NextRequest) {
   const token = await verifyInternalBearerToken(request, [
     "RAID_LIFECYCLE_SECRET",
@@ -90,7 +100,10 @@ export async function GET(request: NextRequest) {
     guard.inFlight = promise;
     const result = await promise;
     guard.lastResult = result as Record<string, unknown>;
-    logDashboardEvent("info", "raids.lifecycle.cron", request, { ...result, cooldownMs: minInterval });
+    const logLevel = Number((result as Record<string, unknown>).failed || 0) > 0
+      ? "warn"
+      : lifecycleHasActivity(result as Record<string, unknown>, fullSweep) ? "info" : "debug";
+    logDashboardEvent(logLevel, "raids.lifecycle.cron", request, { ...result, cooldownMs: minInterval });
     return NextResponse.json({ ok: true, ...result }, { headers: noStoreHeaders() });
   } catch (error) {
     const message = safeErrorMessage(error);

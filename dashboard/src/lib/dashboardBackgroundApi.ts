@@ -51,6 +51,7 @@ type ResourceRecord<T = unknown> = {
   refs: number;
   getOptions: () => DashboardApiResourceOptions<T>;
   state: DashboardApiResourceState<T>;
+  fingerprint: string;
   lastStartedAt: number;
   inFlight: Promise<DashboardApiResourceState<T>> | null;
 };
@@ -71,6 +72,17 @@ function subscribe(listener: () => void) {
 
 function cleanKey(key: string) {
   return String(key || "").trim().slice(0, 220) || "unknown";
+}
+
+function dataFingerprint(value: unknown) {
+  try {
+    return JSON.stringify(value) || "null";
+  } catch {
+    // API payloads are JSON, but a custom selector may theoretically return a
+    // non-serializable value. Falling back to a stable type tag avoids turning
+    // the live refresh loop into a crash source.
+    return Object.prototype.toString.call(value);
+  }
 }
 
 function initialState<T>(data: T): DashboardApiResourceState<T> {
@@ -177,6 +189,7 @@ function ensureRecord<T>(keyInput: string, initialData: T, getOptions: () => Das
       ...initialState(initialData),
       checkedAt,
     },
+    fingerprint: dataFingerprint(initialData),
     lastStartedAt: checkedAt || 0,
     inFlight: null,
   };
@@ -188,7 +201,7 @@ function stateFor<T>(keyInput: string, initialData: T, getOptions: () => Dashboa
   return ensureRecord(keyInput, initialData, getOptions).state;
 }
 
-function broadcastResourceUpdated<T>(record: ResourceRecord<T>, reason: string) {
+function broadcastResourceUpdated<T>(record: ResourceRecord<T>, reason: string, changed: boolean) {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent(DASHBOARD_BACKGROUND_API_REFRESHED_EVENT, {
     detail: {
@@ -197,6 +210,7 @@ function broadcastResourceUpdated<T>(record: ResourceRecord<T>, reason: string) 
       reason,
       checkedAt: record.state.checkedAt,
       updatedAt: record.state.updatedAt,
+      changed,
     },
   }));
 }
@@ -247,15 +261,18 @@ export async function refreshDashboardApiResource<T = unknown>(keyInput: string,
   }).then((payload) => {
     const data = request.select ? request.select(payload) : payload as T;
     const checkedAt = Date.now();
+    const fingerprint = dataFingerprint(data);
+    const changed = fingerprint !== record.fingerprint;
+    record.fingerprint = fingerprint;
     writeStoredCheckedAt(record.key, checkedAt);
     updateRecord(record, {
       data,
       status: "updated",
       error: "",
       checkedAt,
-      updatedAt: checkedAt,
+      updatedAt: changed ? checkedAt : record.state.updatedAt,
     });
-    broadcastResourceUpdated(record, options.reason || "background");
+    broadcastResourceUpdated(record, options.reason || "background", changed);
     return record.state;
   }).catch((error) => {
     const checkedAt = Date.now();

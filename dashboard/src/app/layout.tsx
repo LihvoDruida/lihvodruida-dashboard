@@ -27,6 +27,8 @@ import GlobalToasts from "@/components/GlobalToasts";
 import AppFooter from "@/components/AppFooter";
 import ClientErrorReporter from "@/components/ClientErrorReporter";
 import ClientAuthGuard from "@/components/ClientAuthGuard";
+import LiveDataRefresh from "@/components/LiveDataRefresh";
+import DashboardLivePageSync from "@/components/DashboardLivePageSync";
 import {
   DASHBOARD_TITLE,
   DEFAULT_SEO_DESCRIPTION,
@@ -165,6 +167,8 @@ export default function RootLayout({
         <ClientErrorReporter />
         <ClientAuthGuard />
         <DashboardFormEnhancer />
+        <LiveDataRefresh />
+        <DashboardLivePageSync />
         <Suspense fallback={null}>
           <GlobalToasts />
         </Suspense>

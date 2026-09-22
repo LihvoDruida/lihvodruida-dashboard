@@ -277,6 +277,9 @@ type NicknameMemberCheckRecord = {
   eligibilitySource?: "newcomer_role";
   gateRoleId?: string;
   newcomerQualifiedAt?: string;
+  lastCheckError?: string | null;
+  lastCheckErrorAt?: string | null;
+  lastCheckErrorCount?: number;
 };
 
 function buildMemberCheckRecord(
@@ -303,6 +306,9 @@ function buildMemberCheckRecord(
     ...(options.eligibilitySource ? { eligibilitySource: options.eligibilitySource } : {}),
     ...(options.gateRoleId ? { gateRoleId: options.gateRoleId } : {}),
     ...(options.newcomerQualifiedAt ? { newcomerQualifiedAt: options.newcomerQualifiedAt } : {}),
+    lastCheckError: null,
+    lastCheckErrorAt: null,
+    lastCheckErrorCount: 0,
   };
 }
 
@@ -348,6 +354,9 @@ async function writeMemberCheckRecords(records: NicknameMemberCheckRecord[], opt
             ...(record.eligibilitySource ? { eligibilitySource: record.eligibilitySource } : {}),
             ...(record.gateRoleId ? { gateRoleId: record.gateRoleId } : {}),
             ...(record.newcomerQualifiedAt ? { newcomerQualifiedAt: record.newcomerQualifiedAt } : {}),
+            lastCheckError: record.lastCheckError ?? null,
+            lastCheckErrorAt: record.lastCheckErrorAt ?? null,
+            lastCheckErrorCount: Math.max(0, Number(record.lastCheckErrorCount || 0)),
           }, { merge: true });
         }
         await batch.commit();
@@ -377,14 +386,14 @@ async function deleteMemberCheckRecords(userIds: string[]) {
 }
 
 async function deferFailedNicknameChecks(
-  failures: Array<{ userId: string; error: string }>,
+  failures: Array<{ userId: string; error: string; failureCount?: number }>,
   delayMs = 60 * 60_000,
 ) {
   if (!hasFirebaseProfileConfig() || !failures.length) return;
   const db = getFirebaseAdminDb();
-  const retryAtMs = Date.now() + Math.max(15 * 60_000, delayMs);
-  const retryAt = new Date(retryAtMs).toISOString();
-  const failedAt = new Date().toISOString();
+  const baseDelayMs = Math.max(15 * 60_000, delayMs);
+  const failedAtMs = Date.now();
+  const failedAt = new Date(failedAtMs).toISOString();
   await firebaseWrite(
     "settings",
     "discord-nickname-check-state:retry",
@@ -392,11 +401,17 @@ async function deferFailedNicknameChecks(
       for (let index = 0; index < failures.length; index += 400) {
         const batch = db.batch();
         for (const failure of failures.slice(index, index + 400)) {
+          const previousFailures = Math.max(0, Math.floor(Number(failure.failureCount || 0)));
+          const nextFailureCount = Math.min(previousFailures + 1, 50);
+          const backoffMultiplier = 2 ** Math.min(previousFailures, 5);
+          const retryDelayMs = Math.min(24 * 60 * 60_000, baseDelayMs * backoffMultiplier);
+          const retryAtMs = failedAtMs + retryDelayMs;
           batch.set(db.collection(MEMBER_STATE_COLLECTION).doc(failure.userId), {
-            nextCheckAt: retryAt,
+            nextCheckAt: new Date(retryAtMs).toISOString(),
             nextCheckAtMs: retryAtMs,
             lastCheckError: failure.error.slice(0, 500),
             lastCheckErrorAt: failedAt,
+            lastCheckErrorCount: nextFailureCount,
             updatedAt: failedAt,
           }, { merge: true });
         }
@@ -844,7 +859,7 @@ async function persistFullNicknameCheckSnapshot(
   return { records, trackedValid, trackedInvalid, nextInvalidCheckAt };
 }
 
-type DueInvalidTarget = { userId: string; displayName: string; nextCheckAtMs: number; signature: string; lastNotifiedAt: string | null };
+type DueInvalidTarget = { userId: string; displayName: string; nextCheckAtMs: number; signature: string; lastNotifiedAt: string | null; failureCount: number };
 
 async function loadDueInvalidNicknameTargets(limit: number, now = Date.now()) {
   if (!hasFirebaseProfileConfig()) return { targets: [] as DueInvalidTarget[], dueTotal: 0, nextDueAt: null as string | null, trackedInvalid: 0 };
@@ -863,6 +878,7 @@ async function loadDueInvalidNicknameTargets(limit: number, now = Date.now()) {
       nextCheckAtMs: numberValue(data.nextCheckAtMs, 0),
       signature: String(data.signature || "").slice(0, 180),
       lastNotifiedAt: timestampToIso(data.lastNotifiedAt),
+      failureCount: Math.max(0, Math.floor(numberValue(data.lastCheckErrorCount, 0))),
     };
   }).filter((row) => /^\d{16,25}$/.test(row.userId));
   rows.sort((a, b) => a.nextCheckAtMs - b.nextCheckAtMs || a.userId.localeCompare(b.userId));
@@ -1490,6 +1506,7 @@ export async function processPriorityNicknameWarnings(input: {
     await deferFailedNicknameChecks(failed.map((result) => ({
       userId: result.item.userId,
       error: safeErrorMessage(result.error, "Discord member recheck failed"),
+      failureCount: result.item.failureCount,
     })));
   }
 

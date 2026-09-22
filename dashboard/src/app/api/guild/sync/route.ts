@@ -62,6 +62,18 @@ function hasRateLimit(progress: GuildRosterSyncProgress | null | undefined, reas
   return reasons.some((item) => String(item || "").startsWith("raiderio_rate_limited"));
 }
 
+function guildSyncHasActivity(result: Record<string, unknown>) {
+  if (result.forcedRoster) return true;
+  const sync = result.sync && typeof result.sync === "object" ? result.sync as Record<string, unknown> : null;
+  if (sync?.status === "running" || sync?.status === "failed") return true;
+  const providerActivity = [result.battleNet, result.raiderIo].some((value) => {
+    if (!value || typeof value !== "object") return false;
+    const provider = value as Record<string, unknown>;
+    return Number(provider.checked || 0) > 0 || (!provider.skipped && !provider.reason);
+  });
+  return providerActivity;
+}
+
 async function runAutomaticSync() {
   if (!boolEnv("GUILD_ROSTER_AUTO_SYNC_ENABLED", true)) {
     return { ok: true, skipped: true, reason: "disabled" };
@@ -150,7 +162,7 @@ export async function POST(request: NextRequest) {
     state.inFlight = promise;
     const result = await promise;
     state.lastResult = result;
-    logDashboardEvent("info", "guild.roster.auto_sync", request, result);
+    logDashboardEvent(guildSyncHasActivity(result) ? "info" : "debug", "guild.roster.auto_sync", request, result);
     return NextResponse.json(result, { headers: noStoreHeaders() });
   } catch (error) {
     const message = safeErrorMessage(error);

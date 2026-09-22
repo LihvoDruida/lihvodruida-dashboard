@@ -33,7 +33,7 @@ function isTextEditingElement(element: Element | null) {
 function hasActiveEditor() {
   if (typeof document === "undefined") return false;
   if (isTextEditingElement(document.activeElement)) return true;
-  return Boolean(document.querySelector('form[data-submitting="true"], [aria-busy="true"]'));
+  return Boolean(document.querySelector('form[data-submitting="true"], form[data-dirty="true"], form.is-dirty, [aria-busy="true"]'));
 }
 
 function isIgnorableExtensionMessage(reason: unknown) {

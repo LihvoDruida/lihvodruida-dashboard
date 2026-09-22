@@ -39,6 +39,14 @@ function wantsForceRun(request: NextRequest) {
   return url.searchParams.get("force") === "1" || request.headers.get("x-force-lifecycle") === "1" || request.headers.get("x-force-poll-close-due") === "1";
 }
 
+function pollCloseHasActivity(result: Record<string, unknown>) {
+  const counters = [
+    "failed", "checked", "scanned", "closed", "deleted", "repeated", "repeatedChecked",
+    "scheduledChecked", "scheduledPublished", "voteCleanupChecked", "voteCleanupCleaned", "voteCleanupRemoved",
+  ];
+  return counters.some((key) => Number(result[key] || 0) > 0);
+}
+
 async function run(request: NextRequest) {
   const auth = await verifyInternalBearerToken(request, INTERNAL_POLL_CRON_TOKENS, { minLength: 24 });
   if (!auth.ok) {
@@ -71,7 +79,8 @@ async function run(request: NextRequest) {
     guard.inFlight = promise;
     const result = await promise;
     guard.lastResult = result as Record<string, unknown>;
-    logDashboardEvent(result.failed ? "warn" : "info", "raid_polls.close_due", request, { ...result, cooldownMs: minInterval });
+    const logLevel = result.failed ? "warn" : pollCloseHasActivity(result as Record<string, unknown>) ? "info" : "debug";
+    logDashboardEvent(logLevel, "raid_polls.close_due", request, { ...result, cooldownMs: minInterval });
     return NextResponse.json({ ok: true, ...result }, { headers: noStoreHeaders() });
   } catch (error) {
     const message = safeErrorMessage(error);
