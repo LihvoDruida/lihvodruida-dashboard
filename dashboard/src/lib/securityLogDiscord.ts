@@ -78,6 +78,18 @@ export async function mirrorSecurityLogToDiscordDetailed(
   log: SecurityMirrorLog,
   options: { bypassDedupe?: boolean } = {},
 ): Promise<SecurityMirrorResult> {
+  // Discord deliberately sends correctly-formed interaction requests with an
+  // invalid Ed25519 signature as a routine endpoint security check.  The bot
+  // still rejects those requests with HTTP 401 and stores them in PostgreSQL,
+  // but they are not actionable incidents and must not flood #лог-системи.
+  // A burst is emitted under a different event and remains mirrorable.
+  if (
+    log.event === "bot.security.invalid_discord_signature"
+    && log.details?.routineProbeCandidate === true
+  ) {
+    return { ok: false, skipped: true, reason: "routine_discord_signature_probe" };
+  }
+
   const settings = await getStructuredLogSettings().catch(() => null);
   if (!settings?.securityDiscordEnabled) {
     return { ok: false, skipped: true, reason: "security_mirror_disabled" };

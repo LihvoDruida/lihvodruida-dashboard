@@ -103,3 +103,28 @@ export function inspectDiscordSignature(rawBody, signature, timestamp, nowMs = D
 export function verifyDiscordSignature(rawBody, signature, timestamp) {
   return inspectDiscordSignature(rawBody, signature, timestamp).ok;
 }
+
+/**
+ * Discord intentionally sends correctly-shaped requests with an invalid
+ * Ed25519 signature as a routine security check for interaction endpoints.
+ *
+ * This helper deliberately does NOT call such a request "trusted".  The
+ * request is still rejected with HTTP 401.  It only identifies the narrow
+ * operational shape that should be kept as low-noise telemetry instead of
+ * paging the guild's Discord security channel for every expected probe.
+ *
+ * Missing/malformed headers, an invalid key, stale timestamps and internal
+ * verification errors never qualify and remain actionable warnings.
+ */
+export function isRoutineInvalidSignatureProbe(verification) {
+  if (!verification || typeof verification !== "object") return false;
+  return verification.reason === "ed25519_verification_failed"
+    && verification.publicKeyConfigured === true
+    && verification.publicKeyValid === true
+    && verification.ed25519Present === true
+    && verification.ed25519FormatValid === true
+    && verification.timestampPresent === true
+    && verification.timestampNumeric === true
+    && Number.isFinite(verification.timestampSkewSec)
+    && verification.timestampSkewSec <= 30;
+}

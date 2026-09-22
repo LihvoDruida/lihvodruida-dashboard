@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import botPackage from "../package.json" with { type: "json" };
-import { inspectDiscordSignature } from "./signature.mjs";
+import { inspectDiscordSignature, isRoutineInvalidSignatureProbe } from "./signature.mjs";
 import { completeInteraction } from "./dashboardClient.mjs";
 import { logger } from "./logger.mjs";
 import { startDiscordGatewayBridge, discordGatewayHealth } from "./gateway.mjs";
@@ -33,6 +33,16 @@ const HOST = process.env.HOST || "0.0.0.0";
 
 /** Ліміт тіла запиту. Discord ніколи не шле більше кількох десятків кілобайт. */
 const MAX_BODY_BYTES = 256 * 1024;
+
+// Discord periodically sends intentionally invalid signatures to prove that
+// the endpoint still rejects them.  A single well-formed failure is therefore
+// expected operational noise.  We still keep it in structured logs, while a
+// burst from the same source is promoted back to warning so abuse/scanning is
+// visible without flooding the Discord log channel with routine probes.
+const INVALID_SIGNATURE_BURST_WINDOW_MS = 60_000;
+const INVALID_SIGNATURE_BURST_THRESHOLD = 6;
+const INVALID_SIGNATURE_BURST_ALERT_COOLDOWN_MS = 5 * 60_000;
+const invalidSignatureBursts = new Map();
 
 const InteractionType = {
   PING: 1,
@@ -195,6 +205,36 @@ function requestDiagnosticContext(request, path, extra = {}) {
   };
 }
 
+function registerInvalidSignature(ip, now = Date.now()) {
+  const key = String(ip || "unknown").slice(0, 80);
+  const previous = invalidSignatureBursts.get(key);
+  let entry = previous;
+
+  if (!entry || now - entry.windowStartedAt >= INVALID_SIGNATURE_BURST_WINDOW_MS) {
+    entry = { windowStartedAt: now, count: 0, lastAlertAt: previous?.lastAlertAt || 0 };
+  }
+
+  entry.count += 1;
+  const shouldAlert = entry.count >= INVALID_SIGNATURE_BURST_THRESHOLD
+    && now - entry.lastAlertAt >= INVALID_SIGNATURE_BURST_ALERT_COOLDOWN_MS;
+  if (shouldAlert) entry.lastAlertAt = now;
+  invalidSignatureBursts.set(key, entry);
+
+  if (invalidSignatureBursts.size > 256) {
+    for (const [candidate, state] of invalidSignatureBursts) {
+      if (now - state.windowStartedAt > INVALID_SIGNATURE_BURST_ALERT_COOLDOWN_MS) {
+        invalidSignatureBursts.delete(candidate);
+      }
+    }
+  }
+
+  return {
+    count: entry.count,
+    windowSeconds: INVALID_SIGNATURE_BURST_WINDOW_MS / 1000,
+    shouldAlert,
+  };
+}
+
 const server = createServer(async (request, response) => {
   const path = requestPath(request);
 
@@ -235,11 +275,17 @@ const server = createServer(async (request, response) => {
   const timestamp = String(request.headers["x-signature-timestamp"] || "");
   const verification = inspectDiscordSignature(rawBody, signature, timestamp);
   if (!verification.ok) {
-    logger.warn("Відхилено Discord interaction: підпис не пройшов перевірку", requestDiagnosticContext(request, path, {
+    const ip = requestIp(request);
+    const routineProbe = isRoutineInvalidSignatureProbe(verification);
+    const burst = registerInvalidSignature(ip);
+    const common = requestDiagnosticContext(request, path, {
       eventName: "bot.security.invalid_discord_signature",
       category: "security",
       statusCode: 401,
       reason: verification.reason,
+      routineProbeCandidate: routineProbe,
+      invalidSignatureCount: burst.count,
+      invalidSignatureWindowSec: burst.windowSeconds,
       publicKeyConfigured: verification.publicKeyConfigured,
       publicKeyValid: verification.publicKeyValid,
       ed25519Present: verification.ed25519Present,
@@ -250,7 +296,23 @@ const server = createServer(async (request, response) => {
       timestampAgeSec: verification.timestampAgeSec,
       timestampSkewSec: verification.timestampSkewSec,
       bodyBytes: verification.bodyBytes,
-    }));
+    });
+
+    if (routineProbe && !burst.shouldAlert) {
+      logger.info("Відхилено штатний Discord security probe з некоректним підписом", common);
+    } else {
+      logger.warn(
+        burst.shouldAlert
+          ? "Виявлено серію Discord interaction із некоректним підписом"
+          : "Відхилено Discord interaction: підпис не пройшов перевірку",
+        {
+          ...common,
+          eventName: burst.shouldAlert
+            ? "bot.security.invalid_discord_signature_burst"
+            : "bot.security.invalid_discord_signature",
+        },
+      );
+    }
     return json(response, 401, { error: "invalid_signature" });
   }
 

@@ -1,7 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { generateKeyPairSync, sign } from "node:crypto";
-import { inspectDiscordSignature, verifyDiscordSignature } from "../src/signature.mjs";
+import {
+  inspectDiscordSignature,
+  isRoutineInvalidSignatureProbe,
+  verifyDiscordSignature,
+} from "../src/signature.mjs";
 
 // Ключова пара Ed25519 як у Discord: публічний ключ віддається у hex.
 const { publicKey, privateKey } = generateKeyPairSync("ed25519");
@@ -84,4 +88,29 @@ test("діагностика відрізняє replay/timestamp від крип
   const bad = inspectDiscordSignature(body, "ab".repeat(64), ts, nowSec * 1000);
   assert.equal(bad.reason, "ed25519_verification_failed");
   assert.equal(bad.timestampSkewSec, 0);
+  assert.equal(isRoutineInvalidSignatureProbe(bad), true);
+});
+
+test("routine-probe classifier не маскує malformed або stale запити", () => {
+  assert.equal(isRoutineInvalidSignatureProbe({
+    reason: "missing_ed25519",
+    publicKeyConfigured: true,
+    publicKeyValid: true,
+    ed25519Present: false,
+    ed25519FormatValid: false,
+    timestampPresent: true,
+    timestampNumeric: true,
+    timestampSkewSec: 0,
+  }), false);
+
+  assert.equal(isRoutineInvalidSignatureProbe({
+    reason: "ed25519_verification_failed",
+    publicKeyConfigured: true,
+    publicKeyValid: true,
+    ed25519Present: true,
+    ed25519FormatValid: true,
+    timestampPresent: true,
+    timestampNumeric: true,
+    timestampSkewSec: 31,
+  }), false);
 });
