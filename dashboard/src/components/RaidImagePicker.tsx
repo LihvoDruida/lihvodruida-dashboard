@@ -126,11 +126,13 @@ export default function RaidImagePicker({ defaultValue = "" }: { defaultValue?: 
           ref={inputRef}
           className="input"
           name="imageUrl"
+          type="url"
+          inputMode="url"
+          maxLength={2048}
           placeholder="https://..."
           value={value}
           onChange={(event) => setValue(event.currentTarget.value)}
-          autoComplete="off"
-          inputMode="url"
+          autoComplete="url"
         />
         <button className="btn subtle raid-image-picker__refresh" type="button" onClick={() => void loadImages()} disabled={isLoading}>
           {isLoading ? "Оновлення…" : "Оновити"}

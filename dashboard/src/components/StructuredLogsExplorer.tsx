@@ -233,7 +233,7 @@ export default function StructuredLogsExplorer({
         <div className={styles.searchRow}>
           <label className={styles.searchBox}>
             <span>Пошук</span>
-            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="event, path, користувач, текст…" />
+            <input type="search" maxLength={200} autoComplete="off" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="event, path, користувач, текст…" />
           </label>
           <div className={styles.rangeGroup} aria-label="Період">
             {[1, 6, 24, 72].map((value) => (

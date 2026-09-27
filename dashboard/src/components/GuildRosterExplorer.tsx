@@ -573,6 +573,8 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
             <span aria-hidden="true">⌕</span>
             <input
               id="guild-roster-search"
+              type="search"
+              maxLength={160}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Ім’я, клас, спек, рейд…"

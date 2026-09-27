@@ -115,6 +115,7 @@ export default function ApplicationFilters({
           className="input"
           name="q"
           type="search"
+          maxLength={160}
           placeholder="Номер заявки, номер відстеження, нік, realm, клас..."
           value={query}
           autoComplete="off"

@@ -1389,6 +1389,8 @@ export function RaidForm({
                 name="channelId"
                 inputMode="numeric"
                 pattern="[0-9]{16,25}"
+                maxLength={25}
+                autoComplete="off"
                 placeholder="ID текстового каналу Discord"
                 defaultValue={selectedChannelId}
                 disabled={!discordEnabled}
@@ -1429,6 +1431,8 @@ export function RaidForm({
                 name="voiceChannelId"
                 inputMode="numeric"
                 pattern="[0-9]{16,25}"
+                maxLength={25}
+                autoComplete="off"
                 placeholder="ID голосового каналу Discord (необов’язково)"
                 defaultValue={selectedVoiceChannelId}
                 disabled={!discordEnabled}
@@ -1557,7 +1561,10 @@ export function RaidForm({
             <input
               className="input"
               name="thumbnailUrl"
+              type="url"
               inputMode="url"
+              maxLength={2048}
+              autoComplete="url"
               placeholder="https://..."
               defaultValue={
                 raid?.thumbnailUrl && !isInternalRaidThumbnail(raid.thumbnailUrl)

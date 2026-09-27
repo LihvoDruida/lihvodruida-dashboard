@@ -43,6 +43,16 @@ export type SiteContentItem = {
   body: string;
 };
 
+export const CONTENT_TEXT_LIMITS = {
+  title: 160,
+  slug: 90,
+  description: 600,
+  categories: 400,
+  tags: 400,
+  author: 120,
+  body: 200_000,
+} as const;
+
 const MAX_IMAGE_SIZE = 8 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -286,9 +296,20 @@ function buildFrontmatter(input: {
 function validateContentInput(input: CreateContentInput, slug: string, body: string) {
   if (!canManageSiteContent(input.user)) throw new Error("Недостатньо прав для керування новинами та гайдами.");
   if (!isContentKind(input.kind)) throw new Error("Невідомий тип матеріалу.");
-  if (input.title.trim().length < 3) throw new Error("Заголовок занадто короткий.");
-  if (input.description.trim().length < 12) throw new Error("Опис занадто короткий.");
+  const title = input.title.trim();
+  const description = input.description.trim();
+  const categories = String(input.categories || "").trim();
+  const tags = String(input.tags || "").trim();
+  const author = String(input.author || "").trim();
+  if (title.length < 3) throw new Error("Заголовок занадто короткий.");
+  if (title.length > CONTENT_TEXT_LIMITS.title) throw new Error(`Заголовок занадто довгий. Максимум ${CONTENT_TEXT_LIMITS.title} символів.`);
+  if (description.length < 12) throw new Error("Опис занадто короткий.");
+  if (description.length > CONTENT_TEXT_LIMITS.description) throw new Error(`Опис занадто довгий. Максимум ${CONTENT_TEXT_LIMITS.description} символів.`);
+  if (categories.length > CONTENT_TEXT_LIMITS.categories) throw new Error("Список категорій занадто довгий.");
+  if (tags.length > CONTENT_TEXT_LIMITS.tags) throw new Error("Список тегів занадто довгий.");
+  if (author.length > CONTENT_TEXT_LIMITS.author) throw new Error("Імʼя автора занадто довге.");
   if (body.length < 20) throw new Error("Текст матеріалу занадто короткий.");
+  if (body.length > CONTENT_TEXT_LIMITS.body) throw new Error(`Текст матеріалу занадто довгий. Максимум ${CONTENT_TEXT_LIMITS.body.toLocaleString("uk-UA")} символів.`);
   assertSafeMarkdown(body);
   if (!slug) throw new Error("Не вдалося створити slug.");
 }

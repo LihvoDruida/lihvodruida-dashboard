@@ -233,6 +233,7 @@ export default async function LoginPage({
                     id="token"
                     name="token"
                     type="password"
+                    maxLength={512}
                     placeholder="Введи резервний ключ"
                     autoComplete="current-password"
                   />

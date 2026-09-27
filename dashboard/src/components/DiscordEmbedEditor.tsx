@@ -216,6 +216,7 @@ const DISCORD_LIMITS = {
   fields: 25,
   authorName: 256,
   footerText: 2048,
+  url: 2048,
   embedTotal: 6000,
 };
 
@@ -529,6 +530,8 @@ export function RolePicker({ roles, selectedRoleIds, onChange, fieldName = "role
           id={`${pickerId}-search`}
           className="input discord-role-search"
           type="search"
+          maxLength={100}
+          autoComplete="off"
           value={query}
           placeholder="Пошук ролі..."
           onChange={(event) => setQuery(event.currentTarget.value)}
@@ -991,6 +994,10 @@ function DiscordEmbedEditorInner({
                     <input
                       id="discord-message-link"
                       className="input"
+                      type="url"
+                      inputMode="url"
+                      maxLength={2048}
+                      autoComplete="url"
                       value={messageLink}
                       placeholder="https://discord.com/channels/.../.../..."
                       readOnly={isSubmitting}
@@ -1097,7 +1104,7 @@ function DiscordEmbedEditorInner({
                 </label>
                 <label className="content-field">
                   <span>URL заголовка</span>
-                  <input id="discord-embed-title-url" className="input" name="titleUrl" value={urlValue} placeholder="https://..." onChange={(event) => setUrlValue(event.currentTarget.value)} />
+                  <input id="discord-embed-title-url" className="input" name="titleUrl" type="url" inputMode="url" maxLength={DISCORD_LIMITS.url} autoComplete="url" value={urlValue} placeholder="https://..." onChange={(event) => setUrlValue(event.currentTarget.value)} />
                 </label>
               </div>
 
@@ -1116,11 +1123,11 @@ function DiscordEmbedEditorInner({
               <div className="discord-builder-grid">
                 <label className="content-field">
                   <span>Thumbnail URL</span>
-                  <input id="discord-embed-thumbnail-url" className="input" name="thumbnailUrl" value={thumbnailUrl} placeholder="https://..." onChange={(event) => setThumbnailUrl(event.currentTarget.value)} />
+                  <input id="discord-embed-thumbnail-url" className="input" name="thumbnailUrl" type="url" inputMode="url" maxLength={DISCORD_LIMITS.url} value={thumbnailUrl} placeholder="https://..." onChange={(event) => setThumbnailUrl(event.currentTarget.value)} />
                 </label>
                 <label className="content-field">
                   <span>Image URL</span>
-                  <input id="discord-embed-image-url" className="input" name="imageUrl" value={imageUrl} placeholder="https://..." onChange={(event) => setImageUrl(event.currentTarget.value)} />
+                  <input id="discord-embed-image-url" className="input" name="imageUrl" type="url" inputMode="url" maxLength={DISCORD_LIMITS.url} value={imageUrl} placeholder="https://..." onChange={(event) => setImageUrl(event.currentTarget.value)} />
                 </label>
               </div>
             </div>
@@ -1139,11 +1146,11 @@ function DiscordEmbedEditorInner({
                 </label>
                 <label className="content-field discord-author-url-field">
                   <span>Author URL</span>
-                  <input id="discord-author-url" className="input" name="authorUrl" value={authorUrl} placeholder="https://..." onChange={(event) => setAuthorUrl(event.currentTarget.value)} />
+                  <input id="discord-author-url" className="input" name="authorUrl" type="url" inputMode="url" maxLength={DISCORD_LIMITS.url} value={authorUrl} placeholder="https://..." onChange={(event) => setAuthorUrl(event.currentTarget.value)} />
                 </label>
                 <label className="content-field discord-author-icon-field">
                   <span>Author icon URL</span>
-                  <input id="discord-author-icon-url" className="input" name="authorIconUrl" value={authorIconUrl} placeholder="https://..." onChange={(event) => setAuthorIconUrl(event.currentTarget.value)} />
+                  <input id="discord-author-icon-url" className="input" name="authorIconUrl" type="url" inputMode="url" maxLength={DISCORD_LIMITS.url} value={authorIconUrl} placeholder="https://..." onChange={(event) => setAuthorIconUrl(event.currentTarget.value)} />
                 </label>
               </div>
               <div className="discord-footer-grid">
@@ -1154,7 +1161,7 @@ function DiscordEmbedEditorInner({
                 </label>
                 <label className="content-field">
                   <span>Footer icon URL</span>
-                  <input id="discord-footer-icon-url" className="input" name="footerIconUrl" value={footerIconUrl} placeholder="https://..." onChange={(event) => setFooterIconUrl(event.currentTarget.value)} />
+                  <input id="discord-footer-icon-url" className="input" name="footerIconUrl" type="url" inputMode="url" maxLength={DISCORD_LIMITS.url} value={footerIconUrl} placeholder="https://..." onChange={(event) => setFooterIconUrl(event.currentTarget.value)} />
                 </label>
               </div>
             </div>

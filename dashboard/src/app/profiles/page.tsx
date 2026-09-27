@@ -311,6 +311,9 @@ export default async function ProfilesPage({
                 <input
                   id="profile-directory-search"
                   name="q"
+                  type="search"
+                  maxLength={120}
+                  autoComplete="off"
                   placeholder="Нік, персонаж або реалм"
                   defaultValue={query}
                 />

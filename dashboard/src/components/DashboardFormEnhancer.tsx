@@ -371,7 +371,12 @@ function preserveButtonState(buttons: HTMLButtonElement[]) {
   for (const button of buttons) {
     button.dataset.wasDisabled = button.disabled ? "true" : "false";
     button.dataset.originalText = button.textContent || "";
+    delete button.dataset.loadingTextApplied;
   }
+}
+
+function canReplaceSubmitterText(button: HTMLButtonElement) {
+  return button.dataset.preserveLabel !== "true" && button.childElementCount === 0;
 }
 
 function setWorking(
@@ -395,8 +400,9 @@ function setWorking(
     }
   }
 
-  if (submitter) {
+  if (submitter && canReplaceSubmitterText(submitter)) {
     submitter.textContent = submitter.dataset.loadingLabel || label;
+    submitter.dataset.loadingTextApplied = "true";
   }
 }
 
@@ -412,10 +418,12 @@ function resetWorking(form: HTMLFormElement, buttons: HTMLButtonElement[]) {
     button.disabled = button.dataset.wasDisabled === "true";
     button.removeAttribute("aria-busy");
     button.classList.remove("btn-working", "btn-waiting");
-    if (button.dataset.originalText)
-      button.textContent = button.dataset.originalText;
+    if (button.dataset.loadingTextApplied === "true") {
+      button.textContent = button.dataset.originalText || "";
+    }
     delete button.dataset.wasDisabled;
     delete button.dataset.originalText;
+    delete button.dataset.loadingTextApplied;
   }
 }
 

@@ -443,7 +443,7 @@ export default async function AdminDiscordPage() {
               </div>
               <div className="discord-management-card__body">
                 <label className="field-label">Discord user ID
-                  <input className="input" name="userId" inputMode="numeric" pattern="[0-9]{16,25}" required placeholder="123456789012345678" />
+                  <input className="input" name="userId" inputMode="numeric" pattern="[0-9]{16,25}" maxLength={25} autoComplete="off" required placeholder="123456789012345678" />
                 </label>
                 <label className="field-label">Новий серверний нік
                   <input className="input" name="nickname" maxLength={32} required placeholder={nicknameTemplateExample(policy.template)} />
@@ -459,7 +459,7 @@ export default async function AdminDiscordPage() {
               </div>
               <div className="discord-management-card__body">
                 <label className="field-label discord-management-user-field">Discord user ID
-                  <input className="input" name="userId" inputMode="numeric" pattern="[0-9]{16,25}" required placeholder="123456789012345678" />
+                  <input className="input" name="userId" inputMode="numeric" pattern="[0-9]{16,25}" maxLength={25} autoComplete="off" required placeholder="123456789012345678" />
                 </label>
                 <RoleCheckboxes roles={manageableRoles} fieldName="roleIds" emptyText="Немає ролей, якими бот може керувати. Перевір ієрархію та Manage Roles." density="compact" />
                 <div className="form-actions form-actions--split">

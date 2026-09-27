@@ -139,7 +139,7 @@ export default function AccessGroupsManager({ groups, isServerOwner, currentGrou
               <div className="form-grid compact-form-grid access-form-grid">
                 <label>
                   <span>ID групи</span>
-                  <input className="input" name="id" defaultValue={group.id} readOnly={group.lockedId || !canEdit} inputMode="text" autoComplete="off" />
+                  <input className="input" name="id" defaultValue={group.id} maxLength={32} readOnly={group.lockedId || !canEdit} inputMode="text" autoComplete="off" />
                   <small>{group.lockedId ? "Системний ID не змінюється." : "Лише латиниця, цифри, _ або -."}</small>
                 </label>
                 <label>
@@ -168,7 +168,7 @@ export default function AccessGroupsManager({ groups, isServerOwner, currentGrou
                 </label>
                 <label>
                   <span>Discord role ID</span>
-                  <input className="input" name="discordRoleId" defaultValue={primaryDiscordRoleId(group)} placeholder="123456789012345678" readOnly={!canEdit} inputMode="numeric" pattern="[0-9]{16,25}" autoComplete="off" />
+                  <input className="input" name="discordRoleId" defaultValue={primaryDiscordRoleId(group)} maxLength={25} placeholder="123456789012345678" readOnly={!canEdit} inputMode="numeric" pattern="[0-9]{16,25}" autoComplete="off" />
                   <small>Тільки одна Discord-роль на групу. Якщо поле порожнє, група не прив’язана до ролі Discord.</small>
                 </label>
               </div>
@@ -206,7 +206,7 @@ export default function AccessGroupsManager({ groups, isServerOwner, currentGrou
             <div className="form-grid compact-form-grid access-form-grid">
               <label>
                 <span>ID групи</span>
-                <input className="input" name="id" placeholder="raid_lead" required autoComplete="off" />
+                <input className="input" name="id" placeholder="raid_lead" required maxLength={32} pattern="[A-Za-z0-9_-]{1,32}" autoComplete="off" />
                 <small>Унікальний ID: латиниця, цифри, _ або -.</small>
               </label>
               <label>
@@ -235,7 +235,7 @@ export default function AccessGroupsManager({ groups, isServerOwner, currentGrou
               </label>
               <label>
                 <span>Discord role ID</span>
-                <input className="input" name="discordRoleId" placeholder="123456789012345678" inputMode="numeric" pattern="[0-9]{16,25}" autoComplete="off" />
+                <input className="input" name="discordRoleId" placeholder="123456789012345678" maxLength={25} inputMode="numeric" pattern="[0-9]{16,25}" autoComplete="off" />
                 <small>Одна група = одна Discord-роль. Додаткові ролі створюй окремими групами.</small>
               </label>
             </div>

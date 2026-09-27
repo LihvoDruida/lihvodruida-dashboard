@@ -140,6 +140,8 @@ export default function StructuredLogSettingsPanel({
                   name="securityDiscordChannelId"
                   inputMode="numeric"
                   pattern="[0-9]{16,25}"
+                  maxLength={25}
+                  autoComplete="off"
                   value={settings.securityDiscordChannelId}
                   onChange={(event) => patch("securityDiscordChannelId", event.target.value)}
                   placeholder="123456789012345678"

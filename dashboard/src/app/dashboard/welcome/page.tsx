@@ -180,14 +180,14 @@ export default async function WelcomeCardDashboardPage({
 
             <div className="nickname-warning-settings__group">
               <label className="field-label">Текст повідомлення в каналі
-                <textarea className="input" name="messageTemplate" rows={4} defaultValue={settings.messageTemplate} />
+                <textarea className="input" name="messageTemplate" rows={4} maxLength={600} defaultValue={settings.messageTemplate} />
                 <small>Плейсхолдери: <code>{"{mention}"}</code>, <code>{"{displayName}"}</code>, <code>{"{username}"}</code>, <code>{"{greeting}"}</code>, <code>{"{label}"}</code>.</small>
               </label>
             </div>
 
             <div className="nickname-warning-settings__group">
               <label className="field-label">Варіанти привітання (по одному в рядку)
-                <textarea className="input" name="greetings" rows={8} defaultValue={settings.greetings.join("\n")} />
+                <textarea className="input" name="greetings" rows={8} maxLength={2000} defaultValue={settings.greetings.join("\n")} />
                 <small>Для реального нового учасника система обирає один варіант із цього списку.</small>
               </label>
             </div>
@@ -253,7 +253,7 @@ export default async function WelcomeCardDashboardPage({
           <form action="/dashboard/welcome" method="get">
             <div className="nickname-warning-settings__grid nickname-warning-settings__grid--delivery">
               <label className="field-label">Discord User ID (необов’язково)
-                <input className="input" name="testUserId" defaultValue={testInput.userId} inputMode="numeric" placeholder="Наприклад 123456789012345678" />
+                <input className="input" name="testUserId" defaultValue={testInput.userId} inputMode="numeric" pattern="[0-9]{16,25}" maxLength={25} autoComplete="off" placeholder="Наприклад 123456789012345678" />
                 <small>Якщо ID належить учаснику сервера, сервер підтягне його справжній аватар. Тест не змінює цього користувача.</small>
               </label>
 
@@ -293,7 +293,7 @@ export default async function WelcomeCardDashboardPage({
 
             <div className="nickname-warning-settings__group">
               <label className="field-label">Тестовий шаблон Discord-тексту
-                <textarea className="input" name="testMessageTemplate" rows={4} defaultValue={testMessageTemplate} />
+                <textarea className="input" name="testMessageTemplate" rows={4} maxLength={600} defaultValue={testMessageTemplate} />
                 <small>Це тимчасовий тестовий шаблон. Він не переписує збережений текст, доки ти не зміниш основні налаштування вище.</small>
               </label>
             </div>

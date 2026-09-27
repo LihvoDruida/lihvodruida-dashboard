@@ -315,6 +315,8 @@ export default async function AdminOverviewPage() {
                       name="requiredRoleIdsText"
                       defaultValue={manualAuthRoleIds.join(", ")}
                       placeholder="123456789012345678, 234567890123456789"
+                      maxLength={1024}
+                      autoComplete="off"
                       disabled={!canEditAuthPolicy}
                     />
                   </label>
@@ -466,6 +468,8 @@ export default async function AdminOverviewPage() {
                       name="blockedCountries"
                       defaultValue={geoPolicy.blockedCountries.join(", ")}
                       placeholder="RU, BY"
+                      maxLength={512}
+                      autoComplete="off"
                       disabled={!canEditGeoPolicy}
                       autoCapitalize="characters"
                       spellCheck={false}

@@ -248,6 +248,7 @@ export default function RaidPollBrowser({
           <span className="sr-only">Пошук рейд-пулу</span>
           <input
             type="search"
+            maxLength={160}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Пошук за назвою або складністю"

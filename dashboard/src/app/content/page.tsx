@@ -7,7 +7,7 @@ import { getSession } from "@/lib/auth";
 import { getOwnProfilePath, type AuthorNameSuggestion } from "@/lib/profiles";
 import { resolveAuthorIdentity } from "@/lib/authorIdentity";
 import { canManageSiteContent } from "@/lib/permissions";
-import { listSiteContent, type SiteContentItem } from "@/lib/content";
+import { CONTENT_TEXT_LIMITS, listSiteContent, type SiteContentItem } from "@/lib/content";
 import { redirect } from "next/navigation";
 import { buildPageMetadata } from "@/lib/seo";
 
@@ -114,18 +114,18 @@ function CreateContentForm({ author, authorSuggestions }: { author: string; auth
             </label>
             <label className="content-field">
               <span>Адреса сторінки</span>
-              <input className="input" name="slug" placeholder="згенерується автоматично" />
+              <input className="input" name="slug" maxLength={CONTENT_TEXT_LIMITS.slug} autoComplete="off" placeholder="згенерується автоматично" />
             </label>
           </div>
 
           <label className="content-field content-field--wide">
             <span>Заголовок</span>
-            <input className="input" name="title" placeholder="Наприклад: Новий рейдовий розклад" minLength={3} required />
+            <input className="input" name="title" placeholder="Наприклад: Новий рейдовий розклад" minLength={3} maxLength={CONTENT_TEXT_LIMITS.title} required />
           </label>
 
           <label className="content-field content-field--wide">
             <span>Короткий опис</span>
-            <textarea className="input textarea compact" name="description" placeholder="Короткий опис для картки та сторінки матеріалу" minLength={12} required />
+            <textarea className="input textarea compact" name="description" placeholder="Короткий опис для картки та сторінки матеріалу" minLength={12} maxLength={CONTENT_TEXT_LIMITS.description} required />
           </label>
         </FormSection>
 
@@ -133,18 +133,18 @@ function CreateContentForm({ author, authorSuggestions }: { author: string; auth
           <div className="form-row two">
             <label className="content-field">
               <span>Категорії</span>
-              <input className="input" name="categories" placeholder="WoW Midnight, Рейд" />
+              <input className="input" name="categories" maxLength={CONTENT_TEXT_LIMITS.categories} placeholder="WoW Midnight, Рейд" />
             </label>
             <label className="content-field">
               <span>Теги</span>
-              <input className="input" name="tags" placeholder="Mistblossom, Raid, Guide" />
+              <input className="input" name="tags" maxLength={CONTENT_TEXT_LIMITS.tags} placeholder="Mistblossom, Raid, Guide" />
             </label>
           </div>
 
           <div className="content-media-layout">
             <label className="content-field content-author-field">
               <span>Автор</span>
-              <input id="content-author-create" className="input" name="author" defaultValue={author} />
+              <input id="content-author-create" className="input" name="author" defaultValue={author} maxLength={CONTENT_TEXT_LIMITS.author} />
               <AuthorSuggestionChips targetId="content-author-create" suggestions={authorSuggestions} />
               <small>За замовчуванням береться імʼя з профілю. Можна швидко підставити серверне Discord-імʼя, Discord-імʼя або імʼя з сайту.</small>
             </label>
@@ -155,7 +155,7 @@ function CreateContentForm({ author, authorSuggestions }: { author: string; auth
         <FormSection title="Markdown" hint="Основний текст матеріалу. Підтримуються заголовки, таблиці, посилання і HTML-вставки." body>
           <label className="content-field content-field--wide">
             <span>Текст Markdown</span>
-            <textarea className="input textarea markdown-area" name="body" placeholder="## Вступ&#10;&#10;Основний текст матеріалу..." minLength={20} required />
+            <textarea className="input textarea markdown-area" name="body" placeholder="## Вступ&#10;&#10;Основний текст матеріалу..." minLength={20} maxLength={CONTENT_TEXT_LIMITS.body} required />
           </label>
 
           <div className="content-actions-row content-actions-row--sticky">
@@ -198,17 +198,17 @@ function EditContentForm({ item, author, authorSuggestions }: { item: SiteConten
           <div className="form-row two">
             <label className="content-field">
               <span>Заголовок</span>
-              <input className="input" name="title" defaultValue={item.title} minLength={3} required />
+              <input className="input" name="title" defaultValue={item.title} minLength={3} maxLength={CONTENT_TEXT_LIMITS.title} required />
             </label>
             <label className="content-field">
               <span>Адреса сторінки</span>
-              <input className="input" name="slug" defaultValue={item.slug} required />
+              <input className="input" name="slug" defaultValue={item.slug} maxLength={CONTENT_TEXT_LIMITS.slug} autoComplete="off" required />
             </label>
           </div>
 
           <label className="content-field content-field--wide">
             <span>Опис</span>
-            <textarea className="input textarea compact" name="description" defaultValue={item.description} minLength={12} required />
+            <textarea className="input textarea compact" name="description" defaultValue={item.description} minLength={12} maxLength={CONTENT_TEXT_LIMITS.description} required />
           </label>
         </FormSection>
 
@@ -216,18 +216,18 @@ function EditContentForm({ item, author, authorSuggestions }: { item: SiteConten
           <div className="form-row two">
             <label className="content-field">
               <span>Категорії</span>
-              <input className="input" name="categories" defaultValue={item.categories} />
+              <input className="input" name="categories" defaultValue={item.categories} maxLength={CONTENT_TEXT_LIMITS.categories} />
             </label>
             <label className="content-field">
               <span>Теги</span>
-              <input className="input" name="tags" defaultValue={item.tags} />
+              <input className="input" name="tags" defaultValue={item.tags} maxLength={CONTENT_TEXT_LIMITS.tags} />
             </label>
           </div>
 
           <div className="content-media-layout">
             <label className="content-field content-author-field">
               <span>Автор</span>
-              <input id="content-author-edit" className="input" name="author" defaultValue={item.author || author} />
+              <input id="content-author-edit" className="input" name="author" defaultValue={item.author || author} maxLength={CONTENT_TEXT_LIMITS.author} />
               <AuthorSuggestionChips targetId="content-author-edit" suggestions={authorSuggestions} />
               <small>Можна швидко підставити серверне Discord-імʼя, Discord-імʼя або імʼя з сайту.</small>
             </label>
@@ -244,7 +244,7 @@ function EditContentForm({ item, author, authorSuggestions }: { item: SiteConten
         <FormSection title="Markdown" hint="Повний текст матеріалу. Зміни збережуться для сторінки сайту." body>
           <label className="content-field content-field--wide">
             <span>Markdown</span>
-            <textarea className="input textarea markdown-area" name="body" defaultValue={item.body} minLength={20} required />
+            <textarea className="input textarea markdown-area" name="body" defaultValue={item.body} minLength={20} maxLength={CONTENT_TEXT_LIMITS.body} required />
           </label>
 
           <div className="content-actions-row content-actions-row--sticky">

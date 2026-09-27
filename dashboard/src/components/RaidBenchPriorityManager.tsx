@@ -222,6 +222,7 @@ export default function RaidBenchPriorityManager({
               id="raid-greylist-search-input"
               className="input"
               type="search"
+              maxLength={160}
               value={query}
               onChange={(event) => setQuery(event.currentTarget.value)}
               placeholder="Імʼя, реалм, клас, спек, власник..."
@@ -303,6 +304,7 @@ export default function RaidBenchPriorityManager({
             className="input textarea raid-greylist-manual"
             name="manualNames"
             rows={14}
+            maxLength={50000}
             placeholder={"Forchun\nKhayen-Terokkar\nІмʼя персонажа"}
             value={manualText}
             onChange={(event) => setManualText(event.currentTarget.value)}

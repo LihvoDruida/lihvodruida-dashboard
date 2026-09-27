@@ -106,6 +106,7 @@ export default function RaidPollCreateClientForm({ channels, roles = [], default
     const normalizedDescription = description.trim();
 
     if (normalizedTitle.length < 3) return "Вкажи назву рейду мінімум з 3 символів.";
+    if (normalizedTitle.length > 160) return "Назва рейду занадто довга. Максимум — 160 символів.";
     if (!DIFFICULTIES.some((option) => option.value === difficulty)) return "Вибери коректну складність рейду.";
     if (!looksLikeDiscordChannelId(normalizedChannelId)) return "Вибери коректний Discord-канал.";
     if (!RAID_POLL_CLOSE_OPTIONS.some((option) => option.minutes === closeAfterMinutes)) return "Вибери коректний таймер закриття голосування.";
@@ -305,6 +306,8 @@ export default function RaidPollCreateClientForm({ channels, roles = [], default
               onChange={(event) => setChannelId(event.target.value)}
               inputMode="numeric"
               pattern="\d{16,25}"
+              maxLength={25}
+              autoComplete="off"
               placeholder="ID текстового каналу Discord"
               required
               disabled={pending || disabled}
@@ -404,6 +407,7 @@ export default function RaidPollCreateClientForm({ channels, roles = [], default
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             rows={5}
+            minLength={20}
             maxLength={900}
             required
             disabled={pending || disabled}
