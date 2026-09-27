@@ -231,3 +231,47 @@ export async function notifyDiscordMemberJoined(event) {
   }
   throw lastError instanceof Error ? lastError : new Error("member-joined не доставлено в панель");
 }
+
+
+export async function notifyDiscordNicknameObserved(event) {
+  const token = INTERNAL_TOKEN();
+  if (!token) throw new Error("INTERNAL_API_TOKEN не задано");
+  const url = `${DASHBOARD_URL()}/api/internal/discord/member-nickname`;
+  const payload = {
+    guildId: String(event?.guildId || "").trim(),
+    userId: String(event?.userId || "").trim(),
+    nickname: event?.nickname === null || event?.nickname === undefined ? null : String(event.nickname).slice(0, 64),
+    eventId: String(event?.eventId || "").trim() || null,
+    source: "discord_gateway",
+  };
+
+  let lastError = null;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      const response = await fetchWithTimeout(url, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${token}`,
+          "x-mistblossom-source": "bot-gateway",
+        },
+        body: JSON.stringify(payload),
+      }, Math.max(8_000, DASHBOARD_TIMEOUT_MS));
+
+      const body = await response.json().catch(() => null);
+      if (response.ok) return body;
+      if (response.status >= 400 && response.status < 500) {
+        throw new Error(`Панель відхилила member-nickname ${response.status}: ${JSON.stringify(body || {}).slice(0, 220)}`);
+      }
+      lastError = new Error(body?.error || `Панель member-nickname відповіла ${response.status}`);
+    } catch (error) {
+      if (error instanceof Error && /відхилила member-nickname 4/.test(error.message)) throw error;
+      lastError = error;
+    }
+    if (attempt < 3) {
+      const delay = Math.min(6_000, 400 * (2 ** attempt)) + Math.floor(Math.random() * 180);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("member-nickname не доставлено в панель");
+}

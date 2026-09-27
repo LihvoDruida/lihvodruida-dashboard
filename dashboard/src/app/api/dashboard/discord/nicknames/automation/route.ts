@@ -74,7 +74,24 @@ export async function POST(request: NextRequest) {
     }
 
     const result = runFullScan
-      ? await processFullNicknameSweep({ source: "automatic", members: newcomerGate?.members, newcomerGate: newcomerGate || undefined })
+      ? await (async () => {
+          const sweep = await processFullNicknameSweep({ source: "automatic", members: newcomerGate?.members, newcomerGate: newcomerGate || undefined });
+          // Нові invalid-записи після full sweep мають nextCheckAt=now. Не чекаємо
+          // наступного cron tick: одразу запускаємо ту саму cooldown/batch-safe розсилку.
+          const immediatePriority = await processPriorityNicknameWarnings({ source: "automatic", force: false });
+          return {
+            ...sweep,
+            notified: immediatePriority.notified || 0,
+            dm: immediatePriority.dm || 0,
+            channel: immediatePriority.channel || 0,
+            cooldownSkipped: immediatePriority.cooldownSkipped || 0,
+            deferredByBatch: immediatePriority.deferredByBatch || 0,
+            correctedBeforeSend: immediatePriority.correctedBeforeSend || 0,
+            failed: (sweep.failed || 0) + (immediatePriority.failed || 0),
+            summary: `${sweep.summary} Одразу після sweep: ${immediatePriority.summary}`,
+            immediatePriority,
+          };
+        })()
       : await processPriorityNicknameWarnings({ source: "automatic", force: false });
 
     if ("skipped" in result && result.skipped) {

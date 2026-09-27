@@ -13,12 +13,13 @@ import { buildRaidManualSpecComponents, dashboardProfileUrl, dashboardRaidRulesU
 import { handleRaidPollDiscordVote } from "@/lib/raidPolls";
 // Розбір custom_id — зі спільного пакета: бот користується тим самим кодом,
 // тому нова дія не може «загубитись» на одній зі сторін.
-import { decodeApplicationCustomId, decodeAutoroleCustomId, decodeRaidPollCustomId } from "@mistblossom/discord-contract";
+import { decodeApplicationCustomId, decodeAutoroleCustomId, decodeNicknameFixCustomId, decodeRaidPollCustomId } from "@mistblossom/discord-contract";
 import { decodeRosterCustomId, handleRosterFormationDiscordAction } from "@/lib/rosterFormation";
 import { assertRequestBodySize, logDashboardEvent, noStoreHeaders, safeErrorMessage, verifyInternalBearerToken } from "@/lib/security";
 import { resolveAccessGroupFromDiscord } from "@/lib/accessGroups";
 import { moderateApplication } from "@/lib/moderation";
 import { explainAutoroleInteractionError, handleAutoroleInteraction } from "@/lib/discordAutoroles";
+import { applyRecommendedNicknameFix } from "@/lib/discordNicknameWarnings";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -295,18 +296,27 @@ export async function POST(request: NextRequest) {
     return ephemeral("Цей тип Discord interaction не підтримується цією панеллю.");
   }
 
+  const customId = String(interaction?.data?.custom_id || "");
+  const nicknameFixAction = decodeNicknameFixCustomId(customId);
   const configuredGuildId = String(getDiscordGuildId() || "").trim();
   const interactionGuildId = String(interaction?.guild_id || "").trim();
-  if (!configuredGuildId || interactionGuildId !== configuredGuildId) {
+  // Кнопка виправлення ніку надсилається також у DM, де Discord закономірно
+  // не передає guild_id. Для неї достатньо валідного Discord-підпису +
+  // привʼязки custom_id до userId. Якщо guild_id присутній (fallback-канал),
+  // він усе одно зобовʼязаний збігатися з налаштованим сервером.
+  const guildAllowed = nicknameFixAction
+    ? Boolean(configuredGuildId && (!interactionGuildId || interactionGuildId === configuredGuildId))
+    : Boolean(configuredGuildId && interactionGuildId === configuredGuildId);
+  if (!guildAllowed) {
     logDashboardEvent("warn", "discord.interaction.guild_rejected", request, {
       configuredGuild: Boolean(configuredGuildId),
       interactionGuildPresent: Boolean(interactionGuildId),
       guildMatches: Boolean(configuredGuildId && interactionGuildId === configuredGuildId),
+      nicknameDmAction: Boolean(nicknameFixAction),
     }, { category: "security" });
     return ephemeral("⛔ Ця взаємодія не належить Discord-серверу Mistblossom Vanguard.");
   }
 
-  const customId = String(interaction?.data?.custom_id || "");
   const raidSubmitAction = decodeRaidSignupSubmitCustomId(customId);
   // Ручний запис: вибір класу лише перемальовує меню спеків,
   // вибір спека вже комітить запис через handleRaidDiscordAction.
@@ -319,8 +329,8 @@ export async function POST(request: NextRequest) {
   const rosterAction = raidAction || raidManualClass || pollAction ? null : decodeRosterCustomId(customId, interaction?.data?.values);
   const autoroleAction = raidAction || raidManualClass || pollAction || rosterAction ? null : decodeAutoroleCustomId(customId);
   const applicationAction = raidAction || raidManualClass || pollAction || rosterAction || autoroleAction ? null : decodeApplicationCustomId(customId);
-  const parsed = raidAction || raidManualClass || pollAction || rosterAction || autoroleAction || applicationAction ? null : decodeRulesCustomId(customId);
-  if (!raidAction && !raidManualClass && !pollAction && !rosterAction && !autoroleAction && !applicationAction && !parsed) {
+  const parsed = raidAction || raidManualClass || pollAction || rosterAction || autoroleAction || applicationAction || nicknameFixAction ? null : decodeRulesCustomId(customId);
+  if (!raidAction && !raidManualClass && !pollAction && !rosterAction && !autoroleAction && !applicationAction && !nicknameFixAction && !parsed) {
     logDashboardEvent("warn", "discord.rules.unknown_custom_id", request, { customId: customId.slice(0, 24) });
     return ephemeral("Ця кнопка не належить панелі Mistblossom або вже застаріла.");
   }
@@ -328,6 +338,28 @@ export async function POST(request: NextRequest) {
   const guildId = interactionGuildId;
   const userId = getInteractionUserId(interaction);
   const userName = getInteractionUserName(interaction);
+
+  if (nicknameFixAction) {
+    if (!/^\d{16,25}$/.test(userId) || userId !== nicknameFixAction.userId) {
+      logDashboardEvent("warn", "discord.nickname_warning.fix_wrong_user", request, {
+        actorUserId: userId || null,
+        targetUserId: nicknameFixAction.userId,
+      }, { category: "security" });
+      return ephemeral("⛔ Ця кнопка призначена іншому учаснику. Виправити чужий нік через неї не можна.");
+    }
+
+    try {
+      const result = await applyRecommendedNicknameFix(userId);
+      if (result.alreadyValid) {
+        return finishDecision(interaction, `✅ Нік уже відповідає стандарту: **${result.nickname}**.`, []);
+      }
+      return finishDecision(interaction, `✅ Нік автоматично виправлено на **${result.nickname}**. Додаткових дій не потрібно.`, []);
+    } catch (error) {
+      const message = safeErrorMessage(error, "Не вдалося автоматично виправити нік.");
+      logDashboardEvent("warn", "discord.nickname_warning.fix_failed", request, { userId, message }, { category: "action" });
+      return ephemeral(`❌ ${message}`);
+    }
+  }
 
   if (autoroleAction) {
     try {

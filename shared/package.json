@@ -1,6 +1,6 @@
 {
   "name": "@mistblossom/discord-contract",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "type": "module",
   "description": "Спільний контракт Discord custom_id між панеллю та ботом.",

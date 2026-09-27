@@ -58,6 +58,7 @@ export declare const INTERACTION_DOMAINS: Readonly<{
   RULES: "rules";
   APPLICATION: "application";
   AUTOROLE: "autorole";
+  NICKNAME: "nickname";
 }>;
 
 export declare function interactionDomainFor(customId: string): string | null;
@@ -68,3 +69,6 @@ export declare function validateInteractionComponents(
 
 export declare function buildAutoroleCustomId(action: "add" | "remove" | "toggle" | string, roleId: string, group?: string): string;
 export declare function decodeAutoroleCustomId(customId: string): { action: "add" | "remove" | "toggle"; roleId: string; group: string } | null;
+
+export declare function buildNicknameFixCustomId(userId: string): string;
+export declare function decodeNicknameFixCustomId(customId: string): { userId: string } | null;

@@ -11,12 +11,14 @@ import {
 } from "@/lib/discordAdmin";
 import { firebaseWrite } from "@/lib/firebaseAccess";
 import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
-import { explainNicknameValidation, getGuildNicknamePolicy, nicknameMatchesTemplate, nicknameTemplateExample, VALID_NICKNAME_STRUCTURES, type GuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
+import { explainNicknameValidation, getGuildNicknamePolicy, nicknameMatchesTemplate, nicknameTemplateExample, suggestNicknameFromObservedText, DEFAULT_NICKNAME_TEMPLATE, VALID_NICKNAME_STRUCTURES, type GuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
 import { buildProfileDiscordNicknamePlan, getProfileByDiscordUserId } from "@/lib/profiles";
 import { resilientRead } from "@/lib/runtimeResilience";
 import { dashboardPublicOrigin, timestampToIso } from "@/lib/values";
 import { logDashboardEvent, safeErrorMessage } from "@/lib/security";
 import { loadDiscordNewcomerRulesAccepted, discordNewcomerRulesAccepted } from "@/lib/discordNewcomerState";
+import { updateDiscordMemberNickname } from "@/lib/discordMemberManagement";
+import { buildNicknameFixCustomId } from "@mistblossom/discord-contract";
 
 const STATE_COLLECTION = "dashboardSettings";
 const STATE_DOC_ID = "discordNicknameWarningAutomation";
@@ -819,6 +821,27 @@ export async function processNewcomerNicknameRoleGrant(input: {
     qualifiedAt: nowIso,
   }]);
 
+  let immediateWarning: Awaited<ReturnType<typeof deliverNicknameWarning>> | null = null;
+  let immediateWarningError: string | null = null;
+  if (invalid && policy.nicknameReminderEnabled) {
+    try {
+      const guild = await fetchDiscordGuildSnapshot().catch(() => null);
+      immediateWarning = await deliverNicknameWarning(member, policy, {
+        source: "automatic",
+        force: false,
+        guildName: guild?.name || "Mistblossom Vanguard",
+        guildId: guild?.id || null,
+      });
+    } catch (error) {
+      immediateWarningError = safeErrorMessage(error, "Не вдалося одразу надіслати попередження про нік.");
+      logDashboardEvent("warn", "discord.nickname_newcomer_gate.immediate_warning_failed", undefined, {
+        userId: member.userId,
+        roleId,
+        error: immediateWarningError,
+      }, { category: "action" });
+    }
+  }
+
   logDashboardEvent("info", "discord.nickname_newcomer_gate.role_grant", undefined, {
     userId: member.userId,
     displayName: member.displayName,
@@ -826,6 +849,8 @@ export async function processNewcomerNicknameRoleGrant(input: {
     nickname: memberNickname(member) || null,
     status: invalid ? "invalid" : "valid",
     queuedInvalid: invalid,
+    immediateDelivery: immediateWarning?.delivery || null,
+    immediateWarningError,
   }, { category: "action" });
 
   return {
@@ -834,6 +859,8 @@ export async function processNewcomerNicknameRoleGrant(input: {
     roleId,
     status: invalid ? "invalid" as const : "valid" as const,
     queuedInvalid: invalid,
+    immediateWarning,
+    immediateWarningError,
   };
 }
 
@@ -842,7 +869,10 @@ async function persistFullNicknameCheckSnapshot(
   policy: GuildNicknamePolicy,
   checkedAtMs = Date.now(),
 ) {
-  const records = members.map((member) => buildMemberCheckRecord(member, policy, checkedAtMs));
+  // Після повного sweep усі знайдені invalid-ніки стають due одразу.
+  // Cooldown усе одно захищає вже попереджених, а нові порушення не чекають
+  // ще nicknameInvalidRecheckHours до першого повідомлення.
+  const records = members.map((member) => buildMemberCheckRecord(member, policy, checkedAtMs, { invalidDueNow: true }));
   await writeMemberCheckRecords(records, { cleanupMissing: true });
   const trackedInvalid = records.filter((record) => record.checkStatus === "invalid").length;
   const trackedValid = records.length - trackedInvalid;
@@ -954,6 +984,7 @@ async function recordMemberWarning(input: {
   channelId: string | null;
   messageId: string | null;
   template: string;
+  suggested?: string | null;
 }) {
   if (!hasFirebaseProfileConfig()) return;
   const now = new Date().toISOString();
@@ -969,10 +1000,30 @@ async function recordMemberWarning(input: {
   );
 }
 
-async function suggestedNickname(userId: string, template: string) {
+async function suggestedNickname(userId: string, template: string, observedNickname?: string | null) {
+  // Для legacy-форматів рекомендація насамперед будується з самого ніку.
+  // Це дозволяє виправити `Назар(Aexe) [Aexe]` -> `Назар [Aexe]` навіть
+  // якщо профіль сайту ще не заповнений або відстає від Discord.
+  const fromText = suggestNicknameFromObservedText(observedNickname, template);
+  if (fromText && nicknameMatchesTemplate(fromText, template)) return fromText;
+
   const profile = await getProfileByDiscordUserId(userId).catch(() => null);
   if (!profile) return null;
-  return buildProfileDiscordNicknamePlan(profile, template).value || null;
+  const planned = buildProfileDiscordNicknamePlan(profile, template).value || null;
+  return planned && nicknameMatchesTemplate(planned, template) ? planned : null;
+}
+
+function nicknameFixComponents(userId: string, suggested: string | null) {
+  if (!suggested || !nicknameMatchesTemplate(suggested, DEFAULT_NICKNAME_TEMPLATE)) return [];
+  return [{
+    type: 1,
+    components: [{
+      type: 2,
+      style: 3,
+      label: "Виправити нік",
+      custom_id: buildNicknameFixCustomId(userId),
+    }],
+  }];
 }
 
 export function buildNicknameWarningMessage(input: {
@@ -1033,18 +1084,26 @@ export function buildNicknameWarningMessage(input: {
   lines.push(
     "",
     "### Як виправити",
-    `1. Відкрий свій профіль: ${profileUrl}`,
-    "2. Перевір імʼя, мейн-персонажа та, за потреби, до двох альтів.",
-    "3. Онови серверний нік у профілі або зміни його вручну за одним із форматів вище.",
+    ...(safeSuggested
+      ? [
+          "1. Натисни **«Виправити нік»** під цим повідомленням — бот поставить рекомендований варіант автоматично.",
+          `2. Якщо хочеш змінити склад персонажів, відкрий профіль: ${profileUrl}`,
+          "3. Перевір імʼя, мейн-персонажа та, за потреби, до двох альтів.",
+        ]
+      : [
+          `1. Відкрий свій профіль: ${profileUrl}`,
+          "2. Перевір імʼя, мейн-персонажа та, за потреби, до двох альтів.",
+          "3. Зміни серверний нік вручну за одним із форматів вище.",
+        ]),
     "",
-    "Після виправлення нічого додатково підтверджувати не потрібно — система побачить зміни сама.",
+    "Після виправлення нічого додатково підтверджувати не потрібно — система перевірить новий нік сама.",
     "",
     "### Наступна перевірка",
     input.automationEnabled
       ? `Орієнтовно **${nextCheckLabel} за Києвом**. Некоректні ніки перевіряються кожні **${Math.max(1, input.invalidRecheckHours)} год**.`
       : "Автоматичні перевірки зараз вимкнені, тому наступної запланованої перевірки немає.",
     "",
-    "ℹ️ Бот **не змінює ролі, доступи чи нік автоматично** — він лише перевіряє формат і надсилає попередження.",
+    "ℹ️ Бот **не змінює ролі чи доступи**. Нік змінюється лише після твого натискання кнопки **«Виправити нік»** або вручну.",
   );
   return lines.join("\n").slice(0, 1900);
 }
@@ -1057,7 +1116,7 @@ export async function sendNicknameWarningTestToOwner() {
 
   const member = await fetchDiscordGuildMemberSnapshot(ownerId);
   const nickname = memberNickname(member) || null;
-  const suggested = await suggestedNickname(ownerId, policy.template);
+  const suggested = await suggestedNickname(ownerId, policy.template, nickname);
   const content = buildNicknameWarningMessage({
     nickname,
     template: policy.template,
@@ -1069,7 +1128,7 @@ export async function sendNicknameWarningTestToOwner() {
     invalidRecheckHours: policy.nicknameInvalidRecheckHours,
     testMode: true,
   });
-  const sent = await sendDiscordDirectMessage({ userId: ownerId, content });
+  const sent = await sendDiscordDirectMessage({ userId: ownerId, content, components: nicknameFixComponents(ownerId, suggested) });
   logDashboardEvent("info", "discord.nickname_warning.test_sent", undefined, {
     ownerId,
     channelId: sent.channelId,
@@ -1094,7 +1153,7 @@ async function deliverNicknameWarning(
     return { userId: member.userId, name: member.displayName, status: "cooldown" as const, delivery: null, nickname };
   }
 
-  const suggested = await suggestedNickname(member.userId, policy.template);
+  const suggested = await suggestedNickname(member.userId, policy.template, nickname);
   const content = buildNicknameWarningMessage({
     nickname,
     template: policy.template,
@@ -1105,9 +1164,10 @@ async function deliverNicknameWarning(
     automationEnabled: policy.nicknameReminderEnabled,
     invalidRecheckHours: policy.nicknameInvalidRecheckHours,
   });
+  const components = nicknameFixComponents(member.userId, suggested);
   let dmError: string | null = null;
   try {
-    const sent = await sendDiscordDirectMessage({ userId: member.userId, content });
+    const sent = await sendDiscordDirectMessage({ userId: member.userId, content, components });
     await recordMemberWarning({
       userId: member.userId,
       signature,
@@ -1116,6 +1176,7 @@ async function deliverNicknameWarning(
       channelId: sent.channelId,
       messageId: sent.messageId,
       template: policy.template,
+      suggested,
     });
     logDashboardEvent("info", "discord.nickname_warning.sent", undefined, {
       source: input.source,
@@ -1138,6 +1199,7 @@ async function deliverNicknameWarning(
     channelId: policy.nicknameReminderChannelId,
     userId: member.userId,
     content,
+    components,
   });
   await recordMemberWarning({
     userId: member.userId,
@@ -1147,6 +1209,7 @@ async function deliverNicknameWarning(
     channelId: sent.channelId,
     messageId: sent.messageId,
     template: policy.template,
+    suggested,
   });
   logDashboardEvent("info", "discord.nickname_warning.sent", undefined, {
     source: input.source,
@@ -1158,6 +1221,72 @@ async function deliverNicknameWarning(
     channelId: sent.channelId,
   }, { category: "action" });
   return { userId: member.userId, name: member.displayName, status: "sent" as const, delivery: "channel" as const, nickname };
+}
+
+export async function processObservedNicknameMember(input: {
+  userId: string;
+  observedNickname?: string | null;
+  source?: NicknameWarningSource;
+}) {
+  const userId = String(input.userId || "").trim();
+  if (!/^\d{16,25}$/.test(userId)) return { skipped: true as const, reason: "invalid_user" as const };
+
+  const policy = await getGuildNicknamePolicy({ bypassCache: true });
+  const member = await fetchDiscordGuildMemberSnapshot(userId);
+  if (missingMemberSnapshot(member)) return { skipped: true as const, reason: "member_missing" as const };
+
+  const invalid = invalidMember(member, policy.template);
+  await writeMemberCheckRecords([buildMemberCheckRecord(member, policy, Date.now(), { invalidDueNow: invalid })]);
+  if (!invalid) {
+    return { skipped: false as const, userId, status: "valid" as const, nickname: memberNickname(member) || null, notified: false };
+  }
+  if (!policy.nicknameReminderEnabled) {
+    return { skipped: false as const, userId, status: "invalid" as const, nickname: memberNickname(member) || null, notified: false, reason: "warnings_disabled" as const };
+  }
+
+  const guild = await fetchDiscordGuildSnapshot().catch(() => null);
+  const outcome = await deliverNicknameWarning(member, policy, {
+    source: input.source || "automatic",
+    force: false,
+    guildName: guild?.name || "Mistblossom Vanguard",
+    guildId: guild?.id || null,
+  });
+  return { skipped: false as const, userId, status: "invalid" as const, nickname: memberNickname(member) || null, notified: outcome.status === "sent", outcome };
+}
+
+export async function applyRecommendedNicknameFix(userIdInput: unknown) {
+  const userId = String(userIdInput || "").trim();
+  if (!/^\d{16,25}$/.test(userId)) throw new Error("Некоректний Discord user ID.");
+
+  const policy = await getGuildNicknamePolicy({ bypassCache: true });
+  const member = await fetchDiscordGuildMemberSnapshot(userId);
+  if (missingMemberSnapshot(member)) throw new Error("Учасника більше немає на Discord-сервері.");
+
+  const currentNickname = memberNickname(member) || null;
+  if (currentNickname && nicknameMatchesTemplate(currentNickname, policy.template)) {
+    await writeMemberCheckRecords([buildMemberCheckRecord(member, policy)]);
+    return { changed: false as const, alreadyValid: true as const, nickname: currentNickname, recommended: currentNickname };
+  }
+
+  const recommended = await suggestedNickname(userId, policy.template, currentNickname);
+  if (!recommended || !nicknameMatchesTemplate(recommended, policy.template)) {
+    throw new Error("Не вдалося безпечно визначити рекомендований нік. Відкрий профіль на сайті та вибери імʼя/персонажів вручну.");
+  }
+
+  const result = await updateDiscordMemberNickname({
+    userId,
+    nickname: recommended,
+    reason: "Mistblossom nickname warning: user accepted recommended nickname",
+  });
+  const fresh = await fetchDiscordGuildMemberSnapshot(userId);
+  await writeMemberCheckRecords([buildMemberCheckRecord(fresh, policy)]);
+  logDashboardEvent("info", "discord.nickname_warning.fix_applied", undefined, {
+    userId,
+    beforeNickname: currentNickname,
+    recommended,
+    afterNickname: result.afterNickname,
+  }, { category: "action" });
+  return { changed: true as const, alreadyValid: false as const, nickname: result.afterNickname, recommended };
 }
 
 export async function inspectNicknameWarnings(

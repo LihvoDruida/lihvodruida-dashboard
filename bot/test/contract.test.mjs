@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import {
   buildAutoroleCustomId,
   decodeAutoroleCustomId,
+  buildNicknameFixCustomId,
+  decodeNicknameFixCustomId,
   decodeRaidPollCustomId,
   interactionDomainFor,
   isRaidPollPromptKind,
@@ -53,6 +55,10 @@ test("домени визначаються за реальними custom_id, �
   const autorole = buildAutoroleCustomId("toggle", "123456789012345678", "class");
   assert.equal(interactionDomainFor(autorole), INTERACTION_DOMAINS.AUTOROLE);
   assert.deepEqual(decodeAutoroleCustomId(autorole), { action: "toggle", roleId: "123456789012345678", group: "class" });
+
+  const nicknameFix = buildNicknameFixCustomId("123456789012345678");
+  assert.equal(interactionDomainFor(nicknameFix), INTERACTION_DOMAINS.NICKNAME);
+  assert.deepEqual(decodeNicknameFixCustomId(nicknameFix), { userId: "123456789012345678" });
 
   // rosterFormation.ts -> mbv1:roster_<action>:...
   assert.equal(interactionDomainFor(`mbv1:roster_pick:${POLL}`), INTERACTION_DOMAINS.ROSTER);

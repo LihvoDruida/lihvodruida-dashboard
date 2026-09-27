@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { notifyDiscordMemberJoined } from "./dashboardClient.mjs";
+import { notifyDiscordMemberJoined, notifyDiscordNicknameObserved } from "./dashboardClient.mjs";
 import { logger } from "./logger.mjs";
 
 const GATEWAY_URL = "wss://gateway.discord.gg/?v=10&encoding=json";
@@ -23,6 +23,10 @@ const state = {
   reconnects: 0,
   queue: new Map(),
   activeWorkers: 0,
+  nicknameQueue: new Map(),
+  activeNicknameWorkers: 0,
+  observedNicknames: new Map(),
+  lastMemberUpdateAt: null,
 };
 
 let socket = null;
@@ -99,6 +103,8 @@ function enqueueMemberJoin(payload) {
   const userId = cleanSnowflake(payload?.user?.id);
   if (!guildId || guildId !== GUILD_ID() || !userId || payload?.user?.bot) return;
 
+  rememberNickname(userId, payload?.nick ?? null);
+
   const item = {
     guildId,
     userId,
@@ -160,6 +166,100 @@ async function processQueueItem(item) {
       attempts: item.attempts,
       error: message,
     });
+  }
+}
+
+function rememberNickname(userId, nickname) {
+  const normalized = nickname === null || nickname === undefined ? null : String(nickname).normalize("NFC").trim();
+  const previous = state.observedNicknames.get(userId);
+  state.observedNicknames.set(userId, normalized);
+  // bounded cache: Discord guilds can be large and gateway lives for months
+  if (state.observedNicknames.size > 10_000) {
+    const oldestKey = state.observedNicknames.keys().next().value;
+    if (oldestKey) state.observedNicknames.delete(oldestKey);
+  }
+  return { previous, current: normalized, changed: previous !== undefined && previous !== normalized };
+}
+
+function enqueueNicknameCheck(payload) {
+  const guildId = cleanSnowflake(payload?.guild_id);
+  const userId = cleanSnowflake(payload?.user?.id);
+  if (!guildId || guildId !== GUILD_ID() || !userId || payload?.user?.bot) return;
+
+  state.lastMemberUpdateAt = new Date().toISOString();
+  const remembered = rememberNickname(userId, payload?.nick ?? null);
+  // Перший UPDATE після старту теж варто перевірити: він може бути саме
+  // зміною ніку, а попереднього значення в памʼяті після рестарту немає.
+  if (remembered.previous !== undefined && !remembered.changed) return;
+
+  state.nicknameQueue.set(userId, {
+    guildId,
+    userId,
+    nickname: remembered.current,
+    eventId: `${userId}:${Date.now()}`,
+    queuedAt: Date.now(),
+    attempts: 0,
+  });
+  logger.info("Зміну Discord-ніку поставлено у пріоритетну перевірку", {
+    eventName: "bot.gateway.nickname_check_queued",
+    userId,
+    nickname: remembered.current,
+    queueSize: state.nicknameQueue.size,
+  });
+  pumpNicknameQueue();
+}
+
+async function processNicknameQueueItem(item) {
+  try {
+    item.attempts += 1;
+    const result = await notifyDiscordNicknameObserved(item);
+    logger.info("Зміну Discord-ніку перевірено панеллю", {
+      eventName: "bot.gateway.nickname_check_processed",
+      userId: item.userId,
+      nickname: item.nickname,
+      attempts: item.attempts,
+      result: result?.result || null,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    state.lastError = message;
+    if (item.attempts < 6) {
+      const delay = Math.min(20_000, 750 * (2 ** (item.attempts - 1)));
+      item.queuedAt = Date.now() + delay;
+      state.nicknameQueue.set(item.userId, item);
+      setTimeout(pumpNicknameQueue, delay).unref?.();
+      logger.warn("Перевірку Discord-ніку буде повторено", {
+        eventName: "bot.gateway.nickname_check_retry",
+        userId: item.userId,
+        attempts: item.attempts,
+        error: message,
+      });
+      return;
+    }
+    logger.error("Перевірку Discord-ніку не доставлено після повторів", {
+      eventName: "bot.gateway.nickname_check_failed",
+      userId: item.userId,
+      attempts: item.attempts,
+      error: message,
+    });
+  }
+}
+
+function pumpNicknameQueue() {
+  while (state.activeNicknameWorkers < WORKERS) {
+    const now = Date.now();
+    const item = [...state.nicknameQueue.values()]
+      .filter((row) => row.queuedAt <= now)
+      .sort((a, b) => a.queuedAt - b.queuedAt)[0];
+    if (!item) break;
+    state.nicknameQueue.delete(item.userId);
+    state.activeNicknameWorkers += 1;
+    processNicknameQueueItem(item)
+      .catch(() => null)
+      .finally(() => {
+        state.activeNicknameWorkers -= 1;
+        setImmediate(pumpNicknameQueue);
+      });
   }
 }
 
@@ -225,6 +325,14 @@ function handleDispatch(packet) {
     return;
   }
   if (packet.t === "GUILD_MEMBER_ADD") enqueueMemberJoin(packet.d);
+  if (packet.t === "GUILD_MEMBER_UPDATE") enqueueNicknameCheck(packet.d);
+  if (packet.t === "GUILD_MEMBER_REMOVE") {
+    const userId = cleanSnowflake(packet.d?.user?.id);
+    if (userId) {
+      state.observedNicknames.delete(userId);
+      state.nicknameQueue.delete(userId);
+    }
+  }
 }
 
 function connect() {
@@ -340,8 +448,12 @@ export function discordGatewayHealth() {
     ready: state.ready,
     queueSize: state.queue.size,
     activeWorkers: state.activeWorkers,
+    nicknameQueueSize: state.nicknameQueue.size,
+    activeNicknameWorkers: state.activeNicknameWorkers,
+    observedNicknameCount: state.observedNicknames.size,
     lastEventAt: state.lastEventAt,
     lastMemberJoinAt: state.lastMemberJoinAt,
+    lastMemberUpdateAt: state.lastMemberUpdateAt,
     lastError: state.lastError,
   };
 }

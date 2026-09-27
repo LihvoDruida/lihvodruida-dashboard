@@ -1997,7 +1997,7 @@ export async function sendDiscordDirectMessage(params: {
   return { channelId, messageId: cleanSnowflake(message?.id) || null };
 }
 
-export async function sendDiscordChannelUserWarning(params: { channelId: string; userId: string; content: string }) {
+export async function sendDiscordChannelUserWarning(params: { channelId: string; userId: string; content: string; components?: unknown[] }) {
   const channelId = cleanSnowflake(params.channelId);
   const userId = cleanSnowflake(params.userId);
   const bodyText = String(params.content || "").trim().slice(0, 1800);
@@ -2005,12 +2005,17 @@ export async function sendDiscordChannelUserWarning(params: { channelId: string;
   if (!userId) throw new Error("Discord user ID невалідний.");
   if (!bodyText) throw new Error("Повідомлення Discord порожнє.");
 
+  const body: Record<string, unknown> = {
+    content: `<@${userId}>\n${bodyText}`,
+    allowed_mentions: { parse: [], users: [userId] },
+  };
+  if (Array.isArray(params.components) && params.components.length) {
+    body.components = params.components.slice(0, 5);
+  }
+
   const message = await discordApi<any>(`/channels/${channelId}/messages`, {
     method: "POST",
-    body: JSON.stringify({
-      content: `<@${userId}>\n${bodyText}`,
-      allowed_mentions: { parse: [], users: [userId] },
-    }),
+    body: JSON.stringify(body),
   });
   return { channelId, messageId: cleanSnowflake(message?.id) || null };
 }

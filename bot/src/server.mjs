@@ -95,6 +95,12 @@ function deferredResponseFor(interaction, customId) {
   const domain = interactionDomainFor(customId);
   const fromEphemeral = Boolean((interaction?.message?.flags || 0) & EPHEMERAL);
 
+  if (domain === INTERACTION_DOMAINS.NICKNAME && !interaction?.guild_id) {
+    // У приватному DM не створюємо ще одну відповідь: кнопка оновлює саме
+    // попередження, з якого користувач натиснув «Виправити нік».
+    return { type: CallbackType.DEFERRED_UPDATE_MESSAGE };
+  }
+
   if (domain === INTERACTION_DOMAINS.RAID_POLL) {
     const action = decodeRaidPollCustomId(customId, interaction?.data?.values);
     // Пульт відкривається з публічного повідомлення → потрібна НОВА

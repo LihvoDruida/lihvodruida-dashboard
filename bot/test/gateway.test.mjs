@@ -11,6 +11,9 @@ test("gateway health exposes newcomer priority worker state", () => {
   assert.equal(typeof health.ready, "boolean");
   assert.equal(typeof health.queueSize, "number");
   assert.equal(typeof health.activeWorkers, "number");
+  assert.equal(typeof health.nicknameQueueSize, "number");
+  assert.equal(typeof health.activeNicknameWorkers, "number");
+  assert.equal(typeof health.observedNicknameCount, "number");
 });
 
 test("gateway can be disabled without opening a socket", () => {

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { notifyDiscordMemberJoined } from "../src/dashboardClient.mjs";
+import { notifyDiscordMemberJoined, notifyDiscordNicknameObserved } from "../src/dashboardClient.mjs";
 import { rankGatewayQueueItems } from "../src/gateway.mjs";
 
 test("gateway prioritizes newest joins while queue is fresh", () => {
@@ -106,5 +106,40 @@ test("member-joined bridge does not loop on explicit dashboard 4xx", async () =>
   } finally {
     globalThis.fetch = previousFetch;
     if (previousToken === undefined) delete process.env.INTERNAL_API_TOKEN; else process.env.INTERNAL_API_TOKEN = previousToken;
+  }
+});
+
+
+test("member-nickname bridge forwards observed nickname immediately", async () => {
+  const previousFetch = globalThis.fetch;
+  const previousToken = process.env.INTERNAL_API_TOKEN;
+  const previousUrl = process.env.DASHBOARD_INTERNAL_URL;
+  process.env.INTERNAL_API_TOKEN = "n".repeat(32);
+  process.env.DASHBOARD_INTERNAL_URL = "http://dashboard.test:3000";
+  let seen = null;
+  globalThis.fetch = async (url, init) => {
+    seen = { url: String(url), init };
+    return new Response(JSON.stringify({ ok: true, result: { status: "invalid", notified: true } }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  };
+  try {
+    const result = await notifyDiscordNicknameObserved({
+      guildId: "1449767281453301865",
+      userId: "242712552050655232",
+      nickname: "Назар(Aexe) [Aexe]",
+      eventId: "nick-1",
+    });
+    assert.equal(result.ok, true);
+    assert.equal(seen.url, "http://dashboard.test:3000/api/internal/discord/member-nickname");
+    const body = JSON.parse(seen.init.body);
+    assert.equal(body.nickname, "Назар(Aexe) [Aexe]");
+    assert.equal(body.source, "discord_gateway");
+    assert.equal(seen.init.headers["x-mistblossom-source"], "bot-gateway");
+  } finally {
+    globalThis.fetch = previousFetch;
+    if (previousToken === undefined) delete process.env.INTERNAL_API_TOKEN; else process.env.INTERNAL_API_TOKEN = previousToken;
+    if (previousUrl === undefined) delete process.env.DASHBOARD_INTERNAL_URL; else process.env.DASHBOARD_INTERNAL_URL = previousUrl;
   }
 });

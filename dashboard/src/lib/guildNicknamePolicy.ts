@@ -424,7 +424,7 @@ export function nicknameTemplateToRegex(_templateInput: unknown = DEFAULT_NICKNA
 
     if (token === "name") {
       output += templateLiteralToRegex(literal);
-      output += "[^\\[\\]\\n]{2,32}";
+      output += "[^\\[\\]\\(\\)\\n]{2,32}";
     } else {
       const characterToken = characterNicknamePattern();
       if (seenCharacterToken) {
@@ -442,6 +442,40 @@ export function nicknameTemplateToRegex(_templateInput: unknown = DEFAULT_NICKNA
   output += templateLiteralToRegex(template.slice(lastIndex));
   cachedNicknameRegex = new RegExp(`^\\s*${output}\\s*$`, "iu");
   return cachedNicknameRegex;
+}
+
+export function suggestNicknameFromObservedText(
+  nicknameInput: unknown,
+  templateInput: unknown = DEFAULT_NICKNAME_TEMPLATE,
+) {
+  const nickname = String(nicknameInput || "")
+    .normalize("NFC")
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!nickname) return null;
+
+  // Підтримуємо поширений старий запис:
+  //   Імʼя(Мейн) / Імʼя (Мейн, Альт) / Імʼя(Мейн) [Мейн]
+  // Квадратний список має пріоритет: саме він уже найближчий до нового стандарту.
+  const square = nickname.match(/\[([^\]\n]+)\]\s*$/u);
+  const withoutSquare = square
+    ? nickname.slice(0, square.index).trim()
+    : nickname;
+  const legacy = withoutSquare.match(/^(.*?)\s*\(([^()\n]+)\)\s*$/u);
+
+  const rawName = (legacy?.[1] || withoutSquare).trim();
+  const rawCharacters = square?.[1] || legacy?.[2] || "";
+  if (!rawName || !rawCharacters) return null;
+  if (/[\[\]()]/u.test(rawName)) return null;
+
+  const name = cleanNicknamePart(rawName, 32);
+  const characters = normalizeCharacterNames(rawCharacters);
+  if (!name || codePointLength(name) < 2 || !characters.length) return null;
+
+  const candidate = renderNicknameFromTemplate(templateInput, { name, characters, maxLength: 32 });
+  if (!candidate || codePointLength(candidate) > 32) return null;
+  return candidate;
 }
 
 export type NicknameValidationDetail = {
@@ -470,6 +504,16 @@ export function explainNicknameValidation(nicknameInput: unknown): NicknameValid
   }
 
   const name = match[1].trim();
+  if (/[()]/u.test(name)) {
+    const suggested = suggestNicknameFromObservedText(nickname);
+    return {
+      valid: false,
+      code: "structure",
+      message: suggested
+        ? `Круглі дужки з персонажами більше не є частиною стандарту. Прибери дубль у дужках; рекомендований формат: \`${suggested}\`.`
+        : "Круглі дужки в частині імені не відповідають стандарту. Персонажі мають бути лише в одному блоці квадратних дужок.",
+    };
+  }
   const nameLength = codePointLength(name);
   if (nameLength < 2 || nameLength > 32) {
     return {

@@ -514,7 +514,7 @@ export default async function AdminDiscordPage() {
                 <div>
                   <span className="eyebrow">Серверні ніки</span>
                   <h2>Контроль формату ніків</h2>
-                  <p>Система частіше перевіряє проблемні ніки й значно рідше — коректні. Ролі, доступи та сам нік не змінюються.</p>
+                  <p>Система частіше перевіряє проблемні ніки й значно рідше — коректні. Ролі та доступи не змінюються; нік бот змінює лише після особистого натискання учасником кнопки «Виправити нік».</p>
                 </div>
                 <span className={`status-pill ${policy.nicknameReminderEnabled ? "good" : "subtle"}`}>{policy.nicknameReminderEnabled ? "Автоматизація увімкнена" : "Автоматизація вимкнена"}</span>
               </div>
@@ -551,7 +551,7 @@ export default async function AdminDiscordPage() {
                   <div className="nickname-warning-actions__buttons">
                     <button className="btn subtle" formAction="/api/dashboard/discord/nicknames/inspect" formMethod="post" type="submit" name="recheckAll" value="1" data-confirm-message="Переперевірити ніки всіх учасників і повністю перебудувати пріоритетну чергу? Повідомлення надсилатися не будуть.">Переперевірити всіх</button>
                     {user.isServerOwner ? <button className="btn subtle" formAction="/api/dashboard/discord/nicknames/test-message" formMethod="post" type="submit">Надіслати тест у DM</button> : null}
-                    <button className="btn primary" type="submit" data-confirm-message="Перевірити серверні ніки й надіслати попередження учасникам із неправильним форматом? Ролі та ніки автоматично не змінюватимуться.">Перевірити й попередити</button>
+                    <button className="btn primary" type="submit" data-confirm-message="Перевірити серверні ніки й надіслати попередження учасникам із неправильним форматом? Ролі не змінюються; нік може бути змінений лише самим учасником через кнопку в попередженні.">Перевірити й попередити</button>
                   </div>
                 </form>
 

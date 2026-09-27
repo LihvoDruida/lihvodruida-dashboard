@@ -190,6 +190,29 @@ export function decodeAutoroleCustomId(customId) {
   return { action: match[1], roleId: match[2], group: match[3] || "" };
 }
 
+
+/* ------------------------------------------------------------------ *
+ * Автовиправлення Discord-ніку
+ * ------------------------------------------------------------------ */
+
+const NICKNAME_FIX_PATTERN = new RegExp(
+  `^${CUSTOM_ID_NAMESPACE}:nf:(\\d{16,25})$`,
+);
+
+export function buildNicknameFixCustomId(userId) {
+  const normalizedUserId = String(userId || "").trim();
+  if (!/^\d{16,25}$/.test(normalizedUserId)) throw new Error("Invalid nickname-fix user ID");
+  const customId = `${CUSTOM_ID_NAMESPACE}:nf:${normalizedUserId}`;
+  if (customId.length > CUSTOM_ID_MAX_LENGTH) throw new Error("Nickname-fix custom_id is too long");
+  return customId;
+}
+
+export function decodeNicknameFixCustomId(customId) {
+  const match = String(customId || "").trim().match(NICKNAME_FIX_PATTERN);
+  if (!match) return null;
+  return { userId: match[1] };
+}
+
 /* ------------------------------------------------------------------ *
  * Маршрутизація для бота
  * ------------------------------------------------------------------ */
@@ -206,9 +229,11 @@ export const INTERACTION_DOMAINS = Object.freeze({
   RULES: "rules",
   APPLICATION: "application",
   AUTOROLE: "autorole",
+  NICKNAME: "nickname",
 });
 
 const DOMAIN_PREFIXES = [
+  [`${CUSTOM_ID_NAMESPACE}:nf:`, INTERACTION_DOMAINS.NICKNAME],
   [`${CUSTOM_ID_NAMESPACE}:ar:`, INTERACTION_DOMAINS.AUTOROLE],
   [`${CUSTOM_ID_NAMESPACE}:application:`, INTERACTION_DOMAINS.APPLICATION],
   [`${CUSTOM_ID_NAMESPACE}:poll_`, INTERACTION_DOMAINS.RAID_POLL],
