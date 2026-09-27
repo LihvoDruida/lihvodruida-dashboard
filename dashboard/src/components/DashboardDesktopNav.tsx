@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import DashboardNavIcon, { type DashboardNavSection } from "@/components/DashboardNavIcon";
 
@@ -212,7 +213,8 @@ export default function DashboardDesktopNav({
           data-overflow={secondaryNavItems.length > 0 ? "true" : "false"}
         >
         {primaryNavItems.map((item) => (
-          <a
+          <Link
+            prefetch={false}
             key={item.href}
             href={item.href}
             className={activeSection === item.section ? "is-active" : undefined}
@@ -222,7 +224,7 @@ export default function DashboardDesktopNav({
           >
             <DashboardNavIcon section={item.section} />
             <span className="dashboard-nav__label">{item.desktopLabel}</span>
-          </a>
+          </Link>
         ))}
 
         {secondaryNavItems.length > 0 ? (
@@ -249,7 +251,8 @@ export default function DashboardDesktopNav({
 
               <div className="dashboard-nav-more__menu-list">
                 {secondaryNavItems.map((item) => (
-                  <a
+                  <Link
+                    prefetch={false}
                     key={item.href}
                     href={item.href}
                     className={activeSection === item.section ? "is-active" : undefined}
@@ -260,7 +263,7 @@ export default function DashboardDesktopNav({
                     <DashboardNavIcon section={item.section} />
                     <strong>{item.desktopLabel}</strong>
                     <small>{activeSection === item.section ? "Відкрито" : "Перейти"}</small>
-                  </a>
+                  </Link>
                 ))}
               </div>
             </div>

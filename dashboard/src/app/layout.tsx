@@ -36,8 +36,6 @@ import {
   privateRobots,
 } from "@/lib/seo";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -163,7 +161,7 @@ export default function RootLayout({
             })();
           `}
         </Script>
-        <Script src="/js/dashboard-starfield.js" strategy="afterInteractive" />
+        <Script src="/js/dashboard-starfield.js" strategy="lazyOnload" />
         <ClientErrorReporter />
         <ClientAuthGuard />
         <DashboardFormEnhancer />

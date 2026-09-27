@@ -3,7 +3,7 @@ import AppProblemScreen from "@/components/AppProblemScreen";
 import DashboardIdentity from "@/components/DashboardIdentity";
 import GuildRosterExplorer from "@/components/GuildRosterExplorer";
 import GuildRosterLiveHeroStats from "@/components/GuildRosterLiveHeroStats";
-import { getSessionUser, isAuthenticated } from "@/lib/auth";
+import { getSessionUser } from "@/lib/auth";
 import { loadGuildRosterData } from "@/lib/guildRoster";
 import { getOwnProfilePath } from "@/lib/profiles";
 import { canViewGuildRoster } from "@/lib/permissions";
@@ -26,10 +26,6 @@ export const metadata = buildPageMetadata({
 });
 
 export default async function GuildRosterPage() {
-  if (!(await isAuthenticated())) {
-    redirect("/login");
-    throw new Error("Login required");
-  }
   const user = await getSessionUser();
   if (!user) {
     redirect("/login");

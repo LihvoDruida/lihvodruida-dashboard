@@ -12,7 +12,7 @@ export const metadata = buildPageMetadata({
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-import { getSessionUser, isAuthenticated } from "@/lib/auth";
+import { getSessionUser } from "@/lib/auth";
 import { canManageApplications, canViewApplicationBattleTag, canViewApplications } from "@/lib/permissions";
 import { ApplicationItem, listApplicationFilterOptions, listApplications, sanitizeApplicationsForMentorViewer } from "@/lib/github";
 import { getOwnProfilePath } from "@/lib/profiles";
@@ -142,7 +142,6 @@ function RaiderIoPanel({ item }: { item: ApplicationItem }) {
 
 export default async function DashboardPage({
   searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
-  if (!(await isAuthenticated())) { redirect("/login"); throw new Error("Login required"); }
   const user = await getSessionUser();
   if (!user) { redirect("/login"); throw new Error("Login required"); }
   const mayViewApplications = canViewApplications(user);

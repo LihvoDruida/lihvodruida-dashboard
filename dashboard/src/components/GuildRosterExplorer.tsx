@@ -312,7 +312,7 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
         };
       },
     }),
-    refreshOnMount: true,
+    refreshOnMount: false,
   });
 
   useEffect(() => {

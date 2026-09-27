@@ -31,7 +31,7 @@ export default function RaidLiveSync({ raidId, initialRevision }: { raidId: stri
     key: `raid:${raidId}:snapshot`,
     scope: "raids",
     initialData: null,
-    refreshOnMount: true,
+    refreshOnMount: false,
     request: () => ({
       url: "/api/background/refresh",
       method: "POST",

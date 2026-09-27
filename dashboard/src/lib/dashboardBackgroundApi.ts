@@ -7,6 +7,7 @@ import type { DashboardDataScope } from "@/lib/dashboardLiveRefresh";
 export const DASHBOARD_BACKGROUND_REFRESH_MIN_MS = 10 * 60 * 1000;
 const DASHBOARD_BACKGROUND_RESOURCE_FLOOR_MS = 60 * 1000;
 const DASHBOARD_BACKGROUND_RESOURCE_CONCURRENCY = 2;
+const DASHBOARD_BACKGROUND_RESOURCE_RETAIN_MS = 5 * 60_000;
 export const DASHBOARD_BACKGROUND_API_REFRESHED_EVENT = "dashboard:background-api-refreshed";
 
 export type DashboardBackgroundStatus = "idle" | "checking" | "updated" | "skipped" | "offline" | "error";
@@ -54,6 +55,7 @@ type ResourceRecord<T = unknown> = {
   fingerprint: string;
   lastStartedAt: number;
   inFlight: Promise<DashboardApiResourceState<T>> | null;
+  disposeTimer: number | null;
 };
 
 const records = new Map<string, ResourceRecord>();
@@ -177,6 +179,10 @@ function ensureRecord<T>(keyInput: string, initialData: T, getOptions: () => Das
   const existing = records.get(key) as ResourceRecord<T> | undefined;
   if (existing) {
     existing.getOptions = getOptions;
+    if (existing.disposeTimer !== null && typeof window !== "undefined") {
+      window.clearTimeout(existing.disposeTimer);
+      existing.disposeTimer = null;
+    }
     return existing;
   }
 
@@ -192,6 +198,7 @@ function ensureRecord<T>(keyInput: string, initialData: T, getOptions: () => Das
     fingerprint: dataFingerprint(initialData),
     lastStartedAt: checkedAt || 0,
     inFlight: null,
+    disposeTimer: null,
   };
   records.set(key, record as ResourceRecord);
   return record;
@@ -199,6 +206,18 @@ function ensureRecord<T>(keyInput: string, initialData: T, getOptions: () => Das
 
 function stateFor<T>(keyInput: string, initialData: T, getOptions: () => DashboardApiResourceOptions<T>) {
   return ensureRecord(keyInput, initialData, getOptions).state;
+}
+
+function releaseRecord(record: ResourceRecord) {
+  record.refs = Math.max(0, record.refs - 1);
+  if (record.refs > 0 || typeof window === "undefined") return;
+  if (record.disposeTimer !== null) window.clearTimeout(record.disposeTimer);
+  record.disposeTimer = window.setTimeout(() => {
+    if (record.refs === 0 && !record.inFlight && records.get(record.key) === record) {
+      records.delete(record.key);
+    }
+    record.disposeTimer = null;
+  }, DASHBOARD_BACKGROUND_RESOURCE_RETAIN_MS);
 }
 
 function broadcastResourceUpdated<T>(record: ResourceRecord<T>, reason: string, changed: boolean) {
@@ -337,14 +356,12 @@ export function useDashboardApiResource<T>(options: DashboardApiResourceOptions<
       return () => {
         if (windowWithIdle.cancelIdleCallback && typeof idleHandle === "number") windowWithIdle.cancelIdleCallback(idleHandle);
         else window.clearTimeout(idleHandle);
-        record.refs = Math.max(0, record.refs - 1);
-        if (record.refs === 0) records.delete(key);
+        releaseRecord(record);
       };
     }
 
     return () => {
-      record.refs = Math.max(0, record.refs - 1);
-      if (record.refs === 0) records.delete(key);
+      releaseRecord(record);
     };
   }, [getOptions, key]);
 

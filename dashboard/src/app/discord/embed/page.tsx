@@ -43,8 +43,10 @@ export default async function GeneralDiscordEmbedPage({
   const canUseGeneralEmbeds = canManageGeneralEmbeds(user);
   if (!canUseGeneralEmbeds) redirect(await getOwnProfilePath(user));
 
-  const params = await searchParams;
-  const authorIdentity = await resolveAuthorIdentity(user);
+  const [params, authorIdentity] = await Promise.all([
+    searchParams,
+    resolveAuthorIdentity(user),
+  ]);
   const messageParam = String(params.message || params.url || "").trim();
   const editMode = Boolean(messageParam);
   let configError = "";
@@ -58,20 +60,23 @@ export default async function GeneralDiscordEmbedPage({
 
   if (canUseGeneralEmbeds && hasDiscordEmbedConfig()) {
     try {
-      const [channelData, roleData] = await Promise.all([fetchDiscordTextChannels(), fetchDiscordRoles().catch(() => [])]);
+      const ref = parseDiscordMessageRef(messageParam);
+      const [channelData, roleData, message] = await Promise.all([
+        fetchDiscordTextChannels(),
+        fetchDiscordRoles().catch(() => []),
+        ref ? fetchDiscordEditableMessage(ref) : Promise.resolve(null),
+      ]);
       channels = channelData.channels;
       roles = roleData;
       suggestedChannelId = channels[0]?.id || channelData.suggestedRulesChannelId || "";
 
-      const ref = parseDiscordMessageRef(messageParam);
-      if (ref) {
-        const message = await fetchDiscordEditableMessage(ref);
+      if (message) {
         embedJson = message.embedJson || embedJson;
         content = message.content;
         messageLink = message.url || messageParam;
         suggestedChannelId = message.channelId || suggestedChannelId;
         selectedRoleIds = message.roleIds;
-      } else if (messageParam) {
+      } else if (messageParam && !ref) {
         configError = "Посилання на Discord-повідомлення невалідне.";
       }
     } catch (error) {

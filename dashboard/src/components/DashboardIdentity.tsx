@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { DashboardSession } from "@/lib/auth";
 import { getGuildBranding } from "@/lib/branding";
 import {
@@ -122,7 +123,7 @@ export default async function DashboardIdentity({
 
       {user ? (
         <header className="dashboard-topbar" aria-label="Навігація панелі Mistblossom Vanguard">
-          <a href={profileHref} className="dashboard-brand" aria-label={`${guild.name} — мій профіль`}>
+          <Link prefetch={false} href={profileHref} className="dashboard-brand" aria-label={`${guild.name} — мій профіль`}>
             <span className="dashboard-brand__mark">
               <img src={guild.iconUrl} alt="" width={34} height={34} loading="eager" referrerPolicy="no-referrer" />
             </span>
@@ -130,7 +131,7 @@ export default async function DashboardIdentity({
               <strong>{guild.name}</strong>
               <small>Guild workspace</small>
             </span>
-          </a>
+          </Link>
 
           <DashboardDesktopNav items={navItems} activeSection={activeSection} />
 
@@ -157,10 +158,10 @@ export default async function DashboardIdentity({
 
             <nav className="dashboard-user__menu nav-account__menu" id="dashboard-user-menu" aria-label="Профіль і сесія">
               <p className="dashboard-user__menu-label">Акаунт</p>
-              <a href={profileHref} aria-current={current("profile")}>
+              <Link prefetch={false} href={profileHref} aria-current={current("profile")}>
                 <DashboardNavIcon section="profile" />
                 <span>Мій профіль</span>
-              </a>
+              </Link>
               <p className="dashboard-user__menu-label">Сесія</p>
               <LogoutButton className="dashboard-user__logout" errorClassName="dashboard-user__logout-error" />
             </nav>
@@ -173,7 +174,7 @@ export default async function DashboardIdentity({
       <aside className="sidebar dashboard-mobile-nav">
         <header className="site-nav" aria-label="Мобільна навігація">
           <div className="site-nav__shell">
-            <a href={profileHref} className="site-nav__brand" aria-label={`${guild.name} — мій профіль`}>
+            <Link prefetch={false} href={profileHref} className="site-nav__brand" aria-label={`${guild.name} — мій профіль`}>
               <img
                 className="site-nav__brand-mark"
                 src={guild.iconUrl}
@@ -184,7 +185,7 @@ export default async function DashboardIdentity({
                 referrerPolicy="no-referrer"
               />
               <span className="site-nav__brand-text">{guild.name}</span>
-            </a>
+            </Link>
 
             {user ? (
               <button
@@ -197,7 +198,7 @@ export default async function DashboardIdentity({
                 <span className="nav-burger__bars" aria-hidden="true" />
               </button>
             ) : (
-              <a className="btn primary nav-account__login" href="/login">Увійти</a>
+              <Link prefetch={false} className="btn primary nav-account__login" href="/login">Увійти</Link>
             )}
           </div>
         </header>
@@ -216,17 +217,17 @@ export default async function DashboardIdentity({
 
             <p className="nav-sheet__group">Навігація</p>
             {navItems.map((item) => (
-              <a key={item.href} className="nav-sheet__link" href={item.href} aria-current={current(item.section)}>
+              <Link prefetch={false} key={item.href} className="nav-sheet__link" href={item.href} aria-current={current(item.section)}>
                 <DashboardNavIcon section={item.section} />
                 <span>{item.label}</span>
-              </a>
+              </Link>
             ))}
 
             <p className="nav-sheet__group">Профіль</p>
-            <a className="nav-sheet__link" href={profileHref} aria-current={current("profile")}>
+            <Link prefetch={false} className="nav-sheet__link" href={profileHref} aria-current={current("profile")}>
               <DashboardNavIcon section="profile" />
               <span>Мій профіль</span>
-            </a>
+            </Link>
 
             <p className="nav-sheet__group">Сесія</p>
             <LogoutButton className="nav-sheet__logout" errorClassName="nav-sheet__logout-error" />

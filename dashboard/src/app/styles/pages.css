@@ -1656,7 +1656,6 @@
 }
 
 .sync-message,
-.app-loading-current,
 .permission-check {
   color: var(--text-muted);
   font-size: 0.8rem;

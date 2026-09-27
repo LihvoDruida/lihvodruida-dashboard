@@ -125,11 +125,22 @@ export default function ClientAuthGuard() {
       void verify(event.persisted ? "bfcache" : "pageshow", event.persisted);
     }
 
+    // The server has already authenticated the page request. Rechecking the
+    // same session immediately after hydration only duplicates Discord/auth
+    // work. Seed the client throttle instead and validate on focus/visibility
+    // changes or BFCache restoration.
+    try {
+      const stored = Number(window.sessionStorage.getItem(LAST_AUTH_CHECK_KEY));
+      lastCheck.current = Number.isFinite(stored) && stored > 0 ? stored : Date.now();
+      window.sessionStorage.setItem(LAST_AUTH_CHECK_KEY, String(lastCheck.current));
+    } catch {
+      lastCheck.current = Date.now();
+    }
+
     window.addEventListener("storage", onStorage);
     window.addEventListener("focus", onFocus);
     window.addEventListener("pageshow", onPageShow);
     document.addEventListener("visibilitychange", onVisibility);
-    void verify("mount", true);
 
     return () => {
       window.removeEventListener("storage", onStorage);

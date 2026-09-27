@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { DASHBOARD_BACKGROUND_API_REFRESHED_EVENT } from "@/lib/dashboardBackgroundApi";
 import {
   DASHBOARD_DATA_MUTATED_EVENT,
   DASHBOARD_DATA_REFRESHED_EVENT,
@@ -10,13 +9,11 @@ import {
   DASHBOARD_MUTATION_BROADCAST_CHANNEL,
 } from "@/lib/dashboardLiveRefresh";
 
-const VISIBLE_REFRESH_MS = 60_000;
-const HIDDEN_RECHECK_MS = 5 * 60_000;
-const MIN_REFRESH_SPACING_MS = 5_000;
+const VISIBLE_REFRESH_MS = 5 * 60_000;
+const HIDDEN_RECHECK_MS = 15 * 60_000;
+const MIN_REFRESH_SPACING_MS = 30_000;
 const EDITOR_RETRY_MS = 15_000;
 const MUTATION_DEBOUNCE_MS = 650;
-
-type BackgroundRefreshEvent = CustomEvent<{ changed?: boolean; reason?: string; key?: string }>;
 
 function isEditingElement(element: Element | null) {
   if (!element) return false;
@@ -125,11 +122,6 @@ export default function DashboardLivePageSync() {
       refreshAfterMutation("mutation");
     }
 
-    function onBackgroundApiRefreshed(event: Event) {
-      const detail = (event as BackgroundRefreshEvent).detail || {};
-      if (detail.changed) refreshAfterMutation(`background:${detail.key || detail.reason || "resource"}`);
-    }
-
     function onStorage(event: StorageEvent) {
       if (event.key === DASHBOARD_LAST_MUTATION_STORAGE_KEY && event.newValue) refreshAfterMutation("cross-tab");
     }
@@ -144,7 +136,6 @@ export default function DashboardLivePageSync() {
     window.addEventListener("focus", onFocus);
     window.addEventListener("online", onOnline);
     window.addEventListener(DASHBOARD_DATA_MUTATED_EVENT, onDataMutated);
-    window.addEventListener(DASHBOARD_BACKGROUND_API_REFRESHED_EVENT, onBackgroundApiRefreshed);
     window.addEventListener("storage", onStorage);
     schedule(VISIBLE_REFRESH_MS, "interval");
 
@@ -156,7 +147,6 @@ export default function DashboardLivePageSync() {
       window.removeEventListener("focus", onFocus);
       window.removeEventListener("online", onOnline);
       window.removeEventListener(DASHBOARD_DATA_MUTATED_EVENT, onDataMutated);
-      window.removeEventListener(DASHBOARD_BACKGROUND_API_REFRESHED_EVENT, onBackgroundApiRefreshed);
       window.removeEventListener("storage", onStorage);
       channel?.close();
     };

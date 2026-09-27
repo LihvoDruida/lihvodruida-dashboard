@@ -33,7 +33,7 @@ export default function RaidPollLiveSync({ pollId, initialRevision }: { pollId: 
     scope: "raids",
     initialData: null,
     minIntervalMs: RAID_POLL_VISIBLE_REFRESH_MS,
-    refreshOnMount: true,
+    refreshOnMount: false,
     request: () => ({
       url: "/api/background/refresh",
       method: "POST",

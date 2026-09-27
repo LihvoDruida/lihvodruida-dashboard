@@ -263,7 +263,7 @@ export default function ProfileCharactersLiveSection({
     scope: ["profile", "profiles", "guild", "raids"],
     initialData: null,
     minIntervalMs: refreshMinMsRef.current,
-    refreshOnMount: true,
+    refreshOnMount: false,
     request: () => ({
       url: "/api/background/refresh",
       method: "POST",
