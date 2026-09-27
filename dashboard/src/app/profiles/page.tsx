@@ -279,7 +279,7 @@ export default async function ProfilesPage({
 
           <div className="profile-directory-hero-overview" aria-label="Огляд профілів">
             <div className="profile-directory-hero-brand">
-              <img src="/mistblossom-icon.png" alt="" loading="lazy" />
+              <img src="/mistblossom-icon.png" alt="" loading="lazy" decoding="async" />
               <div>
                 <strong>Mistblossom Vanguard</strong>
                 <span>{user.groupName || guildStatusLabel(user.role)}</span>

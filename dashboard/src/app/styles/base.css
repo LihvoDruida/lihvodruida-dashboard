@@ -53,7 +53,7 @@ a:active {
 html {
   font-family: var(--font-sans);
   font-size: 100%;
-  line-height: 1.5;
+  line-height: var(--line-height-body);
   overflow-x: hidden;
   scroll-behavior: smooth;
   overscroll-behavior-y: contain;
@@ -170,7 +170,7 @@ pre {
   border: 1px solid var(--border-subtle);
   overflow-x: auto;
   color: var(--text-soft);
-  line-height: 1.5;
+  line-height: var(--line-height-body);
 }
 
 pre code {
@@ -221,7 +221,7 @@ h3 {
   background: none;
   color: var(--text-strong);
   font-family: var(--font-display);
-  font-weight: 750;
+  font-weight: var(--font-weight-display);
   letter-spacing: -0.018em;
   text-transform: none;
   text-wrap: balance;
@@ -248,7 +248,7 @@ h6 {
   margin: 0;
   font-family: var(--font-display);
   color: var(--text-strong);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 h4 {
@@ -270,17 +270,17 @@ h6 {
 }
 
 p {
-  line-height: 1.6;
+  line-height: var(--line-height-copy);
 }
 
 strong,
 b {
   color: var(--text-strong);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 small {
-  font-size: 0.82rem;
+  font-size: var(--font-size-body-sm);
   color: var(--text-muted);
 }
 
@@ -314,4 +314,17 @@ small {
 ::selection {
   background: var(--accent-ring);
   color: var(--c-ink-100);
+}
+
+/* ---------- Performance safeguards ---------- */
+@media (max-width: 1000px) {
+  /* Fixed page backgrounds are expensive on mobile compositors and can trigger
+     large repaints while scrolling. The visual gradient stays the same. */
+  body {
+    background-attachment: scroll;
+  }
+
+  #site-starfield {
+    opacity: 0.68;
+  }
 }

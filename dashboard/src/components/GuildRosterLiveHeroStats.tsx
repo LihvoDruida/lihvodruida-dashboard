@@ -87,7 +87,7 @@ export default function GuildRosterLiveHeroStats({
     <div className={styles.summary} aria-label="Стан синхронізації складу">
       <div className={styles.summaryTop}>
         <div className={styles.summaryBrand}>
-          <img src="/mistblossom-icon.png" alt="" loading="lazy" />
+          <img src="/mistblossom-icon.png" alt="" loading="lazy" decoding="async" />
           <div>
             <strong>{liveStats.guildName}</strong>
             <small>{liveStats.guildRealm} · {liveStats.guildFaction}</small>

@@ -48,7 +48,7 @@ export default function ProfileCandidateCharacterRow({
       </label>
       <span className="profile-character-candidate__avatar">
         {image ? (
-          <img src={image} alt="" loading="lazy" referrerPolicy="no-referrer" />
+          <img src={image} alt="" loading="lazy" referrerPolicy="no-referrer" decoding="async" />
         ) : (
           character.name.charAt(0)
         )}

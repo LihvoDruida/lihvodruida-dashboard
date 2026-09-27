@@ -51,8 +51,10 @@ export default async function DiscordAutorolesPage({
   if (!user) { redirect("/login"); throw new Error("Login required"); }
   if (!canManageDiscordMembers(user)) redirect(await getOwnProfilePath(user));
 
-  const params = await searchParams;
-  const authorIdentity = await resolveAuthorIdentity(user);
+  const [params, authorIdentity] = await Promise.all([
+    searchParams,
+    resolveAuthorIdentity(user),
+  ]);
   const messageParam = String(params.message || params.url || "").trim();
   const editMode = Boolean(messageParam);
   let configError = "";
@@ -67,17 +69,17 @@ export default async function DiscordAutorolesPage({
 
   if (hasDiscordEmbedConfig()) {
     try {
-      const [channelData, roleControl] = await Promise.all([
+      const ref = parseDiscordMessageRef(messageParam);
+      const [channelData, roleControl, message] = await Promise.all([
         fetchDiscordTextChannels(),
         fetchDiscordRoleControlSnapshotCachedForUi(),
+        ref ? fetchDiscordEditableMessage(ref) : Promise.resolve(null),
       ]);
       channels = channelData.channels;
       roles = roleControl.roles.map((role) => ({ id: role.id, name: role.name, color: role.color, position: role.position, managed: role.managed, manageable: role.manageable, blockedReason: role.blockedReason }));
       suggestedChannelId = channels[0]?.id || channelData.suggestedRulesChannelId || "";
 
-      const ref = parseDiscordMessageRef(messageParam);
-      if (ref) {
-        const message = await fetchDiscordEditableMessage(ref);
+      if (message) {
         embedJson = message.embedJson || embedJson;
         content = message.content;
         messageLink = message.url || messageParam;
@@ -89,7 +91,7 @@ export default async function DiscordAutorolesPage({
             roles.push({ id: button.roleId, name: `Видалена роль ${button.roleId.slice(-6)}`, color: 0, position: 0, managed: true, manageable: false, blockedReason: "Роль більше не існує або недоступна боту." });
           }
         }
-      } else if (messageParam) {
+      } else if (messageParam && !ref) {
         configError = "Посилання на Discord-повідомлення невалідне.";
       }
     } catch (error) {

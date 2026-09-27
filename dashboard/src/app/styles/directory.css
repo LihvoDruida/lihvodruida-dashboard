@@ -56,8 +56,8 @@
 }
 
 .guild-hero-summary__label {
-  font-size: 0.66rem;
-  font-weight: 700;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-faint);
@@ -70,7 +70,7 @@
 
 .guild-hero-summary__block p {
   margin: 0;
-  font-size: 0.76rem;
+  font-size: var(--font-size-meta);
   color: var(--text-muted);
 }
 
@@ -92,7 +92,7 @@
 
 .guild-hero-stat-card > span {
   font-size: 0.62rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-faint);
@@ -138,7 +138,7 @@
 }
 
 .guild-refresh-action__status {
-  font-size: 0.76rem;
+  font-size: var(--font-size-meta);
   color: var(--text-muted);
 }
 
@@ -398,7 +398,7 @@
 
 .profile-directory-hero-brand > div {
   display: grid;
-  gap: 2px;
+  gap: var(--space-3xs);
   min-width: 0;
 }
 
@@ -409,7 +409,7 @@
 
 .profile-directory-hero-brand span {
   color: var(--text-muted);
-  font-size: 0.76rem;
+  font-size: var(--font-size-meta);
 }
 
 .profile-directory-hero-metrics {
@@ -430,7 +430,7 @@
 .profile-directory-hero-metrics span {
   color: var(--text-faint);
   font-size: 0.62rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -469,8 +469,8 @@
 
 .profile-directory-toolbar-copy p {
   color: var(--text-muted);
-  font-size: 0.78rem;
-  line-height: 1.45;
+  font-size: var(--font-size-ui);
+  line-height: var(--line-height-compact);
 }
 
 .profile-directory-search {
@@ -492,7 +492,7 @@
 .profile-directory-filter-field > span {
   color: var(--text-faint);
   font-size: 0.64rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.09em;
   text-transform: uppercase;
 }
@@ -523,7 +523,7 @@
 .profile-directory-context > div,
 .profile-directory-maintenance-link {
   display: grid;
-  gap: 2px;
+  gap: var(--space-3xs);
   min-width: 120px;
   padding: var(--space-xs) var(--space-sm);
   border: 1px solid var(--border-subtle);
@@ -535,7 +535,7 @@
 .profile-directory-maintenance-link span {
   color: var(--text-faint);
   font-size: 0.62rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.09em;
   text-transform: uppercase;
 }
@@ -574,6 +574,9 @@
 
 .profile-directory-head,
 .profile-directory-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 72px;
+
   display: grid;
   grid-template-columns:
     minmax(230px, 1.65fr)
@@ -592,7 +595,7 @@
   padding: var(--space-xs) var(--space-sm);
   color: var(--text-faint);
   font-size: 0.64rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -608,8 +611,7 @@
   border-radius: var(--radius-md);
   background: var(--surface-raised);
   color: inherit;
-  transition:
-    border-color var(--dur-fast) var(--ease-out),
+  transition: border-color var(--dur-fast) var(--ease-out),
     background-color var(--dur-fast) var(--ease-out),
     transform var(--dur-fast) var(--ease-out),
     box-shadow var(--dur-fast) var(--ease-out);
@@ -625,21 +627,21 @@
 
 .profile-directory-row > [role="cell"] {
   display: grid;
-  gap: 2px;
+  gap: var(--space-3xs);
   min-width: 0;
 }
 
 .profile-directory-row strong {
   color: var(--text-strong);
   font-size: 0.84rem;
-  line-height: 1.35;
+  line-height: var(--line-height-tight);
   overflow-wrap: anywhere;
 }
 
 .profile-directory-row small {
   color: var(--text-muted);
-  font-size: 0.7rem;
-  line-height: 1.35;
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-tight);
   overflow-wrap: anywhere;
 }
 
@@ -662,7 +664,7 @@
   display: grid;
   place-items: center;
   color: var(--c-accent-200);
-  font-weight: 800;
+  font-weight: var(--font-weight-heavy);
   background:
     radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--c-accent-400) 18%, transparent), transparent 72%),
     var(--surface-sunken);
@@ -670,12 +672,12 @@
 
 .profile-directory-user-copy {
   display: grid;
-  gap: 2px;
+  gap: var(--space-3xs);
   min-width: 0;
 }
 
 .profile-directory-user-copy strong {
-  font-size: 0.9rem;
+  font-size: var(--font-size-body);
 }
 
 .profile-directory-user-copy small {
@@ -694,7 +696,7 @@
 
 .profile-directory-character-count strong {
   color: var(--c-accent-200);
-  font-size: 1rem;
+  font-size: var(--font-size-base);
 }
 
 .profile-directory-bnet .dashboard-table-pill {
@@ -702,8 +704,8 @@
 }
 
 .profile-directory-activity strong {
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: var(--font-size-ui);
+  font-weight: var(--font-weight-medium);
 }
 
 .profile-directory-open {
@@ -712,8 +714,8 @@
   justify-content: flex-end;
   gap: var(--space-2xs) !important;
   color: var(--c-accent-300);
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: var(--font-size-ui);
+  font-weight: var(--font-weight-bold);
   white-space: nowrap;
 }
 
@@ -734,9 +736,9 @@
   display: grid;
   place-items: center;
   width: 42px;
-  height: 42px;
+  height: var(--control-height);
   border: 1px solid var(--border-subtle);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--c-accent-300);
   font-size: 1.2rem;
   background: var(--surface-sunken);
@@ -749,8 +751,8 @@
 .profile-directory-empty p {
   margin: 0;
   max-width: 520px;
-  font-size: 0.82rem;
-  line-height: 1.55;
+  font-size: var(--font-size-body-sm);
+  line-height: var(--line-height-relaxed);
 }
 
 .profile-directory-footer {
@@ -762,7 +764,7 @@
   padding-top: var(--space-sm);
   border-top: 1px solid var(--border-subtle);
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
 }
 
 .profile-directory-footer > div strong {
@@ -773,7 +775,7 @@
   min-width: 54px;
   text-align: center;
   color: var(--text-muted);
-  font-size: 0.76rem;
+  font-size: var(--font-size-meta);
 }
 
 @media (max-width: 1180px) {
@@ -839,7 +841,7 @@
     content: attr(data-label);
     color: var(--text-faint);
     font-size: 0.6rem;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     letter-spacing: 0.1em;
     text-transform: uppercase;
   }

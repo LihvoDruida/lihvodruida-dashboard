@@ -80,7 +80,7 @@ main .dashboard-shell {
 .dashboard-list-head p {
   max-width: 72ch;
   color: var(--text-soft);
-  font-size: 0.9rem;
+  font-size: var(--font-size-body);
   line-height: 1.58;
 }
 
@@ -103,10 +103,10 @@ main .dashboard-shell {
   background: var(--accent-soft);
   color: var(--orange-main);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  line-height: 1.6;
+  line-height: var(--line-height-copy);
 }
 
 /* ---------- Лід-абзац і приглушений текст ---------- */
@@ -118,7 +118,7 @@ main .dashboard-shell {
   max-width: 72ch;
   color: var(--text-soft);
   font-size: 0.95rem;
-  line-height: 1.6;
+  line-height: var(--line-height-copy);
 }
 
 .subtle:not(:where(.btn)),
@@ -133,7 +133,7 @@ main .dashboard-shell {
 [class*="-note "]:not(:where(.error-note)):not(:where(.warning-note)) {
   color: var(--text-muted);
   font-size: 0.85rem;
-  line-height: 1.55;
+  line-height: var(--line-height-relaxed);
 }
 
 .hero-accent {
@@ -323,7 +323,7 @@ main .dashboard-shell {
   padding: var(--space-xl) var(--pad-page-inline) calc(var(--space-lg) + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--border-subtle);
   background: var(--surface-sunken);
-  font-size: 0.9rem;
+  font-size: var(--font-size-body);
   color: var(--text-muted);
 }
 
@@ -385,14 +385,14 @@ main .dashboard-shell {
   place-items: center;
   font-family: var(--font-brand);
   font-size: 15px;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   color: var(--c-accent-300);
 }
 
 .app-footer__title {
   font-family: var(--font-brand);
   font-size: 0.95rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-strong);
@@ -407,7 +407,7 @@ main .dashboard-shell {
 .app-footer__tagline {
   max-width: 44ch;
   color: var(--text-faint);
-  line-height: 1.5;
+  line-height: var(--line-height-body);
 }
 
 .app-footer__meta {
@@ -422,7 +422,7 @@ main .dashboard-shell {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .app-footer__version {
@@ -432,7 +432,7 @@ main .dashboard-shell {
   min-height: 30px;
   padding: 5px 9px;
   border: 1px solid var(--border-subtle);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--surface-raised);
   color: var(--text-soft);
   line-height: 1;
@@ -441,15 +441,15 @@ main .dashboard-shell {
 
 .app-footer__version-label {
   color: var(--text-faint);
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .app-footer__version strong {
   color: var(--text-strong);
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
   font-variant-numeric: tabular-nums;
 }
 

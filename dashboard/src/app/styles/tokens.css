@@ -87,6 +87,7 @@
   --surface-raised: rgba(44, 35, 27, 0.85);
   --surface-hover: rgba(255, 155, 85, 0.06);
   --surface-sunken: rgba(12, 10, 7, 0.55);
+  --surface-panel: var(--surface);
 
   --border-subtle: rgba(255, 226, 196, 0.08);
   --border: rgba(255, 226, 196, 0.13);
@@ -97,14 +98,44 @@
   --text-soft: var(--c-ink-300);
   --text-muted: var(--c-ink-400);
   --text-faint: var(--c-ink-500);
+  /* compatibility aliases for older isolated modules */
+  --text: var(--text-body);
 
   --accent-soft: rgba(255, 155, 85, 0.12);
   --accent-ring: rgba(255, 155, 85, 0.35);
   --accent-gradient: linear-gradient(135deg, var(--c-accent-300), var(--c-accent-600));
 
   /* ---------- Тіні ---------- */
+  --shadow-sm: 0 8px 20px -14px rgba(0, 0, 0, 0.7);
   --shadow-md: 0 12px 28px -14px rgba(0, 0, 0, 0.75);
   --shadow-lg: 0 24px 50px -24px rgba(0, 0, 0, 0.9);
+
+  /* ---------- Типографічна шкала ----------
+     Значення відповідають найчастішим поточним розмірам. Винесення
+     у токени не змінює геометрію, але прибирає локальне розходження. */
+  --font-size-2xs: 0.66rem;
+  --font-size-xs: 0.68rem;
+  --font-size-caption: 0.7rem;
+  --font-size-sm: 0.72rem;
+  --font-size-meta: 0.76rem;
+  --font-size-ui: 0.78rem;
+  --font-size-ui-lg: 0.8rem;
+  --font-size-body-sm: 0.82rem;
+  --font-size-body: 0.9rem;
+  --font-size-base: 1rem;
+
+  --font-weight-ui: 500;
+  --font-weight-medium: 600;
+  --font-weight-semibold: 650;
+  --font-weight-bold: 700;
+  --font-weight-display: 750;
+  --font-weight-heavy: 800;
+
+  --line-height-tight: 1.35;
+  --line-height-compact: 1.45;
+  --line-height-body: 1.5;
+  --line-height-relaxed: 1.55;
+  --line-height-copy: 1.6;
 
   /* ---------- Відступи: шкала з кроком 4px ---------- */
   --space-3xs: 2px;
@@ -119,6 +150,7 @@
   /* ---------- Ритм сторінки ---------- */
   --gap-stack: var(--space-md);
   --gap-grid: var(--space-lg);
+  --gap-section: var(--gap-grid);
   --pad-card: var(--space-lg);
   --pad-card-compact: var(--space-md);
   --pad-section: clamp(var(--space-xl), 5vw, var(--space-3xl));
@@ -140,11 +172,13 @@
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
-  /* ---------- Шрифти та z-index (з style.css сайту) ---------- */
-  --font-sans: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-display: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-brand: "Cinzel", "Playfair Display", Georgia, "Times New Roman", serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  /* ---------- Шрифти та z-index ----------
+     Без зовнішнього font fetch: основний UI використовує нативний системний
+     sans-stack, брендові заголовки — стабільний serif fallback. */
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-display: var(--font-sans);
+  --font-brand: Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
   --z-dropdown: 1000;
   --z-navbar: 9999;

@@ -10,7 +10,7 @@
 .settingsPanel {
   border: 1px solid rgba(207, 148, 68, 0.18);
   background: linear-gradient(180deg, rgba(24, 19, 15, 0.94), rgba(15, 12, 10, 0.92));
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.16);
 }
 
@@ -21,7 +21,7 @@
 .searchRow,
 .filterRow {
   display: flex;
-  gap: 8px;
+  gap: var(--space-xs);
   align-items: center;
   flex-wrap: wrap;
 }
@@ -40,7 +40,7 @@
 .searchBox span,
 .field > span {
   font-size: 10px;
-  font-weight: 800;
+  font-weight: var(--font-weight-heavy);
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -54,7 +54,7 @@
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 9px;
   background: rgba(6, 5, 4, 0.46);
-  color: var(--text-primary);
+  color: var(--text-strong);
   padding: 0 12px;
   outline: none;
   font: inherit;
@@ -87,7 +87,7 @@
   border-radius: 9px;
   border: 1px solid rgba(255, 255, 255, 0.09);
   background: rgba(255, 255, 255, 0.035);
-  color: var(--text-secondary);
+  color: var(--text-soft);
   padding: 0 11px;
   display: inline-flex;
   align-items: center;
@@ -103,7 +103,7 @@
 .chip:hover {
   border-color: rgba(245, 158, 70, 0.32);
   background: rgba(245, 158, 70, 0.055);
-  color: var(--text-primary);
+  color: var(--text-strong);
 }
 
 .activeChip {
@@ -148,7 +148,7 @@
   align-items: end;
   gap: 3px;
   border: 1px solid rgba(255, 255, 255, 0.055);
-  border-radius: 10px;
+  border-radius: var(--control-radius);
   background: rgba(4, 3, 3, 0.28);
   overflow: hidden;
 }
@@ -192,7 +192,7 @@
   margin-top: 12px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.055);
-  border-radius: 10px;
+  border-radius: var(--control-radius);
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -201,12 +201,12 @@
   padding: 10px 12px;
   background: #15110e;
   display: grid;
-  gap: 2px;
+  gap: var(--space-3xs);
 }
 
 .summaryStrip strong {
   font-size: 15px;
-  color: var(--text-primary);
+  color: var(--text-strong);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -231,7 +231,7 @@
 .dataArea {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
-  gap: 12px;
+  gap: var(--space-sm);
   align-items: start;
 }
 
@@ -252,7 +252,7 @@
   padding: 10px 14px;
   color: var(--text-muted);
   font-size: 9px;
-  font-weight: 800;
+  font-weight: var(--font-weight-heavy);
   text-transform: uppercase;
   letter-spacing: 0.07em;
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
@@ -298,10 +298,10 @@
 .category {
   width: fit-content;
   max-width: 100%;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 4px 7px;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: var(--font-weight-heavy);
   white-space: nowrap;
 }
 
@@ -351,8 +351,8 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 12px;
-  color: var(--text-primary);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--text-strong);
+  font-family: var(--font-mono);
 }
 
 .requestCell small {
@@ -365,7 +365,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--text-secondary);
+  color: var(--text-soft);
   font-size: 12px;
 }
 
@@ -382,7 +382,7 @@
 .detailsHead {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-sm);
   align-items: flex-start;
   padding-bottom: 13px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
@@ -405,7 +405,7 @@
   width: 32px;
   height: 32px;
   padding: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 .metaGrid {
@@ -433,7 +433,7 @@
 .metaGrid dd {
   margin: 4px 0 0;
   font-size: 11px;
-  color: var(--text-primary);
+  color: var(--text-strong);
   overflow-wrap: anywhere;
 }
 
@@ -461,12 +461,12 @@
   color: #d9cabb;
   overflow: auto;
   font-size: 10px;
-  line-height: 1.55;
+  line-height: var(--line-height-relaxed);
 }
 
 .detailMessage {
-  color: var(--text-secondary);
-  line-height: 1.55;
+  color: var(--text-soft);
+  line-height: var(--line-height-relaxed);
   font-size: 12px;
 }
 
@@ -485,7 +485,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 24px;
+  gap: var(--space-lg);
   padding: 18px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.065);
 }
@@ -516,7 +516,7 @@
   max-width: 720px;
   color: var(--text-muted);
   font-size: 12px;
-  line-height: 1.55;
+  line-height: var(--line-height-relaxed);
 }
 
 .settingsStatusBlock {
@@ -534,13 +534,13 @@
 .mirrorStatus {
   min-height: 30px;
   padding: 0 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   display: inline-flex;
   align-items: center;
   gap: 7px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: var(--font-weight-heavy);
 }
 
 .mirrorStatus i {
@@ -582,7 +582,7 @@
 .settingsSectionTitle {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-sm);
   align-items: flex-start;
   margin-bottom: 12px;
 }
@@ -594,13 +594,13 @@
 
 .settingsSectionTitle strong {
   font-size: 13px;
-  color: var(--text-primary);
+  color: var(--text-strong);
 }
 
 .settingsSectionTitle small {
   color: var(--text-muted);
   font-size: 10px;
-  line-height: 1.45;
+  line-height: var(--line-height-compact);
 }
 
 .switchRow {
@@ -610,7 +610,7 @@
   align-items: center;
   padding: 12px 13px;
   border: 1px solid rgba(245, 158, 70, 0.14);
-  border-radius: 10px;
+  border-radius: var(--control-radius);
   background: rgba(245, 158, 70, 0.035);
   cursor: pointer;
 }
@@ -628,7 +628,7 @@
 .switchRow small {
   color: var(--text-muted);
   font-size: 10px;
-  line-height: 1.45;
+  line-height: var(--line-height-compact);
 }
 
 .switchRow input {
@@ -636,7 +636,7 @@
   width: 42px;
   height: 24px;
   flex: 0 0 42px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: #28211c;
   position: relative;
@@ -669,7 +669,7 @@
 .formGrid2 {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(220px, 0.72fr);
-  gap: 12px;
+  gap: var(--space-sm);
   margin-top: 12px;
 }
 
@@ -683,12 +683,12 @@
 .field small {
   color: var(--text-muted);
   font-size: 9px;
-  line-height: 1.45;
+  line-height: var(--line-height-compact);
 }
 
 .settingsActions {
   display: flex;
-  gap: 8px;
+  gap: var(--space-xs);
   flex-wrap: wrap;
   margin-top: 14px;
   padding-top: 14px;
@@ -702,7 +702,7 @@
 .storageFacts {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: var(--space-xs);
   margin-bottom: 12px;
 }
 
@@ -737,7 +737,7 @@
   margin: 12px 0 0;
   color: var(--text-muted);
   font-size: 9px;
-  line-height: 1.5;
+  line-height: var(--line-height-body);
 }
 
 @media (max-width: 1180px) {

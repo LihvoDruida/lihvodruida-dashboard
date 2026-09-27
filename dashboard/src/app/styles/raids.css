@@ -50,7 +50,7 @@
   margin: 0;
   max-width: 68ch;
   color: var(--text-soft);
-  font-size: 0.9rem;
+  font-size: var(--font-size-body);
 }
 
 /* Лічильники — рядок пігулок, а не стовпчик */
@@ -67,8 +67,8 @@
   border-radius: var(--radius-pill);
   background: var(--surface-sunken);
   color: var(--text-muted);
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
@@ -89,6 +89,9 @@
 
 /* ---------- Рядок рейду ---------- */
 .raid-list-item {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 120px;
+
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -99,8 +102,7 @@
   border-left: 3px solid var(--c-ink-500);
   border-radius: var(--radius-lg);
   background: var(--surface-raised);
-  transition:
-    border-color var(--dur-fast) var(--ease-out),
+  transition: border-color var(--dur-fast) var(--ease-out),
     background-color var(--dur-fast) var(--ease-out),
     transform var(--dur-fast) var(--ease-out);
 }
@@ -160,7 +162,7 @@
 }
 
 .raid-list-title-row strong {
-  font-size: 1rem;
+  font-size: var(--font-size-base);
   color: var(--text-strong);
   overflow-wrap: anywhere;
 }
@@ -214,8 +216,8 @@
   border-radius: var(--radius-pill);
   background: var(--surface-sunken);
   color: var(--text-faint);
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -362,15 +364,15 @@
 }
 
 .raid-preview-meta > span > strong {
-  font-size: 0.66rem;
-  font-weight: 700;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-faint);
 }
 
 .raid-preview-meta > span > small {
-  font-size: 0.72rem;
+  font-size: var(--font-size-sm);
   color: var(--text-muted);
 }
 
@@ -383,7 +385,7 @@
   background: var(--accent-soft);
   color: var(--c-accent-100);
   font-size: 0.85rem;
-  line-height: 1.55;
+  line-height: var(--line-height-relaxed);
 }
 
 .raid-ilvl-notice.is-warning {
@@ -427,7 +429,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-2xs);
-  min-height: 42px;
+  min-height: var(--control-height);
   padding: 0 var(--space-md);
   border: 1px solid color-mix(in srgb, var(--tone) 34%, transparent);
   border-radius: var(--radius-pill);
@@ -435,10 +437,9 @@
   color: var(--tone);
   font-family: inherit;
   font-size: 0.84rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition:
-    background-color var(--dur-fast) var(--ease-out),
+  transition: background-color var(--dur-fast) var(--ease-out),
     transform var(--dur-fast) var(--ease-out);
 }
 
@@ -519,8 +520,8 @@
   margin: 0;
   max-width: 80ch;
   color: var(--text-muted);
-  font-size: 0.82rem;
-  line-height: 1.55;
+  font-size: var(--font-size-body-sm);
+  line-height: var(--line-height-relaxed);
 }
 
 /* Явна одна колонка: інакше суфіксні патерни *-grid / *-layout
@@ -552,8 +553,8 @@
 
 .raid-party-card h3 {
   margin: 0 0 var(--space-2xs);
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--c-accent-300);
@@ -630,7 +631,7 @@
 
 .raid-party-member-copy small,
 .raid-roster-member-copy small {
-  font-size: 0.72rem;
+  font-size: var(--font-size-sm);
   color: var(--text-muted);
   overflow-wrap: anywhere;
 }
@@ -648,7 +649,7 @@
 
 .raid-role-icon,
 .raid-roster-role-icon {
-  font-size: 0.9rem;
+  font-size: var(--font-size-body);
   line-height: 1;
 }
 
@@ -667,7 +668,7 @@
   place-items: center;
   border-style: dashed;
   color: var(--text-faint);
-  font-size: 0.8rem;
+  font-size: var(--font-size-ui-lg);
 }
 
 .raid-signup-order {
@@ -680,7 +681,7 @@
   background: var(--surface-raised);
   color: var(--text-faint);
   font-size: 0.62rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 .raid-signup-order--empty {
@@ -703,7 +704,7 @@
 .raid-member-roster-note span {
   color: var(--text-muted);
   font-size: 0.84rem;
-  line-height: 1.55;
+  line-height: var(--line-height-relaxed);
 }
 
 /* ---------- Бічний список «хто йде» ---------- */
@@ -728,8 +729,8 @@
 }
 
 .raid-roster-heading strong {
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: var(--font-size-ui);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--c-accent-300);
@@ -737,7 +738,7 @@
 
 .raid-roster-heading span {
   font-size: 0.88rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   color: var(--text-strong);
 }
 
@@ -749,8 +750,8 @@
 
 .raid-roster-block h4 {
   margin: 0;
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-faint);
@@ -759,7 +760,7 @@
 .raid-roster-block p {
   margin: 0;
   color: var(--text-faint);
-  font-size: 0.8rem;
+  font-size: var(--font-size-ui-lg);
 }
 
 .raid-roster-member {
@@ -839,7 +840,7 @@
 .raid-form-heading .section-title {
   font-family: var(--font-brand);
   font-size: 1.14rem;
-  font-weight: 750;
+  font-weight: var(--font-weight-display);
   letter-spacing: 0.035em;
   color: var(--text-strong);
 }
@@ -849,7 +850,7 @@
   max-width: 72ch;
   color: var(--text-muted);
   font-size: 0.84rem;
-  line-height: 1.55;
+  line-height: var(--line-height-relaxed);
 }
 
 .raid-form-heading-status {
@@ -862,7 +863,7 @@
 
 .raid-form-heading-status small {
   color: var(--text-faint);
-  font-size: 0.7rem;
+  font-size: var(--font-size-caption);
   text-align: right;
 }
 
@@ -882,10 +883,9 @@
   border-radius: var(--radius-pill);
   background: var(--surface-sunken);
   color: var(--text-muted);
-  font-size: 0.72rem;
-  font-weight: 650;
-  transition:
-    border-color var(--dur-fast) var(--ease-out),
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  transition: border-color var(--dur-fast) var(--ease-out),
     background-color var(--dur-fast) var(--ease-out),
     color var(--dur-fast) var(--ease-out);
 }
@@ -930,15 +930,15 @@
 .raid-publish-panel__copy strong {
   color: var(--text-strong);
   font-size: 0.92rem;
-  font-weight: 750;
+  font-weight: var(--font-weight-display);
 }
 
 .raid-form-section-heading p,
 .raid-publish-panel__copy p {
   margin: 0;
   color: var(--text-muted);
-  font-size: 0.78rem;
-  line-height: 1.5;
+  font-size: var(--font-size-ui);
+  line-height: var(--line-height-body);
 }
 
 .raid-form-step {
@@ -947,11 +947,11 @@
   width: 30px;
   height: 30px;
   border: 1px solid rgba(235, 146, 65, 0.34);
-  border-radius: 10px;
+  border-radius: var(--control-radius);
   background: var(--accent-soft);
   color: var(--c-accent-200);
-  font-size: 0.68rem;
-  font-weight: 800;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-heavy);
   letter-spacing: 0.04em;
 }
 
@@ -969,7 +969,7 @@
   gap: var(--space-xs);
   min-width: 0;
   font-size: 0.79rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.015em;
   color: var(--text-soft);
 }
@@ -978,7 +978,7 @@
   font-size: 0.73rem;
   font-weight: 400;
   letter-spacing: 0;
-  line-height: 1.5;
+  line-height: var(--line-height-body);
   color: var(--text-muted);
 }
 
@@ -1017,7 +1017,7 @@
 
 .raid-setting-card__head span {
   color: var(--text-faint);
-  font-size: 0.7rem;
+  font-size: var(--font-size-caption);
 }
 
 .raid-setting-card .raid-checkbox-line {
@@ -1030,18 +1030,18 @@
 
 .raid-checkbox-line > span {
   display: grid;
-  gap: 2px;
+  gap: var(--space-3xs);
   min-width: 0;
 }
 
 .raid-checkbox-line > span > strong {
   color: var(--text-soft);
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
 }
 
 .raid-checkbox-line > span > small {
   color: var(--text-muted);
-  font-size: 0.7rem;
+  font-size: var(--font-size-caption);
   line-height: 1.4;
 }
 
@@ -1071,8 +1071,8 @@
   border-radius: var(--radius-sm);
   background: var(--surface-sunken);
   color: var(--text-muted);
-  font-size: 0.7rem;
-  line-height: 1.45;
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-compact);
 }
 
 .raid-auto-composition-note {
@@ -1092,8 +1092,8 @@
 
 .raid-auto-composition-note span {
   color: var(--text-soft);
-  font-size: 0.78rem;
-  line-height: 1.55;
+  font-size: var(--font-size-ui);
+  line-height: var(--line-height-relaxed);
 }
 
 .raid-form-section--discord {
@@ -1102,7 +1102,7 @@
 
 .raid-discord-role-block {
   display: grid;
-  gap: 8px;
+  gap: var(--space-xs);
   padding-top: 10px;
   border-top: 1px solid var(--border-subtle);
 }
@@ -1117,12 +1117,12 @@
 
 .raid-discord-role-block__head strong {
   color: var(--text-strong);
-  font-size: 0.82rem;
+  font-size: var(--font-size-body-sm);
 }
 
 .raid-discord-role-block__head span {
   color: var(--text-muted);
-  font-size: 0.72rem;
+  font-size: var(--font-size-sm);
 }
 
 .raid-description-textarea {
@@ -1133,7 +1133,7 @@
 .raid-form-hint {
   margin: 0;
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
 }
 
 /* ---------- Вибір зображення ---------- */
@@ -1179,8 +1179,7 @@
   object-fit: cover;
   border: 1px solid var(--border-subtle);
   cursor: pointer;
-  transition:
-    border-color var(--dur-fast) var(--ease-out),
+  transition: border-color var(--dur-fast) var(--ease-out),
     transform var(--dur-fast) var(--ease-out);
 }
 
@@ -1204,12 +1203,12 @@
 .raid-image-picker__meta,
 .raid-image-picker__empty {
   color: var(--text-muted);
-  font-size: 0.76rem;
+  font-size: var(--font-size-meta);
 }
 
 .raid-image-picker__error {
   color: var(--c-danger);
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
 }
 
 /* ---------- Фінальна дія ---------- */
@@ -1253,8 +1252,8 @@
   border-radius: var(--radius-pill);
   background: var(--surface-sunken);
   color: var(--text-muted);
-  font-size: 0.7rem;
-  font-weight: 650;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
 }
 
 .raid-form-panel.is-dirty .raid-save-state {
@@ -1296,8 +1295,8 @@
 
 .raid-message-link {
   color: var(--c-accent-300);
-  font-size: 0.82rem;
-  font-weight: 650;
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-semibold);
 }
 
 /* Небезпечна зона — візуально відділена від звичайного збереження. */
@@ -1319,7 +1318,7 @@
   max-width: 72ch;
   color: var(--text-muted);
   font-size: 0.84rem;
-  line-height: 1.55;
+  line-height: var(--line-height-relaxed);
 }
 
 /* =========================================================
@@ -1534,8 +1533,8 @@
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--tone) 10%, transparent);
   color: var(--tone);
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   letter-spacing: 0.02em;
 }
 
@@ -1610,7 +1609,7 @@
 
 .raid-archive-status {
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: var(--font-size-ui-lg);
 }
 
 .raid-archive-more-button {
@@ -1668,7 +1667,7 @@
 
 .raid-greylist-box-head small {
   color: var(--text-muted);
-  font-size: 0.76rem;
+  font-size: var(--font-size-meta);
 }
 
 .raid-greylist-mini-actions {
@@ -1687,7 +1686,7 @@
   flex-wrap: wrap;
   gap: var(--space-xs);
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
 }
 
 /* Список складу: власний скрол, щоб сторінка не тягнулась на екрани */
@@ -1736,7 +1735,7 @@
 }
 
 .raid-greylist-member small {
-  font-size: 0.72rem;
+  font-size: var(--font-size-sm);
   color: var(--text-muted);
   overflow-wrap: anywhere;
 }
@@ -1744,7 +1743,7 @@
 .raid-greylist-member img,
 .raid-greylist-avatar {
   width: 34px;
-  height: 34px;
+  height: var(--control-height-sm);
   flex: 0 0 auto;
   border-radius: 50%;
   object-fit: cover;
@@ -1756,8 +1755,8 @@
   display: grid;
   place-items: center;
   color: var(--c-accent-300);
-  font-size: 0.8rem;
-  font-weight: 700;
+  font-size: var(--font-size-ui-lg);
+  font-weight: var(--font-weight-bold);
   text-transform: uppercase;
 }
 
@@ -1820,8 +1819,7 @@
   color: var(--text-soft);
   font-family: inherit;
   cursor: pointer;
-  transition:
-    border-color var(--dur-fast) var(--ease-out),
+  transition: border-color var(--dur-fast) var(--ease-out),
     background-color var(--dur-fast) var(--ease-out),
     transform var(--dur-fast) var(--ease-out);
 }
@@ -1833,12 +1831,12 @@
 }
 
 .raid-poll-day-toggle strong {
-  font-size: 0.9rem;
+  font-size: var(--font-size-body);
   color: var(--text-strong);
 }
 
 .raid-poll-day-toggle span {
-  font-size: 0.68rem;
+  font-size: var(--font-size-xs);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-faint);
@@ -1882,8 +1880,8 @@
 }
 
 .raid-poll-create-preview strong {
-  font-size: 0.66rem;
-  font-weight: 700;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-faint);
@@ -1919,13 +1917,13 @@
 
 .raid-manual-picker__head strong {
   color: var(--c-accent-200);
-  font-size: 0.9rem;
+  font-size: var(--font-size-body);
 }
 
 .raid-manual-picker__head small {
   color: var(--text-muted);
-  font-size: 0.78rem;
-  line-height: 1.55;
+  font-size: var(--font-size-ui);
+  line-height: var(--line-height-relaxed);
 }
 
 /* Два селекти поруч, на вузькому екрані — один під одним */
@@ -1944,13 +1942,13 @@
   border-radius: var(--radius-pill);
   background: var(--accent-soft);
   color: var(--c-accent-200);
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: var(--font-size-ui);
+  font-weight: var(--font-weight-bold);
 }
 
 .raid-manual-picker__hint {
   color: var(--text-faint);
-  font-size: 0.76rem;
+  font-size: var(--font-size-meta);
 }
 
 /* Учасник без персонажа: пунктирна рамка аватара вже є,
@@ -1980,7 +1978,7 @@
 
 .raid-list-kpis > span {
   display: grid;
-  gap: 2px;
+  gap: var(--space-3xs);
   min-width: 0;
   padding: var(--space-xs) var(--space-sm);
   border: 1px solid var(--border-subtle);
@@ -1991,7 +1989,7 @@
 .raid-list-kpis small {
   color: var(--text-faint);
   font-size: 0.64rem;
-  font-weight: 750;
+  font-weight: var(--font-weight-display);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -2054,7 +2052,7 @@
   width: 14px;
   height: 14px;
   border: 3px solid var(--surface-raised);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--c-ink-400);
   box-shadow: 0 0 0 1px var(--border-subtle);
 }
@@ -2086,12 +2084,12 @@
   flex-wrap: wrap;
   gap: 4px var(--space-md);
   color: var(--text-muted);
-  font-size: 0.76rem;
+  font-size: var(--font-size-meta);
 }
 
 .raid-list-primary-meta__time {
   color: var(--text-soft);
-  font-weight: 650;
+  font-weight: var(--font-weight-semibold);
 }
 
 .raid-list-role-summary {
@@ -2112,7 +2110,7 @@
   background: var(--surface-sunken);
   color: var(--text-muted);
   font-size: 0.69rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   white-space: nowrap;
 }
 
@@ -2160,8 +2158,8 @@
 .raid-list-progress-wrap > small {
   min-width: 34px;
   color: var(--text-faint);
-  font-size: 0.66rem;
-  font-weight: 700;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
   text-align: right;
 }
 
@@ -2170,7 +2168,7 @@
 }
 
 .raid-list-action-open {
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 /* ---------- Сторінка рейду: навігація ---------- */
@@ -2188,8 +2186,8 @@
 
 .raid-detail-back {
   color: var(--text-muted);
-  font-size: 0.8rem;
-  font-weight: 650;
+  font-size: var(--font-size-ui-lg);
+  font-weight: var(--font-weight-semibold);
 }
 
 .raid-detail-back:hover,
@@ -2256,18 +2254,18 @@
   flex-wrap: wrap;
   gap: 4px var(--space-md);
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
 }
 
 .raid-description-markdown--compact {
   max-width: 86ch;
   font-size: 0.86rem;
-  line-height: 1.55;
+  line-height: var(--line-height-relaxed);
 }
 
 .raid-closed-banner {
   display: grid;
-  gap: 2px;
+  gap: var(--space-3xs);
 }
 
 .raid-closed-banner strong {
@@ -2276,7 +2274,7 @@
 
 .raid-closed-banner span {
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
 }
 
 /* Чотири речі, які треба побачити за 2 секунди. */
@@ -2289,7 +2287,7 @@
 .raid-overview-card {
   display: grid;
   align-content: start;
-  gap: 4px;
+  gap: var(--space-2xs);
   min-width: 0;
   min-height: 92px;
   padding: var(--space-sm);
@@ -2313,7 +2311,7 @@
 .raid-overview-card__label {
   color: var(--text-faint);
   font-size: 0.63rem;
-  font-weight: 750;
+  font-weight: var(--font-weight-display);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -2327,8 +2325,8 @@
 
 .raid-overview-card small {
   color: var(--text-muted);
-  font-size: 0.7rem;
-  line-height: 1.35;
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-tight);
   overflow-wrap: anywhere;
 }
 
@@ -2341,8 +2339,8 @@
 
 .raid-overview-card__value-line > span {
   color: var(--text-faint);
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
 }
 
 .raid-overview-meter,
@@ -2370,7 +2368,7 @@
 }
 
 .raid-role-counts > span {
-  font-size: 0.9rem;
+  font-size: var(--font-size-body);
 }
 
 .raid-detail-facts {
@@ -2385,18 +2383,18 @@
   border-radius: var(--radius-pill);
   background: var(--surface-sunken);
   color: var(--text-muted);
-  font-size: 0.72rem;
+  font-size: var(--font-size-sm);
   line-height: 1.25;
 }
 
 .raid-detail-facts b {
   color: var(--text-soft);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 .raid-context-notice {
   display: grid;
-  gap: 2px;
+  gap: var(--space-3xs);
   padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--border-subtle);
   border-left: 3px solid var(--c-info);
@@ -2406,13 +2404,13 @@
 
 .raid-context-notice strong {
   color: var(--text-strong);
-  font-size: 0.82rem;
+  font-size: var(--font-size-body-sm);
 }
 
 .raid-context-notice span {
   color: var(--text-muted);
-  font-size: 0.76rem;
-  line-height: 1.45;
+  font-size: var(--font-size-meta);
+  line-height: var(--line-height-compact);
 }
 
 .raid-context-notice--warning {
@@ -2441,7 +2439,7 @@
 
 .raid-attendance-panel__head > div {
   display: grid;
-  gap: 2px;
+  gap: var(--space-3xs);
 }
 
 .raid-attendance-panel__head strong {
@@ -2452,7 +2450,7 @@
 .raid-attendance-panel__head span,
 .raid-attendance-panel__head small {
   color: var(--text-muted);
-  font-size: 0.72rem;
+  font-size: var(--font-size-sm);
 }
 
 .raid-character-picker {
@@ -2491,8 +2489,8 @@
   border-radius: var(--radius-pill);
   background: var(--surface-sunken);
   color: var(--text-muted);
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
   white-space: nowrap;
 }
 
@@ -2520,12 +2518,12 @@
 
 .raid-roster-heading > div > small {
   color: var(--text-faint);
-  font-size: 0.66rem;
+  font-size: var(--font-size-2xs);
 }
 
 .raid-roster-heading > span {
   color: var(--c-accent-200);
-  font-size: 1rem;
+  font-size: var(--font-size-base);
 }
 
 .raid-roster-role-summary {

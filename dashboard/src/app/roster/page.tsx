@@ -249,25 +249,31 @@ export default async function RosterFormationPage() {
   let suggestedChannelId = "";
   let configWarning = "";
 
-  const authorIdentity = await resolveAuthorIdentity(user).catch(() => null);
+  const discordMetadataPromise = discordEnabled
+    ? Promise.all([fetchDiscordTextChannels(), fetchDiscordRoles().catch(() => [])])
+        .then(([channelData, roleData]) => ({ channelData, roleData, error: "" }))
+        .catch((error) => ({
+          channelData: null,
+          roleData: [] as Awaited<ReturnType<typeof fetchDiscordRoles>>,
+          error: error instanceof Error ? error.message : "Не вдалося отримати список Discord-каналів.",
+        }))
+    : Promise.resolve({ channelData: null, roleData: [] as Awaited<ReturnType<typeof fetchDiscordRoles>>, error: "" });
+
+  const [authorIdentity, discordMetadata, formations] = await Promise.all([
+    resolveAuthorIdentity(user).catch(() => null),
+    discordMetadataPromise,
+    storageReady ? listRosterFormations().catch(() => []) : Promise.resolve([]),
+  ]);
   const authorName = authorIdentity?.primaryName || user.name || user.login || "Офіцер";
 
-  if (discordEnabled) {
-    try {
-      const [channelData, roleData] = await Promise.all([
-        fetchDiscordTextChannels(),
-        fetchDiscordRoles().catch(() => []),
-      ]);
-      channels = channelData.channels.map((c) => ({ id: c.id, name: c.name, type: c.type }));
-      roles = roleData.map((r) => ({ id: r.id, name: r.name, color: r.color, position: r.position }));
-      suggestedChannelId = channelData.suggestedChannelId || channels[0]?.id || "";
-      if (channelData.warning) configWarning = channelData.warning;
-    } catch (error) {
-      configWarning = error instanceof Error ? error.message : "Не вдалося отримати список Discord-каналів.";
-    }
+  if (discordMetadata.channelData) {
+    const channelData = discordMetadata.channelData;
+    channels = channelData.channels.map((c) => ({ id: c.id, name: c.name, type: c.type }));
+    roles = discordMetadata.roleData.map((r) => ({ id: r.id, name: r.name, color: r.color, position: r.position }));
+    suggestedChannelId = channelData.suggestedChannelId || channels[0]?.id || "";
+    if (channelData.warning) configWarning = channelData.warning;
   }
-
-  const formations = storageReady ? await listRosterFormations().catch(() => []) : [];
+  if (discordMetadata.error) configWarning = discordMetadata.error;
   const latestOpen = formations.find((f) => f.status === "open") || formations[0] || null;
   const canPublish = discordEnabled && storageReady && channels.length > 0;
 

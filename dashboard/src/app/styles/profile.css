@@ -62,7 +62,7 @@
 
 .profile-account-sidebar__identity span,
 .profile-account-sidebar__identity small {
-  font-size: 0.8rem;
+  font-size: var(--font-size-ui-lg);
   color: var(--text-muted);
 }
 
@@ -111,7 +111,7 @@
   display: grid;
   place-items: center;
   width: 34px;
-  height: 34px;
+  height: var(--control-height-sm);
   flex: 0 0 auto;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
@@ -151,8 +151,8 @@
 .profile-account-overview-card p,
 .profile-account-overview-card__meta {
   margin: 0;
-  font-size: 0.76rem;
-  line-height: 1.5;
+  font-size: var(--font-size-meta);
+  line-height: var(--line-height-body);
   color: var(--text-muted);
 }
 
@@ -204,7 +204,7 @@
   display: grid;
   place-items: center;
   width: 34px;
-  height: 34px;
+  height: var(--control-height-sm);
   flex: 0 0 auto;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
@@ -216,14 +216,14 @@
   margin: 0;
   max-width: 80ch;
   color: var(--text-soft);
-  font-size: 0.9rem;
-  line-height: 1.6;
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-copy);
 }
 
 .profile-card-note {
   color: var(--text-muted);
-  font-size: 0.8rem;
-  line-height: 1.55;
+  font-size: var(--font-size-ui-lg);
+  line-height: var(--line-height-relaxed);
 }
 
 .profile-card-toolbar {
@@ -263,8 +263,8 @@
 }
 
 .profile-name-panel__label {
-  font-size: 0.8rem;
-  font-weight: 700;
+  font-size: var(--font-size-ui-lg);
+  font-weight: var(--font-weight-bold);
   color: var(--text-soft);
 }
 
@@ -298,7 +298,7 @@
 
 .profile-display-mode-option small,
 .profile-display-mode-option span {
-  font-size: 0.76rem;
+  font-size: var(--font-size-meta);
   color: var(--text-muted);
   overflow-wrap: anywhere;
 }
@@ -328,7 +328,7 @@
 }
 
 .profile-nickname-hint {
-  font-size: 0.76rem;
+  font-size: var(--font-size-meta);
   color: var(--text-muted);
 }
 
@@ -347,6 +347,9 @@
 }
 
 .profile-character-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 360px;
+
   position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -378,7 +381,7 @@
   place-items: center;
   color: var(--c-accent-300);
   font-size: 1.6rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 .profile-character-body {
@@ -407,14 +410,14 @@
 }
 
 .profile-character-title-copy strong {
-  font-size: 1rem;
+  font-size: var(--font-size-base);
   color: var(--text-strong);
   overflow-wrap: anywhere;
 }
 
 .profile-character-title-copy small,
 .profile-character-meta {
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
   color: var(--text-muted);
   overflow-wrap: anywhere;
 }
@@ -454,7 +457,7 @@
   border-radius: var(--radius-sm);
   background: var(--surface-raised);
   color: var(--c-accent-300);
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
 }
 
 .profile-character-stat__copy {
@@ -469,7 +472,7 @@
 }
 
 .profile-character-stat__copy small {
-  font-size: 0.68rem;
+  font-size: var(--font-size-xs);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-faint);
@@ -498,8 +501,8 @@
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--tone) 12%, transparent);
   color: var(--tone);
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
   white-space: nowrap;
 }
 
@@ -544,7 +547,7 @@
   padding-top: var(--space-sm);
   border-top: 1px solid var(--border-subtle);
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: var(--font-size-ui-lg);
 }
 
 .profile-character-add-button {
@@ -570,7 +573,7 @@
   display: grid;
   place-items: center;
   width: 34px;
-  height: 34px;
+  height: var(--control-height-sm);
   flex: 0 0 auto;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
@@ -591,7 +594,7 @@
 
 .profile-bnet-status__copy small,
 .profile-bnet-status__copy a {
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
 }
 
 .profile-bnet-status__action {
@@ -610,8 +613,8 @@
 }
 
 .profile-bnet-cta__eyebrow {
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-faint);
@@ -633,6 +636,9 @@
 }
 
 .profile-raid-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 180px;
+
   display: grid;
   gap: var(--space-sm);
   padding: var(--pad-card-compact);
@@ -669,7 +675,7 @@
   flex-wrap: wrap;
   gap: var(--space-3xs) var(--space-sm);
   color: var(--text-muted);
-  font-size: 0.76rem;
+  font-size: var(--font-size-meta);
 }
 
 .profile-raid-card__actions {
@@ -760,7 +766,7 @@
 
 .profile-character-candidate__avatar {
   width: 34px;
-  height: 34px;
+  height: var(--control-height-sm);
   flex: 0 0 auto;
   border-radius: 50%;
   object-fit: cover;
@@ -774,7 +780,7 @@
 }
 
 .profile-character-candidate__kind {
-  font-size: 0.66rem;
+  font-size: var(--font-size-2xs);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-faint);
@@ -795,7 +801,7 @@
 .profile-candidate-counter,
 .profile-candidate-expiry {
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
 }
 
 .profile-candidate-toggle-all {
@@ -937,8 +943,8 @@
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--tone) 12%, transparent);
   color: var(--tone);
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
   white-space: nowrap;
 }
 
@@ -1002,7 +1008,7 @@
 }
 
 .profile-name-display-row__value small {
-  font-size: 0.76rem;
+  font-size: var(--font-size-meta);
   color: var(--text-muted);
 }
 
@@ -1083,7 +1089,7 @@
 }
 
 .profile-display-mode-option small {
-  font-size: 0.76rem;
+  font-size: var(--font-size-meta);
   color: var(--text-muted);
   overflow-wrap: anywhere;
 }
@@ -1125,15 +1131,15 @@
 }
 
 .profile-server-nickname__body small {
-  font-size: 0.68rem;
-  font-weight: 600;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-faint);
 }
 
 .profile-server-nickname__body strong {
-  font-size: 0.9rem;
+  font-size: var(--font-size-body);
   color: var(--text-strong);
   overflow-wrap: anywhere;
 }
@@ -1170,8 +1176,8 @@
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--tone) 12%, transparent);
   color: var(--tone);
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
   white-space: nowrap;
 }
 
@@ -1193,7 +1199,7 @@
   border-radius: var(--radius-sm);
   background: var(--surface-sunken);
   font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size: var(--font-size-ui-lg);
   color: var(--c-accent-200);
 }
 
@@ -1259,7 +1265,7 @@
 
 .profile-character-meta > span {
   position: relative;
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
   color: var(--text-muted);
   overflow-wrap: anywhere;
 }
@@ -1397,8 +1403,8 @@
 }
 
 .profile-account-sidebar__facts dt {
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-faint);
@@ -1407,7 +1413,7 @@
 .profile-account-sidebar__facts dd {
   margin: 0;
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   color: var(--text-strong);
   overflow-wrap: anywhere;
   text-align: right;
@@ -1430,8 +1436,8 @@
   border-radius: var(--radius-pill);
   background: var(--surface-raised);
   color: var(--text-faint);
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
 }
 
 .profile-account-sidebar__footer {
@@ -1547,7 +1553,7 @@
 }
 
 .profile-account-sidebar__identity strong {
-  font-size: 1rem;
+  font-size: var(--font-size-base);
 }
 
 .profile-account-sidebar__facts,
@@ -1595,8 +1601,8 @@
 
 .profile-account-overview-card small {
   order: -1;
-  font-size: 0.66rem;
-  font-weight: 700;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-faint);
@@ -1812,8 +1818,8 @@
 /* Підпис дрібний згори, значення велике знизу — порядок із зразка */
 .profile-account-overview-card small {
   order: -1;
-  font-size: 0.68rem;
-  font-weight: 600;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-faint);
@@ -2012,7 +2018,7 @@
 .profile-character-title-copy p {
   margin: 0;
   color: var(--c-accent-300);
-  font-size: 0.82rem;
+  font-size: var(--font-size-body-sm);
   font-style: italic;
 }
 
@@ -2057,7 +2063,7 @@
 }
 
 .profile-character-stats-divider {
-  height: 34px;
+  height: var(--control-height-sm);
 }
 
 /* Дії притиснуті до низу картки */
@@ -2080,7 +2086,7 @@
 
   .profile-character-stats-divider {
     width: 1px;
-    height: 34px;
+    height: var(--control-height-sm);
   }
 }
 
@@ -2200,13 +2206,13 @@
 }
 
 .profile-card-toolbar--compact > span > strong {
-  font-size: 1rem;
+  font-size: var(--font-size-base);
   color: var(--text-strong);
 }
 
 .profile-card-toolbar--compact > span > small {
   font-size: 0.64rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-faint);
@@ -2335,12 +2341,12 @@
   display: grid;
   place-items: center;
   width: 42px;
-  height: 42px;
+  height: var(--control-height);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   background: var(--surface-raised);
   color: var(--c-accent-300);
-  font-size: 1rem;
+  font-size: var(--font-size-base);
 }
 
 .profile-raid-card__icon--tank {
@@ -2363,7 +2369,7 @@
 
 .profile-raid-card__title {
   display: grid;
-  gap: 4px;
+  gap: var(--space-2xs);
   min-width: 0;
   color: inherit;
 }
@@ -2372,7 +2378,7 @@
   min-width: 0;
   color: var(--text-strong);
   font-size: 0.98rem;
-  line-height: 1.35;
+  line-height: var(--line-height-tight);
   overflow-wrap: anywhere;
   transition: color var(--dur-fast) var(--ease-out);
 }
@@ -2391,10 +2397,10 @@
   border-radius: var(--radius-pill);
   background: var(--surface-raised);
   color: var(--text-soft);
-  font-size: 0.66rem;
+  font-size: var(--font-size-2xs);
   font-style: normal;
-  font-weight: 700;
-  line-height: 1.5;
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-body);
 }
 
 .profile-raid-card__body {
@@ -2413,7 +2419,7 @@
 .profile-raid-role-chip {
   min-height: 28px;
   padding-inline: var(--space-sm);
-  font-size: 0.68rem;
+  font-size: var(--font-size-xs);
 }
 
 .profile-raid-role-chip--tank {
@@ -2440,7 +2446,7 @@
 .profile-raid-meta-item {
   display: grid;
   align-content: start;
-  gap: 2px;
+  gap: var(--space-3xs);
   min-width: 0;
   padding: 9px 10px;
   border: 1px solid var(--border-subtle);
@@ -2452,16 +2458,16 @@
 .profile-raid-meta-item small {
   color: var(--text-faint);
   font-size: 0.6rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.09em;
-  line-height: 1.35;
+  line-height: var(--line-height-tight);
   text-transform: uppercase;
 }
 
 .profile-raid-meta-item strong {
   min-width: 0;
   color: var(--text-strong);
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
@@ -2469,8 +2475,8 @@
 .profile-raid-meta-item__detail {
   min-width: 0;
   color: var(--text-muted);
-  font-size: 0.68rem;
-  line-height: 1.35;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-tight);
   overflow-wrap: anywhere;
 }
 
@@ -2500,14 +2506,14 @@
 .profile-raid-skipped > summary {
   cursor: pointer;
   color: var(--text-soft);
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: var(--font-size-ui);
+  font-weight: var(--font-weight-bold);
 }
 
 /* ---------- Mobile profile normalization ---------- */
 @media (max-width: 760px) {
   .profile-account-page {
-    --profile-ui-gap: 12px;
+    --profile-ui-gap: var(--space-sm);
     --profile-ui-gap-compact: 8px;
   }
 
@@ -2529,8 +2535,8 @@
   .profile-account-sidebar__identity {
     grid-template-columns: 56px minmax(0, 1fr);
     grid-template-rows: auto auto auto;
-    column-gap: 12px;
-    row-gap: 2px;
+    column-gap: var(--space-sm);
+    row-gap: var(--space-3xs);
     justify-items: stretch;
     align-items: center;
     text-align: left;
@@ -2577,7 +2583,7 @@
 
   .profile-account-sidebar__facts > div {
     display: grid;
-    gap: 2px;
+    gap: var(--space-3xs);
     padding: 8px 10px;
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
@@ -2589,7 +2595,7 @@
   }
 
   .profile-account-sidebar__facts dd {
-    font-size: 0.78rem;
+    font-size: var(--font-size-ui);
   }
 
   .profile-account-sidebar__nav {
@@ -2598,7 +2604,7 @@
   }
 
   .profile-account-sidebar__nav a {
-    min-height: 42px;
+    min-height: var(--control-height);
     min-width: 42px;
   }
 
@@ -2616,7 +2622,7 @@
 
   .profile-account-header {
     display: grid;
-    gap: 12px;
+    gap: var(--space-sm);
     padding-bottom: 12px;
     border-bottom: 1px solid var(--border-subtle);
   }
@@ -2631,14 +2637,14 @@
     margin: 0;
     color: var(--text-muted);
     font-size: 0.83rem;
-    line-height: 1.5;
+    line-height: var(--line-height-body);
   }
 
   .profile-account-header__actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     width: 100%;
-    gap: 8px;
+    gap: var(--space-xs);
   }
 
   .profile-account-header__actions .btn {
@@ -2649,7 +2655,7 @@
   /* Four overview cards no longer form a long single-column tower. */
   .profile-account-overview {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    gap: var(--space-xs);
   }
 
   .profile-account-overview-card {
@@ -2667,7 +2673,7 @@
 
   .profile-account-overview-card__icon {
     width: 34px;
-    height: 34px;
+    height: var(--control-height-sm);
   }
 
   .profile-account-overview-card small {
@@ -2676,7 +2682,7 @@
   }
 
   .profile-account-overview-card strong {
-    font-size: 0.9rem;
+    font-size: var(--font-size-body);
     line-height: 1.25;
   }
 
@@ -2690,18 +2696,18 @@
 
   .profile-card--characters,
   .profile-card--raids-modern {
-    gap: 12px;
+    gap: var(--space-sm);
     padding: var(--profile-ui-pad-mobile);
   }
 
   .profile-card-head {
-    gap: 8px;
+    gap: var(--space-xs);
     padding-bottom: 10px;
   }
 
   .profile-card-lead {
     font-size: 0.79rem;
-    line-height: 1.5;
+    line-height: var(--line-height-body);
   }
 
   .profile-card-toolbar--compact {
@@ -2760,13 +2766,13 @@
   }
 
   .profile-character-actions {
-    gap: 8px;
+    gap: var(--space-xs);
     padding-top: 10px;
   }
 
   .profile-character-actions__row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    gap: var(--space-xs);
   }
 
   .profile-character-actions__row.is-single {
@@ -2782,7 +2788,7 @@
 
   .profile-character-action {
     justify-content: center;
-    min-height: 42px;
+    min-height: var(--control-height);
   }
 
   .profile-bnet-status {
@@ -2798,8 +2804,8 @@
   .profile-bnet-cta p {
     margin: 0;
     max-width: 34rem;
-    font-size: 0.8rem;
-    line-height: 1.5;
+    font-size: var(--font-size-ui-lg);
+    line-height: var(--line-height-body);
   }
 
   /* Raid cards switch from desktop split layout to compact mobile stack. */
@@ -2819,7 +2825,7 @@
 
   .profile-raid-card {
     grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
+    gap: var(--space-sm);
     padding: 12px;
     border-radius: var(--profile-ui-radius);
   }
@@ -2832,7 +2838,7 @@
   .profile-raid-card__icon {
     width: 36px;
     height: 36px;
-    border-radius: 10px;
+    border-radius: var(--control-radius);
   }
 
   .profile-raid-card__title strong {
@@ -2840,7 +2846,7 @@
   }
 
   .profile-raid-card__title small {
-    font-size: 0.7rem;
+    font-size: var(--font-size-caption);
   }
 
   .profile-raid-card__headline {
@@ -2937,7 +2943,7 @@
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    gap: 8px;
+    gap: var(--space-xs);
     min-width: 0;
     min-height: 44px;
     padding: 0 11px;
@@ -2976,8 +2982,8 @@
     clip-path: none;
     white-space: nowrap;
     color: inherit;
-    font-size: 0.72rem;
-    font-weight: 700;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
     line-height: 1.2;
   }
 
@@ -3031,7 +3037,7 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: start;
-    gap: 8px;
+    gap: var(--space-xs);
   }
 
   .profile-character-title-copy {
@@ -3040,7 +3046,7 @@
 
   .profile-character-title-copy h3 {
     overflow: hidden;
-    font-size: 1rem;
+    font-size: var(--font-size-base);
     line-height: 1.25;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -3049,7 +3055,7 @@
   .profile-character-title-copy p {
     overflow: hidden;
     margin-top: 2px;
-    font-size: 0.7rem;
+    font-size: var(--font-size-caption);
     line-height: 1.25;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -3075,12 +3081,12 @@
   .profile-character-meta {
     gap: 4px 10px;
     padding-bottom: 1px;
-    font-size: 0.7rem;
-    line-height: 1.35;
+    font-size: var(--font-size-caption);
+    line-height: var(--line-height-tight);
   }
 
   .profile-character-meta > span {
-    font-size: 0.7rem;
+    font-size: var(--font-size-caption);
   }
 
   .profile-character-stats-grid {
@@ -3092,7 +3098,7 @@
   }
 
   .profile-character-stat__copy strong {
-    font-size: 1rem;
+    font-size: var(--font-size-base);
   }
 
   .profile-character-stats-divider {
@@ -3117,12 +3123,12 @@
   }
 
   .profile-account-sidebar__nav a {
-    min-height: 42px;
+    min-height: var(--control-height);
     padding-inline: 9px;
   }
 
   .profile-account-sidebar__nav a .profile-account-sidebar__nav-label {
-    font-size: 0.68rem;
+    font-size: var(--font-size-xs);
   }
 
   .profile-character-artwork {

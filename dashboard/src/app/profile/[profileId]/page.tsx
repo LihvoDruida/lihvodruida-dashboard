@@ -309,14 +309,18 @@ export default async function ProfilePage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const session = await getSession();
-  const nicknamePolicy = await getGuildNicknamePolicy();
   if (!session) {
     redirect("/login");
     throw new Error("Unauthorized");
   }
   const viewer: DashboardSession = session;
 
-  const [{ profileId }, query] = await Promise.all([params, searchParams]);
+  const [{ profileId }, query, nicknamePolicy, apiSettings] = await Promise.all([
+    params,
+    searchParams,
+    getGuildNicknamePolicy(),
+    getDashboardApiSettings(),
+  ]);
   const rulesReturnToken = String(
     Array.isArray(query.rt) ? query.rt[0] : query.rt || "",
   ).trim();
@@ -422,14 +426,16 @@ export default async function ProfilePage({
     nicknamePolicy.template,
   );
   const guildStatus = guildStatusLabel(profile.role);
-  const apiSettings = await getDashboardApiSettings();
-  const raidSignups = canViewPrivateProfileBlocks
-    ? await listProfileRaidSignups(profile).catch(() => [])
-    : [];
+  const [raidSignups, discordMember] = await Promise.all([
+    canViewPrivateProfileBlocks
+      ? listProfileRaidSignups(profile).catch(() => [])
+      : Promise.resolve([]),
+    profile.provider === "discord" && /^\d{16,25}$/.test(profile.providerUserId)
+      ? fetchDiscordGuildMemberSnapshot(profile.providerUserId).catch(() => null)
+      : Promise.resolve(null),
+  ]);
   const accountStatusLabel = dashboardRoleLabel(profile.role);
-  const liveDiscordAvatarUrl = profile.provider === "discord" && /^\d{16,25}$/.test(profile.providerUserId)
-    ? (await fetchDiscordGuildMemberSnapshot(profile.providerUserId).catch(() => null))?.avatarUrl || null
-    : null;
+  const liveDiscordAvatarUrl = discordMember?.avatarUrl || null;
   const profileAvatarUrl = liveDiscordAvatarUrl || profile.avatarUrl || null;
   const visibleCharacters = [...profile.characters].sort((a, b) => {
     if (a.isMain !== b.isMain) return a.isMain ? -1 : 1;

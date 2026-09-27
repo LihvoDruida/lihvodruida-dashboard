@@ -18,7 +18,7 @@
   align-items: center;
   gap: var(--space-2xs);
   color: var(--text-faint);
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
 }
 
 .hero-lock {
@@ -58,7 +58,7 @@
 }
 
 .profile-character-candidate__kind {
-  font-size: 0.7rem;
+  font-size: var(--font-size-caption);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-faint);
@@ -119,7 +119,7 @@
 }
 
 .profile-nickname-hint {
-  font-size: 0.76rem;
+  font-size: var(--font-size-meta);
   color: var(--text-muted);
 }
 
@@ -149,8 +149,8 @@
   gap: var(--space-sm);
   padding-bottom: var(--space-xs);
   border-bottom: 1px solid var(--border-subtle);
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: var(--font-size-ui);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -178,8 +178,8 @@
   border-radius: var(--radius-pill);
   background: transparent;
   color: var(--text-muted);
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.04em;
   cursor: pointer;
 }
@@ -217,7 +217,7 @@
   background: var(--c-discord);
   color: #fff;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 .discord-chat-preview__body {
@@ -238,7 +238,7 @@
 }
 
 .discord-chat-preview__meta span {
-  font-size: 0.7rem;
+  font-size: var(--font-size-caption);
   color: var(--text-faint);
 }
 
@@ -246,8 +246,8 @@
   display: grid;
   gap: var(--space-2xs);
   color: #dcddde;
-  font-size: 0.9rem;
-  line-height: 1.5;
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
 }
 
 .discord-preview-mentions {
@@ -262,7 +262,7 @@
   border-radius: var(--radius-sm);
   background: rgba(88, 101, 242, 0.24);
   color: #c9cdfb;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
 }
 
 /* Сам ембед */
@@ -299,8 +299,8 @@
 }
 
 .discord-preview-author {
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
   color: #fff;
 }
 
@@ -313,8 +313,8 @@
   background-clip: border-box;
   color: var(--c-accent-200);
   font-family: var(--font-sans);
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0;
   text-transform: none;
 }
@@ -341,7 +341,7 @@
 }
 
 .discord-preview-field-name {
-  font-size: 0.82rem;
+  font-size: var(--font-size-body-sm);
   color: #fff;
 }
 
@@ -367,7 +367,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2xs);
-  font-size: 0.72rem;
+  font-size: var(--font-size-sm);
   color: var(--text-faint);
 }
 
@@ -378,7 +378,7 @@
 }
 
 .discord-preview-error {
-  font-size: 0.8rem;
+  font-size: var(--font-size-ui-lg);
   color: var(--c-danger);
 }
 
@@ -388,7 +388,7 @@
   gap: var(--space-xs);
   color: #dcddde;
   font-size: 0.88rem;
-  line-height: 1.55;
+  line-height: var(--line-height-relaxed);
 }
 
 .discord-preview-markdown--compact {
@@ -408,13 +408,13 @@
   background-clip: border-box;
   color: #fff;
   font-size: 0.95rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0;
   text-transform: none;
 }
 
 .discord-preview-subtext {
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
   color: var(--text-faint);
 }
 
@@ -439,7 +439,7 @@
   border-radius: var(--radius-sm);
   background: #131313;
   font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size: var(--font-size-ui-lg);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -503,7 +503,7 @@
 
 .discord-role-selected-shell {
   display: grid;
-  gap: 4px;
+  gap: var(--space-2xs);
   padding: 7px 9px;
   border: 1px solid color-mix(in srgb, var(--border-subtle) 88%, transparent);
   border-radius: var(--radius-lg);
@@ -520,13 +520,13 @@
 
 .discord-role-selected-head strong {
   color: var(--text-strong);
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
 }
 
 .discord-role-selected-head span {
   color: var(--text-muted);
-  font-size: 0.7rem;
-  font-weight: 650;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
 }
 
 .discord-role-selected {
@@ -548,7 +548,7 @@
   background: color-mix(in srgb, var(--c-accent-500) 10%, var(--surface-raised));
   color: var(--text-strong);
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   cursor: pointer;
   transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
 }
@@ -570,23 +570,23 @@
   justify-content: center;
   width: 16px;
   height: 16px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--surface-sunken) 72%, transparent);
   color: var(--text-muted);
-  font-size: 0.82rem;
+  font-size: var(--font-size-body-sm);
   line-height: 1;
 }
 
 .discord-role-placeholder {
   color: var(--text-faint);
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
   line-height: 1.25;
 }
 
 .discord-role-search-shell {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-xs);
   min-width: 0;
   min-height: 36px;
   padding-inline: 9px;
@@ -604,7 +604,7 @@
 
 .discord-role-search-icon {
   color: var(--text-muted);
-  font-size: 1rem;
+  font-size: var(--font-size-base);
   line-height: 1;
 }
 
@@ -664,11 +664,11 @@
   width: 18px;
   height: 18px;
   border: 1px solid color-mix(in srgb, var(--border-strong) 72%, transparent);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: transparent;
   color: transparent;
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: var(--font-weight-heavy);
   transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 
@@ -695,8 +695,8 @@
 .discord-role-picker-option__name {
   min-width: 0;
   color: var(--text-strong);
-  font-size: 0.82rem;
-  font-weight: 700;
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-bold);
   line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -720,7 +720,7 @@
   background: color-mix(in srgb, var(--surface-sunken) 72%, transparent);
   color: var(--text-muted);
   font-size: 0.65rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   line-height: 1;
   text-align: center;
   white-space: nowrap;
@@ -739,13 +739,13 @@
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--surface-sunken) 82%, transparent);
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
 }
 
 .discord-role-picker__help {
   color: var(--text-muted);
-  font-size: 0.72rem;
-  line-height: 1.35;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-tight);
 }
 
 .discord-role-dot {
@@ -828,7 +828,7 @@
   }
 
   .discord-role-picker__help {
-    font-size: 0.68rem;
+    font-size: var(--font-size-xs);
   }
 }
 
@@ -867,7 +867,7 @@
 
 .content-hero-path {
   font-family: var(--font-mono);
-  font-size: 0.76rem;
+  font-size: var(--font-size-meta);
   color: var(--text-faint);
   overflow-wrap: anywhere;
 }
@@ -1040,11 +1040,11 @@
   display: inline-grid;
   grid-template-columns: 18px auto 18px;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-xs);
   color: #d7bd8a;
   font-family: var(--font-brand);
   font-size: 0.64rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.15em;
   text-transform: uppercase;
 }
@@ -1080,7 +1080,7 @@
   width: 58px;
   height: 58px;
   border: 1px solid rgba(228, 177, 79, 0.5);
-  border-radius: 10px;
+  border-radius: var(--control-radius);
   background: #0b0907;
   box-shadow:
     0 0 0 2px rgba(9, 7, 5, 0.9),
@@ -1108,8 +1108,8 @@
   margin: 0;
   color: #e4b45e;
   font-family: var(--font-brand);
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -1119,7 +1119,7 @@
   color: #fff4dc;
   font-family: var(--font-brand);
   font-size: clamp(1.7rem, 5vw, 2rem);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   line-height: 1.05;
   letter-spacing: -0.02em;
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.72);
@@ -1154,8 +1154,8 @@
   max-width: 48ch;
   margin: 1px 0 0;
   color: #b7aa99;
-  font-size: 0.82rem;
-  line-height: 1.45;
+  font-size: var(--font-size-body-sm);
+  line-height: var(--line-height-compact);
 }
 
 .login-alert {
@@ -1167,7 +1167,7 @@
   border-radius: 5px;
   background: linear-gradient(90deg, var(--tint-danger-bg), rgba(10, 8, 6, 0.56));
   color: var(--text-body);
-  font-size: 0.8rem;
+  font-size: var(--font-size-ui-lg);
   line-height: 1.42;
   text-align: left;
 }
@@ -1210,8 +1210,7 @@
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
     0 9px 22px -16px rgba(88, 101, 242, 0.85);
-  transition:
-    transform var(--dur-fast) var(--ease-out),
+  transition: transform var(--dur-fast) var(--ease-out),
     border-color var(--dur-fast) var(--ease-out),
     filter var(--dur-fast) var(--ease-out),
     box-shadow var(--dur-fast) var(--ease-out);
@@ -1264,7 +1263,7 @@
 .login-discord-button strong {
   display: block;
   color: #fff;
-  font-size: 0.9rem;
+  font-size: var(--font-size-body);
   line-height: 1.18;
 }
 
@@ -1315,7 +1314,7 @@
   color: #bca983;
   font-family: var(--font-mono);
   font-size: 0.61rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.035em;
 }
 
@@ -1345,13 +1344,13 @@
 
 .login-token label {
   color: var(--text-muted);
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
 }
 
 .login-token__row {
   display: flex;
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .login-token__row input {
@@ -1368,10 +1367,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--space-xs);
   margin-top: 1px;
   color: #675e53;
-  font-size: 0.66rem;
+  font-size: var(--font-size-2xs);
 }
 
 .login-legal a {
@@ -1397,7 +1396,7 @@
   .login-shell {
     width: min(100%, 460px);
     padding: 20px 16px 18px;
-    border-radius: 10px;
+    border-radius: var(--control-radius);
   }
 
   .login-hero {
@@ -1454,7 +1453,7 @@
   }
 
   .login-hero {
-    gap: 8px;
+    gap: var(--space-xs);
   }
 
   .login-brandmark {
@@ -1540,7 +1539,7 @@
 
 .discord-color-code {
   font-family: var(--font-mono);
-  font-size: 0.82rem;
+  font-size: var(--font-size-body-sm);
   color: var(--c-accent-200);
   text-transform: uppercase;
 }
@@ -1565,7 +1564,7 @@
   gap: var(--space-xs);
   min-height: 38px;
   color: var(--text-soft);
-  font-size: 0.82rem;
+  font-size: var(--font-size-body-sm);
   cursor: pointer;
 }
 
@@ -1585,7 +1584,7 @@
   background: var(--tint-danger-bg);
   color: var(--text-on-danger);
   font-family: var(--font-mono);
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
   overflow-wrap: anywhere;
 }
 
@@ -1626,7 +1625,7 @@
 }
 
 .discord-rules-metric small {
-  font-size: 0.66rem;
+  font-size: var(--font-size-2xs);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-faint);
@@ -1658,8 +1657,8 @@
 .sync-message,
 .permission-check {
   color: var(--text-muted);
-  font-size: 0.8rem;
-  line-height: 1.55;
+  font-size: var(--font-size-ui-lg);
+  line-height: var(--line-height-relaxed);
 }
 
 .global-toast--persistent {
@@ -1683,7 +1682,7 @@
 
 .image-upload-text {
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
 }
 
 .content-back-btn,
@@ -1735,7 +1734,7 @@
   background: color-mix(in srgb, var(--surface-raised) 85%, transparent);
   color: var(--text-soft);
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.03em;
   white-space: nowrap;
 }
@@ -1761,12 +1760,12 @@
 }
 
 .discord-builder-form .content-form-section-head strong {
-  font-size: 1rem;
+  font-size: var(--font-size-base);
 }
 
 .discord-builder-form .content-form-section-head small {
   color: var(--text-muted);
-  font-size: 0.76rem;
+  font-size: var(--font-size-meta);
 }
 
 .discord-builder-form .content-field,
@@ -1917,7 +1916,7 @@
 }
 
 .discord-autorole-toolbar .btn {
-  min-height: 42px;
+  min-height: var(--control-height);
 }
 
 .discord-autorole-card {
@@ -2065,12 +2064,12 @@
 .discord-builder-form .modern-select,
 .discord-builder-form .discord-color-picker,
 .discord-builder-form .btn {
-  min-height: 42px;
+  min-height: var(--control-height);
 }
 
 .discord-builder-form .content-field > span:first-child {
   margin-bottom: 4px;
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
   line-height: 1.2;
 }
 
@@ -2091,7 +2090,7 @@
 .discord-builder-form .discord-footer-grid,
 .discord-builder-form .discord-builder-grid,
 .discord-builder-form .discord-autorole-grid {
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 .discord-builder-form .discord-autorole-card,
@@ -2175,7 +2174,7 @@
 .discord-preview-components {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-xs);
   margin-top: 8px;
 }
 
@@ -2190,7 +2189,7 @@
   justify-content: center;
   gap: 6px;
   font: inherit;
-  font-weight: 650;
+  font-weight: var(--font-weight-semibold);
   line-height: 1;
   color: #fff;
   cursor: default;
@@ -2252,7 +2251,7 @@
 
 .discord-dashboard-hero__side .guild-hero-summary {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .discord-dashboard-hero__side .guild-hero-summary__block {
@@ -2268,7 +2267,7 @@
 
 .discord-dashboard-hero__side .guild-hero-stats {
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .discord-dashboard-hero__side .guild-hero-stat-card {
@@ -2309,8 +2308,7 @@
   color: inherit;
   text-decoration: none;
   overflow: hidden;
-  transition:
-    transform 160ms var(--ease-out),
+  transition: transform 160ms var(--ease-out),
     border-color 160ms var(--ease-out),
     background-color 160ms var(--ease-out);
 }
@@ -2337,7 +2335,7 @@
 .discord-hub-card > p {
   margin: 0;
   color: var(--text-soft);
-  font-size: 0.9rem;
+  font-size: var(--font-size-body);
   line-height: 1.58;
   overflow-wrap: anywhere;
 }
@@ -2408,8 +2406,8 @@
   }
 
   .discord-dashboard-hero .content-hero-path {
-    font-size: 0.72rem;
-    line-height: 1.35;
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-tight);
   }
 
   .discord-dashboard-hero h1 {
@@ -2418,16 +2416,16 @@
 
   .discord-dashboard-hero .lead {
     font-size: 0.88rem;
-    line-height: 1.5;
+    line-height: var(--line-height-body);
   }
 
   .discord-dashboard-hero .hero-secure-note {
     margin-top: 9px;
-    font-size: 0.78rem;
+    font-size: var(--font-size-ui);
   }
 
   .discord-dashboard-hero__side {
-    gap: 8px;
+    gap: var(--space-xs);
   }
 
   .discord-dashboard-hero__side .guild-hero-summary,
@@ -2470,7 +2468,7 @@
   }
 
   .discord-hub-card > strong {
-    font-size: 1rem;
+    font-size: var(--font-size-base);
   }
 
   .discord-hub-card > p {
@@ -2480,7 +2478,7 @@
 
   .discord-hub-card > .btn {
     min-height: 46px;
-    font-size: 0.9rem;
+    font-size: var(--font-size-body);
   }
 }
 

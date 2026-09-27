@@ -34,7 +34,7 @@
   border-style: dashed;
   color: var(--c-accent-300);
   font-size: 1.3rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 .rio-panel {
@@ -49,8 +49,8 @@
 
 .rio-link {
   color: var(--c-accent-300);
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
 }
 
 @media (max-width: 860px) {
@@ -102,12 +102,15 @@
 .discord-raid-signups-hint {
   margin: 0;
   color: var(--text-muted);
-  font-size: 0.8rem;
-  line-height: 1.55;
+  font-size: var(--font-size-ui-lg);
+  line-height: var(--line-height-relaxed);
 }
 
 /* ---------- Рядок контенту ---------- */
 .content-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 76px;
+
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -151,7 +154,7 @@
   background: var(--surface-raised);
   color: var(--c-accent-300);
   font-size: 1.1rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 .content-row-thumb img {
@@ -174,7 +177,7 @@
 
 .content-row-title small {
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: var(--font-size-sm);
   color: var(--text-faint);
   overflow-wrap: anywhere;
 }
@@ -186,7 +189,7 @@
   text-align: right;
   min-width: 0;
   color: var(--text-muted);
-  font-size: 0.76rem;
+  font-size: var(--font-size-meta);
   white-space: nowrap;
 }
 
@@ -224,7 +227,7 @@
 
 .discord-raid-signups-row small,
 .discord-raid-signups-row time {
-  font-size: 0.76rem;
+  font-size: var(--font-size-meta);
   color: var(--text-muted);
 }
 
@@ -233,8 +236,8 @@
   border: 0;
   background: none;
   color: var(--text-muted);
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -295,7 +298,7 @@
   .discord-raid-mobile-label {
     display: block;
     font-size: 0.64rem;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--text-faint);
@@ -307,7 +310,7 @@
   }
 
   .discord-raid-signups-row > [role="cell"]:first-child strong {
-    font-size: 1rem;
+    font-size: var(--font-size-base);
   }
 }
 

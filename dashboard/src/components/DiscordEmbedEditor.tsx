@@ -404,7 +404,7 @@ function DiscordPreview({ embed, content, isValid, mentionRoles = [], actionButt
                 <div className="discord-message-preview__main">
                   {(author?.name || author?.icon_url) ? (
                     <div className="discord-preview-author-row">
-                      {author?.icon_url ? <img className="discord-preview-author-icon" src={text(author.icon_url)} alt="" /> : null}
+                      {author?.icon_url ? <img className="discord-preview-author-icon" src={text(author.icon_url)} alt="" decoding="async" /> : null}
                       {author?.name ? (
                         text(author.url) ? <a className="discord-preview-author discord-preview-link" href={text(author.url)} target="_blank" rel="noreferrer">{text(author.name)}</a> : <div className="discord-preview-author">{text(author.name)}</div>
                       ) : null}
@@ -428,16 +428,16 @@ function DiscordPreview({ embed, content, isValid, mentionRoles = [], actionButt
                   ) : null}
                   {(footer?.text || previewTimestamp) ? (
                     <footer>
-                      {footer?.icon_url ? <img src={text(footer.icon_url)} alt="" /> : null}
+                      {footer?.icon_url ? <img src={text(footer.icon_url)} alt="" decoding="async" /> : null}
                       {footer?.text ? <span>{text(footer.text)}</span> : null}
                       {footer?.text && previewTimestamp ? <span className="discord-preview-footer-separator">•</span> : null}
                       {previewTimestamp ? <time dateTime={previewNow.iso || undefined} suppressHydrationWarning>{previewTimestamp}</time> : null}
                     </footer>
                   ) : null}
                 </div>
-                {thumbnail ? <img className="discord-preview-thumb" src={thumbnail} alt="" /> : null}
+                {thumbnail ? <img className="discord-preview-thumb" src={thumbnail} alt="" decoding="async" /> : null}
               </div>
-              {image ? <img className="discord-preview-image" src={image} alt="" /> : null}
+              {image ? <img className="discord-preview-image" src={image} alt="" decoding="async" /> : null}
             </article>
 
             {actionButtons.length > 0 ? (

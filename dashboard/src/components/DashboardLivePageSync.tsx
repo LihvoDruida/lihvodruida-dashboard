@@ -37,6 +37,18 @@ function shouldSkipPath(pathname: string) {
   return pathname === "/login" || pathname.startsWith("/api/");
 }
 
+function isEditorHeavyPath(pathname: string) {
+  return (
+    pathname === "/content" ||
+    pathname === "/discord/embed" ||
+    pathname === "/discord/autoroles" ||
+    /^\/discord\/rules\/(?:new|edit)(?:\/|$)/.test(pathname) ||
+    /^\/raids\/(?:new|[^/]+\/edit)(?:\/|$)/.test(pathname) ||
+    /^\/polls\/(?:new|[^/]+\/edit)(?:\/|$)/.test(pathname) ||
+    /^\/profile\/[^/]+\/settings(?:\/|$)/.test(pathname)
+  );
+}
+
 export default function DashboardLivePageSync() {
   const router = useRouter();
   const pathname = usePathname() || "/";
@@ -47,6 +59,7 @@ export default function DashboardLivePageSync() {
 
   useEffect(() => {
     if (shouldSkipPath(pathname)) return;
+    const allowPassiveFullRefresh = !isEditorHeavyPath(pathname);
     let cancelled = false;
 
     function clearRefreshTimer() {
@@ -96,7 +109,7 @@ export default function DashboardLivePageSync() {
       window.dispatchEvent(new CustomEvent(DASHBOARD_DATA_REFRESHED_EVENT, {
         detail: { reason, path: pathname, timestamp: now },
       }));
-      schedule(VISIBLE_REFRESH_MS, "interval");
+      if (allowPassiveFullRefresh) schedule(VISIBLE_REFRESH_MS, "interval");
     }
 
     function refreshAfterMutation(reason: string) {
@@ -105,17 +118,19 @@ export default function DashboardLivePageSync() {
     }
 
     function onVisibilityChange() {
+      if (!allowPassiveFullRefresh) return;
       if (document.visibilityState === "visible" && Date.now() - lastRefreshRef.current >= MIN_REFRESH_SPACING_MS) {
         requestRefresh("visible");
       }
     }
 
     function onFocus() {
+      if (!allowPassiveFullRefresh) return;
       if (Date.now() - lastRefreshRef.current >= MIN_REFRESH_SPACING_MS) requestRefresh("focus");
     }
 
     function onOnline() {
-      requestRefresh("online", true);
+      if (allowPassiveFullRefresh) requestRefresh("online", true);
     }
 
     function onDataMutated() {
@@ -137,7 +152,7 @@ export default function DashboardLivePageSync() {
     window.addEventListener("online", onOnline);
     window.addEventListener(DASHBOARD_DATA_MUTATED_EVENT, onDataMutated);
     window.addEventListener("storage", onStorage);
-    schedule(VISIBLE_REFRESH_MS, "interval");
+    if (allowPassiveFullRefresh) schedule(VISIBLE_REFRESH_MS, "interval");
 
     return () => {
       cancelled = true;

@@ -285,8 +285,7 @@ function SignupAvatar({ item }: { item?: RaidSignup | null }) {
         src={image}
         alt=""
         loading="lazy"
-        referrerPolicy="no-referrer"
-      />
+        referrerPolicy="no-referrer" decoding="async" />
     );
   return (
     <span

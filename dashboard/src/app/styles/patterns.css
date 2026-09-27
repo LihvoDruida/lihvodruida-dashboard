@@ -152,8 +152,8 @@
 [class$="-order"],
 [class*="-order "] {
   color: var(--text-muted);
-  font-size: 0.78rem;
-  line-height: 1.5;
+  font-size: var(--font-size-ui);
+  line-height: var(--line-height-body);
 }
 
 /* ---------- Заголовки блоків ---------- */
@@ -167,7 +167,7 @@
 [class$="__label"],
 [class*="__label "] {
   color: var(--text-strong);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   min-width: 0;
 }
 
@@ -175,7 +175,7 @@
 [class*="-label "]:not(:where(.field-label)),
 [class$="__label"],
 [class*="__label "] {
-  font-size: 0.8rem;
+  font-size: var(--font-size-ui-lg);
   letter-spacing: 0.02em;
 }
 
@@ -206,7 +206,7 @@
   background: var(--surface-sunken);
   color: var(--text-soft);
   font-size: 0.85rem;
-  line-height: 1.55;
+  line-height: var(--line-height-relaxed);
 }
 
 /* ---------- Варіанти вибору: радіо-картки ---------- */
@@ -307,7 +307,7 @@
   padding-top: var(--space-xs);
   border-top: 1px solid var(--border-subtle);
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
 }
 
 /* ---------- Пошук ---------- */

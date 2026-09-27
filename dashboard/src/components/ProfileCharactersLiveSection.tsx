@@ -83,7 +83,7 @@ function visibleCharacters(characters: ProfileCharacter[]) {
 function CharacterArtwork({ character }: { character: ProfileCharacter }) {
   const image = characterVisualUrl(character);
   if (image) {
-    return <img src={image} alt="" loading="lazy" referrerPolicy="no-referrer" />;
+    return <img src={image} alt="" loading="lazy" referrerPolicy="no-referrer" decoding="async" />;
   }
   return <span className="profile-character-artwork__fallback" aria-hidden="true">{character.name.charAt(0)}</span>;
 }

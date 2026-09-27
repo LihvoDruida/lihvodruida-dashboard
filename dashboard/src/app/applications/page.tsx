@@ -97,7 +97,7 @@ function CharacterAvatar({ item }: { item: ApplicationItem }) {
   const avatarUrl = getCharacterAvatarUrl(item);
 
   if (avatarUrl) {
-    return <img className="character-avatar" src={avatarUrl} alt="" loading="lazy" referrerPolicy="no-referrer" />;
+    return <img className="character-avatar" src={avatarUrl} alt="" loading="lazy" referrerPolicy="no-referrer" decoding="async" />;
   }
 
   return (

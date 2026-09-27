@@ -264,8 +264,7 @@ export default function RaidBenchPriorityManager({
                       width={34}
                       height={34}
                       loading="lazy"
-                      referrerPolicy="no-referrer"
-                    />
+                      referrerPolicy="no-referrer" decoding="async" />
                   ) : (
                     <span className="raid-greylist-avatar" aria-hidden="true">
                       {member.name.charAt(0)}

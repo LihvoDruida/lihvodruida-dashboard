@@ -141,8 +141,8 @@
 
 .discord-management-status__item small,
 .admin-overview-status-card small {
-  font-size: 0.68rem;
-  font-weight: 600;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-faint);
@@ -168,7 +168,7 @@
 }
 
 .discord-info-chip strong {
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   color: var(--c-accent-300);
 }
 
@@ -187,7 +187,7 @@
   padding: var(--space-md);
   border-style: dashed;
   color: var(--text-faint);
-  font-size: 0.8rem;
+  font-size: var(--font-size-ui-lg);
   text-align: center;
 }
 
@@ -213,7 +213,7 @@
   display: grid;
   place-items: center;
   width: 34px;
-  height: 34px;
+  height: var(--control-height-sm);
   flex: 0 0 auto;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
@@ -234,8 +234,8 @@
 
 .admin-policy-card__title small {
   color: var(--text-muted);
-  font-size: 0.78rem;
-  line-height: 1.55;
+  font-size: var(--font-size-ui);
+  line-height: var(--line-height-relaxed);
 }
 
 
@@ -267,8 +267,8 @@
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--tone) 12%, transparent);
   color: var(--tone);
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
   white-space: nowrap;
 }
 
@@ -293,7 +293,7 @@
   padding-left: 7px;
   border-left: 1px solid color-mix(in srgb, currentColor 24%, transparent);
   color: var(--text-muted);
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
 }
 
 .admin-policy-empty {
@@ -468,8 +468,8 @@
 
 .server-summary-card > span {
   color: var(--text-muted);
-  font-size: 0.72rem;
-  font-weight: 800;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-heavy);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -482,7 +482,7 @@
 
 .server-summary-card > small {
   color: var(--text-muted);
-  line-height: 1.45;
+  line-height: var(--line-height-compact);
 }
 
 .server-usage {
@@ -529,8 +529,8 @@
 .server-core-card__head > span,
 .server-detail-card__head > span {
   color: var(--text-muted);
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: var(--font-size-ui);
+  font-weight: var(--font-weight-bold);
 }
 
 .server-graph-card__head > strong,
@@ -592,7 +592,7 @@
   max-width: 52ch;
   margin: 0;
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
   text-align: right;
   overflow-wrap: anywhere;
 }
@@ -652,7 +652,7 @@
 .server-detail-card dd {
   margin: 0;
   color: var(--text-strong);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   text-align: right;
   overflow-wrap: anywhere;
 }
@@ -662,7 +662,7 @@
   padding: 0 var(--space-xs);
   color: var(--text-muted);
   font-size: 0.74rem;
-  line-height: 1.55;
+  line-height: var(--line-height-relaxed);
 }
 
 @media (max-width: 1120px) {
@@ -717,9 +717,9 @@
    ========================================================= */
 .admin-page {
   --admin-card-radius: 14px;
-  --admin-control-height: 42px;
+  --admin-control-height: var(--control-height);
   display: grid;
-  gap: 16px;
+  gap: var(--space-md);
 }
 
 .admin-page-header {
@@ -751,13 +751,13 @@
   margin: 0;
   color: var(--text-muted);
   font-size: 0.88rem;
-  line-height: 1.55;
+  line-height: var(--line-height-relaxed);
 }
 
 .admin-page-header__metrics {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
-  gap: 8px;
+  gap: var(--space-xs);
   min-width: 0;
 }
 
@@ -765,7 +765,7 @@
   --admin-metric-tone: var(--border-strong);
   display: grid;
   align-content: center;
-  gap: 4px;
+  gap: var(--space-2xs);
   min-width: 0;
   padding: 11px 13px;
   border: 1px solid color-mix(in srgb, var(--admin-metric-tone) 36%, var(--border-subtle));
@@ -780,7 +780,7 @@
 .admin-page-header__metric > span {
   color: var(--text-faint);
   font-size: 0.65rem;
-  font-weight: 800;
+  font-weight: var(--font-weight-heavy);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -795,8 +795,8 @@
 
 .admin-page-header__metric > small {
   color: var(--text-muted);
-  font-size: 0.7rem;
-  line-height: 1.35;
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-tight);
   overflow-wrap: anywhere;
 }
 
@@ -808,7 +808,7 @@
   overflow: visible;
   padding: 6px;
   border: 1px solid var(--border-subtle);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   background: var(--surface-sunken);
 }
 
@@ -816,12 +816,12 @@
   display: grid;
   align-content: center;
   justify-items: start;
-  gap: 2px;
+  gap: var(--space-3xs);
   min-width: 0;
   min-height: 52px;
   padding: 9px 12px;
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: var(--control-radius);
   background: transparent;
   color: var(--text-muted);
   line-height: 1.15;
@@ -846,8 +846,8 @@
 
 .admin-tabs.dashboard-subnav > a small {
   color: var(--text-faint);
-  font-size: 0.66rem;
-  font-weight: 500;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-ui);
   white-space: normal;
 }
 
@@ -873,14 +873,14 @@
 
 .admin-page :where(.profile-card-head, .discord-management-section-head, .server-section__head) h2 {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--font-size-base);
   line-height: 1.25;
 }
 
 .admin-page :where(.profile-card-lead, .discord-management-section-head p) {
   color: var(--text-muted);
-  font-size: 0.8rem;
-  line-height: 1.55;
+  font-size: var(--font-size-ui-lg);
+  line-height: var(--line-height-relaxed);
 }
 
 /* =========================================================
@@ -987,8 +987,8 @@
 
 .server-docker-card > span {
   color: var(--text-faint);
-  font-size: 0.66rem;
-  font-weight: 800;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-heavy);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -1000,7 +1000,7 @@
 
 .server-docker-card > small {
   color: var(--text-muted);
-  font-size: 0.7rem;
+  font-size: var(--font-size-caption);
   line-height: 1.4;
 }
 
@@ -1008,7 +1008,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-sm);
   padding: 11px 13px;
   border: 1px solid var(--border-subtle);
   border-radius: 11px;
@@ -1017,17 +1017,17 @@
 
 .server-cache-health > div {
   display: grid;
-  gap: 2px;
+  gap: var(--space-3xs);
 }
 
 .server-cache-health strong {
   color: var(--text-strong);
-  font-size: 0.82rem;
+  font-size: var(--font-size-body-sm);
 }
 
 .server-cache-health small {
   color: var(--text-muted);
-  font-size: 0.72rem;
+  font-size: var(--font-size-sm);
 }
 
 .server-cache-health code {
@@ -1037,7 +1037,7 @@
   border-radius: 7px;
   background: var(--surface-raised);
   color: var(--c-accent-300);
-  font-size: 0.72rem;
+  font-size: var(--font-size-sm);
 }
 
 .server-cache-health.is-warning {
@@ -1063,8 +1063,8 @@
 .server-docker-empty p {
   margin: 5px 0 0;
   color: var(--text-muted);
-  font-size: 0.78rem;
-  line-height: 1.5;
+  font-size: var(--font-size-ui);
+  line-height: var(--line-height-body);
 }
 
 .server-detail-grid {
@@ -1087,7 +1087,7 @@
 
 @media (max-width: 860px) {
   .admin-page {
-    gap: 12px;
+    gap: var(--space-sm);
   }
 
   .admin-page-header {
@@ -1158,7 +1158,7 @@
 
 .access-groups-list__header small {
   color: var(--text-faint);
-  font-size: 0.7rem;
+  font-size: var(--font-size-caption);
 }
 
 .access-group-tab.btn {
@@ -1179,13 +1179,13 @@
   align-items: center;
   gap: 7px;
   color: var(--text-strong);
-  font-size: 0.8rem;
+  font-size: var(--font-size-ui-lg);
 }
 
 .access-group-tab.btn > span:not(.access-group-tab__icon) {
   color: var(--text-faint);
-  font-size: 0.66rem;
-  line-height: 1.35;
+  font-size: var(--font-size-2xs);
+  line-height: var(--line-height-tight);
 }
 
 .access-group-tab.btn.is-active {
@@ -1209,7 +1209,7 @@
 
 .access-group-card {
   display: grid;
-  gap: 16px;
+  gap: var(--space-md);
   min-width: 0;
   padding: 18px;
   border-radius: var(--admin-card-radius);
@@ -1219,7 +1219,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--space-md);
   padding-bottom: 14px;
   border-bottom: 1px solid var(--border-subtle);
 }
@@ -1242,14 +1242,14 @@
   max-width: 82ch;
   margin: 0;
   color: var(--text-muted);
-  font-size: 0.78rem;
-  line-height: 1.5;
+  font-size: var(--font-size-ui);
+  line-height: var(--line-height-body);
 }
 
 .access-group-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .access-group-summary > span {
@@ -1258,7 +1258,7 @@
   min-width: 0;
   padding: 10px 11px;
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border-radius: var(--control-radius);
   background: var(--surface-sunken);
 }
 
@@ -1270,13 +1270,13 @@
 
 .access-group-summary small {
   color: var(--text-faint);
-  font-size: 0.66rem;
-  line-height: 1.35;
+  font-size: var(--font-size-2xs);
+  line-height: var(--line-height-tight);
 }
 
 .access-form-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 .permissions-grid {
@@ -1300,8 +1300,8 @@
 .permissions-grid legend {
   padding: 0 4px;
   color: var(--text-muted);
-  font-size: 0.7rem;
-  font-weight: 800;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-heavy);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -1309,10 +1309,10 @@
 .permission-check {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 8px;
+  gap: var(--space-xs);
   align-items: start;
   padding: 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -1326,7 +1326,7 @@
 
 .permission-check > span {
   display: grid;
-  gap: 2px;
+  gap: var(--space-3xs);
 }
 
 .permission-check strong {
@@ -1336,18 +1336,18 @@
 
 .permission-check small {
   color: var(--text-faint);
-  font-size: 0.66rem;
-  line-height: 1.35;
+  font-size: var(--font-size-2xs);
+  line-height: var(--line-height-tight);
 }
 
 .access-warning {
   padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--c-warning) 38%, var(--border-subtle));
-  border-radius: 10px;
+  border-radius: var(--control-radius);
   background: color-mix(in srgb, var(--c-warning) 7%, var(--surface-sunken));
   color: var(--text-soft);
   font-size: 0.75rem;
-  line-height: 1.45;
+  line-height: var(--line-height-compact);
 }
 
 .access-form-actions {
@@ -1397,7 +1397,7 @@
 .auth-access-role-option {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 8px;
+  gap: var(--space-xs);
   align-items: start;
   padding: 9px 10px;
   border: 1px solid var(--border-subtle);
@@ -1412,7 +1412,7 @@
 
 .auth-access-role-option > span {
   display: grid;
-  gap: 2px;
+  gap: var(--space-3xs);
   min-width: 0;
 }
 
@@ -1424,20 +1424,20 @@
 .auth-access-role-option small {
   color: var(--text-faint);
   font-size: 0.65rem;
-  line-height: 1.35;
+  line-height: var(--line-height-tight);
 }
 
 .geo-country-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 34px;
+  min-height: var(--control-height-sm);
   padding: 6px 9px;
   border: 1px solid var(--border-subtle);
   border-radius: 9px;
   background: var(--surface-sunken);
   color: var(--text-soft);
-  font-size: 0.72rem;
+  font-size: var(--font-size-sm);
 }
 
 .geo-country-chip--muted {
@@ -1456,9 +1456,9 @@
 
 .discord-management-status__item em {
   color: var(--text-faint);
-  font-size: 0.68rem;
+  font-size: var(--font-size-xs);
   font-style: normal;
-  line-height: 1.35;
+  line-height: var(--line-height-tight);
 }
 
 /* =========================================================
@@ -1474,7 +1474,7 @@
 .integration-status-panel.admin-overview-status-card {
   display: grid;
   grid-template-rows: auto 1fr auto;
-  gap: 12px;
+  gap: var(--space-sm);
   padding: 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -1486,7 +1486,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-sm);
   min-width: 0;
 }
 
@@ -1507,7 +1507,7 @@
 .integration-status-foot,
 .integration-status-item small {
   color: var(--text-muted);
-  font-size: 0.72rem;
+  font-size: var(--font-size-sm);
   line-height: 1.4;
   letter-spacing: 0;
   text-transform: none;
@@ -1516,7 +1516,7 @@
 .integration-status-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--space-xs);
   min-width: 0;
 }
 
@@ -1525,20 +1525,20 @@
   grid-template-columns: auto minmax(0, 1fr);
   grid-template-rows: auto auto;
   column-gap: 7px;
-  row-gap: 2px;
+  row-gap: var(--space-3xs);
   align-content: center;
   min-width: 0;
   min-height: 54px;
   padding: 9px 10px;
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border-radius: var(--control-radius);
   background: var(--surface-sunken);
 }
 
 .integration-status-item strong {
   min-width: 0;
   color: var(--text-strong);
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
   line-height: 1.2;
   letter-spacing: 0;
   text-transform: none;
@@ -1600,7 +1600,7 @@
   border-radius: 9px;
   background: color-mix(in srgb, var(--c-danger) 7%, var(--surface-sunken));
   color: var(--text-soft);
-  font-size: 0.76rem;
+  font-size: var(--font-size-meta);
 }
 
 .integration-status-foot {
@@ -1610,7 +1610,7 @@
 .admin-nickname-summary-card {
   display: grid;
   grid-template-rows: auto auto 1fr;
-  gap: 12px;
+  gap: var(--space-sm);
   min-width: 0;
   padding: 16px;
 }
@@ -1624,18 +1624,18 @@
 
 .admin-nickname-summary-card__header > div {
   display: grid;
-  gap: 2px;
+  gap: var(--space-3xs);
   min-width: 0;
 }
 
 .admin-nickname-summary-card__header strong {
   color: var(--text-strong);
-  font-size: 0.9rem;
+  font-size: var(--font-size-body);
 }
 
 .admin-nickname-summary-card__header small {
   color: var(--text-muted);
-  font-size: 0.7rem;
+  font-size: var(--font-size-caption);
 }
 
 .admin-nickname-template {
@@ -1648,7 +1648,7 @@
   color: var(--c-accent-300);
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  line-height: 1.45;
+  line-height: var(--line-height-compact);
   overflow-wrap: anywhere;
 }
 
@@ -1662,7 +1662,7 @@
 .admin-nickname-example span {
   color: var(--text-faint);
   font-size: 0.65rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -1670,7 +1670,7 @@
 .admin-nickname-example strong {
   min-width: 0;
   color: var(--text-soft);
-  font-size: 0.76rem;
+  font-size: var(--font-size-meta);
   overflow-wrap: anywhere;
 }
 
@@ -1678,12 +1678,12 @@
    13. SECURITY FORMS — секції, вибір ролей, зрозумілий стан
    ========================================================= */
 .admin-policy-card {
-  gap: 16px;
+  gap: var(--space-md);
   padding: 18px;
 }
 
 .admin-policy-card__header {
-  gap: 12px;
+  gap: var(--space-sm);
   padding-bottom: 14px;
   border-bottom: 1px solid var(--border-subtle);
 }
@@ -1694,7 +1694,7 @@
 }
 
 .admin-policy-card__title strong {
-  font-size: 1rem;
+  font-size: var(--font-size-base);
 }
 
 .admin-policy-card__title small {
@@ -1703,7 +1703,7 @@
 
 .admin-policy-layout {
   display: grid;
-  gap: 12px;
+  gap: var(--space-sm);
   align-items: start;
   min-width: 0;
 }
@@ -1728,7 +1728,7 @@
   margin-bottom: 2px;
   padding: 0 4px;
   color: var(--c-accent-300);
-  font-size: 0.72rem;
+  font-size: var(--font-size-sm);
   letter-spacing: 0.08em;
 }
 
@@ -1736,7 +1736,7 @@
   margin: 0 0 2px;
   color: var(--text-muted);
   font-size: 0.75rem;
-  line-height: 1.5;
+  line-height: var(--line-height-body);
 }
 
 .admin-policy-section-headline {
@@ -1758,8 +1758,8 @@
   border-radius: var(--radius-pill);
   background: var(--surface-sunken);
   color: var(--text-muted);
-  font-size: 0.66rem;
-  font-weight: 700;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
   white-space: nowrap;
 }
 
@@ -1772,11 +1772,10 @@
   min-height: 58px;
   padding: 10px 11px;
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border-radius: var(--control-radius);
   background: var(--surface-sunken);
   cursor: pointer;
-  transition:
-    border-color var(--dur-fast) var(--ease-out),
+  transition: border-color var(--dur-fast) var(--ease-out),
     background-color var(--dur-fast) var(--ease-out),
     box-shadow var(--dur-fast) var(--ease-out);
 }
@@ -1824,8 +1823,8 @@
 
 .admin-policy-toggle__copy small {
   color: var(--text-muted);
-  font-size: 0.7rem;
-  line-height: 1.45;
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-compact);
 }
 
 .auth-access-role-list {
@@ -1838,7 +1837,7 @@
 .auth-access-role-option {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 8px;
+  gap: var(--space-xs);
   align-items: start;
   min-width: 0;
   min-height: 58px;
@@ -1847,8 +1846,7 @@
   border-radius: 9px;
   background: var(--surface-sunken);
   cursor: pointer;
-  transition:
-    border-color var(--dur-fast) var(--ease-out),
+  transition: border-color var(--dur-fast) var(--ease-out),
     background-color var(--dur-fast) var(--ease-out),
     box-shadow var(--dur-fast) var(--ease-out);
 }
@@ -1895,7 +1893,7 @@
   color: var(--text-faint);
   font-family: var(--font-mono);
   font-size: 0.6rem;
-  line-height: 1.35;
+  line-height: var(--line-height-tight);
   overflow-wrap: anywhere;
 }
 
@@ -1929,7 +1927,7 @@
 .admin-policy-current-state span {
   color: var(--text-faint);
   font-size: 0.62rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -1937,8 +1935,8 @@
 .admin-policy-current-state strong {
   min-width: 0;
   color: var(--text-soft);
-  font-size: 0.72rem;
-  line-height: 1.35;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-tight);
   overflow-wrap: anywhere;
 }
 
@@ -1957,14 +1955,14 @@
   min-width: 0;
   padding: 10px 11px;
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border-radius: var(--control-radius);
   background: var(--surface-sunken);
 }
 
 .geo-country-summary > span {
   color: var(--text-muted);
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
 }
 
 .geo-country-chip-list {
@@ -1983,19 +1981,19 @@
   min-height: 30px;
   padding: 5px 8px;
   border: 1px solid color-mix(in srgb, var(--c-accent-400) 26%, var(--border-subtle));
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--c-accent-400) 6%, var(--surface-raised));
   color: var(--text-soft);
   font-family: var(--font-mono);
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
 }
 
 .geo-country-chip--muted {
   min-width: 0;
   color: var(--text-faint);
   font-family: inherit;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
 }
 
 .admin-policy-country-source {
@@ -2009,13 +2007,13 @@
 
 .admin-policy-country-source strong {
   color: var(--text-soft);
-  font-size: 0.72rem;
+  font-size: var(--font-size-sm);
 }
 
 .admin-policy-country-source small {
   color: var(--text-muted);
-  font-size: 0.68rem;
-  line-height: 1.45;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-compact);
 }
 
 .admin-policy-footer {
@@ -2026,8 +2024,8 @@
 .admin-policy-footer > small {
   flex: 1 1 420px;
   color: var(--text-muted);
-  font-size: 0.7rem;
-  line-height: 1.5;
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-body);
 }
 
 .admin-policy-footer .btn {
@@ -2170,8 +2168,8 @@
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   color: var(--text-muted);
-  font-size: 0.76rem;
-  font-weight: 700;
+  font-size: var(--font-size-meta);
+  font-weight: var(--font-weight-bold);
   text-decoration: none;
   transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
@@ -2221,12 +2219,12 @@
   display: flex;
   align-items: end;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-sm);
   padding: 0 4px;
 }
 
 .discord-management-zone__head .discord-management-section-head {
-  gap: 2px;
+  gap: var(--space-3xs);
 }
 
 .discord-management-zone__head h2 {
@@ -2244,7 +2242,7 @@
 .discord-settings-card__primary,
 .discord-settings-card__limits {
   display: grid;
-  gap: 12px;
+  gap: var(--space-sm);
   min-width: 0;
 }
 
@@ -2281,7 +2279,7 @@
 }
 
 .discord-management-card {
-  gap: 12px;
+  gap: var(--space-sm);
   padding: 16px;
   border-left-width: 2px;
 }
@@ -2299,7 +2297,7 @@
 }
 
 .discord-management-card__body {
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 .discord-management-user-field,
@@ -2351,7 +2349,7 @@
 
 .discord-role-option__copy {
   display: grid;
-  gap: 4px;
+  gap: var(--space-2xs);
   min-width: 0;
 }
 
@@ -2369,8 +2367,8 @@
   gap: 3px 7px;
   min-width: 0;
   color: var(--text-faint);
-  font-size: 0.68rem;
-  line-height: 1.35;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-tight);
 }
 
 .discord-role-option__copy code {
@@ -2389,7 +2387,7 @@
   color: var(--c-warning);
   font-size: 0.62rem;
   font-style: normal;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 .discord-role-option.is-disabled {
@@ -2413,8 +2411,8 @@
 
 .discord-management-status__item em {
   margin-top: auto;
-  font-size: 0.7rem;
-  line-height: 1.35;
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-tight);
 }
 
 .discord-info-chip {
@@ -2436,7 +2434,7 @@
 
 .discord-management-blocked-roles > span {
   display: grid;
-  gap: 2px;
+  gap: var(--space-3xs);
   padding: 8px 9px;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
@@ -2445,13 +2443,13 @@
 
 .discord-management-blocked-roles strong {
   color: var(--text-soft);
-  font-size: 0.76rem;
+  font-size: var(--font-size-meta);
 }
 
 .discord-management-blocked-roles small {
   color: var(--text-faint);
   font-size: 0.67rem;
-  line-height: 1.35;
+  line-height: var(--line-height-tight);
 }
 
 .discord-management-details {
@@ -2461,11 +2459,11 @@
 }
 
 .discord-management-details > summary {
-  min-height: 42px;
+  min-height: var(--control-height);
   padding: 10px 12px;
   color: var(--text-soft);
-  font-size: 0.76rem;
-  font-weight: 700;
+  font-size: var(--font-size-meta);
+  font-weight: var(--font-weight-bold);
   cursor: pointer;
 }
 
@@ -2473,8 +2471,8 @@
   margin: 0;
   padding: 0 12px 12px;
   color: var(--text-muted);
-  font-size: 0.78rem;
-  line-height: 1.6;
+  font-size: var(--font-size-ui);
+  line-height: var(--line-height-copy);
 }
 
 .discord-import-safety-grid {
@@ -2490,8 +2488,8 @@
   border-radius: var(--radius-md);
   background: var(--tint-warning-bg);
   color: var(--text-soft);
-  font-size: 0.76rem;
-  line-height: 1.5;
+  font-size: var(--font-size-meta);
+  line-height: var(--line-height-body);
 }
 
 .discord-profile-maintenance-grid .form-actions {
@@ -2616,13 +2614,13 @@
 }
 
 .account-cleanup-body {
-  gap: 16px;
+  gap: var(--space-md);
 }
 
 .account-cleanup-status-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .account-cleanup-status-card {
@@ -2643,8 +2641,8 @@
 
 .account-cleanup-status-card > small {
   color: var(--text-faint);
-  font-size: 0.66rem;
-  font-weight: 800;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-heavy);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -2653,14 +2651,14 @@
   min-width: 0;
   color: var(--text-strong);
   font-size: 0.86rem;
-  line-height: 1.35;
+  line-height: var(--line-height-tight);
   overflow-wrap: anywhere;
 }
 
 .account-cleanup-status-card > span {
   color: var(--text-muted);
-  font-size: 0.7rem;
-  line-height: 1.45;
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-compact);
 }
 
 .account-cleanup-last-error {
@@ -2670,7 +2668,7 @@
 .account-cleanup-settings,
 .account-cleanup-manual {
   display: grid;
-  gap: 12px;
+  gap: var(--space-sm);
   min-width: 0;
   padding: 13px;
   border: 1px solid var(--border-subtle);
@@ -2694,21 +2692,21 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 .account-cleanup-settings-actions .form-hint {
   max-width: 68ch;
   color: var(--text-muted);
-  font-size: 0.72rem;
-  line-height: 1.5;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-body);
 }
 
 .account-cleanup-subhead {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-sm);
   padding-bottom: 9px;
   border-bottom: 1px solid var(--border-subtle);
 }
@@ -2721,7 +2719,7 @@
 
 .account-cleanup-manual > form {
   display: grid;
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 .account-cleanup-history > summary {
@@ -2735,9 +2733,12 @@
 }
 
 .account-cleanup-history-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 74px;
+
   display: grid;
   grid-template-columns: minmax(180px, 0.7fr) minmax(0, 1.3fr);
-  gap: 12px;
+  gap: var(--space-sm);
   align-items: center;
   padding: 9px 10px;
   border: 1px solid var(--border-subtle);
@@ -2764,7 +2765,7 @@
 
 .account-cleanup-history-row small {
   color: var(--text-faint);
-  font-size: 0.68rem;
+  font-size: var(--font-size-xs);
 }
 
 .account-cleanup-history-metrics {
@@ -2773,7 +2774,7 @@
   flex-wrap: wrap;
   gap: 5px 12px;
   color: var(--text-muted);
-  font-size: 0.7rem;
+  font-size: var(--font-size-caption);
 }
 
 .account-cleanup-history-metrics span {
@@ -2858,26 +2859,26 @@
 .nickname-policy-card__head h3,
 .nickname-warning-settings__head h3 {
   margin: 4px 0 0;
-  font-size: 1rem;
+  font-size: var(--font-size-base);
 }
 
 .nickname-policy-card > p,
 .nickname-warning-settings__head p {
   margin: 0;
   color: var(--text-muted);
-  font-size: 0.8rem;
-  line-height: 1.55;
+  font-size: var(--font-size-ui-lg);
+  line-height: var(--line-height-relaxed);
 }
 
 .nickname-structure-list {
   display: grid;
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .nickname-structure-item {
   display: grid;
   grid-template-columns: minmax(105px, auto) minmax(0, 1fr);
-  gap: 12px;
+  gap: var(--space-sm);
   align-items: center;
   min-width: 0;
   padding: 10px 12px;
@@ -2888,20 +2889,20 @@
 
 .nickname-structure-item > span {
   color: var(--text-muted);
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
 }
 
 .nickname-structure-item code {
   min-width: 0;
   overflow-wrap: anywhere;
   color: var(--c-accent-300);
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
 }
 
 .nickname-policy-example {
   display: grid;
-  gap: 4px;
+  gap: var(--space-2xs);
   padding: 11px 12px;
   border-radius: 12px;
   background: rgba(245, 158, 11, 0.07);
@@ -2923,7 +2924,7 @@
 .nickname-advanced-settings__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--space-sm);
   padding: 0 12px 12px;
 }
 
@@ -2969,22 +2970,22 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 .nickname-warning-settings__group-head > strong {
-  font-size: 0.82rem;
+  font-size: var(--font-size-body-sm);
 }
 
 .nickname-warning-settings__group-head > small {
   color: var(--text-muted);
-  font-size: 0.72rem;
+  font-size: var(--font-size-sm);
 }
 
 .nickname-warning-settings__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 .nickname-fallback-field {
@@ -3006,7 +3007,7 @@
   right: 13px;
   transform: translateY(-50%);
   color: var(--text-faint);
-  font-size: 0.72rem;
+  font-size: var(--font-size-sm);
   pointer-events: none;
 }
 
@@ -3021,7 +3022,7 @@
   max-width: 520px;
   color: var(--text-muted);
   font-size: 0.74rem;
-  line-height: 1.45;
+  line-height: var(--line-height-compact);
 }
 
 .discord-settings-save-row .btn {
@@ -3030,7 +3031,7 @@
 }
 
 .nickname-warning-card .discord-management-card__body {
-  gap: 16px;
+  gap: var(--space-md);
 }
 
 .nickname-warning-card__head {
@@ -3041,8 +3042,8 @@
   max-width: 680px;
   margin: 5px 0 0;
   color: var(--text-muted);
-  font-size: 0.8rem;
-  line-height: 1.5;
+  font-size: var(--font-size-ui-lg);
+  line-height: var(--line-height-body);
 }
 
 .nickname-warning-status-grid {
@@ -3054,7 +3055,7 @@
 .nickname-warning-metric {
   display: grid;
   align-content: start;
-  gap: 4px;
+  gap: var(--space-2xs);
   min-width: 0;
   padding: 11px 12px;
   border: 1px solid var(--border-subtle);
@@ -3064,8 +3065,8 @@
 
 .nickname-warning-metric > small {
   color: var(--text-muted);
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
@@ -3074,19 +3075,19 @@
   min-width: 0;
   overflow-wrap: anywhere;
   color: var(--c-accent-300);
-  font-size: 0.9rem;
+  font-size: var(--font-size-body);
 }
 
 .nickname-warning-metric > span {
   color: var(--text-faint);
   font-size: 0.69rem;
-  line-height: 1.35;
+  line-height: var(--line-height-tight);
 }
 
 .nickname-warning-flow {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .nickname-warning-flow > span {
@@ -3108,7 +3109,7 @@
   place-items: center;
   width: 25px;
   height: 25px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(245, 158, 11, 0.13);
   color: var(--accent, #f59e0b);
   font-size: 0.75rem;
@@ -3116,13 +3117,13 @@
 
 .nickname-warning-flow strong {
   min-width: 0;
-  font-size: 0.82rem;
+  font-size: var(--font-size-body-sm);
 }
 
 .nickname-warning-flow small {
   min-width: 0;
   color: var(--text-muted);
-  font-size: 0.7rem;
+  font-size: var(--font-size-caption);
   line-height: 1.4;
 }
 
@@ -3143,7 +3144,7 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .nickname-warning-actions__buttons .btn {
@@ -3157,15 +3158,18 @@
 }
 
 .nickname-warning-history__row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 74px;
+
   display: grid;
   grid-template-columns: minmax(170px, 1.35fr) repeat(4, minmax(86px, 0.65fr));
   gap: 10px;
   align-items: center;
   padding: 9px 11px;
   border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
+  border-radius: var(--control-radius);
   background: rgba(0, 0, 0, 0.14);
-  font-size: 0.76rem;
+  font-size: var(--font-size-meta);
 }
 
 .nickname-warning-history__row.is-warning,
@@ -3175,7 +3179,7 @@
 
 .nickname-warning-history__row > span:first-child {
   display: grid;
-  gap: 2px;
+  gap: var(--space-3xs);
 }
 
 .nickname-warning-history__row small {

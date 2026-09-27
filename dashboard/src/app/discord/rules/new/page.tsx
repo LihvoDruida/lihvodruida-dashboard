@@ -26,8 +26,10 @@ export default async function NewDiscordRulesPage({
 
   if (!canManageRulesEmbeds(user)) redirect(await getOwnProfilePath(user));
 
-  const params = await searchParams;
-  const authorIdentity = await resolveAuthorIdentity(user);
+  const [params, authorIdentity] = await Promise.all([
+    searchParams,
+    resolveAuthorIdentity(user),
+  ]);
   const canEditRules = canManageRulesEmbeds(user);
   const ruleType = String(params.type || params.ruleType || "guild") === "raid" ? "raid" : "guild";
   const defaultEmbed = { ...(ruleType === "raid" ? defaultRaidRulesEmbed : defaultRulesEmbed), author: { name: authorIdentity.primaryName } };

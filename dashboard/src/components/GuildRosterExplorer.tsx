@@ -746,7 +746,7 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
               >
                 <div className={styles.mobileIdentity} role="cell" data-label="Персонаж">
                   <span className={styles.avatarWrap}>
-                    {member.avatarUrl ? <img src={member.avatarUrl} alt="" loading="lazy" /> : <span>{member.name.charAt(0).toUpperCase()}</span>}
+                    {member.avatarUrl ? <img src={member.avatarUrl} alt="" loading="lazy" decoding="async" /> : <span>{member.name.charAt(0).toUpperCase()}</span>}
                   </span>
                   <span className={styles.mobileIdentityCopy}>
                     <span className={styles.mobileIdentityName}>
@@ -768,7 +768,7 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
 
                 <div className={styles.characterCell} role="cell" data-label="Персонаж">
                   <span className={styles.avatarWrap}>
-                    {member.avatarUrl ? <img src={member.avatarUrl} alt="" loading="lazy" /> : <span>{member.name.charAt(0).toUpperCase()}</span>}
+                    {member.avatarUrl ? <img src={member.avatarUrl} alt="" loading="lazy" decoding="async" /> : <span>{member.name.charAt(0).toUpperCase()}</span>}
                   </span>
                   <span className={styles.characterCopy}>
                     <strong style={{ color: classColor(member.className) }}>{member.name}</strong>

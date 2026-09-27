@@ -155,7 +155,7 @@ export default function RaidImagePicker({ defaultValue = "" }: { defaultValue?: 
                 title={image.name}
               >
                 <span className="raid-image-picker__preview">
-                  <img src={image.url} alt="" loading="lazy" referrerPolicy="no-referrer" />
+                  <img src={image.url} alt="" loading="lazy" referrerPolicy="no-referrer" decoding="async" />
                 </span>
                 <span className="raid-image-picker__meta">
                   <strong>{readableName(image.name)}</strong>

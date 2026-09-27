@@ -160,8 +160,7 @@ function SignupAvatar({ item }: { item?: RaidSignup | null }) {
         src={image}
         alt=""
         loading="lazy"
-        referrerPolicy="no-referrer"
-      />
+        referrerPolicy="no-referrer" decoding="async" />
     );
   }
   return (
@@ -960,8 +959,7 @@ export function RaidListCard({
             width={86}
             height={86}
             loading="lazy"
-            referrerPolicy="no-referrer"
-          />
+            referrerPolicy="no-referrer" decoding="async" />
           <span className={`raid-list-status-dot raid-list-status-dot--${statusClass}`} aria-hidden="true" />
         </span>
         <span className="raid-list-copy">

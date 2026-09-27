@@ -56,20 +56,15 @@ type ResourceRecord<T = unknown> = {
   lastStartedAt: number;
   inFlight: Promise<DashboardApiResourceState<T>> | null;
   disposeTimer: number | null;
+  listeners: Set<() => void>;
 };
 
 const records = new Map<string, ResourceRecord>();
-const listeners = new Set<() => void>();
 let version = 0;
 
-function emit() {
+function emitRecord(record: ResourceRecord) {
   version += 1;
-  for (const listener of listeners) listener();
-}
-
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
+  for (const listener of record.listeners) listener();
 }
 
 function cleanKey(key: string) {
@@ -171,7 +166,9 @@ function isOnline() {
 
 function updateRecord<T>(record: ResourceRecord<T>, patch: Partial<DashboardApiResourceState<T>>) {
   record.state = { ...record.state, ...patch };
-  emit();
+  // Notify only consumers of this resource. The old global subscriber set made
+  // every live widget re-render whenever any unrelated resource changed.
+  emitRecord(record);
 }
 
 function ensureRecord<T>(keyInput: string, initialData: T, getOptions: () => DashboardApiResourceOptions<T>): ResourceRecord<T> {
@@ -199,6 +196,7 @@ function ensureRecord<T>(keyInput: string, initialData: T, getOptions: () => Das
     lastStartedAt: checkedAt || 0,
     inFlight: null,
     disposeTimer: null,
+    listeners: new Set(),
   };
   records.set(key, record as ResourceRecord);
   return record;
@@ -334,12 +332,16 @@ export function useDashboardApiResource<T>(options: DashboardApiResourceOptions<
   }, [options]);
   const getOptions = useCallback(() => optionsRef.current, []);
   const getSnapshot = useCallback(() => {
-    void version;
     return stateFor(key, optionsRef.current.initialData, getOptions);
   }, [getOptions, key]);
   const getServerSnapshot = useCallback(() => initialStateRef.current, []);
+  const subscribeToResource = useCallback((listener: () => void) => {
+    const record = ensureRecord(key, optionsRef.current.initialData, getOptions);
+    record.listeners.add(listener);
+    return () => record.listeners.delete(listener);
+  }, [getOptions, key]);
 
-  const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const state = useSyncExternalStore(subscribeToResource, getSnapshot, getServerSnapshot);
 
   useEffect(() => {
     const record = ensureRecord(key, optionsRef.current.initialData, getOptions);

@@ -64,8 +64,8 @@
 .roster-create-form__hint {
   flex: 1 1 240px;
   color: var(--text-muted);
-  font-size: 0.78rem;
-  line-height: 1.5;
+  font-size: var(--font-size-ui);
+  line-height: var(--line-height-body);
 }
 
 /* =========================================================
@@ -117,7 +117,7 @@
 
 .roster-coverage-cell__name {
   font-size: 0.86rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   color: var(--text-strong);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -131,8 +131,8 @@
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--c-success) 12%, transparent);
   color: var(--c-success);
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
   white-space: nowrap;
 }
 
@@ -151,7 +151,7 @@
 }
 
 .roster-coverage-cell__members li {
-  font-size: 0.76rem;
+  font-size: var(--font-size-meta);
   color: var(--text-muted);
   overflow-wrap: anywhere;
 }
@@ -185,8 +185,8 @@
 .roster-party__head {
   padding-bottom: var(--space-2xs);
   border-bottom: 1px solid var(--border-subtle);
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--c-accent-300);
@@ -205,7 +205,7 @@
   align-items: center;
   gap: var(--space-2xs);
   min-height: 26px;
-  font-size: 0.82rem;
+  font-size: var(--font-size-body-sm);
   color: var(--text-soft);
   overflow-wrap: anywhere;
 }
@@ -232,8 +232,8 @@
   border-radius: var(--radius-md);
   background: var(--surface-sunken);
   color: var(--text-muted);
-  font-size: 0.8rem;
-  line-height: 1.55;
+  font-size: var(--font-size-ui-lg);
+  line-height: var(--line-height-relaxed);
   overflow-wrap: anywhere;
 }
 
@@ -290,8 +290,8 @@
 .roster-formation-card__roles {
   margin: 0;
   color: var(--text-muted);
-  font-size: 0.8rem;
-  line-height: 1.6;
+  font-size: var(--font-size-ui-lg);
+  line-height: var(--line-height-copy);
   overflow-wrap: anywhere;
 }
 

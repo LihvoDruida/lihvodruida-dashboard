@@ -93,7 +93,7 @@ export default function ContentImageField({ label, hint, currentImage, previewBa
         <div className={`image-preview-card${previewSrc ? " has-image" : ""}`} aria-live="polite">
           {previewSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={previewSrc} alt="Превʼю обкладинки" />
+            <img src={previewSrc} alt="Превʼю обкладинки" decoding="async" />
           ) : (
             <div className="image-preview-placeholder" aria-hidden="true">IMG</div>
           )}

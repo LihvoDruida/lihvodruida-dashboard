@@ -63,30 +63,27 @@ export default async function AdminOverviewPage() {
     throw new Error("Access denied");
   }
 
-  const policy = await getGuildNicknamePolicy();
-  const geoPolicy = await getGeoAccessPolicy();
-  const authPolicy = await getAuthAccessPolicy();
   const canEditGeoPolicy = canManageGroups(user);
   const canEditAuthPolicy = canManageGroups(user);
-  let discordRoles: Array<{
-    id: string;
-    name: string;
-    color: number;
-    position: number;
-    managed: boolean;
-  }> = [];
-  let authRolesError = "";
-
-  if (canEditAuthPolicy) {
-    try {
-      discordRoles = await fetchDiscordRoles();
-    } catch (error) {
-      authRolesError =
-        error instanceof Error
-          ? error.message
-          : String(error || "Discord API error");
-    }
-  }
+  const rolesPromise = canEditAuthPolicy
+    ? fetchDiscordRoles()
+        .then((roles) => ({ roles, error: "" }))
+        .catch((error) => ({
+          roles: [] as Array<{ id: string; name: string; color: number; position: number; managed: boolean }>,
+          error: error instanceof Error ? error.message : String(error || "Discord API error"),
+        }))
+    : Promise.resolve({
+        roles: [] as Array<{ id: string; name: string; color: number; position: number; managed: boolean }>,
+        error: "",
+      });
+  const [policy, geoPolicy, authPolicy, rolesResult] = await Promise.all([
+    getGuildNicknamePolicy(),
+    getGeoAccessPolicy(),
+    getAuthAccessPolicy(),
+    rolesPromise,
+  ]);
+  const discordRoles = rolesResult.roles;
+  const authRolesError = rolesResult.error;
 
   const selectedAuthRoleIds = new Set(authPolicy.requiredRoleIds);
   const loadedAuthRoleIds = new Set(discordRoles.map((role) => role.id));

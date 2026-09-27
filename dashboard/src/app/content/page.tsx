@@ -331,11 +331,13 @@ export default async function ContentPage({
   if (!user) { redirect("/login"); throw new Error("Login required"); }
   if (!canManageSiteContent(user)) redirect(await getOwnProfilePath(user));
 
-  const params = await searchParams;
-  const authorIdentity = await resolveAuthorIdentity(user);
+  const [params, authorIdentity, items] = await Promise.all([
+    searchParams,
+    resolveAuthorIdentity(user),
+    listSiteContent(),
+  ]);
   const authorName = authorIdentity.primaryName;
   const authorSuggestions = authorIdentity.suggestions;
-  const items = await listSiteContent();
   const newsItems = items.filter((item) => item.kind === "news");
   const guideItems = items.filter((item) => item.kind === "guides");
   const selectedItem = params.edit ? items.find((item) => item.path === params.edit) : undefined;

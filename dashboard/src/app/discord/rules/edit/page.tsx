@@ -32,8 +32,10 @@ export default async function EditDiscordRulesPage({
 
   if (!canManageRulesEmbeds(user)) redirect(await getOwnProfilePath(user));
 
-  const params = await searchParams;
-  const authorIdentity = await resolveAuthorIdentity(user);
+  const [params, authorIdentity] = await Promise.all([
+    searchParams,
+    resolveAuthorIdentity(user),
+  ]);
   const canEditRules = canManageRulesEmbeds(user);
   const messageParam = String(params.message || params.url || "").trim();
   let configError = "";
@@ -48,24 +50,25 @@ export default async function EditDiscordRulesPage({
 
   if (canEditRules && hasDiscordEmbedConfig()) {
     try {
-      const [channelData, roleData] = await Promise.all([fetchDiscordTextChannels(), fetchDiscordRoles()]);
+      const ref = parseDiscordMessageRef(messageParam);
+      const [channelData, roleData, message] = await Promise.all([
+        fetchDiscordTextChannels(),
+        fetchDiscordRoles(),
+        ref ? fetchDiscordEditableMessage(ref) : Promise.resolve(null),
+      ]);
       channels = channelData.channels;
       roles = roleData;
       suggestedRulesChannelId = channelData.suggestedRulesChannelId || channels[0]?.id || "";
 
-      const ref = parseDiscordMessageRef(messageParam);
-      if (ref) {
-        const message = await fetchDiscordEditableMessage(ref);
+      if (message) {
         embedJson = message.embedJson || embedJson;
         content = message.content;
         messageLink = message.url || messageParam;
         suggestedRulesChannelId = message.channelId || suggestedRulesChannelId;
         ruleType = message.rulesType === "raid" ? "raid" : "guild";
         selectedRoleIds = message.rulesType === "raid" ? [] : message.roleIds;
-        if (!message.isRules) {
-          configError = "Це повідомлення не схоже на правила, створені через цю панель.";
-        }
-      } else if (messageParam) {
+        if (!message.isRules) configError = "Це повідомлення не схоже на правила, створені через цю панель.";
+      } else if (messageParam && !ref) {
         configError = "Посилання на Discord-повідомлення невалідне.";
       }
     } catch (error) {

@@ -17,7 +17,7 @@ const checks = [
   ["phone breakpoint enables compact mobile identity", mobileBlock.includes(".mobileIdentity {\n    display: grid;")],
   ["mobile search cancels desktop flex basis", mobileBlock.includes(".searchBox {") && mobileBlock.includes("flex: 0 0 auto;") && mobileBlock.includes("height: 46px;")],
   ["mobile metrics use horizontal swipe rail", mobileBlock.includes(".metrics {\n    display: flex;") && mobileBlock.includes("overflow-x: auto;") && mobileBlock.includes("scroll-snap-type: x proximity;")],
-  ["mobile roster rows are card grids", mobileBlock.includes(".tableRow {") && mobileBlock.includes("grid-template-columns: repeat(2, minmax(0, 1fr));") && mobileBlock.includes("border-radius: 14px;")],
+  ["mobile roster rows are card grids", mobileBlock.includes(".tableRow {") && mobileBlock.includes("grid-template-columns: repeat(2, minmax(0, 1fr));") && (mobileBlock.includes("border-radius: 14px;") || mobileBlock.includes("border-radius: var(--radius-md);"))],
   ["mobile stat cells are compact tiles", mobileBlock.includes('.tableRow > div[role="cell"]:not(.mobileIdentity)') && mobileBlock.includes('content: attr(data-label);')],
   ["mobile links span the card", mobileBlock.includes(".linksCell {\n    grid-column: 1 / -1;") && mobileBlock.includes("min-height: 38px;")],
   ["mobile quick-role filters can scroll instead of overflow", mobileBlock.includes(".quickRoles {") && mobileBlock.includes("-webkit-overflow-scrolling: touch;")],

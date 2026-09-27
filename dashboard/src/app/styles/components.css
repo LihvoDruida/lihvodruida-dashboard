@@ -79,8 +79,7 @@ a[class*="__card "],
 [class$="-card"][role="button"],
 [class*="-card "][role="button"] {
   color: inherit;
-  transition:
-    transform var(--dur-fast) var(--ease-out),
+  transition: transform var(--dur-fast) var(--ease-out),
     border-color var(--dur-fast) var(--ease-out),
     box-shadow var(--dur-fast) var(--ease-out);
 }
@@ -162,7 +161,7 @@ a[class*="__card "]:hover {
 [class$="__lead"],
 [class*="__lead "] {
   color: var(--text-soft);
-  font-size: 0.9rem;
+  font-size: var(--font-size-body);
   line-height: 1.58;
 }
 
@@ -186,7 +185,7 @@ a[class*="__card "]:hover {
   border: 1px solid var(--border);
   background: var(--surface-raised);
   color: var(--c-accent-300);
-  font-size: 1rem;
+  font-size: var(--font-size-base);
 }
 
 /* =========================================================
@@ -204,14 +203,13 @@ a[class*="__card "]:hover {
   background: var(--surface-raised);
   color: var(--text-body);
   font-size: 0.84rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   line-height: 1.2;
   letter-spacing: 0.005em;
   text-align: center;
   text-decoration: none;
   cursor: pointer;
-  transition:
-    transform var(--dur-fast) var(--ease-out),
+  transition: transform var(--dur-fast) var(--ease-out),
     background-color var(--dur-fast) var(--ease-out),
     border-color var(--dur-fast) var(--ease-out),
     box-shadow var(--dur-fast) var(--ease-out),
@@ -312,7 +310,7 @@ a[class*="__card "]:hover {
   min-height: var(--control-height-sm);
   padding: 0 12px;
   border-radius: var(--radius-sm);
-  font-size: 0.76rem;
+  font-size: var(--font-size-meta);
 }
 
 .btn-icon {
@@ -358,8 +356,8 @@ a[class*="__card "]:hover {
 [class*="-field "] > span:first-child,
 .field-label,
 label > span:first-child {
-  font-size: 0.8rem;
-  font-weight: 700;
+  font-size: var(--font-size-ui-lg);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.02em;
   color: var(--text-soft);
 }
@@ -407,8 +405,7 @@ textarea {
   color: var(--text-body);
   font-size: 16px;
   outline: 0;
-  transition:
-    border-color var(--dur-fast) var(--ease-out),
+  transition: border-color var(--dur-fast) var(--ease-out),
     background-color var(--dur-fast) var(--ease-out),
     box-shadow var(--dur-fast) var(--ease-out);
 }
@@ -418,7 +415,7 @@ textarea {
 textarea {
   min-height: 120px;
   padding: var(--space-sm) var(--space-md);
-  line-height: 1.55;
+  line-height: var(--line-height-relaxed);
   resize: vertical;
 }
 
@@ -478,7 +475,7 @@ select {
     right calc(var(--space-md) - 6px) center;
   background-size: 6px 6px, 6px 6px;
   background-repeat: no-repeat;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
 }
 
 select option {
@@ -509,7 +506,7 @@ input[type="radio"] {
 }
 
 .inline-check > span {
-  font-weight: 500;
+  font-weight: var(--font-weight-ui);
 }
 
 .inline-check--card {
@@ -540,8 +537,8 @@ fieldset {
 
 legend {
   padding: 0;
-  font-size: 0.8rem;
-  font-weight: 700;
+  font-size: var(--font-size-ui-lg);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--c-accent-300);
@@ -575,7 +572,7 @@ form {
   background: var(--surface-sunken);
   color: var(--text-soft);
   font-size: 0.86rem;
-  line-height: 1.55;
+  line-height: var(--line-height-relaxed);
 }
 
 .notice.panel {
@@ -644,10 +641,10 @@ form {
   border-radius: var(--radius-pill);
   background: var(--surface-raised);
   color: var(--text-soft);
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.04em;
-  line-height: 1.6;
+  line-height: var(--line-height-copy);
   white-space: nowrap;
 }
 
@@ -744,8 +741,8 @@ form {
   border-radius: var(--radius-pill);
   background: var(--surface-raised);
   color: var(--text-soft);
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: var(--font-size-ui-lg);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
@@ -835,8 +832,7 @@ form {
   background: var(--surface-raised);
   color: inherit;
   min-width: 0;
-  transition:
-    border-color var(--dur-fast) var(--ease-out),
+  transition: border-color var(--dur-fast) var(--ease-out),
     background-color var(--dur-fast) var(--ease-out),
     transform var(--dur-fast) var(--ease-out);
 }
@@ -964,7 +960,7 @@ a.dashboard-list-row:hover {
   .dashboard-list-row > [role="cell"][data-label]::before {
     content: attr(data-label);
     font-size: 0.64rem;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--text-faint);
@@ -1020,7 +1016,7 @@ summary {
   padding: var(--space-sm) var(--space-md);
   color: var(--text-soft);
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
   list-style: none;
 }
@@ -1081,8 +1077,8 @@ details > *:not(:where(summary)) {
   border-radius: var(--radius-pill);
   background: var(--surface-raised);
   color: var(--text-soft);
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
   white-space: nowrap;
   cursor: pointer;
   transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
@@ -1219,8 +1215,7 @@ input[type="radio"] {
   border: 1px solid var(--border-strong);
   background: var(--surface-sunken);
   cursor: pointer;
-  transition:
-    border-color var(--dur-fast) var(--ease-out),
+  transition: border-color var(--dur-fast) var(--ease-out),
     background-color var(--dur-fast) var(--ease-out),
     box-shadow var(--dur-fast) var(--ease-out);
 }
@@ -1382,8 +1377,7 @@ input[type="radio"] {
   color: var(--text-soft);
   text-align: left;
   cursor: pointer;
-  transition:
-    border-color var(--dur-fast) var(--ease-out),
+  transition: border-color var(--dur-fast) var(--ease-out),
     background-color var(--dur-fast) var(--ease-out),
     color var(--dur-fast) var(--ease-out);
 }
@@ -1395,13 +1389,13 @@ input[type="radio"] {
 }
 
 .author-suggestion-chip strong {
-  font-size: 0.78rem;
+  font-size: var(--font-size-ui);
   line-height: 1.15;
 }
 
 .author-suggestion-chip em {
   color: var(--text-faint);
-  font-size: 0.66rem;
+  font-size: var(--font-size-2xs);
   font-style: normal;
   line-height: 1.15;
 }
