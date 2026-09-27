@@ -298,13 +298,18 @@ export async function POST(request: NextRequest) {
 
   const customId = String(interaction?.data?.custom_id || "");
   const nicknameFixAction = decodeNicknameFixCustomId(customId);
+  const rulesAction = nicknameFixAction ? null : decodeRulesCustomId(customId);
   const configuredGuildId = String(getDiscordGuildId() || "").trim();
   const interactionGuildId = String(interaction?.guild_id || "").trim();
-  // Кнопка виправлення ніку надсилається також у DM, де Discord закономірно
-  // не передає guild_id. Для неї достатньо валідного Discord-підпису +
-  // привʼязки custom_id до userId. Якщо guild_id присутній (fallback-канал),
-  // він усе одно зобовʼязаний збігатися з налаштованим сервером.
-  const guildAllowed = nicknameFixAction
+  // Персональні кнопки правил/onboarding і виправлення ніку навмисно можуть
+  // жити у DM. Discord не передає guild_id для приватних interaction, тому
+  // для цих двох доменів довіряємо перевіреному Discord-підпису + custom_id
+  // і працюємо з єдиним налаштованим guild. Якщо guild_id все ж присутній
+  // (кнопка натиснута у серверному каналі), він ОБОВʼЯЗКОВО має збігатися.
+  // Інші interaction (рейди, poll, roster, autoroles, moderation) лишаються
+  // server-bound і без guild_id ніколи не допускаються.
+  const dmSafePersonalAction = Boolean(nicknameFixAction || rulesAction);
+  const guildAllowed = dmSafePersonalAction
     ? Boolean(configuredGuildId && (!interactionGuildId || interactionGuildId === configuredGuildId))
     : Boolean(configuredGuildId && interactionGuildId === configuredGuildId);
   if (!guildAllowed) {
@@ -313,6 +318,7 @@ export async function POST(request: NextRequest) {
       interactionGuildPresent: Boolean(interactionGuildId),
       guildMatches: Boolean(configuredGuildId && interactionGuildId === configuredGuildId),
       nicknameDmAction: Boolean(nicknameFixAction),
+      rulesDmAction: Boolean(rulesAction),
     }, { category: "security" });
     return ephemeral("⛔ Ця взаємодія не належить Discord-серверу Mistblossom Vanguard.");
   }
@@ -329,13 +335,13 @@ export async function POST(request: NextRequest) {
   const rosterAction = raidAction || raidManualClass || pollAction ? null : decodeRosterCustomId(customId, interaction?.data?.values);
   const autoroleAction = raidAction || raidManualClass || pollAction || rosterAction ? null : decodeAutoroleCustomId(customId);
   const applicationAction = raidAction || raidManualClass || pollAction || rosterAction || autoroleAction ? null : decodeApplicationCustomId(customId);
-  const parsed = raidAction || raidManualClass || pollAction || rosterAction || autoroleAction || applicationAction || nicknameFixAction ? null : decodeRulesCustomId(customId);
+  const parsed = raidAction || raidManualClass || pollAction || rosterAction || autoroleAction || applicationAction || nicknameFixAction ? null : rulesAction;
   if (!raidAction && !raidManualClass && !pollAction && !rosterAction && !autoroleAction && !applicationAction && !nicknameFixAction && !parsed) {
     logDashboardEvent("warn", "discord.rules.unknown_custom_id", request, { customId: customId.slice(0, 24) });
     return ephemeral("Ця кнопка не належить панелі Mistblossom або вже застаріла.");
   }
 
-  const guildId = interactionGuildId;
+  const guildId = interactionGuildId || configuredGuildId;
   const userId = getInteractionUserId(interaction);
   const userName = getInteractionUserName(interaction);
 
