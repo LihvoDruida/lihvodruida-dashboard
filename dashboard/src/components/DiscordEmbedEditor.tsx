@@ -731,7 +731,16 @@ function DiscordEmbedEditorInner({
   const [footerIconUrl, setFooterIconUrl] = useState(text(footer.icon_url));
   const [timestampEnabled, setTimestampEnabled] = useState(Boolean(initialEmbed.timestamp));
   const [fields, setFields] = useState<EmbedFieldState[]>(initialFields(initialEmbed.fields));
-  const [autoroleButtons, setAutoroleButtons] = useState<DiscordAutoroleButtonOption[]>(normalizeAutoroleButtonList(defaultAutoroleButtons));
+  // `defaultAutoroleButtons = []` creates a fresh array on every render when the
+  // prop is omitted (general/rules editor). Never use that raw array identity as
+  // a reset-effect dependency: typing into any controlled input would re-render,
+  // retrigger the reset effect and immediately restore all default values.
+  const defaultAutoroleButtonsKey = JSON.stringify(normalizeAutoroleButtonList(defaultAutoroleButtons));
+  const normalizedDefaultAutoroleButtons = useMemo<DiscordAutoroleButtonOption[]>(
+    () => JSON.parse(defaultAutoroleButtonsKey) as DiscordAutoroleButtonOption[],
+    [defaultAutoroleButtonsKey],
+  );
+  const [autoroleButtons, setAutoroleButtons] = useState<DiscordAutoroleButtonOption[]>(normalizedDefaultAutoroleButtons);
   const [previewMode, setPreviewMode] = useState<PreviewMode>("desktop");
   const [messageLoadState, setMessageLoadState] = useState<"idle" | "loading" | "loaded" | "error">("idle");
   const [messageLoadText, setMessageLoadText] = useState("");
@@ -766,13 +775,13 @@ function DiscordEmbedEditorInner({
     setFooterIconUrl(text(nextFooter.icon_url));
     setTimestampEnabled(Boolean(nextEmbed.timestamp));
     setFields(initialFields(nextEmbed.fields));
-    setAutoroleButtons(normalizeAutoroleButtonList(defaultAutoroleButtons));
+    setAutoroleButtons(normalizedDefaultAutoroleButtons);
     const normalizedDefaultMessageLink = normalizeMessageLink(defaultMessageLink);
     lastLoadedMessageLinkRef.current = normalizedDefaultMessageLink;
     setLoadedMessageLink(normalizedDefaultMessageLink);
     setMessageLoadState("idle");
     setMessageLoadText("");
-  }, [defaultEmbedJson, defaultContent, defaultMessageLink, suggestedChannelId, channelsKey, selectedRoleIdsKey, fallbackAuthorName, defaultAutoroleButtons]);
+  }, [defaultEmbedJson, defaultContent, defaultMessageLink, suggestedChannelId, channelsKey, selectedRoleIdsKey, fallbackAuthorName, normalizedDefaultAutoroleButtons]);
 
   function applyEmbedToEditor(nextEmbed: EmbedObject) {
     const nextAuthor = objectFrom(nextEmbed.author);
