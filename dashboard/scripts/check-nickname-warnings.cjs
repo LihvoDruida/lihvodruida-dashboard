@@ -67,6 +67,7 @@ assert(botClient.includes('/api/internal/discord/member-nickname'), 'bot gateway
 assert(nicknameGatewayRoute.includes('processObservedNicknameMember') && nicknameGatewayRoute.includes('verifyInternalBearerToken'), 'gateway nickname endpoint must be authenticated and run the production warning path');
 assert(warnings.includes('processObservedNicknameMember') && warnings.includes('applyRecommendedNicknameFix'), 'nickname warning service must support immediate detection and button-driven correction');
 assert(automation.includes('immediatePriority') && warnings.includes('invalidDueNow: true'), 'full sweeps must make new invalid nicknames immediately eligible for bounded priority delivery');
+assert(automation.includes('const priorityDelivery = immediatePriority.skipped') && automation.includes('Пріоритетну розсилку пропущено'), 'full-sweep immediate delivery must narrow skipped priority results before reading delivery metrics');
 assert(page.includes('fallback-канал') && page.includes('nicknameReminderChannelId'), 'owner can choose a fallback Discord channel');
 assert(page.includes('nicknameReminderCooldownHours') && page.includes('nicknameReminderBatchLimit'), 'cooldown and per-run batch controls must be exposed');
 assert(policy.includes('nicknameReminderEnabled') && policy.includes('nicknameInvalidRecheckHours') && policy.includes('nicknameValidRecheckHours'), 'priority and full-sweep nickname intervals must be persisted');

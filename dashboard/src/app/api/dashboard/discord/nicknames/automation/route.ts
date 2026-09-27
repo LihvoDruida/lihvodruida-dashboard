@@ -79,16 +79,37 @@ export async function POST(request: NextRequest) {
           // Нові invalid-записи після full sweep мають nextCheckAt=now. Не чекаємо
           // наступного cron tick: одразу запускаємо ту саму cooldown/batch-safe розсилку.
           const immediatePriority = await processPriorityNicknameWarnings({ source: "automatic", force: false });
+          const priorityDelivery = immediatePriority.skipped
+            ? {
+                notified: 0,
+                dm: 0,
+                channel: 0,
+                cooldownSkipped: 0,
+                deferredByBatch: 0,
+                correctedBeforeSend: 0,
+                failed: immediatePriority.failed || 0,
+                summary: `Пріоритетну розсилку пропущено: ${immediatePriority.reason}.`,
+              }
+            : {
+                notified: immediatePriority.notified || 0,
+                dm: immediatePriority.dm || 0,
+                channel: immediatePriority.channel || 0,
+                cooldownSkipped: immediatePriority.cooldownSkipped || 0,
+                deferredByBatch: immediatePriority.deferredByBatch || 0,
+                correctedBeforeSend: immediatePriority.correctedBeforeSend || 0,
+                failed: immediatePriority.failed || 0,
+                summary: immediatePriority.summary,
+              };
           return {
             ...sweep,
-            notified: immediatePriority.notified || 0,
-            dm: immediatePriority.dm || 0,
-            channel: immediatePriority.channel || 0,
-            cooldownSkipped: immediatePriority.cooldownSkipped || 0,
-            deferredByBatch: immediatePriority.deferredByBatch || 0,
-            correctedBeforeSend: immediatePriority.correctedBeforeSend || 0,
-            failed: (sweep.failed || 0) + (immediatePriority.failed || 0),
-            summary: `${sweep.summary} Одразу після sweep: ${immediatePriority.summary}`,
+            notified: priorityDelivery.notified,
+            dm: priorityDelivery.dm,
+            channel: priorityDelivery.channel,
+            cooldownSkipped: priorityDelivery.cooldownSkipped,
+            deferredByBatch: priorityDelivery.deferredByBatch,
+            correctedBeforeSend: priorityDelivery.correctedBeforeSend,
+            failed: (sweep.failed || 0) + priorityDelivery.failed,
+            summary: `${sweep.summary} Одразу після sweep: ${priorityDelivery.summary}`,
             immediatePriority,
           };
         })()
