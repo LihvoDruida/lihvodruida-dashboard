@@ -115,6 +115,13 @@ export default async function DiscordHubPage({
             </a>
           </div>
 
+          <a className="panel discord-hub-card discord-hub-card--featured discord-hub-card--rules" href="/discord/static">
+            <span className="eyebrow">Рейдовий склад • правила Статика</span>
+            <strong>Статик</strong>
+            <p>Окремі правила, 24-годинні запрошення, підписанти та керування роллю за правами РЛ.</p>
+            <span className="btn primary">Відкрити Статик</span>
+          </a>
+
           <div className="discord-hub-section-group discord-hub-section-group--tools" aria-label="Інструменти Discord">
             {canCreateRaidPolls ? (
               <a className="panel discord-hub-card discord-hub-card--tool discord-hub-card--poll" href="/polls">

@@ -44,6 +44,11 @@ for (const file of walk(apiRoot).filter((name) => name.endsWith(`${path.sep}rout
   if (rel === 'client-errors/route.ts') {
     if (source.includes('assertRequestBodySize(') && source.includes('checkRateLimit(') && source.includes('cleanStack(')) continue;
   }
+  // Public Static onboarding creates only a short-lived DM proof of agreement,
+  // never accepts an arbitrary Discord ID or grants roles itself.
+  if (rel === 'static/accept/route.ts') {
+    if (source.includes('verifyTrustedOrigin(') && source.includes('checkRateLimit(') && source.includes('assertRequestBodySize(') && source.includes('createStaticChallenge(')) continue;
+  }
   if (rel === 'site/applications/route.ts') {
     if (source.includes('isAllowedPublicSiteOrigin(') && source.includes('assertRequestBodySize(') && source.includes('checkRateLimit(') && source.includes('validateApplication(')) continue;
   }

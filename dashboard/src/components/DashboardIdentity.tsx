@@ -95,6 +95,7 @@ export default async function DashboardIdentity({
           canUseApplications
             ? { href: "/applications", section: "applications", label: "Заявки", desktopLabel: "Заявки" }
             : null,
+          { href: "/discord/static", section: "static", label: "Статик", desktopLabel: "Статик" },
           canUseDiscord
             ? { href: "/discord", section: "discord", label: "Discord", desktopLabel: "Discord" }
             : null,

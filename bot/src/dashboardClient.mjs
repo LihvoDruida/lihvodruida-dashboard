@@ -275,3 +275,16 @@ export async function notifyDiscordNicknameObserved(event) {
   }
   throw lastError instanceof Error ? lastError : new Error("member-nickname не доставлено в панель");
 }
+
+/** Verified Discord DM -> trusted internal dashboard; no website login is involved. */
+export async function confirmStaticRulesFromDm({ code, userId, guildId }) {
+  const token = INTERNAL_TOKEN();
+  if (!token) throw new Error("INTERNAL_API_TOKEN не задано");
+  const result = await fetchWithTimeout(`${DASHBOARD_URL()}/api/internal/discord/static-confirm`, {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${token}`, "x-mistblossom-source": "bot-gateway" },
+    body: JSON.stringify({ code, userId, guildId }),
+  }, Math.max(8_000, DASHBOARD_TIMEOUT_MS));
+  if (!result.ok) throw new Error(`Static confirm: dashboard HTTP ${result.status}`);
+  return result.json();
+}

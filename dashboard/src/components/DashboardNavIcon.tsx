@@ -11,13 +11,20 @@ export type DashboardNavSection =
   | "profiles"
   | "raids"
   | "roster"
-  | "rules";
+  | "rules"
+  | "static";
 
 /**
  * Лінійні іконки навігації. Тримаємо їх інлайном (а не iconfont/бібліотекою),
  * щоб не тягнути клієнтський бандл і не мати FOUC на першому рендері.
  */
 const PATHS: Record<DashboardNavSection, ReactNode> = {
+  static: (
+    <>
+      <path d="M12 2.5 19 6v5.5c0 4.3-2.8 7.5-7 10-4.2-2.5-7-5.7-7-10V6z" />
+      <path d="M8.5 12l2.3 2.3 4.7-5" />
+    </>
+  ),
   applications: (
     <>
       <path d="M6 3h8l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />

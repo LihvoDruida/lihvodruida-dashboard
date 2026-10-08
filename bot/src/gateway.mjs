@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { notifyDiscordMemberJoined, notifyDiscordNicknameObserved } from "./dashboardClient.mjs";
+import { notifyDiscordMemberJoined, notifyDiscordNicknameObserved, confirmStaticRulesFromDm } from "./dashboardClient.mjs";
 import { logger } from "./logger.mjs";
 
 const GATEWAY_URL = "wss://gateway.discord.gg/?v=10&encoding=json";
-const INTENTS = (1 << 0) | (1 << 1); // GUILDS + GUILD_MEMBERS
+const INTENTS = (1 << 0) | (1 << 1) | (1 << 12); // GUILDS + GUILD_MEMBERS + DIRECT_MESSAGES
 const TOKEN = () => String(process.env.DISCORD_BOT_TOKEN || "").trim();
 const GUILD_ID = () => String(process.env.DISCORD_GUILD_ID || "").trim();
 const ENABLED = () => String(process.env.DISCORD_GATEWAY_ENABLED ?? "1").trim() !== "0";
@@ -302,6 +302,16 @@ function pumpQueue() {
   }
 }
 
+/** DM command only; never trust a web form claiming an arbitrary Discord user ID. */
+export function parseStaticDmCommand(payload) {
+  if (payload?.guild_id || payload?.author?.bot) return null;
+  const text = String(payload?.content || "").trim();
+  const match = text.match(/^(?:статик|static|statyk)\s+([a-f0-9]{18})$/i);
+  const userId = cleanSnowflake(payload?.author?.id);
+  const channelId = cleanSnowflake(payload?.channel_id);
+  return match && userId && channelId ? { code: match[1].toUpperCase(), userId, channelId } : null;
+}
+
 function handleDispatch(packet) {
   state.lastEventAt = new Date().toISOString();
   if (packet.t === "READY") {
@@ -323,6 +333,29 @@ function handleDispatch(packet) {
     state.reconnects = 0;
     logger.info("Discord Gateway session відновлена", { eventName: "bot.gateway.resumed" });
     return;
+  }
+  if (packet.t === "MESSAGE_CREATE") {
+    const command = parseStaticDmCommand(packet.d);
+    if (command) {
+      const { code, userId, channelId } = command;
+      void (async () => {
+        let message;
+        try {
+          const result = await confirmStaticRulesFromDm({ code, userId, guildId: GUILD_ID() });
+          message = String(result?.message || "Не вдалося підтвердити правила.").slice(0, 1800);
+        } catch (error) {
+          logger.warn("Static DM confirmation failed", { eventName: "bot.static.confirm_failed", userId, error: String(error).slice(0, 160) });
+          message = "Сервер підтвердження тимчасово недоступний. Спробуй ще раз трохи пізніше.";
+        }
+        try {
+          const response = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+            method: "POST", headers: { authorization: `Bot ${TOKEN()}`, "content-type": "application/json" },
+            body: JSON.stringify({ content: message, allowed_mentions: { parse: [] } }),
+          });
+          if (!response.ok) logger.warn("Static DM reply failed", { eventName: "bot.static.dm_reply_failed", status: response.status });
+        } catch { /* Discord DM temporarily unavailable */ }
+      })();
+    }
   }
   if (packet.t === "GUILD_MEMBER_ADD") enqueueMemberJoin(packet.d);
   if (packet.t === "GUILD_MEMBER_UPDATE") enqueueNicknameCheck(packet.d);
