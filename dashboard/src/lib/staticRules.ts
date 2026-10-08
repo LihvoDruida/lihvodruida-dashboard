@@ -6,6 +6,7 @@ import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 import { addGuildMemberRoles, assertDiscordRolesManageable, fetchDiscordGuildMemberSnapshot, fetchDiscordGuildSnapshot, fetchDiscordGuildMembersCachedForUi, fetchDiscordRoleControlSnapshot, getDiscordGuildId, removeGuildMemberRoles } from "@/lib/discordAdmin";
 import { isDashboardAdmin } from "@/lib/permissions";
+import { DEFAULT_STATIC_RULES_MARKDOWN } from "@/lib/staticRulesDefault";
 
 const SETTINGS = "staticRulesConfig";
 const INVITES = "staticRulesInvites";
@@ -37,7 +38,9 @@ export type StaticChallenge = { inviteId: string; version: number; createdAt: st
 export async function getStaticSettings(): Promise<StaticSettings> {
   const data = (await db().collection(SETTINGS).doc("main").get()).data() || {};
   return {
-    text: String(data.text || ""),
+    // Use the supplied rules only before any editor has published custom content.
+    // Never overwrite existing database rules on deployment.
+    text: typeof data.text === "string" && data.text.trim() ? data.text : DEFAULT_STATIC_RULES_MARKDOWN,
     version: Math.max(1, Number(data.version || 1)),
     updatedAt: typeof data.updatedAt === "string" ? data.updatedAt : null,
     memberRoleId: snowflake(data.memberRoleId || process.env.STATIC_MEMBER_ROLE_ID),

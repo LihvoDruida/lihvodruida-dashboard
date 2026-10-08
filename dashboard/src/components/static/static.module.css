@@ -106,3 +106,9 @@
 .violationSlot small{color:var(--text-muted,#a5b2c1);font-size:.75rem;overflow-wrap:anywhere}
 @media(max-width:960px){.rosterMetrics{grid-template-columns:repeat(3,minmax(0,1fr))}.rosterMetrics>div{border-bottom:1px solid rgba(188,201,215,.14)}.banGrid{grid-template-columns:1fr}}
 @media(max-width:700px){.rosterMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}.rosterToolbar{align-items:stretch}.rosterFilters,.rosterFilters input,.rosterFilters select{width:100%}.rosterHead{display:none}.rosterTable{min-width:0}.rosterRow{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.rosterRow>div:first-child{grid-column:1/-1}.rosterActions{grid-column:1/-1}.rosterRow>div[role=cell]:not(:first-child)::before{content:attr(data-label);display:block;font-size:.7rem;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted,#a5b2c1);margin-bottom:4px}.violationInline{grid-column:1/-1}}
+
+/* Bundled Static rules template restore action and in-document navigation. */
+.sourceActions{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 16px;border:1px solid rgba(188,201,215,.16);border-radius:11px;background:rgba(159,204,168,.045)}
+.sourceActions>div{min-width:0;flex:1 1 240px}.sourceActions p{margin:.3em 0 0}
+:global(.static-markdown-content [id^="section-"]){scroll-margin-top:100px}
+@media(max-width:640px){.sourceActions .btn{width:100%;max-width:100%}}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { getStaticSettings, saveStaticSettings, staticPermission } from "@/lib/staticRules";
+import { DEFAULT_STATIC_RULES_MARKDOWN } from "@/lib/staticRulesDefault";
 import { assertRequestBodySize, checkRateLimit, noStoreHeaders, verifyTrustedOrigin } from "@/lib/security";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,7 +11,7 @@ export async function GET() {
     const session = await getSession({ live: true });
     const permissions = await staticPermission(session);
     if (!permissions.view) return reply({ ok: false, error: "Немає доступу до правил." }, 403);
-    return reply({ ok: true, permissions, settings: await getStaticSettings() });
+    return reply({ ok: true, permissions, settings: await getStaticSettings(), template: permissions.edit ? DEFAULT_STATIC_RULES_MARKDOWN : undefined });
   } catch { return reply({ ok: false, error: "Не вдалося отримати правила." }, 503); }
 }
 export async function POST(request: NextRequest) {

@@ -19,6 +19,7 @@ function rig(route, options = {}) {
     'next/server': { NextResponse: { json: reply } },
     '@/lib/auth': { getSession: async () => flags.session === undefined ? SESSION : flags.session },
     '@/lib/security': { assertRequestBodySize: () => null, verifyTrustedOrigin: () => flags.origin, checkRateLimit: () => ({ ok: true }), noStoreHeaders: () => ({'cache-control':'no-store'}) },
+    '@/lib/staticRulesDefault': { DEFAULT_STATIC_RULES_MARKDOWN: '## Example text of the approved rules' },
     '@/lib/staticRules': {
       staticPermission: async () => ({ view: flags.view, edit: flags.edit, admin: flags.admin }),
       getStaticSettings: async () => validConfig,

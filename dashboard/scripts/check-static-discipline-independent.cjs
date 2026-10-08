@@ -35,7 +35,7 @@ const discord={
 };
 const mod={exports:{}};
 vm.runInNewContext(compiled.outputText,{module:mod,exports:mod.exports,process,Date,Buffer,console,
- require:key=>({ 'server-only':{},'node:crypto':require('node:crypto'),'@/lib/firebaseAdmin':{getFirebaseAdminDb:()=>db},'@/lib/discordAdmin':discord,'@/lib/permissions':{isDashboardAdmin:()=>false} }[key] || (()=>{throw Error('Unexpected dependency: '+key)})()) },{filename:'staticRules.compiled.js'});
+ require:key=>({ 'server-only':{},'node:crypto':require('node:crypto'),'@/lib/firebaseAdmin':{getFirebaseAdminDb:()=>db},'@/lib/discordAdmin':discord,'@/lib/permissions':{isDashboardAdmin:()=>false},'@/lib/staticRulesDefault':{DEFAULT_STATIC_RULES_MARKDOWN:'## Документ із достатньою кількістю символів'} }[key] || (()=>{throw Error('Unexpected dependency: '+key)})()) },{filename:'staticRules.compiled.js'});
 const f=mod.exports;
 async function run(){let count=0;const check=async (name,fn)=>{await fn();count++;console.log(`PASS ${name}`)};
  stash('staticRulesConfig').set('main',{text:'## Rules long enough for acceptance tests',memberRoleId:ROLE,managerRoleId:'523456789012345678',version:1});

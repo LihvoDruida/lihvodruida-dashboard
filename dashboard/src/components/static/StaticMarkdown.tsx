@@ -25,6 +25,7 @@ function tokenAt(text: string, depth: number): Token | null {
   offer(/`([^`\n]+)`/g, (match, key) => <code key={key}>{match[1]}</code>);
   offer(/\[([^\]\n]{1,160})\]\(([^\s)]+)\)/g, (match, key) => {
     const url = match[2];
+    if (/^#section-[1-5]$/.test(url)) return <a key={key} href={url}>{match[1]}</a>;
     if (!/^https?:\/\//i.test(url)) return match[0];
     return <a key={key} href={url} target="_blank" rel="noopener noreferrer nofollow">{match[1]}</a>;
   });
@@ -82,7 +83,9 @@ export function StaticMarkdown({ value }: { value: string }) {
     const h = heading(line);
     if (h) {
       const body = inline(h[2], key);
-      blocks.push(h[1].length === 1 ? <h2 key={key}>{body}</h2> : h[1].length === 2 ? <h3 key={key}>{body}</h3> : <h4 key={key}>{body}</h4>);
+      const section = /^([1-5])\.\s/.exec(h[2]);
+      const id = section ? `section-${section[1]}` : undefined;
+      blocks.push(h[1].length === 1 ? <h2 key={key} id={id}>{body}</h2> : h[1].length === 2 ? <h3 key={key} id={id}>{body}</h3> : <h4 key={key} id={id}>{body}</h4>);
       i += 1; continue;
     }
     if (divider(line)) { blocks.push(<hr key={key} />); i += 1; continue; }
