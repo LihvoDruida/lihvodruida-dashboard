@@ -30,7 +30,11 @@ export async function POST(request: NextRequest) {
     if (action === "revoke-invite") { await revokeStaticInvite(String(body.id || ""), session.id); return reply({ ok: true }); }
     if (action === "remove-member") { await removeStaticMember(String(body.userId || ""), session.id); return reply({ ok: true }); }
     if (action === "unblock-member") { await unblockStaticMember(String(body.userId || ""), session.id); return reply({ ok: true }); }
-    if (action === "add-violation") { const result = await addStaticViolation(String(body.userId || ""), String(body.description || ""), session.id); return reply({ ok: true, result, warning: result.warning }); }
+    if (action === "add-violation") {
+      const result = await addStaticViolation(String(body.userId || ""), String(body.description || ""), session.id);
+      const warning = "warning" in result ? result.warning : undefined;
+      return reply({ ok: true, result, ...(warning ? { warning } : {}) });
+    }
     if (action === "remove-violation") { await removeStaticViolation(String(body.userId || ""), String(body.violationId || ""), session.id); return reply({ ok: true }); }
     return reply({ ok: false, error: "Невідома дія." }, 400);
   } catch (error) { return reply({ ok: false, error: error instanceof Error ? error.message : "Помилка збереження." }, 400); }

@@ -2,7 +2,6 @@ import "server-only";
 
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import type { DashboardSession } from "@/lib/auth";
-import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 import { addGuildMemberRoles, assertDiscordRolesManageable, fetchDiscordGuildMemberSnapshot, fetchDiscordGuildSnapshot, fetchDiscordGuildMembersCachedForUi, fetchDiscordRoleControlSnapshot, getDiscordGuildId, removeGuildMemberRoles } from "@/lib/discordAdmin";
 import { isDashboardAdmin } from "@/lib/permissions";
@@ -246,14 +245,16 @@ export async function enforceStaticMemberRole(userIdInput: string) {
 
 export async function sweepStaticForbiddenRoles() {
   // Paginate by doc id: a guild larger than 1000 members must not skip bans.
-  let cursor: QueryDocumentSnapshot | undefined;
+  // Store-agnostic cursor: __name__ ordering accepts the last document ID
+  // both in the PostgreSQL adapter and in Firestore.
+  let cursorId: string | undefined;
   let checked = 0, revoked = 0, failed = 0;
   for (let page = 0; page < 50; page++) {
     let query = db().collection(MEMBERS).orderBy("__name__").limit(250);
-    if (cursor) query = query.startAfter(cursor);
+    if (cursorId !== undefined) query = query.startAfter(cursorId);
     const snap = await query.get();
     if (!snap.docs.length) break;
-    cursor = snap.docs[snap.docs.length - 1];
+    cursorId = snap.docs[snap.docs.length - 1].id;
     for (const doc of snap.docs) {
       const member = doc.data() as StaticMember;
       if (!member.blocked && !staticBanActive(member)) continue;
