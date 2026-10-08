@@ -1,0 +1,1754 @@
+{
+  "results": [
+    {
+      "name": "shared",
+      "width": 320,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "shared",
+      "width": 360,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "shared",
+      "width": 390,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "shared",
+      "width": 520,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "shared",
+      "width": 640,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "shared",
+      "width": 760,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "shared",
+      "width": 860,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "shared",
+      "width": 1000,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "shared",
+      "width": 1001,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "shared",
+      "width": 1280,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "shared",
+      "width": 1440,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "shared",
+      "width": 1920,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "profile",
+      "width": 320,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": null,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 37
+    },
+    {
+      "name": "profile",
+      "width": 360,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": null,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 1
+    },
+    {
+      "name": "profile",
+      "width": 390,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": null,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "profile",
+      "width": 520,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": null,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 1
+    },
+    {
+      "name": "profile",
+      "width": 640,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": null,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 1
+    },
+    {
+      "name": "profile",
+      "width": 760,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": null,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 7
+    },
+    {
+      "name": "profile",
+      "width": 860,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": null,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 1
+    },
+    {
+      "name": "profile",
+      "width": 1000,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": null,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 12
+    },
+    {
+      "name": "profile",
+      "width": 1001,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": null,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "profile",
+      "width": 1280,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": null,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 4
+    },
+    {
+      "name": "profile",
+      "width": 1440,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": null,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 4
+    },
+    {
+      "name": "profile",
+      "width": 1920,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": null,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 4
+    },
+    {
+      "name": "static",
+      "width": 320,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "static",
+      "width": 360,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "static",
+      "width": 390,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "static",
+      "width": 520,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "static",
+      "width": 640,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "static",
+      "width": 760,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "static",
+      "width": 860,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "static",
+      "width": 1000,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "static",
+      "width": 1001,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "static",
+      "width": 1280,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "static",
+      "width": 1440,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "static",
+      "width": 1920,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "static-expanded",
+      "width": 320,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 2
+    },
+    {
+      "name": "static-expanded",
+      "width": 360,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "static-expanded",
+      "width": 390,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "static-expanded",
+      "width": 520,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "static-expanded",
+      "width": 640,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "static-expanded",
+      "width": 760,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "static-expanded",
+      "width": 860,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "static-expanded",
+      "width": 1000,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "static-expanded",
+      "width": 1001,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "static-expanded",
+      "width": 1280,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "static-expanded",
+      "width": 1440,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "static-expanded",
+      "width": 1920,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "logs",
+      "width": 320,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "logs",
+      "width": 360,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "logs",
+      "width": 390,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "logs",
+      "width": 520,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "logs",
+      "width": 640,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "logs",
+      "width": 760,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "logs",
+      "width": 860,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "logs",
+      "width": 1000,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "logs",
+      "width": 1001,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "logs",
+      "width": 1280,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "logs",
+      "width": 1440,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "logs",
+      "width": 1920,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "guild",
+      "width": 320,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 218
+    },
+    {
+      "name": "guild",
+      "width": 360,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 239
+    },
+    {
+      "name": "guild",
+      "width": 390,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 186
+    },
+    {
+      "name": "guild",
+      "width": 520,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 227
+    },
+    {
+      "name": "guild",
+      "width": 640,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 289
+    },
+    {
+      "name": "guild",
+      "width": 760,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 210
+    },
+    {
+      "name": "guild",
+      "width": 860,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "guild",
+      "width": 1000,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "guild",
+      "width": 1001,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "guild",
+      "width": 1280,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "guild",
+      "width": 1440,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "guild",
+      "width": 1920,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "rules",
+      "width": 320,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "rules",
+      "width": 360,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "rules",
+      "width": 390,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "rules",
+      "width": 520,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "rules",
+      "width": 640,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "rules",
+      "width": 760,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "rules",
+      "width": 860,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "rules",
+      "width": 1000,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "rules",
+      "width": 1001,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "rules",
+      "width": 1280,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "rules",
+      "width": 1440,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "rules",
+      "width": 1920,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "applications",
+      "width": 320,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 1
+    },
+    {
+      "name": "applications",
+      "width": 360,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "applications",
+      "width": 390,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 1
+    },
+    {
+      "name": "applications",
+      "width": 520,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "applications",
+      "width": 640,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "applications",
+      "width": 760,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 1
+    },
+    {
+      "name": "applications",
+      "width": 860,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 1
+    },
+    {
+      "name": "applications",
+      "width": 1000,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 1
+    },
+    {
+      "name": "applications",
+      "width": 1001,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "applications",
+      "width": 1280,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "applications",
+      "width": 1440,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "applications",
+      "width": 1920,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "polls",
+      "width": 320,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "polls",
+      "width": 360,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 1
+    },
+    {
+      "name": "polls",
+      "width": 390,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "polls",
+      "width": 520,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 2
+    },
+    {
+      "name": "polls",
+      "width": 640,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 2
+    },
+    {
+      "name": "polls",
+      "width": 760,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 2
+    },
+    {
+      "name": "polls",
+      "width": 860,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 2
+    },
+    {
+      "name": "polls",
+      "width": 1000,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "polls",
+      "width": 1001,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "polls",
+      "width": 1280,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "polls",
+      "width": 1440,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "polls",
+      "width": 1920,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "admin",
+      "width": 320,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": null,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "admin",
+      "width": 360,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": null,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "admin",
+      "width": 390,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": null,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "admin",
+      "width": 520,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": null,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "admin",
+      "width": 640,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": null,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "admin",
+      "width": 760,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": null,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "admin",
+      "width": 860,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": null,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "admin",
+      "width": 1000,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": null,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "admin",
+      "width": 1001,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": null,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "admin",
+      "width": 1280,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": null,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "admin",
+      "width": 1440,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": null,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "admin",
+      "width": 1920,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": null,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "controls",
+      "width": 320,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "controls",
+      "width": 360,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "controls",
+      "width": 390,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "controls",
+      "width": 520,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "controls",
+      "width": 640,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "controls",
+      "width": 760,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "controls",
+      "width": 860,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "controls",
+      "width": 1000,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 16,
+      "navBottom": 68,
+      "mainTop": 78,
+      "scrollY": 0
+    },
+    {
+      "name": "controls",
+      "width": 1001,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "controls",
+      "width": 1280,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "controls",
+      "width": 1440,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "controls",
+      "width": 1920,
+      "rootOverflow": 0,
+      "visibleOverflow": [],
+      "inputFont": 14,
+      "navBottom": 82,
+      "mainTop": 88,
+      "scrollY": 0
+    },
+    {
+      "name": "shared",
+      "touch": true,
+      "coarse": true,
+      "buttons": [
+        {
+          "text": "Створити рейд",
+          "height": 44
+        },
+        {
+          "text": "Переглянути склад",
+          "height": 44
+        },
+        {
+          "text": "Оновити",
+          "height": 44
+        },
+        {
+          "text": "Синхронізація учасників т",
+          "height": 85.1875
+        },
+        {
+          "text": "Скасувати",
+          "height": 44
+        },
+        {
+          "text": "Видалити",
+          "height": 44
+        },
+        {
+          "text": "Нагадати учасникам про по",
+          "height": 44
+        },
+        {
+          "text": "Профіль",
+          "height": 44
+        },
+        {
+          "text": "Профіль",
+          "height": 44
+        },
+        {
+          "text": "Профіль",
+          "height": 44
+        }
+      ]
+    },
+    {
+      "name": "profile",
+      "touch": true,
+      "coarse": true,
+      "buttons": [
+        {
+          "text": "Оновити",
+          "height": 44
+        },
+        {
+          "text": "Редагувати",
+          "height": 44
+        },
+        {
+          "text": "Профіль",
+          "height": 44
+        },
+        {
+          "text": "Оновити",
+          "height": 44
+        },
+        {
+          "text": "Основний персонаж",
+          "height": 44
+        },
+        {
+          "text": "Профіль",
+          "height": 44
+        },
+        {
+          "text": "Оновити",
+          "height": 44
+        },
+        {
+          "text": "Зробити основним",
+          "height": 44
+        }
+      ]
+    },
+    {
+      "name": "static",
+      "touch": true,
+      "coarse": true,
+      "buttons": [
+        {
+          "text": "Створити посилання",
+          "height": 44
+        },
+        {
+          "text": "Порушення",
+          "height": 44
+        },
+        {
+          "text": "Прибрати зі Статика",
+          "height": 44
+        },
+        {
+          "text": "Порушення",
+          "height": 44
+        },
+        {
+          "text": "Прибрати зі Статика",
+          "height": 44
+        }
+      ]
+    },
+    {
+      "name": "static-expanded",
+      "touch": true,
+      "coarse": true,
+      "buttons": [
+        {
+          "text": "Створити посилання",
+          "height": 44
+        },
+        {
+          "text": "Порушення",
+          "height": 44
+        },
+        {
+          "text": "Прибрати зі Статика",
+          "height": 44
+        },
+        {
+          "text": "Зафіксувати",
+          "height": 44
+        },
+        {
+          "text": "Скасувати",
+          "height": 44
+        },
+        {
+          "text": "Порушення",
+          "height": 44
+        },
+        {
+          "text": "Прибрати зі Статика",
+          "height": 44
+        }
+      ]
+    },
+    {
+      "name": "logs",
+      "touch": true,
+      "coarse": true,
+      "buttons": [
+        {
+          "text": "Експорт JSON",
+          "height": 44
+        },
+        {
+          "text": "Оновити",
+          "height": 44
+        },
+        {
+          "text": "18:30:00INFODiscordsync.m",
+          "height": 94.171875
+        },
+        {
+          "text": "18:30:00INFODiscordsync.m",
+          "height": 94.171875
+        },
+        {
+          "text": "18:30:00INFODiscordsync.m",
+          "height": 94.171875
+        },
+        {
+          "text": "18:30:00INFODiscordsync.m",
+          "height": 94.171875
+        },
+        {
+          "text": "18:30:00INFODiscordsync.m",
+          "height": 94.171875
+        },
+        {
+          "text": "18:30:00INFODiscordsync.m",
+          "height": 94.171875
+        },
+        {
+          "text": "18:30:00INFODiscordsync.m",
+          "height": 94.171875
+        },
+        {
+          "text": "18:30:00INFODiscordsync.m",
+          "height": 94.171875
+        },
+        {
+          "text": "18:30:00INFODiscordsync.m",
+          "height": 94.171875
+        },
+        {
+          "text": "18:30:00INFODiscordsync.m",
+          "height": 94.171875
+        }
+      ]
+    },
+    {
+      "name": "guild",
+      "touch": true,
+      "coarse": true,
+      "buttons": [
+        {
+          "text": "Фільтри",
+          "height": 44
+        },
+        {
+          "text": "Профіль",
+          "height": 44
+        },
+        {
+          "text": "Профіль",
+          "height": 44
+        },
+        {
+          "text": "Профіль",
+          "height": 44
+        },
+        {
+          "text": "Профіль",
+          "height": 44
+        }
+      ]
+    },
+    {
+      "name": "rules",
+      "touch": true,
+      "coarse": true,
+      "buttons": [
+        {
+          "text": "Додати правила",
+          "height": 44
+        },
+        {
+          "text": "Оновити",
+          "height": 44
+        },
+        {
+          "text": "Синхронізація учасників т",
+          "height": 85.1875
+        },
+        {
+          "text": "Синхронізація учасників т",
+          "height": 85.1875
+        },
+        {
+          "text": "Скасувати",
+          "height": 44
+        },
+        {
+          "text": "Видалити",
+          "height": 44
+        }
+      ]
+    },
+    {
+      "name": "applications",
+      "touch": true,
+      "coarse": true,
+      "buttons": [
+        {
+          "text": "Скинути",
+          "height": 44
+        },
+        {
+          "text": "Застосувати",
+          "height": 44
+        },
+        {
+          "text": "Видалити заявку",
+          "height": 44
+        },
+        {
+          "text": "Видалити заявку",
+          "height": 44
+        }
+      ]
+    },
+    {
+      "name": "polls",
+      "touch": true,
+      "coarse": true,
+      "buttons": [
+        {
+          "text": "Створити рейд-пул",
+          "height": 44
+        },
+        {
+          "text": "Заплановані0",
+          "height": 44
+        },
+        {
+          "text": "Активні2",
+          "height": 44
+        },
+        {
+          "text": "На паузі1",
+          "height": 44
+        },
+        {
+          "text": "Архів1",
+          "height": 44
+        },
+        {
+          "text": "Вибрати «Рейд Mistblossom",
+          "height": 44
+        },
+        {
+          "text": "Результати",
+          "height": 44
+        },
+        {
+          "text": "Редагувати",
+          "height": 44
+        },
+        {
+          "text": "⏸Пауза",
+          "height": 44
+        },
+        {
+          "text": "Синхронізувати Discord",
+          "height": 44
+        },
+        {
+          "text": "Закрити",
+          "height": 44
+        },
+        {
+          "text": "Видалити",
+          "height": 44
+        },
+        {
+          "text": "Вибрати «ДужеДовгеІмяПерс",
+          "height": 44
+        },
+        {
+          "text": "Результати",
+          "height": 44
+        },
+        {
+          "text": "Редагувати",
+          "height": 44
+        },
+        {
+          "text": "⏸Пауза",
+          "height": 44
+        },
+        {
+          "text": "Синхронізувати Discord",
+          "height": 44
+        },
+        {
+          "text": "Закрити",
+          "height": 44
+        },
+        {
+          "text": "Видалити",
+          "height": 44
+        }
+      ]
+    },
+    {
+      "name": "admin",
+      "touch": true,
+      "coarse": true,
+      "buttons": [
+        {
+          "text": "Увімкнути автоматичне узг",
+          "height": 94
+        },
+        {
+          "text": "Зберегти зміни",
+          "height": 44
+        },
+        {
+          "text": "Оновлення недоступне",
+          "height": 44
+        }
+      ]
+    },
+    {
+      "name": "controls",
+      "touch": true,
+      "coarse": true,
+      "buttons": [
+        {
+          "text": "Зберегти",
+          "height": 44
+        },
+        {
+          "text": "Вимкнено",
+          "height": 44
+        },
+        {
+          "text": "Компактна дія",
+          "height": 44
+        },
+        {
+          "text": "Спеціальний таб",
+          "height": 44
+        },
+        {
+          "text": "Приймаю правила",
+          "height": 44
+        },
+        {
+          "text": "Додаткова інформація",
+          "height": 44.390625
+        }
+      ]
+    },
+    {
+      "focus": "solid",
+      "sheet": {
+        "client": 746,
+        "scroll": 1738,
+        "bottom": 826,
+        "viewport": 844
+      },
+      "scrollTop": 200,
+      "motion": "1e-06s"
+    }
+  ],
+  "actual": [],
+  "liveLimitation": "Production HTTP preview unavailable in this environment; compiled HTML/CSS checked separately."
+}

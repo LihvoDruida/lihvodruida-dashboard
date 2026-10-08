@@ -24,8 +24,16 @@ for (const file of walk(path.join(root, 'src')).filter(file => file.endsWith('.c
       if (parent.type === 'atrule' && parent.name === 'media' && /hover:\s*hover/.test(parent.params)) hasHoverGate = true;
     }
     assert.ok(order.includes(layer), `${path.relative(root, file)}: unowned CSS rule ${rule.selector}`);
+    if (layer === 'defaults') {
+      assert.equal(path.basename(file), 'patterns.css', `Compatibility defaults must have one owner: ${file}`);
+    }
+    if (['html', 'body', 'html, body'].includes(rule.selector)) {
+      rule.walkDecls('overflow-x', declaration => {
+        assert.ok(!/hidden|clip/.test(declaration.value), 'Root overflow must be fixed, not concealed');
+      });
+    }
     if (rule.selector.includes(':hover')) assert.ok(hasHoverGate, `Ungated touch hover: ${rule.selector}`);
-    if (['layout.css', 'components.css'].includes(path.basename(file)) && rule.selector.includes('[class')) {
+    if (/^:where\(\[class(?:\*|\$)=/.test(rule.selector)) {
       assert.equal(layer, 'defaults', `Heuristic selector must stay in defaults: ${rule.selector}`);
     }
     if (file.endsWith('.module.css') && /\.btn\b/.test(rule.selector)) {

@@ -1,7 +1,7 @@
 @layer pages {
   .wrap {
     display: grid;
-    gap: 18px;
+    gap: var(--page-gap);
     min-width: 0;
   }
   .hero {
@@ -10,7 +10,7 @@
   .card {
     display: grid;
     gap: var(--space-md);
-    padding: clamp(16px, 2vw, 26px);
+    padding: var(--panel-padding);
     min-width: 0;
   }
   .card h2 {
@@ -147,12 +147,6 @@
   }
   .fields input,
   .code input {
-    box-sizing: border-box;
-    padding: 11px 12px;
-    border: 1px solid var(--control-border);
-    background: var(--surface-sunken);
-    border-radius: var(--control-radius);
-    color: inherit;
     width: 100%;
   }
   .list {
@@ -264,10 +258,6 @@
     .mdToolbar button:hover:not(:disabled) {
       background: rgba(159, 204, 168, 0.14);
     }
-  }
-  .mdToolbar button:disabled {
-    opacity: 0.4;
-    cursor: default;
   }
   .mdWorkspace {
     min-width: 0;
@@ -459,17 +449,17 @@
   }
   .linksGrid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
     gap: var(--space-sm);
   }
   .linkCard {
     display: grid;
     gap: 7px;
     min-width: 0;
-    padding: 18px;
+    padding: var(--panel-padding);
     text-decoration: none;
     color: inherit;
-    border-radius: 12px;
+    border-radius: var(--card-radius);
     transition:
       border-color 0.2s,
       background 0.2s;
@@ -484,24 +474,9 @@
   }
   @media (hover: hover) and (pointer: fine) {
     .linkCard:hover {
-      border-color: rgba(159, 204, 168, 0.5);
-      background: rgba(159, 204, 168, 0.06);
+      border-color: var(--border-strong);
+      background: var(--surface-hover);
     }
-  }
-  .fields select {
-    box-sizing: border-box;
-    padding: 11px 12px;
-    border: 1px solid var(--control-border);
-    background: var(--surface-sunken);
-    border-radius: var(--control-radius);
-    color: inherit;
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-  }
-  .fields select option {
-    background: var(--c-base-850);
-    color: var(--text-body);
   }
   .eventDetails {
     font-size: 0.81rem;
@@ -513,10 +488,6 @@
       grid-template-columns: 1fr;
     }
     .subnav {
-      gap: var(--space-2xs);
-    }
-    .subnav a {
-      min-width: 0;
     }
   }
 
@@ -578,18 +549,8 @@
   .rosterFilters select,
   .banSearch,
   .violationInline input {
-    box-sizing: border-box;
     min-width: 0;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 12px;
-    background: rgba(0, 0, 0, 0.22);
-    color: inherit;
-    font: inherit;
     max-width: 100%;
-  }
-  .rosterFilters select {
-    background: #201d1b;
   }
   .syncNote {
     padding: 9px 18px;

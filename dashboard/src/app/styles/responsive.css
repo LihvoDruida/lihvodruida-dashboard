@@ -57,66 +57,6 @@
   }
 
   /* Give scrollable tabs one owner without changing their page-specific layout. */
-  .admin-tabs,
-  .dashboard-subnav {
-    min-width: 0;
-    max-width: 100%;
-    overscroll-behavior-inline: contain;
-    scroll-padding-inline: var(--space-xs);
-  }
-
-  .admin-tabs > a,
-  .dashboard-subnav > a {
-    scroll-margin-inline: var(--space-xs);
-  }
-
-  .dashboard-subnav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-xs);
-    padding: 6px;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--card-radius);
-    background: var(--surface-sunken);
-  }
-
-  .dashboard-subnav > a {
-    display: inline-flex;
-    flex: 0 0 auto;
-    align-items: center;
-    min-height: var(--control-height);
-    padding: var(--space-xs) var(--space-sm);
-    border: 1px solid transparent;
-    border-radius: var(--control-radius);
-    color: var(--text-soft);
-    font-size: var(--font-size-body-sm);
-    scroll-snap-align: start;
-  }
-
-  .dashboard-subnav > a[aria-current="page"] {
-    border-color: var(--border-strong);
-    background: var(--accent-soft);
-    color: var(--c-accent-200);
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .dashboard-subnav > a:hover {
-      background: var(--surface-hover);
-      color: var(--text-strong);
-    }
-  }
-
-  @media (max-width: 640px) {
-    .dashboard-subnav {
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      scroll-snap-type: x proximity;
-    }
-
-    .dashboard-subnav > a {
-      white-space: nowrap;
-    }
-  }
 
   @media (max-width: 1000px) {
     input,
@@ -138,4 +78,3 @@
     }
   }
 }
-

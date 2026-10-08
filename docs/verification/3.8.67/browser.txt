@@ -1,0 +1,29 @@
+Layout: shared
+Layout: profile
+Layout: static
+Layout: static-expanded
+Layout: logs
+Layout: guild
+Layout: rules
+Layout: applications
+Layout: polls
+Layout: admin
+Layout: controls
+{
+  "fixtureChecks": 132,
+  "failures": [],
+  "touchFailures": [],
+  "interaction": {
+    "focus": "solid",
+    "sheet": {
+      "client": 746,
+      "scroll": 1738,
+      "bottom": 826,
+      "viewport": 844
+    },
+    "scrollTop": 200,
+    "motion": "1e-06s"
+  },
+  "actual": [],
+  "liveLimitation": "Production HTTP preview unavailable in this environment; compiled HTML/CSS checked separately."
+}
