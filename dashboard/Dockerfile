@@ -73,6 +73,12 @@ COPY --from=deps /repo/shared /repo/shared
 COPY --from=deps /repo/dashboard/node_modules ./node_modules
 COPY dashboard/ ./
 
+# The Static rules document integrity test reads this canonical Markdown from
+# the repository root. Docker stages do not inherit the entire build context;
+# include this one non-secret source explicitly for build:ci only. The runtime
+# stage deliberately does not copy /repo/docs.
+COPY docs/content/static-rules.md /repo/docs/content/static-rules.md
+
 # CI scheduling audit also verifies the real VPS cron endpoint. The dashboard
 # build context is the repository root, but files are not present in a stage
 # until they are explicitly copied. Copy only this non-secret deployment

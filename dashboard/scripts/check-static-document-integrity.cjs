@@ -7,6 +7,16 @@ const vm = require('node:vm');
 const ts = require('typescript');
 const base = path.resolve(__dirname, '..');
 const repo = path.resolve(base, '..');
+// Detect Docker integration regressions rather than merely passing on the host,
+// where docs/content/ is always present in the checked-out repository.
+const dockerfile = fs.readFileSync(path.join(repo, 'dashboard/Dockerfile'), 'utf8');
+const dockerignore = fs.readFileSync(path.join(repo, '.dockerignore'), 'utf8');
+assert.match(dockerfile, /^COPY docs\/content\/static-rules\.md \/repo\/docs\/content\/static-rules\.md$/m,
+  'builder must copy the canonical static rules document for build:ci');
+assert.match(dockerignore, /^!docs\/content\/$/m,
+  'build context must include the Markdown parent directory');
+assert.match(dockerignore, /^!docs\/content\/static-rules\.md$/m,
+  'build context must include the canonical static rules document');
 const md = fs.readFileSync(path.join(repo, 'docs/content/static-rules.md'), 'utf8').trimEnd();
 const read = relative => fs.readFileSync(path.join(base, 'src', relative), 'utf8');
 let count = 0;
