@@ -6,7 +6,7 @@ import {
 } from "@/lib/permissions";
 
 export type AdminTabKey =
-  "overview" | "groups" | "discord" | "logs" | "server" | "welcome";
+  "overview" | "groups" | "discord" | "logs" | "server" | "welcome" | "settings";
 
 export default function AdminTabs({
   active,
@@ -25,6 +25,13 @@ export default function AdminTabs({
       label: "Огляд",
       description: "центр керування",
       visible: canOpenGroups || canOpenDiscord || canOpenLogs,
+    },
+    {
+      key: "settings" as const,
+      href: "/dashboard/settings",
+      label: "Налаштування",
+      description: "ролі Статика",
+      visible: canOpenGroups,
     },
     {
       key: "groups" as const,

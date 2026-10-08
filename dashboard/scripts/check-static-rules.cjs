@@ -20,7 +20,10 @@ verify('lib/staticRules.ts', [
   'staticPermission(',
 ]);
 verify('app/api/static/accept/route.ts', [ 'verifyTrustedOrigin(', 'checkRateLimit(', 'assertRequestBodySize(', 'createStaticChallenge(' ], [ 'addGuildMemberRoles(' ]);
-verify('app/api/static/manage/route.ts', [ 'getSession({ live: true })', 'staticPermission(session)', 'if (!access.edit', 'if (!access.admin' ]);
+verify('app/api/static/manage/route.ts', [ 'getSession({ live: true })', 'staticPermission(session)', 'if (!access.edit' ]);
+verify('app/api/dashboard/static-roles/route.ts', [ 'getSession({ live: true })', 'staticPermission(session)', 'access.admin', 'saveStaticSettings(' ]);
+verify('app/api/static/rules/route.ts', [ 'getSession({ live: true })', 'staticPermission(session)', 'permissions.edit' ]);
+verify('app/api/static/events/route.ts', [ 'listStaticAudit(', 'staticPermission(session)' ]);
 verify('app/api/internal/discord/static-confirm/route.ts', [ 'verifyInternalBearerToken(', 'INTERNAL_API_TOKEN', 'confirmStaticChallenge(' ]);
 verify('app/api/static/status/route.ts', [ 'staticChallengeStatus(', 'checkRateLimit(' ]);
 verify('proxy.ts', [ 'pathname === "/api/static/accept"', 'pathname === "/api/static/status"', 'pathname === "/api/internal/discord/static-confirm"' ]);

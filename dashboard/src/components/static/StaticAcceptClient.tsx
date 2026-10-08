@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import styles from "./static.module.css";
+import { StaticMarkdown } from "./StaticMarkdown";
 
 type Rules = { text: string; version: number; expiresAt: string; ready: boolean };
 type Challenge = { code: string; verifier: string; expiresAt: string };
@@ -60,7 +61,7 @@ export default function StaticAcceptClient({ token, botId }: { token: string; bo
       {error ? <div role="alert" className="notice panel error-note">{error}</div> : null}
       {rules ? <section className={`panel ${styles.card}`}>
         <div className={styles.meta}><span>Версія правил: {rules.version}</span><span>Посилання активне до {new Date(rules.expiresAt).toLocaleString("uk-UA")}</span></div>
-        <div className={styles.rules}>{rules.text || "Правила ще не опубліковано."}</div>
+        <div className={styles.rules}><StaticMarkdown value={rules.text || "*Правила ще не опубліковано.*"} /></div>
         {!challenge ? <div className={styles.acceptArea}>
           <label className={styles.check}><input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} /> Я прочитав(-ла) правила Статика та погоджуюся з ними.</label>
           <button className="btn primary" type="button" disabled={!agreed || !rules.ready || working} onClick={() => void begin()}>{working ? "Готуємо код…" : "Погоджуюся з правилами Статика"}</button>

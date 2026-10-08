@@ -126,6 +126,36 @@ export async function listStaticState() {
   };
 }
 
+export async function listStaticOverview() {
+  const [invites, members, settings] = await Promise.all([
+    db().collection(INVITES).limit(150).get(),
+    db().collection(MEMBERS).limit(1000).get(),
+    getStaticSettings(),
+  ]);
+  return {
+    settings,
+    invites: invites.docs.map((doc) => doc.data() as StaticInvite).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    members: members.docs.map((doc) => doc.data() as StaticMember).sort((a, b) => (b.acceptedAt || "").localeCompare(a.acceptedAt || "")),
+  };
+}
+
+export async function listStaticAudit(limit = 250) {
+  const safeLimit = Math.max(1, Math.min(250, Math.floor(limit)));
+  const snapshot = await db().collection(HISTORY).orderBy("createdAt", "desc").limit(safeLimit).get();
+  return snapshot.docs.map((doc) => {
+    const data = doc.data() ?? {};
+    return {
+      id: doc.id,
+      kind: String(data.kind || "unknown"),
+      actor: String(data.actor || ""),
+      createdAt: String(data.createdAt || ""),
+      details: data.details && typeof data.details === "object" && !Array.isArray(data.details)
+        ? data.details as Record<string, unknown>
+        : {},
+    };
+  });
+}
+
 export async function createStaticChallenge(token: string) {
   const invite = await getStaticInvite(token);
   if (!inviteActive(invite) || !invite) throw new Error("Посилання завершило дію або відкликане.");

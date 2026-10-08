@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { createStaticInvite, listStaticState, removeStaticMember, revokeStaticInvite, saveStaticSettings, staticPermission, unblockStaticMember } from "@/lib/staticRules";
+import { createStaticInvite, listStaticOverview, removeStaticMember, revokeStaticInvite, staticPermission, unblockStaticMember } from "@/lib/staticRules";
 import { assertRequestBodySize, checkRateLimit, noStoreHeaders, verifyTrustedOrigin } from "@/lib/security";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,7 +11,7 @@ export async function GET() {
     const session = await getSession({ live: true });
     const access = await staticPermission(session);
     if (!access.view) return reply({ ok: false, error: "Немає доступу." }, 403);
-    return reply({ ok: true, permissions: access, ...await listStaticState() });
+    return reply({ ok: true, permissions: access, ...await listStaticOverview() });
   } catch { return reply({ ok: false, error: "Сервіс тимчасово недоступний." }, 503); }
 }
 export async function POST(request: NextRequest) {
@@ -26,11 +26,6 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
   const action = String(body.action || "");
   try {
-    if (action === "save-rules") return reply({ ok: true, settings: await saveStaticSettings({ text: String(body.text || "") }, session.id) });
-    if (action === "save-roles") {
-      if (!access.admin) return reply({ ok: false, error: "Налаштовувати ролі може тільки адміністратор або власник." }, 403);
-      return reply({ ok: true, settings: await saveStaticSettings({ memberRoleId: body.memberRoleId, managerRoleId: body.managerRoleId }, session.id, true) });
-    }
     if (action === "create-invite") return reply({ ok: true, invite: await createStaticInvite(session.id) });
     if (action === "revoke-invite") { await revokeStaticInvite(String(body.id || ""), session.id); return reply({ ok: true }); }
     if (action === "remove-member") { await removeStaticMember(String(body.userId || ""), session.id); return reply({ ok: true }); }

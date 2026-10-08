@@ -1,1 +1,55 @@
 .wrap{display:grid;gap:18px;min-width:0}.hero{padding:clamp(18px,3vw,30px)}.card{display:grid;gap:16px;padding:clamp(16px,2vw,26px);min-width:0}.card h2{margin:0;font-size:clamp(1.1rem,2vw,1.45rem)}.sectionHead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}.meta{display:flex;flex-wrap:wrap;gap:12px;font-size:.9rem;color:var(--text-muted,#a5b2c1)}.rules{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7;font-size:1rem;max-width:85ch}.acceptArea{border-top:1px solid rgba(180,200,215,.2);padding-top:16px;display:grid;justify-items:start;gap:14px}.check{display:flex;gap:12px;align-items:flex-start;line-height:1.5;cursor:pointer}.check input{width:18px;height:18px;flex:0 0 18px;margin-top:2px}.challenge{display:grid;gap:12px;padding:18px;border:1px solid rgba(159,204,168,.27);border-radius:14px;background:rgba(102,141,115,.06)}.challenge h2,.challenge p{margin:0}.code{display:flex;align-items:center;flex-wrap:wrap;gap:10px;min-width:0}.code code{padding:12px 14px;border-radius:8px;background:rgba(0,0,0,.3);font-size:1.15rem;letter-spacing:.06em;overflow-wrap:anywhere}.code input{min-width:0;flex:1 1 200px}.muted{color:var(--text-muted,#a5b2c1);font-size:.91rem;line-height:1.55}.success{color:#a4e4b6}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.metrics>div{padding:18px;display:grid;gap:6px}.metrics strong{font-size:1.65rem}.editor{display:block;width:100%;max-width:100%;min-height:220px;padding:16px;color:inherit;background:rgba(0,0,0,.18);border:1px solid rgba(188,201,215,.28);border-radius:12px;resize:vertical;line-height:1.65}.actions{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.actions span{font-size:.87rem;color:var(--text-muted,#a5b2c1);max-width:65ch}.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.fields label{display:grid;gap:6px;font-size:.94rem}.fields input,.code input{box-sizing:border-box;padding:11px 12px;border:1px solid rgba(188,201,215,.28);background:rgba(0,0,0,.18);border-radius:9px;color:inherit;width:100%}.list{display:grid;gap:0}.listRow{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:12px 0;border-top:1px solid rgba(188,201,215,.14);overflow-wrap:anywhere;min-width:0}.listRow>div{display:grid;gap:4px;min-width:0}.listRow small{color:var(--text-muted,#a5b2c1)}@media(max-width:640px){.metrics{grid-template-columns:1fr 1fr}.fields{grid-template-columns:1fr}.listRow{align-items:flex-start}.listRow .btn{max-width:100%}}
+/* Markdown editor, scoped to Static pages; preserve the existing guild theme. */
+.mdEditor{display:grid;gap:0;min-width:0;border:1px solid rgba(188,201,215,.22);border-radius:13px;overflow:hidden;background:rgba(0,0,0,.1)}
+.mdEditorHeader{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(188,201,215,.17)}
+.mdTabs,.mdFileActions{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.mdTab{appearance:none;border:1px solid transparent;border-radius:8px;background:transparent;color:inherit;padding:7px 12px;font:inherit;font-size:.87rem;cursor:pointer}
+.mdTab:hover,.mdTabActive{background:rgba(159,204,168,.12);border-color:rgba(159,204,168,.35)}
+.mdToolbar{display:flex;align-items:center;flex-wrap:wrap;gap:5px;padding:8px 12px;border-bottom:1px solid rgba(188,201,215,.17)}
+.mdToolbar button{min-width:35px;min-height:33px;padding:5px 9px;border:1px solid rgba(188,201,215,.22);border-radius:7px;background:rgba(255,255,255,.035);color:inherit;cursor:pointer;font:inherit;font-size:.85rem;font-weight:650}
+.mdToolbar button:hover:not(:disabled){background:rgba(159,204,168,.14)}
+.mdToolbar button:disabled{opacity:.4;cursor:default}
+.mdWorkspace{min-width:0;display:grid;grid-template-columns:minmax(0,1fr)}
+.mdSplit{grid-template-columns:repeat(2,minmax(0,1fr))}
+.mdPane{display:grid;grid-template-rows:auto minmax(0,1fr);min-width:0;min-height:300px}
+.mdPane + .mdPane{border-left:1px solid rgba(188,201,215,.19)}
+.mdHidden{display:none}
+.mdPaneLabel{display:block;font-size:.77rem;text-transform:uppercase;letter-spacing:.045em;color:var(--text-muted,#a5b2c1);padding:9px 13px;border-bottom:1px solid rgba(188,201,215,.09)}
+.mdPane .editor{border:0;border-radius:0;background:transparent;min-height:340px;max-height:670px;padding:15px 16px;font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:.88rem;line-height:1.68}
+.mdPreview{max-height:670px;min-height:340px;overflow:auto;padding:15px 18px;overflow-wrap:anywhere}
+.mdHint{padding:10px 13px;border-top:1px solid rgba(188,201,215,.13);font-size:.8rem;line-height:1.7;color:var(--text-muted,#a5b2c1)}
+.mdHint code{color:inherit;font-family:ui-monospace,Consolas,monospace}
+.mdFileError{padding:9px 13px;margin:0;color:#f3a9a9}
+/* Shared renderer used identically by the preview and public acceptance page. */
+.rules{max-width:none;white-space:normal}
+.rules .static-markdown-content,.mdPreview .static-markdown-content{max-width:85ch}
+.wrap :global(.static-markdown-content){display:grid;gap:0;min-width:0;line-height:1.75;overflow-wrap:anywhere}
+:global(.static-markdown-content h2){margin:1.2em 0 .55em;font-size:1.42rem;line-height:1.3}
+:global(.static-markdown-content h3){margin:1.2em 0 .5em;font-size:1.22rem;line-height:1.35}
+:global(.static-markdown-content h4){margin:1em 0 .5em;font-size:1.07rem;line-height:1.4}
+:global(.static-markdown-content p){margin:0 0 .85em}
+:global(.static-markdown-content ul),:global(.static-markdown-content ol){margin:0 0 1em;padding-inline-start:1.5em;display:grid;gap:.3em}
+:global(.static-markdown-content blockquote){border-left:3px solid rgba(159,204,168,.55);margin:0 0 1em;padding:.8em 1.1em;background:rgba(159,204,168,.065);border-radius:0 8px 8px 0}
+:global(.static-markdown-content blockquote p:last-child){margin-bottom:0}
+:global(.static-markdown-content hr){width:100%;border:0;border-top:1px solid rgba(188,201,215,.22);margin:1.2em 0}
+:global(.static-markdown-content pre){overflow-x:auto;background:rgba(0,0,0,.28);padding:13px;border-radius:8px;margin:0 0 1em;white-space:pre}
+:global(.static-markdown-content code){font-family:ui-monospace,Consolas,monospace;background:rgba(255,255,255,.065);border-radius:3px;padding:.1em .25em;font-size:.9em}
+:global(.static-markdown-content pre code){padding:0;background:transparent}
+:global(.static-markdown-content a){color:#a9d4ed;text-underline-offset:3px}
+:global(.static-markdown-content a:hover){color:#c7edff}
+:global(.static-markdown-content .static-markdown-table-wrap){max-width:100%;overflow-x:auto;margin:0 0 1.1em}
+:global(.static-markdown-content table){border-collapse:collapse;width:100%;font-size:.94em}
+:global(.static-markdown-content th),:global(.static-markdown-content td){border:1px solid rgba(188,201,215,.2);padding:.55em .7em;text-align:left;vertical-align:top}
+:global(.static-markdown-content th){background:rgba(159,204,168,.09)}
+@media(max-width:820px){.mdSplit{grid-template-columns:minmax(0,1fr)}.mdSplit .mdPane + .mdPane{border-left:0;border-top:1px solid rgba(188,201,215,.2)}.mdPane .editor,.mdPreview{min-height:260px;max-height:520px}}
+
+/* Independent Static pages and admin Discord-role picker */
+.subnav{display:flex;flex-wrap:wrap;gap:8px;min-width:0}
+.linksGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.linkCard{display:grid;gap:7px;min-width:0;padding:18px;text-decoration:none;color:inherit;border-radius:12px;transition:border-color .2s,background .2s}
+.linkCard strong{font-size:1.08rem}.linkCard>span:last-child{color:var(--text-muted,#a5b2c1);font-size:.89rem;line-height:1.5}
+.linkCard:hover{border-color:rgba(159,204,168,.5);background:rgba(159,204,168,.06)}
+.fields select{box-sizing:border-box;padding:11px 12px;border:1px solid rgba(188,201,215,.28);background:var(--panel-bg,#1b2530);border-radius:9px;color:inherit;width:100%;min-width:0;max-width:100%}
+.fields select option{background:#1b2530;color:#e7edf4}
+.eventDetails{font-size:.81rem;color:var(--text-muted,#a5b2c1);overflow-wrap:anywhere}
+@media(max-width:640px){.linksGrid{grid-template-columns:1fr}.subnav{gap:4px}.subnav a{min-width:0}}
