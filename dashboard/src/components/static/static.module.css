@@ -53,3 +53,56 @@
 .fields select option{background:#1b2530;color:#e7edf4}
 .eventDetails{font-size:.81rem;color:var(--text-muted,#a5b2c1);overflow-wrap:anywhere}
 @media(max-width:640px){.linksGrid{grid-template-columns:1fr}.subnav{gap:4px}.subnav a{min-width:0}}
+
+/* Static roster follows GuildRosterExplorer's compact table rhythm without nesting cards. */
+.rosterMetrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;border:1px solid rgba(188,201,215,.14);background:rgba(0,0,0,.16);border-radius:10px;overflow:hidden}
+.rosterMetrics>div{display:grid;gap:7px;padding:15px 16px;border-right:1px solid rgba(188,201,215,.14);min-width:0}
+.rosterMetrics>div:last-child{border-right:0}
+.rosterMetrics small{font-size:.69rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted,#a5b2c1)}
+.rosterMetrics strong{font-size:1.24rem;font-variant-numeric:tabular-nums}
+.rosterPanel{min-width:0;overflow:hidden;padding:0}
+.rosterToolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;padding:18px 18px 15px}
+.rosterToolbar h2{margin:0 0 4px;font-size:1.12rem}
+.rosterFilters{display:flex;flex-wrap:wrap;align-items:center;gap:9px;min-width:0}
+.rosterFilters input,.rosterFilters select,.banSearch,.violationInline input{box-sizing:border-box;min-width:0;border:1px solid rgba(188,201,215,.22);border-radius:8px;padding:10px 12px;background:rgba(0,0,0,.22);color:inherit;font:inherit;max-width:100%}
+.rosterFilters select{background:#201d1b}
+.syncNote{padding:9px 18px;color:var(--text-muted,#a5b2c1);font-size:.78rem;border-block:1px solid rgba(188,201,215,.11)}
+.rosterScroll{width:100%;min-width:0;overflow-x:auto}
+.rosterTable{width:100%;min-width:750px}
+.rosterHead,.rosterRow{display:grid;grid-template-columns:minmax(215px,2.5fr) minmax(105px,.85fr) minmax(170px,1.4fr) minmax(115px,.85fr) minmax(220px,1.6fr);align-items:center;gap:16px;padding:12px 16px}
+.rosterHead{font-size:.72rem;font-weight:750;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted,#a5b2c1);background:rgba(0,0,0,.29)}
+.rosterRow{border-top:1px solid rgba(188,201,215,.12);transition:background .2s;min-height:64px}
+.rosterRow:hover{background:rgba(255,255,255,.025)}
+.rosterRow>div{min-width:0}
+.rosterRow>div[role=cell] small{display:block;color:var(--text-muted,#a5b2c1);font-size:.78rem;margin-top:5px;overflow-wrap:anywhere}
+.rosterRow>div[role=cell] strong{font-size:.85rem}
+.rosterIdentity{display:flex;align-items:center;gap:11px;min-width:0}
+.discordAvatar{width:39px;height:39px;flex:0 0 39px;display:grid;place-items:center;border-radius:10px;background:rgba(170,180,190,.1);font-weight:700;overflow:hidden}
+.discordAvatar img{width:100%;height:100%;object-fit:cover}
+.memberName{display:grid;gap:4px;min-width:0}
+.memberName strong{font-size:.92rem;overflow-wrap:anywhere}
+.memberName small{font-size:.71rem;color:var(--text-muted,#a5b2c1);overflow-wrap:anywhere}
+.statusPill{display:inline-flex;align-items:center;justify-content:center;border:1px solid;border-radius:22px;padding:5px 9px;font-size:.76rem;font-weight:650;max-width:100%}
+.pillActive{color:#acd8a7;border-color:rgba(133,186,112,.35);background:rgba(133,186,112,.06)}
+.pillBanned{color:#f2a8a8;border-color:rgba(218,113,113,.35);background:rgba(218,113,113,.07)}
+.pillRemoved{color:#c1b1a7;border-color:rgba(171,143,134,.28);background:rgba(171,143,134,.06)}
+.rosterActions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.rosterActions .btn{white-space:normal;padding:7px 9px;font-size:.77rem;min-height:32px}
+.violationInline{grid-column:1/-1;display:flex;align-items:end;gap:9px;flex-wrap:wrap;padding:12px;border:1px solid rgba(188,201,215,.16);border-radius:10px;background:rgba(0,0,0,.18)}
+.violationInline label{flex:1 1 250px;display:grid;gap:6px;font-size:.83rem}
+.violationInline input{width:100%}
+.violationInline>span{color:var(--text-muted,#a5b2c1);font-size:.76rem}
+.violationInline p{flex-basis:100%;margin:0}
+.rosterFooter{display:flex;justify-content:center;padding:12px}
+.emptyRoster{padding:25px;text-align:center;color:var(--text-muted,#a5b2c1)}
+.banGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.banCard{display:grid;gap:13px;min-width:0;padding:15px;border-radius:12px;border:1px solid rgba(188,201,215,.14);background:rgba(0,0,0,.1)}
+.banHead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:9px;min-width:0}
+.violationSlots{display:grid;gap:8px}
+.violationSlot{display:flex;align-items:center;justify-content:space-between;gap:11px;padding:11px;border:1px solid rgba(188,201,215,.12);border-radius:8px;background:rgba(0,0,0,.12);min-width:0}
+.violationSlot>div{min-width:0}
+.violationSlot strong{font-size:.81rem}
+.violationSlot p{margin:5px 0;line-height:1.5;overflow-wrap:anywhere;font-size:.87rem}
+.violationSlot small{color:var(--text-muted,#a5b2c1);font-size:.75rem;overflow-wrap:anywhere}
+@media(max-width:960px){.rosterMetrics{grid-template-columns:repeat(3,minmax(0,1fr))}.rosterMetrics>div{border-bottom:1px solid rgba(188,201,215,.14)}.banGrid{grid-template-columns:1fr}}
+@media(max-width:700px){.rosterMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}.rosterToolbar{align-items:stretch}.rosterFilters,.rosterFilters input,.rosterFilters select{width:100%}.rosterHead{display:none}.rosterTable{min-width:0}.rosterRow{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.rosterRow>div:first-child{grid-column:1/-1}.rosterActions{grid-column:1/-1}.rosterRow>div[role=cell]:not(:first-child)::before{content:attr(data-label);display:block;font-size:.7rem;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted,#a5b2c1);margin-bottom:4px}.violationInline{grid-column:1/-1}}

@@ -65,7 +65,7 @@ export default async function DiscordHubPage({
             <div className="eyebrow">Mistblossom Vanguard • Discord</div>
             <div className="content-hero-status-row" aria-label="Стан Discord редактора">
               <span className="content-mode-pill content-mode-pill--library">{hierarchyTitle(user.role)}</span>
-              <span className="content-hero-path">{canCreateRaidPolls ? "Рейд-голосування • Discord повідомлення" : canViewRules ? "Статистика правил • Звичайні повідомлення" : "Звичайні повідомлення"}</span>
+              <span className="content-hero-path">{canCreateRaidPolls ? "Рейди • Discord повідомлення" : canViewRules ? "Статистика правил • Звичайні повідомлення" : "Звичайні повідомлення"}</span>
             </div>
             <h1>Discord-повідомлення</h1>
             <span className="hero-accent" aria-hidden="true" />
@@ -81,7 +81,7 @@ export default async function DiscordHubPage({
             className="discord-dashboard-hero__side"
             summary={[
               { label: "ДОСТУП", value: hierarchyTitle(user.role), note: "Дії залежать від ролі" },
-              { label: "РОЗДІЛ", value: canCreateRaidPolls ? "Пули + повідомлення" : canViewRules ? "Правила + повідомлення" : "Повідомлення", note: discordEnabled ? "Discord API налаштовано" : "Discord API недоступний" },
+              { label: "РОЗДІЛ", value: canCreateRaidPolls ? "Рейди + повідомлення" : canViewRules ? "Правила + повідомлення" : "Повідомлення", note: discordEnabled ? "Discord API налаштовано" : "Discord API недоступний" },
             ]}
             stats={[
               { label: "EMBEDS", value: canUseGeneralEmbeds ? "ON" : "—" },
@@ -123,15 +123,6 @@ export default async function DiscordHubPage({
           </a>
 
           <div className="discord-hub-section-group discord-hub-section-group--tools" aria-label="Інструменти Discord">
-            {canCreateRaidPolls ? (
-              <a className="panel discord-hub-card discord-hub-card--tool discord-hub-card--poll" href="/polls">
-                <span className="eyebrow">Рейд-голосування • {hierarchyTitle(user.role)}</span>
-                <strong>Raid Polls</strong>
-                <p>Створення голосування за дні та час рейду з публікацією в Discord і результатами на сайті.</p>
-                <span className="btn subtle">Відкрити пули</span>
-              </a>
-            ) : null}
-
             {canManageAutoroles ? (
               <a className="panel discord-hub-card discord-hub-card--tool discord-hub-card--autoroles" href="/discord/autoroles">
                 <span className="eyebrow">Авторолі • {hierarchyTitle(user.role)}</span>

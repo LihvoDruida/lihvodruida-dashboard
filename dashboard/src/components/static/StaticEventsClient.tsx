@@ -7,6 +7,8 @@ const LABELS: Record<string, string> = {
   "settings.changed": "Налаштування / правила змінено", "invite.created": "Посилання створено",
   "invite.revoked": "Посилання відкликано", "member.accepted": "Правила прийнято",
   "member.removed": "Учасника виключено", "member.unblocked": "Повторний вступ дозволено",
+  "violation.added": "Порушення додано", "violation.removed": "Порушення знято",
+  "member.banned": "Бан на місяць", "role.enforced": "Заборонену роль знято ботом", "role.enforcement_pending": "Очікується повторне зняття ролі",
 };
 const formatDate = (value: string) => { const stamp = new Date(value); return Number.isNaN(stamp.valueOf()) ? "—" : stamp.toLocaleString("uk-UA"); };
 export default function StaticEventsClient() {

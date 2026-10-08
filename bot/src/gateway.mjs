@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { notifyDiscordMemberJoined, notifyDiscordNicknameObserved, confirmStaticRulesFromDm } from "./dashboardClient.mjs";
+import { notifyDiscordMemberJoined, notifyDiscordNicknameObserved, confirmStaticRulesFromDm, enforceStaticRoles } from "./dashboardClient.mjs";
 import { logger } from "./logger.mjs";
 
 const GATEWAY_URL = "wss://gateway.discord.gg/?v=10&encoding=json";
@@ -34,6 +34,34 @@ let heartbeatTimer = null;
 let heartbeatAcked = true;
 let reconnectTimer = null;
 let stopped = false;
+let staticSweepTimer = null;
+let staticSweepRunning = false;
+const recentStaticChecks = new Map();
+function enqueueStaticEnforcement(payload) {
+  const guildId = cleanSnowflake(payload?.guild_id), userId = cleanSnowflake(payload?.user?.id);
+  if (!guildId || guildId !== GUILD_ID() || !userId || payload?.user?.bot) return;
+  const now = Date.now();
+  if (now - (recentStaticChecks.get(userId) || 0) < 15_000) return;
+  recentStaticChecks.set(userId, now);
+  if (recentStaticChecks.size > 2000) {
+    for (const [id, time] of recentStaticChecks) if (now - time > 30_000) recentStaticChecks.delete(id);
+    if (recentStaticChecks.size > 2000) recentStaticChecks.clear();
+  }
+  void enforceStaticRoles({ guildId, userId })
+    .then(result => { if (result?.revoked) logger.info("Заборонену роль Статика повторно знято", { eventName: "bot.static.role_enforced", userId }); })
+    .catch(error => logger.warn("Перевірка ролі Статика недоступна", { eventName: "bot.static.role_enforce_failed", userId, error: String(error).slice(0, 180) }));
+}
+async function runStaticSweep() {
+  if (staticSweepRunning || stopped || !state.ready || !ENABLED()) return;
+  staticSweepRunning = true;
+  try {
+    const result = await enforceStaticRoles({ guildId: GUILD_ID(), sweep: true });
+    logger.info("Періодична перевірка ролей Статика", { eventName: "bot.static.sweep", ...result });
+  } catch (error) {
+    logger.warn("Періодична перевірка Статика не вдалася", { eventName: "bot.static.sweep_failed", error: String(error).slice(0, 180) });
+  } finally { staticSweepRunning = false; }
+}
+
 
 function cleanSnowflake(value) {
   const text = String(value || "").trim();
@@ -320,6 +348,7 @@ function handleDispatch(packet) {
     state.ready = true;
     state.lastError = null;
     state.reconnects = 0;
+    setTimeout(() => { void runStaticSweep(); }, 10_000).unref?.();
     logger.info("Discord Gateway готовий", {
       eventName: "bot.gateway.ready",
       guildId: GUILD_ID(),
@@ -357,8 +386,8 @@ function handleDispatch(packet) {
       })();
     }
   }
-  if (packet.t === "GUILD_MEMBER_ADD") enqueueMemberJoin(packet.d);
-  if (packet.t === "GUILD_MEMBER_UPDATE") enqueueNicknameCheck(packet.d);
+  if (packet.t === "GUILD_MEMBER_ADD") { enqueueMemberJoin(packet.d); enqueueStaticEnforcement(packet.d); }
+  if (packet.t === "GUILD_MEMBER_UPDATE") { enqueueNicknameCheck(packet.d); enqueueStaticEnforcement(packet.d); }
   if (packet.t === "GUILD_MEMBER_REMOVE") {
     const userId = cleanSnowflake(packet.d?.user?.id);
     if (userId) {
@@ -465,8 +494,14 @@ function connect() {
 export function startDiscordGatewayBridge() {
   stopped = false;
   connect();
+  if (staticSweepTimer) clearInterval(staticSweepTimer);
+  staticSweepTimer = setInterval(() => { void runStaticSweep(); }, 60 * 60 * 1000);
+  staticSweepTimer.unref?.();
   return () => {
     stopped = true;
+    if (staticSweepTimer) clearInterval(staticSweepTimer);
+    staticSweepTimer = null;
+    recentStaticChecks.clear();
     if (reconnectTimer) clearTimeout(reconnectTimer);
     clearHeartbeat();
     closeSocket(1000, "shutdown");

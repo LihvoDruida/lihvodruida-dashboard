@@ -83,12 +83,6 @@ export default async function DashboardIdentity({
                 desktopLabel: canCreateRaids ? "Рейди" : "Мої рейди",
               }
             : null,
-          canUseRaids
-            ? { href: "/polls", section: "polls", label: "Рейд-пули", desktopLabel: "Рейд-пули" }
-            : null,
-          canCreateRaids
-            ? { href: "/roster", section: "roster", label: "Формування складу", desktopLabel: "Склад" }
-            : null,
           canUseGuildRoster
             ? { href: "/guild", section: "guild", label: "Склад гільдії", desktopLabel: "Гільдія" }
             : null,

@@ -86,6 +86,7 @@ function isInternalBearerApiPath(pathname: string) {
     pathname === "/api/internal/discord/member-joined" ||
     pathname === "/api/internal/discord/member-nickname" ||
     pathname === "/api/internal/discord/static-confirm" ||
+    pathname === "/api/internal/discord/static-enforce" ||
     pathname === "/api/profile/discord-lookup" ||
     // Bot forwards verified Discord interactions through the private compose network.
     // The public endpoint stays public for direct Discord delivery, while this branch

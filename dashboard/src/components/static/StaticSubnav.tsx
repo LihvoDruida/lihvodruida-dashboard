@@ -4,6 +4,7 @@ const items = [
   { href: "/discord/static", label: "Огляд і склад" },
   { href: "/discord/static/rules", label: "Правила Статика" },
   { href: "/discord/static/events", label: "Журнал подій" },
+  { href: "/discord/static/bans", label: "Порушення та банліст" },
 ] as const;
 export function StaticSubnav({ active }: { active: typeof items[number]["href"] }) {
   return <nav className={`${styles.subnav} dashboard-subnav`} aria-label="Розділи Статика">

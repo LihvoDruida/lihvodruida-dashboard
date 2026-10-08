@@ -2,8 +2,9 @@ import "server-only";
 
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import type { DashboardSession } from "@/lib/auth";
+import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
-import { addGuildMemberRoles, assertDiscordRolesManageable, fetchDiscordGuildMemberSnapshot, fetchDiscordGuildSnapshot, fetchDiscordRoleControlSnapshot, getDiscordGuildId, removeGuildMemberRoles } from "@/lib/discordAdmin";
+import { addGuildMemberRoles, assertDiscordRolesManageable, fetchDiscordGuildMemberSnapshot, fetchDiscordGuildSnapshot, fetchDiscordGuildMembersCachedForUi, fetchDiscordRoleControlSnapshot, getDiscordGuildId, removeGuildMemberRoles } from "@/lib/discordAdmin";
 import { isDashboardAdmin } from "@/lib/permissions";
 
 const SETTINGS = "staticRulesConfig";
@@ -12,6 +13,8 @@ const CHALLENGES = "staticRulesChallenges";
 const MEMBERS = "staticRulesMembers";
 const HISTORY = "staticRulesAudit";
 const DAY_MS = 24 * 60 * 60 * 1000;
+const MAX_VIOLATIONS = 3;
+const MAX_VIOLATION_DESCRIPTION = 128;
 const CHALLENGE_MS = 10 * 60 * 1000;
 const snowflake = (value: unknown) => /^\d{16,25}$/.test(String(value || "")) ? String(value) : "";
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
@@ -21,7 +24,14 @@ const db = () => getFirebaseAdminDb();
 
 export type StaticSettings = { text: string; version: number; updatedAt: string | null; memberRoleId: string; managerRoleId: string };
 export type StaticInvite = { id: string; createdAt: string; expiresAt: string; createdBy: string; revokedAt: string | null };
-export type StaticMember = { userId: string; name: string; status: "active" | "removed"; blocked: boolean; acceptedAt: string | null; version: number; removedAt: string | null; removedBy: string | null };
+export type StaticViolation = { id: string; description: string; createdAt: string; createdBy: string };
+export type StaticMember = { userId: string; name: string; status: "active" | "removed"; blocked: boolean; acceptedAt: string | null; version: number; removedAt: string | null; removedBy: string | null; violations?: StaticViolation[]; banUntil?: string | null; banReason?: string | null };
+export const staticBanActive = (member: Pick<StaticMember, "banUntil"> | null | undefined, now = Date.now()) => Boolean(member?.banUntil && Date.parse(member.banUntil) > now);
+function monthFromNow(now = new Date()) {
+  const y = now.getUTCFullYear(), m = now.getUTCMonth(), d = now.getUTCDate();
+  const lastDay = new Date(Date.UTC(y, m + 2, 0)).getUTCDate();
+  return new Date(Date.UTC(y, m + 1, Math.min(d, lastDay), now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds(), now.getUTCMilliseconds())).toISOString();
+}
 export type StaticChallenge = { inviteId: string; version: number; createdAt: string; expiresAt: string; status: "pending" | "processing" | "completed" | "failed"; verifierHash: string; userId?: string; message?: string };
 
 export async function getStaticSettings(): Promise<StaticSettings> {
@@ -127,16 +137,131 @@ export async function listStaticState() {
 }
 
 export async function listStaticOverview() {
-  const [invites, members, settings] = await Promise.all([
+  const [invites, memberDocs, settings] = await Promise.all([
     db().collection(INVITES).limit(150).get(),
     db().collection(MEMBERS).limit(1000).get(),
     getStaticSettings(),
   ]);
+  // Discord is the source of truth for nickname/avatar/role; never infer a role
+  // from an old acceptance record. Fail closed to stored data on outage.
+  const discord = await fetchDiscordGuildMembersCachedForUi(60_000).catch(() => null);
+  const identities = new Map((discord || []).map(member => [member.userId, member]));
   return {
     settings,
-    invites: invites.docs.map((doc) => doc.data() as StaticInvite).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-    members: members.docs.map((doc) => doc.data() as StaticMember).sort((a, b) => (b.acceptedAt || "").localeCompare(a.acceptedAt || "")),
+    invites: invites.docs.map(doc => doc.data() as StaticInvite).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    members: memberDocs.docs.map(doc => {
+      const record = doc.data() as StaticMember;
+      const guildMember = identities.get(record.userId);
+      return { ...record, name: guildMember?.displayName || record.name, discord: guildMember
+        ? { avatarUrl: guildMember.avatarUrl, username: guildMember.username, nick: guildMember.nick, roleIds: guildMember.roleIds, joinedAt: guildMember.joinedAt }
+        : null };
+    }).sort((a, b) => (b.acceptedAt || "").localeCompare(a.acceptedAt || "")),
+    discordSynced: discord !== null,
   };
+}
+
+export async function listStaticDiscipline() {
+  const members = (await db().collection(MEMBERS).limit(1000).get()).docs
+    .map(doc => doc.data() as StaticMember)
+    .filter(member => (member.violations?.length || 0) > 0 || staticBanActive(member));
+  const discord = await fetchDiscordGuildMembersCachedForUi(60_000).catch(() => null);
+  const identities = new Map((discord || []).map(member => [member.userId, member]));
+  return members.map(member => ({ ...member,
+    name: identities.get(member.userId)?.displayName || member.name,
+    avatarUrl: identities.get(member.userId)?.avatarUrl || null,
+    violations: member.violations || [],
+    banned: staticBanActive(member),
+  })).sort((a, b) => Number(b.banned) - Number(a.banned) || (b.violations.at(-1)?.createdAt || "").localeCompare(a.violations.at(-1)?.createdAt || ""));
+}
+
+export async function addStaticViolation(userId: string, descriptionInput: string, actorId: string) {
+  if (!snowflake(userId)) throw new Error("Недійсний Discord ID.");
+  const description = descriptionInput.trim();
+  if (!description || description.length > MAX_VIOLATION_DESCRIPTION) throw new Error("Причина порушення має містити від 1 до 128 символів.");
+  const ref = db().collection(MEMBERS).doc(userId);
+  const result = await db().runTransaction(async tx => {
+    const previous = (await tx.get(ref)).data() as StaticMember | undefined;
+    if (!previous) throw new Error("Учасника не знайдено в реєстрі Статика.");
+    const current = previous.violations || [];
+    if (staticBanActive(previous)) throw new Error("Бан уже активний. Можна зняти порушення.");
+    if (current.length >= MAX_VIOLATIONS) throw new Error("Три порушення вже зафіксовано. Зніми одне перед додаванням нового.");
+    const violation = { id: secret(10), description, createdAt: nowIso(), createdBy: actorId };
+    const violations = [...current, violation];
+    const banned = violations.length === MAX_VIOLATIONS;
+    const banUntil = banned ? monthFromNow() : null;
+    tx.set(ref, { ...previous, violations, banUntil, banReason: banned ? "three_violations" : null,
+      status: banned ? "removed" : previous.status,
+      removedAt: banned ? nowIso() : previous.removedAt,
+      removedBy: banned ? actorId : previous.removedBy,
+    });
+    return { banned, banUntil, violation };
+  });
+  await staticAudit("violation.added", actorId, { userId, description, violationId: result.violation.id, count: result.banned ? 3 : null });
+  if (result.banned) {
+    await staticAudit("member.banned", actorId, { userId, banUntil: result.banUntil });
+    // Persist the ban before the Discord call. If Discord fails, gateway + hourly
+    // reconciliation revoke any unauthorized manual role grants.
+    try { await enforceStaticMemberRole(userId); }
+    catch (error) {
+      await staticAudit("role.enforcement_pending", "system", { userId, reason: "Discord unavailable" }).catch(() => null);
+      return { ...result, warning: "Бан збережено, але Discord тимчасово недоступний. Бот повторить зняття ролі." };
+    }
+  }
+  return result;
+}
+
+export async function removeStaticViolation(userId: string, violationId: string, actorId: string) {
+  if (!snowflake(userId) || !/^[a-zA-Z0-9_-]{10,30}$/.test(violationId)) throw new Error("Недійсний учасник або запис.");
+  const ref = db().collection(MEMBERS).doc(userId);
+  await db().runTransaction(async tx => {
+    const previous = (await tx.get(ref)).data() as StaticMember | undefined;
+    if (!previous) throw new Error("Учасника не знайдено.");
+    const violations = (previous.violations || []).filter(v => v.id !== violationId);
+    if (violations.length === (previous.violations || []).length) throw new Error("Порушення не знайдено.");
+    tx.update(ref, { violations, banUntil: null, banReason: null });
+  });
+  await staticAudit("violation.removed", actorId, { userId, violationId });
+  // Revoking a strike lifts the timed ban, but never grants a role automatically.
+}
+
+export async function enforceStaticMemberRole(userIdInput: string) {
+  const userId = snowflake(userIdInput);
+  if (!userId) return { checked: 0, revoked: 0 };
+  const settings = await getStaticSettings();
+  if (!settings.memberRoleId) return { checked: 0, revoked: 0 };
+  const record = (await db().collection(MEMBERS).doc(userId).get()).data() as StaticMember | undefined;
+  if (!record || (!record.blocked && !staticBanActive(record))) return { checked: 1, revoked: 0 };
+  const actual = await fetchDiscordGuildMemberSnapshot(userId).catch(error => {
+    if (String(error).includes("404")) return null;
+    throw error;
+  });
+  if (!actual?.roleIds.includes(settings.memberRoleId)) return { checked: 1, revoked: 0 };
+  await removeGuildMemberRoles({ guildId: getDiscordGuildId(), userId, roleIds: [settings.memberRoleId], reason: `Static role forbidden: blocked or banned` });
+  await staticAudit("role.enforced", "system", { userId, banUntil: record.banUntil || null });
+  return { checked: 1, revoked: 1 };
+}
+
+export async function sweepStaticForbiddenRoles() {
+  // Paginate by doc id: a guild larger than 1000 members must not skip bans.
+  let cursor: QueryDocumentSnapshot | undefined;
+  let checked = 0, revoked = 0, failed = 0;
+  for (let page = 0; page < 50; page++) {
+    let query = db().collection(MEMBERS).orderBy("__name__").limit(250);
+    if (cursor) query = query.startAfter(cursor);
+    const snap = await query.get();
+    if (!snap.docs.length) break;
+    cursor = snap.docs[snap.docs.length - 1];
+    for (const doc of snap.docs) {
+      const member = doc.data() as StaticMember;
+      if (!member.blocked && !staticBanActive(member)) continue;
+      try {
+        const result = await enforceStaticMemberRole(member.userId);
+        checked += result.checked; revoked += result.revoked;
+      } catch { failed++ } // Next hour retries failures without clearing bans.
+    }
+    if (snap.docs.length < 250) break;
+  }
+  return { checked, revoked, failed };
 }
 
 export async function listStaticAudit(limit = 250) {
@@ -199,7 +324,7 @@ export async function confirmStaticChallenge(codeInput: string, userIdInput: str
   const member = await fetchDiscordGuildMemberSnapshot(userId).catch(() => null);
   if (!member?.joinedAt) return { ok: false, message: "Роль видається лише учасникам Discord-сервера." };
   const previous = (await db().collection(MEMBERS).doc(userId).get()).data() as StaticMember | undefined;
-  if (previous?.blocked) return { ok: false, message: "Доступ до Статика відкликано. Звернись до РЛ." };
+  if (previous?.blocked || staticBanActive(previous)) return { ok: false, message: staticBanActive(previous) ? `Вступ заблоковано до ${previous?.banUntil}. Три порушення.` : "Доступ до Статика відкликано. Звернись до РЛ." };
   await assertDiscordRolesManageable([settings.memberRoleId]);
   // Claim the challenge atomically so two DM confirmations cannot grant two different accounts.
   const claimed = await db().runTransaction(async (tx) => {
@@ -215,14 +340,16 @@ export async function confirmStaticChallenge(codeInput: string, userIdInput: str
     const [freshInvite, freshMember] = await Promise.all([
       db().collection(INVITES).doc(raw.inviteId).get(), db().collection(MEMBERS).doc(userId).get(),
     ]);
-    if (!inviteActive(freshInvite.data() as StaticInvite | null) || (freshMember.data() as StaticMember | undefined)?.blocked) throw new Error("Запрошення або доступ відкликано.");
+    if (!inviteActive(freshInvite.data() as StaticInvite | null) || (freshMember.data() as StaticMember | undefined)?.blocked || staticBanActive(freshMember.data() as StaticMember | undefined)) throw new Error("Запрошення або доступ відкликано.");
     await addGuildMemberRoles({ guildId: getDiscordGuildId(), userId, roleIds: [settings.memberRoleId], reason: `Static rules v${settings.version} accepted via DM` });
     const acceptedAt = nowIso();
     const membership = db().collection(MEMBERS).doc(userId);
     const stored = await db().runTransaction(async (tx) => {
       const latest = (await tx.get(membership)).data() as StaticMember | undefined;
-      if (latest?.blocked) return false;
-      tx.set(membership, { userId, name: member.displayName, status: "active", blocked: false, version: settings.version, acceptedAt, removedAt: null, removedBy: null });
+      if (latest?.blocked || staticBanActive(latest)) return false;
+      // Strikes remain visible until a completed timed suspension and re-acceptance.
+      const finishedBan = Boolean(latest?.banUntil && !staticBanActive(latest));
+      tx.set(membership, { ...latest, userId, name: member.displayName, status: "active", blocked: false, version: settings.version, acceptedAt, removedAt: null, removedBy: null, violations: finishedBan ? [] : (latest?.violations || []), banUntil: null, banReason: null });
       return true;
     });
     if (!stored) {
@@ -245,7 +372,7 @@ export async function removeStaticMember(userId: string, actorId: string) {
   // Persist the block first: re-acceptance is denied even if Discord temporarily fails.
   const ref = db().collection(MEMBERS).doc(userId);
   const prev = (await ref.get()).data() as StaticMember | undefined;
-  await ref.set({ userId, name: prev?.name || userId, status: "removed", blocked: true, version: prev?.version || 0, acceptedAt: prev?.acceptedAt || null, removedAt: nowIso(), removedBy: actorId });
+  await ref.set({ ...prev, userId, name: prev?.name || userId, status: "removed", blocked: true, version: prev?.version || 0, acceptedAt: prev?.acceptedAt || null, removedAt: nowIso(), removedBy: actorId });
   await staticAudit("member.removed", actorId, { userId });
   await removeGuildMemberRoles({ guildId: getDiscordGuildId(), userId, roleIds: [settings.memberRoleId], reason: `Removed from static by ${actorId}` });
 }

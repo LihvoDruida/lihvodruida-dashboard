@@ -288,3 +288,17 @@ export async function confirmStaticRulesFromDm({ code, userId, guildId }) {
   if (!result.ok) throw new Error(`Static confirm: dashboard HTTP ${result.status}`);
   return result.json();
 }
+
+
+/** Reconcile forbidden static roles after member events and periodically. */
+export async function enforceStaticRoles({ guildId, userId = "", sweep = false }) {
+  const token = INTERNAL_TOKEN();
+  if (!token) throw new Error("INTERNAL_API_TOKEN не задано");
+  const result = await fetchWithTimeout(`${DASHBOARD_URL()}/api/internal/discord/static-enforce`, {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${token}`, "x-mistblossom-source": "bot-gateway" },
+    body: JSON.stringify({ guildId, userId, sweep }),
+  }, sweep ? 120_000 : Math.max(8_000, DASHBOARD_TIMEOUT_MS));
+  if (!result.ok) throw new Error(`Static enforcement: dashboard HTTP ${result.status}`);
+  return result.json();
+}

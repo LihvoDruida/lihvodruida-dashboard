@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { createStaticInvite, listStaticOverview, removeStaticMember, revokeStaticInvite, staticPermission, unblockStaticMember } from "@/lib/staticRules";
+import { addStaticViolation, createStaticInvite, listStaticOverview, removeStaticMember, removeStaticViolation, revokeStaticInvite, staticPermission, unblockStaticMember } from "@/lib/staticRules";
 import { assertRequestBodySize, checkRateLimit, noStoreHeaders, verifyTrustedOrigin } from "@/lib/security";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,6 +30,8 @@ export async function POST(request: NextRequest) {
     if (action === "revoke-invite") { await revokeStaticInvite(String(body.id || ""), session.id); return reply({ ok: true }); }
     if (action === "remove-member") { await removeStaticMember(String(body.userId || ""), session.id); return reply({ ok: true }); }
     if (action === "unblock-member") { await unblockStaticMember(String(body.userId || ""), session.id); return reply({ ok: true }); }
+    if (action === "add-violation") { const result = await addStaticViolation(String(body.userId || ""), String(body.description || ""), session.id); return reply({ ok: true, result, warning: result.warning }); }
+    if (action === "remove-violation") { await removeStaticViolation(String(body.userId || ""), String(body.violationId || ""), session.id); return reply({ ok: true }); }
     return reply({ ok: false, error: "Невідома дія." }, 400);
   } catch (error) { return reply({ ok: false, error: error instanceof Error ? error.message : "Помилка збереження." }, 400); }
 }

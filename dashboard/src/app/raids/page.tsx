@@ -129,6 +129,8 @@ export default async function RaidsListPage({
           </div>
           {canManage ? (
             <div className="raid-list-head-actions">
+              <a className="btn subtle" href="/roster">Збір рейдового складу на сезон</a>
+              <a className="btn subtle" href="/polls">Рейд-пули</a>
               <a className="btn subtle" href="/raids/bench-priority">
                 🩶 Сірий список
               </a>
