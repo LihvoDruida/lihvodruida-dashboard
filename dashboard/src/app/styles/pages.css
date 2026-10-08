@@ -1,4 +1,4 @@
-/* =========================================================
+@layer pages {/* =========================================================
    PAGES — родини сторінок дашборду
 
    Базові поверхні, кнопки й поля вже описані в components.css.
@@ -40,28 +40,9 @@
    ПРОФІЛЬ
    ========================================================= */
 /* Сторінка профілю: бічна колонка + основний стовпчик */
-.profile-account-layout {
-  display: grid;
-  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
-  gap: var(--gap-grid);
-  align-items: start;
-}
 
 .profile-account-header__badge {
   justify-self: start;
-}
-
-@media (max-width: 1000px) {
-  .profile-account-layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.profile-character-candidate__kind {
-  font-size: var(--font-size-caption);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-faint);
 }
 
 .profile-discord-standard {
@@ -77,19 +58,7 @@
 .profile-card-head--inline {
   display: flex;
   flex-wrap: nowrap;
-  align-items: center;
   gap: var(--space-sm);
-}
-
-.profile-account-sidebar__avatar {
-  width: 88px;
-  height: 88px;
-  border-radius: var(--radius-lg);
-}
-
-.profile-subsection-head--compact {
-  border-bottom: 0;
-  padding-bottom: 0;
 }
 
 .profile-empty-characters {
@@ -105,22 +74,6 @@
 
 .profile-empty-characters--compact {
   padding: var(--space-md);
-}
-
-.profile-nickname-preview {
-  padding: var(--space-xs) var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  color: var(--c-accent-200);
-  overflow-wrap: anywhere;
-}
-
-.profile-nickname-hint {
-  font-size: var(--font-size-meta);
-  color: var(--text-muted);
 }
 
 /* =========================================================
@@ -451,8 +404,11 @@
   cursor: pointer;
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .discord-preview-spoiler:hover {
   color: #dcddde;
+}
 }
 
 .discord-preview-timestamp {
@@ -473,24 +429,9 @@
 }
 
 /* Керування Discord */
-.discord-management-card {
-  display: grid;
-  gap: var(--space-sm);
-}
-
-.discord-management-card__body {
-  display: grid;
-  gap: var(--space-xs);
-  min-width: 0;
-}
 
 .discord-management-card--action {
   border-color: var(--border-strong);
-}
-
-.discord-management-section {
-  display: grid;
-  gap: var(--gap-stack);
 }
 
 .discord-role-picker {
@@ -553,10 +494,13 @@
   transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .discord-role-chip:hover {
   border-color: color-mix(in srgb, var(--c-accent-400) 58%, var(--border-strong));
   background: color-mix(in srgb, var(--c-accent-500) 16%, var(--surface-raised));
   transform: translateY(-1px);
+}
 }
 
 .discord-role-chip__label {
@@ -645,10 +589,13 @@
   transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .discord-role-picker-option:hover {
   border-color: var(--border-strong);
   background: color-mix(in srgb, var(--surface-raised) 88%, var(--surface-sunken));
   transform: translateY(-1px);
+}
 }
 
 .discord-role-picker-option[data-selected="true"] {
@@ -909,17 +856,6 @@
 
 .admin-policy-fieldset {
   display: grid;
-  gap: var(--space-sm);
-}
-
-.admin-policy-toggle {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-xs) var(--space-sm);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
 }
 
 /* На вузьких екранах адмінка ніколи не тягне горизонтальний скрол */
@@ -1186,7 +1122,7 @@
   display: grid;
   gap: var(--space-sm);
   width: 100%;
-  margin-top: 2px;
+  margin-top: var(--space-3xs);
 }
 
 .login-discord-button {
@@ -1226,6 +1162,8 @@
   transition: transform 0.55s var(--ease-out);
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .login-discord-button:hover {
   transform: translateY(-1px);
   border-color: rgba(255, 220, 152, 0.48);
@@ -1235,9 +1173,13 @@
     0 12px 24px -16px rgba(88, 101, 242, 0.92);
   color: #fff;
 }
+}
+
+@media (hover: hover) and (pointer: fine) {
 
 .login-discord-button:hover::before {
   transform: translateX(120%);
+}
 }
 
 .login-discord-button:focus-visible {
@@ -1377,8 +1319,11 @@
   color: inherit;
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .login-legal a:hover {
   color: #c9a66b;
+}
 }
 
 .login-legal > span {
@@ -1485,7 +1430,6 @@
    РОСТЕР
    ========================================================= */
 .roster-inline-form {
-  display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-xs);
@@ -1500,18 +1444,12 @@
    ========================================================= */
 .discord-builder-textarea,
 .discord-description-area {
-  min-height: 180px;
   font-family: var(--font-mono);
   font-size: 0.85rem;
 }
 
 .discord-send-controls {
-  display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-xs);
-  padding-top: var(--space-sm);
-  border-top: 1px solid var(--border-subtle);
 }
 
 .discord-load-message-btn {
@@ -1530,7 +1468,7 @@
   width: 46px;
   height: 44px;
   min-height: 0;
-  padding: 2px;
+  padding: var(--space-3xs);
   border: 1px solid var(--border);
   border-radius: var(--control-radius);
   background: var(--surface-sunken);
@@ -1547,11 +1485,7 @@
 /* Чекбокси ролей і службові прапорці */
 .discord-role-checkboxes {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
-  gap: var(--space-xs);
-  max-height: 260px;
   overflow-y: auto;
-  padding: var(--space-2xs);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   background: var(--surface-sunken);
@@ -1589,9 +1523,7 @@
 }
 
 .discord-management-blocked-roles {
-  display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2xs);
 }
 
 /* Таблиці Discord-розділу успадковують шаблон довідника */
@@ -1747,7 +1679,6 @@
   display: grid;
   gap: clamp(12px, 1.1vw, 16px);
   min-width: 0;
-  padding: clamp(16px, 1.45vw, 22px);
   border-radius: 18px;
 }
 
@@ -1774,10 +1705,6 @@
 .discord-builder-form .discord-autorole-card,
 .discord-builder-form .discord-role-picker {
   min-width: 0;
-}
-
-.discord-builder-form .content-field > span:first-child {
-  margin-bottom: 6px;
 }
 
 .discord-builder-form .input:not(textarea),
@@ -1832,7 +1759,7 @@
 .discord-timestamp-check {
   grid-column: 4 / 5;
   min-height: 46px;
-  padding-inline: 2px;
+  padding-inline: var(--space-3xs);
   align-self: center;
 }
 
@@ -1857,7 +1784,7 @@
 .discord-color-picker-field .discord-color-picker {
   inline-size: 100%;
   block-size: 46px;
-  padding: 4px;
+  padding: var(--space-2xs);
   border-radius: var(--control-radius);
 }
 
@@ -1919,12 +1846,6 @@
   min-height: var(--control-height);
 }
 
-.discord-autorole-card {
-  gap: clamp(12px, 1vw, 16px);
-  padding: clamp(14px, 1.1vw, 18px);
-  border-radius: 16px;
-}
-
 .discord-autorole-card__head {
   align-items: start;
 }
@@ -1935,11 +1856,7 @@
 }
 
 .discord-autorole-card__actions .btn {
-  min-height: 40px;
-}
-
-.discord-autorole-grid {
-  gap: clamp(12px, 1vw, 16px);
+  min-height: var(--control-height);
 }
 
 .discord-autorole-grid .content-field small {
@@ -2053,7 +1970,6 @@
 }
 
 
-
 /* Embed editor density normalization — shared by general embeds, rules and autoroles. */
 .discord-builder-form .content-form-section {
   padding: clamp(14px, 1.15vw, 18px);
@@ -2068,7 +1984,7 @@
 }
 
 .discord-builder-form .content-field > span:first-child {
-  margin-bottom: 4px;
+  margin-bottom: var(--space-2xs);
   font-size: var(--font-size-ui);
   line-height: 1.2;
 }
@@ -2095,11 +2011,11 @@
 
 .discord-builder-form .discord-autorole-card,
 .discord-builder-form .discord-field-row {
-  padding: 12px;
+  padding: var(--space-sm);
 }
 
 .discord-builder-form .discord-builder-actions .btn {
-  min-height: 44px;
+  min-height: var(--control-height);
 }
 
 @media (max-width: 640px) {
@@ -2175,7 +2091,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-xs);
-  margin-top: 8px;
+  margin-top: var(--space-xs);
 }
 
 .discord-preview-component-button {
@@ -2241,7 +2157,7 @@
 }
 
 .discord-dashboard-hero .hero-secure-note {
-  margin-top: 12px;
+  margin-top: var(--space-sm);
 }
 
 .discord-dashboard-hero__side {
@@ -2342,7 +2258,7 @@
 
 .discord-hub-card > .btn {
   width: 100%;
-  min-height: 44px;
+  min-height: var(--control-height);
   margin-top: auto;
   padding-inline: 14px;
 }
@@ -2440,7 +2356,7 @@
 
   .discord-dashboard-hero__side .guild-hero-stat-card {
     min-height: 54px;
-    padding: 8px;
+    padding: var(--space-xs);
   }
 
   .discord-dashboard-hero__side .guild-hero-stat-card > strong {
@@ -2510,3 +2426,5 @@
     transition: none;
   }
 }
+}
+

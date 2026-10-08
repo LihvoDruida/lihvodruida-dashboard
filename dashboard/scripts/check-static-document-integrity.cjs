@@ -28,9 +28,9 @@ function compile(src, fileName) {
   return transpiled.outputText;
 }
 function moduleFor(source, filename, requires) {
-  const module = {exports:{}};
-  vm.runInNewContext(compile(source, filename), {module, exports:module.exports, require(name) {if (!(name in requires)) throw Error(`Unexpected dependency ${name}`);return requires[name]}, process, Buffer, console, Date}, {filename});
-  return module.exports;
+  const loadedModule = {exports:{}};
+  vm.runInNewContext(compile(source, filename), {module: loadedModule, exports:loadedModule.exports, require(name) {if (!(name in requires)) throw Error(`Unexpected dependency ${name}`);return requires[name]}, process, Buffer, console, Date}, {filename});
+  return loadedModule.exports;
 }
 const template = moduleFor(read('lib/staticRulesDefault.ts'), 'staticRulesDefault.ts',{}).DEFAULT_STATIC_RULES_MARKDOWN;
 test('default compiled template is byte identical to project Markdown', () => assert.equal(template, md));

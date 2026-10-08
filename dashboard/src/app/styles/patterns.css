@@ -1,4 +1,4 @@
-
+@layer defaults {
 /* =========================================================
    PATTERNS — структурні заглушки за суфіксом класу
 
@@ -19,24 +19,24 @@
 
 /* ---------- Рядки: зміст ліворуч,
 дії праворуч ---------- */
-[class$="-row"]:not(:where([role="row"])):not(:where(.form-row)),
-[class*="-row "]:not(:where([role="row"])):not(:where(.form-row)),
-[class$="__row"],
-[class*="__row "],
-[class$="-bar"]:not(:where(.action-bar)),
-[class*="-bar "]:not(:where(.action-bar)),
-[class$="__bar"],
-[class*="__bar "],
-[class$="-toolbar"],
-[class*="-toolbar "],
-[class$="-links"],
-[class*="-links "],
-[class$="-badges"],
-[class*="-badges "],
-[class$="-pills"],
-[class*="-pills "],
-[class$="__pills"],
-[class*="__pills "] {
+:where([class$="-row"]:not(:where([role="row"])):not(:where(.form-row))),
+:where([class*="-row "]:not(:where([role="row"])):not(:where(.form-row))),
+:where([class$="__row"]),
+:where([class*="__row "]),
+:where([class$="-bar"]:not(:where(.action-bar))),
+:where([class*="-bar "]:not(:where(.action-bar))),
+:where([class$="__bar"]),
+:where([class*="__bar "]),
+:where([class$="-toolbar"]),
+:where([class*="-toolbar "]),
+:where([class$="-links"]),
+:where([class*="-links "]),
+:where([class$="-badges"]),
+:where([class*="-badges "]),
+:where([class$="-pills"]),
+:where([class*="-pills "]),
+:where([class$="__pills"]),
+:where([class*="__pills "]) {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -45,144 +45,214 @@
 }
 
 /* ---------- Вертикальні стеки ---------- */
-[class$="-stack"],
-/* ---------- Вертикальні стеки ---------- */
-[class*="-stack "],
-[class$="__stack"],
-[class*="__stack "],
-[class$="-column"],
-[class*="-column "],
-[class$="__column"],
-[class*="__column "],
-[class$="-body"],
-[class*="-body "],
-[class$="__body"],
-[class*="__body "],
-[class$="-copy"],
-[class*="-copy "],
-[class$="__copy"],
-[class*="__copy "],
-[class$="-content"]:not(:where(.discord-preview-content)),
-[class*="-content "]:not(:where(.discord-preview-content)),
-[class$="__content"],
-[class*="__content "],
-[class$="-main"],
-[class*="-main "],
-[class$="__main"],
-[class*="__main "],
-[class$="-identity"],
-[class*="-identity "],
-[class$="__identity"],
-[class*="__identity "],
-[class$="-summary"]:not(:where(summary)),
-[class*="-summary "]:not(:where(summary)),
-[class$="__summary"],
-[class*="__summary "],
-[class$="-details"]:not(:where(details)),
-[class*="-details "]:not(:where(details)),
-[class$="-steps"],
-[class*="-steps "],
-[class$="-group"],
-[class*="-group "],
-[class$="__group"],
-[class*="__group "],
-[class$="-groups"],
-[class*="-groups "] {
+:where([class$="-stack"]),
+
+:where([class*="-stack "]),
+
+:where([class$="__stack"]),
+
+:where([class*="__stack "]),
+
+:where([class$="-column"]),
+
+:where([class*="-column "]),
+
+:where([class$="__column"]),
+
+:where([class*="__column "]),
+
+:where([class$="-body"]),
+
+:where([class*="-body "]),
+
+:where([class$="__body"]),
+
+:where([class*="__body "]),
+
+:where([class$="-copy"]),
+
+:where([class*="-copy "]),
+
+:where([class$="__copy"]),
+
+:where([class*="__copy "]),
+
+:where([class$="-content"]:not(:where(.discord-preview-content))),
+
+:where([class*="-content "]:not(:where(.discord-preview-content))),
+
+:where([class$="__content"]),
+
+:where([class*="__content "]),
+
+:where([class$="-main"]),
+
+:where([class*="-main "]),
+
+:where([class$="__main"]),
+
+:where([class*="__main "]),
+
+:where([class$="-identity"]),
+
+:where([class*="-identity "]),
+
+:where([class$="__identity"]),
+
+:where([class*="__identity "]),
+
+:where([class$="-summary"]:not(:where(summary))),
+
+:where([class*="-summary "]:not(:where(summary))),
+
+:where([class$="__summary"]),
+
+:where([class*="__summary "]),
+
+:where([class$="-details"]:not(:where(details))),
+
+:where([class*="-details "]:not(:where(details))),
+
+:where([class$="-steps"]),
+
+:where([class*="-steps "]),
+
+:where([class$="-group"]),
+
+:where([class*="-group "]),
+
+:where([class$="__group"]),
+
+:where([class*="__group "]),
+
+:where([class$="-groups"]),
+
+:where([class*="-groups "]) {
   display: grid;
   gap: var(--space-xs);
   min-width: 0;
 }
 
 /* ---------- Сторінкові контейнери ---------- */
-[class$="-page"],
-/* ---------- Сторінкові контейнери ---------- */
-[class*="-page "],
-[class$="-container"]:not(:where(.container)),
-[class*="-container "]:not(:where(.container)),
-[class$="-shell"]:not(:where(.discord-builder-shell)),
-[class*="-shell "]:not(:where(.discord-builder-shell)) {
+:where([class$="-page"]),
+
+:where([class*="-page "]),
+
+:where([class$="-container"]:not(:where(.container))),
+
+:where([class*="-container "]:not(:where(.container))),
+
+:where([class$="-shell"]:not(:where(.discord-builder-shell))),
+
+:where([class*="-shell "]:not(:where(.discord-builder-shell))) {
   min-width: 0;
 }
 
 /* ---------- Форми ---------- */
-[class$="-form"]:not(:where(.roster-inline-form)),
-/* ---------- Форми ---------- */
-[class*="-form "]:not(:where(.roster-inline-form)),
-[class$="__form"],
-[class*="__form "] {
+:where([class$="-form"]:not(:where(.roster-inline-form))),
+
+:where([class*="-form "]:not(:where(.roster-inline-form))),
+
+:where([class$="__form"]),
+
+:where([class*="__form "]) {
   display: grid;
   gap: var(--space-sm);
   min-width: 0;
 }
 
 /* Форма-обгортка навколо однієї кнопки не має розтягуватись */
-[class$="-action-form"],
-/* Форма-обгортка навколо однієї кнопки не має розтягуватись */
-[class*="-action-form "],
-[class$="-button-form"],
-[class*="-button-form "],
-[class$="-bulk-form"],
-[class*="-bulk-form "] {
+:where([class$="-action-form"]),
+
+:where([class*="-action-form "]),
+
+:where([class$="-button-form"]),
+
+:where([class*="-button-form "]),
+
+:where([class$="-bulk-form"]),
+
+:where([class*="-bulk-form "]) {
   display: inline-grid;
   gap: var(--space-2xs);
 }
 
 /* ---------- Дрібний службовий текст ---------- */
-[class$="-meta"],
-/* ---------- Дрібний службовий текст ---------- */
-[class*="-meta "],
-[class$="__meta"],
-[class*="__meta "],
-[class$="-hint"],
-[class*="-hint "],
-[class$="__hint"],
-[class*="__hint "],
-[class$="-status"],
-[class*="-status "],
-[class$="__status"],
-[class*="__status "],
-[class$="-caption"],
-[class*="-caption "],
-[class$="-placeholder"],
-[class*="-placeholder "],
-[class$="-counter"],
-[class*="-counter "],
-[class$="__counter"],
-[class*="__counter "],
-[class$="-order"],
-[class*="-order "] {
+:where([class$="-meta"]),
+
+:where([class*="-meta "]),
+
+:where([class$="__meta"]),
+
+:where([class*="__meta "]),
+
+:where([class$="-hint"]),
+
+:where([class*="-hint "]),
+
+:where([class$="__hint"]),
+
+:where([class*="__hint "]),
+
+:where([class$="-status"]),
+
+:where([class*="-status "]),
+
+:where([class$="__status"]),
+
+:where([class*="__status "]),
+
+:where([class$="-caption"]),
+
+:where([class*="-caption "]),
+
+:where([class$="-placeholder"]),
+
+:where([class*="-placeholder "]),
+
+:where([class$="-counter"]),
+
+:where([class*="-counter "]),
+
+:where([class$="__counter"]),
+
+:where([class*="__counter "]),
+
+:where([class$="-order"]),
+
+:where([class*="-order "]) {
   color: var(--text-muted);
   font-size: var(--font-size-ui);
   line-height: var(--line-height-body);
 }
 
 /* ---------- Заголовки блоків ---------- */
-.section-title,
-[class$="-title"]:not(:where(.discord-preview-title)),
-[class*="-title "]:not(:where(.discord-preview-title)),
-[class$="__title"]:not(:where(.app-footer__title)),
-[class*="__title "]:not(:where(.app-footer__title)),
-[class$="-label"]:not(:where(.field-label)),
-[class*="-label "]:not(:where(.field-label)),
-[class$="__label"],
-[class*="__label "] {
+:where(.section-title),
+:where([class$="-title"]:not(:where(.discord-preview-title))),
+:where([class*="-title "]:not(:where(.discord-preview-title))),
+:where([class$="__title"]:not(:where(.app-footer__title))),
+:where([class*="__title "]:not(:where(.app-footer__title))),
+:where([class$="-label"]:not(:where(.field-label))),
+:where([class*="-label "]:not(:where(.field-label))),
+:where([class$="__label"]),
+:where([class*="__label "]) {
   color: var(--text-strong);
   font-weight: var(--font-weight-bold);
   min-width: 0;
 }
 
-[class$="-label"]:not(:where(.field-label)),
-[class*="-label "]:not(:where(.field-label)),
-[class$="__label"],
-[class*="__label "] {
+:where([class$="-label"]:not(:where(.field-label))),
+:where([class*="-label "]:not(:where(.field-label))),
+:where([class$="__label"]),
+:where([class*="__label "]) {
   font-size: var(--font-size-ui-lg);
   letter-spacing: 0.02em;
 }
 
-[class$="-header"]:not(:where(.section-header)),
-[class*="-header "]:not(:where(.section-header)),
-[class$="__header"],
-[class*="__header "] {
+:where([class$="-header"]:not(:where(.section-header))),
+:where([class*="-header "]:not(:where(.section-header))),
+:where([class$="__header"]),
+:where([class*="__header "]) {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -192,13 +262,17 @@
 }
 
 /* ---------- Виділені врізки ---------- */
-[class$="-callout"],
-/* ---------- Виділені врізки ---------- */
-[class*="-callout "],
-[class$="-banner"],
-[class*="-banner "],
-[class$="-warning"]:not(:where(.warning-note)):not(:where(.profile-storage-warning)),
-[class*="-warning "]:not(:where(.warning-note)):not(:where(.profile-storage-warning)) {
+:where([class$="-callout"]),
+
+:where([class*="-callout "]),
+
+:where([class$="-banner"]),
+
+:where([class*="-banner "]),
+
+:where([class$="-warning"]:not(:where(.warning-note)):not(:where(.profile-storage-warning))),
+
+:where([class*="-warning "]:not(:where(.warning-note)):not(:where(.profile-storage-warning))) {
   padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--border-subtle);
   border-left: 3px solid var(--c-accent-400);
@@ -210,11 +284,13 @@
 }
 
 /* ---------- Варіанти вибору: радіо-картки ---------- */
-[class$="-option"]:not(:where(option)),
-/* ---------- Варіанти вибору: радіо-картки ---------- */
-[class*="-option "]:not(:where(option)),
-[class$="__option"],
-[class*="__option "] {
+:where([class$="-option"]:not(:where(option))),
+
+:where([class*="-option "]:not(:where(option))),
+
+:where([class$="__option"]),
+
+:where([class*="__option "]) {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
@@ -229,46 +305,59 @@
   transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
 }
 
-[class$="-option"]:hover,
-[class*="-option "]:hover,
-[class$="__option"]:hover,
-[class*="__option "]:hover {
+@media (hover: hover) and (pointer: fine) {
+
+:where([class$="-option"]:hover),
+:where([class*="-option "]:hover),
+:where([class$="__option"]:hover),
+:where([class*="__option "]:hover) {
   border-color: var(--border-strong);
   background: var(--surface-hover);
 }
+}
 
-[class$="-option"].is-selected,
-[class*="-option "].is-selected,
-[class$="-option"].is-active,
-[class*="-option "].is-active,
-[class$="__option"].is-selected,
-[class*="__option "].is-selected {
+:where([class$="-option"].is-selected),
+:where([class*="-option "].is-selected),
+:where([class$="-option"].is-active),
+:where([class*="-option "].is-active),
+:where([class$="__option"].is-selected),
+:where([class*="__option "].is-selected) {
   border-color: var(--border-strong);
   background: var(--accent-soft);
   color: var(--c-accent-200);
 }
 
 /* ---------- Дії та кнопки без класу .btn ---------- */
-[class$="-action"]:not(:where(.raid-action)):not(:where([class*="raid-action--"])),
-/* ---------- Дії та кнопки без класу .btn ---------- */
-[class*="-action "]:not(:where(.raid-action)):not(:where([class*="raid-action--"])),
-[class$="__action"],
-[class*="__action "],
-[class$="-button"]:not(:where(.btn)),
-[class*="-button "]:not(:where(.btn)),
-[class$="__button"],
-[class*="__button "] {
+:where([class$="-action"]:not(:where(.raid-action)):not(:where([class*="raid-action--"]))),
+
+:where([class*="-action "]:not(:where(.raid-action)):not(:where([class*="raid-action--"]))),
+
+:where([class$="__action"]),
+
+:where([class*="__action "]),
+
+:where([class$="-button"]:not(:where(.btn))),
+
+:where([class*="-button "]:not(:where(.btn))),
+
+:where([class$="__button"]),
+
+:where([class*="__button "]) {
   min-width: 0;
 }
 
 /* ---------- Роздільники ---------- */
-[class$="-divider"],
-/* ---------- Роздільники ---------- */
-[class*="-divider "],
-[class$="__divider"],
-[class*="__divider "],
-[class$="-separator"]:not(:where(.app-footer__link-separator)):not(:where(.discord-preview-footer-separator)),
-[class*="-separator "]:not(:where(.app-footer__link-separator)):not(:where(.discord-preview-footer-separator)) {
+:where([class$="-divider"]),
+
+:where([class*="-divider "]),
+
+:where([class$="__divider"]),
+
+:where([class*="__divider "]),
+
+:where([class$="-separator"]:not(:where(.app-footer__link-separator)):not(:where(.discord-preview-footer-separator))),
+
+:where([class*="-separator "]:not(:where(.app-footer__link-separator)):not(:where(.discord-preview-footer-separator))) {
   width: 100%;
   height: 1px;
   border: 0;
@@ -276,9 +365,9 @@
 }
 
 /* ---------- Крапка-індикатор ---------- */
-[class$="-dot"]:not(:where(.discord-role-dot)),
-/* ---------- Крапка-індикатор ---------- */
-[class*="-dot "]:not(:where(.discord-role-dot)) {
+:where([class$="-dot"]:not(:where(.discord-role-dot))),
+
+:where([class*="-dot "]:not(:where(.discord-role-dot))) {
   display: inline-block;
   width: 8px;
   height: 8px;
@@ -288,18 +377,20 @@
 }
 
 /* ---------- Посилання всередині блоків ---------- */
-[class$="-link"]:not(:where(.discord-preview-link)),
-/* ---------- Посилання всередині блоків ---------- */
-[class*="-link "]:not(:where(.discord-preview-link)) {
+:where([class$="-link"]:not(:where(.discord-preview-link))),
+
+:where([class*="-link "]:not(:where(.discord-preview-link))) {
   color: var(--c-accent-300);
 }
 
 /* ---------- Підвал блоку ---------- */
-[class$="-footer"]:not(:where(.app-footer)),
-/* ---------- Підвал блоку ---------- */
-[class*="-footer "]:not(:where(.app-footer)),
-[class$="__footer"],
-[class*="__footer "] {
+:where([class$="-footer"]:not(:where(.app-footer))),
+
+:where([class*="-footer "]:not(:where(.app-footer))),
+
+:where([class$="__footer"]),
+
+:where([class*="__footer "]) {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -311,39 +402,47 @@
 }
 
 /* ---------- Пошук ---------- */
-[class$="-search"],
-/* ---------- Пошук ---------- */
-[class*="-search "],
-[class$="__search"],
-[class*="__search "] {
+:where([class$="-search"]),
+
+:where([class*="-search "]),
+
+:where([class$="__search"]),
+
+:where([class*="__search "]) {
   display: block;
   min-width: 0;
 }
 
 /* ---------- Секції всередині сторінки ---------- */
-[class$="-section"]:not(:where([class*="form-section"])),
-/* ---------- Секції всередині сторінки ---------- */
-[class*="-section "]:not(:where([class*="form-section"])),
-[class$="__section"],
-[class*="__section "] {
+:where([class$="-section"]:not(:where([class*="form-section"]))),
+
+:where([class*="-section "]:not(:where([class*="form-section"]))),
+
+:where([class$="__section"]),
+
+:where([class*="__section "]) {
   display: grid;
   gap: var(--gap-stack);
   min-width: 0;
 }
 
 /* ---------- Елементи списків ---------- */
-[class$="-item"]:not(:where(.dashboard-list-row)):not(:where(.raid-list-item)),
-/* ---------- Елементи списків ---------- */
-[class*="-item "]:not(:where(.dashboard-list-row)):not(:where(.raid-list-item)),
-[class$="__item"]:not(:where(.dashboard-nav-measure__item)),
-[class*="__item "]:not(:where(.dashboard-nav-measure__item)) {
+:where([class$="-item"]:not(:where(.dashboard-list-row)):not(:where(.raid-list-item))),
+
+:where([class*="-item "]:not(:where(.dashboard-list-row)):not(:where(.raid-list-item))),
+
+:where([class$="__item"]:not(:where(.dashboard-nav-measure__item))),
+
+:where([class*="__item "]:not(:where(.dashboard-nav-measure__item))) {
   min-width: 0;
 }
 
 /* ---------- Нічого не має вилазити за межі екрана ---------- */
-[class*="-page"],
-[class*="-shell"],
-[class*="-panel"],
-[class*="-card"] {
+:where([class*="-page"]),
+:where([class*="-shell"]),
+:where([class*="-panel"]),
+:where([class*="-card"]) {
   max-width: 100%;
 }
+}
+

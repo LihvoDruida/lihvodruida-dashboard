@@ -1,4 +1,417 @@
+@layer defaults {
+:where([class$="-card"]:not(:where([class*="nav"]))),
+:where([class*="-card "]:not(:where([class*="nav"]))),
+:where([class$="__card"]),
+:where([class*="__card "]),
+:where([class$="-panel"]:not(:where(.dashboard-list-panel))),
+:where([class*="-panel "]:not(:where(.dashboard-list-panel))),
+:where([class$="__panel"]),
+:where([class*="__panel "]),
+:where([class$="-box"]),
+:where([class*="-box "]) {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
 
+:where(.panel:not(:where([class*="hero"]))) {
+  padding: var(--pad-card);
+}
+
+:where([class$="-card"]:not(:where([class*="nav"]))),
+:where([class*="-card "]:not(:where([class*="nav"]))),
+:where([class$="__card"]),
+:where([class*="__card "]),
+:where([class$="-panel"]:not(:where(.dashboard-list-panel))),
+:where([class*="-panel "]:not(:where(.dashboard-list-panel))),
+:where([class$="__panel"]),
+:where([class*="__panel "]),
+:where([class$="-box"]),
+:where([class*="-box "]) {
+  padding: var(--pad-card-compact);
+}
+:where(.panel:not(:where([class*="hero"]))) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-stack);
+}
+:where(.panel [class$="-card"]),
+:where(.panel [class*="-card "]),
+:where(.panel [class$="__card"]),
+:where(.panel [class*="__card "]) {
+  background: var(--surface-raised);
+  box-shadow: none;
+}
+:where(a[class$="-card"]),
+:where(a[class*="-card "]),
+:where(a[class$="__card"]),
+:where(a[class*="__card "]),
+:where([class$="-card"][role="button"]),
+:where([class*="-card "][role="button"]) {
+  color: inherit;
+  transition: transform var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+
+:where(a[class$="-card"]:hover),
+:where(a[class*="-card "]:hover),
+:where(a[class$="__card"]:hover),
+:where(a[class*="__card "]:hover) {
+  transform: translateY(-3px);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-lg);
+  color: inherit;
+}
+}
+:where(.is-active[class$="-card"]),
+:where(.is-active[class*="-card "]),
+:where(.is-selected[class$="-card"]),
+:where(.is-selected[class*="-card "]) {
+  border-color: var(--border-strong);
+}
+
+:where(.is-active[class$="-card"])::after,
+:where(.is-active[class*="-card "])::after,
+:where(.is-selected[class$="-card"])::after,
+:where(.is-selected[class*="-card "])::after {
+  content: "";
+  position: absolute;
+  inset: var(--space-sm) auto var(--space-sm) 0;
+  width: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-gradient);
+  pointer-events: none;
+}
+:where([class$="__head"]),
+:where([class*="__head "]),
+:where([class$="-head"]),
+:where([class*="-head "]) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+:where([class$="__head"] > div),
+:where([class*="__head "] > div),
+:where([class$="-head"] > div),
+:where([class*="-head "] > div) {
+  min-width: 0;
+}
+
+:where([class$="__head"] strong),
+:where([class*="__head "] strong),
+:where([class$="-head"] strong),
+:where([class*="-head "] strong) {
+  color: var(--text-strong);
+}
+
+:where([class$="__head"] small),
+:where([class*="__head "] small),
+:where([class$="-head"] small),
+:where([class*="-head "] small) {
+  display: block;
+  color: var(--text-muted);
+}
+
+:where([class$="__lead"]),
+:where([class*="__lead "]) {
+  color: var(--text-soft);
+  font-size: var(--font-size-body);
+  line-height: 1.58;
+}
+:where([class$="__icon"]),
+
+:where([class*="__icon "]),
+
+:where([class$="-icon"]),
+
+:where([class*="-icon "]) {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+:where([class$="-field"]:not(:where([class*="filter-shell"]))),
+:where([class*="-field "]:not(:where([class*="filter-shell"]))),
+:where([class$="__field"]),
+:where([class*="__field "]) {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+:where([class$="-field"] > span:first-child),
+:where([class*="-field "] > span:first-child) {
+  font-size: var(--font-size-ui-lg);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.02em;
+  color: var(--text-soft);
+}
+:where([class$="-field"] small),
+:where([class*="-field "] small) {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+:where([class$="-form-section"]),
+:where([class*="-form-section "]) {
+  display: grid;
+  gap: var(--space-md);
+  padding: var(--pad-card-compact);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+:where([class$="-alert"]),
+:where([class*="-alert "]),
+:where([class$="-notice"]),
+:where([class*="-notice "]) {
+  display: block;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--c-ink-500);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-soft);
+  font-size: 0.86rem;
+  line-height: var(--line-height-relaxed);
+}
+:where([class$="-pill"]),
+:where([class*="-pill "]),
+:where([class$="-chip"]),
+:where([class*="-chip "]),
+:where([class$="-badge"]),
+:where([class*="-badge "]),
+:where([class$="-tag"]),
+:where([class*="-tag "]) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: var(--space-3xs) var(--space-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  color: var(--text-soft);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
+  line-height: var(--line-height-copy);
+  white-space: nowrap;
+}
+:where([class$="--ok"]),
+:where([class*="--ok "]),
+:where([class$="--success"]),
+:where([class*="--success "]) {
+  --tone: var(--c-success);
+}
+
+:where([class$="--warning"]),
+:where([class*="--warning "]) {
+  --tone: var(--c-warning);
+}
+
+:where([class$="--danger"]),
+:where([class*="--danger "]),
+:where([class$="--error"]),
+:where([class*="--error "]) {
+  --tone: var(--c-danger);
+}
+
+:where([class$="--accent"]),
+:where([class*="--accent "]) {
+  --tone: var(--c-accent-400);
+}
+
+:where([class$="--muted"]),
+:where([class*="--muted "]),
+:where([class$="--ghost"]),
+:where([class*="--ghost "]) {
+  --tone: var(--c-ink-400);
+}
+
+:where([class$="-pill"]),
+:where([class*="-pill "]),
+:where([class$="-chip"]),
+:where([class*="-chip "]),
+:where([class$="-badge"]),
+:where([class*="-badge "]) {
+  border-color: color-mix(in srgb, var(--tone, var(--c-ink-400)) 32%, transparent);
+  background: color-mix(in srgb, var(--tone, var(--c-ink-400)) 12%, transparent);
+  color: var(--tone, var(--text-soft));
+}
+:where([class$="-filter"]:not(:where([class*="field"]))),
+:where([class*="-filter "]:not(:where([class*="field"]))) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-height: 38px;
+  padding: 0 var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  color: var(--text-soft);
+  font-size: var(--font-size-ui-lg);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+
+
+:where([class$="--tank"]),
+:where([class*="--tank "]) {
+  --tone: var(--c-role-tank);
+}
+
+:where([class$="--healer"]),
+:where([class*="--healer "]) {
+  --tone: var(--c-role-healer);
+}
+
+:where([class$="--dps"]),
+:where([class*="--dps "]) {
+  --tone: var(--c-role-dps);
+}
+
+:where([class$="--mythic"]),
+:where([class*="--mythic "]) {
+  --tone: var(--c-diff-mythic);
+}
+
+:where([class$="--heroic"]),
+:where([class*="--heroic "]) {
+  --tone: var(--c-diff-heroic);
+}
+
+:where([class$="--normal"]),
+:where([class*="--normal "]) {
+  --tone: var(--c-diff-normal);
+}
+
+:where([class$="-list"]:not(:where(.dashboard-nav-more__menu-list)):not(:where(.discord-preview-list))),
+:where([class*="-list "]:not(:where(.dashboard-nav-more__menu-list)):not(:where(.discord-preview-list))) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+:where(.dashboard-list-row > [role="cell"] > [class$="-pill"]),
+:where(.dashboard-list-row > [role="cell"] > [class*="-pill "]),
+:where(.dashboard-list-row > [role="cell"] > [class$="-chip"]),
+:where(.dashboard-list-row > [role="cell"] > [class*="-chip "]) {
+  justify-self: start;
+}
+
+
+:where([class$="-empty"]:not(:where([class*="characters"])):not(:where([class*="--empty"]))),
+:where([class*="-empty "]:not(:where([class*="characters"])):not(:where([class*="--empty"]))) {
+  display: grid;
+  gap: var(--space-2xs);
+  padding: var(--space-xl) var(--space-md);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  text-align: center;
+  color: var(--text-muted);
+}
+
+:where([class$="-empty"]:not(:where([class*="--empty"])) strong),
+:where([class*="-empty "]:not(:where([class*="--empty"])) strong) {
+  color: var(--text-soft);
+  font-size: 0.95rem;
+}
+:where([class$="-stats"]:not(:where([class*="grid"]))),
+:where([class*="-stats "]:not(:where([class*="grid"]))) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr));
+  gap: var(--space-sm);
+}
+@media (max-width: 860px) {
+  :where(.dashboard-list-row [class$="-actions"]) {
+    width: 100%;
+  }
+
+  
+
+  
+
+  
+}
+:where([class$="-tabs"]),
+:where([class*="-tabs "]) {
+  display: flex;
+  gap: var(--space-2xs);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding-bottom: var(--space-2xs);
+  scrollbar-width: none;
+}
+
+:where([class$="-tabs"])::-webkit-scrollbar,
+:where([class*="-tabs "])::-webkit-scrollbar {
+  display: none;
+}
+
+:where([class$="-tabs"] > a),
+:where([class*="-tabs "] > a),
+:where([class$="-tabs"] > button),
+:where([class*="-tabs "] > button) {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  min-height: 40px;
+  padding: 0 var(--space-md);
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  color: var(--text-soft);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+
+:where([class$="-tabs"] > a.is-active),
+:where([class*="-tabs "] > a.is-active),
+:where([class$="-tabs"] > button.is-active),
+:where([class*="-tabs "] > button.is-active) {
+  border-color: transparent;
+  background: var(--accent-gradient);
+  color: var(--text-on-accent);
+}
+:where([class$="-avatar"]),
+
+:where([class*="-avatar "]),
+
+:where([class$="__avatar"]),
+
+:where([class*="__avatar "]) {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+}
+
+:where([class$="-avatar--empty"]),
+:where([class*="-avatar--empty "]) {
+  display: grid;
+  place-items: center;
+  border-style: dashed;
+  color: var(--text-faint);
+}
+}
+@layer components {
 /* =========================================================
    COMPONENTS — панелі, кнопки, форми, повідомлення,
 списки
@@ -15,45 +428,17 @@
 /* =========================================================
    1. ПОВЕРХНІ: панель і картка
    ========================================================= */
-.panel,
-[class$="-card"]:not(:where([class*="nav"])),
-[class*="-card "]:not(:where([class*="nav"])),
-[class$="__card"],
-[class*="__card "],
-[class$="-panel"]:not(:where(.dashboard-list-panel)),
-[class*="-panel "]:not(:where(.dashboard-list-panel)),
-[class$="__panel"],
-[class*="__panel "],
-[class$="-box"],
-[class*="-box "] {
+.panel {
   position: relative;
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
+  border-radius: var(--card-radius);
+  background: var(--surface-panel);
   box-shadow: var(--shadow-md);
-}
-
-.panel:not(:where([class*="hero"])) {
-  padding: var(--pad-card);
-}
-
-[class$="-card"]:not(:where([class*="nav"])),
-[class*="-card "]:not(:where([class*="nav"])),
-[class$="__card"],
-[class*="__card "],
-[class$="-panel"]:not(:where(.dashboard-list-panel)),
-[class*="-panel "]:not(:where(.dashboard-list-panel)),
-[class$="__panel"],
-[class*="__panel "],
-[class$="-box"],
-[class*="-box "] {
-  padding: var(--pad-card-compact);
 }
 
 /* Панель — вертикальний стек: кожна панель дихає однаково.
    Hero-блоки виключені: вони теж носять .panel, але мають власну
    двоколонкову сітку в layout.css, і стек її перекривав. */
-.panel:not(:where([class*="hero"])),
 .page-section {
   display: flex;
   flex-direction: column;
@@ -61,71 +446,37 @@
 }
 
 /* Панель усередині панелі не подвоює рамку */
-.panel .panel,
-.panel [class$="-card"],
-.panel [class*="-card "],
-.panel [class$="__card"],
-.panel [class*="__card "] {
+.panel .panel {
   background: var(--surface-raised);
   box-shadow: none;
 }
 
 /* Клікабельна картка */
-a.card,
-a[class$="-card"],
-a[class*="-card "],
-a[class$="__card"],
-a[class*="__card "],
-[class$="-card"][role="button"],
-[class*="-card "][role="button"] {
+a.card {
   color: inherit;
   transition: transform var(--dur-fast) var(--ease-out),
     border-color var(--dur-fast) var(--ease-out),
     box-shadow var(--dur-fast) var(--ease-out);
 }
 
-a.card:hover,
-a[class$="-card"]:hover,
-a[class*="-card "]:hover,
-a[class$="__card"]:hover,
-a[class*="__card "]:hover {
+@media (hover: hover) and (pointer: fine) {
+
+a.card:hover {
   transform: translateY(-3px);
   border-color: var(--border-strong);
   box-shadow: var(--shadow-lg);
   color: inherit;
 }
+}
 
 /* Виділена картка — смуга акценту зліва */
-.is-active[class$="-card"],
-.is-active[class*="-card "],
-.is-selected[class$="-card"],
-.is-selected[class*="-card "] {
-  border-color: var(--border-strong);
-}
-
-.is-active[class$="-card"]::after,
-.is-active[class*="-card "]::after,
-.is-selected[class$="-card"]::after,
-.is-selected[class*="-card "]::after {
-  content: "";
-  position: absolute;
-  inset: var(--space-sm) auto var(--space-sm) 0;
-  width: 3px;
-  border-radius: var(--radius-pill);
-  background: var(--accent-gradient);
-  pointer-events: none;
-}
 
 /* Шапка картки: заголовок ліворуч,
 дії праворуч */
 .profile-card-head,
 .poll-section-head,
 .content-section-head,
-.content-form-section-head,
-[class$="__head"],
-[class*="__head "],
-[class$="-head"],
-[class*="-head "] {
+.content-form-section-head {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
@@ -134,47 +485,17 @@ a[class*="__card "]:hover {
   min-width: 0;
 }
 
-.profile-card-head--inline,
-[class$="__head"] > div,
-[class*="__head "] > div,
-[class$="-head"] > div,
-[class*="-head "] > div {
+.profile-card-head--inline {
   min-width: 0;
 }
 
-[class$="__head"] strong,
-[class*="__head "] strong,
-[class$="-head"] strong,
-[class*="-head "] strong {
-  color: var(--text-strong);
-}
-
-[class$="__head"] small,
-[class*="__head "] small,
-[class$="-head"] small,
-[class*="-head "] small {
-  display: block;
-  color: var(--text-muted);
-}
-
-.profile-card-lead,
-[class$="__lead"],
-[class*="__lead "] {
+.profile-card-lead {
   color: var(--text-soft);
   font-size: var(--font-size-body);
   line-height: 1.58;
 }
 
 /* Іконка-плитка в шапці */
-[class$="__icon"],
-/* Іконка-плитка в шапці */
-[class*="__icon "],
-[class$="-icon"],
-[class*="-icon "] {
-  display: inline-grid;
-  place-items: center;
-  flex: 0 0 auto;
-}
 
 .profile-account-overview-card__icon,
 .rules-registration-block__icon,
@@ -197,12 +518,12 @@ a[class*="__card "]:hover {
   justify-content: center;
   gap: var(--space-xs);
   min-height: var(--control-height);
-  padding: 0 var(--control-pad-x);
+  padding: var(--space-xs) var(--control-pad-x);
   border: 1px solid var(--border);
   border-radius: var(--control-radius);
   background: var(--surface-raised);
   color: var(--text-body);
-  font-size: 0.84rem;
+  font-size: var(--font-size-body-sm);
   font-weight: var(--font-weight-bold);
   line-height: 1.2;
   letter-spacing: 0.005em;
@@ -216,10 +537,13 @@ a[class*="__card "]:hover {
     color var(--dur-fast) var(--ease-out);
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .btn:hover {
   transform: translateY(-2px);
   border-color: var(--border-strong);
   color: var(--text-strong);
+}
 }
 
 .btn:disabled,
@@ -238,10 +562,13 @@ a[class*="__card "]:hover {
   color: var(--text-on-accent);
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .btn.primary:hover,
 .btn-primary:hover {
   color: var(--text-on-accent);
   box-shadow: 0 12px 26px -14px var(--accent-ring);
+}
 }
 
 /* Другорядна дія */
@@ -251,10 +578,13 @@ a[class*="__card "]:hover {
   color: var(--text-soft);
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .btn.subtle:hover,
 .btn.secondary:hover {
   background: var(--surface-hover);
   color: var(--text-strong);
+}
 }
 
 /* Прозора */
@@ -265,10 +595,13 @@ a[class*="__card "]:hover {
   color: var(--text-soft);
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .btn.ghost:hover,
 .btn-ghost:hover {
   background: var(--surface-hover);
   border-color: var(--border-subtle);
+}
 }
 
 /* Статусні */
@@ -278,9 +611,12 @@ a[class*="__card "]:hover {
   color: var(--c-danger);
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .btn.danger:hover {
   background: rgba(224, 112, 95, 0.2);
   color: #ffb3a6;
+}
 }
 
 .btn.warning {
@@ -289,9 +625,12 @@ a[class*="__card "]:hover {
   color: var(--c-warning);
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .btn.warning:hover {
   background: rgba(232, 179, 74, 0.2);
   color: #ffd88a;
+}
 }
 
 .btn.success {
@@ -300,9 +639,12 @@ a[class*="__card "]:hover {
   color: var(--c-success);
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .btn.success:hover {
   background: rgba(124, 196, 143, 0.2);
   color: #a9e0ba;
+}
 }
 
 /* Розміри */
@@ -340,11 +682,7 @@ a[class*="__card "]:hover {
 .content-field,
 .raid-poll-field,
 .application-filter-field,
-.admin-policy-toggle,
-[class$="-field"]:not(:where([class*="filter-shell"])),
-[class*="-field "]:not(:where([class*="filter-shell"])),
-[class$="__field"],
-[class*="__field "] {
+.admin-policy-toggle {
   display: grid;
   gap: var(--space-xs);
   min-width: 0;
@@ -352,8 +690,6 @@ a[class*="__card "]:hover {
 
 .content-field > span,
 .raid-poll-field > span,
-[class$="-field"] > span:first-child,
-[class*="-field "] > span:first-child,
 .field-label,
 label > span:first-child {
   font-size: var(--font-size-ui-lg);
@@ -370,9 +706,7 @@ label > span:first-child {
 }
 
 /* Підказка під полем */
-.content-field small,
-[class$="-field"] small,
-[class*="-field "] small {
+.content-field small {
   font-size: 0.75rem;
   color: var(--text-muted);
 }
@@ -397,13 +731,13 @@ select,
 textarea {
   width: 100%;
   min-width: 0;
-  min-height: 44px;
+  min-height: var(--control-height);
   padding: 0 var(--space-md);
-  border: 1px solid rgba(255, 155, 85, 0.16);
+  border: 1px solid var(--control-border);
   border-radius: var(--control-radius);
   background: var(--surface-sunken);
   color: var(--text-body);
-  font-size: 16px;
+  font-size: var(--control-font-size);
   outline: 0;
   transition: border-color var(--dur-fast) var(--ease-out),
     background-color var(--dur-fast) var(--ease-out),
@@ -486,13 +820,7 @@ select option {
 /* Чекбокси та радіо */
 input[type="checkbox"],
 input[type="radio"] {
-  width: 18px;
-  height: 18px;
-  min-height: 0;
-  flex: 0 0 auto;
-  padding: 0;
   accent-color: var(--c-accent-500);
-  cursor: pointer;
 }
 
 .inline-check {
@@ -519,9 +847,7 @@ input[type="radio"] {
 /* Секція форми */
 .content-form-section,
 .raid-form-section,
-.admin-policy-fieldset,
-[class$="-form-section"],
-[class*="-form-section "] {
+.admin-policy-fieldset {
   display: grid;
   gap: var(--space-md);
   padding: var(--pad-card-compact);
@@ -559,11 +885,7 @@ form {
 .raid-notice,
 .discord-notice,
 .raid-ilvl-notice,
-.profile-storage-warning,
-[class$="-alert"],
-[class*="-alert "],
-[class$="-notice"],
-[class*="-notice "] {
+.profile-storage-warning {
   display: block;
   padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--border);
@@ -624,23 +946,13 @@ form {
 .raid-state,
 .dashboard-table-pill,
 .profile-count-pill,
-.content-mode-pill,
-[class$="-pill"],
-[class*="-pill "],
-[class$="-chip"],
-[class*="-chip "],
-[class$="-badge"],
-[class*="-badge "],
-[class$="-tag"],
-[class*="-tag "] {
+.content-mode-pill {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2xs);
   padding: var(--space-3xs) var(--space-sm);
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
-  background: var(--surface-raised);
-  color: var(--text-soft);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.04em;
@@ -657,20 +969,14 @@ form {
 .is-connected,
 .is-on,
 .good,
-.success,
-[class$="--ok"],
-[class*="--ok "],
-[class$="--success"],
-[class*="--success "] {
+.success {
   --tone: var(--c-success);
 }
 
 .is-warning,
 .is-pending,
 .is-paused,
-.warning,
-[class$="--warning"],
-[class*="--warning "] {
+.warning {
   --tone: var(--c-warning);
 }
 
@@ -680,11 +986,7 @@ form {
 .is-expired,
 .is-disconnected,
 .is-invalid,
-.danger,
-[class$="--danger"],
-[class*="--danger "],
-[class$="--error"],
-[class*="--error "] {
+.danger {
   --tone: var(--c-danger);
 }
 
@@ -692,9 +994,7 @@ form {
 .is-open,
 .is-next,
 .is-main,
-.primary,
-[class$="--accent"],
-[class*="--accent "] {
+.primary {
   --tone: var(--c-accent-400);
 }
 
@@ -702,11 +1002,7 @@ form {
 .is-empty,
 .is-absent,
 .is-off,
-.subtle,
-[class$="--muted"],
-[class*="--muted "],
-[class$="--ghost"],
-[class*="--ghost "] {
+.subtle {
   --tone: var(--c-ink-400);
 }
 
@@ -717,71 +1013,13 @@ form {
 .raid-state,
 .dashboard-table-pill,
 .profile-count-pill,
-.content-mode-pill,
-[class$="-pill"],
-[class*="-pill "],
-[class$="-chip"],
-[class*="-chip "],
-[class$="-badge"],
-[class*="-badge "] {
+.content-mode-pill {
   border-color: color-mix(in srgb, var(--tone, var(--c-ink-400)) 32%, transparent);
   background: color-mix(in srgb, var(--tone, var(--c-ink-400)) 12%, transparent);
   color: var(--tone, var(--text-soft));
 }
 
 /* Кнопка-фільтр у шапці таблиці */
-[class$="-filter"]:not(:where([class*="field"])),
-[class*="-filter "]:not(:where([class*="field"])) {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2xs);
-  min-height: 38px;
-  padding: 0 var(--space-md);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
-  background: var(--surface-raised);
-  color: var(--text-soft);
-  font-size: var(--font-size-ui-lg);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
-}
-
-
-
-
-
-
-
-[class$="--tank"],
-[class*="--tank "] {
-  --tone: var(--c-role-tank);
-}
-
-[class$="--healer"],
-[class*="--healer "] {
-  --tone: var(--c-role-healer);
-}
-
-[class$="--dps"],
-[class*="--dps "] {
-  --tone: var(--c-role-dps);
-}
-
-[class$="--mythic"],
-[class*="--mythic "] {
-  --tone: var(--c-diff-mythic);
-}
-
-[class$="--heroic"],
-[class*="--heroic "] {
-  --tone: var(--c-diff-heroic);
-}
-
-[class$="--normal"],
-[class*="--normal "] {
-  --tone: var(--c-diff-normal);
-}
 
 /* =========================================================
    6. СПИСКИ ТА ТАБЛИЦІ
@@ -792,17 +1030,12 @@ form {
   gap: var(--gap-stack);
 }
 
-.dashboard-list,
-[class$="-list"]:not(:where(.dashboard-nav-more__menu-list)):not(:where(.discord-preview-list)),
-[class*="-list "]:not(:where(.dashboard-nav-more__menu-list)):not(:where(.discord-preview-list)) {
+.dashboard-list {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
   min-width: 0;
 }
-
-
-
 
 
 /* Складений рядок: зміст ліворуч, дії праворуч */
@@ -811,7 +1044,6 @@ form {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-sm);
 }
 
 .dashboard-list-row > *:first-child {
@@ -837,11 +1069,14 @@ form {
     transform var(--dur-fast) var(--ease-out);
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 a.dashboard-list-row:hover {
   border-color: var(--border-strong);
   background: var(--surface-hover);
   transform: translateY(-2px);
   color: inherit;
+}
 }
 
 .dashboard-list-row > [role="cell"] {
@@ -862,21 +1097,11 @@ a.dashboard-list-row:hover {
   overflow-wrap: break-word;
 }
 
-.dashboard-list-row > [role="cell"] > [class$="-pill"],
-.dashboard-list-row > [role="cell"] > [class*="-pill "],
-.dashboard-list-row > [role="cell"] > [class$="-chip"],
-.dashboard-list-row > [role="cell"] > [class*="-chip "] {
-  justify-self: start;
-}
-
-
 
 .empty-state,
 .raid-empty,
 .poll-empty,
-.content-empty,
-[class$="-empty"]:not(:where([class*="characters"])):not(:where([class*="--empty"])),
-[class*="-empty "]:not(:where([class*="characters"])):not(:where([class*="--empty"])) {
+.content-empty {
   display: grid;
   gap: var(--space-2xs);
   padding: var(--space-xl) var(--space-md);
@@ -887,18 +1112,14 @@ a.dashboard-list-row:hover {
   color: var(--text-muted);
 }
 
-.empty-state strong,
-[class$="-empty"]:not(:where([class*="--empty"])) strong,
-[class*="-empty "]:not(:where([class*="--empty"])) strong {
+.empty-state strong {
   color: var(--text-soft);
   font-size: 0.95rem;
 }
 
 /* Смуга показників над таблицею */
 .guild-hero-stats,
-.raid-list-summary,
-[class$="-stats"]:not(:where([class*="grid"])),
-[class*="-stats "]:not(:where([class*="grid"])) {
+.raid-list-summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr));
   gap: var(--space-sm);
@@ -921,11 +1142,6 @@ a.dashboard-list-row:hover {
   gap: var(--space-xs);
   min-width: 0;
 }
-
-
-
-
-
 
 
 /* Мобільний вигляд рядків: картка з підписами колонок */
@@ -985,8 +1201,7 @@ a.dashboard-list-row:hover {
   }
 
   /* Дії у складених рядках розтягуються на всю ширину картки */
-  .dashboard-list-actions,
-.dashboard-list-row [class$="-actions"] {
+  .dashboard-list-actions {
     width: 100%;
   }
 
@@ -994,12 +1209,6 @@ a.dashboard-list-row:hover {
 
   
 
-  
-}
-
-@media (max-width: 520px) {
-  /* Одна колонка: на вузькому екрані пара «підпис + значення»
-     вже не влазить поруч із сусідньою. */
   
 }
 
@@ -1047,9 +1256,7 @@ details > *:not(:where(summary)) {
 }
 
 /* Смуга вкладок */
-.admin-tabs,
-[class$="-tabs"],
-[class*="-tabs "] {
+.admin-tabs {
   display: flex;
   gap: var(--space-2xs);
   overflow-x: auto;
@@ -1058,63 +1265,11 @@ details > *:not(:where(summary)) {
   scrollbar-width: none;
 }
 
-[class$="-tabs"]::-webkit-scrollbar,
-[class*="-tabs "]::-webkit-scrollbar {
-  display: none;
-}
-
-[class$="-tabs"] > a,
-[class*="-tabs "] > a,
-[class$="-tabs"] > button,
-[class*="-tabs "] > button {
-  flex: 0 0 auto;
-  scroll-snap-align: start;
-  min-height: 40px;
-  padding: 0 var(--space-md);
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
-  background: var(--surface-raised);
-  color: var(--text-soft);
-  font-size: var(--font-size-body-sm);
-  font-weight: var(--font-weight-medium);
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
-}
-
-[class$="-tabs"] > a.is-active,
-[class*="-tabs "] > a.is-active,
-[class$="-tabs"] > button.is-active,
-[class*="-tabs "] > button.is-active {
-  border-color: transparent;
-  background: var(--accent-gradient);
-  color: var(--text-on-accent);
-}
-
 /* =========================================================
    8. АВАТАРИ ТА МЕДІА
    ========================================================= */
-[class$="-avatar"],
-/* =========================================================
-   8. АВАТАРИ ТА МЕДІА
-   ========================================================= */
-[class*="-avatar "],
-[class$="__avatar"],
-[class*="__avatar "] {
-  width: 40px;
-  height: 40px;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 1px solid var(--border);
-  background: var(--surface-raised);
-}
 
-.raid-signup-avatar--empty,
-[class$="-avatar--empty"],
-[class*="-avatar--empty "] {
+.raid-signup-avatar--empty {
   display: grid;
   place-items: center;
   border-style: dashed;
@@ -1181,9 +1336,12 @@ details > *:not(:where(summary)) {
   cursor: pointer;
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .global-toast__close:hover {
   background: var(--surface-hover);
   color: var(--text-strong);
+}
 }
 
 @media (max-width: 640px) {
@@ -1228,9 +1386,12 @@ input[type="radio"] {
   border-radius: 50%;
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 input[type="checkbox"]:hover,
 input[type="radio"]:hover {
   border-color: var(--c-accent-400);
+}
 }
 
 input[type="checkbox"]:checked,
@@ -1334,15 +1495,6 @@ input[type="radio"] {
 /* Товщий бігунок діапазону там, де вказівник грубий.
    pointer: coarse точніший за ширину екрана: планшет із мишею
    лишається з тонким бігунком, телефон отримує великий. */
-@media (pointer: coarse) {
-  
-
-  
-
-  
-
-  
-}
 
 /* =========================================================
    12. ДОПОМІЖНІ ВИБОРИ — компактні чипи, не окремі кнопки дії
@@ -1382,10 +1534,13 @@ input[type="radio"] {
     color var(--dur-fast) var(--ease-out);
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .author-suggestion-chip:hover {
   border-color: var(--border-strong);
   background: var(--surface-hover);
   color: var(--text-strong);
+}
 }
 
 .author-suggestion-chip strong {
@@ -1399,3 +1554,6 @@ input[type="radio"] {
   font-style: normal;
   line-height: 1.15;
 }
+}
+
+

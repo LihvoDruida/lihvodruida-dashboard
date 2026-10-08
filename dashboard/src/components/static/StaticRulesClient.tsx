@@ -1,4 +1,5 @@
 "use client";
+import { PageIntro } from "@/components/ui/PagePrimitives";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { StaticMarkdown } from "./StaticMarkdown";
@@ -40,7 +41,7 @@ export default function StaticRulesClient() {
   }
   const dirty = Boolean(record && draft !== record.settings.text);
   return <div className={styles.wrap}>
-    <header className="hero panel"><div className="eyebrow">Статик • документ</div><h1>Правила Статика</h1><p className="lead">Окремий документ з власною версією. Формат Markdown для перегляду та редагування.</p></header>
+    <PageIntro eyebrow="Статик • документ" title="Правила Статика" description="Окремий документ з власною версією. Формат Markdown для перегляду та редагування." />
     <StaticSubnav active="/discord/static/rules" />
     {error ? <div role="alert" className="notice panel error-note">{error}</div> : null}
     {notice ? <div role="status" className="notice panel success">{notice}</div> : null}

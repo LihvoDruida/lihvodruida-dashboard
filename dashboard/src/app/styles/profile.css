@@ -1,4 +1,4 @@
-/* =========================================================
+@layer pages {/* =========================================================
    PROFILE — профіль, налаштування та суміжні сторінки
 
    Головна зміна структури: розділи йдуть ОДИН ЗА ОДНИМ згори вниз,
@@ -43,7 +43,6 @@
   position: sticky;
   top: calc(var(--nav-space) + var(--space-sm));
   display: grid;
-  gap: var(--space-md);
   justify-items: center;
   text-align: center;
 }
@@ -56,7 +55,6 @@
 }
 
 .profile-account-sidebar__identity strong {
-  font-size: 1.05rem;
   color: var(--text-strong);
 }
 
@@ -69,7 +67,6 @@
 .profile-account-sidebar__avatar {
   width: 96px;
   height: 96px;
-  border-radius: var(--radius-lg);
   object-fit: cover;
   border: 1px solid var(--border);
   background: var(--surface-sunken);
@@ -97,8 +94,6 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--border-subtle);
   border-left: 3px solid var(--c-ink-500);
   border-radius: var(--radius-md);
@@ -110,14 +105,10 @@
 .profile-account-overview-card__icon {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: var(--control-height-sm);
   flex: 0 0 auto;
-  border-radius: var(--radius-md);
   border: 1px solid var(--border);
   background: var(--surface-raised);
   color: var(--c-accent-300);
-  font-size: 0.95rem;
   line-height: 1;
 }
 
@@ -142,7 +133,6 @@
 }
 
 .profile-account-overview-card strong {
-  font-size: 0.92rem;
   color: var(--text-strong);
   overflow-wrap: anywhere;
 }
@@ -203,13 +193,9 @@
 .profile-card-title-icon {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: var(--control-height-sm);
   flex: 0 0 auto;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
-  background: var(--surface-raised);
-  color: var(--c-accent-300);
 }
 
 .profile-card-lead {
@@ -231,10 +217,6 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-xs);
-}
-
-.profile-card-toolbar--compact {
-  gap: var(--space-2xs);
 }
 
 /* Підрозділ усередині секції */
@@ -281,19 +263,17 @@
   transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .profile-display-mode-option:hover {
   border-color: var(--border-strong);
   background: var(--surface-hover);
+}
 }
 
 .profile-display-mode-option.is-selected {
   border-color: var(--border-strong);
   background: var(--accent-soft);
-}
-
-.profile-display-mode-option strong {
-  font-size: 0.85rem;
-  color: var(--text-strong);
 }
 
 .profile-display-mode-option small,
@@ -308,12 +288,6 @@
 }
 
 /* Реальний серверний нік + кнопка копіювання */
-
-.profile-server-nickname {
-  display: grid;
-  gap: var(--space-2xs);
-  min-width: 0;
-}
 
 .profile-nickname-preview {
   flex: 1 1 220px;
@@ -342,9 +316,6 @@
 }
 
 /* Один потік: картки на всю ширину, а не плитка */
-.profile-character-list--single-flow {
-  grid-template-columns: minmax(0, 1fr);
-}
 
 .profile-character-card {
   content-visibility: auto;
@@ -352,13 +323,9 @@
 
   position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--space-md);
-  padding: var(--pad-card-compact);
   border: 1px solid var(--border-subtle);
   border-left: 3px solid var(--c-ink-500);
   border-radius: var(--radius-md);
-  background: var(--surface-sunken);
   min-width: 0;
 }
 
@@ -367,26 +334,19 @@
 }
 
 .profile-character-artwork {
-  width: 92px;
-  height: 92px;
   flex: 0 0 auto;
-  border-radius: var(--radius-md);
   object-fit: cover;
-  border: 1px solid var(--border);
-  background: var(--surface-raised);
 }
 
 .profile-character-artwork__fallback {
   display: grid;
   place-items: center;
   color: var(--c-accent-300);
-  font-size: 1.6rem;
   font-weight: var(--font-weight-bold);
 }
 
 .profile-character-body {
   display: grid;
-  gap: var(--space-sm);
   min-width: 0;
 }
 
@@ -422,12 +382,6 @@
   overflow-wrap: anywhere;
 }
 
-.profile-character-main-corner {
-  position: absolute;
-  top: var(--space-sm);
-  right: var(--space-sm);
-}
-
 /* Показники персонажа */
 .profile-character-stats-grid,
 .profile-character-stats-row {
@@ -438,9 +392,7 @@
 
 .profile-character-stat {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: var(--space-xs);
   padding: var(--space-2xs) var(--space-sm);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
@@ -449,7 +401,6 @@
 }
 
 .profile-character-stat__icon {
-  display: grid;
   place-items: center;
   width: 24px;
   height: 24px;
@@ -466,22 +417,13 @@
   min-width: 0;
 }
 
-.profile-character-stat__copy strong {
-  font-size: 0.85rem;
-  color: var(--text-strong);
-}
-
 .profile-character-stat__copy small {
-  font-size: var(--font-size-xs);
-  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-faint);
 }
 
 .profile-character-stats-divider {
-  height: 1px;
   border: 0;
-  background: var(--border-subtle);
 }
 
 /* Значки гільдії / статусу */
@@ -627,7 +569,6 @@
    ========================================================= */
 .profile-raid-list {
   display: grid;
-  gap: var(--space-sm);
   min-width: 0;
 }
 
@@ -640,12 +581,8 @@
   contain-intrinsic-size: auto 180px;
 
   display: grid;
-  gap: var(--space-sm);
-  padding: var(--pad-card-compact);
   border: 1px solid var(--border-subtle);
   border-left: 3px solid var(--c-accent-400);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
   min-width: 0;
 }
 
@@ -660,22 +597,15 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
 }
 
 .profile-raid-card__title {
   font-size: 0.95rem;
-  color: var(--text-strong);
   overflow-wrap: anywhere;
 }
 
 .profile-raid-card__meta {
-  display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3xs) var(--space-sm);
-  color: var(--text-muted);
-  font-size: var(--font-size-meta);
 }
 
 .profile-raid-card__actions {
@@ -724,11 +654,6 @@
 
 .profile-raid-empty-state__action {
   margin-top: var(--space-2xs);
-}
-
-.profile-raid-meta-item--character,
-.profile-raid-meta-item--order {
-  white-space: nowrap;
 }
 
 /* =========================================================
@@ -839,14 +764,12 @@
 
   /* Навігація профілю стає рядком пігулок над контентом */
   .profile-account-sidebar__nav {
-    display: flex;
     flex-wrap: wrap;
     justify-content: center;
   }
 
   .profile-account-sidebar__nav a {
     flex: 1 1 140px;
-    justify-content: center;
   }
 }
 
@@ -1327,13 +1250,8 @@
 
 .profile-character-stats-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: var(--space-xs);
-  padding: var(--space-2xs) var(--space-sm);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
 }
 
 /* Пара всередині рядка більше не має власної рамки */
@@ -1345,7 +1263,6 @@
 
 .profile-character-stats-divider {
   width: 1px;
-  height: 22px;
   background: var(--border-subtle);
 }
 
@@ -1362,13 +1279,7 @@
   /* На вузькому екрані пари показників стають одна під одною:
      чотири значення в два стовпці лишали по 60px на число. */
   .profile-character-stats-row {
-    grid-template-columns: minmax(0, 1fr);
     gap: var(--space-2xs);
-  }
-
-  .profile-character-stats-divider {
-    width: 100%;
-    height: 1px;
   }
 }
 
@@ -1390,7 +1301,6 @@
   width: 100%;
   margin: 0;
   padding: var(--space-sm) 0;
-  border-top: 1px solid var(--border-subtle);
   border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -1420,11 +1330,6 @@
 }
 
 /* Активний пункт навігації */
-.profile-account-sidebar__nav a[aria-current="page"] {
-  border-color: var(--border-strong);
-  background: var(--accent-soft);
-  color: var(--c-accent-200);
-}
 
 .profile-account-sidebar__nav-count {
   margin-left: auto;
@@ -1455,30 +1360,18 @@
   .profile-account-sidebar {
     /* Горизонтальна смуга: аватар та імʼя ліворуч, стан праворуч.
        Вертикальний блок на 390px займав перший екран цілком. */
-    grid-template-columns: auto minmax(0, 1fr);
     justify-items: stretch;
-    text-align: left;
     align-items: center;
   }
 
   .profile-account-sidebar__identity {
     grid-column: 1 / -1;
-    grid-template-columns: auto minmax(0, 1fr);
-    justify-items: start;
-    text-align: left;
     align-items: center;
     gap: var(--space-sm);
   }
 
-  .profile-account-sidebar__avatar {
-    grid-row: span 3;
-    width: 64px;
-    height: 64px;
-  }
-
   .profile-account-sidebar__facts {
     grid-column: 1 / -1;
-    grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
     gap: var(--space-sm);
   }
 
@@ -1535,8 +1428,6 @@
 
 /* ---------- Картка-колонка ---------- */
 .profile-account-sidebar {
-  gap: var(--space-md);
-  padding: 0;
   overflow: hidden;
 }
 
@@ -1548,13 +1439,6 @@
 }
 
 /* Аватар у кольоровому кільці */
-.profile-account-sidebar__avatar {
-  box-shadow: 0 0 0 4px var(--accent-soft);
-}
-
-.profile-account-sidebar__identity strong {
-  font-size: var(--font-size-base);
-}
 
 .profile-account-sidebar__facts,
 .profile-account-sidebar__nav,
@@ -1571,27 +1455,12 @@
 }
 
 /* ---------- Навігація ---------- */
-.profile-account-sidebar__nav a {
-  justify-content: flex-start;
-  gap: var(--space-sm);
-}
 
 .profile-account-sidebar__nav .profile-ui-icon {
   flex: 0 0 auto;
 }
 
 /* ---------- Картки показників в основному потоці ---------- */
-.profile-account-overview-card {
-  gap: var(--space-md);
-  padding: var(--space-md);
-}
-
-.profile-account-overview-card__icon {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-md);
-  font-size: 1.05rem;
-}
 
 /* Підпис угорі, значення крупно під ним — порядок із зразка */
 .profile-account-overview-card > div,
@@ -1599,44 +1468,11 @@
   gap: var(--space-3xs);
 }
 
-.profile-account-overview-card small {
-  order: -1;
-  font-size: var(--font-size-2xs);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
-
-.profile-account-overview-card strong {
-  font-size: 1.15rem;
-}
-
 /* Тонований варіант картки: рамка й фон у колір стану */
-.profile-account-overview-card--primary {
-  border-color: color-mix(in srgb, var(--c-accent-400) 30%, transparent);
-  background: color-mix(in srgb, var(--c-accent-400) 8%, var(--surface-sunken));
-}
-
-.profile-account-overview-card--primary .profile-account-overview-card__icon {
-  border-color: color-mix(in srgb, var(--c-accent-400) 34%, transparent);
-  background: color-mix(in srgb, var(--c-accent-400) 16%, transparent);
-  color: var(--c-accent-200);
-}
-
-.profile-account-overview-card--success {
-  border-color: color-mix(in srgb, var(--c-success) 30%, transparent);
-  background: color-mix(in srgb, var(--c-success) 8%, var(--surface-sunken));
-}
 
 .profile-account-overview-card--success .profile-account-overview-card__icon,
 .profile-account-overview-card--success strong {
   color: var(--c-success);
-}
-
-.profile-account-overview-card--success .profile-account-overview-card__icon {
-  border-color: color-mix(in srgb, var(--c-success) 34%, transparent);
-  background: color-mix(in srgb, var(--c-success) 16%, transparent);
 }
 
 /* ---------- Телефон і планшет ---------- */
@@ -1665,17 +1501,11 @@
 
   /* Навігація — смуга самих іконок */
   .profile-account-sidebar__nav {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(0, 1fr);
-    gap: var(--space-2xs);
     padding-block: var(--space-2xs);
   }
 
   .profile-account-sidebar__nav a {
-    justify-content: center;
     min-height: 48px;
-    padding: 0;
   }
 
   .profile-account-sidebar__nav-label {
@@ -1688,16 +1518,6 @@
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
-  }
-
-  .profile-account-sidebar__nav-count {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    margin: 0;
-    min-width: 16px;
-    height: 16px;
-    font-size: 0.6rem;
   }
 
   .profile-account-sidebar__nav a {
@@ -1768,8 +1588,11 @@
   background: transparent;
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .profile-account-sidebar__nav a:hover {
   background: var(--surface-hover);
+}
 }
 
 /* Активний пункт: заливка + бурштинова риска зліва, як у зразку */
@@ -1954,7 +1777,6 @@
    різав арт до 92px — а саме арт тут головний носій впізнавання.
    ========================================================= */
 .profile-character-list--single-flow {
-  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
   gap: var(--space-md);
 }
 
@@ -2333,8 +2155,11 @@
   text-decoration: none;
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .profile-raid-card__main:hover .profile-raid-card__title strong {
   color: var(--c-accent-200);
+}
 }
 
 .profile-raid-card__icon {
@@ -2391,7 +2216,7 @@
 
 .profile-raid-card__difficulty {
   justify-self: start;
-  margin-top: 2px;
+  margin-top: var(--space-3xs);
   padding: 2px 8px;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-pill);
@@ -2598,20 +2423,9 @@
     font-size: var(--font-size-ui);
   }
 
-  .profile-account-sidebar__nav {
-    gap: 5px;
-    padding-top: 9px;
-  }
-
-  .profile-account-sidebar__nav a {
-    min-height: var(--control-height);
-    min-width: 42px;
-  }
-
   .profile-account-sidebar__footer {
     display: flex;
     justify-content: flex-end;
-    padding-top: 8px;
   }
 
   .profile-account-sidebar__footer > *,
@@ -2623,7 +2437,7 @@
   .profile-account-header {
     display: grid;
     gap: var(--space-sm);
-    padding-bottom: 12px;
+    padding-bottom: var(--space-sm);
     border-bottom: 1px solid var(--border-subtle);
   }
 
@@ -2735,39 +2549,13 @@
     border-radius: var(--profile-ui-radius);
   }
 
-  .profile-character-artwork {
-    height: 172px;
-  }
-
-  .profile-character-body {
-    gap: 10px;
-    padding: 12px;
-  }
-
-  .profile-character-title-copy h3 {
-    font-size: 1.05rem;
-  }
-
   .profile-character-title-copy p,
   .profile-character-meta {
     font-size: 0.74rem;
   }
 
-  .profile-character-stats-row {
-    padding-top: 9px;
-  }
-
-  .profile-character-stat__copy strong {
-    font-size: 1.08rem;
-  }
-
   .profile-character-stat__copy small {
     font-size: 0.56rem;
-  }
-
-  .profile-character-actions {
-    gap: var(--space-xs);
-    padding-top: 10px;
   }
 
   .profile-character-actions__row {
@@ -2788,7 +2576,6 @@
 
   .profile-character-action {
     justify-content: center;
-    min-height: var(--control-height);
   }
 
   .profile-bnet-status {
@@ -2826,7 +2613,7 @@
   .profile-raid-card {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--space-sm);
-    padding: 12px;
+    padding: var(--space-sm);
     border-radius: var(--profile-ui-radius);
   }
 
@@ -2953,7 +2740,15 @@
     color: var(--text-soft);
   }
 
-  .profile-account-sidebar__nav a:hover,
+  @media (hover: hover) and (pointer: fine) {
+
+  .profile-account-sidebar__nav a:hover {
+    border-color: var(--border-strong);
+    background: var(--surface-hover);
+    color: var(--text-strong);
+  }
+}
+
   .profile-account-sidebar__nav a:focus-visible {
     border-color: var(--border-strong);
     background: var(--surface-hover);
@@ -3054,7 +2849,7 @@
 
   .profile-character-title-copy p {
     overflow: hidden;
-    margin-top: 2px;
+    margin-top: var(--space-3xs);
     font-size: var(--font-size-caption);
     line-height: 1.25;
     text-overflow: ellipsis;
@@ -3094,7 +2889,7 @@
   }
 
   .profile-character-stats-row {
-    padding-top: 8px;
+    padding-top: var(--space-xs);
   }
 
   .profile-character-stat__copy strong {
@@ -3140,3 +2935,130 @@
     padding-inline: 7px;
   }
 }
+
+/* Desktop profile composition belongs to the profile, not the global shell. */
+@media (min-width: 1001px) {
+
+  .profile-card {
+    gap: var(--section-gap);
+  }
+  .profile-card-head {
+    align-items: center;
+    gap: var(--space-md);
+  }
+
+  .profile-card-head h2 {
+    font-size: 1.08rem;
+    line-height: 1.25;
+  }
+
+  .profile-account-header__actions {
+    gap: var(--space-xs);
+  }
+  .profile-account-layout {
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+    gap: var(--space-lg);
+    align-items: start;
+  }
+
+  .profile-account-sidebar {
+    top: 92px;
+    gap: var(--space-md);
+    padding: 22px;
+    border-radius: var(--card-radius);
+  }
+
+  .profile-account-sidebar__avatar {
+    width: 88px;
+    height: 88px;
+  }
+
+  .profile-account-sidebar__facts {
+    width: 100%;
+  }
+
+  .profile-account-sidebar__nav,
+.profile-account-sidebar__footer,
+.profile-account-sidebar__footer > *,
+.profile-account-logout,
+.profile-account-logout > .btn {
+    width: 100%;
+  }
+
+  .profile-account-sidebar__nav a {
+    min-height: 40px;
+    padding: 0 12px;
+    border-radius: var(--control-radius);
+  }
+
+  .profile-account-main {
+    gap: 18px;
+  }
+
+  .profile-account-header {
+    align-items: end;
+    gap: 18px;
+    padding-bottom: var(--space-md);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .profile-account-overview {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-sm);
+  }
+
+  .profile-account-overview-card {
+    min-height: 82px;
+    padding: 14px 16px;
+  }
+
+  .profile-card-toolbar--compact {
+    gap: var(--space-xs);
+  }
+
+  .profile-card-toolbar--compact > span {
+    min-width: 84px;
+    padding: 7px 12px;
+  }
+  .profile-character-list--single-flow {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-md);
+    align-items: stretch;
+  }
+
+  .profile-character-card {
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  .profile-character-artwork {
+    height: 250px;
+  }
+
+  .profile-character-body {
+    min-height: 360px;
+    padding: 18px;
+  }
+
+  .profile-character-actions,
+.profile-character-actions__full,
+.profile-character-actions__full > *,
+.profile-character-actions__row > *,
+.profile-character-action {
+    width: 100%;
+  }
+
+  .profile-character-actions__row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .profile-character-action {
+    min-width: 0;
+  }
+}
+}
+
+

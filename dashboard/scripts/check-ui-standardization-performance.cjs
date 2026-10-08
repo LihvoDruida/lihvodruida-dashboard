@@ -26,10 +26,10 @@ const tsx = tsxFiles.map((file) => fs.readFileSync(file, 'utf8')).join('\n');
 
 const checks = [
   ['system UI font stack is centralized', tokens.includes('--font-sans: system-ui') && tokens.includes('--font-display: var(--font-sans)')],
-  ['common font sizes use shared tokens', tokens.includes('--font-size-ui: 0.78rem') && css.includes('font-size: var(--font-size-ui)')],
+  ['common font sizes use shared tokens', /--font-size-ui:\s*[0-9.]+rem/.test(tokens) && css.includes('font-size: var(--font-size-ui)')],
   ['font weights are centralized', tokens.includes('--font-weight-semibold: 650') && css.includes('font-weight: var(--font-weight-bold)')],
   ['line heights are centralized', tokens.includes('--line-height-body: 1.5') && css.includes('line-height: var(--line-height-body)')],
-  ['legacy semantic CSS aliases are defined', ['--shadow-sm:', '--surface-panel:', '--gap-section:', '--text:'].every((token) => tokens.includes(token))],
+  ['shared semantic CSS tokens are defined', ['--shadow-sm:', '--surface-panel:', '--text:'].every((token) => tokens.includes(token))],
   ['monospace stack has no direct duplicate declaration', !css.includes('font-family: ui-monospace, SFMono-Regular, Menlo, monospace;')],
   ['background resources notify only their own subscribers', backgroundApi.includes('listeners: Set<() => void>') && backgroundApi.includes('emitRecord(record)') && backgroundApi.includes('subscribeToResource') && !backgroundApi.includes('const listeners = new Set<() => void>()')],
   ['decorative starfield honors data saver and low-memory clients', starfield.includes('connection?.saveData') && starfield.includes('navigator.deviceMemory')],

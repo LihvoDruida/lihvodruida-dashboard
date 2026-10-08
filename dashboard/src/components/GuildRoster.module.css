@@ -1,4 +1,4 @@
-.pageHero {
+@layer pages {.pageHero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(360px, 520px);
   gap: var(--space-lg);
@@ -47,7 +47,7 @@
 .summary {
   display: grid;
   gap: var(--space-sm);
-  padding: 16px;
+  padding: var(--space-md);
   border: 1px solid rgba(255, 255, 255, 0.075);
   border-radius: var(--radius-md);
   background: rgba(7, 6, 5, 0.38);
@@ -84,7 +84,7 @@
 .summaryBrand small,
 .summaryFreshness small {
   display: block;
-  margin-top: 2px;
+  margin-top: var(--space-3xs);
   color: #82796f;
   font-size: var(--font-size-sm);
 }
@@ -118,7 +118,7 @@
 
 .summaryMetric strong {
   display: block;
-  margin-top: 4px;
+  margin-top: var(--space-2xs);
   color: #f4ede4;
   font-size: 1.02rem;
 }
@@ -128,7 +128,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-sm);
-  padding-top: 2px;
+  padding-top: var(--space-3xs);
 }
 
 .autoStatus {
@@ -245,7 +245,7 @@
 .quickRoles {
   display: flex;
   gap: var(--space-2xs);
-  padding: 4px;
+  padding: var(--space-2xs);
   border: 1px solid rgba(255, 255, 255, 0.075);
   border-radius: 11px;
   background: rgba(255, 255, 255, 0.025);
@@ -268,7 +268,15 @@
   padding: 0 10px;
 }
 
-.quickRoles button:hover,
+@media (hover: hover) and (pointer: fine) {
+
+.quickRoles button:hover {
+  border-color: rgba(255, 156, 71, 0.22) !important;
+  background: rgba(255, 140, 44, 0.1) !important;
+  color: #ffb46f !important;
+}
+  }
+
 .quickRoles button[aria-pressed="true"] {
   border-color: rgba(255, 156, 71, 0.22) !important;
   background: rgba(255, 140, 44, 0.1) !important;
@@ -411,7 +419,7 @@
 }
 
 .filterActions small {
-  padding-bottom: 8px;
+  padding-bottom: var(--space-xs);
   color: #786f65;
 }
 
@@ -479,9 +487,12 @@
   border-bottom: 0;
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .tableRow:hover {
   background: rgba(255, 145, 51, 0.045);
 }
+  }
 
 .characterCell,
 .classCell {
@@ -618,10 +629,13 @@
   text-decoration: none;
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .linksCell a:hover {
   border-color: rgba(255, 151, 60, 0.24);
   color: #ffad66;
 }
+  }
 
 /* Mobile identity is intentionally absent from the desktop table.
    It replaces the two wide identity columns only on narrow screens. */
@@ -725,7 +739,7 @@
 
   .heroBadges {
     gap: 6px;
-    margin-top: 12px;
+    margin-top: var(--space-sm);
   }
 
   .heroBadge {
@@ -736,7 +750,7 @@
 
   .summary {
     gap: 10px;
-    padding: 12px;
+    padding: var(--space-sm);
   }
 
   .summaryTop,
@@ -818,7 +832,7 @@
     flex: 1 0 auto;
     min-width: 64px;
     height: 38px;
-    padding-inline: 12px;
+    padding-inline: var(--space-sm);
   }
 
   .filtersButton {
@@ -910,7 +924,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-xs);
     min-height: 0;
-    padding: 12px;
+    padding: var(--space-sm);
     border: 1px solid rgba(255, 255, 255, 0.075);
     border-radius: var(--radius-md);
     background: rgba(255, 255, 255, 0.018);
@@ -1056,7 +1070,7 @@
 
   .scoreCell small,
   .raidCell small {
-    margin-top: 2px;
+    margin-top: var(--space-3xs);
     font-size: 0.61rem;
     line-height: var(--line-height-tight);
     white-space: normal;
@@ -1065,7 +1079,7 @@
   .linksCell {
     grid-column: 1 / -1;
     gap: var(--space-xs);
-    padding-top: 2px;
+    padding-top: var(--space-3xs);
   }
 
   .linksCell::before {
@@ -1076,7 +1090,7 @@
     flex: 1 1 0;
     min-height: 38px;
     justify-content: center;
-    padding-inline: 12px;
+    padding-inline: var(--space-sm);
     border-radius: var(--control-radius);
     font-size: var(--font-size-sm);
   }
@@ -1111,7 +1125,7 @@
   .heroBadges {
     overflow-x: auto;
     flex-wrap: nowrap;
-    padding-bottom: 2px;
+    padding-bottom: var(--space-3xs);
     scrollbar-width: none;
   }
 
@@ -1140,7 +1154,7 @@
   }
 
   .table {
-    padding: 8px;
+    padding: var(--space-xs);
   }
 
   .tableRow {
@@ -1244,11 +1258,14 @@
   transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .guildGuideCard:hover {
   border-color: rgba(255, 151, 60, 0.2);
   background: rgba(255, 139, 43, 0.055);
   transform: translateY(-1px);
 }
+  }
 
 .guildGuideIcon {
   display: grid;
@@ -1314,4 +1331,5 @@
     height: var(--control-height-sm);
     border-radius: 9px;
   }
+}
 }

@@ -1,4 +1,172 @@
-/* =========================================================
+@layer defaults {
+:where([class$="-shell"]),
+:where([class*="-shell "]) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--page-gap);
+}
+:where([class$="__head"]),
+:where([class*="__head "]),
+:where([class$="-head"]:not(:where(.profile-card-head--inline))),
+:where([class*="-head "]:not(:where(.profile-card-head--inline))) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+:where([class$="__eyebrow"]),
+:where([class*="__eyebrow "]),
+:where([class$="-eyebrow"]),
+:where([class*="-eyebrow "]) {
+  display: inline-block;
+  /* У grid/flex-батьках inline-block блокифікується й розтягується
+     на всю ширину. fit-content + start тримають пігулку за змістом. */
+  width: fit-content;
+  justify-self: start;
+  align-self: start;
+  padding: var(--space-2xs) var(--space-sm);
+  margin-bottom: var(--space-xs);
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--orange-main);
+  font-size: 11px;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: var(--line-height-copy);
+}
+:where([class$="__lead"]),
+:where([class*="__lead "]),
+:where([class$="-lead"]),
+:where([class*="-lead "]) {
+  max-width: 72ch;
+  color: var(--text-soft);
+  font-size: 0.95rem;
+  line-height: var(--line-height-copy);
+}
+
+:where([class$="__hint"]),
+:where([class*="__hint "]),
+:where([class$="__meta"]),
+:where([class*="__meta "]),
+:where([class$="__desc"]),
+:where([class*="__desc "]),
+:where([class$="-note"]:not(:where(.error-note)):not(:where(.warning-note))),
+:where([class*="-note "]:not(:where(.error-note)):not(:where(.warning-note))) {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: var(--line-height-relaxed);
+}
+:where([class$="-hero"]:not(:where([class*="landing"]))),
+:where([class*="-hero "]:not(:where([class*="landing"]))) {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--hero-columns);
+  align-items: center;
+  gap: var(--space-lg);
+  padding: var(--hero-padding);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  background: var(--hero-background);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+:where([class$="-hero"]:not(:where([class*="landing"])))::before,
+:where([class*="-hero "]:not(:where([class*="landing"])))::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--card-radius);
+  pointer-events: none;
+  background: var(--hero-background);
+}
+
+:where([class$="-hero__copy"]),
+:where([class*="-hero__copy "]) {
+  min-width: 0;
+}
+
+:where([class$="-hero__copy"] h1),
+:where([class*="-hero__copy "] h1) {
+  margin-bottom: var(--space-xs);
+}
+
+:where([class$="-hero__copy"] p),
+:where([class*="-hero__copy "] p) {
+  max-width: 62ch;
+  color: var(--text-soft);
+  line-height: 1.58;
+}
+
+:where([class$="-hero__actions"]),
+:where([class*="-hero__actions "]),
+:where([class$="__actions"]),
+:where([class*="__actions "]),
+:where([class$="-actions"]),
+:where([class*="-actions "]) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+:where([class$="-hero__actions"]),
+:where([class*="-hero__actions "]) {
+  margin-top: var(--space-md);
+}
+
+@media (max-width: 860px) {
+:where([class$="-hero"]:not(:where([class*="landing"]))),
+:where([class*="-hero "]:not(:where([class*="landing"]))) {
+    grid-template-columns: var(--hero-columns);
+  }
+}
+:where([class$="-grid"]),
+
+:where([class*="-grid "]),
+
+:where([class$="__grid"]),
+
+:where([class*="__grid "]) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: var(--gap-grid);
+}
+:where([class*="-stats-grid"]),
+:where([class*="-metrics"]),
+:where([class$="-stat-grid"]),
+:where([class*="-stat-grid "]) {
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
+  gap: var(--space-sm);
+}
+:where([class$="--wide"]),
+:where([class*="--wide "]),
+:where([class$="--full"]),
+:where([class*="--full "]) {
+  grid-column: 1 / -1;
+}
+
+:where([class$="-layout"]:not(:where(.access-groups-layout))),
+:where([class*="-layout "]:not(:where(.access-groups-layout))) {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: var(--gap-grid);
+  align-items: start;
+}
+
+@media (max-width: 1000px) {
+
+:where([class$="-layout"]:not(:where(.access-groups-layout))),
+:where([class*="-layout "]:not(:where(.access-groups-layout))) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  
+}
+}
+@layer layout {/* =========================================================
    LAYOUT — оболонки сторінок, секції, сітки, футер
    Ритм і максимальні ширини — ті самі, що на сайті:
    єдина ширина через --page-max, --pad-section по вертикалі,
@@ -15,6 +183,7 @@ main,
   width: 100%;
   max-width: var(--page-max);
   margin-inline: auto;
+  min-width: 0;
 }
 
 main,
@@ -23,6 +192,8 @@ main,
   flex: 1 0 auto;
   padding: 24px var(--page-gutter);
   padding-bottom: calc(var(--space-3xl) + env(safe-area-inset-bottom, 0px));
+  padding-left: max(var(--page-gutter), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--page-gutter), env(safe-area-inset-right, 0px));
 }
 
 /* Вкладені оболонки не подвоюють відступи */
@@ -38,9 +209,7 @@ main .dashboard-shell {
 /* ---------- Вертикальний стек секцій ---------- */
 .dashboard-shell,
 .content-shell,
-.app-page-stack,
-[class$="-shell"],
-[class*="-shell "] {
+.app-page-stack {
   display: flex;
   flex-direction: column;
   gap: var(--page-gap);
@@ -53,11 +222,7 @@ main .dashboard-shell {
 
 /* ---------- Шапка секції ---------- */
 .section-header,
-.dashboard-list-head,
-[class$="__head"],
-[class*="__head "],
-[class$="-head"]:not(:where(.profile-card-head--inline)),
-[class*="-head "]:not(:where(.profile-card-head--inline)) {
+.dashboard-list-head {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
@@ -86,11 +251,7 @@ main .dashboard-shell {
 
 /* ---------- Надзаголовок (section-tag сайту) ---------- */
 .eyebrow,
-.app-state-eyebrow,
-[class$="__eyebrow"],
-[class*="__eyebrow "],
-[class$="-eyebrow"],
-[class*="-eyebrow "] {
+.app-state-eyebrow {
   display: inline-block;
   /* У grid/flex-батьках inline-block блокифікується й розтягується
      на всю ширину. fit-content + start тримають пігулку за змістом. */
@@ -110,11 +271,7 @@ main .dashboard-shell {
 }
 
 /* ---------- Лід-абзац і приглушений текст ---------- */
-.lead,
-[class$="__lead"],
-[class*="__lead "],
-[class$="-lead"],
-[class*="-lead "] {
+.lead {
   max-width: 72ch;
   color: var(--text-soft);
   font-size: 0.95rem;
@@ -122,15 +279,7 @@ main .dashboard-shell {
 }
 
 .subtle:not(:where(.btn)),
-.hint,
-[class$="__hint"],
-[class*="__hint "],
-[class$="__meta"],
-[class*="__meta "],
-[class$="__desc"],
-[class*="__desc "],
-[class$="-note"]:not(:where(.error-note)):not(:where(.warning-note)),
-[class*="-note "]:not(:where(.error-note)):not(:where(.warning-note)) {
+.hint {
   color: var(--text-muted);
   font-size: 0.85rem;
   line-height: var(--line-height-relaxed);
@@ -145,26 +294,22 @@ main .dashboard-shell {
    Контекстна панель із м’яким верхнім блиском.
    ========================================================= */
 .hero,
-.dashboard-hero,
-[class$="-hero"]:not(:where([class*="landing"])),
-[class*="-hero "]:not(:where([class*="landing"])) {
+.dashboard-hero {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  grid-template-columns: var(--hero-columns);
   align-items: center;
   gap: var(--space-lg);
-  padding: clamp(var(--space-md), 2.4vw, var(--space-xl));
+  padding: var(--hero-padding);
   border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  background: var(--surface);
+  border-radius: var(--card-radius);
+  background: var(--hero-background);
   box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
 
 .hero::before,
-.dashboard-hero::before,
-[class$="-hero"]:not(:where([class*="landing"]))::before,
-[class*="-hero "]:not(:where([class*="landing"]))::before {
+.dashboard-hero::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -188,47 +333,30 @@ main .dashboard-shell {
 
 .hero-copy,
 .dashboard-hero__copy,
-.guild-hero__copy,
-[class$="-hero__copy"],
-[class*="-hero__copy "] {
+.guild-hero__copy {
   min-width: 0;
 }
 
 .hero-copy h1,
-.dashboard-hero__copy h1,
-[class$="-hero__copy"] h1,
-[class*="-hero__copy "] h1 {
+.dashboard-hero__copy h1 {
   margin-bottom: var(--space-xs);
 }
 
 .hero-copy p,
-.dashboard-hero__copy p,
-[class$="-hero__copy"] p,
-[class*="-hero__copy "] p {
+.dashboard-hero__copy p {
   max-width: 62ch;
   color: var(--text-soft);
   line-height: 1.58;
 }
 
-[class$="-hero__actions"],
-[class*="-hero__actions "],
-[class$="__actions"],
-[class*="__actions "],
 .action-bar,
 .action-row,
 .form-actions,
-.dashboard-list-actions,
-[class$="-actions"],
-[class*="-actions "] {
+.dashboard-list-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-sm);
-}
-
-[class$="-hero__actions"],
-[class*="-hero__actions "] {
-  margin-top: var(--space-md);
 }
 
 .form-actions--split {
@@ -237,10 +365,8 @@ main .dashboard-shell {
 
 @media (max-width: 860px) {
 .hero,
-.dashboard-hero,
-[class$="-hero"]:not(:where([class*="landing"])),
-[class*="-hero "]:not(:where([class*="landing"])) {
-    grid-template-columns: minmax(0, 1fr);
+.dashboard-hero {
+    grid-template-columns: var(--hero-columns);
   }
 }
 
@@ -248,14 +374,6 @@ main .dashboard-shell {
    СІТКИ
    Один патерн auto-fit: не треба описувати кожну сітку окремо.
    ========================================================= */
-[class$="-grid"],
-/* =========================================================
-   СІТКИ
-   Один патерн auto-fit: не треба описувати кожну сітку окремо.
-   ========================================================= */
-[class*="-grid "],
-[class$="__grid"],
-[class*="__grid "],
 .access-form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
@@ -264,13 +382,6 @@ main .dashboard-shell {
 
 /* Дрібніші плитки: статистика,
 лічильники */
-[class*="-stats-grid"],
-[class*="-metrics"],
-[class$="-stat-grid"],
-[class*="-stat-grid "] {
-  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
-  gap: var(--space-sm);
-}
 
 /* Форма у дві колонки */
 .form-row,
@@ -286,33 +397,11 @@ main .dashboard-shell {
 
 /* Поле на всю ширину сітки */
 .content-field--wide,
-.raid-poll-field--wide,
-[class$="--wide"],
-[class*="--wide "],
-[class$="--full"],
-[class*="--full "] {
+.raid-poll-field--wide {
   grid-column: 1 / -1;
 }
 
 /* ---------- Головна: контент + бічний стек ---------- */
-
-[class$="-layout"]:not(:where(.access-groups-layout)),
-[class*="-layout "]:not(:where(.access-groups-layout)) {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
-  gap: var(--gap-grid);
-  align-items: start;
-}
-
-@media (max-width: 1000px) {
-
-[class$="-layout"]:not(:where(.access-groups-layout)),
-[class*="-layout "]:not(:where(.access-groups-layout)) {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  
-}
 
 /* =========================================================
    ФУТЕР — спільна мова застосунку
@@ -463,10 +552,13 @@ main .dashboard-shell {
   color: var(--text-soft);
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .app-footer__links a:hover {
   color: var(--c-accent-200);
   text-decoration: underline;
   text-underline-offset: 3px;
+}
 }
 
 @media (max-width: 640px) {
@@ -536,3 +628,11 @@ main .dashboard-shell {
     padding-inline: 14px;
   }
 }
+
+/* A text-only intro uses one content column at every viewport. */
+.hero.hero--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+}
+
+

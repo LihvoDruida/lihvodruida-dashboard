@@ -1,4 +1,5 @@
 "use client";
+import { PageIntro } from "@/components/ui/PagePrimitives";
 import { useEffect, useState } from "react";
 import styles from "./static.module.css";
 import { StaticMarkdown } from "./StaticMarkdown";
@@ -52,11 +53,7 @@ export default function StaticAcceptClient({ token, botId }: { token: string; bo
   }
   return (
     <main className={`container app-page ${styles.wrap}`}>
-      <header className={`hero panel ${styles.hero}`}>
-        <div className="eyebrow">Mistblossom Vanguard • рейдовий склад</div>
-        <h1>Правила Статика</h1>
-        <p className="lead">Ознайомся з правилами та підтвердь прийняття через приватне повідомлення Discord-боту. Реєструватися на сайті не потрібно.</p>
-      </header>
+      <PageIntro className={styles.hero} eyebrow="Mistblossom Vanguard • рейдовий склад" title="Правила Статика" description="Ознайомся з правилами та підтвердь прийняття через приватне повідомлення Discord-боту. Реєструватися на сайті не потрібно." />
       {loading ? <section className="panel"><p>Завантажуємо правила…</p></section> : null}
       {error ? <div role="alert" className="notice panel error-note">{error}</div> : null}
       {rules ? <section className={`panel ${styles.card}`}>

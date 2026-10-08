@@ -1,0 +1,26 @@
+{
+  "version": "3.8.66",
+  "verify": "PASS",
+  "productionBuild": "PASS",
+  "finalLint": "PASS",
+  "botTests": {
+    "pass": 38,
+    "fail": 0
+  },
+  "staticRoleScenarios": {
+    "pass": 14,
+    "fail": 0
+  },
+  "responsiveLayouts": {
+    "checks": 84,
+    "failures": 0
+  },
+  "compiledHtmlCss": {
+    "checks": 14,
+    "failures": 0
+  },
+  "productionDiscordTested": false,
+  "productionDatabaseTested": false,
+  "buildNextVersion": "16.3.5",
+  "archiveLockNextVersion": "16.3.3"
+}

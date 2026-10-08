@@ -1,0 +1,254 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> lihvodruida-dashboard@3.8.66 prebuild
+> node scripts/remove-legacy-middleware.cjs
+
+[next16-middleware-cleanup] no stale middleware files found
+
+> lihvodruida-dashboard@3.8.66 build
+> node scripts/next-build.cjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.mjs took 16ms
+- Experiments (use with caution):
+  · cpus: 2
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1234ms
+  Skipping validation of types
+  Finished TypeScript config validation in 13ms ...
+  Collecting page data using 2 workers ...
+  Generating static pages using 2 workers (0/5) ...
+  Generating static pages using 2 workers (1/5) 
+  Generating static pages using 2 workers (2/5) 
+  Generating static pages using 2 workers (3/5) 
+✓ Generating static pages using 2 workers (5/5) in 183ms
+Turbopack build encountered 2 warnings:
+./dashboard/src/lib/discordWelcomeCard.ts:273:22
+Warning: Dynamic filesystem access causes tracing of the whole project
+  [90m271 |[0m   [36mfor[0m ([36mconst[0m candidate [36mof[0m backgroundCandidates()) {
+  [90m272 |[0m     [36mtry[0m {
+[33m[1m>[0m [90m273 |[0m       source = [36mawait[0m fs.readFile(candidate);
+  [90m    |[0m                      [33m[1m^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m274 |[0m       [36mbreak[0m;
+  [90m275 |[0m     } [36mcatch[0m (error) {
+  [90m276 |[0m       lastError = error;
+
+Static analysis determined that this filesystem access causes the whole project to be traced and included in the output.
+This is usually unintentional and leads to all source files (including the public folder) to be deployed as part of the server code.
+This can slow down deployments or lead to failures when size limits are exceeded.
+To resolve this, you can
+- make sure the path is statically scoped to some subfolder, for example path.join(process.cwd(), 'data', bar), or
+- only use them in development, or
+- opt out by adding an ignore comment to the highlighted call: fs.readFile(/*turbopackIgnore: true*/ ...), or
+- remove them.
+
+Import traces:
+  App Route:
+    ./dashboard/src/lib/discordWelcomeCard.ts
+    ./dashboard/src/lib/discordWelcomeArtifact.ts
+    ./dashboard/src/app/api/dashboard/welcome-card/publish-test/route.ts
+
+  Server Component:
+    ./dashboard/src/lib/discordWelcomeCard.ts
+    ./dashboard/src/lib/discordWelcomeArtifact.ts
+    ./dashboard/src/app/dashboard/welcome/page.tsx
+
+
+./dashboard/src/lib/discordWelcomeCard.ts:487:25
+Warning: Dynamic filesystem access causes tracing of the whole project
+  [90m485 |[0m     [36mlet[0m fontfile: string | [36mnull[0m = [36mnull[0m;
+  [90m486 |[0m     [36mfor[0m ([36mconst[0m dir [36mof[0m welcomeFontDirCandidates()) {
+[33m[1m>[0m [90m487 |[0m       [36mconst[0m candidate = path.join(dir, font.file);
+  [90m    |[0m                         [33m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m488 |[0m       [36mtry[0m {
+  [90m489 |[0m         [36mawait[0m fs.access(candidate);
+  [90m490 |[0m         fontfile = candidate;
+
+Static analysis determined that this filesystem access causes the whole project to be traced and included in the output.
+This is usually unintentional and leads to all source files (including the public folder) to be deployed as part of the server code.
+This can slow down deployments or lead to failures when size limits are exceeded.
+To resolve this, you can
+- make sure the path is statically scoped to some subfolder, for example path.join(process.cwd(), 'data', bar), or
+- only use them in development, or
+- opt out by adding an ignore comment to the highlighted call: path.join(/*turbopackIgnore: true*/ ...), or
+- remove them.
+
+Import traces:
+  App Route:
+    ./dashboard/src/lib/discordWelcomeCard.ts
+    ./dashboard/src/lib/discordWelcomeArtifact.ts
+    ./dashboard/src/app/api/dashboard/welcome-card/publish-test/route.ts
+
+  Server Component:
+    ./dashboard/src/lib/discordWelcomeCard.ts
+    ./dashboard/src/lib/discordWelcomeArtifact.ts
+    ./dashboard/src/app/dashboard/welcome/page.tsx
+
+
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /access-denied
+├ ƒ /admin
+├ ƒ /admin/[...path]
+├ ƒ /api/admin/[...path]
+├ ƒ /api/applications
+├ ƒ /api/applications/[number]
+├ ƒ /api/applications/[number]/status
+├ ƒ /api/applications/bulk-status
+├ ƒ /api/auth/battlenet/callback
+├ ƒ /api/auth/battlenet/start
+├ ƒ /api/auth/discord/callback
+├ ƒ /api/auth/discord/start
+├ ƒ /api/auth/github/callback
+├ ƒ /api/auth/github/start
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/session
+├ ƒ /api/background/refresh
+├ ƒ /api/background/settings
+├ ƒ /api/calendar/raids.ics
+├ ƒ /api/client-errors
+├ ƒ /api/content/create
+├ ƒ /api/content/delete
+├ ƒ /api/content/update
+├ ƒ /api/dashboard/discord/applications/test-channel
+├ ƒ /api/dashboard/discord/nickname
+├ ƒ /api/dashboard/discord/nicknames/automation
+├ ƒ /api/dashboard/discord/nicknames/inspect
+├ ƒ /api/dashboard/discord/nicknames/notify
+├ ƒ /api/dashboard/discord/nicknames/test-message
+├ ƒ /api/dashboard/discord/officers/sync
+├ ƒ /api/dashboard/discord/onboarding/automation
+├ ƒ /api/dashboard/discord/profiles/cleanup
+├ ƒ /api/dashboard/discord/profiles/cleanup-settings
+├ ƒ /api/dashboard/discord/profiles/import-firestore
+├ ƒ /api/dashboard/discord/roles/add
+├ ƒ /api/dashboard/discord/roles/remove
+├ ƒ /api/dashboard/discord/settings
+├ ƒ /api/dashboard/impersonation/end
+├ ƒ /api/dashboard/logs/export
+├ ƒ /api/dashboard/logs/ingest
+├ ƒ /api/dashboard/logs/maintenance
+├ ƒ /api/dashboard/logs/query
+├ ƒ /api/dashboard/logs/security-test
+├ ƒ /api/dashboard/logs/settings
+├ ƒ /api/dashboard/profiles/orphan-cleanup
+├ ƒ /api/dashboard/profiles/orphan-cleanup/apply
+├ ƒ /api/dashboard/profiles/refresh-external-data
+├ ƒ /api/dashboard/rules/acceptance-settings
+├ ƒ /api/dashboard/security/auth-access
+├ ƒ /api/dashboard/security/geo-access
+├ ƒ /api/dashboard/server-status
+├ ƒ /api/dashboard/static-roles
+├ ƒ /api/dashboard/welcome-card/preview
+├ ƒ /api/dashboard/welcome-card/publish-test
+├ ƒ /api/dashboard/welcome-card/repair-roleless
+├ ƒ /api/dashboard/welcome-card/run-onboarding
+├ ƒ /api/dashboard/welcome-card/settings
+├ ƒ /api/discord/embeds/message
+├ ƒ /api/discord/embeds/publish
+├ ƒ /api/discord/interactions
+├ ƒ /api/guild/refresh
+├ ƒ /api/guild/sync
+├ ƒ /api/health
+├ ƒ /api/integrations/status
+├ ƒ /api/internal/discord/member-joined
+├ ƒ /api/internal/discord/member-nickname
+├ ƒ /api/internal/discord/static-confirm
+├ ƒ /api/internal/discord/static-enforce
+├ ƒ /api/internal/health
+├ ƒ /api/polls
+├ ƒ /api/polls/[pollId]
+├ ƒ /api/polls/[pollId]/close
+├ ƒ /api/polls/[pollId]/discord-sync
+├ ƒ /api/polls/[pollId]/pause
+├ ƒ /api/polls/[pollId]/vote
+├ ƒ /api/polls/close-due
+├ ƒ /api/polls/recalculate-recommendations
+├ ƒ /api/profile/[profileId]/refresh-external-data
+├ ƒ /api/profile/battlenet/candidates/expire
+├ ƒ /api/profile/characters/add
+├ ƒ /api/profile/characters/bulk-add
+├ ƒ /api/profile/characters/main
+├ ƒ /api/profile/characters/remove
+├ ƒ /api/profile/discord-lookup
+├ ƒ /api/profile/discord-nickname
+├ ƒ /api/profile/gender
+├ ƒ /api/profile/name
+├ ƒ /api/profile/name-mode
+├ ƒ /api/profile/nickname-characters
+├ ƒ /api/profile/raid-role
+├ ƒ /api/raids
+├ ƒ /api/raids/[raidId]/attendance
+├ ƒ /api/raids/[raidId]/close
+├ ƒ /api/raids/[raidId]/delete
+├ ƒ /api/raids/[raidId]/discord-action
+├ ƒ /api/raids/[raidId]/snapshot
+├ ƒ /api/raids/bench-priority
+├ ƒ /api/raids/images
+├ ƒ /api/raids/lifecycle
+├ ƒ /api/raids/publish
+├ ƒ /api/roster
+├ ƒ /api/roster/discord-action
+├ ƒ /api/rules/accept/complete
+├ ƒ /api/site/applications
+├ ƒ /api/site/guild
+├ ƒ /api/static/accept
+├ ƒ /api/static/bans
+├ ƒ /api/static/events
+├ ƒ /api/static/manage
+├ ƒ /api/static/rules
+├ ƒ /api/static/status
+├ ƒ /applications
+├ ƒ /content
+├ ƒ /dashboard
+├ ƒ /dashboard/discord
+├ ƒ /dashboard/groups
+├ ƒ /dashboard/logs
+├ ƒ /dashboard/server
+├ ƒ /dashboard/settings
+├ ƒ /dashboard/welcome
+├ ƒ /discord
+├ ƒ /discord/autoroles
+├ ƒ /discord/embed
+├ ƒ /discord/rules
+├ ƒ /discord/rules/edit
+├ ƒ /discord/rules/new
+├ ƒ /discord/static
+├ ƒ /discord/static/bans
+├ ƒ /discord/static/events
+├ ƒ /discord/static/rules
+├ ƒ /guild
+├ ƒ /login
+├ ƒ /polls
+├ ƒ /polls/[pollId]
+├ ƒ /polls/[pollId]/edit
+├ ƒ /polls/new
+├ ○ /privacy
+├ ƒ /profile
+├ ƒ /profile/[profileId]
+├ ƒ /profile/[profileId]/characters/[characterKey]
+├ ƒ /profile/[profileId]/settings
+├ ƒ /profiles
+├ ƒ /raids
+├ ƒ /raids/[raidId]
+├ ƒ /raids/[raidId]/edit
+├ ƒ /raids/bench-priority
+├ ƒ /raids/new
+├ ○ /robots.txt
+├ ƒ /roster
+├ ƒ /rules/accept
+├ ƒ /static/accept
+└ ○ /terms
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+[next-build] OK in 6s

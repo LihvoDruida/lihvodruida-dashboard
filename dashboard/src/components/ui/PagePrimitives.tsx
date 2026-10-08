@@ -19,6 +19,28 @@ export function PageSection({ children, className }: PageShellProps) {
   return <section className={joinClassNames("panel page-section", className)}>{children}</section>;
 }
 
+export function PageIntro({
+  eyebrow,
+  title,
+  description,
+  className,
+}: {
+  eyebrow: string;
+  title: string;
+  description: ReactNode;
+  className?: string;
+}) {
+  return (
+    <header className={joinClassNames("hero panel hero--single", className)}>
+      <div className="hero-copy">
+        <span className="eyebrow">{eyebrow}</span>
+        <h1>{title}</h1>
+        <p className="lead">{description}</p>
+      </div>
+    </header>
+  );
+}
+
 export function SectionHeader({
   eyebrow,
   title,

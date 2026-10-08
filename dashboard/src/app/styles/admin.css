@@ -1,4 +1,4 @@
-/* =========================================================
+@layer pages {/* =========================================================
    ADMIN — панель керування, Discord-адмінка та журнали
 
    64 класи адмінки не мали правил, тому картки дій, журнал
@@ -72,7 +72,6 @@
 .discord-management-card {
   display: flex;
   flex-direction: column;
-  gap: var(--gap-stack);
   border-left: 3px solid var(--c-ink-500);
   min-width: 0;
 }
@@ -97,7 +96,6 @@
 
 .discord-management-card__body {
   display: grid;
-  gap: var(--space-md);
   min-width: 0;
 }
 
@@ -157,14 +155,12 @@
 
 .discord-info-chip {
   display: inline-flex;
-  align-items: baseline;
   gap: var(--space-3xs);
   padding: var(--space-3xs) var(--space-sm);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-pill);
   background: var(--surface-sunken);
   font-size: 0.74rem;
-  white-space: nowrap;
 }
 
 .discord-info-chip strong {
@@ -197,7 +193,6 @@
 .admin-policy-card {
   display: flex;
   flex-direction: column;
-  gap: var(--gap-stack);
   min-width: 0;
 }
 
@@ -205,15 +200,12 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--space-sm);
   min-width: 0;
 }
 
 .admin-policy-card__icon {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: var(--control-height-sm);
   flex: 0 0 auto;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
@@ -228,7 +220,6 @@
 }
 
 .admin-policy-card__title strong {
-  font-size: 0.95rem;
   color: var(--text-strong);
 }
 
@@ -352,8 +343,6 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-sm);
-  padding-top: var(--space-sm);
   border-top: 1px solid var(--border-subtle);
 }
 
@@ -366,10 +355,6 @@
   .admin-policy-footer {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .admin-policy-footer .btn {
-    width: 100%;
   }
 }
 
@@ -384,7 +369,6 @@
 
 .server-status-dashboard {
   display: grid;
-  gap: var(--gap-section);
 }
 
 .server-status-toolbar {
@@ -392,7 +376,6 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-md);
-  padding: var(--space-md);
 }
 
 .server-status-toolbar > div:first-child {
@@ -461,8 +444,6 @@
 
 .server-summary-card {
   display: grid;
-  gap: var(--space-xs);
-  padding: var(--space-md);
   border-top: 2px solid var(--server-tone);
 }
 
@@ -476,7 +457,6 @@
 
 .server-summary-card > strong {
   color: var(--text-strong);
-  font-size: clamp(1.45rem, 3vw, 2.2rem);
   line-height: 1;
 }
 
@@ -502,13 +482,8 @@
   transition: width 260ms ease;
 }
 
-.server-graphs-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
 .server-graph-card {
   min-width: 0;
-  padding: var(--space-md);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   background: var(--surface-raised);
@@ -548,11 +523,6 @@
   color: var(--server-tone);
 }
 
-.server-graph {
-  height: 160px;
-  margin-top: var(--space-sm);
-}
-
 .server-core-spark {
   height: 72px;
 }
@@ -580,8 +550,6 @@
 
 .server-section {
   display: grid;
-  gap: var(--space-md);
-  padding: var(--space-lg);
 }
 
 .server-section__head h2 {
@@ -624,7 +592,6 @@
 .server-detail-card {
   display: grid;
   gap: var(--space-md);
-  padding: var(--space-md);
 }
 
 .server-detail-card dl {
@@ -827,10 +794,13 @@
   line-height: 1.15;
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .admin-tabs.dashboard-subnav > a:hover {
   border-color: var(--border-subtle);
   background: var(--surface-raised);
   color: var(--text-strong);
+}
 }
 
 .admin-tabs.dashboard-subnav > a.is-active {
@@ -956,12 +926,12 @@
 
 .server-graph {
   height: 128px;
-  margin-top: 8px;
+  margin-top: var(--space-xs);
 }
 
 .server-section {
   gap: 14px;
-  padding: 16px;
+  padding: var(--space-md);
 }
 
 .server-docker-grid {
@@ -1050,7 +1020,7 @@
 }
 
 .server-docker-empty {
-  padding: 16px;
+  padding: var(--space-md);
   border: 1px dashed var(--border);
   border-radius: 11px;
   background: var(--surface-sunken);
@@ -1091,7 +1061,7 @@
   }
 
   .admin-page-header {
-    padding: 16px;
+    padding: var(--space-md);
   }
 
   .admin-page-header__metrics {
@@ -1311,17 +1281,20 @@
   grid-template-columns: auto minmax(0, 1fr);
   gap: var(--space-xs);
   align-items: start;
-  padding: 8px;
+  padding: var(--space-xs);
   border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .permission-check:hover {
   background: var(--surface-raised);
 }
+}
 
 .permission-check input {
-  margin-top: 2px;
+  margin-top: var(--space-3xs);
 }
 
 .permission-check > span {
@@ -1351,7 +1324,7 @@
 }
 
 .access-form-actions {
-  padding-top: 12px;
+  padding-top: var(--space-sm);
   border-top: 1px solid var(--border-subtle);
 }
 
@@ -1394,22 +1367,6 @@
   min-width: 0;
 }
 
-.auth-access-role-option {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--space-xs);
-  align-items: start;
-  padding: 9px 10px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 9px;
-  background: var(--surface-sunken);
-  cursor: pointer;
-}
-
-.auth-access-role-option input {
-  margin-top: 2px;
-}
-
 .auth-access-role-option > span {
   display: grid;
   gap: var(--space-3xs);
@@ -1428,20 +1385,7 @@
 }
 
 .geo-country-chip {
-  display: inline-flex;
-  align-items: center;
   gap: 6px;
-  min-height: var(--control-height-sm);
-  padding: 6px 9px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 9px;
-  background: var(--surface-sunken);
-  color: var(--text-soft);
-  font-size: var(--font-size-sm);
-}
-
-.geo-country-chip--muted {
-  color: var(--text-faint);
 }
 
 .discord-management-status__item.is-ok {
@@ -1456,9 +1400,7 @@
 
 .discord-management-status__item em {
   color: var(--text-faint);
-  font-size: var(--font-size-xs);
   font-style: normal;
-  line-height: var(--line-height-tight);
 }
 
 /* =========================================================
@@ -1475,7 +1417,7 @@
   display: grid;
   grid-template-rows: auto 1fr auto;
   gap: var(--space-sm);
-  padding: 16px;
+  padding: var(--space-md);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface);
@@ -1604,7 +1546,7 @@
 }
 
 .integration-status-foot {
-  padding-top: 2px;
+  padding-top: var(--space-3xs);
 }
 
 .admin-nickname-summary-card {
@@ -1612,7 +1554,7 @@
   grid-template-rows: auto auto 1fr;
   gap: var(--space-sm);
   min-width: 0;
-  padding: 16px;
+  padding: var(--space-md);
 }
 
 .admin-nickname-summary-card__header {
@@ -1725,7 +1667,7 @@
 }
 
 .admin-policy-fieldset legend {
-  margin-bottom: 2px;
+  margin-bottom: var(--space-3xs);
   padding: 0 4px;
   color: var(--c-accent-300);
   font-size: var(--font-size-sm);
@@ -1780,9 +1722,12 @@
     box-shadow var(--dur-fast) var(--ease-out);
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .admin-policy-toggle:hover {
   border-color: color-mix(in srgb, var(--c-accent-400) 32%, var(--border-subtle));
   background: color-mix(in srgb, var(--c-accent-400) 4%, var(--surface-sunken));
+}
 }
 
 .admin-policy-toggle:focus-within {
@@ -1806,7 +1751,7 @@
 }
 
 .admin-policy-toggle > input {
-  margin-top: 2px;
+  margin-top: var(--space-3xs);
 }
 
 .admin-policy-toggle__copy {
@@ -1851,8 +1796,11 @@
     box-shadow var(--dur-fast) var(--ease-out);
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .auth-access-role-option:hover {
   border-color: color-mix(in srgb, var(--c-accent-400) 34%, var(--border-subtle));
+}
 }
 
 .auth-access-role-option:focus-within {
@@ -1871,7 +1819,7 @@
 }
 
 .auth-access-role-option input {
-  margin-top: 2px;
+  margin-top: var(--space-3xs);
 }
 
 .auth-access-role-option__copy {
@@ -1902,7 +1850,7 @@
 }
 
 .admin-policy-input--manual-role {
-  margin-top: 2px;
+  margin-top: var(--space-3xs);
   padding-top: 10px;
   border-top: 1px solid var(--border-subtle);
 }
@@ -2084,7 +2032,7 @@
   .integration-status-panel.admin-overview-status-card,
 .admin-nickname-summary-card,
 .admin-policy-card {
-    padding: 12px;
+    padding: var(--space-sm);
   }
 
   .integration-status-head {
@@ -2174,7 +2122,16 @@
   transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 
-.discord-management-jump-nav a:hover,
+@media (hover: hover) and (pointer: fine) {
+
+.discord-management-jump-nav a:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-sunken);
+  color: var(--text-strong);
+  outline: 0;
+}
+}
+
 .discord-management-jump-nav a:focus-visible {
   border-color: var(--border-strong);
   background: var(--surface-sunken);
@@ -2233,9 +2190,7 @@
 
 .discord-settings-card {
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(420px, 0.92fr);
   gap: 18px;
-  align-items: end;
   border-left-color: var(--c-info);
 }
 
@@ -2280,7 +2235,7 @@
 
 .discord-management-card {
   gap: var(--space-sm);
-  padding: 16px;
+  padding: var(--space-md);
   border-left-width: 2px;
 }
 
@@ -2333,9 +2288,12 @@
   transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .discord-role-option:hover {
   border-color: var(--border-strong);
   background: var(--surface-raised);
+}
 }
 
 .discord-role-option:has(input:checked) {
@@ -2397,7 +2355,7 @@
 .discord-management-status__item {
   min-height: 90px;
   align-content: start;
-  padding: 12px;
+  padding: var(--space-sm);
 }
 
 .discord-management-status__item small {
@@ -2429,7 +2387,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
-  margin-top: 8px;
+  margin-top: var(--space-xs);
 }
 
 .discord-management-blocked-roles > span {
@@ -2842,7 +2800,7 @@
   display: grid;
   gap: 14px;
   min-width: 0;
-  padding: 16px;
+  padding: var(--space-md);
   border: 1px solid rgba(245, 158, 11, 0.18);
   border-radius: 16px;
   background: rgba(18, 13, 9, 0.48);
@@ -2945,7 +2903,7 @@
 }
 
 .settings-toggle-row input {
-  margin-top: 4px;
+  margin-top: var(--space-2xs);
   accent-color: var(--accent, #f59e0b);
 }
 
@@ -2962,7 +2920,7 @@
 .nickname-warning-settings__group {
   display: grid;
   gap: 10px;
-  padding-top: 12px;
+  padding-top: var(--space-sm);
   border-top: 1px solid var(--border-subtle);
 }
 
@@ -2989,7 +2947,7 @@
 }
 
 .nickname-fallback-field {
-  margin-top: 2px;
+  margin-top: var(--space-3xs);
 }
 
 .input-with-suffix {
@@ -3248,3 +3206,5 @@
     width: 100%;
   }
 }
+}
+

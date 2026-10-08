@@ -1,4 +1,4 @@
-/* =========================================================
+@layer reset {/* =========================================================
    BASE — ресет, фон, типографіка
    Перенесено з assets/css/style.css + site-polish.css сайту.
    ========================================================= */
@@ -10,35 +10,6 @@
    власний відгук через :active. */
 * {
   -webkit-tap-highlight-color: transparent;
-}
-
-button,
-a {
-  transition: transform var(--dur-instant) ease;
-}
-
-button:active,
-a:active {
-  transform: scale(0.985);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-*::before,
-*::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-/* Вимикаємо hover-підйоми на тач-пристроях */
-@media (hover: none) {
-  .panel:hover,
-[class*="-card"]:hover {
-    transform: none;
-  }
 }
 
 /* ---------- 2. Ресет ---------- */
@@ -53,8 +24,9 @@ a:active {
 html {
   font-family: var(--font-sans);
   font-size: 100%;
+  color-scheme: dark;
   line-height: var(--line-height-body);
-  overflow-x: hidden;
+  overflow-x: clip;
   scroll-behavior: smooth;
   overscroll-behavior-y: contain;
   background: var(--site-bg-0);
@@ -78,7 +50,7 @@ body {
     linear-gradient(180deg, var(--site-bg-0), var(--site-bg-1) 45%, var(--site-bg-2));
   background-attachment: fixed;
 
-  /* Місце під плаваючу капсулу зверху й мобільну панель знизу */
+  /* Спільний резерв для шапки, включно з вирізом екрана. */
   display: flex;
   flex-direction: column;
   padding-top: var(--nav-space);
@@ -88,7 +60,7 @@ body {
 #site-starfield {
   position: fixed;
   inset: 0;
-  width: 100vw;
+  width: 100%;
   height: 100vh;
   z-index: 0;
   pointer-events: none;
@@ -121,7 +93,7 @@ select {
 input,
 textarea,
 select {
-  font-size: 16px;
+  font-size: var(--control-font-size);
 }
 
 a {
@@ -131,8 +103,11 @@ a {
   transition: color var(--dur-fast) var(--ease-out);
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 a:hover {
   color: var(--c-accent-200);
+}
 }
 
 ul,
@@ -306,9 +281,12 @@ small {
   background-clip: content-box;
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 *::-webkit-scrollbar-thumb:hover {
   background: var(--c-base-500);
   background-clip: content-box;
+}
 }
 
 ::selection {
@@ -328,3 +306,5 @@ small {
     opacity: 0.68;
   }
 }
+}
+

@@ -1,4 +1,4 @@
-/* =========================================================
+@layer theme {/* =========================================================
    ДИЗАЙН-ТОКЕНИ — Mistblossom Vanguard
 
    Збережена тепла нічна палітра й бурштиновий акцент, але файл
@@ -47,7 +47,8 @@
 
   /* ---------- Точки зламу ----------
      CSS не дозволяє var() у @media, тому це довідка, а не токени.
-     Уся адаптивність сайту зведена до чотирьох ширин:
+     Спільні точки переходу каркаса; локальні компоненти можуть
+     мати власні переходи, коли їхній вміст перестає вміщуватись:
 
        1000px — бічна колонка йде під контент (page-layout, side-stack)
         860px — багатоколонкові сітки стають одноколонковими
@@ -113,15 +114,15 @@
   /* ---------- Типографічна шкала ----------
      Значення відповідають найчастішим поточним розмірам. Винесення
      у токени не змінює геометрію, але прибирає локальне розходження. */
-  --font-size-2xs: 0.66rem;
-  --font-size-xs: 0.68rem;
-  --font-size-caption: 0.7rem;
-  --font-size-sm: 0.72rem;
-  --font-size-meta: 0.76rem;
-  --font-size-ui: 0.78rem;
-  --font-size-ui-lg: 0.8rem;
-  --font-size-body-sm: 0.82rem;
-  --font-size-body: 0.9rem;
+  --font-size-2xs: 0.6875rem;
+  --font-size-xs: 0.75rem;
+  --font-size-caption: 0.75rem;
+  --font-size-sm: 0.75rem;
+  --font-size-meta: 0.8125rem;
+  --font-size-ui: 0.8125rem;
+  --font-size-ui-lg: 0.875rem;
+  --font-size-body-sm: 0.875rem;
+  --font-size-body: 0.9375rem;
   --font-size-base: 1rem;
 
   --font-weight-ui: 500;
@@ -150,8 +151,7 @@
   /* ---------- Ритм сторінки ---------- */
   --gap-stack: var(--space-md);
   --gap-grid: var(--space-lg);
-  --gap-section: var(--gap-grid);
-  --pad-card: var(--space-lg);
+  --pad-card: var(--panel-padding);
   --pad-card-compact: var(--space-md);
   --pad-section: clamp(var(--space-xl), 5vw, var(--space-3xl));
   --pad-page-inline: clamp(var(--space-md), 4vw, var(--space-xl));
@@ -160,7 +160,6 @@
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 20px;
-  --radius-xl: 28px;
   --radius-pill: 999px;
   --control-radius: 10px;
 
@@ -195,9 +194,10 @@
      Desktop geometry живе у desktop.css/nav.css.
      ======================================================= */
   /* Геометрія мобільної навігації */
-  --nav-h: 54px;
-  --nav-inset: 16px;
-  --nav-space: calc(var(--nav-h) + var(--nav-inset) * 2);
+  --nav-h: 56px;
+  --nav-inset: 10px;
+  --nav-clearance: 12px;
+  --nav-space: calc(var(--nav-h) + var(--nav-inset) + var(--nav-clearance) + env(safe-area-inset-top, 0px));
 
   --nav-surface: rgba(26, 21, 17, 0.82);
   --nav-surface-solid: rgba(18, 15, 12, 0.95);
@@ -212,11 +212,18 @@
   --section-gap: 16px;
   --card-radius: var(--radius-md);
   --panel-padding: 20px;
-  --control-height: 42px;
-  --control-height-sm: 34px;
+  --control-height: 44px;
+  --control-height-sm: 40px;
+  --control-font-size: 1rem;
   --control-pad-x: 16px;
   --sidebar-width: 272px;
+  --hero-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  --hero-padding: clamp(var(--space-md), 2.4vw, var(--space-xl));
+  --hero-background: linear-gradient(110deg, rgba(255, 155, 85, 0.05), transparent 42%), rgba(25, 20, 16, 0.82);
+  --control-border: rgba(255, 155, 85, 0.16);
 
   /* ---------- Короткий alias для фокусу/форм ---------- */
   --orange-main: var(--c-accent-400);
 }
+}
+

@@ -1,4 +1,4 @@
-/* =========================================================
+@layer components {/* =========================================================
    NAVIGATION — app-style desktop workspace + mobile sheet
    ========================================================= */
 
@@ -11,7 +11,7 @@
    ========================================================= */
 .dashboard-topbar {
   position: fixed;
-  top: 12px;
+  top: var(--nav-inset);
   left: 50%;
   z-index: var(--z-navbar);
   display: grid;
@@ -19,7 +19,7 @@
   align-items: center;
   gap: 18px;
   width: min(calc(100% - 32px), var(--page-max));
-  min-height: 64px;
+  min-height: var(--nav-h);
   padding: 8px 10px 8px 14px;
   border: 1px solid rgba(255, 226, 196, 0.11);
   border-radius: var(--card-radius);
@@ -39,8 +39,11 @@
   text-decoration: none;
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .dashboard-brand:hover {
   color: var(--text-strong);
+}
 }
 
 .dashboard-brand__mark {
@@ -104,7 +107,7 @@
   width: fit-content;
   max-width: 100%;
   margin-inline: auto;
-  padding: 4px;
+  padding: var(--space-2xs);
   border: 1px solid rgba(255, 226, 196, 0.075);
   border-radius: 13px;
   background: rgba(12, 10, 7, 0.34);
@@ -142,9 +145,16 @@
   opacity: 0.72;
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .dashboard-nav > a:hover,
+.dashboard-nav-more__trigger:hover {
+  color: var(--text-strong);
+  background: rgba(255, 255, 255, 0.035);
+}
+}
+
 .dashboard-nav > a:focus-visible,
-.dashboard-nav-more__trigger:hover,
 .dashboard-nav-more__trigger:focus-visible {
   color: var(--text-strong);
   background: rgba(255, 255, 255, 0.035);
@@ -262,7 +272,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
-  padding-top: 8px;
+  padding-top: var(--space-xs);
 }
 
 .dashboard-nav-more__menu-list a {
@@ -275,7 +285,14 @@
   color: var(--text-soft);
 }
 
-.dashboard-nav-more__menu-list a:hover,
+@media (hover: hover) and (pointer: fine) {
+
+.dashboard-nav-more__menu-list a:hover {
+  background: var(--surface-hover);
+  color: var(--text-strong);
+}
+}
+
 .dashboard-nav-more__menu-list a.is-active {
   background: var(--surface-hover);
   color: var(--text-strong);
@@ -364,7 +381,14 @@
   transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
 
-.dashboard-user__button:hover,
+@media (hover: hover) and (pointer: fine) {
+
+.dashboard-user__button:hover {
+  border-color: var(--border-subtle);
+  background: rgba(255, 255, 255, 0.035);
+}
+}
+
 .dashboard-user.is-open .dashboard-user__button {
   border-color: var(--border-subtle);
   background: rgba(255, 255, 255, 0.035);
@@ -436,7 +460,7 @@
   right: 0;
   z-index: var(--z-dropdown);
   width: 250px;
-  padding: 8px;
+  padding: var(--space-xs);
   border: 1px solid var(--border);
   border-radius: 16px;
   background: rgba(18, 15, 12, 0.985);
@@ -480,10 +504,13 @@
   cursor: pointer;
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .dashboard-user__menu > a:hover,
 .dashboard-user__logout button:hover {
   background: var(--surface-hover);
   color: var(--text-strong);
+}
 }
 
 .dashboard-user__menu > a[aria-current="page"] {
@@ -534,7 +561,7 @@
     z-index: var(--z-navbar);
     display: flex;
     justify-content: center;
-    padding: calc(10px + env(safe-area-inset-top)) 12px 0;
+    padding: calc(var(--nav-inset) + env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) 0 max(12px, env(safe-area-inset-left, 0px));
     pointer-events: none;
   }
 
@@ -545,7 +572,7 @@
     justify-content: space-between;
     gap: var(--space-sm);
     width: min(100%, 640px);
-    min-height: 52px;
+    min-height: var(--nav-h);
     padding: 6px 7px 6px 12px;
     border: 1px solid var(--nav-line);
     border-radius: 16px;
@@ -593,8 +620,8 @@
     position: relative;
     display: grid;
     place-items: center;
-    width: 40px;
-    height: 40px;
+    width: var(--control-height);
+    height: var(--control-height);
     flex: 0 0 auto;
     border: 0;
     border-radius: 11px;
@@ -648,8 +675,8 @@
   }
 
   .nav-account__login {
-    min-height: 40px;
-    padding-inline: 16px;
+    min-height: var(--control-height);
+    padding-inline: var(--space-md);
   }
 
   .nav-sheet {
@@ -657,7 +684,8 @@
     inset: 0;
     z-index: calc(var(--z-navbar) - 1);
     display: block;
-    padding: calc(78px + env(safe-area-inset-top)) 12px calc(18px + env(safe-area-inset-bottom));
+    height: 100dvh;
+    padding: var(--nav-space) max(12px, env(safe-area-inset-right, 0px)) calc(18px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
     background: rgba(8, 7, 6, 0.76);
     opacity: 0;
     visibility: hidden;
@@ -693,7 +721,7 @@
     align-items: center;
     gap: 11px;
     padding: 6px 7px 13px;
-    margin-bottom: 4px;
+    margin-bottom: var(--space-2xs);
     border-bottom: 1px solid var(--border-subtle);
   }
 
@@ -761,9 +789,16 @@
     color: var(--text-muted);
   }
 
+  @media (hover: hover) and (pointer: fine) {
+
   .nav-sheet__link:hover,
-.nav-sheet__link:focus-visible,
 .nav-sheet__logout button:hover {
+    background: var(--surface-hover);
+    color: var(--text-strong);
+  }
+}
+
+  .nav-sheet__link:focus-visible {
     background: var(--surface-hover);
     color: var(--text-strong);
   }
@@ -806,7 +841,7 @@
   }
 
   .nav-sheet {
-    padding-inline: 8px;
+    padding-inline: var(--space-xs);
   }
 }
 
@@ -814,3 +849,9 @@
   width: 58%;
   height: 58%;
 }
+
+@media (min-width: 1320px) {
+  .dashboard-brand__copy strong { max-width: 260px; }
+}
+}
+

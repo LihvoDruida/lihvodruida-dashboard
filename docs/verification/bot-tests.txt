@@ -1,0 +1,51 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> @mistblossom/bot@3.6.4 test
+> node --test "test/*.test.mjs"
+
+✔ розбирає всі дії рейд-пулу (1.792153ms)
+✔ легасі custom_id далі відкривають пульт (0.217864ms)
+✔ select без значень відхиляється, кнопки — ні (0.22163ms)
+✔ сміття не проходить (0.112568ms)
+✔ домени визначаються за реальними custom_id, які будує dashboard (1.927104ms)
+✔ контракт приймає фактичні roster/rules custom_id (1.120976ms)
+✔ усі поточні raid custom_id доходять до raid domain (0.247117ms)
+✔ дублікат custom_id у наборі компонентів ловиться (0.47075ms)
+✔ більше пʼяти рядків — не ок (0.713451ms)
+✔ рядок Discord не може містити шість кнопок (0.835452ms)
+✔ select menu займає Action Row самостійно (0.265164ms)
+✔ gateway health exposes newcomer priority worker state (2.200886ms)
+✔ gateway can be disabled without opening a socket (1.039245ms)
+✔ gateway prioritizes newest joins while queue is fresh (1.232642ms)
+✔ gateway starvation guard eventually promotes an older join (0.188671ms)
+✔ member-joined bridge sends bearer/source payload and accepts success (3.167057ms)
+✔ member-joined bridge retries 202 onboarding_busy instead of dropping event (530.749068ms)
+✔ member-joined bridge does not loop on explicit dashboard 4xx (1.057391ms)
+✔ member-nickname bridge forwards observed nickname immediately (0.789544ms)
+✔ replay guard accepts an interaction once and rejects a duplicate (1.012966ms)
+✔ replay guard accepts id again after ttl (0.199296ms)
+✔ replay guard rejects malformed ids (0.118977ms)
+✔ replay guard stays bounded under unique-id floods (7.520381ms)
+✔ коректний підпис проходить (2.638001ms)
+✔ змінене тіло не проходить (0.386184ms)
+✔ чужий підпис не проходить (0.281368ms)
+✔ старий timestamp відхиляється (захист від повтору) (0.273617ms)
+✔ порожні або сміттєві заголовки відхиляються (0.179266ms)
+✔ без налаштованого ключа нічого не проходить (0.27646ms)
+✔ діагностика не повертає секрет і пояснює причину (0.182791ms)
+✔ діагностика відрізняє replay/timestamp від криптографічної помилки (0.298784ms)
+✔ routine-probe classifier не маскує malformed або stale запити (0.251333ms)
+✔ Static role: regrant while check is running is checked again without cooldown (4.363245ms)
+✔ Static role: failures retry with backoff and notify after final failure (1.795969ms)
+✔ Static role: retry can succeed without final failure (0.656535ms)
+✔ Static role: bounded queue coalesces pending member and reports overflow (1.904631ms)
+✔ Static role: stop discards pending checks and ignores new events (0.631308ms)
+✔ Статик: only real Discord DM with 72-bit code is accepted (2.569339ms)
+ℹ tests 38
+ℹ suites 0
+ℹ pass 38
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 639.096303
