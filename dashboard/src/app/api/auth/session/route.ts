@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getStoredSession } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 import { noStoreHeaders } from "@/lib/security";
 
 export const runtime = "nodejs";
@@ -7,7 +7,9 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function GET() {
-  const session = await getStoredSession().catch(() => null);
+  // This endpoint drives cross-tab/BFCache re-authentication. A valid signed
+  // cookie alone does not establish current guild membership or access roles.
+  const session = await getSession({ live: true }).catch(() => null);
   if (!session) {
     return NextResponse.json(
       {

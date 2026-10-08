@@ -119,7 +119,7 @@ export async function listStaticState() {
     settings,
     invites: invites.docs.map((doc) => doc.data() as StaticInvite).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
     members: members.docs.map((doc) => doc.data() as StaticMember).sort((a, b) => (b.acceptedAt || "").localeCompare(a.acceptedAt || "")),
-    audit: events.docs.map((doc) => ({ id: doc.id, ...doc.data() })).sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || ""))).slice(0, 60),
+    audit: events.docs.map((doc) => ({ id: doc.id, ...doc.data(), createdAt: String(doc.data().createdAt || "") })).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 60),
   };
 }
 

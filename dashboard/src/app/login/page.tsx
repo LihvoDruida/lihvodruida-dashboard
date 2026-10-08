@@ -1,4 +1,4 @@
-import { getStoredSession } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 import { getGuildBranding } from "@/lib/branding";
 import { redirect } from "next/navigation";
 import { buildPageMetadata } from "@/lib/seo";
@@ -95,7 +95,7 @@ export default async function LoginPage({
     isEnabled(params.reauth);
   const session = forceFreshLogin || loggedOut
     ? null
-    : await getStoredSession().catch(() => null);
+    : await getSession({ live: true }).catch(() => null);
   if (session) {
     const profileId = session.profileId || "";
     const profile = profileId
@@ -126,7 +126,7 @@ export default async function LoginPage({
   const guild = await getGuildBranding();
   const authPolicy = await getAuthAccessPolicy();
   const error = errorText(params.error);
-  const hasDiscord = Boolean(process.env.DISCORD_OAUTH_CLIENT_ID);
+  const hasDiscord = Boolean(process.env.DISCORD_OAUTH_CLIENT_ID || process.env.DISCORD_CLIENT_ID);
   const hasTokenFallback =
     Boolean(process.env.ADMIN_DASHBOARD_TOKEN) &&
     (!authPolicy.enabled || authPolicy.allowEmergencyTokenLogin);

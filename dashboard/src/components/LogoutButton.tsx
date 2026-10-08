@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useRef, useState } from "react";
 import { notifyDashboardLogout } from "@/components/ClientAuthGuard";
 import {
   dashboardErrorMessage,
@@ -18,6 +18,7 @@ export default function LogoutButton({
 } = {}) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
 
   function fallbackLogout(message?: string) {
     if (message) console.warn("[dashboard:logout:fallback]", message);
@@ -28,11 +29,14 @@ export default function LogoutButton({
         "Основний запит не підтвердився, тому запускаємо безпечний fallback.",
       ttl: 4200,
     });
-    notifyDashboardLogout();
-    // Свідомо жорстка навігація, а не router.push: після виходу треба скинути
-    // клієнтський RSC-кеш авторизованих сторінок, інакше вони лишаються в памʼяті.
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-    window.location.assign("/api/auth/logout?fallback=1");
+    // Native POST works without fetch/JavaScript and keeps logout as a state-
+    // changing POST, not a CSRF-prone GET. Do not announce success before the
+    // server has processed it; the redirect is the acknowledgement.
+    if (formRef.current) formRef.current.submit();
+    else {
+      setPending(false);
+      setError("Не вдалося надіслати запит виходу. Онови сторінку й спробуй знову.");
+    }
   }
 
   async function submitLogout(event: FormEvent<HTMLFormElement>) {
@@ -53,17 +57,22 @@ export default function LogoutButton({
         method: "POST",
         credentials: "same-origin",
         cache: "no-store",
-        redirect: "follow",
+        redirect: "error",
         headers: {
-          Accept: "application/json, text/html;q=0.9, */*;q=0.8",
+          Accept: "application/json",
           "X-Dashboard-Action": "logout",
         },
       });
 
-      if (!response.ok && !response.redirected) {
-        const data = await response.json().catch(() => ({}));
+      const data = await response.json().catch(() => null);
+      if (
+        !response.ok ||
+        response.headers.get("X-Dashboard-Session") !== "cleared" ||
+        data?.ok !== true ||
+        data?.signedOut !== true
+      ) {
         fallbackLogout(
-          data?.error || `Logout POST failed with ${response.status}`,
+          data?.error || `Logout was not confirmed (HTTP ${response.status})`,
         );
         return;
       }
@@ -77,7 +86,7 @@ export default function LogoutButton({
       // Те саме, що й у fallbackLogout: повний перезавантаж документа гарантує,
       // що після виходу не лишиться закешованого приватного RSC-контенту.
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-      window.location.assign("/login");
+      window.location.assign("/login?loggedOut=1");
     } catch (caught) {
       console.error("[dashboard:logout]", caught);
       const errorMessage = dashboardErrorMessage(caught, "Logout fetch failed");
@@ -93,6 +102,7 @@ export default function LogoutButton({
 
   return (
     <form
+      ref={formRef}
       method="post"
       action="/api/auth/logout"
       className={className}

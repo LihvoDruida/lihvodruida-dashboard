@@ -19,7 +19,7 @@ function isProtectedPath(pathname: string) {
     return false;
   return (
     pathname === "/" ||
-    /^\/(admin|guild|profile|profiles|raids|discord|content)(?:\/|$)/.test(
+    /^\/(dashboard|admin|guild|profile|profiles|raids|polls|roster|discord|content)(?:\/|$)/.test(
       pathname,
     )
   );

@@ -26,6 +26,8 @@ import {
   getAuthAccessPolicy,
 } from "@/lib/authAccessPolicy";
 import { ensureDiscordNewcomerBootstrapRole } from "@/lib/discordNewcomerBootstrap";
+import { safeDashboardReturnPath } from "@/lib/dashboardRedirects";
+import { BNET_OAUTH_STATE_COOKIE, LEGACY_BNET_OAUTH_STATE_COOKIE } from "@/lib/authCookieNames";
 
 export type DashboardRole = "admin" | "moderator" | "mentor" | "member";
 
@@ -428,15 +430,10 @@ export type OAuthStatePayload = {
 };
 
 function safeOAuthNextPath(value?: string | null) {
-  const path = String(value || "").trim();
-  if (!path || path.length > 1500) return "";
-  if (!path.startsWith("/") || path.startsWith("//")) return "";
-  if (
-    path === "/" ||
-    /^\/(?:raids|profile|rules\/accept)(?:[/?#]|$)/.test(path)
-  )
-    return path;
-  return "";
+  // The start endpoint and callback must agree on the same allowlist.
+  // Otherwise a successful login silently loses the requested destination
+  // (e.g. /discord/static or /admin) when state is signed and parsed.
+  return safeDashboardReturnPath(value, { scope: "discord-auth", fallback: "" });
 }
 
 function createNonce(bytesLength = 24) {
@@ -723,6 +720,10 @@ export async function clearSession() {
   store.set(LEGACY_SESSION_COOKIE, "", legacyCookieOptions);
   store.set(OAUTH_STATE_COOKIE, "", secureCookieOptions);
   store.set(LEGACY_OAUTH_STATE_COOKIE, "", legacyCookieOptions);
+  // Linking a Battle.net account is another OAuth transaction; invalidate it
+  // on logout to prevent a pending callback being resumed in a new session.
+  store.set(BNET_OAUTH_STATE_COOKIE, "", secureCookieOptions);
+  store.set(LEGACY_BNET_OAUTH_STATE_COOKIE, "", legacyCookieOptions);
 }
 
 /**
