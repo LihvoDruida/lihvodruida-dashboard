@@ -19,6 +19,14 @@
 **/coverage
 **/.vscode
 **/.idea
+**/*.tsbuildinfo
+**/*.zip
+qa/
+dashboard/docs/
+# Obsolete UI assets can remain after overlaying a source ZIP on an old checkout.
+dashboard/public/assets/icons/
+dashboard/public/assets/img/profile/
+dashboard/public/assets/img/ui/
 
 # Артефакти розгортання й документація в образі не потрібні
 backups/

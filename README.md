@@ -106,3 +106,5 @@ curl -fsS https://guild.lihvodruida.pp.ua/api/health
 ## VPS performance preset
 
 The production Make/Docker flow is tuned for 2 vCPU / 4 GB RAM / 40 GB SSD. See `docs/PERFORMANCE.md`.
+
+Діагностика DNS/HTTPS перед Docker-збіркою: `make network-check`. Відновлення після помилки `auth.docker.io`: [docs/BUILD_NETWORK.md](docs/BUILD_NETWORK.md).

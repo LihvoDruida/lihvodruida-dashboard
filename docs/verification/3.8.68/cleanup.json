@@ -1,0 +1,258 @@
+{
+  "removed_files": 63,
+  "removed_bytes": 9959613,
+  "removed": [
+    {
+      "path": "dashboard/public/assets/icons/character-card/crown.svg",
+      "bytes": 174
+    },
+    {
+      "path": "dashboard/public/assets/icons/character-card/external-link.svg",
+      "bytes": 304
+    },
+    {
+      "path": "dashboard/public/assets/icons/character-card/item-level.svg",
+      "bytes": 276
+    },
+    {
+      "path": "dashboard/public/assets/icons/character-card/non-guild-members.svg",
+      "bytes": 378
+    },
+    {
+      "path": "dashboard/public/assets/icons/character-card/updated-clock.svg",
+      "bytes": 264
+    },
+    {
+      "path": "dashboard/public/assets/icons/character-card/guild-leaf.svg",
+      "bytes": 409
+    },
+    {
+      "path": "dashboard/public/assets/icons/character-card/main-star.svg",
+      "bytes": 184
+    },
+    {
+      "path": "dashboard/public/assets/icons/character-card/trash.svg",
+      "bytes": 410
+    },
+    {
+      "path": "dashboard/public/assets/icons/character-card/level-shield.svg",
+      "bytes": 368
+    },
+    {
+      "path": "dashboard/public/assets/icons/character-card/rio-chart.svg",
+      "bytes": 309
+    },
+    {
+      "path": "dashboard/public/assets/icons/profile/swords.svg",
+      "bytes": 338
+    },
+    {
+      "path": "dashboard/public/assets/icons/profile/crown.svg",
+      "bytes": 177
+    },
+    {
+      "path": "dashboard/public/assets/icons/profile/check.svg",
+      "bytes": 193
+    },
+    {
+      "path": "dashboard/public/assets/icons/profile/plus.svg",
+      "bytes": 152
+    },
+    {
+      "path": "dashboard/public/assets/icons/profile/user.svg",
+      "bytes": 214
+    },
+    {
+      "path": "dashboard/public/assets/icons/profile/logout.svg",
+      "bytes": 218
+    },
+    {
+      "path": "dashboard/public/assets/icons/profile/group.svg",
+      "bytes": 350
+    },
+    {
+      "path": "dashboard/public/assets/icons/profile/sync.svg",
+      "bytes": 251
+    },
+    {
+      "path": "dashboard/public/assets/icons/profile/shield.svg",
+      "bytes": 169
+    },
+    {
+      "path": "dashboard/public/assets/icons/profile/leaf.svg",
+      "bytes": 247
+    },
+    {
+      "path": "dashboard/public/assets/icons/profile/home.svg",
+      "bytes": 170
+    },
+    {
+      "path": "dashboard/public/assets/icons/profile/gear.svg",
+      "bytes": 458
+    },
+    {
+      "path": "dashboard/public/assets/icons/profile/calendar.svg",
+      "bytes": 228
+    },
+    {
+      "path": "dashboard/public/assets/icons/profile/link.svg",
+      "bytes": 443
+    },
+    {
+      "path": "dashboard/public/assets/img/profile/profile-hero-bg.png",
+      "bytes": 2026751
+    },
+    {
+      "path": "dashboard/public/assets/img/profile/profile-sidebar-emblem.svg",
+      "bytes": 444
+    },
+    {
+      "path": "dashboard/public/assets/img/ui/guild-hero-bg.png",
+      "bytes": 1739474
+    },
+    {
+      "path": "docs/verification/static-1440-after.png",
+      "bytes": 356003
+    },
+    {
+      "path": "docs/verification/profile-390-after.png",
+      "bytes": 229983
+    },
+    {
+      "path": "docs/verification/profile-1440-after.png",
+      "bytes": 321378
+    },
+    {
+      "path": "docs/verification/summary.json",
+      "bytes": 484
+    },
+    {
+      "path": "docs/verification/build.txt",
+      "bytes": 9215
+    },
+    {
+      "path": "docs/verification/compiled-results.json",
+      "bytes": 3070
+    },
+    {
+      "path": "docs/verification/results.json",
+      "bytes": 22564
+    },
+    {
+      "path": "docs/verification/bot-tests.txt",
+      "bytes": 3418
+    },
+    {
+      "path": "docs/verification/static-expanded-1440-after.png",
+      "bytes": 371704
+    },
+    {
+      "path": "docs/verification/static-expanded-390-after.png",
+      "bytes": 334290
+    },
+    {
+      "path": "docs/verification/static-390-after.png",
+      "bytes": 294576
+    },
+    {
+      "path": "docs/verification/verify.txt",
+      "bytes": 38877
+    },
+    {
+      "path": "docs/verification/3.8.67/admin-390.png",
+      "bytes": 218350
+    },
+    {
+      "path": "docs/verification/3.8.67/interaction-results.json",
+      "bytes": 31887
+    },
+    {
+      "path": "docs/verification/3.8.67/profile-390.png",
+      "bytes": 230097
+    },
+    {
+      "path": "docs/verification/3.8.67/fixture-results.json",
+      "bytes": 23627
+    },
+    {
+      "path": "docs/verification/3.8.67/controls-1440.png",
+      "bytes": 253867
+    },
+    {
+      "path": "docs/verification/3.8.67/polls-1440.png",
+      "bytes": 248834
+    },
+    {
+      "path": "docs/verification/3.8.67/compiled-css.txt",
+      "bytes": 43
+    },
+    {
+      "path": "docs/verification/3.8.67/static-390.png",
+      "bytes": 297523
+    },
+    {
+      "path": "docs/verification/3.8.67/profile-1440.png",
+      "bytes": 318204
+    },
+    {
+      "path": "docs/verification/3.8.67/build.txt",
+      "bytes": 9214
+    },
+    {
+      "path": "docs/verification/3.8.67/compiled-results.json",
+      "bytes": 3070
+    },
+    {
+      "path": "docs/verification/3.8.67/control-states.json",
+      "bytes": 974
+    },
+    {
+      "path": "docs/verification/3.8.67/static-1440.png",
+      "bytes": 358781
+    },
+    {
+      "path": "docs/verification/3.8.67/results.json",
+      "bytes": 35536
+    },
+    {
+      "path": "docs/verification/3.8.67/bot-tests.txt",
+      "bytes": 3417
+    },
+    {
+      "path": "docs/verification/3.8.67/browser.txt",
+      "bytes": 578
+    },
+    {
+      "path": "docs/verification/3.8.67/admin-1440.png",
+      "bytes": 293587
+    },
+    {
+      "path": "docs/verification/3.8.67/polls-390.png",
+      "bytes": 221139
+    },
+    {
+      "path": "docs/verification/3.8.67/controls-390.png",
+      "bytes": 189230
+    },
+    {
+      "path": "docs/verification/3.8.67/applications-390.png",
+      "bytes": 313737
+    },
+    {
+      "path": "docs/verification/3.8.67/static-expanded-1440.png",
+      "bytes": 379814
+    },
+    {
+      "path": "docs/verification/3.8.67/applications-1440.png",
+      "bytes": 407556
+    },
+    {
+      "path": "docs/verification/3.8.67/verify.txt",
+      "bytes": 38877
+    },
+    {
+      "path": "docs/verification/3.8.67/static-expanded-390.png",
+      "bytes": 322756
+    }
+  ]
+}

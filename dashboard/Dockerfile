@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.7
+# Use the bundled BuildKit Dockerfile frontend; no separate frontend image pull.
 
 # ---------------------------------------------------------------------------
 # Mistblossom Vanguard — образ панелі.
@@ -89,6 +89,8 @@ COPY deploy/nginx/dashboard.conf /repo/deploy/nginx/dashboard.conf
 COPY deploy/nginx/proxy-params.inc /repo/deploy/nginx/proxy-params.inc
 COPY deploy/nginx/proxy-params-fast.inc /repo/deploy/nginx/proxy-params-fast.inc
 COPY deploy/scripts/start.sh /repo/deploy/scripts/start.sh
+COPY deploy/scripts/build-images.sh /repo/deploy/scripts/build-images.sh
+COPY deploy/scripts/network-check.sh /repo/deploy/scripts/network-check.sh
 COPY deploy/scripts/db-backup.sh /repo/deploy/scripts/db-backup.sh
 COPY deploy/scripts/db-restore.sh /repo/deploy/scripts/db-restore.sh
 COPY deploy/scripts/security-audit.sh /repo/deploy/scripts/security-audit.sh

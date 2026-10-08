@@ -5,7 +5,7 @@ This deployment is tuned for the OVH VPS profile used by Mistblossom Vanguard.
 ## What changed
 
 - `make up` builds `dashboard` and `bot` once, then starts services with `--no-build --no-deps`.
-- Compose build concurrency defaults to `1` to avoid two builds fighting for 4 GB RAM.
+- `build-images.sh` finishes each image before starting the next; Compose concurrency is also set to `1`.
 - Next/Turbopack uses `2` build CPUs and a 2560 MB Node heap cap.
 - Docker BuildKit persists npm tarballs and `.next/cache` between builds.
 - Health checks run sooner, so a ready dashboard/bot is detected in seconds rather than waiting up to ~30 s.

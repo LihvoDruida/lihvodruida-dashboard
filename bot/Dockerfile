@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.7
+# Use the bundled BuildKit Dockerfile frontend; no separate frontend image pull.
 
 # ---------------------------------------------------------------------------
 # Mistblossom Vanguard — Discord-бот.

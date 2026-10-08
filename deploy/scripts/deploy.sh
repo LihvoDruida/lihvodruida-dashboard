@@ -62,7 +62,7 @@ log "Перевіряємо передумови"
 ./deploy/scripts/start.sh --check
 
 log "Збираємо dashboard + bot"
-$COMPOSE build dashboard bot
+bash deploy/scripts/build-images.sh dashboard bot
 
 log "Піднімаємо стек без повторної збірки"
 $COMPOSE up -d --remove-orphans --no-build
