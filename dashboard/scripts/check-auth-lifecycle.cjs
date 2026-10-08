@@ -216,7 +216,9 @@ function loadTs(relative, mocks = {}) {
   });
   await check("server clears pending Battle.net OAuth and Static audit has typed timestamp", () => {
     assert.match(authSource, /store\.set\(BNET_OAUTH_STATE_COOKIE, "", secureCookieOptions\)/);
-    assert.match(staticRules, /createdAt: String\(doc\.data\(\)\.createdAt \|\| ""\)/);
+    assert.match(staticRules, /const data = doc\.data\(\) \?\? \{\};/);
+    assert.match(staticRules, /createdAt: String\(data\.createdAt \|\| ""\)/);
+    assert.doesNotMatch(staticRules, /doc\.data\(\)\.createdAt/);
   });
   console.log(`[check-auth-lifecycle] OK — ${count} lifecycle regression checks`);
 })().catch((error) => {

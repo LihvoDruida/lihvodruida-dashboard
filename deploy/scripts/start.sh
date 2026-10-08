@@ -302,7 +302,7 @@ fi
 
 LIVE_SYNC_VALUE="$(env_get dashboard/.env.production SESSION_LIVE_ACCESS_SYNC_ENABLED || true)"
 case "${LIVE_SYNC_VALUE,,}" in
-  0|false|off|no) warn "SESSION_LIVE_ACCESS_SYNC_ENABLED вимкнено — відкликані Discord-ролі можуть діяти до завершення сесії" ;;
+  0|false|off|no) warn "SESSION_LIVE_ACCESS_SYNC_ENABLED=off ігнорується у production: перевірка Discord-ролей є обовʼязковою. Прибери застаріле вимкнення з конфігурації." ;;
   *) ok "live-перевірка Discord-доступу не вимкнена" ;;
 esac
 

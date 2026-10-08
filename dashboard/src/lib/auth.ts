@@ -109,16 +109,24 @@ function liveDiscordAccessGraceMs() {
 }
 
 function safeDiscordAccessFallback(
-  session: DashboardSession,
   cached: LiveDiscordAccessCacheEntry | undefined,
 ) {
   const now = Date.now();
-  if (cached && now - cached.checkedAt <= liveDiscordAccessGraceMs()) {
+  // Only a SUCCESSFULLY verified guild membership can be reused during a
+  // transient Discord outage. The signed browser cookie alone is not proof of
+  // continuing membership. In particular, do not resurrect cached denials.
+  // Administrator/owner access cannot remain elevated for an entire outage.
+  const grace = cached?.session && (
+    isSensitiveDashboardRole(cached.session.role) ||
+    cached.session.isServerOwner ||
+    (cached.session.permissions || []).some((permission) => !permission.endsWith(".view"))
+  )
+    ? Math.min(60_000, liveDiscordAccessGraceMs())
+    : liveDiscordAccessGraceMs();
+  if (cached && cached.session && now >= cached.checkedAt && now - cached.checkedAt <= grace) {
     return cached.session;
   }
-  return isSensitiveDashboardRole(session.role)
-    ? downgradeToSafeMemberSession(session)
-    : session;
+  return null;
 }
 function canRefreshDiscordAccess(
   session: DashboardSession | null | undefined,
@@ -134,28 +142,6 @@ function canRefreshDiscordAccess(
 
 function isSensitiveDashboardRole(role: DashboardRole | null | undefined) {
   return role === "admin" || role === "moderator" || role === "mentor";
-}
-
-function downgradeToSafeMemberSession(
-  session: DashboardSession,
-): DashboardSession {
-  return {
-    ...session,
-    role: "member",
-    groupId: undefined,
-    groupName: "Учасник",
-    groupRank: 10,
-    permissions: [
-      "dashboard.view",
-      "raids.view",
-      "guild.roster.view",
-      "profiles.group.view",
-    ],
-    isServerOwner: false,
-    // Do not keep stale Discord role ids after a failed live read. Role ids are
-    // rehydrated on the next successful Discord API check.
-    discordRoleIds: [],
-  };
 }
 
 async function deleteProfileAfterDiscordMembershipLoss(
@@ -201,7 +187,13 @@ async function deleteProfileAfterDiscordMembershipLoss(
 async function refreshDiscordAccess(
   session: DashboardSession | null,
 ): Promise<DashboardSession | null> {
-  if (!canRefreshDiscordAccess(session)) return session;
+  if (!canRefreshDiscordAccess(session)) {
+    // Production cannot trust a discord session when its guild/API verification
+    // is misconfigured (or the signed token has an invalid Discord ID).
+    return session?.provider === "discord" && process.env.NODE_ENV === "production"
+      ? null
+      : session;
+  }
 
   const cacheKey = `${session.provider}:${session.id}`;
   const ttlMs = liveDiscordAccessSyncTtlMs();
@@ -213,7 +205,7 @@ async function refreshDiscordAccess(
   if (cached && Date.now() - cached.checkedAt < ttlMs) return cached.session;
 
   if (runtimeCircuitOpen("discord-live-access")) {
-    return safeDiscordAccessFallback(session, cached);
+    return safeDiscordAccessFallback(cached);
   }
 
   return singleFlight(`discord-live-access:${cacheKey}`, async () => {
@@ -287,7 +279,7 @@ async function refreshDiscordAccess(
                 name: member.displayName || session.name,
                 avatar: member.avatarUrl || session.avatar || null,
                 avatar_url: member.avatarUrl || session.avatar_url || session.avatar || null,
-                discordRoleIds: member.roleIds || [],
+                discordRoleIds: liveRoleIds,
                 impersonatedBy: undefined,
               },
               resolved.group,
@@ -324,25 +316,14 @@ async function refreshDiscordAccess(
 
       if (isQuotaOrResourceError(error) || isTimeoutLikeError(error)) {
         openRuntimeCircuit("discord-live-access", error, 120_000);
-        const fallbackSession = safeDiscordAccessFallback(session, cached);
-        // Keep the original validation timestamp when reusing a cached
-        // elevated session; otherwise repeated outages could extend trust
-        // forever simply by refreshing checkedAt on each failed request.
-        cache.set(cacheKey, {
-          checkedAt: cached?.checkedAt ?? Date.now(),
-          session: fallbackSession,
-        });
-        return fallbackSession;
+        // Do not write a failure result into the verified-membership cache:
+        // that would extend its lifetime or replace a known good role set.
+        return safeDiscordAccessFallback(cached);
       }
 
-      const fallbackSession = isSensitiveDashboardRole(session.role)
-        ? downgradeToSafeMemberSession(session)
-        : session;
-      cache.set(cacheKey, {
-        checkedAt: Date.now() - Math.floor(ttlMs * 0.75),
-        session: fallbackSession,
-      });
-      return fallbackSession;
+      // API 401/403/5xx and unexpected errors are NOT positive membership
+      // evidence. Preserve only a genuinely verified, short-lived snapshot.
+      return safeDiscordAccessFallback(cached);
     }
   });
 }
@@ -647,7 +628,15 @@ export async function getSession(
   options: { live?: boolean; enforceNonDiscordPolicy?: boolean } = {},
 ): Promise<DashboardSession | null> {
   const session = await getStoredSession();
-  if (session?.impersonatedBy) return session;
+  if (session?.impersonatedBy) {
+    // A persisted "view as group" cookie must not outlive the owner's guild
+    // membership or owner status. Re-check the REAL actor, then retain the
+    // simulated permissions only if that actor is still the server owner.
+    if (session.provider !== "discord" || session.impersonatedBy !== session.id)
+      return null;
+    const verifiedOwner = await refreshDiscordAccess({ ...session, impersonatedBy: undefined });
+    return verifiedOwner?.isServerOwner ? session : null;
+  }
 
   const shouldEnforceNonDiscordPolicy = options.enforceNonDiscordPolicy ?? true;
   const gatedSession = shouldEnforceNonDiscordPolicy
@@ -669,11 +658,13 @@ export async function getSession(
       })
     : session;
 
+  // Production membership verification is a security invariant, not a
+  // performance toggle. Neither a stale env flag nor an accidental {live:false}
+  // at a new call site should silently turn Discord role cookies into authority.
   const liveAccessEnabled =
-    options.live ?? authEnvFlag(
-      "SESSION_LIVE_ACCESS_SYNC_ENABLED",
-      process.env.NODE_ENV === "production",
-    );
+    process.env.NODE_ENV === "production" && gatedSession?.provider === "discord"
+      ? true
+      : options.live ?? authEnvFlag("SESSION_LIVE_ACCESS_SYNC_ENABLED", false);
   return liveAccessEnabled ? refreshDiscordAccess(gatedSession) : gatedSession;
 }
 

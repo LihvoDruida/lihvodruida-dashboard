@@ -48,7 +48,7 @@ function isProtectedPagePath(pathname: string) {
   // /polls і /roster раніше були відсутні: сторінки покладалися лише на
   // серверний getSession(), тож неавторизований користувач бачив спалах layout
   // замість чистого редиректу на /login.
-  return /^\/(?:dashboard|admin|guild|profile|profiles|raids|polls|roster|discord|content)(?:\/|$)/.test(
+  return /^\/(?:dashboard|admin|applications|guild|profile|profiles|raids|polls|roster|discord|content)(?:\/|$)/.test(
     pathname,
   );
 }

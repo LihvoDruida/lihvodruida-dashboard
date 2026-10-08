@@ -19,7 +19,7 @@ function isProtectedPath(pathname: string) {
     return false;
   return (
     pathname === "/" ||
-    /^\/(dashboard|admin|guild|profile|profiles|raids|polls|roster|discord|content)(?:\/|$)/.test(
+    /^\/(dashboard|admin|applications|guild|profile|profiles|raids|polls|roster|discord|content)(?:\/|$)/.test(
       pathname,
     )
   );
@@ -43,7 +43,10 @@ async function checkSession() {
   });
 
   if (response.status === 401 || response.status === 403) return false;
-  if (!response.ok) return true;
+  // An upstream 5xx or malformed response is UNKNOWN, not an authenticated
+  // session. Keep the page's existing server-side guard authoritative while
+  // the network recovers; the caller deliberately handles transient failures.
+  if (!response.ok) throw new Error(`Session check failed: HTTP ${response.status}`);
   const data = await response.json().catch(() => ({}));
   return Boolean(data?.authenticated);
 }
