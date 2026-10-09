@@ -5,7 +5,7 @@
    ============================================================== */
 :root {
   --guild-banner-height: 96px;
-  --guild-banner-height-mobile: 104px;
+  --guild-banner-height-mobile: 92px;
 }
 
 .guild-status-banner {
@@ -224,26 +224,73 @@ html.guild-banner-collapsed body:has(.guild-status-banner) .dashboard-topbar { t
 @media (max-width: 1000px) {
   .guild-status-banner { height: var(--guild-banner-height-mobile); }
   .guild-status-banner__inner {
-    width: calc(100% - 28px);
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: 38px 1fr;
+    width: calc(100% - 24px);
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    align-content: center;
     column-gap: 12px;
-    row-gap: 0;
+    row-gap: 2px;
+    padding: 9px 0 8px;
   }
-  .guild-status-banner__brand { grid-column: 1 / -1; grid-row: 1; gap: 0; }
-  .guild-status-banner__brand strong { font-size: clamp(17px, 3.6vw, 23px); }
-  .guild-status-banner__brand-sub { display: none; }
-  .guild-status-banner__raid { grid-column: 1; grid-row: 2; }
-  .guild-status-banner__reset { grid-column: 2; grid-row: 2; }
-  .guild-status-banner__eyebrow { font-size: 8px; letter-spacing: .09em; }
-  .guild-status-banner__raid-name { font-size: 12px; }
-  .guild-status-banner__raid-progress { gap: 2px 7px; font-size: 9px; }
+  .guild-status-banner__brand {
+    grid-column: 1;
+    grid-row: 1;
+    align-items: flex-start;
+    justify-content: end;
+    text-align: left;
+    gap: 2px;
+  }
+  .guild-status-banner__brand strong {
+    font-size: clamp(18px, 5.1vw, 26px);
+    line-height: 1.02;
+    max-width: 100%;
+  }
+  .guild-status-banner__brand-sub {
+    display: flex;
+    justify-content: flex-start;
+    width: auto;
+    gap: 7px;
+    font-size: 7px;
+    letter-spacing: .18em;
+    color: #9eb8bd;
+  }
+  .guild-status-banner__brand-sub i {
+    width: clamp(10px, 4vw, 22px);
+  }
+  .guild-status-banner__raid {
+    grid-column: 1;
+    grid-row: 2;
+    align-items: flex-start;
+    gap: 2px;
+    min-width: 0;
+  }
+  .guild-status-banner__reset {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-items: flex-end;
+    align-self: center;
+    gap: 3px;
+    padding-left: 10px;
+    border-left: 1px solid rgba(216, 180, 118, .24);
+  }
+  .guild-status-banner__eyebrow { font-size: 8px; letter-spacing: .12em; }
+  .guild-status-banner__raid-name {
+    font-size: 12px;
+    line-height: 1.15;
+  }
+  .guild-status-banner__raid-progress {
+    gap: 2px 8px;
+    font-size: 9px;
+    line-height: 1.2;
+  }
   .guild-status-banner__clock { gap: 5px; }
-  .guild-status-banner__clock-part { min-width: 21px; }
-  .guild-status-banner__clock-part b { font-size: 16px; }
+  .guild-status-banner__clock-part { min-width: 20px; }
+  .guild-status-banner__clock-part b { font-size: 17px; }
   .guild-status-banner__clock-part:not(:last-child)::after { right: -6px; font-size: 14px; }
   .guild-status-banner__clock-part small { font-size: 7px; }
-  .guild-status-banner__reset-caption { font-size: 8px; }
+  .guild-status-banner__clock-part:nth-child(4) { display: none; }
+  .guild-status-banner__clock-part:nth-child(3)::after { display: none; }
+  .guild-status-banner__reset-caption { display: none; }
   body:has(.guild-status-banner) { padding-top: calc(var(--nav-space) + var(--guild-banner-height-mobile)); }
   body:has(.guild-status-banner) .site-nav {
     top: var(--guild-banner-height-mobile);
@@ -259,10 +306,14 @@ html.guild-banner-collapsed body:has(.guild-status-banner) .dashboard-topbar { t
 }
 
 @media (max-width: 380px) {
-  .guild-status-banner__inner { width: calc(100% - 20px); column-gap: 5px; }
+  .guild-status-banner__inner { width: calc(100% - 18px); column-gap: 6px; }
+  .guild-status-banner__brand strong { font-size: 17px; }
+  .guild-status-banner__brand-sub { font-size: 6px; gap: 6px; }
   .guild-status-banner__eyebrow { font-size: 7px; }
-  .guild-status-banner__reset-caption { display: none; }
-  .guild-status-banner__clock-part { min-width: 19px; }
+  .guild-status-banner__raid-name { font-size: 11px; }
+  .guild-status-banner__clock-part { min-width: 18px; }
+  .guild-status-banner__clock-part b { font-size: 15px; }
+  .guild-status-banner__reset { padding-left: 8px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
