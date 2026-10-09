@@ -1,28 +1,31 @@
-/* ==============================================================
-   Guild status ribbon — ForeverChanges-inspired typographic rhythm.
-   Reuses the existing forest artwork and bundled OFL typefaces.
-   Background, starfield, navigation controls remain unchanged.
-   ============================================================== */
+/* Masthead geometry and type scale adapted from ForeverChanges p-masthead.
+   Our forest artwork, guild progression, reset clock and navigation are retained.
+   Cinzel is local to this ribbon; Cyrillic uses the bundled Spectral SC fallback. */
 :root {
-  --guild-banner-height: 92px;
-  --guild-banner-height-mobile: 80px;
+  --guild-banner-height: 90px;
+  --guild-banner-height-mobile: 74px;
 }
 
-.guild-status-banner {
+/* Specificity also protects the fixed ribbon from base.css body > * rules. */
+body .guild-status-banner {
+  --masthead-font: var(--font-guild-masthead), var(--font-guild-display), Georgia, serif;
+  --masthead-sans: Verdana, Geneva, "DejaVu Sans", Tahoma, sans-serif;
   position: fixed;
-  top: 0;
-  left: 0;
+  inset: 0 0 auto;
   width: 100%;
   height: var(--guild-banner-height);
+  margin: 0;
+  padding: 0;
   z-index: calc(var(--z-navbar) - 1);
-  color: #f6f0e8;
+  color: #f1e6cc;
+  border: 0;
   border-bottom: 1px solid rgba(232, 197, 142, .17);
+  border-radius: 0;
   background: linear-gradient(90deg, rgba(6, 17, 16, .90) 0%, rgba(10, 15, 14, .8) 28%, rgba(12, 18, 20, .89) 75%, rgba(8, 13, 16, .94) 100%),
     url('/assets/img/profile/profile-hero-bg.png') center 50% / cover no-repeat,
     #0b1515;
   box-shadow: 0 10px 30px rgba(0, 0, 0, .2);
   transition: transform .28s ease, opacity .23s ease;
-  will-change: transform;
   pointer-events: auto;
 }
 
@@ -38,289 +41,199 @@
 .guild-status-banner__inner {
   position: relative;
   z-index: 1;
-  width: min(100% - 52px, 1540px);
+  width: min(calc(100% - 64px), 1356px);
   height: 100%;
-  margin: 0 auto;
+  margin-inline: auto;
   display: grid;
-  grid-template-columns: minmax(280px, 320px) minmax(420px, 1fr) minmax(280px, 320px);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 560px) minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
-  column-gap: clamp(22px, 2.4vw, 36px);
-  overflow: hidden;
+  gap: 24px;
+}
+
+.guild-status-banner__raid,
+.guild-status-banner__reset {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding-bottom: 6px;
+}
+
+.guild-status-banner__raid::after,
+.guild-status-banner__clock::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(226, 194, 117, .7) 40% 60%, transparent);
 }
 
 .guild-status-banner__raid {
-  width: 100%;
-  min-width: 0;
   justify-self: start;
-  min-height: 64px;
-  display: grid;
-  grid-template-rows: 18px minmax(26px, auto) 16px;
-  align-content: center;
-  align-items: center;
-  row-gap: 6px;
+  align-items: flex-start;
+  max-width: 100%;
   color: inherit;
   text-decoration: none;
 }
 
-.guild-status-banner__raid:hover,
+.guild-status-banner__raid:hover { color: #fff; }
 .guild-status-banner__raid:focus-visible {
-  color: #fff;
+  outline: 2px solid #e2c275;
+  outline-offset: 4px;
+  border-radius: 2px;
 }
 
-.guild-status-banner__eyebrow {
-  display: inline-flex;
-  align-items: center;
-  max-width: max-content;
+/* Reset generic [class$="__eyebrow"] styles imported by desktop.css. */
+.guild-status-banner .guild-status-banner__eyebrow {
+  display: block;
   padding: 0;
-  color: #e7bd6f;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: #d8b86a;
+  font: 600 10px/1.2 var(--masthead-font);
+  letter-spacing: .24em;
   text-transform: uppercase;
-  font-family: var(--font-brand);
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: .18em;
   white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .9);
+}
+
+.guild-status-banner__eyebrow > span {
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
 }
 
 .guild-status-banner__raid-name {
-  display: block;
-  width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: #f6f0e8;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(16px, 1.25vw, 22px);
-  line-height: 1;
+  max-width: 100%;
+  color: #f1e6cc;
+  font: 700 clamp(16px, 1.4vw, 22px)/1.15 var(--masthead-font);
+  letter-spacing: -.025em;
+  overflow-wrap: anywhere;
+  text-shadow: 0 1px rgba(0, 0, 0, .9), 0 2px 12px rgba(0, 0, 0, .8);
 }
 
 .guild-status-banner__raid-progress {
   display: flex;
-  align-items: center;
   flex-wrap: wrap;
-  gap: 4px 12px;
-  color: #d4c8b8;
-  font-size: 11px;
-  line-height: 1;
+  gap: 3px 10px;
+  color: rgba(217, 208, 188, .75);
+  font: 400 9px/1.25 var(--masthead-sans);
+  letter-spacing: .06em;
 }
-
 .guild-status-banner__raid-progress > span { white-space: nowrap; }
 .guild-status-banner__raid-progress b { color: #a9d9bd; font-weight: 700; }
 
 .guild-status-banner__brand {
-  width: min(100%, 620px);
   min-width: 0;
-  min-height: 64px;
+  width: 100%;
   justify-self: center;
-  display: grid;
-  grid-template-rows: 18px minmax(30px, auto) 18px;
-  align-content: center;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  row-gap: 5px;
   text-align: center;
 }
 
-.guild-status-banner__brand::before {
-  content: "";
+.guild-status-banner__wordmark {
   display: block;
+  max-width: 100%;
+  color: #f1e6cc;
+  font: 700 clamp(21px, 2vw, 32px)/1.08 var(--masthead-font);
+  letter-spacing: -.045em;
+  text-shadow: 0 1px 1px #000, 0 2px 6px rgba(0, 0, 0, .7);
+  overflow-wrap: anywhere;
 }
-
-.guild-status-banner__brand strong {
-  display: block;
-  width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: var(--font-brand);
-  font-weight: 700;
-  font-size: clamp(24px, 2.2vw, 36px);
-  line-height: .96;
-  letter-spacing: -.03em;
-  color: #fbf0dc;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, .82);
+.guild-status-banner__wordmark-accent { color: #b7e4e2; }
+.guild-status-banner__ornament {
+  flex: none;
+  width: 88px;
+  height: 14px;
+  margin-top: -2px;
+  margin-bottom: 4px;
+  color: #e5d7b8;
+  filter: drop-shadow(0 1px 2px #000);
 }
 
 .guild-status-banner__brand-sub {
   display: flex;
-  gap: 10px;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  color: #a8c9c8;
-  font-family: var(--font-brand);
+  gap: 9px;
+  max-width: 100%;
+  color: rgba(217, 208, 188, .8);
+  font: 600 10.5px/1.2 var(--masthead-font);
+  letter-spacing: .24em;
   text-transform: uppercase;
-  font-weight: 700;
-  font-size: 9px;
-  letter-spacing: .22em;
   white-space: nowrap;
-  line-height: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .9);
 }
-
 .guild-status-banner__brand-sub i {
   display: block;
+  flex: 0 1 44px;
+  width: 44px;
   height: 1px;
-  width: clamp(40px, 7vw, 102px);
-  background: linear-gradient(90deg, transparent, rgba(155, 209, 210, .55));
+  background: linear-gradient(90deg, transparent, rgba(127, 179, 240, .5));
 }
 .guild-status-banner__brand-sub i:last-child { transform: rotate(180deg); }
 
-.guild-status-banner__reset-mobile-label { display: none; }
-
 .guild-status-banner__reset {
-  width: 100%;
-  min-width: 0;
-  min-height: 64px;
   justify-self: end;
-  display: grid;
-  grid-template-rows: 18px minmax(28px, auto) 20px;
-  align-content: center;
-  align-items: center;
-  justify-items: end;
-  row-gap: 5px;
-}
-.guild-status-banner__clock {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 34px;
-  align-items: start;
-  justify-content: end;
-  justify-items: center;
-  gap: 8px;
-  width: auto;
-  font-variant-numeric: tabular-nums;
-}
-.guild-status-banner__clock-part {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  min-width: 34px;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 3px;
-}
-.guild-status-banner__clock-part:not(:last-child)::after {
-  content: ":";
-  position: absolute;
-  right: -7px;
-  top: -1px;
-  color: #c89f5c;
-  font-family: var(--font-display);
-  font-size: 18px;
-}
-.guild-status-banner__clock-part b {
-  color: #fff4e5;
-  font-family: var(--font-brand);
-  font-size: clamp(20px, 1.7vw, 30px);
-  font-weight: 700;
-  line-height: .95;
-}
-.guild-status-banner__clock-part small {
-  display: block;
-  width: 100%;
-  text-align: center;
-  font-size: 8px;
-  color: #d0b687;
-  line-height: 1;
-  letter-spacing: .08em;
-}
-.guild-status-banner__reset-caption {
-  display: block;
-  width: 100%;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-align: right;
-  font-size: 9px;
-  line-height: 1;
-  color: #9fb1ac;
-  opacity: .92;
-}
-
-.guild-status-banner__reset-mobile-label { display: none; }
-
-.guild-status-banner__reset {
-  width: min(100%, 320px);
-  justify-self: end;
-  display: flex;
-  flex-direction: column;
   align-items: flex-end;
-  justify-content: center;
-  gap: 3px;
-  min-width: 0;
-  min-width: 0;
-  padding-top: 1px;
+  text-align: right;
+  padding-bottom: 0;
 }
+.guild-status-banner__reset-mobile-label { display: none; }
 .guild-status-banner__clock {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 40px;
-  align-items: start;
-  justify-content: end;
-  justify-items: center;
+  position: relative;
+  display: flex;
+  align-items: baseline;
   gap: 10px;
-  width: 100%;
+  padding-bottom: 6px;
   font-variant-numeric: tabular-nums;
 }
 .guild-status-banner__clock-part {
   position: relative;
   display: flex;
   flex-direction: column;
-  min-width: 40px;
   align-items: center;
-  justify-content: flex-start;
-  gap: 3px;
+  min-width: 34px;
 }
-.guild-status-banner__clock-part:not(:last-child)::after {
+.guild-status-banner__clock-part + .guild-status-banner__clock-part::before {
   content: ":";
   position: absolute;
-  right: -9px;
-  top: 0;
-  color: #c89f5c;
-  font-family: var(--font-display);
-  font-size: 19px;
+  top: -1px;
+  left: -8px;
+  color: rgba(226, 194, 117, .6);
+  font: 700 22px/1 var(--masthead-font);
 }
 .guild-status-banner__clock-part b {
-  color: #fff4e5;
-  font-family: var(--font-brand);
-  font-size: clamp(20px, 1.75vw, 30px);
-  font-weight: 700;
-  line-height: 1.1;
+  color: #f1e6cc;
+  font: 700 26px/1 var(--masthead-font);
+  letter-spacing: .02em;
+  text-shadow: 0 1px rgba(0, 0, 0, .9), 0 2px 12px rgba(0, 0, 0, .8);
 }
 .guild-status-banner__clock-part small {
-  display: block;
-  width: 100%;
-  text-align: center;
-  font-size: 7px;
-  color: #d0b687;
-  line-height: 1;
-  letter-spacing: .08em;
+  margin-top: 4px;
+  color: rgba(217, 208, 188, .65);
+  font: 400 9px/1 var(--masthead-sans);
+  letter-spacing: .14em;
 }
 .guild-status-banner__reset-caption {
-  display: block;
-  opacity: .95;
-  width: 100%;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-align: right;
-  font-size: 9px;
-  line-height: 1.05;
-  margin-top: -1px;
   color: #9fb1ac;
+  font: 400 8px/1.25 var(--masthead-sans);
+  white-space: nowrap;
 }
 
-/* The nav stays pinned, while the ribbon reveals on upward scrolling and
-   disappears when scrolling down. No document reflow during scroll. */
+/* Leave the content height stable while the pinned ribbon slides away. */
 body:has(.guild-status-banner) { padding-top: calc(var(--nav-space) + var(--guild-banner-height)); }
 body:has(.guild-status-banner) .dashboard-topbar {
   top: calc(var(--guild-banner-height) + 12px);
   transition: top .28s ease, background-color .2s ease;
 }
-html.guild-banner-collapsed .guild-status-banner {
+html.guild-banner-collapsed body .guild-status-banner {
   transform: translateY(-102%);
   opacity: 0;
   pointer-events: none;
@@ -331,100 +244,58 @@ html.guild-banner-collapsed body:has(.guild-status-banner) .dashboard-topbar { t
   body:has(.guild-status-banner) { padding-top: calc(88px + var(--guild-banner-height)); }
 }
 
-
-@media (max-width: 1320px) and (min-width: 1001px) {
+@media (min-width: 1001px) and (max-width: 1320px) {
   .guild-status-banner__inner {
-    width: calc(100% - 38px);
-    grid-template-columns: minmax(240px, 280px) minmax(360px, 1fr) minmax(240px, 280px);
-    column-gap: 18px;
+    width: calc(100% - 48px);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 440px) minmax(0, 1fr);
+    gap: 16px;
   }
-  .guild-status-banner__brand { width: min(100%, 500px); }
-  .guild-status-banner__brand strong { font-size: clamp(22px, 2vw, 31px); }
-  .guild-status-banner__brand-sub i { width: clamp(28px, 6vw, 80px); }
-  .guild-status-banner__clock { grid-auto-columns: 30px; gap: 7px; }
-  .guild-status-banner__clock-part { min-width: 30px; }
-  .guild-status-banner__clock-part:not(:last-child)::after { right: -6px; font-size: 16px; }
-  .guild-status-banner__clock-part b { font-size: clamp(18px, 1.6vw, 25px); }
-  .guild-status-banner__reset-caption { font-size: 8px; }
+  .guild-status-banner .guild-status-banner__eyebrow { font-size: 8px; letter-spacing: .16em; }
+  .guild-status-banner__wordmark { font-size: clamp(21px, 2.1vw, 27px); }
+  .guild-status-banner__raid-name { font-size: 16px; }
+  .guild-status-banner__clock { gap: 8px; }
+  .guild-status-banner__clock-part { min-width: 28px; }
+  .guild-status-banner__clock-part b { font-size: 22px; }
+  .guild-status-banner__clock-part + .guild-status-banner__clock-part::before { left: -7px; font-size: 18px; }
+  .guild-status-banner__reset-caption { font-size: 7px; }
 }
 
+/* The existing mobile nav starts at 1000px. Like the reference, the ribbon
+   becomes a wordmark at left and a compact three-part clock at right. */
 @media (max-width: 1000px) {
-  .guild-status-banner { height: var(--guild-banner-height-mobile); }
+  body .guild-status-banner { height: var(--guild-banner-height-mobile); }
   .guild-status-banner__inner {
-    width: calc(100% - 18px);
+    width: calc(100% - 32px);
     grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: minmax(0, 1fr);
-    align-items: center;
-    column-gap: 10px;
-    padding: 8px 0;
+    gap: 16px;
   }
-  .guild-status-banner__raid,
-  .guild-status-banner__brand-sub { display: none; }
+  .guild-status-banner__raid { display: none; }
   .guild-status-banner__brand {
-    width: auto;
-    max-width: calc(100vw - 132px);
-    min-height: 0;
-    grid-template-rows: auto;
-    grid-column: 1;
-    grid-row: 1;
+    align-items: flex-start;
     justify-self: start;
-    align-items: center;
-    row-gap: 0;
     text-align: left;
   }
-  .guild-status-banner__brand::before { display: none; }
-  .guild-status-banner__brand strong {
-    width: 100%;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: clamp(15px, 4vw, 20px);
-    line-height: 1;
+  .guild-status-banner__wordmark { font-size: clamp(17px, 3.8vw, 28px); line-height: 1.1; }
+  .guild-status-banner__ornament { display: none; }
+  .guild-status-banner__brand-sub {
+    justify-content: flex-start;
+    gap: 7px;
+    margin-top: 5px;
+    font-size: 8.5px;
+    letter-spacing: .18em;
   }
-  .guild-status-banner__reset {
-    grid-column: 2;
-    grid-row: 1;
-    width: auto;
-    min-height: 0;
-    max-width: 114px;
-    grid-template-rows: 12px auto;
-    row-gap: 4px;
-    align-items: center;
-    justify-items: end;
-    padding-left: 8px;
-    border-left: 1px solid rgba(216, 180, 118, .2);
-  }
+  .guild-status-banner__brand-sub i:first-child { display: none; }
+  .guild-status-banner__brand-sub i:last-child { width: 28px; flex-basis: 28px; }
+  .guild-status-banner__reset { gap: 3px; }
   .guild-status-banner__reset-desktop-label { display: none; }
   .guild-status-banner__reset-mobile-label { display: inline; }
-  .guild-status-banner__eyebrow {
-    max-width: 100%;
-    font-size: 7px;
-    letter-spacing: .15em;
-  }
-  .guild-status-banner__clock {
-    display: flex;
-    justify-content: flex-end;
-    width: auto;
-    gap: 4px;
-  }
-  .guild-status-banner__clock-part {
-    min-width: 18px;
-    gap: 2px;
-  }
-  .guild-status-banner__clock-part b { font-size: 16px; }
-  .guild-status-banner__clock-part:not(:last-child)::after {
-    right: -5px;
-    top: -1px;
-    font-size: 12px;
-  }
-  .guild-status-banner__clock-part small {
-    font-size: 6px;
-    letter-spacing: .06em;
-  }
+  .guild-status-banner .guild-status-banner__eyebrow { font-size: 8.5px; letter-spacing: .18em; }
+  .guild-status-banner__clock { gap: 8px; padding-bottom: 5px; }
+  .guild-status-banner__clock-part { min-width: 28px; }
+  .guild-status-banner__clock-part b { font-size: 20px; }
+  .guild-status-banner__clock-part + .guild-status-banner__clock-part::before { left: -7px; font-size: 18px; }
   .guild-status-banner__clock-part:nth-child(4),
   .guild-status-banner__reset-caption { display: none; }
-  .guild-status-banner__clock-part:nth-child(3)::after { display: none; }
   body:has(.guild-status-banner) { padding-top: calc(var(--nav-space) + var(--guild-banner-height-mobile)); }
   body:has(.guild-status-banner) .site-nav {
     top: var(--guild-banner-height-mobile);
@@ -439,19 +310,16 @@ html.guild-banner-collapsed body:has(.guild-status-banner) .dashboard-topbar { t
   }
 }
 
-@media (max-width: 380px) {
-  .guild-status-banner__inner { width: calc(100% - 14px); column-gap: 8px; }
-  .guild-status-banner__brand { max-width: calc(100vw - 126px); }
-  .guild-status-banner__brand strong { font-size: 14px; }
-  .guild-status-banner__reset { max-width: 104px; padding-left: 7px; }
-  .guild-status-banner__clock { gap: 3px; }
-  .guild-status-banner__clock-part { min-width: 16px; }
-  .guild-status-banner__clock-part b { font-size: 14px; }
-  .guild-status-banner__clock-part:not(:last-child)::after { right: -4px; font-size: 11px; }
+@media (max-width: 420px) {
+  .guild-status-banner__inner { width: calc(100% - 24px); gap: 12px; }
+  .guild-status-banner__wordmark { font-size: clamp(16px, 4.3vw, 18px); }
+  .guild-status-banner__brand-sub { font-size: 7px; gap: 5px; letter-spacing: .14em; }
+  .guild-status-banner__brand-sub i:last-child { width: 18px; flex-basis: 18px; }
+  .guild-status-banner__clock-part small { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .guild-status-banner,
+  body .guild-status-banner,
   body:has(.guild-status-banner) .dashboard-topbar,
   body:has(.guild-status-banner) .site-nav { transition: none; }
 }

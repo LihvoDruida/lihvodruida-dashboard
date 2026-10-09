@@ -16,6 +16,13 @@ const guildHeadingFont = localFont({
   display: "swap",
   variable: "--font-guild-heading",
 });
+const guildMastheadFont = localFont({
+  src: "../../assets/fonts/welcome/Cinzel-Variable.ttf",
+  weight: "400 900",
+  style: "normal",
+  display: "swap",
+  variable: "--font-guild-masthead",
+});
 import type { Metadata, Viewport } from "next";
 // Порядок шарів повторює порядок сайту lihvodruida.github.io:
 // variables → style → site-polish → nav → сторінкові стилі.
@@ -145,7 +152,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="uk" className={`${guildDisplayFont.variable} ${guildHeadingFont.variable}`}>
+    <html lang="uk" className={`${guildDisplayFont.variable} ${guildHeadingFont.variable} ${guildMastheadFont.variable}`}>
       <body>
         <Script id="dashboard-extension-noise-guard" strategy="beforeInteractive">
           {`

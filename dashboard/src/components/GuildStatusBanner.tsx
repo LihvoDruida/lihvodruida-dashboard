@@ -81,6 +81,9 @@ export default function GuildStatusBanner({
       weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit",
       timeZone: "Europe/Kyiv",
     }).format(resetAt);
+  const brandBreak = guildName.trim().lastIndexOf(" ");
+  const brandStart = brandBreak > 0 ? guildName.trim().slice(0, brandBreak) : guildName;
+  const brandEnd = brandBreak > 0 ? guildName.trim().slice(brandBreak) : "";
 
   return (
     <div className="guild-status-banner" aria-label="Статус гільдії та наступне тижневе скидання WoW Retail EU">
@@ -102,7 +105,13 @@ export default function GuildStatusBanner({
         </Link>
 
         <div className="guild-status-banner__brand" aria-label={guildName}>
-          <strong title={guildName}>{guildName}</strong>
+          <strong className="guild-status-banner__wordmark" title={guildName}>
+            <span>{brandStart}</span>{brandEnd && <span className="guild-status-banner__wordmark-accent">{brandEnd}</span>}
+          </strong>
+          <svg className="guild-status-banner__ornament" viewBox="0 0 88 14" width="88" height="14" fill="none" aria-hidden="true" focusable="false">
+            <path d="M4 3C15 16 27 12 44 5C61-2 73-1 84 9M4 9C15-1 27-2 44 5C61 12 73 16 84 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+            <path d="m44 2 3 3-3 3-3-3 3-3Z" fill="currentColor" />
+          </svg>
           <span className="guild-status-banner__brand-sub"><i aria-hidden="true" /> World of Warcraft <i aria-hidden="true" /></span>
         </div>
 
@@ -119,7 +128,7 @@ export default function GuildStatusBanner({
               </span>
             ))}
           </div>
-          <span className="guild-status-banner__reset-caption" suppressHydrationWarning>{resetLabel} · Київ</span>
+          <time className="guild-status-banner__reset-caption" dateTime={resetAt === null ? undefined : new Date(resetAt).toISOString()} suppressHydrationWarning>{resetLabel} · Київ</time>
         </div>
       </div>
     </div>
