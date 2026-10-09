@@ -1,5 +1,21 @@
 import { Suspense, type ReactNode } from "react";
 import Script from "next/script";
+import localFont from "next/font/local";
+
+const guildDisplayFont = localFont({
+  src: "../../assets/fonts/welcome/SpectralSC-Bold.ttf",
+  weight: "700",
+  style: "normal",
+  display: "swap",
+  variable: "--font-guild-display",
+});
+const guildHeadingFont = localFont({
+  src: "../../assets/fonts/welcome/Philosopher-Bold.ttf",
+  weight: "700",
+  style: "normal",
+  display: "swap",
+  variable: "--font-guild-heading",
+});
 import type { Metadata, Viewport } from "next";
 // Порядок шарів повторює порядок сайту lihvodruida.github.io:
 // variables → style → site-polish → nav → сторінкові стилі.
@@ -22,6 +38,7 @@ import "./styles/admin.css";
 import "./styles/polls.css";
 import "./styles/roster.css";
 import "./styles/desktop.css";
+import "./styles/guild-banner.css";
 import DashboardFormEnhancer from "@/components/DashboardFormEnhancer";
 import GlobalToasts from "@/components/GlobalToasts";
 import AppFooter from "@/components/AppFooter";
@@ -128,7 +145,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="uk">
+    <html lang="uk" className={`${guildDisplayFont.variable} ${guildHeadingFont.variable}`}>
       <body>
         <Script id="dashboard-extension-noise-guard" strategy="beforeInteractive">
           {`

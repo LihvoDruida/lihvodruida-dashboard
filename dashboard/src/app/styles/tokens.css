@@ -176,8 +176,8 @@
      Без зовнішнього font fetch: основний UI використовує нативний системний
      sans-stack, брендові заголовки — стабільний serif fallback. */
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-display: var(--font-sans);
-  --font-brand: Georgia, "Times New Roman", serif;
+  --font-display: var(--font-guild-heading), Georgia, "Times New Roman", serif;
+  --font-brand: var(--font-guild-display), "Palatino Linotype", Georgia, serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
   --z-dropdown: 1000;

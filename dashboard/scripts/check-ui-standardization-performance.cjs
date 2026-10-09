@@ -25,7 +25,7 @@ const tsxFiles = walk(path.join(root, 'src')).filter((file) => file.endsWith('.t
 const tsx = tsxFiles.map((file) => fs.readFileSync(file, 'utf8')).join('\n');
 
 const checks = [
-  ['system UI font stack is centralized', tokens.includes('--font-sans: system-ui') && tokens.includes('--font-display: var(--font-sans)')],
+  ['global body and branded heading font stacks are centralized', tokens.includes('--font-sans: system-ui') && tokens.includes('--font-display: var(--font-guild-heading)') && tokens.includes('--font-brand: var(--font-guild-display)')],
   ['common font sizes use shared tokens', tokens.includes('--font-size-ui: 0.78rem') && css.includes('font-size: var(--font-size-ui)')],
   ['font weights are centralized', tokens.includes('--font-weight-semibold: 650') && css.includes('font-weight: var(--font-weight-bold)')],
   ['line heights are centralized', tokens.includes('--line-height-body: 1.5') && css.includes('line-height: var(--line-height-body)')],

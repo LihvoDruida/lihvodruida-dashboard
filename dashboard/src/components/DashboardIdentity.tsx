@@ -18,6 +18,9 @@ import LogoutButton from "@/components/LogoutButton";
 import DashboardDesktopNav from "@/components/DashboardDesktopNav";
 import DashboardNavIcon, { type DashboardNavSection } from "@/components/DashboardNavIcon";
 import SiteNavBehaviour from "@/components/SiteNavBehaviour";
+import GuildStatusBanner, { type GuildStatusRaid } from "@/components/GuildStatusBanner";
+import { loadStoredGuildRosterData } from "@/lib/guildRoster";
+import { primaryCurrentRaidProgress, currentSeasonRaidSlugs } from "@/lib/characterRaidProgress";
 import ProfileAvatar from "@/components/ProfileAvatar";
 import { getProfileById, getProfilePublicName } from "@/lib/profiles";
 import { getGuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
@@ -55,6 +58,30 @@ export default async function DashboardIdentity({
     getGuildBranding(),
     getGuildNicknamePolicy().catch(() => ({ template: "{name} [{main}, {alt}, {alt}]" })),
   ]);
+
+  // Cached guild progress only: never trigger Raider.IO/Battle.net refresh from
+  // the global navigation. Missing current season data must not show old raids.
+  const roster = user && canViewGuildRoster(user)
+    ? await loadStoredGuildRosterData().catch(() => null)
+    : null;
+  const seasonSnapshot = roster?.stats.raidSeasonSnapshot || null;
+  const currentSlugs = currentSeasonRaidSlugs(seasonSnapshot);
+  const primaryRaid = currentSlugs.length
+    ? primaryCurrentRaidProgress(roster?.stats.raidProgression || [], seasonSnapshot)
+    : null;
+  const rosterUpdatedMs = Date.parse(roster?.stats.updatedAt || "");
+  // An old cache must not be presented as *current* guild progress. Raider.IO
+  // exposes tier aggregates as fallback; verify their season before displaying.
+  const rosterIsFresh = !Number.isFinite(rosterUpdatedMs) || Date.now() - rosterUpdatedMs < 72 * 60 * 60_000;
+  const progressMatchesSeason = Boolean(primaryRaid && currentSlugs.includes(primaryRaid.slug));
+  const bannerRaid: GuildStatusRaid = primaryRaid && progressMatchesSeason && rosterIsFresh ? {
+    name: primaryRaid.name,
+    totalBosses: primaryRaid.totalBosses,
+    normalKills: primaryRaid.normalKills,
+    heroicKills: primaryRaid.heroicKills,
+    mythicKills: primaryRaid.mythicKills,
+    updatedAt: roster?.stats.updatedAt || null,
+  } : null;
 
   const profile = user?.profileId ? await getProfileById(user.profileId).catch(() => null) : null;
   const displayName = profile
@@ -115,6 +142,10 @@ export default async function DashboardIdentity({
   return (
     <>
       <SiteNavBehaviour />
+
+      {user ? (
+        <GuildStatusBanner guildName={guild.name} raid={bannerRaid} raidHref={canViewGuildRoster(user) ? "/guild" : "/raids"} />
+      ) : null}
 
       {user ? (
         <header className="dashboard-topbar" aria-label="Навігація панелі Mistblossom Vanguard">
