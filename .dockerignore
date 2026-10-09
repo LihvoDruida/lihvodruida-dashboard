@@ -29,3 +29,10 @@ docs/**
 !docs/content/
 !docs/content/static-rules.md
 runtime/server-stats/*.jsonl
+
+# Obsolete unreferenced CSS layers from pre-v3.8.68 checkouts.
+# The Docker build must not inherit stray files when ZIP releases are unpacked
+# over an existing source directory. cleanup:legacy removes them on the host.
+dashboard/src/app/styles/accessibility.css
+dashboard/src/app/styles/cascade.css
+dashboard/src/app/styles/responsive.css

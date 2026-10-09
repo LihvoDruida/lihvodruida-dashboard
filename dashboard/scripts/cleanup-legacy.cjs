@@ -19,6 +19,15 @@ const legacyPaths = [
   // disk and break TypeScript before the invariant check gets a chance to run.
   'src/app/api/dashboard/discord/nicknames/cleanup',
   'public/ui-icons',
+  // Retired global layers from versions before the unified 17-file theme.
+  // ZIP releases are sometimes extracted over an old VPS checkout. Because
+  // Docker COPY dashboard/ ./ also copies untracked leftovers, these three
+  // orphaned files caused audit:styles to fail during the image build.
+  // The active theme imports are defined in src/app/layout.tsx; none of these
+  // names is part of the canonical v3.8.68 release.
+  'src/app/styles/accessibility.css',
+  'src/app/styles/cascade.css',
+  'src/app/styles/responsive.css',
 ];
 
 let removed = 0;

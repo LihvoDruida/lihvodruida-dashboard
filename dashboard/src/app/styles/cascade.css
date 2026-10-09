@@ -1,3 +1,0 @@
-/* Declare precedence before route chunks: names are stable across the app. */
-@layer theme, reset, defaults, components, layout, pages, accessibility;
-
