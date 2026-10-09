@@ -78,6 +78,7 @@ services:
       dockerfile: dashboard/Dockerfile
       pull: true
       args:
+        NODE_IMAGE_REPOSITORY: ${NODE_IMAGE_REPOSITORY:-public.ecr.aws/docker/library/node}
         NEXT_PUBLIC_DASHBOARD_URL: ${DASHBOARD_PUBLIC_URL:?треба задати DASHBOARD_PUBLIC_URL}
         # Preset for the production VPS (2 vCPU / 4 GB RAM). Can be overridden
         # from `.env` without editing the Dockerfile.
@@ -171,6 +172,8 @@ services:
       context: .
       dockerfile: bot/Dockerfile
       pull: true
+      args:
+        NODE_IMAGE_REPOSITORY: ${NODE_IMAGE_REPOSITORY:-public.ecr.aws/docker/library/node}
     image: mistblossom/bot:${IMAGE_TAG:-latest}
     restart: unless-stopped
     environment:

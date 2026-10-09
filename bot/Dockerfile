@@ -13,7 +13,10 @@
 # ---------------------------------------------------------------------------
 
 ARG NODE_VERSION=24.21.0-bookworm-slim
-FROM node:${NODE_VERSION}
+# Docker Official Images on ECR Public avoid Docker Hub's auth endpoint.
+# Set NODE_IMAGE_REPOSITORY=node to use Docker Hub again if desired.
+ARG NODE_IMAGE_REPOSITORY=public.ecr.aws/docker/library/node
+FROM ${NODE_IMAGE_REPOSITORY}:${NODE_VERSION}
 
 ENV NODE_ENV=production \
     PORT=8080 \

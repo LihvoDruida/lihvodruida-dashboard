@@ -15,6 +15,9 @@
 # ---------------------------------------------------------------------------
 
 ARG NODE_VERSION=24.21.0-bookworm-slim
+# Docker Official Images on ECR Public avoid Docker Hub's auth endpoint.
+# Set NODE_IMAGE_REPOSITORY=node to use Docker Hub again if desired.
+ARG NODE_IMAGE_REPOSITORY=public.ecr.aws/docker/library/node
 # Pinned security overlay. package-lock stays the reproducible baseline, then
 # the production image replaces only Next.js with the currently approved
 # patched release before build. CI below verifies that the overlay happened.
@@ -23,7 +26,7 @@ ARG REACT_SECURITY_VERSION=19.2.8
 ARG SHARP_SECURITY_VERSION=0.35.4
 
 # --- 1. Залежності -----------------------------------------------------------
-FROM node:${NODE_VERSION} AS deps
+FROM ${NODE_IMAGE_REPOSITORY}:${NODE_VERSION} AS deps
 ARG NEXT_SECURITY_VERSION
 ARG REACT_SECURITY_VERSION
 ARG SHARP_SECURITY_VERSION
@@ -48,7 +51,7 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked \
     && node -e "const fs=require('node:fs'); const path=require('node:path'); const checks=[['next',process.argv[1]],['react',process.argv[2]],['react-dom',process.argv[2]],['sharp',process.argv[3]]]; for (const [pkg,expected] of checks) { const manifest=path.join(process.cwd(),'node_modules',pkg,'package.json'); const actual=JSON.parse(fs.readFileSync(manifest,'utf8')).version; if(actual!==expected) throw new Error(pkg+' security overlay failed: '+actual+' != '+expected); }" "${NEXT_SECURITY_VERSION}" "${REACT_SECURITY_VERSION}" "${SHARP_SECURITY_VERSION}"
 
 # --- 2. Збірка ---------------------------------------------------------------
-FROM node:${NODE_VERSION} AS builder
+FROM ${NODE_IMAGE_REPOSITORY}:${NODE_VERSION} AS builder
 ARG NEXT_SECURITY_VERSION
 ARG REACT_SECURITY_VERSION
 ARG SHARP_SECURITY_VERSION
@@ -123,7 +126,7 @@ RUN --mount=type=cache,target=/repo/dashboard/.next/cache,sharing=locked \
     npm run build:ci
 
 # --- 3. Runtime --------------------------------------------------------------
-FROM node:${NODE_VERSION} AS runner
+FROM ${NODE_IMAGE_REPOSITORY}:${NODE_VERSION} AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production

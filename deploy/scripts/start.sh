@@ -327,6 +327,10 @@ version_at_least() {
   awk -v v="$value" -v m="$minimum" 'BEGIN { split(v,a,"."); split(m,b,"."); for(i=1;i<=3;i++){a[i]+=0;b[i]+=0;if(a[i]>b[i])exit 0;if(a[i]<b[i])exit 1} exit 0 }'
 }
 
+NODE_IMAGE_REPOSITORY_VALUE="${NODE_IMAGE_REPOSITORY-$(env_get .env NODE_IMAGE_REPOSITORY || true)}"
+NODE_IMAGE_REPOSITORY_VALUE="${NODE_IMAGE_REPOSITORY_VALUE:-public.ecr.aws/docker/library/node}"
+ok "Node.js base image repository: $NODE_IMAGE_REPOSITORY_VALUE"
+
 NEXT_SECURITY_VALUE="$(env_get .env NEXT_SECURITY_VERSION || true)"
 NEXT_SECURITY_VALUE="${NEXT_SECURITY_VALUE:-16.3.5}"
 if version_at_least "$NEXT_SECURITY_VALUE" "16.3.3"; then
