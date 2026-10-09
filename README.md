@@ -1,3 +1,7 @@
+> **Security Stage 4 — v3.8.68 (2026-10-09)**: Durable Discord Ingress stores
+> verified interaction receipts in PostgreSQL *before* the deferred ACK.
+> Details: [`docs/security/SECURITY_STAGE4_2026-10-09.md`](docs/security/SECURITY_STAGE4_2026-10-09.md).
+
 # Mistblossom Vanguard
 
 Панель управління гільдією World of Warcraft: профілі, рейди, рейд-пули,
@@ -26,6 +30,8 @@
 ## Документація
 
 Точка входу — [`docs/README.md`](docs/README.md).
+
+Новий захист Discord interaction-відповідей: [`docs/security/SECURITY_STAGE3_2026-10-09.md`](docs/security/SECURITY_STAGE3_2026-10-09.md).
 
 | Документ | Про що |
 |----------|--------|
@@ -106,5 +112,3 @@ curl -fsS https://guild.lihvodruida.pp.ua/api/health
 ## VPS performance preset
 
 The production Make/Docker flow is tuned for 2 vCPU / 4 GB RAM / 40 GB SSD. See `docs/PERFORMANCE.md`.
-
-Діагностика DNS/HTTPS перед Docker-збіркою: `make network-check`. Відновлення після помилки `auth.docker.io`: [docs/BUILD_NETWORK.md](docs/BUILD_NETWORK.md).

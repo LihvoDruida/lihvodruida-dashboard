@@ -481,6 +481,12 @@ wait_healthy() {
   fail "$service не став готовим за ${timeout} с"
 }
 
+if [ "$RESTART" -eq 1 ]; then
+  step "Зупиняю стек"
+  $COMPOSE down --remove-orphans
+  ok "зупинено"
+fi
+
 # На малому VPS не передаємо --build кожному `compose up`: так dashboard
 # і bot могли повторно проходити граф залежностей на наступних етапах.
 # Образи збираються рівно один раз, а запуск нижче завжди йде з --no-build.
@@ -490,7 +496,7 @@ if [ "$BUILD" -eq 1 ]; then
   export COMPOSE_PARALLEL_LIMIT="${COMPOSE_PARALLEL_LIMIT:-1}"
 
   BUILD_STARTED=$SECONDS
-  bash deploy/scripts/build-images.sh dashboard bot
+  $COMPOSE build dashboard bot
   ok "образи готові за $((SECONDS - BUILD_STARTED)) с"
 
   # На 40 GB VPS BuildKit може за кілька деплоїв вирости до 10–15+ GB.
@@ -507,12 +513,6 @@ if [ "$BUILD" -eq 1 ]; then
   fi
 else
   "$PWD/deploy/scripts/docker-stats-snapshot.sh" || true
-fi
-
-if [ "$RESTART" -eq 1 ]; then
-  step "Зупиняю стек після успішної збірки"
-  $COMPOSE down --remove-orphans
-  ok "зупинено"
 fi
 
 UP_ARGS="-d --remove-orphans --no-build --no-deps"

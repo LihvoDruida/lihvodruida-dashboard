@@ -2,10 +2,9 @@ import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import botPackage from "../package.json" with { type: "json" };
 import { inspectDiscordSignature, isRoutineInvalidSignatureProbe } from "./signature.mjs";
-import { completeInteraction } from "./dashboardClient.mjs";
+import { enqueueVerifiedInteraction, startInteractionIngressWorker, startInteractionOutboxWorker } from "./dashboardClient.mjs";
 import { logger } from "./logger.mjs";
 import { startDiscordGatewayBridge, discordGatewayHealth } from "./gateway.mjs";
-import { claimDiscordInteractionId } from "./replayGuard.mjs";
 import {
   INTERACTION_DOMAINS,
   interactionDomainFor,
@@ -23,7 +22,7 @@ import {
  * окремо від релізів панелі.
  *
  * Бот НЕ знає бізнес-логіки. Його робота: перевірити підпис, зрозуміти домен
- * дії, миттєво відповісти Discord «прийнято» і переслати запит у панель.
+ * дії, зберегти його в спільній базі та лише тоді підтвердити Discord ACK.
  * Бізнес-логіка лишається в панелі. Бот тримає лише транспорт: interaction ACK
  * і доставку завершеної interaction-відповіді. Бази даних у контейнері бота немає.
  */
@@ -65,7 +64,10 @@ function json(response, status, payload) {
   response.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
     "content-length": Buffer.byteLength(body),
-    "cache-control": "no-store",
+    "cache-control": "no-store, max-age=0",
+    "x-content-type-options": "nosniff",
+    "referrer-policy": "no-referrer",
+    "x-frame-options": "DENY",
   });
   response.end(body);
 }
@@ -139,18 +141,9 @@ async function handleInteraction(interaction, rawBody, signature, timestamp) {
 
   const deferred = deferredResponseFor(interaction, customId);
 
-  // Робота йде ПІСЛЯ того, як Discord отримав підтвердження: у нього рівно
-  // 3 секунди, а панель може думати довше (транзакція + запис у базу).
-  // setImmediate, а не await: відповідь має піти зараз.
-  setImmediate(() => {
-    completeInteraction({ rawBody, signature, timestamp, interaction, domain }).catch((error) => {
-      logger.error("Взаємодію не завершено", {
-        domain,
-        customId: customId.slice(0, 60),
-        error: error instanceof Error ? error.message : String(error),
-      });
-    });
-  });
+  // The durable receipt must be committed before Discord sees an ACK. The
+  // worker performs the business action later, recovering after bot restarts.
+  await enqueueVerifiedInteraction({ rawBody, signature, timestamp, interaction, domain });
 
   return deferred;
 }
@@ -336,21 +329,8 @@ const server = createServer(async (request, response) => {
     return json(response, 400, { error: "invalid_json" });
   }
 
-  if (interaction?.type !== InteractionType.PING) {
-    const interactionId = String(interaction?.id || "").trim();
-    if (!claimDiscordInteractionId(interactionId)) {
-      logger.warn("Повторний Discord interaction заблоковано", requestDiagnosticContext(request, path, {
-        eventName: "bot.security.discord_interaction_replay",
-        category: "security",
-        statusCode: 200,
-        interactionIdValid: /^\d{16,25}$/.test(interactionId),
-      }));
-      const customId = String(interaction?.data?.custom_id || "");
-      const duplicateAck = /^\d{16,25}$/.test(interactionId)
-        ? deferredResponseFor(interaction, customId)
-        : { type: CallbackType.CHANNEL_MESSAGE, data: { flags: EPHEMERAL, content: "⚠️ Некоректний Discord interaction id." } };
-      return json(response, 200, duplicateAck);
-    }
+  if (interaction?.type !== InteractionType.PING && !/^\d{16,25}$/.test(String(interaction?.id || ""))) {
+    return json(response, 400, { error: "invalid_interaction_id" });
   }
 
   try {
@@ -360,14 +340,13 @@ const server = createServer(async (request, response) => {
     logger.error("Збій обробки взаємодії", {
       error: error instanceof Error ? error.message : String(error),
     });
-    return json(response, 200, {
-      type: CallbackType.CHANNEL_MESSAGE,
-      data: { flags: EPHEMERAL, content: "⚠️ Сталася помилка. Спробуйте ще раз за хвилину." },
-    });
+    return json(response, 503, { error: "interaction_ingress_unavailable" });
   }
 });
 
 const stopGateway = startDiscordGatewayBridge();
+const stopIngressWorker = startInteractionIngressWorker();
+const stopOutboxWorker = startInteractionOutboxWorker();
 
 server.listen(PORT, HOST, () => {
   logger.info("Бот слухає", { host: HOST, port: PORT });
@@ -378,6 +357,8 @@ for (const signal of ["SIGTERM", "SIGINT"]) {
   process.once(signal, () => {
     logger.info("Зупинка", { signal });
     try { stopGateway?.(); } catch {}
+    try { stopIngressWorker?.(); } catch {}
+    try { stopOutboxWorker?.(); } catch {}
     server.close(() => process.exit(0));
     setTimeout(() => process.exit(0), 5000).unref();
   });

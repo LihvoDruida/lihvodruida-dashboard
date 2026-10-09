@@ -12,7 +12,6 @@
 | Розгортаю з нуля на новому сервері | [DEPLOYMENT.md](./DEPLOYMENT.md) |
 | Треба зрозуміти, з чого складається система | [ARCHITECTURE.md](./ARCHITECTURE.md) |
 | Шукаю, за що відповідає змінна оточення | [CONFIGURATION.md](./CONFIGURATION.md) |
-| Docker build падає на DNS або Docker Hub | [BUILD_NETWORK.md](./BUILD_NETWORK.md) |
 | Щось зламалось у проді | [OPERATIONS.md](./OPERATIONS.md) |
 | Питання про базу: бекап, міграція, обслуговування | [DATABASE.md](./DATABASE.md) |
 

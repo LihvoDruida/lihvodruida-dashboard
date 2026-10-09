@@ -24,15 +24,15 @@ function loadTs(relative, mocks = {}) {
   });
   const errors = (js.diagnostics || []).filter((d) => d.category === ts.DiagnosticCategory.Error);
   assert.equal(errors.length, 0, `Failed to transpile ${relative}`);
-  const loadedModule = { exports: {} };
+  const module = { exports: {} };
   const requireMock = (name) => {
     if (Object.hasOwn(mocks, name)) return mocks[name];
     if (name === "server-only" || name === "next/headers") return {};
     if (name.startsWith("@/lib/")) return {};
     throw new Error(`Unexpected import ${name} in ${relative}`);
   };
-  new Function("module", "exports", "require", js.outputText)(loadedModule, loadedModule.exports, requireMock);
-  return loadedModule.exports;
+  new Function("module", "exports", "require", js.outputText)(module, module.exports, requireMock);
+  return module.exports;
 }
 
 (async () => {

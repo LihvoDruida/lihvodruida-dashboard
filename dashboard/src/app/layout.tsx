@@ -1,12 +1,14 @@
 import { Suspense, type ReactNode } from "react";
 import Script from "next/script";
 import type { Metadata, Viewport } from "next";
-// Shared cascade first; page styles own composition, shared styles own primitives.
-import "./styles/cascade.css";
+// Порядок шарів повторює порядок сайту lihvodruida.github.io:
+// variables → style → site-polish → nav → сторінкові стилі.
 import "./styles/tokens.css";
 import "./styles/base.css";
-import "./styles/patterns.css";
 import "./styles/layout.css";
+// patterns — структурні заглушки за суфіксом класу. Свідомо йдуть
+// ПЕРЕД іменними шарами, щоб будь-яке конкретне правило їх перекривало.
+import "./styles/patterns.css";
 import "./styles/components.css";
 import "./styles/lists.css";
 import "./styles/applications.css";
@@ -20,8 +22,6 @@ import "./styles/admin.css";
 import "./styles/polls.css";
 import "./styles/roster.css";
 import "./styles/desktop.css";
-import "./styles/responsive.css";
-import "./styles/accessibility.css";
 import DashboardFormEnhancer from "@/components/DashboardFormEnhancer";
 import GlobalToasts from "@/components/GlobalToasts";
 import AppFooter from "@/components/AppFooter";

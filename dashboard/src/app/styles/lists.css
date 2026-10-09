@@ -1,4 +1,4 @@
-@layer components {/* =========================================================
+/* =========================================================
    LISTS — shared list details still used by current pages.
    Legacy generic application classes were removed after the
    dedicated applications workbench replaced them.
@@ -124,12 +124,9 @@
   transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
 }
 
-@media (hover: hover) and (pointer: fine) {
-
 .content-row:hover {
   border-color: var(--border-strong);
   background: var(--surface-hover);
-}
 }
 
 .content-row.is-active {
@@ -327,5 +324,3 @@
     height: 110px;
   }
 }
-}
-

@@ -1,4 +1,4 @@
-@layer pages {/* =========================================================
+/* =========================================================
    POLLS — рейд-пули: голосування за день і час
 
    Останній домен без власних правил. Сторінка показує сітку
@@ -56,12 +56,9 @@
   transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 
-@media (hover: hover) and (pointer: fine) {
-
 .poll-tab:hover {
   border-color: var(--border-strong);
   color: var(--text-strong);
-}
 }
 
 .poll-tab.is-active {
@@ -1117,11 +1114,8 @@
   transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
 }
 
-@media (hover: hover) and (pointer: fine) {
-
 .raid-poll-publication-option:hover {
   border-color: var(--border-strong);
-}
 }
 
 .raid-poll-publication-option.is-selected {
@@ -1350,5 +1344,3 @@
     padding: 8px 10px;
   }
 }
-}
-

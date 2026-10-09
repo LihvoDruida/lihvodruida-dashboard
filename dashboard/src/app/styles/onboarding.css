@@ -1,4 +1,4 @@
-@layer pages {/* =========================================================
+/* =========================================================
    ONBOARDING — спільний шаблон реєстрації
 
    /rules/accept і /profile/[id]/settings показують по суті
@@ -209,14 +209,11 @@
     transform var(--dur-fast) var(--ease-out);
 }
 
-@media (hover: hover) and (pointer: fine) {
-
 .profile-setup-progress-step:hover {
   border-color: var(--border-strong);
   background: var(--surface-hover);
   transform: translateY(-2px);
   color: inherit;
-}
 }
 
 /* Позначка стану займає перший стовпчик обох рядків */
@@ -440,6 +437,10 @@
   min-width: 0;
 }
 
+.rules-registration-block--wide {
+  grid-column: 1 / -1;
+}
+
 .rules-registration-editor {
   display: grid;
   gap: var(--space-md);
@@ -591,6 +592,12 @@
 }
 
 /* Смуга «Реєстраційні дані заповнені» */
+.profile-account-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  gap: var(--space-sm);
+  min-width: 0;
+}
 
 .profile-account-overview-card--primary {
   border-left: 3px solid var(--c-accent-400);
@@ -600,7 +607,13 @@
 .profile-account-overview-card > div,
 .profile-account-overview-card > span:not(:where([class$="__icon"])) {
   display: grid;
+  gap: var(--space-3xs);
   min-width: 0;
+}
+
+.profile-account-overview-card strong {
+  font-size: var(--font-size-body);
+  color: var(--text-strong);
 }
 
 .profile-account-overview-card small,
@@ -621,22 +634,21 @@
 .profile-account-sidebar__nav a {
   display: flex;
   align-items: center;
+  gap: var(--space-xs);
   min-height: 40px;
   padding: 0 var(--space-md);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
+  background: var(--surface-sunken);
   color: var(--text-soft);
   font-size: 0.84rem;
   font-weight: var(--font-weight-medium);
   transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 
-@media (hover: hover) and (pointer: fine) {
-
 .profile-account-sidebar__nav a:hover {
   border-color: var(--border-strong);
   color: var(--text-strong);
-}
 }
 
 .profile-account-sidebar__pills {
@@ -720,12 +732,9 @@
   transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
 }
 
-@media (hover: hover) and (pointer: fine) {
-
 .profile-gender-form label:hover {
   border-color: var(--border-strong);
   background: var(--surface-hover);
-}
 }
 
 .profile-gender-form label > span {
@@ -746,6 +755,12 @@
   color: var(--text-muted);
 }
 
+.profile-name-panel__label {
+  font-size: var(--font-size-ui-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-soft);
+}
+
 .profile-nickname-character-list {
   display: grid;
   gap: var(--space-2xs);
@@ -763,6 +778,9 @@
 }
 
 @media (max-width: 860px) {
+  .profile-account-overview {
+    grid-template-columns: minmax(0, 1fr);
+  }
 
   .profile-gender-box__head,
 .profile-raid-role-box__head,
@@ -818,12 +836,9 @@
   cursor: pointer;
 }
 
-@media (hover: hover) and (pointer: fine) {
-
 .profile-gender-option:hover {
   border-color: var(--border-strong);
   background: var(--surface-hover);
-}
 }
 
 .profile-gender-option.is-selected {
@@ -1109,14 +1124,11 @@
     opacity var(--dur-fast) var(--ease-out);
 }
 
-@media (hover: hover) and (pointer: fine) {
-
 .profile-gender-option:hover,
 .profile-raid-role-option:hover,
 .profile-nickname-character-option:hover {
   border-color: var(--border-strong);
   background: var(--surface-hover);
-}
 }
 
 .profile-gender-option.is-selected,
@@ -1354,14 +1366,12 @@
 }
 
 @media (hover: none) and (pointer: coarse) {
-  @media (hover: hover) and (pointer: fine) {
   .profile-gender-option:hover,
 .profile-raid-role-option:hover,
 .profile-nickname-character-option:hover {
     border-color: var(--border-subtle);
     background: var(--surface-sunken);
   }
-}
 
   .profile-gender-option.is-selected,
 .profile-raid-role-option.is-selected,
@@ -1446,5 +1456,3 @@
     min-width: 0;
   }
 }
-}
-

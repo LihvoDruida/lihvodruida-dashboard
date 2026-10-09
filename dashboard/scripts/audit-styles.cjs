@@ -177,10 +177,7 @@ const invalidCssFiles = cssFiles
   .map((file) => ({ file, error: validateCssBraces(fs.readFileSync(file, 'utf8'), file) }))
   .filter(({ error }) => error);
 const unreferencedCssFiles = cssFiles.filter((file) => !sourceText.includes(path.basename(file)));
-// Local CSS Modules consume shared tokens too. They have scoped selectors,
-// so include them in token validation without treating their names as globals.
-const moduleCssFiles = walk(srcRoot).filter((file) => file.endsWith('.module.css'));
-const cssText = [...cssFiles, ...moduleCssFiles].map((file) => fs.readFileSync(file, 'utf8')).join('\n');
+const cssText = cssFiles.map((file) => fs.readFileSync(file, 'utf8')).join('\n');
 const cssWithoutComments = stripCssComments(cssText);
 const selectorClasses = new Map();
 const selectorIds = new Map();

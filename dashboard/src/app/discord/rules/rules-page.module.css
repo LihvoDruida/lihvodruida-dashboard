@@ -1,4 +1,4 @@
-@layer pages {/*
+/*
  * Локальна дизайн-система сторінки /discord/rules.
  * Навмисно не змінює жоден глобальний селектор сайту.
  */
@@ -98,7 +98,7 @@
 }
 
 .headerActions :global(.btn) {
-  min-height: var(--control-height);
+  min-height: 38px;
   white-space: nowrap;
 }
 
@@ -357,7 +357,7 @@
 
 .toolbarActions :global(.btn) {
   min-height: var(--control-height-sm);
-  padding-inline: var(--space-sm);
+  padding-inline: 12px;
 }
 
 .signupsHint {
@@ -481,25 +481,19 @@
   box-shadow: none;
 }
 
-@media (hover: hover) and (pointer: fine) {
-
 .ruleRow:hover {
   border-color: rgba(255, 178, 106, 0.2);
   background: rgba(255, 155, 85, 0.035);
 }
-  }
 
 .ruleRowRaid {
   border-color: rgba(192, 138, 223, 0.14);
 }
 
-@media (hover: hover) and (pointer: fine) {
-
 .ruleRowRaid:hover {
   border-color: rgba(192, 138, 223, 0.28);
   background: rgba(192, 138, 223, 0.035);
 }
-  }
 
 .ruleRowMain {
   display: grid;
@@ -639,8 +633,8 @@
 }
 
 .ruleActions :global(.btn) {
-  min-height: var(--control-height);
-  padding-inline: var(--space-sm);
+  min-height: 36px;
+  padding-inline: 12px;
 }
 
 @media (max-width: 1180px) {
@@ -679,7 +673,7 @@
 
   .pageHeader {
     gap: 14px;
-    padding: var(--space-md);
+    padding: 16px;
   }
 
   .headerActions :global(.btn) {
@@ -715,7 +709,7 @@
   }
 
   .signupRow {
-    margin-top: var(--space-xs);
+    margin-top: 8px;
     padding: 11px;
     border: 1px solid var(--border-subtle);
     border-radius: var(--control-radius);
@@ -771,5 +765,4 @@
     border-radius: 9px;
     font-size: 0.95rem;
   }
-}
 }

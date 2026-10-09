@@ -1,4 +1,4 @@
-@layer pages {.workspace {
+.workspace {
   display: grid;
   gap: 14px;
   min-width: 0;
@@ -100,14 +100,11 @@
   white-space: nowrap;
 }
 
-@media (hover: hover) and (pointer: fine) {
-
 .chip:hover {
   border-color: rgba(245, 158, 70, 0.32);
   background: rgba(245, 158, 70, 0.055);
   color: var(--text-strong);
 }
-  }
 
 .activeChip {
   background: rgba(245, 158, 70, 0.14);
@@ -192,7 +189,7 @@
   display: grid;
   grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 1px;
-  margin-top: var(--space-sm);
+  margin-top: 12px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.055);
   border-radius: var(--control-radius);
@@ -246,7 +243,7 @@
 .tableHeader,
 .logRow {
   display: grid;
-  grid-template-columns: 86px 86px 104px minmax(0, 0.9fr) minmax(0, 1.2fr);
+  grid-template-columns: 86px 86px 104px minmax(220px, 0.9fr) minmax(260px, 1.2fr);
   gap: 10px;
   align-items: center;
 }
@@ -282,13 +279,7 @@
   box-shadow: none;
 }
 
-@media (hover: hover) and (pointer: fine) {
-
-.logRow:hover {
-  background: rgba(255, 255, 255, 0.035);
-}
-  }
-
+.logRow:hover,
 .logRowSelected {
   background: rgba(255, 255, 255, 0.035);
 }
@@ -450,7 +441,7 @@
 .jsonBlock {
   display: grid;
   gap: 7px;
-  margin-top: var(--space-sm);
+  margin-top: 12px;
 }
 
 .pathBlock small,
@@ -593,7 +584,7 @@
   justify-content: space-between;
   gap: var(--space-sm);
   align-items: flex-start;
-  margin-bottom: var(--space-sm);
+  margin-bottom: 12px;
 }
 
 .settingsSectionTitle > div {
@@ -679,7 +670,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(220px, 0.72fr);
   gap: var(--space-sm);
-  margin-top: var(--space-sm);
+  margin-top: 12px;
 }
 
 .field {
@@ -712,7 +703,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-xs);
-  margin-bottom: var(--space-sm);
+  margin-bottom: 12px;
 }
 
 .storageFacts span {
@@ -772,5 +763,4 @@
   .settingsForm { padding: 14px 15px 16px; }
   .formGrid2 { grid-template-columns: 1fr; }
   .storageFacts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
 }

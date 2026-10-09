@@ -1,4 +1,4 @@
-/** Independent regression checks for large Discord role-holder sweeps and violation API response. */
+/** Independent regression checks for PostgreSQL/Firestore cursor and violation API response. */
 'use strict';
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -37,19 +37,33 @@ for (let i = 0; i < 604; i++) {
 }
 // One document has an expired ban and must remain untouched.
 rows.get(idAt(603)).banUntil = times.expired;
-const roles = new Map([...rows.keys()].map(id => [id, [ROLE]]));
+const roles = new Map(bannedIndices.map(i => [idAt(i), [ROLE]]));
 const removals = [];
 const dbTables = new Map([['staticRulesMembers', rows], ['staticRulesConfig', new Map([['main', {memberRoleId:ROLE,managerRoleId:'823456789012345678',text:'Enough Markdown content for tests',version:1}]])], ['staticRulesAudit', new Map()]]);
 const getTable = name => { if (!dbTables.has(name)) dbTables.set(name, new Map()); return dbTables.get(name); };
 const getDoc = (table, id) => ({id, get: async () => ({id, data: () => clone(getTable(table).get(id))}),
   set:async data => getTable(table).set(id, clone(data)), update:async data => getTable(table).set(id,{...getTable(table).get(id),...clone(data)})});
-const db = {collection: name => ({ doc: id => getDoc(name, id) })};
-let rosterReads = 0;
+const cursors = []; let pageReads = 0;
+const getCollection = table => ({
+  doc:id => getDoc(table,id),
+  orderBy(field) { assert.equal(field, '__name__'); return getQuery(table, undefined, 250); },
+});
+function getQuery(table, start, pageSize) {
+  return {
+    limit(value) { return getQuery(table, start, value); },
+    startAfter(id) { assert.equal(typeof id, 'string', 'cursor must be store-independent document ID'); cursors.push(id); return getQuery(table, id, pageSize); },
+    async get() { pageReads++;
+      const entries = [...getTable(table)].sort(([a],[b])=>a.localeCompare(b))
+        .filter(([id])=>start===undefined || id>start).slice(0,pageSize);
+      return {docs: entries.map(([id, value]) => ({id,data:()=>clone(value)}))};
+    },
+  };
+}
+const db = {collection:getCollection};
 const mocks = {
   '@/lib/firebaseAdmin':{getFirebaseAdminDb:()=>db},
   '@/lib/discordAdmin':{
     getDiscordGuildId:()=> '723456789012345678',
-    fetchDiscordGuildMembers:async limit => { assert.equal(limit,0); rosterReads++; return [...roles].map(([userId,roleIds])=>({userId,roleIds})); },
     fetchDiscordGuildMemberSnapshot:async id => ({userId:id,roleIds:roles.get(id)||[],joinedAt:'2026-10-01'}),
     removeGuildMemberRoles:async ({userId,roleIds}) => { removals.push(userId); roles.set(userId,(roles.get(userId)||[]).filter(id => !roleIds.includes(id))); },
   },
@@ -59,13 +73,14 @@ const mocks = {
 const rules = load('lib/staticRules.ts',mocks);
 (async () => {
   const stats = await rules.sweepStaticForbiddenRoles();
-  assert.equal(stats.checked,604, 'all actual Discord role holders are checked');
+  assert.equal(stats.checked,5, 'exactly five actively blocked/banned accounts');
   assert.equal(stats.revoked,5);
   assert.equal(stats.failed,0);
-  assert.equal(rosterReads,1);
+  assert.equal(pageReads,3);
+  assert.deepEqual(cursors,[idAt(249),idAt(499)]);
   assert.deepEqual(removals.sort(),bannedIndices.filter(i=>i!==603).map(idAt).sort());
   assert.deepEqual(roles.get(idAt(603)),[ROLE], 'expired ban is ignored');
-  console.log('PASS 604 Discord role holders checked without reliance on acceptance-registry pagination');
+  console.log('PASS pagination across 604 PostgreSQL-like records uses stable string cursor without omission/duplication');
   console.log('PASS all active bans re-evaluated including page boundaries; expired ban untouched');
 
   let nextResult={banned:false,banUntil:null,violation:{id:'v1'}};

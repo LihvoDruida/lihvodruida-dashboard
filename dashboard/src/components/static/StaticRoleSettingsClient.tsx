@@ -1,5 +1,4 @@
 "use client";
-import { PageIntro } from "@/components/ui/PagePrimitives";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import styles from "./static.module.css";
@@ -35,11 +34,10 @@ export default function StaticRoleSettingsClient() {
   const changed = Boolean(data && (memberRoleId !== data.settings.memberRoleId || managerRoleId !== data.settings.managerRoleId));
   const ready = Boolean(data && !data.warning && data.botCanManageRoles && memberValid && managerValid && memberRoleId !== managerRoleId);
   return <div className={styles.wrap}>
-    <PageIntro eyebrow="Панель керування • Discord" title="Налаштування" description="Налаштування ролей Статика: кого бот приймає до складу та хто може керувати ним." />
+    <header className="hero panel"><div className="eyebrow">Панель керування • Discord</div><h1>Налаштування</h1><p className="lead">Налаштування ролей Статика: кого бот приймає до складу та хто може керувати ним.</p></header>
     <section className={`panel ${styles.card}`}>
       <div className={styles.sectionHead}><h2>Discord-ролі Статика</h2><Link className="btn subtle" href="/discord/static">До Статика →</Link></div>
       <p className={styles.muted}>Налаштування змінюють тільки адміністратори або власник сервера. РЛ керує Статиком, але не може змінити власні повноваження.</p>
-      <p className={styles.muted}>Якщо роль учасника видали вручну людині, яка не прийняла правила Статика, бот автоматично зніме цю роль. Інші ролі та роль РЛ ця перевірка не змінює.</p>
       {error ? <div className="notice panel error-note" role="alert">{error}</div> : null}
       {notice ? <div className="notice panel success" role="status">{notice}</div> : null}
       {!data ? !error ? <p>Завантаження ролей Discord-сервера…</p> : null : <>

@@ -1,5 +1,4 @@
-@layer theme {
-  /* =========================================================
+/* =========================================================
    ДИЗАЙН-ТОКЕНИ — Mistblossom Vanguard
 
    Збережена тепла нічна палітра й бурштиновий акцент, але файл
@@ -7,49 +6,48 @@
    реально споживає поточний dashboard.
    ========================================================= */
 
-  :root {
-    /* ---------- Основа: тепла нічна база ---------- */
-    --c-base-900: #0c0a07; /* найглибший фон, підвал */
-    --c-base-850: #100d0a;
-    --c-base-700: #1a1511; /* підняті поверхні */
-    --c-base-500: #2c231b; /* ховер, активні поверхні */
-    --c-base-400: #3a2e24; /* межі, розділювачі */
+:root {
+  /* ---------- Основа: тепла нічна база ---------- */
+  --c-base-900: #0c0a07; /* найглибший фон, підвал */
+  --c-base-850: #100d0a;
+  --c-base-700: #1a1511; /* підняті поверхні */
+  --c-base-500: #2c231b; /* ховер, активні поверхні */
+  --c-base-400: #3a2e24; /* межі, розділювачі */
 
-    /* ---------- Акцент: бурштин ---------- */
-    --c-accent-100: #ffe6cd;
-    --c-accent-200: #ffc890;
-    --c-accent-300: #ffb26a;
-    --c-accent-400: #ff9b55;
-    --c-accent-500: #ff7a2f;
-    --c-accent-600: #d86324;
+  /* ---------- Акцент: бурштин ---------- */
+  --c-accent-100: #ffe6cd;
+  --c-accent-200: #ffc890;
+  --c-accent-300: #ffb26a;
+  --c-accent-400: #ff9b55;
+  --c-accent-500: #ff7a2f;
+  --c-accent-600: #d86324;
 
-    /* ---------- Текст ---------- */
-    --c-ink-100: #fff6ec;
-    --c-ink-200: #e6e1d8;
-    --c-ink-300: #b8ada0;
-    --c-ink-400: #9c948a;
-    --c-ink-500: #756b5e;
+  /* ---------- Текст ---------- */
+  --c-ink-100: #fff6ec;
+  --c-ink-200: #e6e1d8;
+  --c-ink-300: #b8ada0;
+  --c-ink-400: #9c948a;
+  --c-ink-500: #756b5e;
 
-    /* ---------- Статуси, зведені до теплої бази ---------- */
-    --c-success: #7cc48f;
-    --c-info: #79a6d8;
-    --c-warning: #e8b34a;
-    --c-danger: #e0705f;
+  /* ---------- Статуси, зведені до теплої бази ---------- */
+  --c-success: #7cc48f;
+  --c-info: #79a6d8;
+  --c-warning: #e8b34a;
+  --c-danger: #e0705f;
 
-    /* ---------- Ролі WoW ---------- */
-    --c-role-tank: #79a6d8;
-    --c-role-healer: #7cc48f;
-    --c-role-dps: #e0705f;
+  /* ---------- Ролі WoW ---------- */
+  --c-role-tank: #79a6d8;
+  --c-role-healer: #7cc48f;
+  --c-role-dps: #e0705f;
 
-    /* ---------- Складності рейду ---------- */
-    --c-diff-mythic: #c08adf;
-    --c-diff-heroic: #79a6d8;
-    --c-diff-normal: #7cc48f;
+  /* ---------- Складності рейду ---------- */
+  --c-diff-mythic: #c08adf;
+  --c-diff-heroic: #79a6d8;
+  --c-diff-normal: #7cc48f;
 
-    /* ---------- Точки зламу ----------
+  /* ---------- Точки зламу ----------
      CSS не дозволяє var() у @media, тому це довідка, а не токени.
-     Спільні точки переходу каркаса; локальні компоненти можуть
-     мати власні переходи, коли їхній вміст перестає вміщуватись:
+     Уся адаптивність сайту зведена до чотирьох ширин:
 
        1000px — бічна колонка йде під контент (page-layout, side-stack)
         860px — багатоколонкові сітки стають одноколонковими
@@ -59,185 +57,166 @@
      Desktop workspace починається з 1001px; мобільна навігація
      має окремий компактний режим до 1000px. */
 
-    /* ---------- Текст на кольорових підкладках ----------
+  /* ---------- Текст на кольорових підкладках ----------
      Ці значення повторювались по 3–15 разів у кожному доменному
      файлі. Тепер вони мають імена, і зміна відтінку статусу — одна
      правка тут, а не пошук по 15 стилях. */
-    --text-on-accent: #1c1208;
-    --text-on-warning: #f4d79a;
-    --text-on-danger: #ffbdb1;
-    --text-on-success: #b6e2c3;
+  --text-on-accent: #1c1208;
+  --text-on-warning: #f4d79a;
+  --text-on-danger: #ffbdb1;
+  --text-on-success: #b6e2c3;
 
-    /* ---------- Підкладки статусів ----------
+  /* ---------- Підкладки статусів ----------
      Однакові трійки «межа / фон / м'який фон» для сповіщень,
      чипів і карток. Раніше кожен файл писав свою rgba(). */
-    --tint-warning-border: rgba(232, 179, 74, 0.28);
-    --tint-warning-bg: rgba(232, 179, 74, 0.08);
-    --tint-danger-border: rgba(224, 112, 95, 0.28);
-    --tint-danger-bg: rgba(224, 112, 95, 0.08);
-    --tint-success-border: rgba(124, 196, 143, 0.28);
-    --tint-success-bg: rgba(124, 196, 143, 0.08);
+  --tint-warning-border: rgba(232, 179, 74, 0.28);
+  --tint-warning-bg: rgba(232, 179, 74, 0.08);
+  --tint-danger-border: rgba(224, 112, 95, 0.28);
+  --tint-danger-bg: rgba(224, 112, 95, 0.08);
+  --tint-success-border: rgba(124, 196, 143, 0.28);
+  --tint-success-bg: rgba(124, 196, 143, 0.08);
 
-    /* ---------- Брендовий колір інтеграції ---------- */
-    --c-discord: #5865f2;
+  /* ---------- Брендовий колір інтеграції ---------- */
+  --c-discord: #5865f2;
 
-    /* =======================================================
+  /* =======================================================
      СЕМАНТИЧНИЙ ШАР — ним і треба користуватися у стилях
      ======================================================= */
 
-    --surface: rgba(34, 27, 21, 0.72);
-    --surface-raised: rgba(44, 35, 27, 0.85);
-    --surface-hover: rgba(255, 155, 85, 0.06);
-    --surface-sunken: rgba(12, 10, 7, 0.55);
-    --surface-panel: var(--surface);
+  --surface: rgba(34, 27, 21, 0.72);
+  --surface-raised: rgba(44, 35, 27, 0.85);
+  --surface-hover: rgba(255, 155, 85, 0.06);
+  --surface-sunken: rgba(12, 10, 7, 0.55);
+  --surface-panel: var(--surface);
 
-    --border-subtle: rgba(255, 226, 196, 0.08);
-    --border: rgba(255, 226, 196, 0.13);
-    --border-strong: rgba(255, 178, 106, 0.28);
+  --border-subtle: rgba(255, 226, 196, 0.08);
+  --border: rgba(255, 226, 196, 0.13);
+  --border-strong: rgba(255, 178, 106, 0.28);
 
-    --text-strong: var(--c-ink-100);
-    --text-body: var(--c-ink-200);
-    --text-soft: var(--c-ink-300);
-    --text-muted: var(--c-ink-400);
-    --text-faint: var(--c-ink-500);
-    /* compatibility aliases for older isolated modules */
-    --text: var(--text-body);
+  --text-strong: var(--c-ink-100);
+  --text-body: var(--c-ink-200);
+  --text-soft: var(--c-ink-300);
+  --text-muted: var(--c-ink-400);
+  --text-faint: var(--c-ink-500);
+  /* compatibility aliases for older isolated modules */
+  --text: var(--text-body);
 
-    --accent-soft: rgba(255, 155, 85, 0.12);
-    --accent-ring: rgba(255, 155, 85, 0.35);
-    --accent-gradient: linear-gradient(
-      135deg,
-      var(--c-accent-300),
-      var(--c-accent-600)
-    );
+  --accent-soft: rgba(255, 155, 85, 0.12);
+  --accent-ring: rgba(255, 155, 85, 0.35);
+  --accent-gradient: linear-gradient(135deg, var(--c-accent-300), var(--c-accent-600));
 
-    /* ---------- Тіні ---------- */
-    --shadow-sm: 0 8px 20px -14px rgba(0, 0, 0, 0.7);
-    --shadow-md: 0 12px 28px -14px rgba(0, 0, 0, 0.75);
-    --shadow-lg: 0 24px 50px -24px rgba(0, 0, 0, 0.9);
+  /* ---------- Тіні ---------- */
+  --shadow-sm: 0 8px 20px -14px rgba(0, 0, 0, 0.7);
+  --shadow-md: 0 12px 28px -14px rgba(0, 0, 0, 0.75);
+  --shadow-lg: 0 24px 50px -24px rgba(0, 0, 0, 0.9);
 
-    /* ---------- Типографічна шкала ----------
+  /* ---------- Типографічна шкала ----------
      Значення відповідають найчастішим поточним розмірам. Винесення
      у токени не змінює геометрію, але прибирає локальне розходження. */
-    --font-size-2xs: 0.6875rem;
-    --font-size-xs: 0.75rem;
-    --font-size-caption: 0.75rem;
-    --font-size-sm: 0.75rem;
-    --font-size-meta: 0.8125rem;
-    --font-size-ui: 0.8125rem;
-    --font-size-ui-lg: 0.875rem;
-    --font-size-body-sm: 0.875rem;
-    --font-size-body: 0.9375rem;
-    --font-size-base: 1rem;
+  --font-size-2xs: 0.66rem;
+  --font-size-xs: 0.68rem;
+  --font-size-caption: 0.7rem;
+  --font-size-sm: 0.72rem;
+  --font-size-meta: 0.76rem;
+  --font-size-ui: 0.78rem;
+  --font-size-ui-lg: 0.8rem;
+  --font-size-body-sm: 0.82rem;
+  --font-size-body: 0.9rem;
+  --font-size-base: 1rem;
 
-    --font-weight-ui: 500;
-    --font-weight-medium: 600;
-    --font-weight-semibold: 650;
-    --font-weight-bold: 700;
-    --font-weight-display: 750;
-    --font-weight-heavy: 800;
+  --font-weight-ui: 500;
+  --font-weight-medium: 600;
+  --font-weight-semibold: 650;
+  --font-weight-bold: 700;
+  --font-weight-display: 750;
+  --font-weight-heavy: 800;
 
-    --line-height-tight: 1.35;
-    --line-height-compact: 1.45;
-    --line-height-body: 1.5;
-    --line-height-relaxed: 1.55;
-    --line-height-copy: 1.6;
+  --line-height-tight: 1.35;
+  --line-height-compact: 1.45;
+  --line-height-body: 1.5;
+  --line-height-relaxed: 1.55;
+  --line-height-copy: 1.6;
 
-    /* ---------- Відступи: шкала з кроком 4px ---------- */
-    --space-3xs: 2px;
-    --space-2xs: 4px;
-    --space-xs: 8px;
-    --space-sm: 12px;
-    --space-md: 16px;
-    --space-lg: 24px;
-    --space-xl: 32px;
-    --space-3xl: 64px;
+  /* ---------- Відступи: шкала з кроком 4px ---------- */
+  --space-3xs: 2px;
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-3xl: 64px;
 
-    /* ---------- Ритм сторінки ---------- */
-    --gap-stack: var(--space-md);
-    --gap-grid: var(--space-lg);
-    --pad-card: var(--panel-padding);
-    --pad-card-compact: var(--space-md);
-    --pad-section: clamp(var(--space-xl), 5vw, var(--space-3xl));
-    --pad-page-inline: clamp(var(--space-md), 4vw, var(--space-xl));
+  /* ---------- Ритм сторінки ---------- */
+  --gap-stack: var(--space-md);
+  --gap-grid: var(--space-lg);
+  --gap-section: var(--gap-grid);
+  --pad-card: var(--space-lg);
+  --pad-card-compact: var(--space-md);
+  --pad-section: clamp(var(--space-xl), 5vw, var(--space-3xl));
+  --pad-page-inline: clamp(var(--space-md), 4vw, var(--space-xl));
 
-    /* ---------- Радіуси ---------- */
-    --radius-sm: 8px;
-    --radius-md: 14px;
-    --radius-lg: 20px;
-    --radius-pill: 999px;
-    --control-radius: 10px;
+  /* ---------- Радіуси ---------- */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+  --control-radius: 10px;
 
-    /* ---------- Рух ---------- */
-    --dur-instant: 0.12s;
-    --dur-fast: 0.2s;
-    --dur-base: 0.3s;
-    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  /* ---------- Рух ---------- */
+  --dur-instant: 0.12s;
+  --dur-fast: 0.2s;
+  --dur-base: 0.3s;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
-    /* ---------- Шрифти та z-index ----------
+  /* ---------- Шрифти та z-index ----------
      Без зовнішнього font fetch: основний UI використовує нативний системний
      sans-stack, брендові заголовки — стабільний serif fallback. */
-    --font-sans:
-      system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-      Helvetica, Arial, sans-serif;
-    --font-display: var(--font-sans);
-    --font-brand: Georgia, "Times New Roman", serif;
-    --font-mono:
-      ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-      "Liberation Mono", monospace;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-display: var(--font-sans);
+  --font-brand: Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
-    --z-dropdown: 1000;
-    --z-navbar: 9999;
-    --z-toast: 10500;
+  --z-dropdown: 1000;
+  --z-navbar: 9999;
+  --z-toast: 10500;
 
-    /* ---------- Фон сторінки ---------- */
-    --site-bg-0: var(--c-base-900);
-    --site-bg-1: var(--c-base-850);
-    --site-bg-2: var(--c-base-700);
+  /* ---------- Фон сторінки ---------- */
+  --site-bg-0: var(--c-base-900);
+  --site-bg-1: var(--c-base-850);
+  --site-bg-2: var(--c-base-700);
 
-    /* =======================================================
+  /* =======================================================
      ГЕОМЕТРІЯ НАВІГАЦІЇ ДАШБОРДУ
      Мобільна навігація використовує власну компактну шапку.
      Desktop geometry живе у desktop.css/nav.css.
      ======================================================= */
-    /* Геометрія мобільної навігації */
-    --nav-h: 56px;
-    --nav-inset: 10px;
-    --nav-clearance: 12px;
-    --nav-space: calc(
-      var(--nav-h) + var(--nav-inset) + var(--nav-clearance) +
-        env(safe-area-inset-top, 0px)
-    );
+  /* Геометрія мобільної навігації */
+  --nav-h: 54px;
+  --nav-inset: 16px;
+  --nav-space: calc(var(--nav-h) + var(--nav-inset) * 2);
 
-    --nav-surface: rgba(26, 21, 17, 0.82);
-    --nav-surface-solid: rgba(18, 15, 12, 0.95);
-    --nav-panel: rgba(20, 16, 13, 0.97);
-    --nav-line: var(--border);
-    --nav-shadow: var(--shadow-lg), 0 2px 12px rgba(0, 0, 0, 0.35);
+  --nav-surface: rgba(26, 21, 17, 0.82);
+  --nav-surface-solid: rgba(18, 15, 12, 0.95);
+  --nav-panel: rgba(20, 16, 13, 0.97);
+  --nav-line: var(--border);
+  --nav-shadow: var(--shadow-lg), 0 2px 12px rgba(0, 0, 0, 0.35);
 
-    /* ---------- Ширина контенту ---------- */
-    --page-max: 1520px;
-    --page-gutter: clamp(16px, 2vw, 28px);
-    --page-gap: 20px;
-    --section-gap: 16px;
-    --card-radius: var(--radius-md);
-    --panel-padding: 20px;
-    --control-height: 44px;
-    --control-height-sm: 40px;
-    --control-font-size: 1rem;
-    --control-pad-x: 16px;
-    --sidebar-width: 272px;
-    --hero-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-    --hero-padding: clamp(var(--space-md), 2.4vw, var(--space-xl));
-    --hero-background:
-      linear-gradient(110deg, rgba(255, 155, 85, 0.05), transparent 42%),
-      rgba(25, 20, 16, 0.82);
-    --control-border: rgba(255, 155, 85, 0.16);
-    --control-disabled-opacity: 0.55;
+  /* ---------- Ширина контенту ---------- */
+  --page-max: 1520px;
+  --page-gutter: clamp(16px, 2vw, 28px);
+  --page-gap: 20px;
+  --section-gap: 16px;
+  --card-radius: var(--radius-md);
+  --panel-padding: 20px;
+  --control-height: 42px;
+  --control-height-sm: 34px;
+  --control-pad-x: 16px;
+  --sidebar-width: 272px;
 
-    /* ---------- Короткий alias для фокусу/форм ---------- */
-    --orange-main: var(--c-accent-400);
-  }
+  /* ---------- Короткий alias для фокусу/форм ---------- */
+  --orange-main: var(--c-accent-400);
 }

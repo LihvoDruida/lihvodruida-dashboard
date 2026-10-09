@@ -20,6 +20,7 @@ import { resolveAccessGroupFromDiscord } from "@/lib/accessGroups";
 import { moderateApplication } from "@/lib/moderation";
 import { explainAutoroleInteractionError, handleAutoroleInteraction } from "@/lib/discordAutoroles";
 import { applyRecommendedNicknameFix } from "@/lib/discordNicknameWarnings";
+import { beginInteractionOutbox, finishInteractionOutbox } from "@/lib/discordInteractionOutbox";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -225,7 +226,7 @@ function discordSignatureDiagnostics(request: NextRequest, rawBody: string, fall
   };
 }
 
-export async function POST(request: NextRequest) {
+async function processInteraction(request: NextRequest, onClaimed: (id: string) => void) {
   const oversized = assertRequestBodySize(request, 256 * 1024);
   if (oversized) return oversized;
 
@@ -294,6 +295,22 @@ export async function POST(request: NextRequest) {
   if (interaction?.type !== 3) {
     logDashboardEvent("warn", "discord.interaction.unsupported_type", request, { interactionType: interaction?.type });
     return ephemeral("Цей тип Discord interaction не підтримується цією панеллю.");
+  }
+
+  // Signed request + bearer + matching interaction ID are validated above.
+  // The transactional claim carries an encrypted short-lived webhook token.
+  // Duplicates may fetch the original stored result but can never execute again.
+  try {
+    const claim = await beginInteractionOutbox(interactionId, String(interaction?.token || ""));
+    if (!claim.claimed) {
+      logDashboardEvent("info", "discord.interaction.duplicate", request, { interactionId }, { category: "security" });
+      if (claim.result) return json(claim.result);
+      return NextResponse.json({ pending: true }, { status: 202, headers: noStoreHeaders() });
+    }
+    onClaimed(interactionId);
+  } catch (error) {
+    logDashboardEvent("error", "discord.interaction.outbox_unavailable", request, { message: safeErrorMessage(error) }, { category: "security" });
+    return new NextResponse("interaction outbox unavailable", { status: 503, headers: noStoreHeaders() });
   }
 
   const customId = String(interaction?.data?.custom_id || "");
@@ -646,4 +663,36 @@ export async function POST(request: NextRequest) {
     logDashboardEvent("error", "discord.rules.action_failed", request, { message: safeErrorMessage(error), guildId, userId, action: effectiveParsed.action });
     return finishDecision(interaction, "❌ Не вдалося виконати дію. Спробуй ще раз пізніше або звернись до гільдмайстра.");
   }
+}
+
+// Every response after a successful claim is durably recorded before the bot
+// sees the processing result. The bot only PATCHes webhook responses from the
+// shared outbox, allowing another replica to resume delivery after a restart.
+export async function POST(request: NextRequest) {
+  let claimedId = "";
+  let response: NextResponse;
+  try {
+    response = await processInteraction(request, (id) => { claimedId = id; });
+  } catch (error) {
+    if (!claimedId) throw error;
+    logDashboardEvent("error", "discord.interaction.processing_failed", request, { message: safeErrorMessage(error) }, { category: "action" });
+    response = ephemeral("⚠️ Не вдалося виконати дію. Перевірте результат у панелі та зверніться до офіцера.");
+  }
+  if (claimedId) {
+    let result: InteractionResponse;
+    try {
+      result = await response.clone().json() as InteractionResponse;
+      if (!result || typeof result.type !== "number") throw new Error("unexpected interaction result");
+    } catch {
+      result = { type: 4, data: { content: "⚠️ Відповідь недоступна. Перевірте результат у панелі.", components: [] } };
+    }
+    try {
+      await finishInteractionOutbox(claimedId, result);
+    } catch (error) {
+      logDashboardEvent("error", "discord.interaction.outbox_write_failed", request, { message: safeErrorMessage(error), interactionId: claimedId }, { category: "security" });
+      // Do not pretend the response is safely queued if persistence failed.
+      return new NextResponse("interaction delivery persistence unavailable", { status: 503, headers: noStoreHeaders() });
+    }
+  }
+  return response;
 }

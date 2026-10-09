@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { staticChallengeStatus } from "@/lib/staticRules";
-import { checkRateLimit, noStoreHeaders } from "@/lib/security";
+import { checkRateLimit, getClientIp, noStoreHeaders } from "@/lib/security";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
-  const ip = (request.headers.get("x-forwarded-for") || "unknown").split(",")[0].trim();
+  const ip = getClientIp(request);
   if (!checkRateLimit(`static-status:${ip}`, 180, 15 * 60_000).ok) return NextResponse.json({ ok: false }, { status: 429, headers: noStoreHeaders() });
   try {
     const status = await staticChallengeStatus(request.nextUrl.searchParams.get("code") || "", request.nextUrl.searchParams.get("v") || "");

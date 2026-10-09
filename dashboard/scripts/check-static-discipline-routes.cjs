@@ -24,9 +24,9 @@ function build(file, overrides={}){
    },
    '@/lib/discordAdmin':{getDiscordGuildId:()=> '423456789012345678'}
  };
- const loadedModule={exports:{}};
- vm.runInNewContext(code,{module:loadedModule,exports:loadedModule.exports,require:key=>{if(!(key in mocks))throw Error(`Unexpected import ${key}`);return mocks[key]}},{filename:file});
- return {route:loadedModule.exports,flags};
+ const module={exports:{}};
+ vm.runInNewContext(code,{module,exports:module.exports,require:key=>{if(!(key in mocks))throw Error(`Unexpected import ${key}`);return mocks[key]}},{filename:file});
+ return {route:module.exports,flags};
 }
 const req=body=>({json:async()=>body});
 async function test(name,callback){await callback();console.log('PASS',name);count++}

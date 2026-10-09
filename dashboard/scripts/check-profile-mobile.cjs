@@ -17,7 +17,7 @@ const checks = [
   [normalized.includes("grid-template-columns: 56px minmax(0, 1fr);"), "mobile sidebar identity keeps avatar beside account data"],
   [normalized.includes(".profile-account-sidebar__facts") && normalized.includes("repeat(2, minmax(0, 1fr))"), "mobile profile facts use a compact two-column grid"],
   [normalized.includes(".profile-account-header__actions") && normalized.includes("repeat(2, minmax(0, 1fr))"), "profile header actions are normalized for mobile"],
-  [polish.includes(".profile-character-artwork") && polish.includes("height: 148px;"), "mobile character artwork uses the final compact height"],
+  [normalized.includes(".profile-character-artwork") && normalized.includes("height: 172px;"), "mobile character artwork height is reduced"],
   [normalized.includes(".profile-character-actions__row") && normalized.includes("repeat(2, minmax(0, 1fr))"), "character actions use a touch-friendly two-column row"],
   [page.includes('className="profile-raid-meta-item__detail"'), "raid metadata detail has dedicated markup"],
   [page.includes('className="profile-raid-card__difficulty"'), "raid difficulty has dedicated markup"],

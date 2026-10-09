@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createStaticChallenge, getStaticInvite, getStaticSettings, inviteActive } from "@/lib/staticRules";
-import { assertRequestBodySize, checkRateLimit, noStoreHeaders, verifyTrustedOrigin } from "@/lib/security";
+import { createStaticChallenge, getStaticInvite, getStaticSettings, inviteActive, StaticChallengeRateLimitError } from "@/lib/staticRules";
+import { assertRequestBodySize, checkRateLimit, getClientIp, noStoreHeaders, verifyTrustedOrigin } from "@/lib/security";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,14 +23,15 @@ export async function POST(request: NextRequest) {
   const size = assertRequestBodySize(request, 2048);
   if (size) return size;
   if (!verifyTrustedOrigin(request)) return NextResponse.json({ ok: false, error: "Неприпустиме джерело запиту." }, { status: 403, headers: headers() });
-  const ip = (request.headers.get("x-forwarded-for") || "unknown").split(",")[0].trim();
+  const ip = getClientIp(request);
   if (!checkRateLimit(`static-challenge:${ip}`, 8, 15 * 60_000).ok) return NextResponse.json({ ok: false, error: "Надто багато спроб. Зачекай." }, { status: 429, headers: headers() });
   const body = await request.json().catch(() => ({}));
   if (body?.agree !== true || typeof body?.token !== "string") return NextResponse.json({ ok: false, error: "Потрібне підтвердження згоди." }, { status: 400, headers: headers() });
   try {
-    const challenge = await createStaticChallenge(body.token);
+    const challenge = await createStaticChallenge(body.token, ip);
     return NextResponse.json({ ok: true, ...challenge }, { headers: headers() });
   } catch (error) {
+    if (error instanceof StaticChallengeRateLimitError) return NextResponse.json({ ok: false, error: error.message }, { status: 429, headers: noStoreHeaders({ "Retry-After": "900" }) });
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Недійсний токен." }, { status: 400, headers: headers() });
   }
 }

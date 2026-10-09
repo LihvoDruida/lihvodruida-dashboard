@@ -4,15 +4,15 @@ import { validateInteractionComponents } from "@mistblossom/discord-contract";
 /**
  * Клієнт до панелі й до Discord.
  *
- * Схема роботи, і чому вона саме така:
+ * Delivery pipeline:
+ *   1. Verify Ed25519 and atomically persist the signed receipt in the dashboard.
+ *   2. ACK the interaction only after durable persistence completes.
+ *   3. A recoverable worker dispatches the receipt to the existing signed
+ *      interaction handler and stores the result in the shared outbox.
+ *   4. The outbox worker edits the original Discord response.
  *
- *   1. Бот миттєво відповідає Discord «прийнято, думаю» (deferred).
- *   2. Пересилає взаємодію в панель і чекає на відповідь скільки треба.
- *   3. Редагує ту саму відкладену відповідь готовим текстом і компонентами.
- *
- * Крок 3 обовʼязковий. Без нього людина бачить вічне «застосунок думає»:
- * Discord дає 3 секунди на ACK і 15 хвилин на результат, але результат
- * хтось має надіслати. Раніше це робив Cloudflare Worker — тепер бот.
+ * The receipt must reach the dashboard within Discord's three-second ACK
+ * deadline. Once accepted, the worker and outbox survive bot restarts.
  *
  * Для редагування interaction-відповіді bot token не потрібен: Discord
  * авторизує її interaction token-ом. Водночас сам bot container тепер має
@@ -49,14 +49,14 @@ async function fetchWithTimeout(url, options, timeoutMs) {
  * підпис самостійно. Якби вона просто довіряла боту, будь-хто з доступом до
  * внутрішньої мережі міг би надсилати підроблені взаємодії.
  */
-async function callDashboard({ rawBody, signature, timestamp, domain, interactionId }) {
+async function callDashboard({ rawBody, signature, timestamp, domain, interactionId, maxAttempts = MAX_ATTEMPTS }) {
   const token = INTERNAL_TOKEN();
   if (!token) throw new Error("INTERNAL_API_TOKEN не задано");
 
   const url = `${DASHBOARD_URL()}/api/discord/interactions`;
   let lastError = null;
 
-  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     try {
       const response = await fetchWithTimeout(url, {
         method: "POST",
@@ -86,7 +86,7 @@ async function callDashboard({ rawBody, signature, timestamp, domain, interactio
       lastError = error;
     }
 
-    if (attempt < MAX_ATTEMPTS - 1) {
+    if (attempt < maxAttempts - 1) {
       await new Promise((resolve) => setTimeout(resolve, retryDelayMs(attempt)));
     }
   }
@@ -117,7 +117,7 @@ async function patchOriginalResponse(interactionToken, payload) {
   const response = await fetchWithTimeout(url, {
     method: "PATCH",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ ...payload, allowed_mentions: { parse: [] } }),
   }, DISCORD_TIMEOUT_MS);
 
   if (response.ok) return true;
@@ -126,63 +126,150 @@ async function patchOriginalResponse(interactionToken, payload) {
   throw new Error(`Discord відхилив відповідь ${response.status}: ${text.slice(0, 300)}`);
 }
 
-/**
- * Повний цикл: панель → Discord.
- *
- * Якщо щось падає, людина має побачити зрозумілий текст, а не вічне «думаю».
- * Тому будь-яка помилка все одно закінчується спробою написати, що сталося.
- */
-export async function completeInteraction({ rawBody, signature, timestamp, interaction, domain }) {
-  const interactionToken = String(interaction?.token || "");
-  if (!interactionToken) throw new Error("У взаємодії немає token");
+const INGRESS_ENDPOINT = "/api/internal/discord/interaction-ingress";
+let ingressDraining = false;
 
+// The ACK is returned only after durable persistence; keep well below Discord's
+// three-second deadline. A failed persistence never schedules the action.
+export async function enqueueVerifiedInteraction({ rawBody, signature, timestamp, interaction, domain }) {
+  const response = await fetchWithTimeout(`${DASHBOARD_URL()}${INGRESS_ENDPOINT}`, {
+    method: "POST",
+    headers: { ...outboxHeaders(), "content-type": "application/json" },
+    body: JSON.stringify({ id: String(interaction?.id || ""), rawBody, signature, timestamp, domain: String(domain || "unknown") }),
+  }, 1_800);
+  if (!response.ok) throw new Error(`Discord ingress HTTP ${response.status}`);
+  const data = await response.json();
+  if (!data?.ok) throw new Error("Discord ingress did not confirm persistence");
+  return data;
+}
+
+// Reuse the dashboard's existing signed Discord route. Its shared outbox claim
+// ensures that an uncertain delivery response cannot replay the business action.
+export async function drainInteractionIngress() {
+  if (ingressDraining) return;
+  ingressDraining = true;
   try {
-    const result = await callDashboard({
-      rawBody,
-      signature,
-      timestamp,
-      domain,
-      interactionId: interaction?.id,
-    });
-
-    const payload = messagePayloadFrom(result);
-    if (!payload) {
-      logger.warn("Панель не повернула тіла відповіді", { domain });
-      await patchOriginalResponse(interactionToken, {
-        content: "⚠️ Панель не повернула відповіді. Спробуйте ще раз або відкрийте сайт.",
-        components: [],
-      });
-      return;
-    }
-
-    // Перевіряємо набір компонентів ДО відправки. Дубль custom_id Discord
-    // відхиляє помилкою 400, і колись це вбивало весь приватний пульт
-    // голосування: людина бачила текст без жодної кнопки.
-    if (payload.components) {
-      const check = validateInteractionComponents(payload.components);
-      if (!check.ok) {
-        logger.error("Панель повернула некоректні компоненти", {
-          domain,
-          duplicates: check.duplicates,
-          tooLong: check.tooLong,
-          rows: check.rows,
+    const response = await fetchWithTimeout(`${DASHBOARD_URL()}${INGRESS_ENDPOINT}`, {
+      headers: outboxHeaders(),
+    }, DASHBOARD_TIMEOUT_MS);
+    if (!response.ok) throw new Error(`ingress fetch HTTP ${response.status}`);
+    const data = await response.json();
+    for (const job of Array.isArray(data?.jobs) ? data.jobs.slice(0, 10) : []) {
+      if (!/^\d{16,25}$/.test(String(job?.id || "")) || !job.leaseId) continue;
+      let success = false;
+      let permanent = false;
+      try {
+        await callDashboard({
+          rawBody: job.rawBody, signature: job.signature, timestamp: job.timestamp,
+          domain: job.domain, interactionId: job.id, maxAttempts: 1,
         });
-        // Краще показати текст без кнопок, ніж отримати 400 і не показати
-        // взагалі нічого.
-        delete payload.components;
+        success = true;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        permanent = /Панель відповіла 4(00|01|03|04|13):/.test(message);
+        logger.warn("Discord ingress dispatch failed", { interactionId: job.id, permanent, error: message.slice(0, 160) });
+      }
+      try {
+        const ack = await fetchWithTimeout(`${DASHBOARD_URL()}${INGRESS_ENDPOINT}`, {
+          method: "PATCH",
+          headers: { ...outboxHeaders(), "content-type": "application/json" },
+          body: JSON.stringify({ id: job.id, leaseId: job.leaseId, success, permanent }),
+        }, DASHBOARD_TIMEOUT_MS);
+        if (!ack.ok) throw new Error(`ingress settlement HTTP ${ack.status}`);
+      } catch (error) {
+        logger.warn("Discord ingress settlement failed", { interactionId: job.id, error: error instanceof Error ? error.message : String(error) });
       }
     }
-
-    await patchOriginalResponse(interactionToken, payload);
-    logger.debug("Взаємодію завершено", { domain });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    logger.error("Збій завершення взаємодії", { domain, error: message });
-    await patchOriginalResponse(interactionToken, {
-      content: "⚠️ Не вдалося обробити дію. Спробуйте ще раз за хвилину або відкрийте панель на сайті.",
-      components: [],
-    }).catch(() => null);
+    logger.warn("Discord ingress poll deferred", { error: error instanceof Error ? error.message : String(error) });
+  } finally {
+    ingressDraining = false;
   }
+}
+
+export function startInteractionIngressWorker() {
+  const interval = setInterval(() => { void drainInteractionIngress(); }, 3_000);
+  interval.unref?.();
+  void drainInteractionIngress();
+  return () => clearInterval(interval);
+}
+
+const OUTBOX_ENDPOINT = "/api/internal/discord/interaction-deliveries";
+let outboxDraining = false;
+
+function outboxHeaders() {
+  const token = INTERNAL_TOKEN();
+  if (!token) throw new Error("INTERNAL_API_TOKEN не задано");
+  return {
+    authorization: `Bearer ${token}`,
+    "x-mistblossom-source": "bot",
+    "cache-control": "no-store",
+  };
+}
+
+// The route is only reachable inside the Compose network and authenticates the
+// bot. Interaction tokens never appear in logs, paths or query strings.
+async function acknowledgeDelivery(job, success, permanent = false) {
+  const response = await fetchWithTimeout(`${DASHBOARD_URL()}${OUTBOX_ENDPOINT}`, {
+    method: "POST",
+    headers: { ...outboxHeaders(), "content-type": "application/json" },
+    body: JSON.stringify({ id: job.id, leaseId: job.leaseId, success, permanent }),
+  }, DASHBOARD_TIMEOUT_MS);
+  if (!response.ok) throw new Error(`outbox ack HTTP ${response.status}`);
+}
+
+export async function drainInteractionOutbox() {
+  if (outboxDraining) return;
+  outboxDraining = true;
+  try {
+    const response = await fetchWithTimeout(`${DASHBOARD_URL()}${OUTBOX_ENDPOINT}`, {
+      method: "GET",
+      headers: outboxHeaders(),
+    }, DASHBOARD_TIMEOUT_MS);
+    if (!response.ok) throw new Error(`outbox fetch HTTP ${response.status}`);
+    const body = await response.json();
+    for (const job of Array.isArray(body?.jobs) ? body.jobs.slice(0, 10) : []) {
+      if (!/^\d{16,25}$/.test(String(job?.id || "")) || !job?.leaseId || !job?.interactionToken) continue;
+      let payload = messagePayloadFrom(job.result) || {
+        content: "⚠️ Відповідь не надійшла. Перевірте стан дії на сайті.",
+        components: [],
+      };
+      if (payload.components) {
+        const valid = validateInteractionComponents(payload.components);
+        if (!valid.ok) payload = { ...payload, components: [] };
+      }
+      let success = false;
+      let permanent = false;
+      try {
+        await patchOriginalResponse(job.interactionToken, payload);
+        success = true;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        // Invalid/expired interaction webhook tokens cannot be repaired by
+        // retrying. Retry rate limits, network failures and Discord 5xx only.
+        permanent = /Discord відхилив відповідь (400|401|403|404):/.test(message);
+        logger.warn("Discord outbox delivery failed", { interactionId: job.id, permanent, error: message.slice(0, 160) });
+      }
+      try {
+        await acknowledgeDelivery(job, success, permanent);
+      } catch (error) {
+        // The lease expires and another worker safely retries. PATCH of
+        // @original replaces the same message and is naturally idempotent.
+        logger.warn("Discord outbox settlement unavailable", { interactionId: job.id, error: error instanceof Error ? error.message : String(error) });
+      }
+    }
+  } catch (error) {
+    logger.warn("Discord outbox poll deferred", { error: error instanceof Error ? error.message : String(error) });
+  } finally {
+    outboxDraining = false;
+  }
+}
+
+export function startInteractionOutboxWorker() {
+  const interval = setInterval(() => { void drainInteractionOutbox(); }, 5_000);
+  interval.unref?.();
+  void drainInteractionOutbox();
+  return () => clearInterval(interval);
 }
 
 export async function notifyDiscordMemberJoined(event) {

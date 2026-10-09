@@ -1,4 +1,4 @@
-@layer pages {/* =========================================================
+/* =========================================================
    APPLICATIONS — recruitment workbench
    Scoped to .applications-page so the rest of the dashboard keeps its layout.
    ========================================================= */
@@ -83,7 +83,7 @@
   display: grid;
   gap: var(--space-sm);
   min-width: 0;
-  padding: var(--space-md);
+  padding: 16px;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   background: color-mix(in srgb, var(--surface-sunken) 88%, transparent);
@@ -303,7 +303,7 @@
 
 .application-card__number {
   display: block;
-  margin-bottom: var(--space-3xs);
+  margin-bottom: 2px;
   color: var(--text-faint);
   font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-display);
@@ -428,7 +428,7 @@
   display: grid;
   gap: 3px;
   min-width: 0;
-  padding: var(--space-xs);
+  padding: 8px;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
 }
@@ -517,7 +517,7 @@
 
 @media (max-width: 620px) {
   .applications-hero,
-  .applications-workbench { padding: var(--space-md); }
+  .applications-workbench { padding: 16px; }
   .applications-command__grid,
   .applications-page .applications-live-filters,
   .application-facts,
@@ -529,7 +529,7 @@
   .application-card__footer { align-items: stretch; flex-direction: column; }
   .applications-access-chip { width: 100%; }
   .application-card__header { grid-template-columns: minmax(0, 1fr); }
-  .application-card__main { padding: var(--space-md); }
+  .application-card__main { padding: 16px; }
   .application-state { align-self: flex-start; }
   .applications-command__footer small { width: 100%; margin-left: 14px; }
 }
@@ -537,8 +537,8 @@
 .application-delete-row {
   display: grid;
   gap: 7px;
-  padding-top: var(--space-sm);
-  margin-top: var(--space-sm);
+  padding-top: 12px;
+  margin-top: 12px;
   border-top: 1px solid color-mix(in srgb, var(--c-danger) 22%, transparent);
 }
 
@@ -550,5 +550,3 @@
   color: var(--text-muted);
   line-height: var(--line-height-compact);
 }
-}
-

@@ -1,16 +1,382 @@
-/* Desktop changes shared parameters; components keep ownership of their rules. */
-@layer theme {
-  @media (min-width: 1001px) {
-    :root {
-      --nav-h: 64px;
-      --nav-inset: 12px;
-      --control-height: 42px;
-      --control-height-sm: 34px;
-      --control-font-size: 0.875rem;
-      --pad-card: 20px;
-      --hero-columns: minmax(0, 1.7fr) minmax(280px, 0.7fr);
-      --hero-padding: 22px 24px;
-    }
+/* =========================================================
+   DESKTOP — єдиний робочий каркас Mistblossom Vanguard
+
+   Цей файл навмисно підключається останнім. Доменні файли описують
+   зміст конкретних сторінок, а тут задається ОДНА геометрія ПК:
+   ширина полотна, ритм секцій, картки, контролі, таблиці й профіль.
+   ========================================================= */
+
+@media (min-width: 1001px) {
+  body {
+    padding-top: 88px;
+    background:
+      radial-gradient(circle at 10% -8%, rgba(200, 155, 60, 0.11), transparent 32rem),
+      radial-gradient(circle at 90% 0%, rgba(255, 122, 47, 0.055), transparent 30rem),
+      linear-gradient(180deg, #0d0b08 0%, var(--site-bg-1) 48%, #15110d 100%);
+  }
+
+  /* ---------- Єдина ширина та відступ сторінок ---------- */
+  main,
+.container,
+.app-page,
+.admin-container {
+    width: 100%;
+    max-width: var(--page-max);
+    margin-inline: auto;
+    padding: 24px var(--page-gutter) 64px;
+  }
+
+  .container .container,
+.app-page .dashboard-shell,
+.container .dashboard-shell,
+main .dashboard-shell {
+    max-width: none;
+    padding: 0;
+  }
+
+  .dashboard-shell,
+.content-shell,
+.app-page-stack,
+[class$="-shell"],
+[class*="-shell "] {
+    gap: var(--page-gap);
+  }
+
+  .page-section,
+.profile-card,
+.content-form-section,
+.raid-form-section,
+.discord-management-section {
+    gap: var(--section-gap);
+  }
+
+  /* ---------- Поверхні: одна товщина, радіус і тінь ---------- */
+  .panel {
+    border-radius: var(--card-radius);
+    border-color: rgba(255, 226, 196, 0.1);
+    background: rgba(29, 23, 18, 0.76);
+    box-shadow:
+      0 14px 34px -27px rgba(0, 0, 0, 0.96),
+      inset 0 1px 0 rgba(255, 255, 255, 0.018);
+  }
+
+  /* Fallback для доменних surface-класів. :where() має нульову
+     специфічність, тому свідомий стиль конкретного компонента завжди
+     сильніший за глобальну нормалізацію. */
+  :where(
+    [class$="-card"]:not([class*="nav"]),
+    [class*="-card "]:not([class*="nav"]),
+    [class$="__card"],
+    [class*="__card "],
+    [class$="-panel"]:not(.dashboard-list-panel),
+    [class*="-panel "]:not(.dashboard-list-panel),
+    [class$="__panel"],
+    [class*="__panel "],
+    [class$="-box"],
+    [class*="-box "]
+  ) {
+    border-radius: var(--card-radius);
+    border-color: rgba(255, 226, 196, 0.1);
+  }
+
+  .panel:not(:where([class*="hero"])) {
+    padding: var(--panel-padding);
+  }
+
+
+  :where(.panel) :where(
+    .panel,
+    [class$="-card"],
+    [class*="-card "],
+    [class$="__card"],
+    [class*="__card "]
+  ) {
+    border-color: rgba(255, 226, 196, 0.075);
+    background: rgba(12, 10, 7, 0.3);
+    box-shadow: none;
+  }
+
+  /* ---------- Заголовок сторінки ---------- */
+  .hero,
+.dashboard-hero,
+[class$="-hero"]:not(:where([class*="landing"])),
+[class*="-hero "]:not(:where([class*="landing"])) {
+    grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.7fr);
+    gap: var(--space-lg);
+    min-height: 0;
+    padding: 22px 24px;
+    border-radius: var(--card-radius);
+    border-color: rgba(255, 178, 106, 0.14);
+    background:
+      linear-gradient(110deg, rgba(255, 155, 85, 0.05), transparent 42%),
+      rgba(25, 20, 16, 0.82);
+    box-shadow:
+      0 16px 38px -30px rgba(0, 0, 0, 0.98),
+      inset 0 1px 0 rgba(255, 255, 255, 0.024);
+  }
+
+  .hero-copy h1,
+.dashboard-hero__copy h1,
+[class$="-hero__copy"] h1,
+[class*="-hero__copy "] h1 {
+    margin-bottom: 6px;
+    font-size: clamp(1.55rem, 1.9vw, 2.1rem);
+    line-height: 1.12;
+  }
+
+  .eyebrow,
+.app-state-eyebrow,
+[class$="__eyebrow"],
+[class*="__eyebrow "],
+[class$="-eyebrow"],
+[class*="-eyebrow "] {
+    padding: 3px 9px;
+    margin-bottom: 6px;
+    font-size: 9.5px;
+    letter-spacing: 0.12em;
+  }
+
+  .lead,
+[class$="__lead"],
+[class*="__lead "],
+[class$="-lead"],
+[class*="-lead "] {
+    font-size: var(--font-size-body);
+    line-height: 1.58;
+  }
+
+  /* ---------- Заголовки секцій та action bars ---------- */
+  .section-header,
+.dashboard-list-head,
+.profile-card-head,
+.content-section-head,
+.content-form-section-head {
+    align-items: center;
+    gap: var(--space-md);
+  }
+
+  .section-header h2,
+.dashboard-list-head h2,
+.profile-card-head h2 {
+    font-size: 1.08rem;
+    line-height: 1.25;
+  }
+
+  .action-bar,
+.profile-account-header__actions,
+.raid-greylist-mini-actions {
+    gap: var(--space-xs);
+  }
+
+  /* ---------- Контроли ---------- */
+  .btn {
+    min-height: var(--control-height);
+    padding-inline: var(--control-pad-x);
+    border-radius: var(--control-radius);
+    font-size: var(--font-size-body-sm);
+  }
+
+  .btn-sm {
+    min-height: var(--control-height-sm);
+    padding-inline: 12px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-meta);
+  }
+
+  .btn-icon {
+    width: var(--control-height);
+    min-width: var(--control-height);
+    padding: 0;
+  }
+
+  input,
+textarea,
+select {
+    font-size: 14px;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+select {
+    min-height: var(--control-height);
+  }
+
+  textarea {
+    min-height: 104px;
+  }
+
+  /* ---------- Сітки: один ритм, без випадкових 12/24/32px ---------- */
+  :where(
+    [class$="-grid"],
+    [class*="-grid "],
+    [class$="__grid"],
+    [class*="__grid "]
+  ) {
+    gap: var(--section-gap);
+  }
+
+  :where(
+    [class$="-layout"]:not(.profile-account-layout):not(.access-groups-layout),
+    [class*="-layout "]:not(.profile-account-layout):not(.access-groups-layout)
+  ) {
+    gap: var(--page-gap);
+  }
+
+  /* ---------- Таблиці й списки ---------- */
+  .dashboard-list-panel {
+    overflow: hidden;
+    border: 1px solid rgba(255, 226, 196, 0.1);
+    border-radius: var(--card-radius);
+    background: rgba(29, 23, 18, 0.76);
+    box-shadow: 0 14px 34px -27px rgba(0, 0, 0, 0.96);
+  }
+
+  .dashboard-list-head {
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: rgba(255, 255, 255, 0.014);
+  }
+
+  
+
+  .dashboard-list-row {
+    border-color: rgba(255, 226, 196, 0.065);
+  }
+
+  .dashboard-list-row:hover {
+    background: rgba(255, 155, 85, 0.035);
+  }
+
+  
+
+  /* =======================================================
+     PROFILE — виправлення проблем зі скріну
+     ======================================================= */
+  .profile-account-layout {
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+    gap: var(--space-lg);
+    align-items: start;
+  }
+
+  .profile-account-sidebar {
+    top: 92px;
+    gap: var(--space-md);
+    padding: 22px;
+    border-radius: var(--card-radius);
+  }
+
+  .profile-account-sidebar__avatar {
+    width: 88px;
+    height: 88px;
+  }
+
+  .profile-account-sidebar__facts {
+    width: 100%;
+  }
+
+  .profile-account-sidebar__nav,
+.profile-account-sidebar__footer,
+.profile-account-sidebar__footer > *,
+.profile-account-logout,
+.profile-account-logout > .btn {
+    width: 100%;
+  }
+
+  .profile-account-sidebar__nav a {
+    min-height: 40px;
+    padding: 0 12px;
+    border-radius: var(--control-radius);
+  }
+
+  .profile-account-main {
+    gap: 18px;
+  }
+
+  .profile-account-header {
+    align-items: end;
+    gap: 18px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .profile-account-overview {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-sm);
+  }
+
+  .profile-account-overview-card {
+    min-height: 82px;
+    padding: 14px 16px;
+  }
+
+  .profile-card-toolbar--compact {
+    gap: var(--space-xs);
+  }
+
+  .profile-card-toolbar--compact > span {
+    min-width: 84px;
+    padding: 7px 12px;
+  }
+
+  /* auto-fit, не auto-fill: порожні треки більше не залишають
+     величезну пусту ділянку праворуч, коли персонажів 2–3. */
+  .profile-character-list--single-flow {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-md);
+    align-items: stretch;
+  }
+
+  .profile-character-card {
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  .profile-character-artwork {
+    height: 250px;
+  }
+
+  .profile-character-body {
+    min-height: 360px;
+    padding: 18px;
+  }
+
+  .profile-character-actions,
+.profile-character-actions__full,
+.profile-character-actions__full > *,
+.profile-character-actions__row > *,
+.profile-character-action {
+    width: 100%;
+  }
+
+  .profile-character-actions__row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .profile-character-action {
+    min-width: 0;
+  }
+
+  /* ---------- Адмінські екрани ---------- */
+  .admin-tabs,
+[class*="admin-tabs"] {
+    border-radius: 12px;
+  }
+
+  .app-footer {
+    padding-top: 24px;
+    padding-bottom: 24px;
+    background: rgba(12, 10, 7, 0.42);
+  }
+
+  .app-footer__inner {
+    max-width: var(--page-max);
   }
 }
 
+@media (min-width: 1320px) {
+  .dashboard-brand__copy strong {
+    max-width: 260px;
+  }
+}

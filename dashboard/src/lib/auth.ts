@@ -28,6 +28,7 @@ import {
 import { ensureDiscordNewcomerBootstrapRole } from "@/lib/discordNewcomerBootstrap";
 import { safeDashboardReturnPath } from "@/lib/dashboardRedirects";
 import { BNET_OAUTH_STATE_COOKIE, LEGACY_BNET_OAUTH_STATE_COOKIE } from "@/lib/authCookieNames";
+import { isSessionTokenRevoked, revokeSessionToken } from "@/lib/sessionRevocation";
 
 export type DashboardRole = "admin" | "moderator" | "mentor" | "member";
 
@@ -585,6 +586,7 @@ export async function createSessionToken(session: DashboardSession) {
       ).slice(0, 100),
       isServerOwner: Boolean(session.isServerOwner),
       impersonatedBy: session.impersonatedBy || null,
+      jti: createNonce(24),
       iat: now,
       exp: now + SESSION_MAX_AGE_SECONDS,
     }),
@@ -621,7 +623,17 @@ export async function getStoredSession(): Promise<DashboardSession | null> {
   const token = secureAuthCookiesEnabled()
     ? store.get(SESSION_COOKIE)?.value || ""
     : store.get(LEGACY_SESSION_COOKIE)?.value || "";
-  return verifySessionToken(token);
+  const verified = await verifySessionToken(token);
+  if (!verified) return null;
+  // Database-backed logout revocation, checked on every request: copied
+  // cookies are rejected immediately, not merely on the next Discord sync.
+  // A database outage is not positive evidence of a valid session.
+  if (process.env.NODE_ENV === "production") {
+    try {
+      if (await isSessionTokenRevoked(token)) return null;
+    } catch { return null; }
+  }
+  return verified;
 }
 
 export async function getSession(
@@ -693,6 +705,14 @@ export async function setSession(session: DashboardSession) {
 
 export async function clearSession() {
   const store = await cookies();
+  const currentToken = secureAuthCookiesEnabled()
+    ? store.get(SESSION_COOKIE)?.value || ""
+    : store.get(LEGACY_SESSION_COOKIE)?.value || "";
+  if (currentToken && await verifySessionToken(currentToken)) {
+    // Fail closed on a failed revocation write. The logout handler must not
+    // acknowledge an irreversible logout when a stolen cookie remains valid.
+    await revokeSessionToken(currentToken, 60 * 60 * 24 * 30);
+  }
   const secureCookieOptions = {
     httpOnly: true,
     secure: true,

@@ -78,7 +78,16 @@ export async function POST(request: NextRequest) {
   // The global proxy enforces trusted origins on unsafe methods. Avoid a
   // second, differently configured origin check behind Cloudflare here.
   logDashboardEvent("info", "auth.logout.post", request);
-  await clearSession();
+  try {
+    await clearSession();
+  } catch {
+    // Do not claim success while server-side revocation is unavailable.
+    // The browser still receives expired cookies; a copied token cannot be
+    // promised invalid until the database write succeeds.
+    const response = NextResponse.json({ ok: false, signedOut: false, error: "Не вдалося відкликати сесію. Повтори вихід." }, { status: 503, headers: noStoreHeaders() });
+    expireAuthCookies(response);
+    return response;
+  }
   // AJAX receives an unambiguous, non-redirecting acknowledgement. A 303
   // followed by fetch used to be treated as proof of logout, even when the
   // redirect ultimately served a login/error page or a stale cached response.

@@ -3,13 +3,14 @@ import "server-only";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import type { DashboardSession } from "@/lib/auth";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
-import { addGuildMemberRoles, assertDiscordRolesManageable, fetchDiscordGuildMemberSnapshot, fetchDiscordGuildSnapshot, fetchDiscordGuildMembers, fetchDiscordGuildMembersCachedForUi, fetchDiscordRoleControlSnapshot, getDiscordGuildId, removeGuildMemberRoles } from "@/lib/discordAdmin";
+import { addGuildMemberRoles, assertDiscordRolesManageable, fetchDiscordGuildMemberSnapshot, fetchDiscordGuildSnapshot, fetchDiscordGuildMembersCachedForUi, fetchDiscordRoleControlSnapshot, getDiscordGuildId, removeGuildMemberRoles } from "@/lib/discordAdmin";
 import { isDashboardAdmin } from "@/lib/permissions";
 import { DEFAULT_STATIC_RULES_MARKDOWN } from "@/lib/staticRulesDefault";
 
 const SETTINGS = "staticRulesConfig";
 const INVITES = "staticRulesInvites";
 const CHALLENGES = "staticRulesChallenges";
+const CHALLENGE_QUOTAS = "staticRulesChallengeQuotas";
 const MEMBERS = "staticRulesMembers";
 const HISTORY = "staticRulesAudit";
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -226,53 +227,44 @@ export async function removeStaticViolation(userId: string, violationId: string,
   // Revoking a strike lifts the timed ban, but never grants a role automatically.
 }
 
-function staticRoleDenialReason(record: StaticMember | undefined) {
-  if (record?.blocked) return "blocked";
-  if (staticBanActive(record)) return "banned";
-  // A role alone is never proof of consent. Published edits do not invalidate
-  // a previous acceptance; only members who have never accepted are rejected.
-  if (!record?.acceptedAt || !Number.isFinite(Date.parse(record.acceptedAt))) return "rules_not_accepted";
-  return null;
-}
-
 export async function enforceStaticMemberRole(userIdInput: string) {
   const userId = snowflake(userIdInput);
   if (!userId) return { checked: 0, revoked: 0 };
   const settings = await getStaticSettings();
   if (!settings.memberRoleId) return { checked: 0, revoked: 0 };
   const record = (await db().collection(MEMBERS).doc(userId).get()).data() as StaticMember | undefined;
-  if (!staticRoleDenialReason(record)) return { checked: 1, revoked: 0 };
-  const actual = await fetchDiscordGuildMemberSnapshot(userId);
+  if (!record || (!record.blocked && !staticBanActive(record))) return { checked: 1, revoked: 0 };
+  const actual = await fetchDiscordGuildMemberSnapshot(userId).catch(error => {
+    if (String(error).includes("404")) return null;
+    throw error;
+  });
   if (!actual?.roleIds.includes(settings.memberRoleId)) return { checked: 1, revoked: 0 };
-  // Consent may have been committed while the Discord read was in flight.
-  // A failed database read must never be mistaken for a missing acceptance.
-  const [latestSettings, latestMember] = await Promise.all([
-    getStaticSettings(), db().collection(MEMBERS).doc(userId).get(),
-  ]);
-  const latest = latestMember.data() as StaticMember | undefined;
-  const reason = staticRoleDenialReason(latest);
-  if (!reason || latestSettings.memberRoleId !== settings.memberRoleId) return { checked: 1, revoked: 0 };
-  // Delete exactly this role, never replace the member's complete role list.
-  await removeGuildMemberRoles({ guildId: getDiscordGuildId(), userId, roleIds: [settings.memberRoleId], reason: `Static role forbidden: ${reason}` });
-  await staticAudit("role.enforced", "system", { userId, roleId: settings.memberRoleId, reason, banUntil: latest?.banUntil || null }).catch(() => null);
+  await removeGuildMemberRoles({ guildId: getDiscordGuildId(), userId, roleIds: [settings.memberRoleId], reason: `Static role forbidden: blocked or banned` });
+  await staticAudit("role.enforced", "system", { userId, banUntil: record.banUntil || null });
   return { checked: 1, revoked: 1 };
 }
 
 export async function sweepStaticForbiddenRoles() {
-  const settings = await getStaticSettings();
-  if (!settings.memberRoleId) return { checked: 0, revoked: 0, failed: 0 };
-  // Read the actual paginated guild roster, not the acceptance registry or UI
-  // cache: an unauthorized role holder may have no database record at all.
-  const holders = (await fetchDiscordGuildMembers(0)).filter(member => member.roleIds.includes(settings.memberRoleId));
+  // Paginate by doc id: a guild larger than 1000 members must not skip bans.
+  // Store-agnostic cursor: __name__ ordering accepts the last document ID
+  // both in the PostgreSQL adapter and in Firestore.
+  let cursorId: string | undefined;
   let checked = 0, revoked = 0, failed = 0;
-  // Bound parallel Discord requests while keeping large guilds reconcilable.
-  for (let offset = 0; offset < holders.length; offset += 4) {
-    await Promise.all(holders.slice(offset, offset + 4).map(async member => {
+  for (let page = 0; page < 50; page++) {
+    let query = db().collection(MEMBERS).orderBy("__name__").limit(250);
+    if (cursorId !== undefined) query = query.startAfter(cursorId);
+    const snap = await query.get();
+    if (!snap.docs.length) break;
+    cursorId = snap.docs[snap.docs.length - 1].id;
+    for (const doc of snap.docs) {
+      const member = doc.data() as StaticMember;
+      if (!member.blocked && !staticBanActive(member)) continue;
       try {
         const result = await enforceStaticMemberRole(member.userId);
         checked += result.checked; revoked += result.revoked;
-      } catch { failed++; } // The next sweep retries without changing consent/bans.
-    }));
+      } catch { failed++ } // Next hour retries failures without clearing bans.
+    }
+    if (snap.docs.length < 250) break;
   }
   return { checked, revoked, failed };
 }
@@ -294,9 +286,48 @@ export async function listStaticAudit(limit = 250) {
   });
 }
 
-export async function createStaticChallenge(token: string) {
+/** Transactional, multi-instance admission control for a shared 24h invite.
+ * The client's trusted IP is salted with a nonpublic invite hash before
+ * storage, so the database never stores visitor IPs in this collection.
+ */
+export class StaticChallengeRateLimitError extends Error {
+  constructor() {
+    super("Забагато спроб за цим запрошенням. Спробуй через 15 хвилин.");
+    this.name = "StaticChallengeRateLimitError";
+  }
+}
+
+export async function claimStaticChallengeQuota(inviteId: string, ip: string, now = Date.now()): Promise<boolean> {
+  const refs = [
+    { id: digest(`ip:${inviteId}:${ip}`), max: 16 },
+    { id: digest(`invite:${inviteId}`), max: 300 },
+  ];
+  const expiresAt = new Date(now + 15 * 60 * 1000).toISOString();
+  return db().runTransaction(async tx => {
+    const quotaDocs = refs.map(item => db().collection(CHALLENGE_QUOTAS).doc(item.id));
+    const snapshots = await Promise.all(quotaDocs.map(ref => tx.get(ref)));
+    const data = snapshots.map(snap => snap.data() as { count?: number; expiresAt?: string } | undefined);
+    const counts = data.map((entry, index) => entry && Date.parse(entry.expiresAt || "") > now
+      ? Math.max(0, Number(entry.count || 0)) : 0);
+    if (counts.some((count, index) => count >= refs[index].max)) return false;
+    quotaDocs.forEach((ref, index) => tx.set(ref, {
+      count: counts[index] + 1,
+      expiresAt: counts[index] === 0 ? expiresAt : data[index]?.expiresAt,
+    }));
+    return true;
+  });
+}
+
+export async function pruneStaticChallengeQuotas(limit = 250): Promise<number> {
+  const expired = await db().collection(CHALLENGE_QUOTAS).where("expiresAt", "<=", nowIso()).limit(Math.min(500, Math.max(1, limit))).get();
+  await Promise.all(expired.docs.map(doc => doc.ref.delete()));
+  return expired.docs.length;
+}
+
+export async function createStaticChallenge(token: string, clientIp = "unknown") {
   const invite = await getStaticInvite(token);
   if (!inviteActive(invite) || !invite) throw new Error("Посилання завершило дію або відкликане.");
+  if (!await claimStaticChallengeQuota(invite.id, clientIp)) throw new StaticChallengeRateLimitError();
   const settings = await getStaticSettings();
   if (!settings.memberRoleId || !settings.text) throw new Error("Правила або роль Статика ще не налаштовані.");
   const code = randomBytes(9).toString("hex").toUpperCase();
@@ -349,38 +380,28 @@ export async function confirmStaticChallenge(codeInput: string, userIdInput: str
   });
   if (!claimed) return { ok: false, message: "Код уже використовується." };
   try {
+    // Recheck revocation immediately before Discord mutation.
+    const [freshInvite, freshMember] = await Promise.all([
+      db().collection(INVITES).doc(raw.inviteId).get(), db().collection(MEMBERS).doc(userId).get(),
+    ]);
+    if (!inviteActive(freshInvite.data() as StaticInvite | null) || (freshMember.data() as StaticMember | undefined)?.blocked || staticBanActive(freshMember.data() as StaticMember | undefined)) throw new Error("Запрошення або доступ відкликано.");
+    await addGuildMemberRoles({ guildId: getDiscordGuildId(), userId, roleIds: [settings.memberRoleId], reason: `Static rules v${settings.version} accepted via DM` });
     const acceptedAt = nowIso();
     const membership = db().collection(MEMBERS).doc(userId);
-    // Persist the verified DM acceptance before granting the role. Otherwise
-    // GUILD_MEMBER_UPDATE could observe a legitimate grant before its proof.
     const stored = await db().runTransaction(async (tx) => {
-      const [latestDoc, invite, config] = await Promise.all([
-        tx.get(membership), tx.get(db().collection(INVITES).doc(raw.inviteId)), tx.get(db().collection(SETTINGS).doc("main")),
-      ]);
-      const latest = latestDoc.data() as StaticMember | undefined;
-      const currentConfig = config.data() || {};
-      const currentRole = snowflake(currentConfig.memberRoleId || process.env.STATIC_MEMBER_ROLE_ID);
-      if (!inviteActive(invite.data() as StaticInvite | null) || latest?.blocked || staticBanActive(latest)) return false;
-      if (Math.max(1, Number(currentConfig.version || 1)) !== settings.version || currentRole !== settings.memberRoleId) return false;
+      const latest = (await tx.get(membership)).data() as StaticMember | undefined;
+      if (latest?.blocked || staticBanActive(latest)) return false;
       // Strikes remain visible until a completed timed suspension and re-acceptance.
       const finishedBan = Boolean(latest?.banUntil && !staticBanActive(latest));
       tx.set(membership, { ...latest, userId, name: member.displayName, status: "active", blocked: false, version: settings.version, acceptedAt, removedAt: null, removedBy: null, violations: finishedBan ? [] : (latest?.violations || []), banUntil: null, banReason: null });
       return true;
     });
-    if (!stored) throw new Error("Запрошення, правила або доступ змінилися. Відкрий посилання повторно.");
-    await staticAudit("member.accepted", userId, { version: settings.version, inviteId: raw.inviteId }).catch(() => null);
-    await addGuildMemberRoles({ guildId: getDiscordGuildId(), userId, roleIds: [settings.memberRoleId], reason: `Static rules v${settings.version} accepted via DM` });
-    // A manager can revoke access while the Discord request is in flight.
-    const completed = await db().runTransaction(async tx => {
-      const latest = (await tx.get(membership)).data() as StaticMember | undefined;
-      if (staticRoleDenialReason(latest)) return false;
-      tx.update(ref, { status: "completed", userId, message: "Роль Статик видана." });
-      return true;
-    });
-    if (!completed) {
+    if (!stored) {
       await removeGuildMemberRoles({ guildId: getDiscordGuildId(), userId, roleIds: [settings.memberRoleId], reason: "Static membership revoked during acceptance" });
       throw new Error("РЛ відкликав доступ до Статика.");
     }
+    await ref.update({ status: "completed", userId, message: "Роль Статик видана." });
+    await staticAudit("member.accepted", userId, { version: settings.version, inviteId: raw.inviteId }).catch(() => null);
     return { ok: true, message: "Правила Статика прийнято. Роль успішно видана!" };
   } catch (error) {
     await ref.update({ status: "failed", message: "Не вдалося видати роль. Повтори код або звернись до РЛ." });

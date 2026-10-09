@@ -47,7 +47,7 @@ export AUTO_PRUNE_BUILD_CACHE ?= 1
 .NOTPARALLEL:
 
 .PHONY: help start up restart stop check cert cert-self cert-status cert-origin \
-        backup restore deploy logs ps resources clean-cache docker-stats rebuild-dashboard rebuild-bot discord-check discord-endpoint-check discord-endpoint-fix internal-check security-audit guild-sync fix-perms network-check
+        backup restore deploy logs ps resources clean-cache docker-stats rebuild-dashboard rebuild-bot discord-check discord-endpoint-check discord-endpoint-fix internal-check security-audit guild-sync fix-perms
 
 help:
 	@sed -n '3,18p' Makefile | sed 's/^# \?//'
@@ -103,7 +103,7 @@ ps:
 # Швидке перевстановлення тільки зміненого сервісу. Це значно дешевше за
 # повний `make up`, коли правки були лише в dashboard або bot.
 rebuild-dashboard: fix-perms
-	@bash $(SCRIPTS)/build-images.sh dashboard
+	@docker compose build dashboard
 	@docker compose exec -T postgres sh -lc 'psql -v ON_ERROR_STOP=1 -q -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"' < dashboard/src/lib/db/schema.sql
 	@BUILD_CACHE_KEEP_STORAGE=$(BUILD_CACHE_KEEP_STORAGE) BUILD_CACHE_MAX_AGE=$(BUILD_CACHE_MAX_AGE) $(SCRIPTS)/docker-cache-maintenance.sh
 	@docker compose up -d --no-deps --no-build dashboard
@@ -111,7 +111,7 @@ rebuild-dashboard: fix-perms
 	@docker compose ps dashboard
 
 rebuild-bot: fix-perms
-	@bash $(SCRIPTS)/build-images.sh bot
+	@docker compose build bot
 	@BUILD_CACHE_KEEP_STORAGE=$(BUILD_CACHE_KEEP_STORAGE) BUILD_CACHE_MAX_AGE=$(BUILD_CACHE_MAX_AGE) $(SCRIPTS)/docker-cache-maintenance.sh
 	@docker compose up -d --no-deps --no-build bot
 	@$(SCRIPTS)/docker-stats-snapshot.sh || true
@@ -128,9 +128,6 @@ discord-endpoint-fix: fix-perms
 
 internal-check: fix-perms
 	@$(SCRIPTS)/internal-auth-check.sh
-
-network-check:
-	@bash $(SCRIPTS)/network-check.sh
 
 security-audit: fix-perms
 	@$(SCRIPTS)/security-audit.sh
