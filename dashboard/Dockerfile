@@ -1,4 +1,5 @@
-# syntax=docker/dockerfile:1.7
+# Use BuildKit's bundled Dockerfile frontend. An external syntax directive
+# adds a Docker Hub authentication request before any build step runs.
 
 # ---------------------------------------------------------------------------
 # Mistblossom Vanguard — образ панелі.
