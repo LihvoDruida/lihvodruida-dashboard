@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
 }
 export async function GET(request: NextRequest) {
   if (!await authorized(request)) return fail("unauthorized", 401);
-  try { return NextResponse.json({ jobs: await leaseInteractionIngress(10) }, { headers: HEADERS }); }
+  try { return NextResponse.json({ jobs: await leaseInteractionIngress(1) }, { headers: HEADERS }); }
   catch { return fail("ingress_unavailable", 503); }
 }
 export async function PATCH(request: NextRequest) {

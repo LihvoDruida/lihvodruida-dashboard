@@ -32,11 +32,46 @@ function retryDelayMs(attempt) {
   return Math.min(4000, 300 * Math.pow(2, attempt)) + Math.floor(Math.random() * 150);
 }
 
+// The timeout covers headers AND the entire response body. Undici's fetch()
+// resolves on headers, while a stalled body used to bypass the ACK deadline.
+// Also bound memory consumption if an upstream responds with unbounded data.
 async function fetchWithTimeout(url, options, timeoutMs) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let timer;
+  const deadline = new Promise((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error(`HTTP response deadline exceeded (${timeoutMs} ms)`));
+    }, timeoutMs);
+  });
   try {
-    return await fetch(url, { ...options, signal: controller.signal });
+    return await Promise.race([(async () => {
+      const response = await fetch(url, { ...options, signal: controller.signal });
+      const maxBytes = 4 * 1024 * 1024;
+      const declaredLength = Number(response.headers?.get?.("content-length") || 0);
+      if (declaredLength > maxBytes) throw new Error("HTTP response exceeds size limit");
+      const reader = response.body?.getReader();
+      const chunks = [];
+      let received = 0;
+      if (reader) {
+        while (true) {
+          const part = await reader.read();
+          if (part.done) break;
+          received += part.value.byteLength;
+          if (received > maxBytes) {
+            void reader.cancel().catch(() => {});
+            throw new Error("HTTP response exceeds size limit");
+          }
+          chunks.push(part.value);
+        }
+      }
+      const bytes = new Uint8Array(received);
+      let offset = 0;
+      for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+      return new Response([204, 205, 304].includes(response.status) ? null : bytes, {
+        status: response.status, statusText: response.statusText, headers: response.headers,
+      });
+    })(), deadline]);
   } finally {
     clearTimeout(timer);
   }
@@ -154,7 +189,7 @@ export async function drainInteractionIngress() {
     }, DASHBOARD_TIMEOUT_MS);
     if (!response.ok) throw new Error(`ingress fetch HTTP ${response.status}`);
     const data = await response.json();
-    for (const job of Array.isArray(data?.jobs) ? data.jobs.slice(0, 10) : []) {
+    for (const job of Array.isArray(data?.jobs) ? data.jobs.slice(0, 1) : []) {
       if (!/^\d{16,25}$/.test(String(job?.id || "")) || !job.leaseId) continue;
       let success = false;
       let permanent = false;

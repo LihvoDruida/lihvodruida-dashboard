@@ -319,9 +319,20 @@ export async function claimStaticChallengeQuota(inviteId: string, ip: string, no
 }
 
 export async function pruneStaticChallengeQuotas(limit = 250): Promise<number> {
-  const expired = await db().collection(CHALLENGE_QUOTAS).where("expiresAt", "<=", nowIso()).limit(Math.min(500, Math.max(1, limit))).get();
-  await Promise.all(expired.docs.map(doc => doc.ref.delete()));
-  return expired.docs.length;
+  const cutoff = nowIso();
+  const expired = await db().collection(CHALLENGE_QUOTAS).where("expiresAt", "<=", cutoff).limit(Math.min(500, Math.max(1, limit))).get();
+  let removed = 0;
+  for (const snapshot of expired.docs) {
+    // The quota may have been renewed after the initial scan. Re-read under a
+    // transaction; never erase a live counter belonging to a new window.
+    if (await db().runTransaction(async tx => {
+      const latest = (await tx.get(snapshot.ref)).data() as { expiresAt?: string } | undefined;
+      if (!latest || !latest.expiresAt || latest.expiresAt > cutoff) return false;
+      tx.delete(snapshot.ref);
+      return true;
+    })) removed++;
+  }
+  return removed;
 }
 
 export async function createStaticChallenge(token: string, clientIp = "unknown") {

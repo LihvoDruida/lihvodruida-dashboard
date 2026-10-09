@@ -24,7 +24,12 @@ export async function POST(request: NextRequest) {
   if (size) return size;
   if (!verifyTrustedOrigin(request)) return NextResponse.json({ ok: false, error: "Неприпустиме джерело запиту." }, { status: 403, headers: headers() });
   const ip = getClientIp(request);
-  if (!checkRateLimit(`static-challenge:${ip}`, 8, 15 * 60_000).ok) return NextResponse.json({ ok: false, error: "Надто багато спроб. Зачекай." }, { status: 429, headers: headers() });
+  // A secondary per-process 8/IP gate protects against bursts even before the
+  // shared 16/IP+invite and 300/invite transactional quotas are checked.
+  const localQuota = checkRateLimit(`static-challenge:${ip}`, 8, 15 * 60_000);
+  if (!localQuota.ok) return NextResponse.json({ ok: false, error: "Надто багато спроб. Зачекай." }, {
+    status: 429, headers: noStoreHeaders({ "Retry-After": String(Math.max(1, Math.ceil((localQuota.resetAt - Date.now()) / 1000))) }),
+  });
   const body = await request.json().catch(() => ({}));
   if (body?.agree !== true || typeof body?.token !== "string") return NextResponse.json({ ok: false, error: "Потрібне підтвердження згоди." }, { status: 400, headers: headers() });
   try {

@@ -8,7 +8,7 @@ import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
 const COLLECTION = "discordInteractionClaims";
 const REPLAY_MS = 24 * 60 * 60 * 1000;
 const DELIVERY_MS = 14 * 60 * 1000;
-const LEASE_MS = 30_000;
+const LEASE_MS = 90_000;
 const MAX_ATTEMPTS = 8;
 const MAX_RESULT_BYTES = 128 * 1024;
 const ID_PATTERN = /^\d{16,25}$/;
@@ -124,6 +124,13 @@ export async function retireStalledInteractionResults(now = Date.now()) {
   return retired;
 }
 
+// PostgreSQL and Firestore support chained where predicates. Keep the old
+// mocked collection contract for independent unit tests that expose only a
+// single filter; the transaction still validates due time before claiming.
+function dueQuery<T extends { where?: (field: string, op: "<=", value: string) => T }>(query: T, field: string, now: number): T {
+  return typeof query.where === "function" ? query.where(field, "<=", new Date(now).toISOString()) : query;
+}
+
 export async function leaseInteractionDeliveries(limit = 10, now = Date.now()) {
   // Resolve abandoned executions before looking for pending deliveries.
   await retireStalledInteractionResults(now);
@@ -133,8 +140,8 @@ export async function leaseInteractionDeliveries(limit = 10, now = Date.now()) {
   // Scan a bounded set of eligible statuses; individual claims are guarded by
   // transactions. No bot can deliver the same receipt concurrently.
   const [ready, leased] = await Promise.all([
-    coll.where("deliveryState", "==", "ready").limit(150).get(),
-    coll.where("deliveryState", "==", "leased").limit(150).get(),
+    dueQuery(coll.where("deliveryState", "==", "ready"), "nextAttemptAt", now).limit(150).get(),
+    dueQuery(coll.where("deliveryState", "==", "leased"), "leaseUntil", now).limit(150).get(),
   ]);
   const candidates = [...ready.docs, ...leased.docs];
   const jobs: Array<{ id: string; leaseId: string; interactionToken: string; result: Callback }> = [];

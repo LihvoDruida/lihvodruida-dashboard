@@ -9,7 +9,7 @@ const COLLECTION = "discordInteractionIngress";
 const ID = /^\d{16,25}$/;
 const SIG = /^[0-9a-f]{128}$/i;
 const RETENTION_MS = 24 * 60 * 60_000;
-const CLAIM_MS = 45_000;
+const CLAIM_MS = 90_000;
 const SIGNATURE_MAX_AGE_MS = 300_000;
 const SAFETY_MARGIN_MS = 20_000;
 const MAX_BODY_BYTES = 256 * 1024;
@@ -54,7 +54,7 @@ function validate(payload: Envelope, now: number) {
   if (typeof payload.domain !== "string" || payload.domain.length > 80) throw new Error("invalid ingress domain");
   let body: Record<string, unknown>;
   try { body = JSON.parse(payload.rawBody); } catch { throw new Error("invalid ingress JSON"); }
-  if (String(body?.id || "") !== payload.id || ![2, 3, 5].includes(Number(body?.type))) throw new Error("invalid interaction identity/type");
+  if (String(body?.id || "") !== payload.id || Number(body?.type) !== 3) throw new Error("invalid interaction identity/type");
   const age = now - Number(payload.timestamp) * 1000;
   if (age < -30_000 || age >= SIGNATURE_MAX_AGE_MS - SAFETY_MARGIN_MS) throw new Error("expired ingress signature");
   return Number(payload.timestamp) * 1000 + SIGNATURE_MAX_AGE_MS - SAFETY_MARGIN_MS;
@@ -80,12 +80,19 @@ export async function enqueueInteractionIngress(payload: Envelope, now = Date.no
   });
 }
 
+// PostgreSQL and Firestore support chained where predicates. Keep the old
+// mocked collection contract for independent unit tests that expose only a
+// single filter; the transaction still validates due time before claiming.
+function dueQuery<T extends { where?: (field: string, op: "<=", value: string) => T }>(query: T, field: string, now: number): T {
+  return typeof query.where === "function" ? query.where(field, "<=", new Date(now).toISOString()) : query;
+}
+
 export async function leaseInteractionIngress(limit = 10, now = Date.now()) {
   const collection = getFirebaseAdminDb().collection(COLLECTION);
   const size = Math.max(1, Math.min(20, Math.floor(limit)));
   const [ready, leased] = await Promise.all([
-    collection.where("status", "==", "ready").limit(150).get(),
-    collection.where("status", "==", "leased").limit(150).get(),
+    dueQuery(collection.where("status", "==", "ready"), "nextAttemptAt", now).limit(150).get(),
+    dueQuery(collection.where("status", "==", "leased"), "leaseUntil", now).limit(150).get(),
   ]);
   const results: Array<Envelope & { leaseId: string }> = [];
   for (const snapshot of [...ready.docs, ...leased.docs]) {

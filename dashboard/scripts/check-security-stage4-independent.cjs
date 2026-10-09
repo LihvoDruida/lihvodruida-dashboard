@@ -88,28 +88,28 @@ function storage() {
   await check("leased job decrypts to original raw request", async () => {
     // Active receipt is already leased. Lease has a transactional payload copy;
     // validate decryption by allowing its lease to expire.
-    const entries = await lib.leaseInteractionIngress(1, base + 46_000);
+    const entries = await lib.leaseInteractionIngress(1, base + 91_000);
     assert.equal(entries[0].id, original.id);
     assert.equal(entries[0].rawBody, envelope().rawBody);
     assert.equal(entries[0].domain, "raid_poll");
   });
   const fresh = store.rows.get(original.id).leaseId;
   await check("old lease cannot settle renewed claim", async () => {
-    assert.equal(await lib.settleInteractionIngress(original.id, first, true, false, base + 46_010), false);
+    assert.equal(await lib.settleInteractionIngress(original.id, first, true, false, base + 91_010), false);
   });
   await check("failed dispatch requeues with backoff and no lost receipt", async () => {
-    assert.equal(await lib.settleInteractionIngress(original.id, fresh, false, false, base + 46_020), true);
+    assert.equal(await lib.settleInteractionIngress(original.id, fresh, false, false, base + 91_020), true);
     assert.equal(store.rows.get(original.id).status, "ready");
     assert.ok(store.rows.get(original.id).payloadCipher);
-    assert.deepEqual(await lib.leaseInteractionIngress(1, base + 46_030), []);
+    assert.deepEqual(await lib.leaseInteractionIngress(1, base + 91_030), []);
   });
   await check("successful dispatch scrubs encrypted request and retains fingerprint", async () => {
-    const again = await lib.leaseInteractionIngress(1, base + 55_000);
+    const again = await lib.leaseInteractionIngress(1, base + 100_000);
     assert.equal(again.length, 1);
-    assert.equal(await lib.settleInteractionIngress(original.id, again[0].leaseId, true, false, base + 55_020), true);
+    assert.equal(await lib.settleInteractionIngress(original.id, again[0].leaseId, true, false, base + 100_020), true);
     assert.equal(store.rows.get(original.id).payloadCipher, "");
     assert.equal(store.rows.get(original.id).status, "dispatched");
-    assert.equal((await lib.enqueueInteractionIngress(envelope(), base + 55_100)).created, false);
+    assert.equal((await lib.enqueueInteractionIngress(envelope(), base + 100_100)).created, false);
   });
   await check("failed store rejects receipt and does not mutate queue", async () => {
     store.fail(true);

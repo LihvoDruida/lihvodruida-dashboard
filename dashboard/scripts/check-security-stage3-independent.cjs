@@ -120,11 +120,11 @@ function store() {
     await outbox.finishInteractionOutbox(second, answer, base + 100);
     const jobs = await outbox.leaseInteractionDeliveries(10, base + 200);
     assert.equal(jobs.length, 1);
-    const reacquired = await outbox.leaseInteractionDeliveries(10, base + 31_000);
+    const reacquired = await outbox.leaseInteractionDeliveries(10, base + 91_000);
     assert.equal(reacquired.length, 1);
     assert.notEqual(reacquired[0].leaseId, jobs[0].leaseId);
-    assert.equal(await outbox.settleInteractionDelivery(second, jobs[0].leaseId, true, false, base + 31_100), false);
-    assert.equal(await outbox.settleInteractionDelivery(second, reacquired[0].leaseId, true, false, base + 31_100), true);
+    assert.equal(await outbox.settleInteractionDelivery(second, jobs[0].leaseId, true, false, base + 91_100), false);
+    assert.equal(await outbox.settleInteractionDelivery(second, reacquired[0].leaseId, true, false, base + 91_100), true);
   });
   await test("permanent Discord token rejection never retries", async () => {
     const third = "1977770001112223336";

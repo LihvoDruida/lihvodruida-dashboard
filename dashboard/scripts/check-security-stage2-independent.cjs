@@ -71,9 +71,10 @@ function fakeDb() {
         const tx = {
           get: (ref) => ref.get(),
           set: (ref, data) => changes.push([ref, data]),
+          delete: (ref) => changes.push([ref, null]),
         };
         const value = await fn(tx);
-        changes.forEach(([ref, data]) => col(ref.collection).set(ref.id, data));
+        changes.forEach(([ref, data]) => data === null ? col(ref.collection).delete(ref.id) : col(ref.collection).set(ref.id, data));
         return value;
       } finally { release(); }
     },

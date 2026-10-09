@@ -139,6 +139,11 @@ async function handleInteraction(interaction, rawBody, signature, timestamp) {
     };
   }
 
+  // Do not ACK unsupported interaction types: the downstream outbox only handles components.
+  if (interaction.type !== InteractionType.MESSAGE_COMPONENT) {
+    return { type: CallbackType.CHANNEL_MESSAGE, data: { flags: EPHEMERAL, content: "Цей тип взаємодії поки не підтримується." } };
+  }
+
   const deferred = deferredResponseFor(interaction, customId);
 
   // The durable receipt must be committed before Discord sees an ACK. The
