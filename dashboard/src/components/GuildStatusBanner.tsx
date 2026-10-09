@@ -83,7 +83,7 @@ export default function GuildStatusBanner({
     }).format(resetAt);
 
   return (
-    <div className="guild-status-banner" aria-label="Рейдовий прогрес гільдії та наступне тижневе скидання WoW Retail EU">
+    <div className="guild-status-banner" aria-label="Статус гільдії та наступне тижневе скидання WoW Retail EU">
       <div className="guild-status-banner__inner">
         <Link prefetch={false} href={raidHref} className="guild-status-banner__raid">
           <span className="guild-status-banner__eyebrow">Актуальний рейд · Retail</span>
@@ -107,7 +107,10 @@ export default function GuildStatusBanner({
         </div>
 
         <div className="guild-status-banner__reset" title={`Наступне EU скидання: ${resetLabel} (Київ)`}>
-          <span className="guild-status-banner__eyebrow">До скидання КД · EU</span>
+          <span className="guild-status-banner__eyebrow">
+            <span className="guild-status-banner__reset-desktop-label">До скидання КД · EU</span>
+            <span className="guild-status-banner__reset-mobile-label">КД · EU</span>
+          </span>
           <div className="guild-status-banner__clock" role="timer" aria-label={countdown ? `${countdown.days} днів, ${countdown.hours} годин, ${countdown.minutes} хвилин, ${countdown.seconds} секунд` : "Завантаження таймера"}>
             {[countdown?.days, countdown?.hours, countdown?.minutes, countdown?.seconds].map((part, index) => (
               <span className="guild-status-banner__clock-part" key={index}>

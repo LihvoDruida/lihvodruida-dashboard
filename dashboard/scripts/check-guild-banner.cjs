@@ -13,6 +13,7 @@ const identity = read('src/components/DashboardIdentity.tsx');
 const css = read('src/app/styles/guild-banner.css');
 const layout = read('src/app/layout.tsx');
 const tokens = read('src/app/styles/tokens.css');
+const mobileCss = css.match(/@media \(max-width: 1000px\) \{([\s\S]*?)\n\}\n\n@media \(max-width: 380px\)/)?.[1] || '';
 
 const compiled = ts.transpileModule(utils, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 }, reportDiagnostics: true });
 if (compiled.diagnostics?.length) throw new Error('Weekly reset module does not transpile');
@@ -36,6 +37,9 @@ const checks = [
   ['cached-only load avoids Raider.IO requests on nav render', /loadStoredGuildRosterData/.test(identity)],
   ['central guild title and real three-difficulty counters', /guild-status-banner__brand/.test(client) && /raid\.mythicKills/.test(client) && /raid\.heroicKills/.test(client) && /raid\.normalKills/.test(client)],
   ['ribbon is before main nav and nav remains intact', identity.indexOf('<GuildStatusBanner') < identity.indexOf('<header className="dashboard-topbar"')],
+  ['mobile hides raid and guild subtitle', /\.guild-status-banner__raid,\s*\.guild-status-banner__brand-sub\s*\{\s*display: none;\s*\}/.test(mobileCss)],
+  ['mobile displays only one-row brand and reset columns', /grid-template-columns: minmax\(0, 1fr\) auto/.test(mobileCss) && /grid-template-rows: minmax\(0, 1fr\)/.test(mobileCss) && /\.guild-status-banner__reset\s*\{[\s\S]*?grid-row: 1;/.test(mobileCss)],
+  ['mobile uses short reset label and preserves desktop version', /reset-desktop-label/.test(client) && /reset-mobile-label/.test(client) && /\.guild-status-banner__reset-desktop-label \{ display: none; \}/.test(mobileCss)],
   ['mobile pinned nav adjusts while banner visible', /html\.guild-banner-collapsed body:has\(\.guild-status-banner\) \.site-nav \{ top: 0; \}/.test(css)],
   ['desktop nav stays pinned and slides under ribbon', /body:has\(\.guild-status-banner\) \.dashboard-topbar/.test(css) && /top: 12px/.test(css)],
   ['reduced motion respected', /prefers-reduced-motion: reduce/.test(css)],
