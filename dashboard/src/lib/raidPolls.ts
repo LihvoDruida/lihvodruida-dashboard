@@ -1,3 +1,5 @@
+import { withDiscordPublicationLease, publicationRevision, getDiscordPublicationOperation, DiscordPublicationPendingError } from "@/lib/discordPublication";
+import { publishDiscordResourceMessage } from "@/lib/discordMessagePublication";
 import { createHash, randomUUID } from "crypto";
 import {
   FieldValue,
@@ -10,12 +12,12 @@ import { clearRuntimeCachedValue, clearRuntimeCachedValuesByPrefix, getRuntimeCa
 import { mapConcurrentSettled } from "@/lib/concurrency";
 import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
 import {
-  createDiscordRaidMessage,
   deleteDiscordRaidMessage,
   discordMessageUrl,
   editDiscordRaidMessage,
   getDiscordDefaultChannelId,
   normalizeDiscordEmbed,
+  parseDiscordMessageRef,
   type DiscordMessageRef,
 } from "@/lib/discordAdmin";
 import { raidAlgorithmAnalyzePollSlot } from "@/lib/raidCompositionAlgorithm";
@@ -596,6 +598,7 @@ export function normalizeRaidPoll(id: string, data: Record<string, unknown>): Ra
     createdByDiscordId: cleanSnowflake(data.createdByDiscordId || data.created_by_discord_id),
     createdByName: cleanString(data.createdByName || data.created_by_name, 120) || "Dashboard",
     channelId: cleanSnowflake(data.channelId || data.channel_id) || null,
+    discordMessageChannelId: cleanSnowflake(data.discordMessageChannelId) || parseDiscordMessageRef(String(data.messageUrl || ""))?.channelId || cleanSnowflake(data.channelId || data.channel_id) || null,
     messageId: cleanSnowflake(data.messageId || data.message_id) || null,
     messageUrl: cleanString(data.messageUrl || data.message_url, 2048) || null,
     mentionRoleIds: cleanSnowflakeIds(data.mentionRoleIds ?? data.mention_role_ids),
@@ -1709,7 +1712,7 @@ export async function syncRaidPollDiscordMessage(
   }
 
   await editDiscordRaidMessage({
-    ref: { channelId: poll.channelId, messageId: poll.messageId },
+    ref: { channelId: poll.discordMessageChannelId || poll.channelId, messageId: poll.messageId },
     content: payload.content,
     embed: payload.embed,
     components: payload.components,
@@ -1721,75 +1724,40 @@ export async function syncRaidPollDiscordMessage(
   return "updated";
 }
 
-async function publishOrUpdatePollDiscordMessage(poll: RaidPollItem, channelIdInput?: string | null) {
-  const targetChannelId = cleanSnowflake(channelIdInput) || cleanSnowflake(poll.channelId) || getDiscordDefaultChannelId();
-  if (!targetChannelId) throw new Error("Discord-канал для рейд-пулу не вибрано.");
-
-  const relatedPolls = await loadPublishedRaidPollsForRecommendations(poll);
-  const payload = buildRaidPollDiscordPayload(poll, relatedPolls);
-  const hasExistingMessage = Boolean(poll.channelId && poll.messageId);
-  const canEditExisting = Boolean(hasExistingMessage && poll.channelId === targetChannelId);
-  let message: Record<string, unknown> | null = null;
-
-  if (canEditExisting && poll.channelId && poll.messageId) {
-    try {
-      message = await editDiscordRaidMessage({
-        ref: { channelId: poll.channelId, messageId: poll.messageId },
-        content: payload.content,
-        embed: payload.embed,
-        components: payload.components,
-        mentionRoleIds: payload.mentionRoleIds,
-        auditReason: `Raid poll updated: ${poll.id}`,
-      }) as Record<string, unknown>;
-    } catch (error) {
-      if (!isMissingDiscordMessageError(error)) throw error;
-      message = await createDiscordRaidMessage({
-        channelId: targetChannelId,
-        content: payload.content,
-        embed: payload.embed,
-        components: payload.components,
-        mentionRoleIds: payload.mentionRoleIds,
-        auditReason: `Raid poll republished after missing message: ${poll.id}`,
-      }) as Record<string, unknown>;
-    }
-  } else {
-    message = await createDiscordRaidMessage({
-      channelId: targetChannelId,
-      content: payload.content,
-      embed: payload.embed,
-      components: payload.components,
-      mentionRoleIds: payload.mentionRoleIds,
-      auditReason: hasExistingMessage ? `Raid poll moved to another channel: ${poll.id}` : `Raid poll created from dashboard: ${poll.id}`,
-    }) as Record<string, unknown>;
-
-    if (hasExistingMessage && poll.channelId && poll.messageId && poll.channelId !== targetChannelId) {
-      await deleteDiscordRaidMessage({
-        ref: { channelId: poll.channelId, messageId: poll.messageId },
-        auditReason: `Raid poll moved to another channel: ${poll.id}`,
-      }).catch((error) => {
-        console.warn("[raidPolls] Failed to delete old Discord poll message", {
-          pollId: poll.id,
-          message: error instanceof Error ? error.message : String(error),
-        });
-      });
-    }
-  }
-
-  const messageId = cleanSnowflake(message?.id || message?.message_id || poll.messageId);
-  const finalChannelId = cleanSnowflake(message?.channel_id || targetChannelId);
-  if (!messageId || !finalChannelId) throw new Error("Discord не підтвердив повідомлення рейд-пулу.");
-  return { channelId: finalChannelId, messageId, messageUrl: discordMessageUrl(finalChannelId, messageId) };
+async function publishOrUpdatePollDiscordMessage(input: RaidPollItem, channelIdInput?: string | null) {
+  return withDiscordPublicationLease(`poll:${input.id}`, async assertOwned => {
+    const targetChannelId = cleanSnowflake(channelIdInput) || cleanSnowflake(input.channelId) || getDiscordDefaultChannelId();
+    if (!targetChannelId) throw new Error("Discord-канал для рейд-пулу не вибрано.");
+    const result = await publishDiscordResourceMessage({
+      kind: "poll-message", collection: RAID_POLL_COLLECTION, resourceId: input.id,
+      channelId: targetChannelId, assertOwned,
+      build: async raw => {
+        const current = normalizeRaidPoll(input.id, raw);
+        // A scheduled claim renders the future open state. Stored votes and
+        // message references still come from the fresh document under lease.
+        const poll = current.status === "scheduled" && input.status === "open"
+          ? { ...current, status: "open" as const, closesAt: input.closesAt, closesAtMs: input.closesAtMs }
+          : current;
+        const related = await loadPublishedRaidPollsForRecommendations(poll);
+        return { payload: buildRaidPollDiscordPayload(poll, related), resourceUrl: dashboardPollUrl(poll.id) };
+      },
+      patch: () => ({ updatedAt: new Date().toISOString(), updatedAtMs: Date.now() }),
+    });
+    clearRaidPollRuntimeCaches(input.id);
+    clearRaidPollDiscordSignatureCache(input.id);
+    return result;
+  });
 }
 
 async function savePollDiscordRef(pollId: string, ref: { channelId: string; messageId: string; messageUrl: string }) {
   const updatedAt = new Date().toISOString();
   await firebaseWrite("raid", `raid-poll:discord-ref:${pollId}`, async () => {
-    await pollRef(pollId).update({
-      channelId: ref.channelId,
-      messageId: ref.messageId,
-      messageUrl: ref.messageUrl,
-      updatedAt,
-      updatedAtMs: Date.now(),
+    const document = pollRef(pollId);
+    await getFirebaseAdminDb().runTransaction(async tx => {
+      const current = (await tx.get(document)).data();
+      if (current?.messageId !== ref.messageId || current?.discordMessageChannelId !== ref.channelId)
+        throw new Error("Посилання на Discord-повідомлення вже змінилося. Онови сторінку.");
+      tx.update(document, { updatedAt, updatedAtMs: Date.now() });
     });
     return true;
   }, { bypassCircuit: true, logEvent: "raid_polls.discord_ref_failed" });
@@ -1953,16 +1921,7 @@ export async function saveRaidPollFromInput(input: RaidPollCreateInput, user: Da
     await recalculatePublishedRaidPollDiscordRecommendations(createdPoll).catch(() => null);
     return createdPoll;
   } catch (error) {
-    if (published?.channelId && published?.messageId) {
-      await deleteDiscordRaidMessage({
-        ref: { channelId: published.channelId, messageId: published.messageId },
-        auditReason: `Rollback failed raid poll create: ${id}`,
-      }).catch(() => null);
-    }
-    await firebaseWrite("raid", `raid-poll:create-rollback:${id}`, async () => {
-      await pollRef(id).delete().catch(() => null);
-      return true;
-    }, { logEvent: "raid_polls.create_rollback_failed" }).catch(() => null);
+    await markRaidPollPublishFailed(id, error instanceof Error ? error.message : String(error));
     clearRaidPollRuntimeCaches(id);
     throw error;
   }
@@ -2112,6 +2071,7 @@ export async function updateRaidPollFromInput(pollId: string, input: RaidPollUpd
         closesAt: next.closesAt,
         closesAtMs,
         channelId,
+        ...(previous.messageId ? { discordMessageChannelId: previous.discordMessageChannelId || previous.channelId || null } : {}),
         mentionRoleIds,
         autoRepeatWeekly,
         repeatWeeklyDay,
@@ -2228,7 +2188,7 @@ async function publishClaimedScheduledRaidPoll(template: RaidPollItem, lockId: s
         const raw = snap.data() || {};
         const current = normalizeRaidPoll(snap.id, raw);
         const currentLockId = cleanString((raw as Record<string, unknown>).scheduledPublishLockId, 120);
-        if (current.status !== "scheduled" || currentLockId !== lockId) {
+        if (current.status !== "scheduled" || currentLockId !== lockId || (published?.messageId && raw.messageId !== published.messageId)) {
           throw new Error("Публікацію рейд-пулу вже обробляє інший процес.");
         }
         tx.update(ref, {
@@ -2259,14 +2219,7 @@ async function publishClaimedScheduledRaidPoll(template: RaidPollItem, lockId: s
     await recalculatePublishedRaidPollDiscordRecommendations(finalPoll).catch(() => null);
     return finalPoll;
   } catch (error) {
-    // Якщо Discord уже створив повідомлення, але commit у БД впав, прибираємо
-    // його. Інакше після зняття lock наступний cron створив би дубль.
-    if (published?.channelId && published?.messageId) {
-      await deleteDiscordRaidMessage({
-        ref: { channelId: published.channelId, messageId: published.messageId },
-        auditReason: `Rollback failed scheduled raid poll publish: ${template.id}`,
-      }).catch(() => null);
-    }
+    // The durable receipt retains the known ID; retry reconciles before POST.
     await markRaidPollPublishFailed(template.id, error instanceof Error ? error.message : String(error));
     throw error;
   }
@@ -2372,7 +2325,7 @@ async function claimRaidPollRepeat(pollId: string, nowMs: number, lockId: string
 async function createRepeatedRaidPoll(template: RaidPollItem) {
   const now = new Date();
   const nowIso = now.toISOString();
-  const id = newPollId();
+  const id = publicationRevision(["poll-repeat", template.id, template.repeatNextAtMs || template.repeatNextAt]).slice(0, 32);
   const closesAtMs = now.getTime() + template.closeAfterMinutes * 60 * 1000;
   const repeatWeeklyDay = template.repeatWeeklyDay || "mon";
   const repeatWeeklyTime = template.repeatWeeklyTime || "12:00";
@@ -2411,7 +2364,10 @@ async function createRepeatedRaidPoll(template: RaidPollItem) {
   };
 
   await firebaseWrite("raid", `raid-poll:repeat-create:${template.id}:${id}`, async () => {
-    await pollRef(id).set({
+    await getFirebaseAdminDb().runTransaction(async tx => {
+      const ref = pollRef(id);
+      if ((await tx.get(ref)).exists) return;
+      tx.create(ref, {
       ...nextPoll,
       votes: [],
       votesByDiscordId: {},
@@ -2419,6 +2375,8 @@ async function createRepeatedRaidPoll(template: RaidPollItem) {
       createdAtMs: now.getTime(),
       updatedAtMs: now.getTime(),
       repeatedAt: nowIso,
+      discordMessageChannelId: null,
+      });
     });
     return true;
   }, { logEvent: "raid_polls.repeat_create_failed" });
@@ -2455,13 +2413,7 @@ async function createRepeatedRaidPoll(template: RaidPollItem) {
     });
     return { poll: publishedPoll, oldPollId: template.id, discordDeleted: Boolean(deleteResult?.discordDeleted), discordDeleteFailed: Boolean(deleteResult?.discordDeleteFailed) };
   } catch (error) {
-    if (published?.channelId && published?.messageId) {
-      await deleteDiscordRaidMessage({
-        ref: { channelId: published.channelId, messageId: published.messageId },
-        auditReason: `Rollback failed repeated raid poll create: ${id}`,
-      }).catch(() => null);
-    }
-    await pollRef(id).delete().catch(() => null);
+    await markRaidPollPublishFailed(id, error instanceof Error ? error.message : String(error));
     clearRaidPollRuntimeCaches(id);
     throw error;
   }
@@ -3289,6 +3241,14 @@ export async function handleRaidPollDiscordVote(params: {
 }
 
 export async function deleteRaidPoll(pollId: string) {
+  return withDiscordPublicationLease(`poll:${pollId}`, async () => {
+    const pending = await getDiscordPublicationOperation("poll-message", pollId);
+    if (pending && !["complete", "rejected"].includes(pending.state)) throw new DiscordPublicationPendingError("uncertain");
+    return deleteRaidPollUnderPublicationLease(pollId);
+  });
+}
+
+async function deleteRaidPollUnderPublicationLease(pollId: string) {
   if (!hasRaidPollStorage()) throw new Error(firebaseUnavailableMessage("raid", "write"));
 
   const ref = pollRef(pollId);
@@ -3302,7 +3262,7 @@ export async function deleteRaidPoll(pollId: string) {
   if (poll.channelId && poll.messageId) {
     try {
       await deleteDiscordRaidMessage({
-        ref: { channelId: poll.channelId, messageId: poll.messageId },
+        ref: { channelId: poll.discordMessageChannelId || poll.channelId, messageId: poll.messageId },
         auditReason: `Raid poll manually deleted from dashboard: ${poll.id}`,
       });
       discordDeleted = true;

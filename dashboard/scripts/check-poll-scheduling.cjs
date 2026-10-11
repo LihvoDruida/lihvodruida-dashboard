@@ -30,7 +30,7 @@ const checks = [
   ['scheduled close timer is anchored to publication rather than creation', polls.includes('const closeBaseMs = scheduledPublishAtMs || now.getTime()')],
   ['first recurring run after a scheduled publish is moved to the following occurrence', polls.includes('nextWeeklyRepeatMs(scheduledPublishAtMs + 60_000, scheduleDay, scheduleTime)')],
   ['due scheduled polls are claimed with a persisted lock before Discord publish', polls.includes('claimScheduledRaidPoll') && polls.includes('scheduledPublishLockId') && polls.includes('scheduledPublishLockedAtMs')],
-  ['failed DB commit rolls back an already-created Discord message', polls.includes('Rollback failed scheduled raid poll publish') && polls.includes('markRaidPollPublishFailed')],
+  ['failed DB commit retains receipt and marks publish for recovery', polls.includes('durable receipt retains the known ID') && polls.includes('markRaidPollPublishFailed')],
   ['failed scheduled publication remains due instead of being moved a week by an unrelated edit', !polls.includes('!previous.scheduledPublishAtMs || previous.scheduledPublishAtMs <= nowMs') && polls.includes('Прострочений timestamp лишається due')],
   ['scheduled publish failures are persisted for admin diagnostics and automatic retry', shared.includes('scheduledPublishLastError?: string | null') && polls.includes('scheduledPublishLastErrorAt: failedAt.toISOString()') && views.includes('Остання спроба публікації не вдалася')],
   ['lifecycle publishes scheduled polls before close/repeat work', lifecyclePublishIndex >= 0 && lifecycleRepeatIndex > lifecyclePublishIndex],

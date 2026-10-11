@@ -1275,6 +1275,23 @@
   min-width: 0;
 }
 
+.raid-publication-recovery {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.raid-publication-recovery p {
+  margin: 0;
+}
+
+.raid-publication-recovery input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
 .raid-publish-panel__warning {
   grid-column: 1 / -1;
   margin: 0;

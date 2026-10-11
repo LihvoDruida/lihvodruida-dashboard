@@ -72,6 +72,7 @@ export type RaidPollItem = {
   createdByDiscordId: string;
   createdByName: string;
   channelId?: string | null;
+  discordMessageChannelId?: string | null;
   messageId?: string | null;
   messageUrl?: string | null;
   mentionRoleIds: string[];

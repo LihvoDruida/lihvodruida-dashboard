@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { discordCredentialKey, discordRestRequest } from "@/lib/discordRest";
+import { DiscordRestError, discordCredentialKey, discordRestRequest } from "@/lib/discordRest";
 import { mapConcurrent } from "@/lib/concurrency";
 import { parseRulesRoleIdsFromUrl } from "@/lib/rulesOnboarding";
 import { logDashboardEvent } from "@/lib/security";
@@ -333,8 +333,8 @@ function hasDirectDiscordBotConfig() {
  */
 async function discordRaidMessageRelay<T = never>(_payload: Record<string, unknown>): Promise<T> {
   void _payload;
-  throw new Error(
-    "Публікація рейдів у Discord недоступна: не налаштований DISCORD_BOT_TOKEN у панелі.",
+  throw new DiscordRestError(
+    "Публікація рейдів у Discord недоступна: не налаштований DISCORD_BOT_TOKEN у панелі.", 401,
   );
 }
 
@@ -355,7 +355,7 @@ function sanitizeDiscordApiPath(path: string) {
 const discordMetadataReads = new Map<string, Promise<unknown>>();
 export async function discordApi<T = any>(path: string, init: DiscordRequestInit = {}): Promise<T> {
   const token = getBotToken();
-  if (!token) throw new Error("Discord bot token не налаштований. Дії з ролями, ніками та учасниками не можуть виконуватись напряму через Discord API.");
+  if (!token) throw new DiscordRestError("Discord bot token не налаштований. Дії з ролями, ніками та учасниками не можуть виконуватись напряму через Discord API.", 401);
   const { auditReason, expectedStatuses = [], headers: inputHeaders, retry, ...requestInit } = init;
   const method = String(requestInit.method || "GET").toUpperCase();
   const headers = new Headers(inputHeaders || {});
@@ -1127,6 +1127,8 @@ export function parseDiscordMessageRef(value: string): DiscordMessageRef | null 
 
 export async function createDiscordEmbedMessage(params: {
   channelId: string;
+  nonce?: string;
+  retry?: "never";
   content?: string;
   embed: Record<string, unknown>;
   roleIds?: string[];
@@ -1137,9 +1139,10 @@ export async function createDiscordEmbedMessage(params: {
   auditReason?: string;
 }) {
   const channelId = cleanSnowflake(params.channelId);
-  if (!channelId) throw new Error("Канал Discord не вибрано або ID невалідний.");
+  if (!channelId) throw new DiscordRestError("Канал Discord не вибрано або ID невалідний.", 400);
 
   const body: Record<string, unknown> = {
+    ...(params.nonce ? { nonce: params.nonce, enforce_nonce: true } : {}),
     content: messageContentWithRoleMentions(params.content, params.mentionRoleIds || []),
     embeds: [params.embed],
     allowed_mentions: allowedMentionsForRoles(params.mentionRoleIds || []),
@@ -1155,6 +1158,7 @@ export async function createDiscordEmbedMessage(params: {
     method: "POST",
     body: JSON.stringify(body),
     auditReason: params.auditReason,
+    retry: params.retry,
   });
 }
 
@@ -1188,6 +1192,8 @@ export async function editDiscordEmbedMessage(params: {
 
 export async function createDiscordRaidMessage(params: {
   channelId: string;
+  nonce?: string;
+  retry?: "never";
   content?: string;
   embed: Record<string, unknown>;
   components?: unknown[];
@@ -1289,12 +1295,12 @@ export async function createDiscordGuildScheduledEvent(params: {
   auditReason?: string;
 }) {
   const guildId = cleanSnowflake(getDiscordGuildId());
-  if (!guildId) throw new Error("Discord-сервер не підключений до панелі.");
+  if (!guildId) throw new DiscordRestError("Discord-сервер не підключений до панелі.", 400);
   const name = cleanScheduledEventText(params.name, 100);
   const description = cleanScheduledEventText(params.description, 1000);
   const location = cleanScheduledEventText(params.location, 100);
-  if (!name) throw new Error("Discord-подія потребує назву.");
-  if (!location) throw new Error("Discord-подія потребує локацію або посилання.");
+  if (!name) throw new DiscordRestError("Discord-подія потребує назву.", 400);
+  if (!location) throw new DiscordRestError("Discord-подія потребує локацію або посилання.", 400);
 
   return discordApi<DiscordGuildScheduledEvent>(`/guilds/${guildId}/scheduled-events`, {
     method: "POST",
@@ -1477,6 +1483,64 @@ export async function fetchDiscordEditableMessage(ref: DiscordMessageRef) {
   if (!ref.channelId || !ref.messageId) throw new Error("Посилання на Discord-повідомлення невалідне.");
   const message = await discordApi<Record<string, unknown>>(`/channels/${ref.channelId}/messages/${ref.messageId}`);
   return normalizeDiscordMessageForEditor(message, ref.channelId);
+}
+
+/** Bounded read-only recovery. An empty history or absent nonce is inconclusive.
+ * A manually supplied link must still identify this bot's announcement. */
+export async function findDiscordPublicationMessage(params: {
+  channelId: string; nonce: string; startedAt: string; resourceUrl: string;
+  manualRef?: DiscordMessageRef | null;
+}) {
+  const channelId = cleanSnowflake(params.channelId);
+  if (!channelId) return null;
+  const bot = await discordApi<{ id: string }>("/users/@me");
+  const startedAt = Date.parse(params.startedAt) - 10_000;
+  const valid = (message: Record<string, unknown>, manual = false) => {
+    const author = message.author as { id?: string } | undefined;
+    if (author?.id !== bot.id || String(message.channel_id || channelId) !== channelId) return false;
+    const timestamp = Date.parse(String(message.timestamp || ""));
+    if (!cleanSnowflake(message.id) || !Number.isFinite(timestamp) || timestamp < startedAt) return false;
+    if (String(message.nonce || "") === params.nonce) return true;
+    if (!manual || !params.resourceUrl) return false;
+    const embeds = message.embeds as Array<{ url?: string }> | undefined;
+    const links = (message.components as Array<{ components?: Array<{ url?: string }> }> | undefined)?.flatMap(row => row.components || []);
+    return embeds?.some(embed => embed.url === params.resourceUrl) || links?.some(link => link.url === params.resourceUrl) || false;
+  };
+  if (params.manualRef) {
+    if (params.manualRef.channelId !== channelId) throw new Error("Посилання має вести в канал незавершеної публікації.");
+    const message = await discordApi<Record<string, unknown>>(`/channels/${channelId}/messages/${params.manualRef.messageId}`);
+    if (!valid(message, true)) throw new Error("Це повідомлення не належить незавершеній публікації цього рейду.");
+    return { id: String(message.id), channel_id: channelId };
+  }
+  let before = "";
+  for (let page = 0; page < 3; page++) {
+    const messages = await discordApi<Array<Record<string, unknown>>>(`/channels/${channelId}/messages?limit=100${before ? `&before=${before}` : ""}`);
+    const matches = messages.filter(message => valid(message));
+    if (matches.length > 1) throw new Error("Знайдено кілька оголошень. Вкажи посилання на потрібне повідомлення для звірки.");
+    if (matches.length === 1) return { id: String(matches[0].id), channel_id: channelId };
+    const last = messages.at(-1);
+    if (!last || messages.length < 100 || Date.parse(String(last.timestamp || "")) < startedAt) break;
+    before = cleanSnowflake(last.id);
+    if (!before) break;
+  }
+  return null;
+}
+
+export async function findDiscordPublicationScheduledEvent(params: {
+  name: string; description: string; scheduledStartTime: string; scheduledEndTime: string; location: string;
+}) {
+  const guildId = cleanSnowflake(getDiscordGuildId());
+  if (!guildId) throw new Error("Discord-сервер не підключений до панелі.");
+  const bot = await discordApi<{ id: string }>("/users/@me");
+  const events = await discordApi<Array<DiscordGuildScheduledEvent & { creator_id?: string }>>(`/guilds/${guildId}/scheduled-events`);
+  const matches = events.filter(event => event.creator_id === bot.id && event.entity_type === 3 &&
+    event.name === cleanScheduledEventText(params.name, 100) &&
+    event.description === cleanScheduledEventText(params.description, 1000) &&
+    Date.parse(event.scheduled_start_time || "") === Date.parse(params.scheduledStartTime) &&
+    Date.parse(event.scheduled_end_time || "") === Date.parse(params.scheduledEndTime) &&
+    event.entity_metadata?.location === cleanScheduledEventText(params.location, 100));
+  if (matches.length !== 1) return null;
+  return { id: matches[0].id };
 }
 
 export async function listRulesEmbedMessages(channelId: string, limit = 50) {

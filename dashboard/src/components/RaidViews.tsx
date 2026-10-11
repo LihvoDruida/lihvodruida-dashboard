@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { ReactNode } from "react";
 import DashboardIdentity from "@/components/DashboardIdentity";
 import HeroSidePanel from "@/components/HeroSidePanel";
@@ -1066,6 +1067,8 @@ export function RaidForm({
   defaultChannelId = "",
   defaultVoiceChannelId = "",
   editorAccountName = "",
+  publicationPending = false,
+  publicationEventPending = false,
 }: {
   raid?: RaidItem | null;
   channels: RaidChannelOption[];
@@ -1075,6 +1078,8 @@ export function RaidForm({
   defaultChannelId?: string;
   defaultVoiceChannelId?: string;
   editorAccountName?: string;
+  publicationPending?: boolean;
+  publicationEventPending?: boolean;
 }) {
   const defaultComposition = raid
     ? raidAutoCompositionLabel(raid).replace(/\s/g, "")
@@ -1106,12 +1111,12 @@ export function RaidForm({
   const isDiscordPublished = Boolean(
     raid?.channelId && raid?.messageId && raid?.status !== "draft",
   );
-  const canPublish = discordEnabled && !(raid ? isRaidClosed(raid) : false);
+  const canPublish = discordEnabled && (publicationPending || publicationEventPending || !(raid ? isRaidClosed(raid) : false));
   const saveLabel =
     isExistingRaid && raid?.status !== "draft"
       ? "Зберегти без публікації"
       : "Зберегти чернетку";
-  const publishLabel = isDiscordPublished
+  const publishLabel = publicationPending || publicationEventPending ? "Перевірити Discord" : isDiscordPublished
     ? "Оновити Discord"
     : "Опублікувати в Discord";
   const initialSaveState = isExistingRaid
@@ -1129,6 +1134,7 @@ export function RaidForm({
         data-existing-raid={isExistingRaid ? "true" : "false"}
       >
         <input type="hidden" name="raidId" value={raid?.id || ""} />
+        {!raid?.id ? <input type="hidden" name="creationToken" value={randomUUID()} /> : null}
         <input type="hidden" name="composition" value={defaultComposition} />
 
         <div className="raid-form-heading">
@@ -1616,6 +1622,19 @@ export function RaidForm({
               {publishLabel}
             </button>
           </div>
+          {publicationEventPending && !publicationPending ? (
+            <div className="notice warning-note raid-publication-recovery" role="status">
+              <p>Оголошення рейду збережене. Discord-подія потребує звірки: натисни «Перевірити Discord», щоб перевірити результат її створення.</p>
+            </div>
+          ) : null}
+          {publicationPending ? (
+            <div className="notice warning-note raid-publication-recovery" role="status">
+              <p>Перевіряємо попереднє надсилання. Натисни «Перевірити Discord», щоб звірити результат.</p>
+              <label htmlFor="raid-publication-message">Посилання на вже створене оголошення (необовʼязково)</label>
+              <input id="raid-publication-message" name="publicationMessageUrl" type="url" placeholder="https://discord.com/channels/…" maxLength={300} />
+              <p className="muted">Якщо оголошення видно в Discord, скопіюй його посилання. Воно має належати цьому рейду й бути надіслане нашим ботом.</p>
+            </div>
+          ) : null}
           {!canPublish ? (
             <p className="raid-publish-panel__warning">
               Discord-публікація зараз недоступна. Чернетку та локальні зміни

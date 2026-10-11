@@ -1,3 +1,4 @@
+import { DiscordPublicationPendingError } from "@/lib/discordPublication";
 import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
 import { recordAdminAudit } from "@/lib/accessGroups";
@@ -112,6 +113,9 @@ export async function POST(request: NextRequest) {
       ttl: scheduledEvent.action === "failed" ? 10000 : 7600,
     });
   } catch (error) {
+    const savedRaidId = error && typeof error === "object" && "raidId" in error ? String(error.raidId || "") : "";
+    if (/^[A-Za-z0-9_-]{8,80}$/.test(savedRaidId)) failurePath = `/raids/${encodeURIComponent(savedRaidId)}/edit`;
+    const pending = error instanceof DiscordPublicationPendingError;
     const message = safeErrorMessage(error);
     logDashboardEvent("error", "raids.discord.publish.failed", request, { actorId: user.id, actorRole: user.role, message });
     await recordAdminAudit("raids.discord.publish_failed", user, {
@@ -120,8 +124,8 @@ export async function POST(request: NextRequest) {
       error: error instanceof Error ? error.message : String(error || ""),
     }).catch(() => false);
     return redirectWithToast(request, failurePath, {
-      tone: "error",
-      title: "Discord-публікацію не виконано",
+      tone: pending ? "warning" : "error",
+      title: pending ? "Перевірка публікації" : "Discord-публікацію не виконано",
       message: safeErrorMessage(error),
       ttl: 9200,
     });

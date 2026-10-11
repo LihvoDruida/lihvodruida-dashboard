@@ -1,3 +1,5 @@
+import { withDiscordPublicationLease, runDiscordPublicationCreation, publicationRevision, getDiscordPublicationOperation, updateDiscordPublicationOperation, DiscordPublicationPendingError } from "@/lib/discordPublication";
+import { publishDiscordResourceMessage } from "@/lib/discordMessagePublication";
 import { FieldValue } from "@/lib/db/firestoreCompat";
 import {
   cleanRaidImageUrl,
@@ -49,6 +51,8 @@ import {
   wowSpecFullName,
 } from "@/lib/wowClassCatalog";
 import {
+  findDiscordPublicationScheduledEvent,
+  parseDiscordMessageRef,
   createDiscordGuildScheduledEvent,
   createDiscordRaidMessage,
   deleteDiscordGuildScheduledEvent,
@@ -168,6 +172,7 @@ export type RaidItem = {
   composition: RaidComposition;
   status: "draft" | "published" | "closed";
   channelId?: string | null;
+  discordMessageChannelId?: string | null;
   voiceChannelId?: string | null;
   messageId?: string | null;
   messageUrl?: string | null;
@@ -1215,6 +1220,7 @@ function normalizeRaid(id: string, data: Record<string, unknown>): RaidItem {
     composition: normalizeComposition(data.composition),
     status,
     channelId: cleanString(data.channelId, 32) || null,
+    discordMessageChannelId: cleanSnowflake(data.discordMessageChannelId) || parseDiscordMessageRef(String(data.messageUrl || ""))?.channelId || cleanSnowflake(data.channelId) || null,
     voiceChannelId:
       cleanString(data.voiceChannelId || data.voice_channel_id, 32) || null,
     messageId: cleanString(data.messageId, 32) || null,
@@ -2061,7 +2067,7 @@ async function syncRaidClosedDiscordState(raid: RaidItem) {
         closedReason: raid.closedReason === "manual" ? "manual" : "auto",
         closedAt: raid.closedAt || new Date().toISOString(),
       },
-      raid.channelId,
+      raid.discordMessageChannelId || raid.channelId,
       { syncScheduledEvent: false },
     );
     return true;
@@ -2268,7 +2274,7 @@ async function syncRaidDiscordDeletionAfterStart(raid: RaidItem) {
 
   try {
     await deleteDiscordRaidMessage({
-      ref: { channelId: raid.channelId, messageId: raid.messageId },
+      ref: { channelId: raid.discordMessageChannelId || raid.channelId, messageId: raid.messageId },
       auditReason: `Raid message auto-delete after start+${RAID_DISCORD_MESSAGE_RETENTION_HOURS}h: ${raid.id}`,
     });
   } catch (error) {
@@ -2895,7 +2901,7 @@ export async function closeRaid(raidId: string) {
   let discordSynced = true;
   if (closed.channelId && closed.messageId && !closed.discordDeletedAt) {
     try {
-      await publishOrUpdateRaid(closed, closed.channelId, { syncScheduledEvent: false });
+      await publishOrUpdateRaid(closed, closed.discordMessageChannelId || closed.channelId, { syncScheduledEvent: false });
     } catch (error) {
       discordSynced = false;
       console.warn(
@@ -2922,7 +2928,17 @@ export async function closeRaid(raidId: string) {
 }
 
 export async function deleteRaid(raidId: string) {
-  const raid = await getRaid(raidId);
+  return withDiscordPublicationLease(`raid:${raidId}`, async () => {
+    for (const kind of ["raid-message", "raid-event"]) {
+      const pending = await getDiscordPublicationOperation(kind, raidId);
+      if (pending && !["complete", "rejected"].includes(pending.state)) throw new DiscordPublicationPendingError("uncertain");
+    }
+    return deleteRaidUnderPublicationLease(raidId);
+  });
+}
+
+async function deleteRaidUnderPublicationLease(raidId: string) {
+  const raid = await readRaidForLifecycleTask(raidId);
   if (!raid) throw new Error("Рейд не знайдено.");
 
   let discordDeleted = false;
@@ -2969,7 +2985,7 @@ export async function deleteRaid(raidId: string) {
   if (raid.channelId && raid.messageId) {
     try {
       await deleteDiscordRaidMessage({
-        ref: { channelId: raid.channelId, messageId: raid.messageId },
+        ref: { channelId: raid.discordMessageChannelId || raid.channelId, messageId: raid.messageId },
         auditReason: `Raid manually deleted from dashboard: ${raid.id}`,
       });
       discordDeleted = true;
@@ -3328,7 +3344,7 @@ export async function removeRaidSignupsForAccounts(input: {
       const nextRaid = { ...item.raid, signups: item.nextSignups, updatedAt: new Date().toISOString() };
       if (!nextRaid.channelId || !nextRaid.messageId || nextRaid.discordDeletedAt) continue;
       try {
-        await publishOrUpdateRaid(nextRaid, nextRaid.channelId, { syncScheduledEvent: false });
+        await publishOrUpdateRaid(nextRaid, nextRaid.discordMessageChannelId || nextRaid.channelId, { syncScheduledEvent: false });
         discordSynced += 1;
       } catch (error) {
         discordFailed += 1;
@@ -3484,7 +3500,8 @@ export async function saveRaidFromForm(
   if (!hasRaidStorage())
     throw new Error("Збереження рейдів тимчасово недоступне.");
 
-  const raidId = cleanRaidId(form.get("raidId"));
+  const creationToken = String(form.get("creationToken") || "");
+  const raidId = cleanRaidId(form.get("raidId")) || (/^[a-f0-9-]{36}$/.test(creationToken) ? publicationRevision([user.provider, user.id, creationToken]).slice(0, 32) : "");
   const payload = formRaidPayload(form, user, profile);
   const savedRaid = await firebaseWrite(
     "raid",
@@ -3494,57 +3511,62 @@ export async function saveRaidFromForm(
       const ref = raidId
         ? db.collection(RAID_COLLECTION).doc(raidId)
         : db.collection(RAID_COLLECTION).doc();
-      const snapshot = await ref.get();
-      const existingRaid = snapshot.exists
-        ? normalizeRaid(snapshot.id, snapshot.data() || {})
-        : null;
-      validateRaidPayload(payload, existingRaid);
-      const nextStatus = snapshot.exists
-        ? existingRaid?.status || "draft"
-        : "draft";
-      const effectivePayload = existingRaid
-        ? {
-            ...payload,
-            createdByDiscordId: existingRaid.createdByDiscordId,
-            createdByName: existingRaid.createdByName,
-            createdByMain: existingRaid.createdByMain,
-          }
-        : payload;
-      const reminderScheduleChanged = Boolean(
-        existingRaid &&
-          (existingRaid.date !== effectivePayload.date ||
-            existingRaid.time !== effectivePayload.time ||
-            cleanSnowflake(existingRaid.channelId) !== cleanSnowflake(effectivePayload.channelId) ||
-            cleanSnowflake(existingRaid.voiceChannelId) !== cleanSnowflake(effectivePayload.voiceChannelId)),
-      );
+      const savedRaid = await db.runTransaction(async tx => {
+        const snapshot = await tx.get(ref);
+        const existingRaid = snapshot.exists
+          ? normalizeRaid(snapshot.id, snapshot.data() || {})
+          : null;
+        validateRaidPayload(payload, existingRaid);
+        const nextStatus = snapshot.exists
+          ? existingRaid?.status || "draft"
+          : "draft";
+        const effectivePayload = existingRaid
+          ? {
+              ...payload,
+              createdByDiscordId: existingRaid.createdByDiscordId,
+              createdByName: existingRaid.createdByName,
+              createdByMain: existingRaid.createdByMain,
+            }
+          : payload;
+        const reminderScheduleChanged = Boolean(
+          existingRaid &&
+            (existingRaid.date !== effectivePayload.date ||
+              existingRaid.time !== effectivePayload.time ||
+              cleanSnowflake(existingRaid.channelId) !== cleanSnowflake(effectivePayload.channelId) ||
+              cleanSnowflake(existingRaid.voiceChannelId) !== cleanSnowflake(effectivePayload.voiceChannelId)),
+        );
 
-      await ref.set(
-        {
-          ...effectivePayload,
-          status: nextStatus,
-          ...(reminderScheduleChanged
-            ? {
-                reminderChannelId: null,
-                reminderMessageId: null,
-                reminderSentAt: null,
-                reminderDeletedAt: null,
-                reminderClaimedAt: null,
-                reminderDmAttemptedAt: null,
-                reminderDmSentCount: null,
-                reminderDmFailedCount: null,
-              }
-            : {}),
-          ...(nextStatus === "closed"
-            ? {}
-            : { closedAt: null, closedReason: null }),
-          updatedAt: FieldValue.serverTimestamp(),
-          ...(snapshot.exists
-            ? {}
-            : { createdAt: FieldValue.serverTimestamp(), signups: [] }),
-        },
-        { merge: true },
-      );
+        tx.set(ref,
+          {
+            ...effectivePayload,
+            ...(existingRaid?.messageId ? { discordMessageChannelId: existingRaid.discordMessageChannelId || existingRaid.channelId || null } : {}),
+            status: nextStatus,
+            ...(reminderScheduleChanged
+              ? {
+                  reminderChannelId: null,
+                  reminderMessageId: null,
+                  reminderSentAt: null,
+                  reminderDeletedAt: null,
+                  reminderClaimedAt: null,
+                  reminderDmAttemptedAt: null,
+                  reminderDmSentCount: null,
+                  reminderDmFailedCount: null,
+                }
+              : {}),
+            ...(nextStatus === "closed"
+              ? {}
+              : { closedAt: null, closedReason: null }),
+            updatedAt: FieldValue.serverTimestamp(),
+            ...(snapshot.exists
+              ? {}
+              : { createdAt: FieldValue.serverTimestamp(), signups: [] }),
+          },
+          { merge: true },
+        );
 
+        return { existingRaid, reminderScheduleChanged };
+      });
+      const { existingRaid, reminderScheduleChanged } = savedRaid;
       if (
         reminderScheduleChanged &&
         existingRaid?.reminderMessageId &&
@@ -5019,11 +5041,11 @@ function raidDashboardUrl(raidId: string) {
 
 function raidDiscordScheduledEventDescription(raid: RaidItem, messageUrl: string) {
   const pieces = [
+    raidDashboardUrl(raid.id) ? `Сторінка рейду: ${raidDashboardUrl(raid.id)}` : "",
+    messageUrl ? `Оголошення: ${messageUrl}` : "",
     raid.description.trim(),
     raid.raidLeaderName ? `РЛ: ${raid.raidLeaderName}` : "",
     raidVoiceChannelLink(raid) ? `Голосовий канал: ${raidVoiceChannelLink(raid)}` : "",
-    messageUrl ? `Оголошення: ${messageUrl}` : "",
-    raidDashboardUrl(raid.id) ? `Сторінка рейду: ${raidDashboardUrl(raid.id)}` : "",
   ].filter(Boolean);
   return Array.from(pieces.join("\n\n")).slice(0, 1000).join("");
 }
@@ -5051,24 +5073,61 @@ async function persistRaidDiscordScheduledEventState(
       await getFirebaseAdminDb()
         .collection(RAID_COLLECTION)
         .doc(raidId)
-        .set({ ...patch, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+        .update({ ...patch, updatedAt: FieldValue.serverTimestamp() });
       clearRaidRuntimeCaches(raidId);
     },
     { timeoutMs: 3_000, bypassCircuit: true, logEvent: "raids.discord_event_state_write_failed" },
   );
 }
 
+async function createOrRecoverRaidScheduledEvent(raid: RaidItem, params: { name: string; description: string; scheduledStartTime: string; scheduledEndTime: string; location: string }, assertOwned: () => Promise<void>) {
+  const result = await runDiscordPublicationCreation({
+    kind: "raid-event", collection: RAID_COLLECTION, resourceId: raid.id,
+    target: "scheduled-event", revision: publicationRevision(params), previousId: cleanSnowflake(raid.discordEventId),
+    context: { params }, assertOwned,
+    create: async operation => {
+      const stored = operation.context.params as typeof params;
+      const created = await createDiscordGuildScheduledEvent({ ...stored, auditReason: `Raid scheduled event recreated: ${raid.id}` });
+      return { id: created.id };
+    },
+    reconcile: operation => findDiscordPublicationScheduledEvent(operation.context.params as typeof params),
+    patch: (result, current, operation) => {
+      if (current.discordEventId && current.discordEventId !== operation.previousId && current.discordEventId !== result.id)
+        throw new Error("Посилання на Discord-подію змінилося. Потрібна звірка.");
+      return { discordEventId: result.id, discordEventUrl: discordScheduledEventUrl(String(result.id)),
+        discordEventSyncedAt: FieldValue.serverTimestamp(), discordEventLastError: null };
+    },
+  });
+  return { id: String(result.result.id) };
+}
+
 async function syncRaidDiscordScheduledEvent(
   raid: RaidItem,
   messageUrl: string,
+  assertOwned: () => Promise<void>,
 ): Promise<RaidDiscordScheduledEventSyncResult> {
+  const pendingEvent = await getDiscordPublicationOperation("raid-event", raid.id);
+  if (pendingEvent && !["complete", "rejected"].includes(pendingEvent.state)) {
+    try {
+      if (pendingEvent.state === "prepared" && raid.discordEventEnabled === false) {
+        await updateDiscordPublicationOperation("raid-event", raid.id, pendingEvent.nonce, { state: "rejected", error: null });
+      } else {
+        const recovered = await createOrRecoverRaidScheduledEvent(raid, pendingEvent.context.params as Parameters<typeof createOrRecoverRaidScheduledEvent>[1], assertOwned);
+        raid = { ...raid, discordEventId: recovered.id, discordEventUrl: discordScheduledEventUrl(recovered.id) };
+      }
+    } catch (error) {
+      const message = "Результат створення Discord-події потребує звірки. Оголошення рейду вже збережене; повтори оновлення Discord для перевірки події.";
+      await persistRaidDiscordScheduledEventState(raid.id, { discordEventLastError: message }).catch(() => undefined);
+      console.warn("[raids] scheduled event reconciliation pending", error instanceof Error ? error.message : "unavailable");
+      return { action: "failed", eventId: raid.discordEventId || null, eventUrl: raid.discordEventUrl || null, error: message };
+    }
+  }
   const enabled = raid.discordEventEnabled !== false;
   const existingEventId = cleanSnowflake(raid.discordEventId);
 
   if (!enabled) {
     if (!existingEventId) {
       await persistRaidDiscordScheduledEventState(raid.id, {
-        discordEventEnabled: false,
         discordEventId: null,
         discordEventUrl: null,
         discordEventSyncedAt: FieldValue.serverTimestamp(),
@@ -5082,7 +5141,6 @@ async function syncRaidDiscordScheduledEvent(
         auditReason: `Raid scheduled event disabled: ${raid.id}`,
       });
       await persistRaidDiscordScheduledEventState(raid.id, {
-        discordEventEnabled: false,
         discordEventId: null,
         discordEventUrl: null,
         discordEventSyncedAt: FieldValue.serverTimestamp(),
@@ -5121,233 +5179,99 @@ async function syncRaidDiscordScheduledEvent(
   try {
     let event: { id?: string } | null = null;
     let action: "created" | "updated" = existingEventId ? "updated" : "created";
-    if (existingEventId) {
+    const pending = await getDiscordPublicationOperation("raid-event", raid.id);
+    const create = () => createOrRecoverRaidScheduledEvent(raid, params, assertOwned);
+    if (pending && !["complete", "rejected"].includes(pending.state)) {
+      event = await create();
+      action = "created";
+      // Reconcile the original CREATE before applying newly edited settings.
+      await assertOwned();
+      event = await editDiscordGuildScheduledEvent({ eventId: String(event.id), ...params, auditReason: `Raid scheduled event recovered: ${raid.id}` });
+    } else if (existingEventId) {
       try {
-        event = await editDiscordGuildScheduledEvent({
-          eventId: existingEventId,
-          ...params,
-          auditReason: `Raid scheduled event updated: ${raid.id}`,
-        });
+        await assertOwned();
+        event = await editDiscordGuildScheduledEvent({ eventId: existingEventId, ...params, auditReason: `Raid scheduled event updated: ${raid.id}` });
       } catch (error) {
         if (!isMissingDiscordScheduledEventError(error)) throw error;
         action = "created";
-        event = await createDiscordGuildScheduledEvent({
-          ...params,
-          auditReason: `Raid scheduled event recreated: ${raid.id}`,
-        });
+        event = await create();
       }
     } else {
-      event = await createDiscordGuildScheduledEvent({
-        ...params,
-        auditReason: `Raid scheduled event created: ${raid.id}`,
-      });
+      event = await create();
     }
-
-    const eventId = cleanSnowflake(event?.id || existingEventId);
+    const eventId = cleanSnowflake(event?.id);
     if (!eventId) throw new Error("Discord не повернув ID запланованої події.");
     const eventUrl = discordScheduledEventUrl(eventId);
-    try {
-      await persistRaidDiscordScheduledEventState(raid.id, {
-        discordEventEnabled: true,
-        discordEventDurationMinutes: raidDiscordEventDurationMinutes(raid),
-        discordEventId: eventId,
-        discordEventUrl: eventUrl || null,
-        discordEventSyncedAt: FieldValue.serverTimestamp(),
-        discordEventLastError: null,
-      });
-    } catch (stateError) {
-      // Якщо щойно створили подію, але не змогли зберегти її ID, прибираємо
-      // її назад із Discord. Інакше наступна публікація створила б дублікат.
-      if (action === "created") {
-        await deleteDiscordGuildScheduledEvent({
-          eventId,
-          auditReason: `Rollback orphan raid scheduled event: ${raid.id}`,
-        }).catch(() => false);
-      }
-      throw stateError;
-    }
+    await persistRaidDiscordScheduledEventState(raid.id, {
+      discordEventId: eventId, discordEventUrl: eventUrl || null,
+      discordEventSyncedAt: FieldValue.serverTimestamp(), discordEventLastError: null,
+    });
+    clearRaidRuntimeCaches(raid.id);
     return { action, eventId, eventUrl: eventUrl || null, error: null };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error || "Discord scheduled event sync failed");
     await persistRaidDiscordScheduledEventState(raid.id, {
-      discordEventEnabled: true,
       discordEventLastError: message.slice(0, 400),
     }).catch(() => false);
-    return { action: "failed", eventId: existingEventId || null, eventUrl: raid.discordEventUrl || null, error: message };
+    const known = await readRaidForLifecycleTask(raid.id).catch(() => null);
+    return { action: "failed", eventId: known?.discordEventId || existingEventId || null, eventUrl: known?.discordEventUrl || raid.discordEventUrl || null, error: message };
   }
 }
 
 export async function publishOrUpdateRaid(
-  raid: RaidItem,
+  input: RaidItem,
   channelId?: string | null,
-  options?: { syncScheduledEvent?: boolean },
+  options?: { syncScheduledEvent?: boolean; publicationMessageUrl?: string },
 ) {
-  const closed = isRaidClosed(raid);
-  // A draft becomes published as part of this operation. Build the public
-  // message from that effective state, otherwise Discord visibly says
-  // “Чернетка” while already exposing live signup buttons.
-  const publicRaid: RaidItem = { ...raid, status: closed ? "closed" : "published" };
-  const payload = buildRaidDiscordPayload(publicRaid);
-  const components = buildRaidAttendanceComponents(raid.id, {
-    disabled: closed,
-    full: !closed && isRaidRegistrationFull(raid),
-    registrationLocked: !closed && isRaidRegistrationLocked(raid),
-    signed: false,
-    personalized: false,
-  });
-  const targetChannelId = cleanSnowflake(
-    channelId || raid.channelId || getDiscordDefaultChannelId(),
-  );
-  if (!targetChannelId)
-    throw new Error(
-      "Канал Discord для рейду не вибрано. Вибери канал у формі рейду.",
-    );
-
-  let message: any;
-  const hasExistingMessage = Boolean(raid.channelId && raid.messageId);
-  const canEditExisting = Boolean(
-    hasExistingMessage && targetChannelId === raid.channelId,
-  );
-
-  if (canEditExisting && raid.channelId && raid.messageId) {
-    const existingRef: DiscordMessageRef = {
-      channelId: raid.channelId,
-      messageId: raid.messageId,
-    };
-    try {
-      message = await editDiscordRaidMessage({
-        ref: existingRef,
-        content: payload.content,
-        embed: payload.embed,
-        components,
-        mentionRoleIds: payload.mentionRoleIds,
-        auditReason: `Raid updated: ${raid.id}`,
-      });
-    } catch (error) {
-      if (!isMissingDiscordMessageError(error)) throw error;
-      message = await createDiscordRaidMessage({
-        channelId: targetChannelId,
-        content: payload.content,
-        embed: payload.embed,
-        components,
-        mentionRoleIds: payload.mentionRoleIds,
-        auditReason: `Raid republished after missing message: ${raid.id}`,
-      });
-    }
-  } else {
-    message = await createDiscordRaidMessage({
-      channelId: targetChannelId,
-      content: payload.content,
-      embed: payload.embed,
-      components,
-      mentionRoleIds: payload.mentionRoleIds,
-      auditReason: `Raid published: ${raid.id}`,
+  return withDiscordPublicationLease(`raid:${input.id}`, async assertOwned => {
+    const raid = await readRaidForLifecycleTask(input.id);
+    if (!raid) throw new Error("Рейд не знайдено.");
+    const targetChannelId = cleanSnowflake(channelId || raid.channelId || getDiscordDefaultChannelId());
+    if (!targetChannelId) throw new Error("Канал Discord для рейду не вибрано. Вибери канал у формі рейду.");
+    const manualRef = options?.publicationMessageUrl ? parseDiscordMessageRef(options.publicationMessageUrl) : null;
+    if (options?.publicationMessageUrl && !manualRef) throw new Error("Вкажи повне посилання на повідомлення Discord.");
+    const result = await publishDiscordResourceMessage({
+      kind: "raid-message", collection: RAID_COLLECTION, resourceId: raid.id,
+      channelId: targetChannelId, assertOwned, manualRef,
+      build: async data => {
+        const fresh = normalizeRaid(raid.id, data);
+        const closed = isRaidClosed(fresh);
+        const publicRaid: RaidItem = { ...fresh, status: closed ? "closed" : "published" };
+        return {
+          resourceUrl: dashboardRaidUrl(fresh.id),
+          payload: { ...buildRaidDiscordPayload(publicRaid), components: buildRaidAttendanceComponents(fresh.id, {
+            disabled: closed, full: !closed && isRaidRegistrationFull(fresh),
+            registrationLocked: !closed && isRaidRegistrationLocked(fresh), signed: false, personalized: false,
+          }) },
+        };
+      },
+      patch: data => {
+        const fresh = normalizeRaid(raid.id, data);
+        const closed = isRaidClosed(fresh);
+        return {
+          status: closed ? "closed" : "published",
+          closedReason: closed ? (fresh.closedReason === "manual" ? "manual" : "auto") : null,
+          ...(closed && !fresh.closedAt ? { closedAt: FieldValue.serverTimestamp() } : closed ? {} : { closedAt: null }),
+          discordCloseSyncedAt: closed ? FieldValue.serverTimestamp() : null,
+          discordDeletedAt: null, discordDeleteReason: null,
+          publishedAt: fresh.publishedAt || FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
+        };
+      },
     });
-
-    if (
-      hasExistingMessage &&
-      raid.channelId &&
-      raid.messageId &&
-      raid.channelId !== targetChannelId
-    ) {
-      await deleteDiscordRaidMessage({
-        ref: { channelId: raid.channelId, messageId: raid.messageId },
-        auditReason: `Raid moved to another channel: ${raid.id}`,
-      }).catch((error) =>
-        console.warn("[raids] Failed to delete old Discord raid message", {
-          raidId: raid.id,
-          message: error instanceof Error ? error.message : String(error),
-        }),
-      );
-    }
-  }
-
-  const nextChannelId = String(message?.channel_id || targetChannelId);
-  const nextMessageId = String(message?.id || "");
-  if (!nextChannelId || !nextMessageId)
-    throw new Error(
-      "Discord не підтвердив повідомлення. Перевір канал і повтори дію.",
-    );
-  const messageUrl = discordMessageUrl(nextChannelId, nextMessageId);
-
-  await firebaseWrite(
-    "raid",
-    `raid:${raid.id}:publish-state`,
-    async () => {
-      await getFirebaseAdminDb()
-        .collection(RAID_COLLECTION)
-        .doc(raid.id)
-        .set(
-          {
-            status: closed ? "closed" : "published",
-            closedReason: closed
-              ? raid.closedReason === "manual"
-                ? "manual"
-                : "auto"
-              : null,
-            ...(closed && !raid.closedAt
-              ? { closedAt: FieldValue.serverTimestamp() }
-              : closed
-                ? {}
-                : { closedAt: null }),
-            discordCloseSyncedAt: closed ? FieldValue.serverTimestamp() : null,
-            discordDeletedAt: null,
-            discordDeleteReason: null,
-            channelId: nextChannelId,
-            messageId: nextMessageId,
-            messageUrl,
-            publishedAt: FieldValue.serverTimestamp(),
-            updatedAt: FieldValue.serverTimestamp(),
-          },
-          { merge: true },
-        );
-      clearRaidRuntimeCaches(raid.id);
-    },
-    { timeoutMs: 3_000, bypassCircuit: true, logEvent: "raids.publish_state_write_failed" },
-  );
-
-  const publishedRaid: RaidItem = {
-    ...raid,
-    status: closed ? "closed" : "published",
-    closedReason: closed ? (raid.closedReason === "manual" ? "manual" : "auto") : null,
-    closedAt: closed ? (raid.closedAt || new Date().toISOString()) : null,
-    discordCloseSyncedAt: closed ? new Date().toISOString() : null,
-    discordDeletedAt: null,
-    discordDeleteReason: null,
-    channelId: nextChannelId,
-    messageId: nextMessageId,
-    messageUrl,
-  };
-  await reconcileRaidLifecycleTasksForRaid(publishedRaid).catch((error) => {
-    console.warn("[raids] Failed to reconcile lifecycle tasks after publish", {
-      raidId: raid.id,
-      message: error instanceof Error ? error.message : String(error),
+    clearRaidRuntimeCaches(raid.id);
+    const publishedRaid = await readRaidForLifecycleTask(raid.id);
+    if (!publishedRaid) throw new Error("Рейд видалено.");
+    await reconcileRaidLifecycleTasksForRaid(publishedRaid).catch(error => {
+      console.warn("[raids] Failed to reconcile lifecycle tasks after publish", {
+        raidId: raid.id, message: error instanceof Error ? error.message : String(error),
+      });
     });
+    const scheduledEvent = options?.syncScheduledEvent === false
+      ? { action: "skipped" as const, eventId: publishedRaid.discordEventId || null,
+          eventUrl: publishedRaid.discordEventUrl || null, error: publishedRaid.discordEventLastError || null }
+      : await syncRaidDiscordScheduledEvent(publishedRaid, result.messageUrl, assertOwned);
+    return { ...result, raid: publishedRaid, scheduledEvent };
   });
-
-  const scheduledEvent = options?.syncScheduledEvent === false
-    ? {
-        action: "skipped" as const,
-        eventId: raid.discordEventId || null,
-        eventUrl: raid.discordEventUrl || null,
-        error: raid.discordEventLastError || null,
-      }
-    : await syncRaidDiscordScheduledEvent(
-        {
-          ...publishedRaid,
-          channelId: nextChannelId,
-          messageId: nextMessageId,
-          messageUrl,
-        },
-        messageUrl,
-      );
-
-  return {
-    channelId: nextChannelId,
-    messageId: nextMessageId,
-    messageUrl,
-    scheduledEvent,
-  };
 }
 
 export async function saveAndMaybePublishRaid(
@@ -5361,39 +5285,33 @@ export async function saveAndMaybePublishRaid(
     const wasDiscordPublished = Boolean(
       raid.channelId && raid.messageId && raid.status !== "draft",
     );
-    const result = await publishOrUpdateRaid(
-      raid,
-      form.get("channelId")
-        ? cleanString(form.get("channelId"), 32)
-        : raid.channelId,
-    );
-    const shouldAutoClose = isRaidClosed({
-      ...raid,
-      ...result,
-      status: "published",
-    });
-    const nextStatus = shouldAutoClose
-      ? ("closed" as const)
-      : ("published" as const);
-    return {
-      raid: {
-        ...raid,
-        status: nextStatus,
-        closedReason: shouldAutoClose ? ("auto" as const) : null,
-        closedAt: shouldAutoClose ? new Date().toISOString() : null,
-        channelId: result.channelId,
-        messageId: result.messageId,
-        messageUrl: result.messageUrl,
-        discordEventId: result.scheduledEvent.eventId,
-        discordEventUrl: result.scheduledEvent.eventUrl,
-        discordEventLastError: result.scheduledEvent.error,
-      },
-      published: result.messageUrl,
-      discordAction: wasDiscordPublished
-        ? ("updated" as const)
-        : ("created" as const),
-      scheduledEvent: result.scheduledEvent,
-    };
+    try {
+      const result = await publishOrUpdateRaid(
+        raid,
+        form.get("channelId") ? cleanString(form.get("channelId"), 32) : raid.channelId,
+        { publicationMessageUrl: String(form.get("publicationMessageUrl") || "").trim() },
+      );
+      return {
+        raid: {
+          ...result.raid,
+          channelId: result.channelId,
+          messageId: result.messageId,
+          messageUrl: result.messageUrl,
+          discordEventId: result.scheduledEvent.eventId,
+          discordEventUrl: result.scheduledEvent.eventUrl,
+          discordEventLastError: result.scheduledEvent.error,
+        },
+        published: result.messageUrl,
+        discordAction: wasDiscordPublished
+          ? ("updated" as const)
+          : ("created" as const),
+        scheduledEvent: result.scheduledEvent,
+      };
+    } catch (error) {
+      // Even a brand-new form must return to the saved draft after Discord fails.
+      if (error instanceof Error) Object.assign(error, { raidId: raid.id });
+      throw error;
+    }
   }
   return { raid, published: null, discordAction: null };
 }
@@ -5890,7 +5808,7 @@ async function editCurrentRaidDiscordMessage(
   // синхронізація падає і користувач бачить "Discord-повідомлення не оновилося автоматично".
   // Тому основне джерело істини — messageId/channelId, збережені в документі рейду.
   const storedRef = cleanDiscordMessageRef({
-    channelId: raid.channelId,
+    channelId: raid.discordMessageChannelId || raid.channelId,
     messageId: raid.messageId,
   });
   const fallbackRef = cleanDiscordMessageRef(messageRef);

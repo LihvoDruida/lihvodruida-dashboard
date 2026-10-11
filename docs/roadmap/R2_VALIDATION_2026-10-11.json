@@ -1,0 +1,104 @@
+{
+  "date": "2026-10-11",
+  "release": "3.8.70",
+  "bot_version": "3.6.6",
+  "base_release": "3.8.69",
+  "base_archive_sha256": "cba31669561999a4fd9ddf5879f5e8830b83109e1b201b6707b3412134472426",
+  "completed_packages": [
+    "R1",
+    "R2"
+  ],
+  "pending_packages": [
+    "R3",
+    "R4",
+    "R5",
+    "R6",
+    "R7",
+    "R8"
+  ],
+  "tests": {
+    "postgresql_engine": "16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+    "publication_postgresql_scenarios": 26,
+    "publication_transport_checks": 8,
+    "r1_postgresql_regression": 23,
+    "pg_transaction_fault_injection": 7,
+    "bot": 45,
+    "verify": "passed",
+    "lint": "passed",
+    "build_ci": "passed",
+    "docker_builder_copy_inputs": 23,
+    "source_builder_files_compared": 504,
+    "ui_widths": [
+      320,
+      390,
+      768,
+      1280
+    ],
+    "ui_overflow": false,
+    "ui_panel_overlap": false,
+    "closed_event_recovery": "enabled",
+    "anonymous_http_statuses": [
+      401,
+      401,
+      401,
+      303
+    ],
+    "post_ref_atomicity": "real PostgreSQL",
+    "discord_responses": "controlled local HTTP server / explicit dependency boundaries"
+  },
+  "not_executed": [
+    "live Discord calls",
+    "VPS deployment",
+    "Docker and PostgreSQL 17 runner",
+    "production database backup/restore"
+  ],
+  "build_warnings": [
+    "pre-existing discordWelcomeCard.ts:273 dynamic filesystem tracing",
+    "pre-existing discordWelcomeCard.ts:487 dynamic font path tracing"
+  ],
+  "lab_note": "Native PostgreSQL startup used the R1 QA-only UID shim; no SQL-engine patch. The shim/test cluster is excluded from this source archive.",
+  "protected_scope": "All 637 R1 files preserved; bot, R1 storage modules, banner, backgrounds/assets and logging design preserved. Acceptance of every type of rules unchanged.",
+  "source_sha256": {
+    "src/lib/discordPublication.ts": "35c3e39c16beff8f23c2ed1874bda214bb0b22ad5549dce40abf8f7b3b5b8d73",
+    "src/lib/discordMessagePublication.ts": "b21e4e5377e0b1f8eac2b10fa13d9f2d19c5fd0a6e5839491a6a9b5d940d32bd",
+    "src/lib/raids.ts": "f3f0ce3aac4e124963450e8cf9f0635e4d4dcf3ab660979c8bf3223b31d832b2",
+    "src/lib/raidPolls.ts": "9c2d40bd8fb1b6d4ed5f2363504e9341c4a9dc1053738b47fd52fc495c371bba",
+    "src/lib/discordAdmin.ts": "139b637f09627e36c215c4cb073df5bd461fcb48640df4c4f62824edee0c5b70",
+    "scripts/test-discord-publication-pg.cjs": "ddbdd0eeb14df895bab93d28c65ca6c2f29835f66265f8a7bc32d5a9c2e20efd",
+    "scripts/check-discord-publication.cjs": "b59b1514ee22ff9e66a35b2d1c789e453095e47e7124ee96b0e4367c2e9bf601"
+  },
+  "qa_logs": {
+    "publication-pg": {
+      "sha256": "cc7d598c8ad45db92d87aa92640874e069f1c9ffbcc03f03219ee1d245be9a81",
+      "bytes": 2137
+    },
+    "r1-regression-pg": {
+      "sha256": "5e01113d0b9fd18eb9c0910703b21c180f8a0bc134a6b81104a212e0e61321f6",
+      "bytes": 1717
+    },
+    "verify": {
+      "sha256": "03a038663f961080377c76acf8798451b1640abc525304075324d047f13a7439",
+      "bytes": 45697
+    },
+    "bot": {
+      "sha256": "b84ba22fd4fb23d3d4632cabcd52df65e419fa227b6aa51b72d8df2f41f66056",
+      "bytes": 5180
+    },
+    "final-build-ci": {
+      "sha256": "43bd0cbb01c056a77293e17d8b0708d2f0fc314acf6c6e9811dcec32453795d9",
+      "bytes": 58147
+    },
+    "final-lint": {
+      "sha256": "c07eb96cef18f5672b29c4b1198158291c2a29609d5509988c5903b18539f880",
+      "bytes": 148
+    },
+    "ui": {
+      "sha256": "54e91bba7898ca507fe5b590099b32d935be240c29708b4eed7d3caafcb457d7",
+      "bytes": 649
+    },
+    "http": {
+      "sha256": "f8c184ca125a59a64418b0e8ff052597a28b516bf23f49ac64a7f6c1ab7bc037",
+      "bytes": 382
+    }
+  }
+}

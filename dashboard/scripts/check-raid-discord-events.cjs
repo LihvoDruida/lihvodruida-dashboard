@@ -32,7 +32,7 @@ ok(raids.includes('syncRaidDiscordScheduledEvent') && raids.includes('syncRaidDi
 ok(raids.includes('syncScheduledEvent: false') && raids.includes('options?.syncScheduledEvent === false'), 'background message refreshes do not PATCH scheduled events unnecessarily');
 ok(raids.includes('isMissingDiscordScheduledEventError') && raids.includes('Raid scheduled event recreated'), 'missing scheduled event is recreated without duplicating healthy events');
 ok(raids.includes('discordEventLastError') && raids.includes('action: "failed"'), 'scheduled-event failure is persisted diagnostically instead of aborting raid publication');
-ok(raids.includes('Rollback orphan raid scheduled event') && raids.includes('if (action === "created")'), 'new event is rolled back if its Discord ID cannot be persisted, preventing duplicates');
+ok(raids.includes('runDiscordPublicationCreation') && raids.includes('findDiscordPublicationScheduledEvent'), 'event creation retains a durable receipt and reconciles ambiguous results');
 ok(raids.includes('deleteDiscordGuildScheduledEvent({') && raids.includes('discordEventDeleteFailed'), 'manual raid deletion also cleans up the scheduled event');
 ok(views.includes('name="discordEventEnabled"') && views.includes('name="discordEventDurationMinutes"'), 'raid editor exposes scheduled-event controls');
 ok(views.includes('Відкрити Discord-подію') && views.includes('discordEventUrl'), 'raid UI exposes the Discord event link');

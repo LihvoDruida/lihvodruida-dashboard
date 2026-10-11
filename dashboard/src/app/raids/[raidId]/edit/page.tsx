@@ -1,3 +1,4 @@
+import { getDiscordPublicationOperation } from "@/lib/discordPublication";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { fetchDiscordRoles, fetchDiscordTextChannels, fetchDiscordVoiceChannels, hasDiscordEmbedConfig } from "@/lib/discordAdmin";
@@ -28,6 +29,12 @@ export default async function EditRaidPage({
   const { raidId } = await params;
   const query = await searchParams;
   const raid = await getRaid(raidId);
+  const [publication, eventPublication] = raid ? await Promise.all([
+    getDiscordPublicationOperation("raid-message", raidId).catch(() => undefined),
+    getDiscordPublicationOperation("raid-event", raidId).catch(() => undefined),
+  ]) : [];
+  const publicationEventPending = Boolean(eventPublication && !["complete", "rejected"].includes(eventPublication.state));
+  const publicationPending = Boolean(publication && !["complete", "rejected"].includes(publication.state));
   const discordEnabled = hasDiscordEmbedConfig();
   let channels: Array<{ id: string; name: string }> = [];
   let voiceChannels: Array<{ id: string; name: string }> = [];
@@ -68,7 +75,7 @@ export default async function EditRaidPage({
 
       {raid ? (
         <section className="raid-editor-layout">
-          <RaidForm raid={raid} channels={channels} voiceChannels={voiceChannels} roles={roles} discordEnabled={discordEnabled} editorAccountName={user.name || user.login || ""} />
+          <RaidForm publicationEventPending={publicationEventPending} publicationPending={publicationPending} raid={raid} channels={channels} voiceChannels={voiceChannels} roles={roles} discordEnabled={discordEnabled} editorAccountName={user.name || user.login || ""} />
           <div className="raid-preview-column">
             <RaidEditorLivePreview initialRaid={raid} />
             <RosterSideList raid={raid} />
