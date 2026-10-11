@@ -1,0 +1,65 @@
+{
+  "date": "2026-10-11",
+  "root_cause": "Cleanup automation path missing from exact internal bearer allowlist; default Compose cron request blocked with HTTP 421 before handler",
+  "behavioral_checks": 101,
+  "full_build_ci_on_builder_files": "passed",
+  "post_build_deployment_audit": "101 security/performance invariants passed after the start.sh change",
+  "eslint": "passed",
+  "typescript": "passed as part of build:ci",
+  "shell_syntax": "passed",
+  "idle_discord_rest_calls": 0,
+  "active_interval_seconds": 10,
+  "idle_interval_seconds": 60,
+  "max_kicks_per_cycle": 5,
+  "browser": {
+    "widths": [
+      320,
+      360,
+      390,
+      430,
+      640,
+      768,
+      1024,
+      1280,
+      1920
+    ],
+    "pagination": "25 to 50 passed",
+    "live_refresh": "expanded rows preserved",
+    "tabs_and_keyboard": "passed",
+    "save_pause_owner_restriction": "passed",
+    "browser_errors": 0
+  },
+  "production_standalone_http_checks": [
+    {
+      "label": "authorized scheduler reaches the handler",
+      "status": 503
+    },
+    {
+      "label": "wrong secret is rejected by the handler",
+      "status": 401
+    },
+    {
+      "label": "missing bearer cannot use an internal Host",
+      "status": 421
+    },
+    {
+      "label": "unknown Host stays blocked",
+      "status": 421
+    },
+    {
+      "label": "admin settings path has no internal Host exception",
+      "status": 421
+    },
+    {
+      "label": "public Cloudflare policy stays strict",
+      "status": 403
+    }
+  ],
+  "live_discord_configured": false,
+  "live_members_kicked": 0,
+  "http_503_explanation": "Authorized request reached the handler; deliberately absent DISCORD_GUILD_ID prevents live moderation in this smoke test",
+  "discord_and_document_store": "modeled for behavioral tests",
+  "docker_image_build": "not performed; Docker unavailable",
+  "vps_deployment": "not performed",
+  "known_build_warnings": "2 existing welcome-card filesystem tracing warnings"
+}

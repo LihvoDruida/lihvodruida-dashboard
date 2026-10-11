@@ -1,0 +1,26 @@
+{
+  "date": "2026-10-11",
+  "issue": "dashboard builder omitted deploy/cron/run-job.sh required by build:ci",
+  "before_fix_staged_behavioral_check": "failed with the same missing worker error as the VPS",
+  "after_fix_staged_build_ci": "passed",
+  "discord_cleanup_behavioral_checks": 69,
+  "platform_hardening_checks": 15,
+  "missing_copy_negative_regression": "passed; missing COPY rejected even when local worker exists",
+  "eslint": "passed",
+  "typescript": "passed as part of build:ci",
+  "next_production_build": "passed",
+  "builder_copy_inputs_before": 22,
+  "builder_copy_inputs_after": 23,
+  "validation_method": "Local directory reconstructed from builder COPY instructions with .dockerignore filtering; installed dependencies reused. This is not a Docker build.",
+  "local_node_version": "24.19.0",
+  "dependency_versions": {
+    "next": "16.3.5",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "sharp": "0.35.4"
+  },
+  "known_build_warnings": "2 existing welcome-card filesystem tracing warnings",
+  "docker_image_build": "not performed; Docker unavailable",
+  "vps_deployment": "not performed",
+  "live_members_kicked": 0
+}

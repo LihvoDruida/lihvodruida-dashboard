@@ -1419,6 +1419,10 @@ export function clearCharacterProfileLinksCache() {
   clearRuntimeCachedValuesByPrefix("profile-character-links:");
 }
 
+export function invalidateProfileIdentityCaches(profileId: string) {
+  clearProfileRuntimeCaches(profileId, { characterLinks: true });
+}
+
 function clearProfileRuntimeCaches(profileId?: string | null, options: { characterLinks?: boolean } = {}) {
   const cleanId = String(profileId || "").trim();
   if (cleanId) clearRuntimeCachedValue(`profile:${cleanId}`);

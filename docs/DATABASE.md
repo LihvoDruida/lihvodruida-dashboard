@@ -4,6 +4,10 @@
 твоєму сервері. Розгортання самого сервера — у [DEPLOYMENT.md](./DEPLOYMENT.md);
 тут тільки про базу.
 
+Оновлення v3.8.69: прямі зміни документів атомарні; batch/runTransaction
+зберігають REPEATABLE READ. Перевірки, застосування й окремий відкат:
+[R1_POSTGRES_ATOMICITY_2026-10-11.md](./roadmap/R1_POSTGRES_ATOMICITY_2026-10-11.md).
+
 Переїзд спроєктований так, щоб **відкат займав одну змінну оточення**. Поки
 Firebase-ключі лишаються в `.env.production`, повернутись назад можна, просто
 прибравши `DATABASE_URL` і перезапустивши панель.
@@ -293,3 +297,23 @@ compose: формат даних на диску несумісний. Поря�
 | `deploy/scripts/db-backup.sh` | бекап із перевіркою цілісності |
 | `deploy/scripts/db-restore.sh` | відновлення |
 | `docker-compose.yml` | сервіс `postgres`, мережа `data`, том `pgdata` |
+
+## R2 — журнал публікацій
+
+У v3.8.70 `discordPublications` зберігає поточну операцію створення для ресурсу, її nonce, ревізію, стан і підтверджений ID. Операції використовують існуюче сховище документів; SQL-міграція не потрібна. Не очищайте незавершені операції під час рестарту/відкату. [Поведінка, перевірки та оновлення R2](./roadmap/R2_DISCORD_PUBLICATION_2026-10-11.md).
+
+## R3 — серверний каталог профілів
+
+У v3.8.71 пошук/права/фільтри/сортування працюють до LIMIT; сторінка з 20 профілів і агрегати читаються одним SQL-запитом. SQL-міграція не потрібна (PostgreSQL 16+; Compose використовує 17). Перевірка великих наборів: `TEST_DATABASE_URL=... npm run test:profiles`; ізольований `test:db:docker` включає R1/R2/R3. [Поведінка, обмеження й оновлення R3](./roadmap/R3_PROFILE_DIRECTORY_2026-10-11.md).
+
+## R4 — кероване очищення
+
+У v3.8.72 додається документ `dashboardSettings/discordMemberCleanupControl_<guildId>`: токен покоління, сигнал паузи та одна поточна спроба. Пауза атомарно змінює цей документ і `settings.enabled`, незалежно від worker lease. Журнал `discordCleanupEvents_<guildId>` зберігається; його не можна очищати для повторного запуску невизначених виключень. Нових таблиць/індексів та SQL-міграції немає. `TEST_DATABASE_URL=... npm run test:cleanup` перевіряє реальну PostgreSQL-конкурентність і межу Discord REST. `test:db:docker` тепер запускає всі чотири серії R1–R4. [Пауза, дедлайни й порядок оновлення R4](./roadmap/R4_MANAGED_CLEANUP_2026-10-11.md).
+
+## R5 — групи й ревізії
+
+У v3.8.73 `dashboardSettings/accessGroupsWriteGuard` серіалізує зміни каталогу груп. Документи груп отримують `generation`, `lastMutationId`, `lastMutationBy`; revision обчислюється із сирого документа. Нової таблиці чи SQL-міграції немає. Редагування/видалення потребують актуальної ревізії, усі dashboard writers треба оновлювати разом. `TEST_DATABASE_URL=... npm run test:groups` перевіряє конкурентні зміни на окремій PostgreSQL; `test:db:docker` включає п’ять серій R1–R5. [Контракт і оновлення R5](./roadmap/R5_GROUP_DRAFTS_2026-10-11.md).
+
+## R6.1: імʼя та черга Discord-ніку
+
+`profileNicknameSyncJobs/{profileId}` зберігає останній явний intent, UUID/receipt, ревізію джерела, lease, dispatched, deadline та результат. Імʼя, identityRevision і intent записуються атомарно. Worker отримує до трьох dueAtMs-записів; порожня черга не читає Discord. dispatched після аварії означає тільки GET-звірку, доки користувач не створить новий явний intent. Таблиці чи обовʼязкової SQL-міграції немає. Оновлюються dashboard та cron; перед відкатом зупинити worker й розібрати незавершені задачі. Докладно: `roadmap/R6_1_PROFILE_NICKNAME_2026-10-11.md`.

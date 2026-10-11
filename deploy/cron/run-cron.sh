@@ -18,6 +18,7 @@
 #   adaptive     /api/dashboard/discord/member-cleanup/automation — 10s під час роботи, 60s у спокої
 #   *    * * * *  /api/dashboard/discord/onboarding/automation — welcome DM для нових Discord-учасників
 #   */15 * * * *  /api/dashboard/discord/nicknames/automation — перевірка ніків + DM/fallback-попередження
+#   *    * * * *  /api/dashboard/discord/profile-nicknames/automation — лише готова черга змін профілю
 # ---------------------------------------------------------------------------
 
 set -eu
@@ -42,6 +43,7 @@ call() {
     /api/dashboard/logs/maintenance) interval=1800; key=log-maintenance ;;
     /api/dashboard/profiles/orphan-cleanup) interval=900; key=account-cleanup ;;
     /api/dashboard/discord/nicknames/automation) interval=900; key=nicknames ;;
+    /api/dashboard/discord/profile-nicknames/automation) interval=60; key=profile-nicknames ;;
     *) log "невідома задача: $path"; return 1 ;;
   esac
   # Independent workers retain deadlines and backoff; no automatic curl replay.
@@ -83,6 +85,7 @@ while true; do
   # Endpoint сам тримає baseline/ідемпотентний стан, тому повторний tick не
   # дублює DM і не запускає повторну первинну перевірку ніку.
   call "/api/dashboard/discord/onboarding/automation"
+  call "/api/dashboard/discord/profile-nicknames/automation"
 
   # Найчутливіша до часу рейдова задача. Звичайний tick читає тільки dueAtMs
   # із task queue; hourly sweep лише ремонтує/звіряє task plan для legacy або

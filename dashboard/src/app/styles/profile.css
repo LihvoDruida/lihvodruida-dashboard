@@ -3140,3 +3140,15 @@
     padding-inline: 7px;
   }
 }
+
+/* R6.1: explicit profile/name workflow, using the established palette. */
+.profile-identity-workflow { display: grid; gap: var(--space-sm); min-width: 0; }
+.profile-identity-form { display: flex; flex-wrap: wrap; gap: var(--space-sm); min-width: 0; }
+.profile-identity-form input { flex: 1 1 12rem; width: 100%; min-width: 0; }
+.profile-identity-form .btn { white-space: normal; height: auto; }
+.profile-identity-sync, .profile-identity-conflict { min-width: 0; overflow-wrap: anywhere; }
+.profile-identity-sync p, .profile-identity-conflict p { margin: 0 0 var(--space-sm); }
+.profile-identity-conflict { border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-sm); background: var(--surface-panel); }
+.profile-identity-actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); }
+.profile-identity-workflow .profile-nickname-preview { display: grid; gap: var(--space-xs); min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 480px) { .profile-identity-form .btn { width: 100%; } }

@@ -1,0 +1,92 @@
+{
+  "release": "R6.1",
+  "dashboard": "3.8.74",
+  "bot": "3.6.6",
+  "date": "2026-10-11",
+  "production_deployed": false,
+  "live_discord_changed": false,
+  "identity_pg": {
+    "passed": 30,
+    "postgres": true,
+    "noLiveDiscord": true
+  },
+  "api": {
+    "passed": 11,
+    "noLiveDiscord": true
+  },
+  "browser": {
+    "passed": 20,
+    "widths": 9,
+    "browserErrors": 0,
+    "baselineConfirmations": 2,
+    "newConfirmations": 1
+  },
+  "standalone": {
+    "passed": 5,
+    "standalone": true,
+    "unauthenticatedOnly": true,
+    "noLiveDiscord": true
+  },
+  "pg_regressions": {
+    "R1": 23,
+    "R2": 26,
+    "R3": 32,
+    "R4": 11,
+    "R5": 21
+  },
+  "bot_tests": 45,
+  "build_ci": "passed",
+  "runtime_versions": {
+    "node": "24.19.0",
+    "next": "16.3.5",
+    "react": "19.2.8",
+    "sharp": "0.35.4"
+  },
+  "builder_input_comparison": {
+    "copy_inputs": 23,
+    "compared_files": 571,
+    "differences": []
+  },
+  "unchanged": {
+    "baseline_files": 663,
+    "retained": true,
+    "changed": [
+      "guild_header_work/README.md",
+      "guild_header_work/dashboard/package-lock.json",
+      "guild_header_work/dashboard/package.json",
+      "guild_header_work/dashboard/scripts/test-db-docker.cjs",
+      "guild_header_work/dashboard/src/app/profile/[profileId]/settings/page.tsx",
+      "guild_header_work/dashboard/src/app/styles/profile.css",
+      "guild_header_work/dashboard/src/components/ProfileNameControls.tsx",
+      "guild_header_work/dashboard/src/lib/profiles.ts",
+      "guild_header_work/deploy/cron/run-cron.sh",
+      "guild_header_work/docs/DATABASE.md",
+      "guild_header_work/docs/roadmap/IMPLEMENTATION_STATUS.md"
+    ],
+    "protected_unchanged": 81,
+    "profile_css_original_prefix": true
+  },
+  "known_warnings": {
+    "count": 2,
+    "module": "discordWelcomeCard.ts",
+    "existing_before_R6": true
+  },
+  "limitations": [
+    "No production DB, tokens, Developer Portal or live Discord validation",
+    "Docker engine not run; native isolated PostgreSQL with QA-only UID shim",
+    "Full R6 is not complete; remaining roadmap items are recorded"
+  ],
+  "log_sha256": {
+    "r6-build-ci.log": "14c75fbb0caee7188f13cc0f0c537a44db1b6f58cc9e512ab54ab4e8b9c52298",
+    "r6-identity-api.log": "b7b7085a1f31640f83faf2dbd7af53403e54e7b72f7f325d873d56ca08484fa0",
+    "r6-identity-ui.log": "5557b3e36869f84329dcae97d91301394e3d65c4f074f2a0749af6f767c6ef50",
+    "r6-http.log": "253c9beeffc4f1176bcbecc9e3390ef57379c6ce2ed8729a2a18f731979d5c75",
+    "r6-bot.log": "e66537815939cdd99e6ac41f728d7af8ffee853aba96343ca271aea893a97fbb",
+    "r6-test-profile-identity-pg.cjs.log": "f73bdb96e691d25e3bcffe532bbce49bfaf44f3650e8ee83e361a0e368591fdf",
+    "r6-test-document-store-pg.cjs.log": "5e01113d0b9fd18eb9c0910703b21c180f8a0bc134a6b81104a212e0e61321f6",
+    "r6-test-discord-publication-pg.cjs.log": "cc7d598c8ad45db92d87aa92640874e069f1c9ffbcc03f03219ee1d245be9a81",
+    "r6-test-profile-directory-pg.cjs.log": "56f261dc3703f7c0ec9d2c05a5781f4dbc55308dfc75c292fd090859a36955e5",
+    "r6-test-discord-cleanup-pg.cjs.log": "98f706b0b62c6af757985536deddea161552c3f203a1cc7cf98c1f1fc0a09b30",
+    "r6-test-access-groups-pg.cjs.log": "e2c327aac78374a76a9c5403cce500411ef3d8137cd11d91b812e4a25cde9a6f"
+  }
+}

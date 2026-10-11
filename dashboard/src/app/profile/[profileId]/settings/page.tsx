@@ -851,6 +851,7 @@ export default async function ProfileSettingsPage({
                 </div>
 
                 <ProfileNameControls
+                  identityProfileId={profile.profileId}
                   preferredName={profile.preferredName}
                   publicNameMode={profile.publicNameMode}
                   discordName={profile.displayName}

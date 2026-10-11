@@ -2,6 +2,11 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import type { ProfilePublicNameMode } from "@/lib/profiles";
+import dynamic from "next/dynamic";
+import type { ProfileIdentityState } from "@/lib/profileNicknameSync";
+const ProfileIdentityControls = dynamic(
+  () => import("@/components/ProfileIdentityControls"),
+);
 
 type IconName = "edit" | "check" | "x" | "copy" | "sync";
 
@@ -134,6 +139,7 @@ type Props = {
   canSyncDiscord: boolean;
   discordOwnerLocked?: boolean;
   returnTo?: string;
+  identityProfileId?: string;
 };
 
 export default function ProfileNameControls({
@@ -151,7 +157,9 @@ export default function ProfileNameControls({
   canSyncDiscord,
   discordOwnerLocked = false,
   returnTo = "",
+  identityProfileId,
 }: Props) {
+  const [identity, setIdentity] = useState<ProfileIdentityState | null>(null);
   const inputId = useId();
   const [value, setValue] = useState(preferredName || "");
   const [copied, setCopied] = useState(false);
@@ -172,7 +180,7 @@ export default function ProfileNameControls({
     setCopied(false);
   }, [nicknamePreview]);
 
-  const savedName = (preferredName || "").trim();
+  const savedName = (identity?.preferredName ?? preferredName ?? "").trim();
   const draftName = value.trim();
   const hasName = Boolean(savedName);
   const synced = Boolean(
@@ -228,7 +236,18 @@ export default function ProfileNameControls({
           ) : null}
         </div>
 
-        {canManage ? (
+        {canManage && identityProfileId ? (
+          <ProfileIdentityControls
+            profileId={identityProfileId}
+            preferredName={preferredName || ""}
+            discordOwnerLocked={discordOwnerLocked}
+            canSyncDiscord={canSyncDiscord}
+            discordName={discordName}
+            currentServerNickname={currentServerNickname}
+            serverNicknameChecked={serverNicknameChecked}
+            onState={setIdentity}
+          />
+        ) : canManage ? (
           <form
             className={`profile-name-edit-form profile-name-edit-form--always is-editing${nameTooShort || nameMissing ? " is-invalid" : ""}`}
             action="/api/profile/name"
@@ -357,7 +376,8 @@ export default function ProfileNameControls({
                 <span>
                   <strong>Імʼя + персонажі</strong>
                   <small>
-                    {serverStyleNamePreview ||
+                    {identity?.nicknamePreview ||
+                      serverStyleNamePreview ||
                       nicknamePreview ||
                       publicNamePreview ||
                       savedName ||
@@ -371,95 +391,100 @@ export default function ProfileNameControls({
         ) : null}
       </section>
 
-      <section
-        className="profile-discord-standard"
-        aria-label="Discord nickname"
-      >
-        <div className="profile-discord-standard__head profile-discord-standard__head--modern">
-          <div className="profile-discord-standard__identity">
-            <span className="profile-name-panel__label">Discord</span>
-            <strong title={discordName || "Discord"}>
-              {discordName || "Discord"}
-            </strong>
-            <small>Оригінальне імʼя Discord.</small>
-          </div>
+      {!identityProfileId ? (
+        <section
+          className="profile-discord-standard"
+          aria-label="Discord nickname"
+        >
+          <div className="profile-discord-standard__head profile-discord-standard__head--modern">
+            <div className="profile-discord-standard__identity">
+              <span className="profile-name-panel__label">Discord</span>
+              <strong title={discordName || "Discord"}>
+                {discordName || "Discord"}
+              </strong>
+              <small>Оригінальне імʼя Discord.</small>
+            </div>
 
-          {canManage && canSyncDiscord && hasName && nicknamePreview ? (
-            discordOwnerLocked ? (
-              <button
-                className="btn subtle btn-sm profile-nick-sync-button"
-                type="button"
-                onClick={copyNickname}
-                title={`Скопіювати: ${nicknamePreview}`}
-                aria-label="Скопіювати Discord nickname"
-              >
-                <ProfileActionIcon name="copy" />
-                <span>{copied ? "Скопійовано" : "Скопіювати"}</span>
-              </button>
-            ) : (
-              <form
-                className="profile-discord-nick-form"
-                action="/api/profile/discord-nickname"
-                method="post"
-              >
-                {returnTo ? (
-                  <input type="hidden" name="returnTo" value={returnTo} />
-                ) : null}
+            {canManage && canSyncDiscord && hasName && nicknamePreview ? (
+              discordOwnerLocked ? (
                 <button
-                  className={`btn subtle btn-sm profile-nick-sync-button${synced ? " is-synced" : ""}`}
-                  type="submit"
-                  data-preserve-label="true"
-                  title={`Змінити серверне імʼя на: ${nicknamePreview}`}
-                  aria-label="Стандартизувати серверне імʼя Discord"
+                  className="btn subtle btn-sm profile-nick-sync-button"
+                  type="button"
+                  onClick={copyNickname}
+                  title={`Скопіювати: ${nicknamePreview}`}
+                  aria-label="Скопіювати Discord nickname"
                 >
-                  <ProfileActionIcon name="sync" />
-                  <span>{syncLabel}</span>
+                  <ProfileActionIcon name="copy" />
+                  <span>{copied ? "Скопійовано" : "Скопіювати"}</span>
                 </button>
-              </form>
-            )
+              ) : (
+                <form
+                  className="profile-discord-nick-form"
+                  action="/api/profile/discord-nickname"
+                  method="post"
+                >
+                  {returnTo ? (
+                    <input type="hidden" name="returnTo" value={returnTo} />
+                  ) : null}
+                  <button
+                    className={`btn subtle btn-sm profile-nick-sync-button${synced ? " is-synced" : ""}`}
+                    type="submit"
+                    data-preserve-label="true"
+                    title={`Змінити серверне імʼя на: ${nicknamePreview}`}
+                    aria-label="Стандартизувати серверне імʼя Discord"
+                  >
+                    <ProfileActionIcon name="sync" />
+                    <span>{syncLabel}</span>
+                  </button>
+                </form>
+              )
+            ) : null}
+          </div>
+
+          {showServerNickname ? (
+            <div
+              className="profile-server-nickname"
+              aria-label="Поточне імʼя на Discord-сервері"
+            >
+              <span
+                className="profile-server-nickname__icon"
+                aria-hidden="true"
+              >
+                ⌁
+              </span>
+              <span className="profile-server-nickname__body">
+                <small>Реальний серверний нік</small>
+                <strong>{serverNickname || "Не встановлено"}</strong>
+              </span>
+            </div>
           ) : null}
-        </div>
 
-        {showServerNickname ? (
-          <div
-            className="profile-server-nickname"
-            aria-label="Поточне імʼя на Discord-сервері"
-          >
-            <span className="profile-server-nickname__icon" aria-hidden="true">
-              ⌁
-            </span>
-            <span className="profile-server-nickname__body">
-              <small>Реальний серверний нік</small>
-              <strong>{serverNickname || "Не встановлено"}</strong>
-            </span>
-          </div>
-        ) : null}
-
-        {canSyncDiscord &&
-        hasName &&
-        nicknamePreview &&
-        (!synced || discordOwnerLocked) ? (
-          <div
-            className={`profile-nickname-preview${synced ? " is-synced" : ""}${discordOwnerLocked ? " is-owner-locked" : ""}`}
-          >
-            <span>Буде в Discord</span>
-            <strong>{nicknamePreview}</strong>
-            {discordOwnerLocked ? (
-              <small>Власник сервера змінює вручну.</small>
-            ) : synced ? (
-              <small>Готово{lastSyncedAt ? ` • ${lastSyncedAt}` : ""}.</small>
-            ) : (
-              <small>Лише на цьому сервері.</small>
-            )}
-          </div>
-        ) : canManage ? (
-          <small className="profile-nickname-hint">
-            {!hasName
-              ? "Вкажи імʼя — формат збереться автоматично."
-              : "Синхронізація доступна після входу через Discord."}
-          </small>
-        ) : null}
-      </section>
+          {canSyncDiscord &&
+          hasName &&
+          nicknamePreview &&
+          (!synced || discordOwnerLocked) ? (
+            <div
+              className={`profile-nickname-preview${synced ? " is-synced" : ""}${discordOwnerLocked ? " is-owner-locked" : ""}`}
+            >
+              <span>Буде в Discord</span>
+              <strong>{nicknamePreview}</strong>
+              {discordOwnerLocked ? (
+                <small>Власник сервера змінює вручну.</small>
+              ) : synced ? (
+                <small>Готово{lastSyncedAt ? ` • ${lastSyncedAt}` : ""}.</small>
+              ) : (
+                <small>Лише на цьому сервері.</small>
+              )}
+            </div>
+          ) : canManage ? (
+            <small className="profile-nickname-hint">
+              {!hasName
+                ? "Вкажи імʼя — формат збереться автоматично."
+                : "Синхронізація доступна після входу через Discord."}
+            </small>
+          ) : null}
+        </section>
+      ) : null}
     </div>
   );
 }

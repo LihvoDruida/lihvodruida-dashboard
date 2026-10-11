@@ -14,6 +14,9 @@
 | Шукаю, за що відповідає змінна оточення | [CONFIGURATION.md](./CONFIGURATION.md) |
 | Щось зламалось у проді | [OPERATIONS.md](./OPERATIONS.md) |
 | Питання про базу: бекап, міграція, обслуговування | [DATABASE.md](./DATABASE.md) |
+| Третє оновлення: повний каталог профілів | [R3 та перевірки](./roadmap/R3_PROFILE_DIRECTORY_2026-10-11.md) |
+| Друге оновлення: надійна публікація Discord | [R2 та відкат](./roadmap/R2_DISCORD_PUBLICATION_2026-10-11.md) |
+| Перше оновлення за планом діагностики: атомарність PostgreSQL | [R1 та відкат](./roadmap/R1_POSTGRES_ATOMICITY_2026-10-11.md) |
 
 ---
 

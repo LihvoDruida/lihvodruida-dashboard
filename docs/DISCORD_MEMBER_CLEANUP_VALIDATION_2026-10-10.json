@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-10",
+  "behavioral_checks": 69,
+  "full_build_ci": "passed",
+  "final_next_build": "passed",
+  "typescript": "passed",
+  "eslint": "passed",
+  "shell_syntax": "passed",
+  "compose_structure": "passed",
+  "browser": {
+    "engine": "Chromium",
+    "widths": [
+      320,
+      360,
+      390,
+      430,
+      640,
+      768,
+      1024,
+      1280,
+      1920
+    ],
+    "initial_rows": 25,
+    "show_more_rows": 50,
+    "expanded_rows_after_live_refresh": 50,
+    "tabs": "passed",
+    "keyboard": "passed",
+    "save_and_pause": "passed",
+    "owner_only_configuration": "passed",
+    "errors": 0
+  },
+  "integration_test_environment": "Discord REST and document store modeled; shell cron worker executed with controlled HTTP stub",
+  "deployment": "not performed",
+  "live_members_kicked": 0,
+  "known_build_warnings": "2 existing welcome-card filesystem tracing warnings"
+}

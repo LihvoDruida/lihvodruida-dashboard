@@ -1,0 +1,127 @@
+{
+  "date": "2026-10-11",
+  "site_version": "3.8.69",
+  "bot_version": "3.6.6",
+  "completed_package": "R1 / D01",
+  "remaining_packages": [
+    "R2",
+    "R3",
+    "R4",
+    "R5",
+    "R6",
+    "R7",
+    "R8"
+  ],
+  "base_archive_sha256": "7362d6dfece9cbe8bbbee2baca1faaf71aa836e766a45a27dd66fb127f072401",
+  "database": {
+    "engine": "native PostgreSQL",
+    "version": "16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+    "pool_connections": 8,
+    "isolated_test_schema": true,
+    "original_d01_reproduced": true,
+    "tests_passed": 23,
+    "tests_failed": 0,
+    "cases": [
+      "D01: two simultaneous profile merges preserve both fields",
+      "32 concurrent mixed merge/update increments produce exactly 32",
+      "simultaneous merges create a missing document without losing fields",
+      "deep merges and dotted updates preserve siblings",
+      "nested deletes and transforms do not erase independent changes",
+      "arrayUnion preserves concurrent additions and removes duplicates",
+      "update of a missing document rejects and creates nothing",
+      "update waiting for a committed DELETE does not resurrect the row",
+      "24 concurrent creates have one winner and never overwrite it",
+      "two transactions creating the same absent document have one winner",
+      "a stale transaction retries and preserves a direct writer's fields",
+      "an external action after a retried transaction is executed once",
+      "stale transaction update after deletion rejects and rolls back preceding writes",
+      "failed batch rolls back merge and delete, then releases locks",
+      "queued operations see earlier writes in the same batch",
+      "real multi-document deadlock retries without partial or lost increments",
+      "a blocked document does not block unrelated documents or collections",
+      "default application transaction isolation is unchanged",
+      "full set remains an explicit replacement; update map replaces that map",
+      "timestamps, dates and nested transforms retain their stored representation",
+      "serialization failure rolls back and releases the document lock",
+      "getAll keeps ordering, missing documents, queries and subcollections",
+      "independent Node processes share atomicity through PostgreSQL"
+    ],
+    "independent_node_processes": 2,
+    "cross_process_increments": 48,
+    "real_deadlock_recovered": true,
+    "schema_migration_required": false,
+    "startup_uid_shim_for_restricted_qa_only": true
+  },
+  "transaction_fault_tests": {
+    "passed": 7,
+    "failed": 0,
+    "included_in_verify_and_build_ci": true
+  },
+  "verify": {
+    "exit_code": 0,
+    "includes_typecheck_and_eslint": true
+  },
+  "bot_tests": {
+    "passed": 45,
+    "failed": 0
+  },
+  "production_build": {
+    "exit_code": 0,
+    "builder_copy_inputs": 23,
+    "next_build_seconds": 31,
+    "runtime": {
+      "node": "24.19.0",
+      "next": "16.3.5",
+      "react": "19.2.8",
+      "react-dom": "19.2.8",
+      "sharp": "0.35.4"
+    },
+    "existing_warnings": [
+      "discordWelcomeCard.ts:273 dynamic filesystem tracing",
+      "discordWelcomeCard.ts:487 dynamic filesystem tracing"
+    ]
+  },
+  "compatibility": {
+    "changed_original_files": [
+      "README.md",
+      "dashboard/package-lock.json",
+      "dashboard/package.json",
+      "dashboard/src/lib/db/documentStore.ts",
+      "dashboard/src/lib/db/pgPool.ts",
+      "docs/DATABASE.md",
+      "docs/README.md"
+    ],
+    "unchanged_ui_and_image_files": 194,
+    "rules_acceptance_unchanged": true,
+    "schema_sql_unchanged": true,
+    "no_original_files_removed": true
+  },
+  "not_executed": [
+    "production VPS deployment",
+    "production PostgreSQL 17.11 Docker engine (reproducible test:db:docker runner included)",
+    "live Discord requests",
+    "production backup/restore"
+  ],
+  "evidence_log_hashes": {
+    "before-pg": {
+      "sha256": "4f1ffffea558c36808ca44ae517cae956f71c02837d344fc6d30663f1f56901e",
+      "bytes": 293
+    },
+    "after-pg": {
+      "sha256": "5e01113d0b9fd18eb9c0910703b21c180f8a0bc134a6b81104a212e0e61321f6",
+      "bytes": 1717
+    },
+    "verify": {
+      "sha256": "495b4a96144071988b7c81b2beb55ce62120d618fbc72c5fbdaa0512811a35aa",
+      "bytes": 44912
+    },
+    "bot": {
+      "sha256": "5eaa78569807806f959429c93dfe12e3c8f541c07eb4468ca80b1f640755dfc8",
+      "bytes": 5185
+    },
+    "build-ci": {
+      "sha256": "10966e6d2714e1c42b78155fb77da5a9c26958df786823483db3cc3ae0b6c3ed",
+      "bytes": 57329
+    }
+  }
+}
