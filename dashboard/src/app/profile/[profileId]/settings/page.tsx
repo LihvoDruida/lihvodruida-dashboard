@@ -1,4 +1,6 @@
 import DashboardIdentity from "@/components/DashboardIdentity";
+import ListReturnLink from "@/components/ListReturnLink";
+import { listNavigationScope } from "@/lib/listNavigationScope";
 import LogoutButton from "@/components/LogoutButton";
 import ProfileNameControls from "@/components/ProfileNameControls";
 import ProfileAvatar from "@/components/ProfileAvatar";
@@ -17,7 +19,7 @@ import {
   resolveWowCharacterRole,
   type WowCharacterRole,
 } from "@/lib/wowRoles";
-import { guildStatusLabel } from "@/lib/permissions";
+import { canViewProfiles, guildStatusLabel } from "@/lib/permissions";
 import {
   buildProfileDiscordNickname,
   buildProfileDiscordNicknamePlan,
@@ -632,6 +634,7 @@ export default async function ProfileSettingsPage({
         aria-label="Налаштування профілю Mistblossom Vanguard"
       >
         <DashboardIdentity user={session} activeSection="profile" />
+        {!isRulesReturn && canViewProfiles(session) ? <ListReturnLink kind="profiles" scope={listNavigationScope(session)} /> : null}
         {/* Та сама двоколонкова схема, що на сторінці профілю. */}
         <div className="profile-account-layout">
           <aside className="panel profile-account-sidebar" aria-label="Навігація профілю">

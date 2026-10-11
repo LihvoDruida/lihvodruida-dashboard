@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import DashboardIdentity from "@/components/DashboardIdentity";
+import ListReturnLink from "@/components/ListReturnLink";
+import { listNavigationScope } from "@/lib/listNavigationScope";
 import LogoutButton from "@/components/LogoutButton";
 import ProfileCharacterSetup from "@/components/ProfileCharacterSetup";
 import ProfileCandidateBulkActions from "@/components/ProfileCandidateBulkActions";
@@ -25,6 +27,7 @@ import { wowRoleLabel } from "@/lib/wowRoles";
 import { getSession, type DashboardSession } from "@/lib/auth";
 import {
   canViewProfileAccessDetails,
+  canViewProfiles,
   dashboardRoleLabel,
   guildStatusLabel,
 } from "@/lib/permissions";
@@ -450,6 +453,7 @@ export default async function ProfilePage({
         aria-label="Профіль Mistblossom Vanguard"
       >
         <DashboardIdentity user={viewer} activeSection="profile" />
+        {!isRulesReturn && canViewProfiles(viewer) ? <ListReturnLink kind="profiles" scope={listNavigationScope(viewer)} /> : null}
         {/* Класична двоколонкова схема: липка бічна колонка з
             навігацією та коротким станом + основний потік праворуч.
             Проти першої версії тут додано швидкі показники в бічній

@@ -1,5 +1,8 @@
 import ApplicationStatusActions from "@/components/ApplicationStatusActions";
 import ApplicationFilters from "@/components/ApplicationFilters";
+import ListViewMemory from "@/components/ListViewMemory";
+import { listNavigationScope } from "@/lib/listNavigationScope";
+import { listEntryId, listViewUrl } from "@/lib/listViewState";
 import { redirect } from "next/navigation";
 import DashboardIdentity from "@/components/DashboardIdentity";
 import { buildPageMetadata } from "@/lib/seo";
@@ -151,7 +154,9 @@ export default async function DashboardPage({
   const params = await searchParams;
   const urlParams = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) if (value) urlParams.set(key, value);
-  const [rawItems, filterOptions] = await Promise.all([listApplications(urlParams), listApplicationFilterOptions()]);
+  const currentUrl = listViewUrl("applications", `/applications?${urlParams}`) || "/applications";
+  const listParams = new URLSearchParams(currentUrl.split("?")[1] || "");
+  const [rawItems, filterOptions] = await Promise.all([listApplications(listParams), listApplicationFilterOptions()]);
   const items = mayViewSensitiveApplications ? rawItems : sanitizeApplicationsForMentorViewer(rawItems);
   const counts = {
     all: items.length,
@@ -215,12 +220,13 @@ export default async function DashboardPage({
           </div>
 
           <ApplicationFilters
-            initialQuery={params.q || ""}
-            initialStatus={params.status || "all"}
-            initialClass={params.class || "all"}
-            initialSort={params.sort || "created"}
+            initialQuery={listParams.get("q") || ""}
+            initialStatus={listParams.get("status") || "all"}
+            initialClass={listParams.get("class") || "all"}
+            initialSort={listParams.get("sort") || "created"}
             classOptions={classOptions}
           />
+          <ListViewMemory key={listNavigationScope(user)} kind="applications" scope={listNavigationScope(user)} currentUrl={currentUrl} />
         </section>
 
         {!mayManageApplications ? <div className="notice panel">Режим наставника: заявки можна переглядати, але Discord і BattleTag приховано, а рішення по кандидатах недоступні.</div> : null}
@@ -231,7 +237,7 @@ export default async function DashboardPage({
             const statusLabel = item.status_text || "На розгляді";
             const sourceSystem = typeof item.source_system === "string" ? item.source_system : "application-store";
             return (
-              <article className={`application-card panel application-card--${item.status_key}`} key={String(item.id || item.tracking_number || item.number)}>
+              <article id={listEntryId("applications", String(item.id || item.tracking_number || item.number))} data-list-entry="applications" className={`application-card panel application-card--${item.status_key}`} key={String(item.id || item.tracking_number || item.number)}>
                 <div className="application-card__statusbar" aria-hidden="true" />
                 <div className="application-card__main">
                   <header className="application-card__header">

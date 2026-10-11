@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { listViewUrl } from "@/lib/listViewState";
 
 type ApplicationFiltersProps = {
   initialQuery?: string;
@@ -23,8 +24,8 @@ function normalizedValue(value: string | null | undefined, fallback: string) {
   return clean || fallback;
 }
 
-function buildNextUrl(pathname: string, currentParams: { toString(): string }, updates: Record<string, string>) {
-  const params = new URLSearchParams(currentParams.toString());
+function buildNextUrl(pathname: string, updates: Record<string, string>) {
+  const params = new URLSearchParams();
 
   for (const [key, value] of Object.entries(updates)) {
     const clean = String(value || "").trim();
@@ -56,6 +57,9 @@ export default function ApplicationFilters({
   const [className, setClassName] = useState(normalizedValue(initialClass, DEFAULTS.class));
   const [sort, setSort] = useState(normalizedValue(initialSort, DEFAULTS.sort));
   const latestFiltersRef = useRef({ status, className, sort });
+  const lastRequestedRef = useRef("");
+  const resettingRef = useRef(false);
+  const paramsString = searchParams.toString();
 
   const options = useMemo(() => Array.from(new Set(classOptions.filter(Boolean))).sort(), [classOptions]);
 
@@ -70,39 +74,50 @@ export default function ApplicationFilters({
     latestFiltersRef.current = { status, className, sort };
   }, [status, className, sort]);
 
+  useEffect(() => { lastRequestedRef.current = ""; resettingRef.current = false; }, [paramsString]);
+
   const applyFilters = useCallback((updates: Record<string, string>) => {
     const safePathname = pathname || "/";
-    const nextUrl = buildNextUrl(safePathname, searchParams, updates);
+    const nextUrl = listViewUrl("applications", buildNextUrl(safePathname, updates)) || "/applications";
+    const currentUrl = listViewUrl("applications", `${safePathname}?${paramsString}`);
+    if (nextUrl === currentUrl || nextUrl === lastRequestedRef.current) return;
+    lastRequestedRef.current = nextUrl;
     startTransition(() => {
       router.replace(nextUrl, { scroll: false });
     });
-  }, [pathname, router, searchParams, startTransition]);
+  }, [pathname, router, paramsString, startTransition]);
 
   useEffect(() => {
+    if (resettingRef.current || query.trim() === initialQuery.trim()) return;
     const timer = window.setTimeout(() => {
       const latest = latestFiltersRef.current;
       applyFilters({ q: query, status: latest.status, class: latest.className, sort: latest.sort });
     }, 360);
 
     return () => window.clearTimeout(timer);
-  }, [applyFilters, query]);
+  }, [applyFilters, query, initialQuery]);
 
   function applyImmediate(next: Partial<Record<keyof typeof DEFAULTS, string>>) {
+    resettingRef.current = false;
     const merged = {
       q: next.q ?? query,
       status: next.status ?? status,
       class: next.class ?? className,
       sort: next.sort ?? sort,
     };
+    latestFiltersRef.current = { status: merged.status, className: merged.class, sort: merged.sort };
     applyFilters(merged);
   }
 
   function resetFilters() {
+    resettingRef.current = true;
     setQuery("");
     setStatus(DEFAULTS.status);
     setClassName(DEFAULTS.class);
     setSort(DEFAULTS.sort);
-    applyFilters(DEFAULTS);
+    latestFiltersRef.current = { status: DEFAULTS.status, className: DEFAULTS.class, sort: DEFAULTS.sort };
+    lastRequestedRef.current = "/applications?view=all";
+    startTransition(() => { router.replace("/applications?view=all", { scroll: false }); });
   }
 
   const hasActiveFilters = Boolean(query.trim()) || status !== DEFAULTS.status || className !== DEFAULTS.class || sort !== DEFAULTS.sort;
@@ -119,7 +134,7 @@ export default function ApplicationFilters({
           placeholder="Номер заявки, номер відстеження, нік, realm, клас..."
           value={query}
           autoComplete="off"
-          onChange={(event) => setQuery(event.currentTarget.value)}
+          onChange={(event) => { resettingRef.current = false; setQuery(event.currentTarget.value); }}
         />
       </label>
 
@@ -155,6 +170,7 @@ export default function ApplicationFilters({
           }}
         >
           <option value="all">Усі класи</option>
+          {className !== "all" && !options.includes(className) ? <option value={className}>{className} (немає у поточному списку)</option> : null}
           {options.map((option) => <option key={option} value={option}>{option}</option>)}
         </select>
       </label>

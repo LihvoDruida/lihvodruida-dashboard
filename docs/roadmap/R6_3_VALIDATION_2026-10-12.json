@@ -1,0 +1,130 @@
+{
+  "release": "R6.3",
+  "dashboard": "3.8.76",
+  "bot": "3.6.6",
+  "checked_at_utc": "2026-10-11T21:26:42.804111+00:00",
+  "report_date_timezone": "Europe/Kyiv",
+  "behavioural_state_checks": 14,
+  "postgresql_profile_directory_cases": 32,
+  "postgresql_fixture_profiles": 2000,
+  "browser": {
+    "cases": 21,
+    "scenario_names": [
+      "Idle application filters never trigger navigation",
+      "Debounced typing produces one update and stops after acknowledgement",
+      "Immediate class change cancels redundant pending search",
+      "Slow reset stays one request and preserves explicit show-all marker",
+      "Unknown saved class remains visible and removable",
+      "Bare list entry resumes the scoped last filtered page once",
+      "Explicit filters win over memory; show-all never loops",
+      "Named views exclude cursors and support removal",
+      "Five saved views are bounded; existing name replaces its view",
+      "Profile and settings return to the opened record and page",
+      "Removed opened row falls back to its next available neighbour",
+      "Filter submission clears the previous cursor and row position",
+      "Access/account scope change does not inherit another list view",
+      "Corrupt browser memory is retained until explicit recovery",
+      "Quota errors keep filtering and save controls usable",
+      "Server cursor reset cannot retain an invalid remembered page",
+      "Expired browser memory leaves the initial list unfiltered",
+      "History navigation restores the previous list position",
+      "Application refresh does not move the page or reapply filters",
+      "Disabled storage has an accurate warning without breaking filters",
+      "Real controls fit nine widths from 320 to 1920px"
+    ],
+    "widths": [
+      320,
+      360,
+      390,
+      430,
+      640,
+      768,
+      1024,
+      1280,
+      1920
+    ],
+    "page_errors": 0,
+    "horizontal_overflow": false,
+    "visual_review_widths": [
+      390,
+      1280
+    ],
+    "fixture": "actual production React components, HTTP fixture, Next navigation stub",
+    "responsive_verification": "actual system CSS including applications-page scope and CSS module; no fixture max-width workaround"
+  },
+  "standalone_http_checks": 11,
+  "standalone_http_scope": "unauthenticated routes, origin and no-store checks",
+  "build_ci": "passed",
+  "eslint": "passed",
+  "inspect": {
+    "files": 456,
+    "blocking_issues": 0
+  },
+  "builder_inputs": {
+    "docker_copy_inputs": 23,
+    "checked_files": 579,
+    "differences": []
+  },
+  "preservation": {
+    "previous_archive_files": 679,
+    "missing": [],
+    "changed_previous_files": [
+      "README.md",
+      "dashboard/package-lock.json",
+      "dashboard/package.json",
+      "dashboard/src/app/applications/page.tsx",
+      "dashboard/src/app/profile/[profileId]/page.tsx",
+      "dashboard/src/app/profile/[profileId]/settings/page.tsx",
+      "dashboard/src/app/profiles/page.tsx",
+      "dashboard/src/components/ApplicationFilters.tsx",
+      "docs/roadmap/IMPLEMENTATION_STATUS.md"
+    ],
+    "byte_identical_previous_files": 670,
+    "bot_unchanged": true,
+    "existing_styles_background_rules_and_logging_unchanged": true,
+    "R1_R6_2_modules_and_reports_retained": true
+  },
+  "runtime": {
+    "node": "24.19.0",
+    "next": "16.3.5",
+    "react": "19.2.8",
+    "sharp": "0.35.4",
+    "postgresql": "16.15"
+  },
+  "memory_limits": {
+    "storage": "sessionStorage, current browser tab",
+    "ttl_hours": 24,
+    "position_history": 8,
+    "named_views": 5,
+    "input_json_max_bytes": 65536,
+    "url_max_characters": 4096,
+    "profile_query_max_characters": 120,
+    "application_query_max_characters": 160,
+    "cross_device_persistence": false
+  },
+  "limits": {
+    "vps_changed": false,
+    "production_database_changed": false,
+    "live_discord_tested": false,
+    "live_battlenet_tested": false,
+    "authenticated_live_next_flow_tested": false,
+    "docker_engine_run": false,
+    "all_R6_completed": false,
+    "group_assignment_migration_completed": false,
+    "raids_and_polls_list_memory_added": false,
+    "late_image_layout_shift_possible": true
+  },
+  "warnings": [
+    "Two existing dynamic filesystem Turbopack tracing warnings in discordWelcomeCard.ts"
+  ],
+  "log_sha256": {
+    "r6-3-build-ci.log": "f7f0cdd41995cfac6146eac880455fe6160e4c9aa1fea1516fb367631bf2c6cb",
+    "r6-3-lint.log": "ffea8cf58e7181646871ba86fa54243e8b303bb3ddf326098be7a89479771367",
+    "r6-3-ui.log": "63d509b5bf3e128bfa80d65b6752614d9a662305020d4acfb1c21199833653e7",
+    "r6-3-widths.log": "64a44c7fc18fd077fdaaf140fedf796ba8c6f80e82b0b9611b8c35f2acfa0f23",
+    "r6-3-http.log": "e6efabd3b59a9a3e0653e6d844c557da085e4868d12dacd4170b8a451fa374e4",
+    "r6-3-profile-directory-pg.log": "c52fb88db9579d33b1accd79104142be43be4232c5b135b87f4e9f5aea78e2e4"
+  },
+  "browser_harness_sha256": "b135e370373fc798dd29e9c62839b9928e7549c9d0766c918ac62e9383de4b4b",
+  "responsive_harness_sha256": "b714a97b728ec0a53d2f7ca1201840b16199905cb3dc8f9a5cedc61394b70572"
+}

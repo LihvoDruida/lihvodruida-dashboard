@@ -1,0 +1,13 @@
+.bar { display:flex; flex-wrap:wrap; align-items:center; gap:.65rem; padding:1rem 0; min-width:0; }
+.views { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; min-width:0; }
+.view { display:inline-flex; align-items:center; gap:.3rem; max-width:100%; border:1px solid var(--border); border-radius:8px; }
+.view a { padding:.5rem .65rem; overflow-wrap:anywhere; color:var(--c-accent-300); }
+.view button { background:transparent; border:0; color:var(--text-muted); padding:.5rem; cursor:pointer; min-width:44px; min-height:44px; }
+.label { color:var(--text-muted); font-size:.85rem; }
+.editor { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; min-width:0; }
+.editor input { width:190px; max-width:100%; }
+.message { flex-basis:100%; color:var(--text-muted); font-size:.85rem; margin:0; }
+.returnLink { color:var(--c-accent-300); width:fit-content; max-width:100%; padding:.4rem 0; overflow-wrap:anywhere; }
+.returned { outline:2px solid var(--c-accent-300); outline-offset:3px; scroll-margin-top:100px; }
+@media (max-width:480px) { .bar { align-items:flex-start; } .editor { width:100%; } .editor input { width:100%; } }
+@media (prefers-reduced-motion:reduce) { .returned { scroll-behavior:auto; } }

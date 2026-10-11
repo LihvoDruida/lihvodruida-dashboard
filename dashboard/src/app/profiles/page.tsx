@@ -1,4 +1,7 @@
 import DashboardIdentity from "@/components/DashboardIdentity";
+import ListViewMemory from "@/components/ListViewMemory";
+import { listNavigationScope } from "@/lib/listNavigationScope";
+import { listEntryId } from "@/lib/listViewState";
 import ProfileAvatar from "@/components/ProfileAvatar";
 import { getSession } from "@/lib/auth";
 import {
@@ -98,6 +101,8 @@ function ProfileRow({ profile, avatarUrl }: { profile: DashboardProfile; avatarU
   return (
     <a
       className="profile-directory-row"
+      id={listEntryId("profiles", profile.profileId)}
+      data-list-entry="profiles"
       href={href}
       role="row"
       aria-label={`Відкрити профіль: ${displayName}`}
@@ -236,7 +241,7 @@ export default async function ProfilesPage({
               </p>
             </div>
 
-            <form className="profile-directory-search" action="/profiles" method="get">
+            <form className="profile-directory-search" action="/profiles" method="get" data-list-filter="profiles">
               <label className="profile-directory-search-field" htmlFor="profile-directory-search">
                 <span>Пошук</span>
                 <input
@@ -281,10 +286,12 @@ export default async function ProfilesPage({
 
               <div className="profile-directory-search-actions">
                 <button className="btn primary" type="submit">Застосувати</button>
-                {hasFilters ? <a className="btn subtle" href="/profiles">Скинути</a> : null}
+                {hasFilters ? <a className="btn subtle" data-list-reset-position href="/profiles?view=all">Скинути</a> : null}
               </div>
             </form>
           </div>
+
+          <ListViewMemory key={listNavigationScope(user)} kind="profiles" scope={listNavigationScope(user)} currentUrl={buildProfilesHref({ ...filters, cursor: result.cursorReset || result.unavailable ? null : params.cursor })} restorePosition={!result.cursorReset && !result.unavailable} />
 
           <div className="profile-directory-context" aria-label="Поточний стан списку">
             <div><span>Профілі</span><strong>{formatNumber(total)}</strong></div>
@@ -322,7 +329,7 @@ export default async function ProfilesPage({
                         ? "Зміни пошук або фільтри. Можна шукати за Discord-ніком, персонажем чи реалмом."
                         : "Профіль зʼявиться після входу учасника через Discord."}
                     </p>
-                    {hasFilters ? <a className="btn subtle" href="/profiles">Очистити фільтри</a> : null}
+                    {hasFilters ? <a className="btn subtle" data-list-reset-position href="/profiles?view=all">Очистити фільтри</a> : null}
                   </div>
                 )}
               </div>
