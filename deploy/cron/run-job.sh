@@ -43,6 +43,15 @@ set -e
 [ "$curl_status" -eq 0 ] || code="000"
 stamp=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
 if [ "$code" = "200" ]; then
+  if [ "$key" = "member-cleanup" ]; then
+    # The authenticated endpoint supplies a bounded idle/active deadline.
+    # No JSON utility is required in the minimal curl image.
+    next_interval=$(sed -n 's/.*"nextRunInSeconds"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p' "$body_file" | head -n 1)
+    case "$next_interval" in
+      10|60) interval="$next_interval" ;;
+      *) interval=60 ;;
+    esac
+  fi
   echo "[cron $stamp] OK   $path"
   echo 0 > "$state_dir/$key.failures"
   echo $((now + interval)) > "$state_dir/$key.next"

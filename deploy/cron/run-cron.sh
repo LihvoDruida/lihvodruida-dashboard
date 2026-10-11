@@ -15,7 +15,7 @@
 #   */5  * * * *  /api/polls/close-due?force=1 — scheduled-публікація + автозакриття/повтор
 #   */30 * * * *  /api/dashboard/logs/maintenance — retention/budget журналу
 #   */15 * * * *  /api/dashboard/profiles/orphan-cleanup — scheduler перевірки/очищення акаунтів
-#   *    * * * *  /api/dashboard/discord/member-cleanup/automation — очищення Discord за роллю/датою вступу
+#   adaptive     /api/dashboard/discord/member-cleanup/automation — 10s під час роботи, 60s у спокої
 #   *    * * * *  /api/dashboard/discord/onboarding/automation — welcome DM для нових Discord-учасників
 #   */15 * * * *  /api/dashboard/discord/nicknames/automation — перевірка ніків + DM/fallback-попередження
 # ---------------------------------------------------------------------------
@@ -36,7 +36,7 @@ call() {
   case "$path" in
     /api/raids/lifecycle*) interval=60; key=raid-lifecycle ;;
     /api/dashboard/discord/onboarding/automation) interval=60; key=onboarding ;;
-    /api/dashboard/discord/member-cleanup/automation) interval=60; key=member-cleanup ;;
+    /api/dashboard/discord/member-cleanup/automation) interval=10; key=member-cleanup ;;
     /api/polls/close-due*) interval=300; key=polls ;;
     /api/guild/sync) interval=120; key=guild-sync ;;
     /api/dashboard/logs/maintenance) interval=1800; key=log-maintenance ;;
@@ -54,6 +54,16 @@ log "старт; база=${BASE}"
 # старі рейди, які були створені до появи task scheduler, не чекаючи початку
 # наступної години. Після reconciliation цей же виклик обробляє вже due tasks.
 call "/api/raids/lifecycle?sweep=1&limit=100"
+
+# Cleanup progresses independently of calendar-minute jobs. Its HTTP response
+# sets the worker deadline: 10s with queued work, 60s when idle. The worker's
+# lock and persisted backoff still prevent overlaps and retry storms.
+(
+  while true; do
+    call "/api/dashboard/discord/member-cleanup/automation"
+    sleep 10
+  done
+) &
 
 # Запамʼятовуємо саме календарну хвилину, а не просто робимо sleep 60.
 # Якщо повільна другорядна задача перетнула межу хвилини, цикл одразу
@@ -73,7 +83,6 @@ while true; do
   # Endpoint сам тримає baseline/ідемпотентний стан, тому повторний tick не
   # дублює DM і не запускає повторну первинну перевірку ніку.
   call "/api/dashboard/discord/onboarding/automation"
-  call "/api/dashboard/discord/member-cleanup/automation"
 
   # Найчутливіша до часу рейдова задача. Звичайний tick читає тільки dueAtMs
   # із task queue; hourly sweep лише ремонтує/звіряє task plan для legacy або

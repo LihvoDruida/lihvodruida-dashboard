@@ -91,7 +91,7 @@ for script in deploy/scripts/*.sh deploy/cron/*.sh; do
 done
 
 for f in dashboard/Dockerfile bot/Dockerfile dashboard/package.json dashboard/package-lock.json \
-         bot/package.json bot/package-lock.json bot/src/server.mjs deploy/cron/run-cron.sh; do
+         bot/package.json bot/package-lock.json bot/src/server.mjs deploy/cron/run-cron.sh deploy/cron/run-job.sh; do
   [ -f "$f" ] && ok "$f" || problem "відсутній build/runtime файл: $f"
 done
 
@@ -573,8 +573,11 @@ $COMPOSE up $UP_ARGS nginx
 wait_healthy nginx 30
 
 step "5/5 Планові задачі"
+# Bind-mounted script changes alone do not make Compose replace a running
+# cron process. Recreate it so each deployment loads the current dispatcher
+# and clears an old HTTP-421 backoff deadline immediately.
 # shellcheck disable=SC2086
-$COMPOSE up $UP_ARGS cron
+$COMPOSE up $UP_ARGS --force-recreate cron
 ok "cron запущено"
 
 # ---------------------------------------------------------------------------

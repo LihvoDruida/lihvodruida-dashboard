@@ -4,15 +4,15 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const ts = require('typescript');
 const crypto = require('node:crypto');
-const { execFileSync } = require('node:child_process');
+const { execFileSync, spawnSync } = require('node:child_process');
 const os = require('node:os');
 const root = path.resolve(__dirname, '..');
 let checks = 0;
 function check(value, label) { assert.ok(value, label); checks++; }
 let clock = Date.parse('2026-10-10T12:00:00Z');
 class TestDate extends Date { constructor(...args) { super(...(args.length ? args : [clock])); } static now() { return clock; } }
-function load(relative, modules, globals = {}) {
-  const source = ts.transpileModule(fs.readFileSync(path.join(root, relative), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
+function load(relative, modules, globals = {}, transform = (source) => source) {
+  const source = ts.transpileModule(transform(fs.readFileSync(path.join(root, relative), 'utf8')), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
   const exports = {};
   vm.runInNewContext(source, { exports, require: (name) => { if (name === 'server-only') return {}; if (name === 'node:crypto') return crypto; if (!(name in modules)) throw new Error(`Unexpected import: ${name}`); return modules[name]; }, Date: TestDate, setInterval, clearInterval, console, Map, Set, Promise, ...globals }, { filename: relative });
   return exports;
@@ -44,18 +44,19 @@ const member = (i, roles = [], joinedAt = '2026-01-01T12:00:00Z') => ({ userId: 
 const evaluate = (m, c = control, period = 'week') => policy.evaluateCleanupMember(m, roleId, period, c, clock);
 async function fixture(members) {
   const db = memoryStore(); let writable = true; let liveControl = control; let kickError = null; let readMutation = null; let pageFailure = null; const kicks = [];
+  const apiCalls = { control: 0, pages: 0, members: 0 };
   const access = { assertFirebaseWriteAvailable: () => { if (!writable) throw new Error('read-only'); } };
   const leases = load('src/lib/automationLease.ts', { '@/lib/firebaseAdmin': { getFirebaseAdminDb: () => db }, '@/lib/firebaseAccess': access });
   const discord = {
     getDiscordGuildId: () => guildId,
-    fetchDiscordCleanupControl: async () => liveControl,
-    fetchDiscordCleanupMemberPage: async (after, size) => { if (pageFailure) throw new Error(pageFailure); const page = members.filter((m) => BigInt(m.userId) > BigInt(after)).slice(0, size); return { members: page, after: page.at(-1)?.userId || after, complete: page.length < size }; },
-    fetchDiscordGuildMemberSnapshot: async (id) => { const m = members.find((value) => value.userId === id); if (!m) throw new Error('Discord API 404: Unknown Member'); return readMutation ? readMutation(m) : m; },
+    fetchDiscordCleanupControl: async () => { apiCalls.control++; return liveControl; },
+    fetchDiscordCleanupMemberPage: async (after, size) => { apiCalls.pages++; if (pageFailure) throw new Error(pageFailure); const page = members.filter((m) => BigInt(m.userId) > BigInt(after)).slice(0, size); return { members: page, after: page.at(-1)?.userId || after, complete: page.length < size }; },
+    fetchDiscordGuildMemberSnapshot: async (id) => { apiCalls.members++; const m = members.find((value) => value.userId === id); if (!m) throw new Error('Discord API 404: Unknown Member'); return readMutation ? readMutation(m) : m; },
     kickDiscordCleanupMember: async (guild, id, reason) => { check(guild === guildId && reason.includes('Guild cleanup'), 'kick guild and audit reason'); kicks.push(id); if (kickError) throw new Error(kickError); members = members.filter((m) => m.userId !== id); },
   };
   const service = load('src/lib/discordMemberCleanup.ts', { '@/lib/automationLease': leases, '@/lib/firebaseAccess': access, '@/lib/firebaseAdmin': { getFirebaseAdminDb: () => db }, '@/lib/discordAdmin': discord, '@/lib/discordCleanupPolicy': policy, '@/lib/security': { logDashboardEvent: () => {} } });
   await service.saveDiscordCleanupSettings({ enabled: false, roleId, period: 'week' }, 'owner');
-  return { db, service, leases, kicks, writable: (v) => { writable = v; }, control: (v) => { liveControl = v; }, kickError: (v) => { kickError = v; }, readMutation: (v) => { readMutation = v; }, pageFailure: (v) => { pageFailure = v; }, enable: () => service.saveDiscordCleanupSettings({ enabled: true, roleId, period: 'week' }, 'owner') };
+  return { db, service, leases, kicks, apiCalls, writable: (v) => { writable = v; }, control: (v) => { liveControl = v; }, kickError: (v) => { kickError = v; }, readMutation: (v) => { readMutation = v; }, pageFailure: (v) => { pageFailure = v; }, enable: () => service.saveDiscordCleanupSettings({ enabled: true, roleId, period: 'week' }, 'owner') };
 }
 async function main() {
   check(evaluate(member(1)).eligible, 'no roles qualifies');
@@ -97,8 +98,20 @@ async function main() {
   f = await fixture([member(1)]); await f.enable(); f.kickError('Discord API 429: rate limited'); await f.service.runDiscordMemberCleanup();
   check((await f.service.listDiscordCleanupMembers('uncertain')).rows.length === 0, '429 is safe deferred work');
   f.kickError(null); clock += 16 * 60_000; await f.service.runDiscordMemberCleanup(); check(f.kicks.length === 2, 'definite rejection retried later');
+  f = await fixture(Array.from({ length: 12 }, (_, i) => member(i + 1))); await f.enable();
+  let active = await f.service.runDiscordMemberCleanup();
+  check(f.kicks.length === 5 && active.nextRunInSeconds === 10, 'active backlog requests a ten-second next run');
+  clock += 10_000; active = await f.service.runDiscordMemberCleanup();
+  check(f.kicks.length === 10 && active.nextRunInSeconds === 10, 'backlog progresses without waiting for the next minute');
+  clock += 10_000; active = await f.service.runDiscordMemberCleanup();
+  check(f.kicks.length === 12 && active.nextRunInSeconds === 60, 'drained queue returns to idle cadence');
+  const beforeIdle = { ...f.apiCalls }; clock += 60_000;
+  const idle = await f.service.runDiscordMemberCleanup();
+  check(JSON.stringify(f.apiCalls) === JSON.stringify(beforeIdle) && idle.nextRunInSeconds === 60, 'idle queue makes no Discord REST requests');
+  check((await f.service.getDiscordCleanupOverview()).state.lastAutomaticRunAt === new Date(clock).toISOString(), 'automatic heartbeat persists even during idle');
   f = await fixture(Array.from({ length: 260 }, (_, i) => member(i + 1)));
-  await f.service.runDiscordMemberCleanup(); let overview = await f.service.getDiscordCleanupOverview();
+  const scanning = await f.service.runDiscordMemberCleanup(); let overview = await f.service.getDiscordCleanupOverview();
+  check(scanning.nextRunInSeconds === 10, 'unfinished full scan progresses at active cadence');
   check(overview.state.scan.checked === 200 && overview.state.activeScanId === null, 'large scan saves cursor without publishing incomplete list');
   f.pageFailure('API unavailable'); await assert.rejects(f.service.runDiscordMemberCleanup()); f.pageFailure(null); await f.service.runDiscordMemberCleanup();
   overview = await f.service.getDiscordCleanupOverview(); check(overview.state.checked === 260 && !overview.state.scan, 'scan resumes after failure');
@@ -138,6 +151,29 @@ async function main() {
   const automatic = load('src/app/api/dashboard/discord/member-cleanup/automation/route.ts', routes);
   check((await automatic.POST(request({}))).status === 401 && mutations === 1, 'scheduler requires internal bearer'); bearer = true;
   check((await automatic.POST(request({}))).status === 200 && mutations === 2, 'authorized scheduler executes service');
+  // Execute the real production proxy too: direct route tests missed the old
+  // Host allowlist omission that blocked every Docker cron request with 421.
+  const { NextRequest, NextResponse } = require('next/server');
+  const proxyModules = { 'next/server': { NextRequest, NextResponse }, '@/lib/security': {
+    forbiddenResponse: (error) => NextResponse.json({ ok: false, error }, { status: 403 }),
+    getCanonicalDashboardOrigin: () => 'https://guild.example', getRequestHost: (r) => r.headers.get('host') || r.nextUrl.host,
+    isAllowedHost: (host) => host === 'guild.example', isLocalHost: () => false,
+    logDashboardEvent: () => {}, noStoreHeaders: () => ({ 'Cache-Control': 'no-store' }), verifyTrustedOrigin: () => false,
+  } };
+  const proxyGlobals = { process: { env: { NODE_ENV: 'production', SECURITY_REQUIRE_CLOUDFLARE: 'strict' } }, Headers, btoa, crypto: crypto.webcrypto };
+  const ingress = load('src/proxy.ts', proxyModules, proxyGlobals);
+  const previousIngress = load('src/proxy.ts', proxyModules, proxyGlobals, (source) => source.replace('    pathname === "/api/dashboard/discord/member-cleanup/automation" ||\n', ''));
+  const cronPath = '/api/dashboard/discord/member-cleanup/automation';
+  const internalRequest = (pathname = cronPath, host = 'dashboard:3000', token = 'controlled-test-token') => new NextRequest(`http://${host}${pathname}`, { method: 'POST', headers: { host, ...(token ? { authorization: `Bearer ${token}` } : {}) } });
+  check(previousIngress.proxy(internalRequest()).status === 421, 'previous proxy reproduces the actual cron Host blocker');
+  check(ingress.proxy(internalRequest()).headers.get('x-middleware-next') === '1', 'Docker cleanup request reaches its authenticated route');
+  check(ingress.proxy(internalRequest(cronPath, 'dashboard:3000', '')).status === 421, 'internal cleanup without bearer still rejected');
+  check(ingress.proxy(internalRequest('/api/dashboard/discord/member-cleanup')).status === 421, 'browser admin route never inherits internal Host exception');
+  check(ingress.proxy(internalRequest(`${cronPath}/unexpected`)).status === 421, 'internal exception applies to the exact cleanup path only');
+  check(ingress.proxy(internalRequest(cronPath, 'attacker.example')).status === 421, 'bearer header cannot bypass arbitrary Host validation');
+  check(ingress.proxy(internalRequest(cronPath, 'guild.example', '')).status === 403, 'public production Cloudflare policy remains enforced');
+  bearer = false;
+  check(ingress.proxy(internalRequest()).status === 200 && (await automatic.POST(request({}))).status === 401, 'route rejects wrong secret after proxy admits a potential bearer');
   let calls = 0, responseStatus = 429;
   const discordModules = { '@/lib/concurrency': {}, '@/lib/rulesOnboarding': {}, '@/lib/security': { logDashboardEvent: () => {} }, '@/lib/values': { cleanSnowflake: (id) => /^\d{16,25}$/.test(id) ? id : '' }, '@/lib/discordAvatar': {}, '@/lib/discordRulesStats': {} };
   const actualDiscord = load('src/lib/discordAdmin.ts', discordModules, { process: { env: { DISCORD_BOT_TOKEN: 'controlled-test-token' } }, Headers, AbortController, setTimeout, clearTimeout, fetch: async () => { calls++; return responseStatus === 204 ? new Response(null, { status: 204 }) : Response.json({ message: 'controlled rejection', retry_after: 65, global: true }, { status: responseStatus }); } });
@@ -152,7 +188,7 @@ async function main() {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'guild-cron-check-'));
   try {
     const bin = path.join(temp, 'bin'); fs.mkdirSync(bin);
-    fs.writeFileSync(path.join(bin, 'curl'), '#!/bin/sh\necho "$*" >> "$TEST_CALLS"\necho "${TEST_HTTP:-200}"\n'); fs.chmodSync(path.join(bin, 'curl'), 0o755);
+    fs.writeFileSync(path.join(bin, 'curl'), '#!/bin/sh\necho "$*" >> "$TEST_CALLS"\nwhile [ "$#" -gt 0 ]; do\n  if [ "$1" = "--output" ]; then printf "%s" "${TEST_BODY:-}" > "$2"; shift 2; else shift; fi\ndone\necho "${TEST_HTTP:-200}"\n'); fs.chmodSync(path.join(bin, 'curl'), 0o755);
     const worker = path.resolve(root, '../deploy/cron/run-job.sh');
     const env = { ...process.env, PATH: `${bin}:${process.env.PATH}`, CRON_STATE_DIR: path.join(temp, 'state'), INTERNAL_CRON_TOKEN: 'test-token-never-output', TEST_CALLS: path.join(temp, 'calls') };
     execFileSync('sh', [worker, '/api/test-a', '900', 'a'], { env });
@@ -164,6 +200,21 @@ async function main() {
     check(!fs.existsSync(path.join(env.CRON_STATE_DIR, 'fail.lock')), 'worker lock released after failed HTTP');
     execFileSync('sh', [worker, '/api/raids/lifecycle', '60', 'raid-lifecycle'], { env });
     check(fs.readFileSync(env.TEST_CALLS, 'utf8').includes('sweep=1'), 'startup raid reconciliation scheduled independently');
+    for (const [body, interval] of [['{"result":{"nextRunInSeconds":10}}', 10], ['{"result":{"nextRunInSeconds":60}}', 60], ['{"result":{"nextRunInSeconds":0}}', 60], ['broken-json', 60]]) {
+      fs.writeFileSync(path.join(env.CRON_STATE_DIR, 'member-cleanup.next'), '0');
+      const before = Math.floor(Date.now() / 1000);
+      execFileSync('sh', [worker, cronPath, '10', 'member-cleanup'], { env: { ...env, TEST_BODY: body } });
+      const deadline = Number(fs.readFileSync(path.join(env.CRON_STATE_DIR, 'member-cleanup.next'), 'utf8'));
+      check(deadline >= before + interval && deadline <= Math.floor(Date.now() / 1000) + interval, 'worker uses a bounded active or idle response deadline');
+    }
+    fs.writeFileSync(path.join(bin, 'sleep'), '#!/bin/sh\nif [ "$1" = "10" ]; then /bin/sleep 0.15; else /bin/sleep 3; fi\n'); fs.chmodSync(path.join(bin, 'sleep'), 0o755);
+    const dispatcherWorker = path.join(bin, 'dispatcher-worker');
+    fs.writeFileSync(dispatcherWorker, '#!/bin/sh\necho "$1" >> "$DISPATCH_CALLS"\n'); fs.chmodSync(dispatcherWorker, 0o755);
+    const dispatched = path.join(temp, 'dispatch-calls');
+    const dispatcher = spawnSync('timeout', ['1.5', 'sh', path.resolve(root, '../deploy/cron/run-cron.sh')], { env: { ...env, CRON_WORKER_PATH: dispatcherWorker, DISPATCH_CALLS: dispatched }, timeout: 5000 });
+    check(dispatcher.status === 124, 'controlled real dispatcher exits after the test timeout');
+    const paths = fs.readFileSync(dispatched, 'utf8').trim().split('\n');
+    check(paths.filter((p) => p === cronPath).length >= 3 && paths.filter((p) => p === '/api/dashboard/discord/onboarding/automation').length === 1, 'cleanup ticks independently while the calendar-minute loop sleeps');
   } finally { fs.rmSync(temp, { recursive: true, force: true }); }
   console.log(`[check-discord-member-cleanup] OK — ${checks} behavioral policy, storage, pagination, lease and cron checks.`);
 }
