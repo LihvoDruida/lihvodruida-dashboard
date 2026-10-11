@@ -32,7 +32,7 @@ export default async function ServerStatusPage() {
 
   return (
     <main className="container app-page admin-container server-status-container">
-      <section className="dashboard-shell content-shell admin-page server-status-page app-page-stack" aria-label="Стан сервера Mistblossom Vanguard">
+      <section className="dashboard-shell content-shell admin-workspace admin-page server-status-page app-page-stack" aria-label="Стан сервера Mistblossom Vanguard">
         <DashboardIdentity user={user} activeSection="admin" />
         <AdminPageHeader
           eyebrow="Mistblossom Vanguard • Owner only"

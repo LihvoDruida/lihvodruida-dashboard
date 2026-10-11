@@ -1,0 +1,131 @@
+/* Opt-in management layer. The logs workspace retains its existing styles. */
+.admin-workspace {
+  --management-accent: #c9dda6;
+  --management-muted: #a4b1a6;
+  --management-line: rgba(196, 221, 171, .16);
+  gap: 22px;
+  min-width: 0;
+}
+.admin-workspace *, .admin-workspace *::before, .admin-workspace *::after { box-sizing: border-box; }
+.admin-workspace .panel {
+  min-width: 0;
+  border: 1px solid var(--management-line);
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(21, 36, 31, .94), rgba(14, 25, 23, .93));
+  box-shadow: 0 8px 30px rgba(0, 0, 0, .12);
+}
+.admin-workspace :where(h1, h2, h3, p) { overflow-wrap: anywhere; }
+.admin-workspace :where(h2) { font-size: clamp(21px, 2vw, 27px); line-height: 1.25; }
+.admin-workspace :where(h3) { font-size: 19px; line-height: 1.35; }
+.admin-workspace :where(p, label, small) { line-height: 1.6; }
+.admin-workspace :where(.input, .select, textarea, select) { min-width: 0; max-width: 100%; border-radius: 11px; }
+.admin-workspace :where(input, select, button, a, textarea, summary):focus-visible { outline: 2px solid var(--management-accent); outline-offset: 4px; }
+.admin-workspace :where(.btn) { min-height: 44px; border-radius: 11px; font-weight: 650; }
+.admin-workspace .btn.primary { background: #d0dfa9; color: #17231d; border-color: #d0dfa9; }
+.admin-workspace .btn.primary:disabled { opacity: .5; }
+.admin-workspace :where(.eyebrow) { font-size: 10px; font-weight: 750; letter-spacing: .12em; color: #b3c6a6; background: transparent; padding: 0; border: 0; border-radius: 0; }
+.admin-workspace .admin-page-header { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; padding: clamp(22px, 3vw, 34px); }
+.admin-workspace .admin-page-header__copy { max-width: 860px; }
+.admin-workspace .admin-page-header h1 { margin: 8px 0 12px; font-size: clamp(29px, 3.3vw, 44px); line-height: 1.13; letter-spacing: -.025em; }
+.admin-workspace .admin-page-header__copy p { max-width: 74ch; font-size: 14px; margin: 0; color: #bcc9bd; }
+.admin-workspace .admin-page-header__metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 10px; min-width: 0; }
+.admin-workspace .admin-page-header__metric { padding: 14px 16px; border: 1px solid var(--management-line); border-radius: 13px; background: rgba(214, 235, 189, .035); min-width: 0; }
+.admin-workspace .admin-page-header__metric strong { font-size: 18px; overflow-wrap: anywhere; }
+.admin-workspace .management-nav { display: grid; grid-template-columns: 1.1fr 1.25fr .8fr; gap: 12px; padding: 16px; border: 1px solid var(--management-line); border-radius: 18px; background: rgba(13, 24, 21, .94); }
+.admin-workspace .management-nav-group { min-width: 0; }
+.admin-workspace .management-nav-label { display: block; margin: 0 0 9px 8px; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--management-muted); }
+.admin-workspace .management-nav-links { display: flex; gap: 5px; }
+.admin-workspace .management-nav a { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; padding: 11px 10px; border: 1px solid transparent; border-radius: 11px; color: #c4cec4; text-decoration: none; transition: background .15s ease, border-color .15s ease; }
+.admin-workspace .management-nav a strong { font-size: 13px; font-family: inherit; }
+.admin-workspace .management-nav a small { font-size: 10px; color: #94a295; line-height: 1.4; overflow-wrap: anywhere; }
+.admin-workspace .management-nav a:hover { background: rgba(201, 221, 166, .065); }
+.admin-workspace .management-nav a[aria-current="page"] { border-color: rgba(201, 221, 166, .32); background: rgba(201, 221, 166, .12); color: #e1edcc; }
+.admin-workspace .management-sections { min-width: 0; }
+.admin-workspace .management-section-tabs { display: flex; flex-wrap: wrap; gap: 7px; padding: 0 0 15px; border-bottom: 1px solid var(--management-line); }
+.admin-workspace .management-section-tabs button { white-space: normal; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 10px 14px; border: 1px solid transparent; border-radius: 11px; background: rgba(22, 39, 32, .8); color: #a9b7ab; cursor: pointer; font: inherit; font-size: 13px; }
+.admin-workspace .management-section-tabs button[aria-selected="true"] { background: #cdddb0; color: #17251b; border-color: #cdddb0; font-weight: 700; }
+.admin-workspace .management-section-number { font-size: 10px; opacity: .6; font-variant-numeric: tabular-nums; }
+.admin-workspace .management-section-panel { min-width: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.admin-workspace .management-section-panel[hidden] { display: none !important; }
+.admin-workspace .management-section-description { margin: 15px 2px 20px; color: #a7b6a9; font-size: 13px; }
+.admin-workspace .management-task-stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; min-width: 0; }
+.admin-workspace .management-section-panel > :where(.panel, article, section) { padding: clamp(20px, 2.6vw, 30px); }
+.admin-workspace .management-section-panel > .discord-management-health-grid { padding: 0; }
+.admin-workspace .management-section-panel > .discord-management-zone { padding: 0; }
+.admin-workspace .admin-overview-top-grid { gap: 18px; }
+.admin-workspace :where(.admin-policy-current-state, .access-group-summary, .nickname-policy-card, .discord-management-status__item, .server-summary-card, .account-cleanup-status-card) { border-radius: 13px; border-color: var(--management-line); }
+.admin-workspace :where(.auth-access-card, .geo-access-card) { margin: 0; }
+.admin-workspace .admin-policy-layout { gap: 24px; }
+.admin-workspace :where(.discord-management-card, .discord-management-section) { padding: clamp(20px, 2.5vw, 28px); }
+.admin-workspace :where(.discord-settings-card__limits, .discord-member-actions-grid, .discord-automation-grid, .discord-profile-maintenance-grid) { gap: 18px; }
+.admin-workspace :where(.discord-management-card__body, .account-cleanup-body) { gap: 18px; }
+.admin-workspace :where(.discord-management-details, .permissions-category) { border: 1px solid var(--management-line); border-radius: 12px; background: rgba(10, 23, 17, .28); }
+.admin-workspace :where(.discord-management-details, .permissions-category) > summary { padding: 13px 15px; cursor: pointer; min-height: 44px; color: #cbdac0; }
+.admin-workspace :where(.discord-management-details) > :not(summary) { margin: 0 15px 15px; }
+.admin-workspace .access-groups-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 20px; align-items: start; }
+.admin-workspace .access-groups-list { position: sticky; top: calc(var(--nav-space, 72px) + 16px); max-height: calc(100dvh - var(--nav-space, 72px) - 32px); overflow-y: auto; overscroll-behavior: contain; padding: 15px; display: grid; gap: 7px; }
+.admin-workspace .access-groups-list__header { padding: 4px 4px 9px; }
+.admin-workspace .access-groups-search { display: grid; gap: 6px; color: #a7b6a9; font-size: 12px; margin-bottom: 7px; }
+.admin-workspace .access-group-tab { text-align: left; width: 100%; padding: 12px; background: transparent; border-color: transparent; }
+.admin-workspace .access-group-tab.is-active { background: rgba(201, 221, 166, .11); border-color: rgba(201, 221, 166, .25); }
+.admin-workspace .access-group-tab span { font-size: 11px; color: #9bad9d; }
+.admin-workspace .access-group-card { padding: clamp(20px, 2.8vw, 30px); }
+.admin-workspace .access-group-card__head p { max-width: 66ch; font-size: 13px; }
+.admin-workspace .access-form-grid { gap: 18px; }
+.admin-workspace .permissions-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.admin-workspace .permissions-category summary { font-weight: 650; }
+.admin-workspace .permissions-category small { margin-left: 8px; font-weight: 400; font-size: 11px; color: #a5b4a5; }
+.admin-workspace .permissions-category .permission-check { margin: 4px 10px; padding: 10px; }
+.admin-workspace .permissions-category .permission-check strong { font-size: 13px; }
+.admin-workspace .permissions-category .permission-check small { margin: 3px 0 0; font-size: 11px; }
+.admin-workspace .access-form-actions { border-top: 1px solid var(--management-line); padding-top: 20px; margin-top: 20px; }
+.admin-workspace .management-welcome-preview { width: 100%; }
+.admin-workspace .management-welcome-preview img { width: 100%; height: auto; border-radius: 14px; display: block; }
+.admin-workspace .management-preview-placeholder { display: grid; justify-items: center; text-align: center; align-content: center; gap: 10px; min-height: 210px; padding: 24px; background: radial-gradient(ellipse at top, rgba(136, 171, 110, .12), rgba(6, 17, 12, .3)); border-radius: 13px; }
+.admin-workspace .management-preview-placeholder strong { font-size: 19px; }
+.admin-workspace .management-preview-placeholder p { color: #a7b6a9; font-size: 13px; margin: 0; }
+.admin-workspace .server-status-toolbar { gap: 16px; }
+.admin-workspace :where(.server-summary-grid, .server-graphs-grid, .server-detail-grid) { gap: 16px; }
+.admin-workspace :where(.server-section, .server-summary-card) { padding: 22px; }
+.admin-workspace .discord-cleanup { gap: 20px; }
+.admin-workspace .discord-cleanup-member { border-radius: 13px; background: rgba(11, 24, 18, .5); border-color: var(--management-line); }
+@media (max-width: 1000px) {
+  .admin-workspace .management-nav { grid-template-columns: 1fr 1fr; }
+  .admin-workspace .management-nav-group:last-child { grid-column: 1 / -1; }
+  .admin-workspace .management-nav-group:last-child .management-nav-links { max-width: 360px; }
+  .admin-workspace .access-groups-layout { grid-template-columns: 220px minmax(0, 1fr); }
+  .admin-workspace .permissions-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 700px) {
+  .admin-workspace { gap: 16px; }
+  .admin-workspace .management-nav { grid-template-columns: 1fr; gap: 13px; padding: 13px; }
+  .admin-workspace .management-nav-group:last-child { grid-column: auto; }
+  .admin-workspace .management-nav-group:last-child .management-nav-links { max-width: none; }
+  .admin-workspace .management-nav a small { display: none; }
+  .admin-workspace .management-nav a { padding: 11px 8px; }
+  .admin-workspace .management-nav-label { margin-bottom: 5px; font-size: 9px; }
+  .admin-workspace .admin-page-header { padding: 22px 18px; gap: 18px; }
+  .admin-workspace .admin-page-header__metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .admin-workspace .admin-page-header__metric { padding: 11px 12px; }
+  .admin-workspace .admin-page-header__metric strong { font-size: 16px; }
+  .admin-workspace .management-section-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+  .admin-workspace .management-section-tabs button { padding: 11px 10px; text-align: left; font-size: 12px; }
+  .admin-workspace .management-section-number { display: none; }
+  .admin-workspace .access-groups-layout { grid-template-columns: 1fr; }
+  .admin-workspace .access-groups-list { position: static; max-height: none; overflow: visible; }
+  .admin-workspace :where(.access-group-card, .discord-management-card, .discord-management-section) { padding: 18px; }
+  .admin-workspace .management-section-panel > :where(.panel, article, section) { padding: 18px; }
+  .admin-workspace .management-section-panel > :where(.discord-management-health-grid, .discord-management-zone) { padding: 0; }
+  .admin-workspace :where(.form-actions, .access-form-actions, .admin-policy-footer) { gap: 10px; }
+  .admin-workspace :where(.form-actions, .access-form-actions, .admin-policy-footer) .btn { white-space: normal; }
+  .admin-workspace .management-section-description { font-size: 12px; margin-bottom: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { .admin-workspace .management-nav a { transition: none; } }
+
+.admin-workspace .management-shortcut { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 20px; padding: 20px 24px; }
+.admin-workspace .management-shortcut h2 { font-size: 19px; }
+.admin-workspace .management-shortcut .btn { width: auto; }
+@media (max-width: 700px) {
+  .admin-workspace .management-shortcut { grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 18px; }
+  .admin-workspace .management-shortcut .btn { width: 100%; }
+}

@@ -1,3 +1,7 @@
+> **Керування та автоматизація — 11.10.2026:** згрупована адаптивна навігація,
+> спільна черга Discord REST, захист повторів та оптимізація Gateway-подій.
+> Деталі: [`docs/management/MANAGEMENT_2026-10-11.md`](docs/management/MANAGEMENT_2026-10-11.md).
+
 > **Security Stage 4 — v3.8.68 (2026-10-09)**: Durable Discord Ingress stores
 > verified interaction receipts in PostgreSQL *before* the deferred ACK.
 > Details: [`docs/security/SECURITY_STAGE4_2026-10-09.md`](docs/security/SECURITY_STAGE4_2026-10-09.md).

@@ -47,6 +47,7 @@ import "./styles/roster.css";
 import "./styles/desktop.css";
 import "./styles/guild-banner.css";
 import "./styles/discord-cleanup.css";
+import "./styles/management.css";
 import DashboardFormEnhancer from "@/components/DashboardFormEnhancer";
 import GlobalToasts from "@/components/GlobalToasts";
 import AppFooter from "@/components/AppFooter";

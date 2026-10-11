@@ -5,7 +5,7 @@ const root = path.resolve(__dirname, '..');
 const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
 const onboarding = read('src/lib/discordNewcomerOnboarding.ts');
 const card = read('src/lib/discordWelcomeCard.ts');
-const admin = read('src/lib/discordAdmin.ts');
+const admin = read('src/lib/discordAdmin.ts') + read('src/lib/discordRest.ts');
 const testing = read('src/lib/discordWelcomeCardTesting.ts');
 const preview = read('src/app/api/dashboard/welcome-card/preview/route.ts');
 
@@ -34,7 +34,7 @@ const checks = [
   ['test-member lookup is short-lived and promise-deduplicated', testing.includes('__mistblossomWelcomeTestMemberCache') && testing.includes('fetchCachedTestMember')],
   ['owner preview endpoint has CPU-abuse rate limiting', preview.includes('checkRateLimit') && preview.includes('welcome-preview:')],
   ['Discord transport proactively observes bucket limits', admin.includes('observeDiscordRateLimit') && admin.includes('x-ratelimit-remaining')],
-  ['Discord transport handles global rate limits', admin.includes('__mistblossomDiscordGlobalCooldownUntil') && admin.includes('json?.global === true')],
+  ['Discord transport handles global rate limits', admin.includes('state.globalUntil = Math.max') && admin.includes('json?.global === true')],
   ['Discord cooldown waits until deadline instead of sleeping only once', admin.includes('for (;;)') && admin.includes('Math.max(routeUntil, globalUntil)')],
 ];
 

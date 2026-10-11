@@ -30,7 +30,7 @@ function rig(route, options = {}) {
       removeStaticMember: async () => null, revokeStaticInvite: async () => null, unblockStaticMember: async () => null,
     },
     '@/lib/discordAdmin': {
-      fetchDiscordRoleControlSnapshot: async () => flags.available ? { roles: roleList, guild: { name:'Test' }, botCanManageRoles: true, error: null } : { roles: [], guild: null, botCanManageRoles: false, error: 'API down' },
+      fetchDiscordRoleControlSnapshotCachedForUi: async () => flags.available ? { roles: roleList, guild: { name:'Test' }, botCanManageRoles: true, error: null } : { roles: [], guild: null, botCanManageRoles: false, error: 'API down' },
     },
   };
   const compiledModule = { exports: {} };

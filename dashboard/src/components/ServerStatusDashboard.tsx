@@ -166,6 +166,9 @@ export default function ServerStatusDashboard({ initialSnapshot }: { initialSnap
   const [error, setError] = useState("");
   const [latencyMs, setLatencyMs] = useState<number | null>(null);
   const inFlight = useRef(false);
+  const requestController = useRef<AbortController | null>(null);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; requestController.current?.abort(); }; }, []);
   // Ref ініціалізується лениво: Date.now() під час рендера — нечиста
   // операція, від якої результат залежить від випадкових ре-рендерів.
   const lastSlowRefresh = useRef<number | null>(null);
@@ -177,6 +180,7 @@ export default function ServerStatusDashboard({ initialSnapshot }: { initialSnap
     if (manual) setManualLoading(true);
     const started = performance.now();
     const controller = new AbortController();
+    requestController.current = controller;
     const timeout = window.setTimeout(() => controller.abort(), 4_000);
     try {
       const requestOptions: RequestInit = {
@@ -197,6 +201,7 @@ export default function ServerStatusDashboard({ initialSnapshot }: { initialSnap
       if (!response.ok || !payload.ok || !payload.snapshot) {
         throw new Error(payload.message || (response.status === 403 ? "Ця сторінка доступна лише власнику сервера." : "Метрики сервера тимчасово недоступні."));
       }
+      if (!mounted.current) return;
       const incoming = payload.snapshot;
       startTransition(() => {
         setSnapshot((current) => ({ ...incoming, docker: incoming.docker ?? current.docker }));
@@ -207,11 +212,13 @@ export default function ServerStatusDashboard({ initialSnapshot }: { initialSnap
       errorCount.current = 0;
       if (includeDocker) lastSlowRefresh.current = Date.now();
     } catch (reason) {
+      if (!mounted.current) return;
       errorCount.current += 1;
       setError(reason instanceof Error && reason.name !== "AbortError" ? reason.message : "Сервер не встиг відповісти на запит метрик.");
     } finally {
       window.clearTimeout(timeout);
-      if (manual) setManualLoading(false);
+      if (manual && mounted.current) setManualLoading(false);
+      if (requestController.current === controller) requestController.current = null;
       inFlight.current = false;
     }
   }, []);
@@ -235,7 +242,7 @@ export default function ServerStatusDashboard({ initialSnapshot }: { initialSnap
       const includeDocker = Date.now() - lastSlowRefresh.current >= SLOW_REFRESH_MS;
       await refresh({ includeDocker });
       const backoff = errorCount.current ? Math.min(12_000, POLL_MS * (errorCount.current + 1)) : POLL_MS;
-      schedule(backoff);
+      if (!cancelled) schedule(backoff);
     };
 
     const onVisibility = () => {

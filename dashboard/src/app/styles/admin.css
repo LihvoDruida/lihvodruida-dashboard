@@ -45,19 +45,7 @@
 }
 
 /* Картки дій парами: адмінська форма надто довга для трьох колонок */
-.admin-overview-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
-  gap: var(--gap-grid);
-  align-items: start;
-  min-width: 0;
-}
-
 /* Overview is a vertical workspace. Internal sections decide their own columns. */
-.admin-overview-grid--security {
-  grid-template-columns: minmax(0, 1fr);
-}
-
 .admin-overview-top-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.75fr) minmax(300px, 0.75fr);
@@ -312,12 +300,6 @@
 /* =========================================================
    7. АДАПТИВ
    ========================================================= */
-
-@media (max-width: 1000px) {
-  .admin-overview-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
 
 @media (max-width: 860px) {
   .discord-management-limit-field {
@@ -2144,44 +2126,6 @@
   --discord-zone-gap: 14px;
 }
 
-.discord-management-jump-nav {
-  position: sticky;
-  top: 76px;
-  z-index: 8;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 6px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
-  backdrop-filter: blur(14px);
-  box-shadow: var(--shadow-sm);
-}
-
-.discord-management-jump-nav a {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 36px;
-  padding: 7px 12px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  color: var(--text-muted);
-  font-size: var(--font-size-meta);
-  font-weight: var(--font-weight-bold);
-  text-decoration: none;
-  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
-}
-
-.discord-management-jump-nav a:hover,
-.discord-management-jump-nav a:focus-visible {
-  border-color: var(--border-strong);
-  background: var(--surface-sunken);
-  color: var(--text-strong);
-  outline: 0;
-}
-
 .discord-management-health-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.72fr);
@@ -2522,22 +2466,7 @@
 }
 
 @media (max-width: 1000px) {
-  .discord-management-jump-nav {
-    top: 70px;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    scrollbar-width: none;
-  }
-
-  .discord-management-jump-nav::-webkit-scrollbar {
-    display: none;
-  }
-
-  .discord-management-jump-nav a {
-    flex: 0 0 auto;
-  }
-
-  .discord-member-actions-grid,
+.discord-member-actions-grid,
 .discord-automation-grid,
 .discord-profile-maintenance-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -2546,11 +2475,7 @@
 }
 
 @media (max-width: 700px) {
-  .discord-management-jump-nav {
-    position: static;
-  }
-
-  .discord-management-health-grid,
+.discord-management-health-grid,
 .discord-management-zone {
     scroll-margin-top: 84px;
   }

@@ -2,11 +2,12 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 
 import AdminPageHeader from "@/components/AdminPageHeader";
+import ManagementSections from "@/components/ManagementSections";
 import AdminTabs from "@/components/AdminTabs";
 import DashboardIdentity from "@/components/DashboardIdentity";
 import { getSession } from "@/lib/auth";
 import {
-  fetchDiscordRoleControlSnapshot,
+  fetchDiscordRoleControlSnapshotCachedForUi,
   fetchDiscordTextChannels,
   getDiscordDefaultChannelId,
   getDiscordGuildId,
@@ -139,7 +140,7 @@ export default async function AdminDiscordPage() {
 
   const [policy, control, cleanupAutomation, nicknameWarningState, textChannels] = await Promise.all([
     getGuildNicknamePolicy(),
-    fetchDiscordRoleControlSnapshot(),
+    fetchDiscordRoleControlSnapshotCachedForUi(),
     getAccountCleanupAutomationSettings(),
     getNicknameWarningAutomationState(),
     fetchDiscordTextChannels().catch(() => ({ guild: null, channels: [], suggestedChannelId: "", suggestedRulesChannelId: "", warning: "Discord channels unavailable" })),
@@ -208,7 +209,7 @@ export default async function AdminDiscordPage() {
 
   return (
     <main className="container app-page admin-container">
-      <section className="dashboard-shell content-shell admin-page discord-management-page app-page-stack" aria-label="Керування Discord-учасниками">
+      <section className="dashboard-shell content-shell admin-workspace admin-page discord-management-page app-page-stack" aria-label="Керування Discord-учасниками">
         <DashboardIdentity user={user} activeSection="admin" />
         <AdminPageHeader
           eyebrow="Mistblossom Vanguard • Discord"
@@ -224,19 +225,18 @@ export default async function AdminDiscordPage() {
 
         <AdminTabs active="discord" user={user} />
 
-        <section className="panel discord-management-section" aria-label="Автоматичне очищення Discord">
+        <section className="panel discord-management-section management-shortcut" aria-label="Автоматичне очищення Discord">
           <SectionHeader eyebrow="Автоматизація" title="Очищення Discord за роллю та строком" description="Люди без ролей або лише з однією вибраною роллю; дата вступу, автоматичне виключення та окрема історія." />
           <Link href="/dashboard/discord/cleanup" className="btn primary">Відкрити очищення Discord</Link>
         </section>
 
-        <nav className="discord-management-jump-nav" aria-label="Навігація по Discord-керуванню">
-          <a href="#discord-health">Стан</a>
-          <a href="#discord-settings">Налаштування</a>
-          <a href="#discord-member-actions">Учасник</a>
-          <a href="#discord-automation">Синхронізація</a>
-          <a href="#discord-profiles">Профілі</a>
-        </nav>
-
+        <ManagementSections sections={[
+          { id: "discord-health", label: "Підключення", description: "Стан бота та доступні ролі. Перевір підключення перед змінами." },
+          { id: "discord-settings", label: "Правила й канали", description: "Глобальні налаштування ніків, заявок і автоматичних попереджень." },
+          { id: "discord-member-actions", label: "Учасник", description: "Точкові зміни ролей та ніку одного учасника." },
+          { id: "discord-automation", label: "Синхронізація", description: "Масові операції зі складом. Параметри та запуск згруповані за задачею." },
+          { id: "discord-profiles", label: "Профілі", description: "Обслуговування бази: імпорт, перевірка неактуальних профілів та очищення." },
+        ]}>
         <section id="discord-health" className="discord-management-health-grid" aria-label="Стан Discord">
           <section className="panel discord-management-section discord-management-section--status" aria-label="Стан Discord-підключення">
             <SectionHeader
@@ -758,6 +758,7 @@ export default async function AdminDiscordPage() {
             </article>
           </div>
         </section>
+        </ManagementSections>
       </section>
     </main>
   );

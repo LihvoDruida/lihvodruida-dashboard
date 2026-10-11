@@ -102,10 +102,11 @@ export async function mapConcurrent<T, R>(
   const results = new Array<R>(total);
   let cursor = 0;
   let failed = 0;
-  let firstError: unknown = null;
+  let firstError: unknown;
+  let stopped = false;
 
   async function worker() {
-    while (cursor < total) {
+    while (cursor < total && !stopped) {
       const index = cursor;
       cursor += 1;
 
@@ -113,8 +114,7 @@ export async function mapConcurrent<T, R>(
         results[index] = await mapper(items[index], index);
       } catch (error) {
         failed += 1;
-        if (options.failFast !== false && !firstError) firstError = error;
-        if (options.failFast !== false) throw error;
+        if (options.failFast !== false && !stopped) { firstError = error; stopped = true; }
         results[index] = undefined as R;
       }
     }
@@ -123,7 +123,7 @@ export async function mapConcurrent<T, R>(
   const workers = Array.from({ length: concurrency }, () => worker());
   await Promise.all(workers);
 
-  if (firstError && options.failFast !== false) throw firstError;
+  if (stopped) throw firstError;
 
   return {
     results,

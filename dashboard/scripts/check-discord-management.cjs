@@ -8,7 +8,7 @@ const importer = fs.readFileSync(path.join(root, "src/lib/legacyProfileImport.ts
 const route = fs.readFileSync(path.join(root, "src/app/api/dashboard/discord/profiles/import-firestore/route.ts"), "utf8");
 
 const checks = [
-  [page.includes('className="discord-management-jump-nav"'), "long Discord page has quick task navigation"],
+  [page.includes('<ManagementSections sections='), "long Discord page has quick task navigation"],
   [page.includes('className="discord-management-health-grid"'), "connection state and role hierarchy share a dedicated health grid"],
   [page.includes('className="discord-member-actions-grid"'), "single-member actions are grouped separately"],
   [page.includes('className="discord-automation-grid"'), "bulk Discord automation has its own workspace"],

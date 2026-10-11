@@ -5,7 +5,7 @@ const root = path.resolve(__dirname, '..');
 const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
 const exists = (relative) => fs.existsSync(path.join(root, relative));
 
-const admin = read('src/lib/discordAdmin.ts');
+const admin = read('src/lib/discordAdmin.ts') + read('src/lib/discordRest.ts');
 const card = read('src/lib/discordWelcomeCard.ts');
 const artifact = read('src/lib/discordWelcomeArtifact.ts');
 const joinNumber = read('src/lib/discordMemberJoinNumber.ts');
@@ -23,7 +23,7 @@ const checks = [
   ['night-elf background asset exists', exists('public/assets/discord-welcome-card-night-elf-base.png')],
   ['multipart upload copies Buffer into ArrayBuffer-backed Uint8Array', admin.includes('const fileBytes = Uint8Array.from(params.fileBuffer)') && admin.includes('new Blob([fileBytes]')],
   ['Discord attachment content preserves line breaks', admin.includes('.replace(/\\r\\n/g, "\\n")') && admin.includes('.slice(0, 1800)')],
-  ['multipart Discord upload has timeout/rate-limit retry handling', admin.includes('waitForDiscordCooldown(routeKey)') && admin.includes('discordRetryAfterMs(response, json, attempt)') && admin.includes('AbortController')],
+  ['multipart Discord upload has timeout/rate-limit retry handling', admin.includes('body: form') && admin.includes('waitForCooldown(state, key, signal)') && admin.includes('retryDelay = Number.isFinite(seconds)') && admin.includes('AbortSignal.timeout')],
   ['all card consumers share one server artifact pipeline', artifact.includes('createDiscordWelcomeArtifact') && onboarding.includes('createDiscordWelcomeArtifact') && previewRoute.includes('createDiscordWelcomeArtifact') && publishRoute.includes('createDiscordWelcomeArtifact')],
   ['card renderer caches preprocessed background', card.includes('__mistblossomWelcomeBackgroundPromise') && card.includes('.raw()') && card.includes('loadPreparedBackground')],
   ['card renderer caches avatar circles with bounded TTL/cache size', card.includes('__mistblossomWelcomeAvatarCache') && card.includes('AVATAR_CACHE_TTL_MS') && card.includes('AVATAR_CACHE_MAX')],

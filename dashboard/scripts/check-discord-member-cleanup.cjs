@@ -176,7 +176,9 @@ async function main() {
   check(ingress.proxy(internalRequest()).status === 200 && (await automatic.POST(request({}))).status === 401, 'route rejects wrong secret after proxy admits a potential bearer');
   let calls = 0, responseStatus = 429;
   const discordModules = { '@/lib/concurrency': {}, '@/lib/rulesOnboarding': {}, '@/lib/security': { logDashboardEvent: () => {} }, '@/lib/values': { cleanSnowflake: (id) => /^\d{16,25}$/.test(id) ? id : '' }, '@/lib/discordAvatar': {}, '@/lib/discordRulesStats': {} };
-  const actualDiscord = load('src/lib/discordAdmin.ts', discordModules, { process: { env: { DISCORD_BOT_TOKEN: 'controlled-test-token' } }, Headers, AbortController, setTimeout, clearTimeout, fetch: async () => { calls++; return responseStatus === 204 ? new Response(null, { status: 204 }) : Response.json({ message: 'controlled rejection', retry_after: 65, global: true }, { status: responseStatus }); } });
+  const transportGlobals = { process: { env: { DISCORD_BOT_TOKEN: 'controlled-test-token' } }, Headers, Response, FormData, AbortSignal, AbortController, setTimeout, clearTimeout, fetch: async () => { calls++; return responseStatus === 204 ? new Response(null, { status: 204 }) : Response.json({ message: 'controlled rejection', retry_after: 65, global: true }, { status: responseStatus }); } };
+  discordModules['@/lib/discordRest'] = load('src/lib/discordRest.ts', {}, transportGlobals);
+  const actualDiscord = load('src/lib/discordAdmin.ts', discordModules, transportGlobals);
   await assert.rejects(actualDiscord.kickDiscordCleanupMember(guildId, member(1).userId, 'test audit'));
   check(calls === 1, 'cleanup DELETE never automatically retries 429');
   clock += 40_000; await assert.rejects(actualDiscord.discordApi('/users/@me'));

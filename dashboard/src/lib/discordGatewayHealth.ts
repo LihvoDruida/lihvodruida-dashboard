@@ -8,6 +8,8 @@ export type DiscordGatewayHealth = {
   ready: boolean;
   queueSize: number;
   activeWorkers: number;
+  staticQueueSize: number;
+  activeStaticWorkers: number;
   lastEventAt: string | null;
   lastMemberJoinAt: string | null;
   lastError: string | null;
@@ -21,6 +23,8 @@ const FALLBACK: DiscordGatewayHealth = {
   ready: false,
   queueSize: 0,
   activeWorkers: 0,
+  staticQueueSize: 0,
+  activeStaticWorkers: 0,
   lastEventAt: null,
   lastMemberJoinAt: null,
   lastError: "bot health unavailable",
@@ -45,6 +49,8 @@ export async function getDiscordGatewayHealth(): Promise<DiscordGatewayHealth> {
       ready: Boolean(gateway.ready),
       queueSize: Number.isFinite(Number(gateway.queueSize)) ? Math.max(0, Number(gateway.queueSize)) : 0,
       activeWorkers: Number.isFinite(Number(gateway.activeWorkers)) ? Math.max(0, Number(gateway.activeWorkers)) : 0,
+      staticQueueSize: Number.isFinite(Number(gateway.staticQueueSize)) ? Math.max(0, Number(gateway.staticQueueSize)) : 0,
+      activeStaticWorkers: Number.isFinite(Number(gateway.activeStaticWorkers)) ? Math.max(0, Number(gateway.activeStaticWorkers)) : 0,
       lastEventAt: typeof gateway.lastEventAt === "string" ? gateway.lastEventAt : null,
       lastMemberJoinAt: typeof gateway.lastMemberJoinAt === "string" ? gateway.lastMemberJoinAt : null,
       lastError: typeof gateway.lastError === "string" && gateway.lastError ? gateway.lastError : null,

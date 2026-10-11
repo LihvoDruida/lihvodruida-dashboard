@@ -84,6 +84,12 @@ function PermissionCheckbox({ permissionKey, checked, disabled }: { permissionKe
 
 export default function AccessGroupsManager({ groups, isServerOwner, currentGroupId, saveGroupAction, deleteGroupAction, impersonateAction }: Props) {
   const [expanded, setExpanded] = useState<string>(groups[0]?.id || "new");
+  const [query, setQuery] = useState("");
+  const [visibleCount, setVisibleCount] = useState(10);
+  const filteredGroups = useMemo(() => {
+    const search = query.trim().toLocaleLowerCase("uk-UA");
+    return search ? groups.filter(group => `${group.name} ${group.id} ${roleLabel(group.role)} ${group.discordRoleIds.join(" ")}`.toLocaleLowerCase("uk-UA").includes(search)) : groups;
+  }, [groups, query]);
   const categories = useMemo(() => Object.entries(permissionsByCategory()) as Array<[string, DashboardPermissionKey[]]>, []);
 
   return (
@@ -93,12 +99,17 @@ export default function AccessGroupsManager({ groups, isServerOwner, currentGrou
           <span className="section-title">Групи</span>
           <small>{groups.length} груп</small>
         </div>
-        {groups.map((group) => (
-          <button key={group.id} type="button" className={`btn subtle access-group-tab${expanded === group.id ? " is-active" : ""}`} onClick={() => setExpanded(group.id)}>
+        <label className="access-groups-search">Знайти групу
+          <input className="input" type="search" maxLength={120} value={query} onChange={event => { setQuery(event.target.value); setVisibleCount(10); }} placeholder="Назва, ID або Discord-роль" />
+        </label>
+        {filteredGroups.slice(0, visibleCount).map((group) => (
+          <button key={group.id} type="button" className={`btn subtle access-group-tab${expanded === group.id ? " is-active" : ""}`} aria-pressed={expanded === group.id} onClick={() => setExpanded(group.id)}>
             <strong><span className="access-group-tab__icon" aria-hidden="true">{groupIcon(group)}</span>{group.name}</strong>
             <span>ID {group.id} · {roleLabel(group.role)} · {group.permissions.length} прав</span>
           </button>
         ))}
+        {!filteredGroups.length ? <p role="status">Груп не знайдено.</p> : null}
+        {filteredGroups.length > visibleCount ? <button type="button" className="btn subtle" onClick={() => setVisibleCount(count => count + 10)}>Показати ще 10 · {filteredGroups.length - visibleCount} залишилось</button> : null}
         <button type="button" className={`btn subtle access-group-tab${expanded === "new" ? " is-active" : ""}`} onClick={() => setExpanded("new")}>
           <strong><span className="access-group-tab__icon" aria-hidden="true">＋</span>Нова група</strong>
           <span>ID, назва, іконка, Discord роль і права</span>
@@ -177,12 +188,12 @@ export default function AccessGroupsManager({ groups, isServerOwner, currentGrou
 
               <div className="permissions-grid">
                 {categories.map(([category, keys]) => (
-                  <fieldset key={category}>
-                    <legend>{category}</legend>
+                  <details className="permissions-category" key={category} open={category === categories[0]?.[0]}>
+                    <summary>{category}<small>{keys.length} прав</small></summary>
                     {keys.map((key) => (
                       <PermissionCheckbox key={key} permissionKey={key} checked={group.permissions.includes(key)} disabled={!canEdit || key === "dashboard.view" || (key === "groups.manage" && !isServerOwner)} />
                     ))}
-                  </fieldset>
+                  </details>
                 ))}
               </div>
 
@@ -241,12 +252,12 @@ export default function AccessGroupsManager({ groups, isServerOwner, currentGrou
             </div>
             <div className="permissions-grid">
               {categories.map(([category, keys]) => (
-                <fieldset key={category}>
-                  <legend>{category}</legend>
+                <details className="permissions-category" key={category} open={category === categories[0]?.[0]}>
+                  <summary>{category}<small>{keys.length} прав</small></summary>
                   {keys.map((key) => (
                     <PermissionCheckbox key={key} permissionKey={key} checked={key === "dashboard.view"} disabled={key === "dashboard.view" || (key === "groups.manage" && !isServerOwner)} />
                   ))}
-                </fieldset>
+                </details>
               ))}
             </div>
             <div className="form-actions access-form-actions"><button className="btn primary" type="submit" data-dashboard-action="access-groups-create" data-loading-label="Створюємо...">Створити групу</button></div>

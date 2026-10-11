@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { fetchDiscordRoleControlSnapshot } from "@/lib/discordAdmin";
+import { fetchDiscordRoleControlSnapshotCachedForUi } from "@/lib/discordAdmin";
 import { getStaticSettings, saveStaticSettings, staticPermission } from "@/lib/staticRules";
 import { assertRequestBodySize, checkRateLimit, noStoreHeaders, verifyTrustedOrigin } from "@/lib/security";
 export const runtime = "nodejs";
@@ -15,7 +15,7 @@ export async function GET() {
   try {
     const { allowed } = await adminSession();
     if (!allowed) return reply({ ok: false, error: "Налаштування доступні лише адміністрації." }, 403);
-    const [settings, control] = await Promise.all([getStaticSettings(), fetchDiscordRoleControlSnapshot()]);
+    const [settings, control] = await Promise.all([getStaticSettings(), fetchDiscordRoleControlSnapshotCachedForUi()]);
     return reply({ ok: true, settings, roles: control.roles, botCanManageRoles: control.botCanManageRoles, warning: control.error || null, guildName: control.guild?.name || null });
   } catch { return reply({ ok: false, error: "Не вдалося перевірити роль адміністратора." }, 503); }
 }

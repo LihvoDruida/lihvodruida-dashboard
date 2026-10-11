@@ -955,16 +955,19 @@ function storedWarningOnCooldown(state: StoredWarningState | undefined, signatur
 
 async function loadStoredWarningStates(userIds: Set<string>) {
   if (!hasFirebaseProfileConfig() || !userIds.size) return new Map<string, StoredWarningState>();
-  const snapshot = await getFirebaseAdminDb().collection(MEMBER_STATE_COLLECTION).limit(5000).get().catch(() => null);
-  if (!snapshot) return null;
+  const db = getFirebaseAdminDb();
+  const ids = [...userIds];
+  const chunks = Array.from({ length: Math.ceil(ids.length / 100) }, (_, index) => ids.slice(index * 100, (index + 1) * 100));
+  const loaded = await mapConcurrentSettled(chunks, chunk => db.getAll(...chunk.map(id => db.collection(MEMBER_STATE_COLLECTION).doc(id))), { profile: "io", max: 2 });
+  if (loaded.results.some(result => !result.ok)) return null;
   const states = new Map<string, StoredWarningState>();
-  for (const doc of snapshot.docs || []) {
-    if (!userIds.has(doc.id)) continue;
-    const data = doc.data() || {};
-    states.set(doc.id, {
-      signature: String(data.signature || "").slice(0, 180),
-      lastNotifiedAt: timestampToIso(data.lastNotifiedAt),
-    });
+  for (const result of loaded.results) {
+    if (!result.ok) continue;
+    for (const doc of result.value) {
+      if (!doc.exists) continue;
+      const data = doc.data() || {};
+      states.set(doc.id, { signature: String(data.signature || "").slice(0, 180), lastNotifiedAt: timestampToIso(data.lastNotifiedAt) });
+    }
   }
   return states;
 }
@@ -1571,8 +1574,6 @@ export async function processPriorityNicknameWarnings(input: {
 } = {}) {
   const source = input.source || "automatic";
   const policy = await getGuildNicknamePolicy({ bypassCache: true });
-  const guild = await fetchDiscordGuildSnapshot().catch(() => null);
-  const guildName = guild?.name || "Mistblossom Vanguard";
   const queue = await loadDueInvalidNicknameTargets(policy.nicknameReminderBatchLimit);
   if (!queue.targets.length) {
     await patchAutomationState({ nextInvalidCheckAt: queue.nextDueAt, trackedInvalid: queue.trackedInvalid });
@@ -1586,6 +1587,9 @@ export async function processPriorityNicknameWarnings(input: {
       dueTotal: queue.dueTotal,
     };
   }
+
+  const guild = await fetchDiscordGuildSnapshot().catch(() => null);
+  const guildName = guild?.name || "Mistblossom Vanguard";
 
   const startedAtMs = Date.now();
   const startedAt = new Date(startedAtMs).toISOString();

@@ -1,3 +1,4 @@
+import { createCoalescingQueue } from "./coalescingQueue.mjs";
 import { randomUUID } from "node:crypto";
 import { notifyDiscordMemberJoined, notifyDiscordNicknameObserved, confirmStaticRulesFromDm, enforceStaticRoles } from "./dashboardClient.mjs";
 import { logger } from "./logger.mjs";
@@ -37,19 +38,32 @@ let stopped = false;
 let staticSweepTimer = null;
 let staticSweepRunning = false;
 const recentStaticChecks = new Map();
+let lastStaticQueueWarningAt = 0;
+const staticChecks = createCoalescingQueue({ capacity: MAX_QUEUE, workers: WORKERS,
+  run: async ({ guildId, userId }) => {
+    const result = await enforceStaticRoles({ guildId, userId });
+    if (result?.revoked) logger.info("Заборонену роль Статика повторно знято", { eventName: "bot.static.role_enforced", userId });
+  },
+  onError: (error, { userId }) => logger.warn("Перевірка ролі Статика недоступна", { eventName: "bot.static.role_enforce_failed", userId, error: String(error).slice(0, 180) }),
+});
 function enqueueStaticEnforcement(payload) {
   const guildId = cleanSnowflake(payload?.guild_id), userId = cleanSnowflake(payload?.user?.id);
   if (!guildId || guildId !== GUILD_ID() || !userId || payload?.user?.bot) return;
   const now = Date.now();
   if (now - (recentStaticChecks.get(userId) || 0) < 15_000) return;
+  if (!staticChecks.enqueue(userId, { guildId, userId })) {
+    if (now - lastStaticQueueWarningAt > 30_000) {
+      lastStaticQueueWarningAt = now;
+      logger.warn("Черга перевірок ролей заповнена; резервна перевірка відновить пропущені події", { eventName: "bot.static.queue_full", queueSize: staticChecks.size });
+    }
+    return;
+  }
   recentStaticChecks.set(userId, now);
   if (recentStaticChecks.size > 2000) {
     for (const [id, time] of recentStaticChecks) if (now - time > 30_000) recentStaticChecks.delete(id);
     if (recentStaticChecks.size > 2000) recentStaticChecks.clear();
   }
-  void enforceStaticRoles({ guildId, userId })
-    .then(result => { if (result?.revoked) logger.info("Заборонену роль Статика повторно знято", { eventName: "bot.static.role_enforced", userId }); })
-    .catch(error => logger.warn("Перевірка ролі Статика недоступна", { eventName: "bot.static.role_enforce_failed", userId, error: String(error).slice(0, 180) }));
+
 }
 async function runStaticSweep() {
   if (staticSweepRunning || stopped || !state.ready || !ENABLED()) return;
@@ -379,7 +393,8 @@ function handleDispatch(packet) {
         try {
           const response = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
             method: "POST", headers: { authorization: `Bot ${TOKEN()}`, "content-type": "application/json" },
-            body: JSON.stringify({ content: message, allowed_mentions: { parse: [] } }),
+            body: JSON.stringify({ content: message, allowed_mentions: { parse: [] }, nonce: cleanSnowflake(packet.d?.id) || randomUUID().replaceAll("-", "").slice(0, 25), enforce_nonce: true }),
+            signal: AbortSignal.timeout(10_000),
           });
           if (!response.ok) logger.warn("Static DM reply failed", { eventName: "bot.static.dm_reply_failed", status: response.status });
         } catch { /* Discord DM temporarily unavailable */ }
@@ -493,12 +508,14 @@ function connect() {
 
 export function startDiscordGatewayBridge() {
   stopped = false;
+  staticChecks.start();
   connect();
   if (staticSweepTimer) clearInterval(staticSweepTimer);
   staticSweepTimer = setInterval(() => { void runStaticSweep(); }, 60 * 60 * 1000);
   staticSweepTimer.unref?.();
   return () => {
     stopped = true;
+    staticChecks.stop();
     if (staticSweepTimer) clearInterval(staticSweepTimer);
     staticSweepTimer = null;
     recentStaticChecks.clear();
@@ -515,6 +532,8 @@ export function discordGatewayHealth() {
     connected: state.connected,
     ready: state.ready,
     queueSize: state.queue.size,
+    staticQueueSize: staticChecks.size,
+    activeStaticWorkers: staticChecks.active,
     activeWorkers: state.activeWorkers,
     nicknameQueueSize: state.nicknameQueue.size,
     activeNicknameWorkers: state.activeNicknameWorkers,

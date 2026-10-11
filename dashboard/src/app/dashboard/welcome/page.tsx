@@ -1,4 +1,5 @@
-import Image from "next/image";
+import ManagementSections from "@/components/ManagementSections";
+import ManagementWelcomePreview from "@/components/ManagementWelcomePreview";
 import { redirect } from "next/navigation";
 
 import AdminTabs from "@/components/AdminTabs";
@@ -94,7 +95,7 @@ export default async function WelcomeCardDashboardPage({
 
   return (
     <main className="container app-page admin-container server-status-container">
-      <section className="dashboard-shell content-shell admin-page server-status-page app-page-stack" aria-label="Welcome-картки та onboarding">
+      <section className="dashboard-shell content-shell admin-workspace admin-page server-status-page app-page-stack" aria-label="Welcome-картки та onboarding">
         <DashboardIdentity user={user} activeSection="admin" />
         <AdminPageHeader
           eyebrow="Mistblossom Vanguard • Owner only"
@@ -109,20 +110,13 @@ export default async function WelcomeCardDashboardPage({
         />
         <AdminTabs active="welcome" user={user} />
 
-        <section className={`panel ${gatewayHealth.ready ? "is-ok" : "is-warning"}`} aria-label="Discord Gateway newcomer worker">
-          <div className="discord-management-section-head discord-management-section-head--inline">
-            <div>
-              <span className="eyebrow">Priority worker</span>
-              <h2>{gatewayHealth.ready ? "Discord Gateway активний" : "Discord Gateway не активний — працює cron recovery"}</h2>
-              <p>{gatewayHealth.ready
-                ? `Нові GUILD_MEMBER_ADD обробляються одразу. Активних worker-ів: ${gatewayHealth.activeWorkers}; у черзі: ${gatewayHealth.queueSize}.`
-                : `Миттєвий newcomer worker недоступний. ${gatewayHealth.lastError || "Перевір bot container та Server Members Intent у Discord Developer Portal."}`}</p>
-            </div>
-            <span className={`status-pill ${gatewayHealth.ready ? "good" : "warning"}`}>{gatewayHealth.ready ? "LIVE" : "FALLBACK"}</span>
-          </div>
-          {!gatewayHealth.ready ? <small>Для миттєвого GUILD_MEMBER_ADD увімкни Server Members Intent у Discord Developer Portal. Навіть без нього хвилинний cron лишається резервним механізмом.</small> : null}
-        </section>
-
+        <ManagementSections initialSection={paramValue(params, "repairPreview") === "1" ? "welcome-recovery" : Object.keys(params).some(key => key.startsWith("test")) ? "welcome-test" : "welcome-settings"} sections={[
+          { id: "welcome-settings", label: "Привітання", description: "Канал, текст картки та стартова роль для нових учасників." },
+          { id: "welcome-gateway", label: "Автоматизація", description: "Стан миттєвої обробки вступу та резервного механізму." },
+          { id: "welcome-recovery", label: "Відновлення", description: "Перевірка та відновлення стартових ролей." },
+          { id: "welcome-test", label: "Тест і прев’ю", description: "Перевір дані та вигляд картки перед публікацією." },
+          { id: "welcome-publish", label: "Публікація тесту", description: "Надсилання тестової картки в обраний Discord-канал." },
+        ]}>
         <section className="panel" aria-label="Welcome-картки Discord">
           <div className="discord-management-section-head discord-management-section-head--inline">
             <div>
@@ -198,6 +192,21 @@ export default async function WelcomeCardDashboardPage({
           </form>
         </section>
 
+        <section className={`panel ${gatewayHealth.ready ? "is-ok" : "is-warning"}`} aria-label="Discord Gateway newcomer worker">
+          <div className="discord-management-section-head discord-management-section-head--inline">
+            <div>
+              <span className="eyebrow">Priority worker</span>
+              <h2>{gatewayHealth.ready ? "Discord Gateway активний" : "Discord Gateway не активний — працює cron recovery"}</h2>
+              <p>{gatewayHealth.ready
+                ? `Нові GUILD_MEMBER_ADD обробляються одразу. Активних worker-ів: ${gatewayHealth.activeWorkers}; у черзі: ${gatewayHealth.queueSize}.`
+                : `Миттєвий newcomer worker недоступний. ${gatewayHealth.lastError || "Перевір bot container та Server Members Intent у Discord Developer Portal."}`}</p>
+            </div>
+            <span className={`status-pill ${gatewayHealth.ready ? "good" : "warning"}`}>{gatewayHealth.ready ? "LIVE" : "FALLBACK"}</span>
+          </div>
+          <p className="text-muted">Перевірка ролей Статика: {gatewayHealth.staticQueueSize || 0} у черзі · {gatewayHealth.activeStaticWorkers || 0} обробляються.</p>
+          {!gatewayHealth.ready ? <small>Для миттєвого GUILD_MEMBER_ADD увімкни Server Members Intent у Discord Developer Portal. Навіть без нього хвилинний cron лишається резервним механізмом.</small> : null}
+        </section>
+
         <section className="panel" aria-label="Відновлення ролей нових учасників">
           <div className="discord-management-section-head discord-management-section-head--inline">
             <div>
@@ -240,6 +249,7 @@ export default async function WelcomeCardDashboardPage({
           ) : null}
         </section>
 
+        <div className="management-task-stack">
         <section className="panel" aria-label="Тест welcome-системи">
           <div className="discord-management-section-head discord-management-section-head--inline">
             <div>
@@ -323,7 +333,7 @@ export default async function WelcomeCardDashboardPage({
             <div>
               <span className="eyebrow">PNG renderer • server</span>
               <h2>Preview, згенерований на сервері</h2>
-              <p>Зображення нижче повертає окремий owner-only API route. Браузер лише показує готовий PNG; композиція, аватар, тексти та фон збираються серверним Sharp.</p>
+              <p>Створи прев’ю за запитом, перевір текст та вигляд привітання. Готове зображення можна відкрити окремо.</p>
             </div>
             <a className="btn btn-secondary" href={previewUrl} target="_blank" rel="noreferrer">Відкрити PNG</a>
           </div>
@@ -341,21 +351,7 @@ export default async function WelcomeCardDashboardPage({
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)",
               }}
             >
-              <Image
-                src={previewUrl}
-                alt="Серверний preview welcome-картки"
-                width={1600}
-                height={900}
-                unoptimized
-                priority
-                style={{
-                  display: "block",
-                  width: "100%",
-                  height: "auto",
-                  maxWidth: "616px",
-                  borderRadius: "16px",
-                }}
-              />
+              <ManagementWelcomePreview url={previewUrl} />
             </div>
             <p className="text-muted" style={{ margin: 0 }}>Preview у панелі обмежений до приблизного desktop-розміру вкладення в Discord, щоб візуально збігатися з публікацією в каналі.</p>
           </div>
@@ -368,6 +364,7 @@ export default async function WelcomeCardDashboardPage({
           </div>
         </section>
 
+        </div>
         <section className="panel" aria-label="Тестова публікація Discord">
           <div className="discord-management-section-head discord-management-section-head--inline">
             <div>
@@ -404,6 +401,7 @@ export default async function WelcomeCardDashboardPage({
             </div>
           </form>
         </section>
+        </ManagementSections>
       </section>
     </main>
   );

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { discordMembershipMessageNonce } from "@/lib/discordMessageNonce";
 import { randomUUID } from "node:crypto";
 
 import {
@@ -15,7 +16,7 @@ import {
   type DiscordGuildMemberModerationItem,
 } from "@/lib/discordAdmin";
 import { createDiscordWelcomeArtifact } from "@/lib/discordWelcomeArtifact";
-import { mapConcurrent } from "@/lib/concurrency";
+import { mapConcurrent, mapConcurrentSettled } from "@/lib/concurrency";
 import { getDiscordWelcomeCardSettings, type DiscordWelcomeCardSettings } from "@/lib/discordWelcomeCardSettings";
 import { MISTBLOSSOM_DISCORD_CHANNELS, discordGuildChannelUrl } from "@/lib/discordGuildLinks";
 import { firebaseWrite } from "@/lib/firebaseAccess";
@@ -433,7 +434,7 @@ async function sendPrivateWelcome(params: {
     nickname: params.nickname,
     nicknameValid: params.nicknameValid,
   });
-  return sendDiscordDirectMessage({ userId: params.member.userId, content, components: acceptButton(params.roleIds) });
+  return sendDiscordDirectMessage({ userId: params.member.userId, content, components: acceptButton(params.roleIds), nonce: discordMembershipMessageNonce({ guildId: getDiscordGuildId(), userId: params.member.userId, joinedAt: params.member.joinedAt }, "welcome-dm") });
 }
 
 async function sendChannelWelcome(member: DiscordGuildMemberModerationItem, settings: DiscordWelcomeCardSettings) {
@@ -441,6 +442,7 @@ async function sendChannelWelcome(member: DiscordGuildMemberModerationItem, sett
   const artifact = await createDiscordWelcomeArtifact(member, settings);
   const sent = await sendDiscordChannelMessageWithAttachment({
     channelId: settings.channelId,
+    nonce: discordMembershipMessageNonce({ guildId: getDiscordGuildId(), userId: member.userId, joinedAt: member.joinedAt }, "welcome-card"),
     content: artifact.content,
     fileName: artifact.fileName,
     fileBuffer: artifact.buffer,
@@ -549,7 +551,8 @@ export async function runDiscordNewcomerOnboarding(options: {
 
     let members: DiscordGuildMemberModerationItem[];
     if (priorityMode) {
-      const resolved = await Promise.allSettled(priorityUserIds.map((userId) => fetchDiscordGuildMemberSnapshot(userId)));
+      const mappedPriority = await mapConcurrentSettled(priorityUserIds, userId => fetchDiscordGuildMemberSnapshot(userId), { profile: "external-api", max: 4 });
+      const resolved = mappedPriority.results.map(item => item.ok ? { status: "fulfilled" as const, value: item.value } : { status: "rejected" as const, reason: item.error });
       const unresolved = resolved
         .map((item, index) => ({ item, userId: priorityUserIds[index] }))
         .filter(({ item }) => item.status === "rejected" || !item.value?.joinedAt);

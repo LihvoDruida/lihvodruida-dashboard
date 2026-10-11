@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import DashboardIdentity from "@/components/DashboardIdentity";
 import AdminPageHeader from "@/components/AdminPageHeader";
+import ManagementSections from "@/components/ManagementSections";
 import AdminTabs from "@/components/AdminTabs";
 import IntegrationStatusPanel from "@/components/IntegrationStatusPanel";
 import { buildPageMetadata } from "@/lib/seo";
@@ -96,7 +97,7 @@ export default async function AdminOverviewPage() {
   return (
     <main className="container app-page admin-container">
       <section
-        className="dashboard-shell content-shell admin-page app-page-stack"
+        className="dashboard-shell content-shell admin-workspace admin-page app-page-stack"
         aria-label="Керування Mistblossom Vanguard"
       >
         <DashboardIdentity user={user} activeSection="admin" />
@@ -113,7 +114,7 @@ export default async function AdminOverviewPage() {
             },
             {
               label: "Шаблон ніку",
-              value: policy.template,
+              value: "3 формати",
               note: nicknameTemplateExample(policy.template),
             },
             {
@@ -135,10 +136,11 @@ export default async function AdminOverviewPage() {
 
         <AdminTabs active="overview" user={user} />
 
-        <section
-          className="admin-overview-grid admin-overview-grid--security"
-          aria-label="Стан системи та правила доступу"
-        >
+        <ManagementSections sections={[
+          { id: "overview-status", label: "Стан системи", description: "Інтеграції та чинні правила гільдії в одному місці." },
+          { id: "overview-auth", label: "Вхід і реєстрація", description: "Хто може авторизуватися: членство на сервері, Discord-ролі й винятки." },
+          { id: "overview-geo", label: "Географія доступу", description: "Країни та винятки для доступу до сайту." },
+        ]}>
           <div className="admin-overview-top-grid">
             <IntegrationStatusPanel
               compact
@@ -535,7 +537,7 @@ export default async function AdminOverviewPage() {
               </footer>
             </form>
           </article>
-        </section>
+        </ManagementSections>
       </section>
     </main>
   );

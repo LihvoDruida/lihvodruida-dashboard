@@ -125,7 +125,7 @@ export default async function AdminGroupsPage() {
 
   return (
     <main className="container app-page admin-container access-groups-container">
-      <section className="dashboard-shell content-shell admin-page access-groups-page app-page-stack" aria-label="Керування групами та правами доступу Mistblossom Vanguard">
+      <section className="dashboard-shell content-shell admin-workspace admin-page access-groups-page app-page-stack" aria-label="Керування групами та правами доступу Mistblossom Vanguard">
         <DashboardIdentity user={user} activeSection="admin" />
         <AdminPageHeader
           eyebrow="Mistblossom Vanguard • Права"

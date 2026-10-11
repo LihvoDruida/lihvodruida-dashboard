@@ -6,7 +6,7 @@ import {
 } from "@/lib/permissions";
 
 export type AdminTabKey =
-  "overview" | "groups" | "discord" | "logs" | "server" | "welcome" | "settings";
+  "overview" | "groups" | "cleanup" | "discord" | "logs" | "server" | "welcome" | "settings";
 
 export default function AdminTabs({
   active,
@@ -71,6 +71,29 @@ export default function AdminTabs({
   ].filter((tab) => tab.visible);
 
   if (!tabs.length) return null;
+
+  // Logs retain their existing navigation and presentation.
+  if (active !== "logs") {
+    const sections = [
+      { label: "Доступ і склад", keys: ["overview", "groups", "settings"] },
+      { label: "Discord та автоматизація", keys: ["discord", "cleanup", "welcome"] },
+      { label: "Система", keys: ["server", "logs"] },
+    ];
+    const managementTabs = [...tabs, { key: "cleanup" as const, href: "/dashboard/discord/cleanup", label: "Очищення", description: "роль та строк", visible: canOpenDiscord }].filter(tab => tab.visible);
+    return <nav className="management-nav" aria-label="Розділи керування">
+      {sections.map(section => {
+        const links = section.keys.map(key => managementTabs.find(tab => tab.key === key)).filter(tab => tab !== undefined);
+        return links.length ? <div className="management-nav-group" key={section.label}>
+          <span className="management-nav-label">{section.label}</span>
+          <div className="management-nav-links">{links.map(tab => <a key={tab.key} href={tab.href}
+            aria-current={active === tab.key ? "page" : undefined}>
+            <strong>{tab.key === "settings" ? "Статик" : tab.key === "welcome" ? "Привітання" : tab.label}</strong><small>{tab.description}</small>
+          </a>)}</div>
+        </div> : null;
+      })}
+    </nav>;
+  }
+
 
   return (
     <nav className="admin-tabs dashboard-subnav" aria-label="Розділи керування">

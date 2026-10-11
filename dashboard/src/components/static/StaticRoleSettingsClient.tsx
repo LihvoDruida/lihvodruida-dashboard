@@ -11,21 +11,21 @@ export default function StaticRoleSettingsClient() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  async function load() {
-    const res = await fetch("/api/dashboard/static-roles", { cache: "no-store" });
+  async function load(signal?: AbortSignal) {
+    const res = await fetch("/api/dashboard/static-roles", { cache: "no-store", signal });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || "Немає доступу до налаштувань.");
     const state = json as Response;
     setData(state); setMemberRoleId(state.settings.memberRoleId); setManagerRoleId(state.settings.managerRoleId);
   }
-  useEffect(() => { void load().catch(cause => setError(cause instanceof Error ? cause.message : "Помилка завантаження.")); }, []);
+  useEffect(() => { const controller = new AbortController(); void load(controller.signal).catch(cause => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Помилка завантаження."); }); return () => controller.abort(); }, []);
   async function save() {
     setBusy(true); setError(""); setNotice("");
     try {
       const res = await fetch("/api/dashboard/static-roles", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ memberRoleId, managerRoleId }) });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Помилка збереження.");
-      await load(); setNotice("Discord-ролі Статика оновлено.");
+      setData(current => current ? { ...current, settings: result.settings } : current); setNotice("Discord-ролі Статика оновлено.");
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Не вдалося зберегти ролі."); }
     finally { setBusy(false); }
   }
@@ -34,7 +34,6 @@ export default function StaticRoleSettingsClient() {
   const changed = Boolean(data && (memberRoleId !== data.settings.memberRoleId || managerRoleId !== data.settings.managerRoleId));
   const ready = Boolean(data && !data.warning && data.botCanManageRoles && memberValid && managerValid && memberRoleId !== managerRoleId);
   return <div className={styles.wrap}>
-    <header className="hero panel"><div className="eyebrow">Панель керування • Discord</div><h1>Налаштування</h1><p className="lead">Налаштування ролей Статика: кого бот приймає до складу та хто може керувати ним.</p></header>
     <section className={`panel ${styles.card}`}>
       <div className={styles.sectionHead}><h2>Discord-ролі Статика</h2><Link className="btn subtle" href="/discord/static">До Статика →</Link></div>
       <p className={styles.muted}>Налаштування змінюють тільки адміністратори або власник сервера. РЛ керує Статиком, але не може змінити власні повноваження.</p>
