@@ -44,7 +44,7 @@ assert(manualRoute.includes('acquireAccountCleanupExecutionLock'), 'Manual clean
 assert(page.includes('Зберегти автоматизацію'), 'Discord management UI must expose automation settings.');
 assert(page.includes('Історія останніх запусків'), 'Discord management UI must show cleanup run history.');
 assert(styles.includes('.account-cleanup-status-grid'), 'Cleanup automation UI must have dedicated responsive layout styles.');
-assert(cron.includes('[ $((minute % 15)) -eq 0 ] && call "/api/dashboard/profiles/orphan-cleanup"'), 'Cron must tick the cleanup scheduler every 15 minutes.');
+assert(cron.includes('call "/api/dashboard/profiles/orphan-cleanup"') && cron.includes('interval=900; key=account-cleanup'), 'Cron must tick the cleanup scheduler every 15 minutes.');
 assert(!cron.includes('/api/dashboard/profiles/orphan-cleanup/apply"'), 'Cron must not bypass persisted cleanup settings with the legacy apply endpoint.');
 
 assert(discord.includes('expectedStatuses?: number[]'), 'Discord wrapper must support explicitly expected HTTP statuses');

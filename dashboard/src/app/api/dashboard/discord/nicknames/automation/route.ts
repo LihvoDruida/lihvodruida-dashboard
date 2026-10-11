@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
   const state = await getNicknameWarningAutomationState({ fresh: true });
   const runFullScan = policy.nicknameReminderEnabled && nicknameFullScanDue(state, policy);
-  const execution = acquireNicknameWarningExecution(runFullScan ? "automatic:full" : "automatic:priority");
+  const execution = await acquireNicknameWarningExecution(runFullScan ? "automatic:full" : "automatic:priority");
   if (!execution) {
     return NextResponse.json({ ok: true, skipped: true, reason: "in_flight" }, { headers: noStoreHeaders() });
   }
@@ -126,6 +126,6 @@ export async function POST(request: NextRequest) {
     logDashboardEvent("error", "discord.nickname_warning.auto_failed", request, { message }, { category: "action" });
     return NextResponse.json({ ok: false, error: message }, { status: 500, headers: noStoreHeaders() });
   } finally {
-    execution.release();
+    await execution.release();
   }
 }

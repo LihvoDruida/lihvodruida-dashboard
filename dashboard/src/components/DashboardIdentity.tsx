@@ -20,6 +20,7 @@ import DashboardNavIcon, { type DashboardNavSection } from "@/components/Dashboa
 import SiteNavBehaviour from "@/components/SiteNavBehaviour";
 import GuildStatusBanner, { type GuildStatusRaid } from "@/components/GuildStatusBanner";
 import { loadStoredGuildRosterData } from "@/lib/guildRoster";
+import { isGuildRosterCacheFresh } from "@/lib/guildRosterFreshness";
 import { primaryCurrentRaidProgress, currentSeasonRaidSlugs } from "@/lib/characterRaidProgress";
 import ProfileAvatar from "@/components/ProfileAvatar";
 import { getProfileById, getProfilePublicName } from "@/lib/profiles";
@@ -69,10 +70,9 @@ export default async function DashboardIdentity({
   const primaryRaid = currentSlugs.length
     ? primaryCurrentRaidProgress(roster?.stats.raidProgression || [], seasonSnapshot)
     : null;
-  const rosterUpdatedMs = Date.parse(roster?.stats.updatedAt || "");
   // An old cache must not be presented as *current* guild progress. Raider.IO
   // exposes tier aggregates as fallback; verify their season before displaying.
-  const rosterIsFresh = !Number.isFinite(rosterUpdatedMs) || Date.now() - rosterUpdatedMs < 72 * 60 * 60_000;
+  const rosterIsFresh = isGuildRosterCacheFresh(roster?.stats.updatedAt);
   const progressMatchesSeason = Boolean(primaryRaid && currentSlugs.includes(primaryRaid.slug));
   const bannerRaid: GuildStatusRaid = primaryRaid && progressMatchesSeason && rosterIsFresh ? {
     name: primaryRaid.name,

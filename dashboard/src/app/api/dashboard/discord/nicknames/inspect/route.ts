@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   const guard = await requireDiscordAdmin(request, "nicknames-inspect", 8 * 1024);
   if ("error" in guard) return guard.error;
 
-  const execution = acquireNicknameWarningExecution(`manual-inspect:${guard.session.id}`);
+  const execution = await acquireNicknameWarningExecution(`manual-inspect:${guard.session.id}`);
   if (!execution) {
     return adminDiscordResponse(request, {
       ok: false,
@@ -53,6 +53,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return await discordAdminError(request, "admin.discord.nicknames_inspect_failed", error, "Перевірку ніків не виконано.", guard.session);
   } finally {
-    execution.release();
+    await execution.release();
   }
 }

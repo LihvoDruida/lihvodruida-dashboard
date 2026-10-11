@@ -9,7 +9,7 @@ const interactions = read("src/app/api/discord/interactions/route.ts");
 const discordAdmin = read("src/lib/discordAdmin.ts");
 const picker = read("src/components/DiscordEmbedEditor.tsx");
 const shared = fs.readFileSync(path.join(root, "..", "shared", "index.mjs"), "utf8");
-const cron = fs.readFileSync(path.join(root, "..", "deploy", "cron", "run-cron.sh"), "utf8");
+const cron = fs.readFileSync(path.join(root, "..", "deploy", "cron", "run-cron.sh"), "utf8") + fs.readFileSync(path.join(root, "..", "deploy", "cron", "run-job.sh"), "utf8");
 
 const checks = [
   [documentStore.includes('field === "__name__") return "doc_id"'), "documentId ordering maps to doc_id"],

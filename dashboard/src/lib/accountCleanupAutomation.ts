@@ -1,4 +1,5 @@
 import "server-only";
+import { acquireAutomationLease } from "@/lib/automationLease";
 
 import type { DashboardSession } from "@/lib/auth";
 import { firebaseWrite } from "@/lib/firebaseAccess";
@@ -23,23 +24,26 @@ declare global {
   var __mistblossomAccountCleanupExecutionLock: AccountCleanupExecutionLock | undefined;
 }
 
-export function acquireAccountCleanupExecutionLock(source: string) {
+export async function acquireAccountCleanupExecutionLock(source: string) {
   const now = Date.now();
   const active = globalThis.__mistblossomAccountCleanupExecutionLock;
   // Defensive stale-lock expiry: one cleanup run should never be allowed to
   // block all future maintenance after an unexpected rejected promise.
   if (active && now - active.startedAt < 2 * 60 * 60_000) return null;
+  const lease = await acquireAutomationLease("account-cleanup", source);
+  if (!lease) return null;
   const lock = { source: String(source || "unknown").slice(0, 80), startedAt: now };
   globalThis.__mistblossomAccountCleanupExecutionLock = lock;
   let released = false;
   return {
     lock,
-    release() {
+    async release() {
       if (released) return;
       released = true;
       if (globalThis.__mistblossomAccountCleanupExecutionLock === lock) {
         globalThis.__mistblossomAccountCleanupExecutionLock = undefined;
       }
+      await lease.release();
     },
   };
 }

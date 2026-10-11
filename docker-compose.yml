@@ -246,6 +246,7 @@ services:
       TZ: Europe/Kyiv
     volumes:
       - ./deploy/cron/run-cron.sh:/opt/cron/run-cron.sh:ro
+      - ./deploy/cron/run-job.sh:/opt/cron/run-job.sh:ro
     networks:
       - edge
     read_only: true

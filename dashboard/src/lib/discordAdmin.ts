@@ -221,6 +221,7 @@ export type DiscordMessageRef = {
 };
 
 export type DiscordGuildMemberSnapshot = {
+  bot?: boolean;
   userId: string;
   nick: string | null;
   username: string | null;
@@ -297,6 +298,7 @@ type DiscordRequestInit = Omit<RequestInit, "headers"> & {
   headers?: HeadersInit;
   auditReason?: string;
   expectedStatuses?: number[];
+  retry?: "never";
 };
 
 function getBotToken() {
@@ -375,16 +377,17 @@ async function waitForDiscordCooldown(key: string) {
     const globalUntil = globalThis.__mistblossomDiscordGlobalCooldownUntil || 0;
     const delay = Math.max(routeUntil, globalUntil) - Date.now();
     if (delay <= 0) return;
+    if (delay > 20_000) throw new Error(`Discord API 429: запити призупинено ще на ${Math.ceil(delay / 1000)} с.`);
     await sleep(Math.min(delay, 20_000));
   }
 }
 
 function setDiscordCooldown(key: string, delayMs: number) {
-  discordRouteCooldowns().set(key, Date.now() + Math.max(100, Math.min(30_000, Math.floor(delayMs))));
+  discordRouteCooldowns().set(key, Math.max(discordRouteCooldowns().get(key) || 0, Date.now() + Math.max(100, Math.floor(delayMs))));
 }
 
 function setDiscordGlobalCooldown(delayMs: number) {
-  globalThis.__mistblossomDiscordGlobalCooldownUntil = Date.now() + Math.max(250, Math.min(30_000, Math.floor(delayMs)));
+  globalThis.__mistblossomDiscordGlobalCooldownUntil = Math.max(globalThis.__mistblossomDiscordGlobalCooldownUntil || 0, Date.now() + Math.max(250, Math.floor(delayMs)));
 }
 
 function observeDiscordRateLimit(response: Response, key: string) {
@@ -398,10 +401,10 @@ function observeDiscordRateLimit(response: Response, key: string) {
 function discordRetryAfterMs(response: Response, json: any, attempt: number) {
   const retryAfter = Number(json?.retry_after ?? response.headers.get("retry-after") ?? response.headers.get("x-ratelimit-reset-after") ?? 0);
   const normalized = Number.isFinite(retryAfter) && retryAfter > 0
-    ? retryAfter > 50 ? retryAfter : retryAfter * 1000
+    ? retryAfter * 1000
     : 900 + attempt * 650;
   const jitter = 150 + Math.floor(Math.random() * 300);
-  return Math.max(500, Math.min(20_000, Math.floor(normalized + jitter)));
+  return Math.max(500, Math.floor(normalized + jitter));
 }
 
 function shouldRetryDiscordStatus(status: number) {
@@ -422,7 +425,7 @@ export async function discordApi<T = any>(path: string, init: DiscordRequestInit
   const token = getBotToken();
   if (!token) throw new Error("Discord bot token не налаштований. Дії з ролями, ніками та учасниками не можуть виконуватись напряму через Discord API.");
 
-  const { auditReason: auditReasonInput, expectedStatuses = [], headers: inputHeaders, ...requestInit } = init;
+  const { auditReason: auditReasonInput, expectedStatuses = [], headers: inputHeaders, retry, ...requestInit } = init;
   const method = String(requestInit.method || "GET").toUpperCase();
   const isMutation = method !== "GET" && method !== "HEAD";
   const headers = new Headers(inputHeaders || {});
@@ -441,7 +444,7 @@ export async function discordApi<T = any>(path: string, init: DiscordRequestInit
   );
 
   const routeKey = discordRouteKey(path, method);
-  const maxAttempts = method === "DELETE" ? 7 : isMutation ? 5 : 4;
+  const maxAttempts = retry === "never" ? 1 : method === "DELETE" ? 7 : isMutation ? 5 : 4;
   const timeoutMs = discordApiTimeoutMs(method);
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
@@ -477,7 +480,7 @@ export async function discordApi<T = any>(path: string, init: DiscordRequestInit
         const delay = discordRetryAfterMs(response, json, attempt);
         setDiscordCooldown(routeKey, delay);
         if (json?.global === true) setDiscordGlobalCooldown(delay);
-        if (attempt < maxAttempts - 1) {
+        if (attempt < maxAttempts - 1 && delay <= 20_000) {
           await sleep(delay);
           continue;
         }
@@ -506,7 +509,7 @@ export async function discordApi<T = any>(path: string, init: DiscordRequestInit
             detail: safeDetail,
           });
         }
-        const rateHint = response.status === 429 ? " Після кількох повторів Discord усе ще обмежує запити." : "";
+        const rateHint = response.status === 429 ? " Discord тимчасово обмежив запити." : "";
         throw new Error(`Discord API ${response.status}: ${safeDetail}${rateHint}`);
       }
 
@@ -1676,6 +1679,7 @@ export async function fetchDiscordGuildMemberSnapshot(userIdInput: string, guild
   return {
     userId,
     nick,
+    bot: Boolean(user.bot),
     username,
     globalName,
     displayName: nick || globalName || username || "Discord",
@@ -1932,6 +1936,47 @@ export async function fetchDiscordGuildMembersCachedForUi(ttlMsInput: unknown = 
   const members = await fetchDiscordGuildMembers(0);
   discordGuildMembersUiCache = { checkedAt: Date.now(), members };
   return members;
+}
+
+/** A resumable raw page, including bots so the cursor always advances through the entire guild. */
+export async function fetchDiscordCleanupMemberPage(after = "0", limit = 200) {
+  const guildId = getDiscordGuildId();
+  if (!guildId || !/^\d{1,25}$/.test(after)) throw new Error("Некоректний сервер або курсор Discord.");
+  const size = Math.max(1, Math.min(200, Math.floor(limit)));
+  const raw = await discordApi<any[]>(`/guilds/${guildId}/members?limit=${size}&after=${after}`);
+  if (!Array.isArray(raw)) throw new Error("Discord повернув некоректний список учасників.");
+  const members = raw.map((member) => ({
+    userId: cleanSnowflake(member?.user?.id),
+    displayName: cleanText(member?.nick || member?.user?.global_name || member?.user?.username, 100) || "Discord",
+    bot: Boolean(member?.user?.bot),
+    roleIds: Array.isArray(member?.roles) ? member.roles.map(String) : ["invalid-role-data"],
+    joinedAt: cleanText(member?.joined_at, 80) || null,
+  }));
+  if (members.some((member) => !member.userId)) throw new Error("Discord повернув учасника без ID.");
+  const next = members.at(-1)?.userId || after;
+  if (raw.length && BigInt(next) <= BigInt(after)) throw new Error("Курсор Discord не просувається.");
+  return { members, after: next, complete: raw.length < size };
+}
+
+/** Unlike role management, kicking needs KICK_MEMBERS, not MANAGE_ROLES. */
+export async function fetchDiscordCleanupControl(): Promise<import("@/lib/discordCleanupPolicy").CleanupControl> {
+  const guildId = getDiscordGuildId();
+  if (!guildId) throw new Error("Discord-сервер не підключено.");
+  const [guild, bot, rawRoles] = await Promise.all([fetchDiscordGuildSnapshot(), fetchDiscordCurrentBotUser(), fetchDiscordRawRoles(guildId)]);
+  if (!guild.ownerId) throw new Error("Не вдалося визначити власника Discord-сервера.");
+  const botMember = await discordApi<any>(`/guilds/${guildId}/members/${bot.id}`);
+  const roleIds = Array.isArray(botMember?.roles) ? botMember.roles.map(String) : [];
+  let bits = rawRoles.find((role) => role.id === guildId)?.permissionsRaw || 0n;
+  for (const id of roleIds) bits |= rawRoles.find((role) => role.id === id)?.permissionsRaw || 0n;
+  const roles = rawRoles.map((role) => ({ id: role.id, name: role.name, position: role.position, managed: role.managed, permissions: String(role.permissionsRaw || 0n) }));
+  const top = highestRoleForMember(roleIds, rawRoles);
+  return { guildId, ownerId: guild.ownerId, botId: bot.id, canKick: Boolean(bits & (8n | 2n)), roles, botTopRole: roles.find((role) => role.id === top?.id) || null };
+}
+
+/** Never retry a destructive request blindly: the member might have rejoined in between attempts. */
+export async function kickDiscordCleanupMember(guildId: string, userId: string, reason: string) {
+  if (!cleanSnowflake(guildId) || !cleanSnowflake(userId)) throw new Error("Некоректний ID для виключення.");
+  await discordApi<void>(`/guilds/${guildId}/members/${userId}`, { method: "DELETE", auditReason: reason, retry: "never", expectedStatuses: [404] });
 }
 
 export async function removeGuildMemberRoles(params: {

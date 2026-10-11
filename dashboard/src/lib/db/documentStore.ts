@@ -432,6 +432,11 @@ export class PgQuery {
         continue;
       }
       const expression = queryOrderExpression(clause.field, normalized);
+      // Match cleanup partial indexes explicitly; an expression comparison
+      // alone does not let PostgreSQL prove a JSON key-existence predicate.
+      if (["nextAttemptAt", "listKey", "sortKey"].includes(clause.field)) {
+        conditions.push(`data ? '${clause.field}'`);
+      }
       values.push(normalized);
       conditions.push(`${expression} ${clause.op} $${values.length}`);
     }

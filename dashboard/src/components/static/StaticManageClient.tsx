@@ -10,9 +10,16 @@ type Violation = { id: string; description: string; createdAt: string; createdBy
 type Member = { userId: string; name: string; status: string; blocked: boolean; acceptedAt: string | null; version: number; removedAt: string | null; violations?: Violation[]; banUntil?: string | null; discord: { avatarUrl: string | null; username: string | null; nick: string | null; roleIds: string[]; joinedAt: string | null } | null };
 type Snapshot = { settings: Config; permissions: { view: boolean; edit: boolean; admin: boolean }; invites: Invite[]; members: Member[]; discordSynced: boolean };
 const date = (value: string | null | undefined) => value && !Number.isNaN(Date.parse(value)) ? new Intl.DateTimeFormat("uk-UA", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Kyiv" }).format(new Date(value)) : "—";
-const banned = (member: Member) => Boolean(member.banUntil && Date.parse(member.banUntil) > Date.now());
+const bannedAt = (member: Member, now: number) => Boolean(member.banUntil && Date.parse(member.banUntil) > now);
 
 export default function StaticManageClient() {
+  const [now, setNow] = useState(0);
+  useEffect(() => {
+    setNow(Date.now());
+    const timer = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+  const banned = (member: Member) => bannedAt(member, now);
   const [state, setState] = useState<Snapshot | null>(null);
   const [generated, setGenerated] = useState("");
   const [error, setError] = useState("");
@@ -48,7 +55,7 @@ export default function StaticManageClient() {
     const searchText = `${member.name} ${member.userId} ${member.discord?.username || ""}`.toLocaleLowerCase("uk-UA");
     const statusOk = filter === "all" || (filter === "active" && member.status === "active" && !banned(member)) || (filter === "removed" && member.status !== "active") || (filter === "violations" && Boolean(member.violations?.length));
     return statusOk && searchText.includes(search.toLocaleLowerCase("uk-UA").trim());
-  }) || [], [state, search, filter]);
+  }) || [], [state, search, filter, now]);
   const canEdit = Boolean(state?.permissions.edit);
   return <div className={styles.wrap}>
     <header className="hero panel"><div className="eyebrow">Mistblossom Vanguard • Рейдовий склад</div><h1>Склад Статика</h1><p className="lead">Учасники Discord із зафіксованою датою прийняття правил. Структура таблиці та фільтрів узгоджена зі складом гільдії.</p></header>
@@ -60,7 +67,7 @@ export default function StaticManageClient() {
         <div><small>Учасників</small><strong>{state.members.filter(x => x.status === "active" && !banned(x) && (!state.discordSynced || x.discord?.roleIds.includes(state.settings.memberRoleId))).length}</strong></div>
         <div><small>З порушеннями</small><strong>{state.members.filter(x => (x.violations?.length || 0) > 0).length}</strong></div>
         <div><small>Блокування</small><strong>{state.members.filter(banned).length}</strong></div>
-        <div><small>Активні запрошення</small><strong>{state.invites.filter(x => !x.revokedAt && Date.parse(x.expiresAt) > Date.now()).length}</strong></div>
+        <div><small>Активні запрошення</small><strong>{state.invites.filter(x => !x.revokedAt && Date.parse(x.expiresAt) > now).length}</strong></div>
         <div><small>Правила v</small><strong>{state.settings.version}</strong></div>
       </div>
       <div className={styles.linksGrid}>
@@ -71,7 +78,7 @@ export default function StaticManageClient() {
       {!state.settings.memberRoleId || !state.settings.managerRoleId ? <div className="notice panel">Discord-ролі не налаштовані. {state.permissions.admin ? <Link href="/dashboard/settings">Налаштування →</Link> : "Зверніться до адміністратора."}</div> : null}
       <section className={`panel ${styles.card}`}><div className={styles.sectionHead}><h2>Запрошення на 24 години</h2>{canEdit ? <button className="btn primary" disabled={busy || !state.settings.text || !state.settings.memberRoleId} onClick={() => void action("create-invite")}>Створити посилання</button> : null}</div>
         {generated ? <div className={styles.challenge}><strong>Посилання — скопіюй його зараз</strong><div className={styles.code}><input readOnly value={generated} aria-label="Посилання-запрошення" /><button className="btn subtle" onClick={() => void navigator.clipboard.writeText(generated)}>Копіювати</button></div></div> : null}
-        <div className={styles.list}>{state.invites.length === 0 ? <p className={styles.muted}>Запрошень немає.</p> : state.invites.slice(0, 12).map(invite => <div className={styles.listRow} key={invite.id}><div><strong>{!invite.revokedAt && Date.parse(invite.expiresAt) > Date.now() ? "Активне" : invite.revokedAt ? "Відкликане" : "Завершене"}</strong><span className={styles.muted}>{date(invite.createdAt)} — {date(invite.expiresAt)}</span></div>{canEdit && !invite.revokedAt && Date.parse(invite.expiresAt) > Date.now() ? <button className="btn subtle" disabled={busy} onClick={() => void action("revoke-invite", { id: invite.id }, "Відкликати запрошення?")}>Відкликати</button> : null}</div>)}</div>
+        <div className={styles.list}>{state.invites.length === 0 ? <p className={styles.muted}>Запрошень немає.</p> : state.invites.slice(0, 12).map(invite => <div className={styles.listRow} key={invite.id}><div><strong>{!invite.revokedAt && Date.parse(invite.expiresAt) > now ? "Активне" : invite.revokedAt ? "Відкликане" : "Завершене"}</strong><span className={styles.muted}>{date(invite.createdAt)} — {date(invite.expiresAt)}</span></div>{canEdit && !invite.revokedAt && Date.parse(invite.expiresAt) > now ? <button className="btn subtle" disabled={busy} onClick={() => void action("revoke-invite", { id: invite.id }, "Відкликати запрошення?")}>Відкликати</button> : null}</div>)}</div>
       </section>
       <section className={`panel ${styles.rosterPanel}`} aria-label="Склад Статика">
         <div className={styles.rosterToolbar}><div><h2>Учасники Статика</h2><span className={styles.muted}>{filtered.length} з {state.members.length}</span></div>

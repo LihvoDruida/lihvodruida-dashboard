@@ -33,9 +33,9 @@ function rig(route, options = {}) {
       fetchDiscordRoleControlSnapshot: async () => flags.available ? { roles: roleList, guild: { name:'Test' }, botCanManageRoles: true, error: null } : { roles: [], guild: null, botCanManageRoles: false, error: 'API down' },
     },
   };
-  const module = { exports: {} };
-  vm.runInNewContext(source, { module, exports: module.exports, require: (name) => { if (!(name in mocks)) throw Error('Unexpected import: ' + name); return mocks[name]; } }, { filename: route });
-  return { handler: module.exports, flags, calls };
+  const compiledModule = { exports: {} };
+  vm.runInNewContext(source, { module: compiledModule, exports: compiledModule.exports, require: (name) => { if (!(name in mocks)) throw Error('Unexpected import: ' + name); return mocks[name]; } }, { filename: route });
+  return { handler: compiledModule.exports, flags, calls };
 }
 function post(body) { return { json: async () => body }; }
 let pass = 0;

@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     const form = await request.formData();
     const mode = String(form.get("mode") || "inspect").toLowerCase();
     const apply = mode === "apply";
-    const execution = acquireAccountCleanupExecutionLock(`manual:${apply ? "apply" : "inspect"}`);
+    const execution = await acquireAccountCleanupExecutionLock(`manual:${apply ? "apply" : "inspect"}`);
     if (!execution) {
       return adminDiscordResponse(request, {
         ok: false,
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
         data: { ...compactProfileCleanupResult(result), refresh: apply },
       });
     } finally {
-      execution.release();
+      await execution.release();
     }
   } catch (error) {
     return await discordAdminError(request, "admin.discord.profiles_cleanup_failed", error, "Перевірку Discord-профілів не виконано.", guard.session);

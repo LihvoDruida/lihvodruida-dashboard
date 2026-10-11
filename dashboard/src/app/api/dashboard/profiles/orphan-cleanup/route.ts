@@ -120,7 +120,7 @@ async function run(request: NextRequest) {
   // Normal cron execution can apply only when the owner enabled auto cleanup.
   if (!forced && mode === "apply" && !settings.autoCleanupEnabled) mode = "inspect";
 
-  const execution = acquireAccountCleanupExecutionLock(`automatic:${mode}`);
+  const execution = await acquireAccountCleanupExecutionLock(`automatic:${mode}`);
   if (!execution) {
     return NextResponse.json({ ok: true, skipped: true, reason: "cleanup_in_flight" }, {
       headers: noStoreHeaders({ "X-Mistblossom-Account-Cleanup": "in-flight" }),
@@ -223,7 +223,7 @@ async function run(request: NextRequest) {
     });
   } finally {
     guard.inFlight = undefined;
-    execution.release();
+    await execution.release();
   }
 }
 

@@ -19,7 +19,7 @@ function load(relative, mocks = {}) {
     fileName: relative,
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   });
-  const module = { exports: {} };
+  const compiledModule = { exports: {} };
   const mockRequire = (id) => {
     if (Object.hasOwn(mocks, id)) return mocks[id];
     if (id === "server-only") return {};
@@ -27,8 +27,8 @@ function load(relative, mocks = {}) {
     if (id.startsWith("@/lib/") || id.startsWith("@mistblossom/")) return {};
     throw new Error(`Unexpected dependency ${id}`);
   };
-  new Function("require", "module", "exports", js.outputText)(mockRequire, module, module.exports);
-  return module.exports;
+  new Function("require", "module", "exports", js.outputText)(mockRequire, compiledModule, compiledModule.exports);
+  return compiledModule.exports;
 }
 function fakeDb() {
   const collections = new Map();

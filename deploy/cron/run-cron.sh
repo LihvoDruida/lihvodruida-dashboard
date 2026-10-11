@@ -9,12 +9,13 @@
 # а тягнути окремий образ заради кількох задач надлишково. Цикл із перевіркою
 # хвилини робить те саме і легко читається в логах.
 #
-# Задачі та розклад:
+# Задачі та розклад (кожна має незалежного worker із дедлайном і backoff):
 #   */2  * * * *  /api/guild/sync             — Battle.net + Raider.IO + raid progress у БД
 #   *    * * * *  /api/raids/lifecycle        — per-record task queue: close/reminder/Discord cleanup
 #   */5  * * * *  /api/polls/close-due?force=1 — scheduled-публікація + автозакриття/повтор
 #   */30 * * * *  /api/dashboard/logs/maintenance — retention/budget журналу
 #   */15 * * * *  /api/dashboard/profiles/orphan-cleanup — scheduler перевірки/очищення акаунтів
+#   *    * * * *  /api/dashboard/discord/member-cleanup/automation — очищення Discord за роллю/датою вступу
 #   *    * * * *  /api/dashboard/discord/onboarding/automation — welcome DM для нових Discord-учасників
 #   */15 * * * *  /api/dashboard/discord/nicknames/automation — перевірка ніків + DM/fallback-попередження
 # ---------------------------------------------------------------------------
@@ -32,29 +33,19 @@ log() {
 
 call() {
   path="$1"
-  body_file="/tmp/cron-body"
-  : > "$body_file"
-  # --max-time тримає задачу в межах хвилини: якщо ендпоїнт завис,
-  # наступний тік не має накладатися на попередній. HTTP code не дублюємо:
-  # curl при transport failure уже друкує 000 через --write-out.
-  set +e
-  code=$(curl --silent --show-error --output "$body_file" \
-              --write-out '%{http_code}' \
-              --max-time 55 \
-              --request POST \
-              --header "Authorization: Bearer ${TOKEN}" \
-              --header "Content-Type: application/json" \
-              --data '{"source":"self-hosted-cron"}' \
-              "${BASE}${path}")
-  curl_status=$?
-  set -e
-  [ "$curl_status" -eq 0 ] || code="000"
-
-  if [ "$code" = "200" ]; then
-    log "OK   ${path}"
-  else
-    log "FAIL ${path} -> HTTP ${code}: $(head -c 200 "$body_file" 2>/dev/null || true)"
-  fi
+  case "$path" in
+    /api/raids/lifecycle*) interval=60; key=raid-lifecycle ;;
+    /api/dashboard/discord/onboarding/automation) interval=60; key=onboarding ;;
+    /api/dashboard/discord/member-cleanup/automation) interval=60; key=member-cleanup ;;
+    /api/polls/close-due*) interval=300; key=polls ;;
+    /api/guild/sync) interval=120; key=guild-sync ;;
+    /api/dashboard/logs/maintenance) interval=1800; key=log-maintenance ;;
+    /api/dashboard/profiles/orphan-cleanup) interval=900; key=account-cleanup ;;
+    /api/dashboard/discord/nicknames/automation) interval=900; key=nicknames ;;
+    *) log "невідома задача: $path"; return 1 ;;
+  esac
+  # Independent workers retain deadlines and backoff; no automatic curl replay.
+  /bin/sh "${CRON_WORKER_PATH:-/opt/cron/run-job.sh}" "$path" "$interval" "$key" &
 }
 
 log "старт; база=${BASE}"
@@ -82,6 +73,7 @@ while true; do
   # Endpoint сам тримає baseline/ідемпотентний стан, тому повторний tick не
   # дублює DM і не запускає повторну первинну перевірку ніку.
   call "/api/dashboard/discord/onboarding/automation"
+  call "/api/dashboard/discord/member-cleanup/automation"
 
   # Найчутливіша до часу рейдова задача. Звичайний tick читає тільки dueAtMs
   # із task queue; hourly sweep лише ремонтує/звіряє task plan для legacy або
@@ -92,18 +84,18 @@ while true; do
     call "/api/raids/lifecycle"
   fi
 
-  [ $((minute % 5)) -eq 0 ] && call "/api/polls/close-due?force=1"
+  call "/api/polls/close-due?force=1"
 
   # Власний VPS дозволяє тримати склад актуальним без browser-driven sync.
   # Це важлива, але не секундно-критична задача, тому запускається після raid lifecycle.
-  [ $((minute % 2)) -eq 0 ] && call "/api/guild/sync"
+  call "/api/guild/sync"
 
-  [ $((minute % 30)) -eq 0 ] && call "/api/dashboard/logs/maintenance"
+  call "/api/dashboard/logs/maintenance"
 
   # Scheduler акаунтів сам читає збережені налаштування і вирішує,
   # чи настав час dry-run перевірки або реального очищення.
-  [ $((minute % 15)) -eq 0 ] && call "/api/dashboard/profiles/orphan-cleanup"
-  [ $((minute % 15)) -eq 0 ] && call "/api/dashboard/discord/nicknames/automation"
+  call "/api/dashboard/profiles/orphan-cleanup"
+  call "/api/dashboard/discord/nicknames/automation"
 
   # Якщо задачі завершилися в тій самій хвилині — спимо до наступної межі.
   # Якщо вони вже перейшли в нову хвилину — не спимо: наступна ітерація

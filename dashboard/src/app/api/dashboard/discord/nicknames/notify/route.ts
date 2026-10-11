@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   const guard = await requireDiscordAdmin(request, "nicknames-notify", 8 * 1024);
   if ("error" in guard) return guard.error;
 
-  const execution = acquireNicknameWarningExecution(`manual:${guard.session.id}`);
+  const execution = await acquireNicknameWarningExecution(`manual:${guard.session.id}`);
   if (!execution) {
     return adminDiscordResponse(request, {
       ok: false,
@@ -57,6 +57,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return await discordAdminError(request, "admin.discord.nickname_warning_failed", error, "Попередження не надіслано.", guard.session);
   } finally {
-    execution.release();
+    await execution.release();
   }
 }

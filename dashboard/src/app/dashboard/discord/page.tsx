@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 import AdminPageHeader from "@/components/AdminPageHeader";
 import AdminTabs from "@/components/AdminTabs";
@@ -222,6 +223,11 @@ export default async function AdminDiscordPage() {
         />
 
         <AdminTabs active="discord" user={user} />
+
+        <section className="panel discord-management-section" aria-label="Автоматичне очищення Discord">
+          <SectionHeader eyebrow="Автоматизація" title="Очищення Discord за роллю та строком" description="Люди без ролей або лише з однією вибраною роллю; дата вступу, автоматичне виключення та окрема історія." />
+          <Link href="/dashboard/discord/cleanup" className="btn primary">Відкрити очищення Discord</Link>
+        </section>
 
         <nav className="discord-management-jump-nav" aria-label="Навігація по Discord-керуванню">
           <a href="#discord-health">Стан</a>

@@ -1,4 +1,5 @@
 import "server-only";
+import { acquireAutomationLease } from "@/lib/automationLease";
 
 import { mapConcurrentSettled } from "@/lib/concurrency";
 import {
@@ -249,20 +250,23 @@ export function nicknameFullScanDue(
   return nicknameWarningDue(state.lastFullScanAt, policy.nicknameValidRecheckHours, now);
 }
 
-export function acquireNicknameWarningExecution(source: string) {
+export async function acquireNicknameWarningExecution(source: string) {
   const now = Date.now();
   const current = globalThis.__mistblossomNicknameWarningExecution;
   if (current && now - current.startedAt < 60 * 60_000) return null;
+  const lease = await acquireAutomationLease("discord-nickname-warnings", source);
+  if (!lease) return null;
   const lock = { source: String(source || "unknown").slice(0, 80), startedAt: now };
   globalThis.__mistblossomNicknameWarningExecution = lock;
   let released = false;
   return {
-    release() {
+    async release() {
       if (released) return;
       released = true;
       if (globalThis.__mistblossomNicknameWarningExecution === lock) {
         globalThis.__mistblossomNicknameWarningExecution = undefined;
       }
+      await lease.release();
     },
   };
 }

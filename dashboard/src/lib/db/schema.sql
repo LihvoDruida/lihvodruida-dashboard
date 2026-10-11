@@ -51,6 +51,14 @@ CREATE INDEX IF NOT EXISTS documents_date_idx
 CREATE INDEX IF NOT EXISTS documents_updated_at_idx
   ON documents (collection, updated_at DESC);
 
+-- Bounded Discord cleanup queries: due work and stable cursor pagination.
+CREATE INDEX IF NOT EXISTS documents_next_attempt_at_idx
+  ON documents (collection, (data ->> 'nextAttemptAt')) WHERE data ? 'nextAttemptAt';
+CREATE INDEX IF NOT EXISTS documents_list_key_idx
+  ON documents (collection, (data ->> 'listKey')) WHERE data ? 'listKey';
+CREATE INDEX IF NOT EXISTS documents_sort_key_idx
+  ON documents (collection, (data ->> 'sortKey')) WHERE data ? 'sortKey';
+
 -- updated_at підтримує сама база: покладатись на застосунок означало б,
 -- що будь-який пропущений виклик тихо ламає інкрементальні бекапи.
 CREATE OR REPLACE FUNCTION documents_touch_updated_at()

@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: true, skipped: true, reason: "cooldown", cooldownMs: cooldown, ...(guard.lastResult || {}) }, { headers: noStoreHeaders({ "X-Mistblossom-Account-Cleanup": "cooldown" }) });
   }
 
-  const execution = acquireAccountCleanupExecutionLock("legacy-internal-apply");
+  const execution = await acquireAccountCleanupExecutionLock("legacy-internal-apply");
   if (!execution) {
     return NextResponse.json({ ok: true, skipped: true, reason: "cleanup_in_flight" }, { headers: noStoreHeaders({ "X-Mistblossom-Account-Cleanup": "in-flight" }) });
   }
@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(payload, { status: 500, headers: noStoreHeaders({ "X-Mistblossom-Account-Cleanup": "error" }) });
   } finally {
     guard.inFlight = undefined;
-    execution.release();
+    await execution.release();
   }
 }
 
