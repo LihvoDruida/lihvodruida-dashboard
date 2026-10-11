@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (result.added <= 0) {
-      return redirectToProfile(request, session.profileId, statusForNoop(result));
+      return redirectToProfile(request, session.profileId, statusForNoop(result), returnTo);
     }
 
     const response = redirectToProfile(request, session.profileId, result.skipped > 0 ? "characters_added_partial" : result.added > 1 ? "characters_added" : "character_added", returnTo);

@@ -1,0 +1,94 @@
+{
+  "release": "R6.2",
+  "dashboard": "3.8.75",
+  "bot": "3.6.6",
+  "checked_at_utc": "2026-10-11T20:53:32.415552+00:00",
+  "postgresql_cases": {
+    "R1": 23,
+    "R2": 26,
+    "R3": 32,
+    "R4": 11,
+    "R5": 21,
+    "R6.1": 30,
+    "R6.2": 17,
+    "total": 160
+  },
+  "new_api_cases": 10,
+  "browser": {
+    "new_cases": 15,
+    "R6_1_regressions": 20,
+    "widths": [
+      320,
+      360,
+      390,
+      430,
+      640,
+      768,
+      1024,
+      1280,
+      1920
+    ],
+    "page_errors": 0,
+    "horizontal_overflow": false,
+    "visual_review_widths": [
+      390,
+      1280
+    ]
+  },
+  "bot_tests": 45,
+  "standalone_http_checks": 7,
+  "build_ci": "passed",
+  "production_build_final": "passed",
+  "eslint": "passed",
+  "inspect": {
+    "files": 451,
+    "blocking_issues": 0
+  },
+  "builder_inputs": {
+    "checked_files": 577,
+    "differences": []
+  },
+  "preservation": {
+    "protected_files": 112,
+    "missing": [],
+    "profile_css_original_prefix_retained": true
+  },
+  "runtime": {
+    "node": "24.19.0",
+    "next": "16.3.5",
+    "react": "19.2.8",
+    "sharp": "0.35.4",
+    "postgresql": "16.15"
+  },
+  "limits": {
+    "live_discord_tested": false,
+    "live_battlenet_tested": false,
+    "vps_changed": false,
+    "production_database_changed": false,
+    "docker_engine_run": false,
+    "global_cross_profile_uniqueness_added": false,
+    "receipt_history": "latest committed operation only",
+    "instant_discord_patch_on_character_setup": false,
+    "maximum_selected_characters": 200,
+    "body_bytes": 40960
+  },
+  "warnings": [
+    "Two existing dynamic filesystem Turbopack tracing warnings in discordWelcomeCard.ts"
+  ],
+  "log_sha256": {
+    "r6-2-build-ci.log": "5502ac6e56ab175127e1b28246e69de09f32a3239f2333e2f6c0ac804a899e92",
+    "r6-2-production-build-final.log": "f76017eb1cd5f1a650ee078222de5ba1c064d77a0c951625c3e8a9bc4a7f16c6",
+    "r6-2-lint.log": "44362eae3cdca0f4f0fe04f07738beb831ba2d9a79ab5aed0929bd2e832c8c34",
+    "r6-2-ui.log": "813a0d554652dcb65e07ace0965c00cae6a3dd0407cd6893e105076c516face9",
+    "r6-2-identity-ui.log": "5557b3e36869f84329dcae97d91301394e3d65c4f074f2a0749af6f767c6ef50",
+    "r6-2-http.log": "8cebde98379b87ea72ea893fd7cb1864029e5091e75a93e74aaf7e860b633133",
+    "r6-2-bot.log": "083b46cc09c4fd054999d3cebcdb2611382dab4eb11c2c823428f97d2f0aea9d",
+    "r6-2-test-document-store-pg.cjs.log": "5e01113d0b9fd18eb9c0910703b21c180f8a0bc134a6b81104a212e0e61321f6",
+    "r6-2-test-discord-publication-pg.cjs.log": "cc7d598c8ad45db92d87aa92640874e069f1c9ffbcc03f03219ee1d245be9a81",
+    "r6-2-test-profile-directory-pg.cjs.log": "56651e3b20e6eba46143c1049918e30fe8d42f76efce2afcd6483aad8543065a",
+    "r6-2-test-discord-cleanup-pg.cjs.log": "107109049338d79ba6a55559975007e8271ea6e565895d5e9a0dd5b67e6572c4",
+    "r6-2-test-access-groups-pg.cjs.log": "e2c327aac78374a76a9c5403cce500411ef3d8137cd11d91b812e4a25cde9a6f",
+    "r6-2-test-profile-identity-pg.cjs.log": "f73bdb96e691d25e3bcffe532bbce49bfaf44f3650e8ee83e361a0e368591fdf",
+    "r6-2-test-profile-character-setup-pg.cjs.log": "095d7203b05616be013cac2e7870484539aeff85e1b2983f85b1feccaec7db27"
+  }
+}

@@ -3152,3 +3152,41 @@
 .profile-identity-actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); }
 .profile-identity-workflow .profile-nickname-preview { display: grid; gap: var(--space-xs); min-width: 0; overflow-wrap: anywhere; }
 @media (max-width: 480px) { .profile-identity-form .btn { width: 100%; } }
+
+/* R6.2: explicit character setup, using the shared amber palette. */
+.profile-character-setup {
+  margin-top: 24px;
+  padding: clamp(14px, 2vw, 24px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  min-width: 0;
+}
+.profile-character-setup form { display: grid; gap: 18px; }
+.profile-character-setup > .profile-card-head { display: block; }
+.profile-character-setup__choices { min-width: 0; margin: 0; padding: 0; border: 0; display: grid; gap: 12px; }
+.profile-character-setup__choices legend { padding: 0 0 12px; font-weight: 700; color: var(--text-strong); }
+.profile-character-setup__selection, .profile-character-setup__actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.profile-character-setup__selection { justify-content: space-between; color: var(--text-soft); }
+.profile-character-setup__list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.profile-character-setup__candidate { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: var(--surface-raised); cursor: pointer; }
+.profile-character-setup__candidate:has(input:checked), .profile-character-setup__roles label:has(input:checked) { border-color: var(--c-accent-400); background: var(--accent-soft); }
+.profile-character-setup__candidate > span:nth-child(2) { display: grid; gap: 4px; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.profile-character-setup__candidate small, .profile-character-setup__badge { color: var(--text-muted); font-size: 12px; }
+.profile-character-setup input[type="checkbox"], .profile-character-setup input[type="radio"] { width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--c-accent-400); }
+.profile-character-setup__main { display: grid; gap: 8px; color: var(--text-soft); }
+.profile-character-setup__main select { width: 100%; min-width: 0; padding: 12px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: var(--surface-raised); color: var(--text-strong); font: inherit; }
+.profile-character-setup__roles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.profile-character-setup__roles label { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 12px; cursor: pointer; min-width: 0; }
+.profile-character-setup__roles span { overflow-wrap: anywhere; }
+.profile-character-setup__summary { display: flex; flex-wrap: wrap; gap: 10px 24px; padding: 14px; border-radius: var(--radius-md); background: var(--accent-soft); color: var(--text-soft); overflow-wrap: anywhere; }
+.profile-character-setup__status { color: var(--text-soft); overflow-wrap: anywhere; }
+.profile-character-setup :is(input, select, button):focus-visible { outline: 2px solid var(--c-accent-400); outline-offset: 3px; }
+.profile-character-setup__actions .btn { white-space: normal; text-align: center; }
+@media (max-width: 640px) {
+  .profile-character-setup__roles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .profile-character-setup__roles label:first-child { grid-column: 1 / -1; }
+  .profile-character-setup__candidate { display: grid; grid-template-columns: 18px minmax(0, 1fr); }
+  .profile-character-setup__badge { grid-column: 2; }
+  .profile-character-setup__actions > .btn { width: 100%; }
+}

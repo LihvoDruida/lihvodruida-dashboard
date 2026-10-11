@@ -5,7 +5,7 @@ const load = require('./load-server-ts.cjs');
 
 // Compile the whole production profiles/catalog modules. Auth permission,
 // normalizers, canonical reads and PostgreSQL are real; external APIs throw.
-module.exports = function subject(pool, store, groups, mode = 'postgres') {
+module.exports = function subject(pool, store, groups, mode = 'postgres', profileModule = 'src/lib/profiles.ts') {
   function dependencies(entry) {
     const source = ts.createSourceFile(entry, fs.readFileSync(path.resolve(__dirname, '../..', entry), 'utf8'), ts.ScriptTarget.Latest, true);
     const deps = {};
@@ -26,14 +26,15 @@ module.exports = function subject(pool, store, groups, mode = 'postgres') {
   const guildPolicy = load('src/lib/guildNicknamePolicy.ts', { '@/lib/db/firestoreCompat': compat, '@/lib/firebaseAdmin': firebase, '@/lib/runtimeResilience': resilience, '@/lib/firebaseAccess': { firebaseWrite: (_key, _type, write) => write() }, '@/lib/values': values }).exports;
   const raidProgress = load('src/lib/characterRaidProgress.ts').exports;
   const canonical = load('src/lib/characterDataStore.ts', { '@/lib/db/firestoreCompat': compat, '@/lib/firebaseAdmin': firebase, '@/lib/runtimeResilience': resilience, '@/lib/characterRaidProgress': raidProgress }).exports;
-  const deps = { ...dependencies('src/lib/profiles.ts'), crypto: require('node:crypto'), '@/lib/db/firestoreCompat': compat, '@/lib/firebaseAdmin': firebase,
+  const deps = { ...dependencies(profileModule), crypto: require('node:crypto'), '@/lib/db/firestoreCompat': compat, '@/lib/firebaseAdmin': firebase,
     '@/lib/values': values, '@/lib/permissions': permissions, '@/lib/accessGroups': access, '@/lib/guildNicknamePolicy': guildPolicy,
     '@/lib/wowCharacters': load('src/lib/wowCharacters.ts', { crypto: require('node:crypto') }).exports,
     '@/lib/wowRoles': load('src/lib/wowRoles.ts').exports,
     '@/lib/characterDataStore': canonical, '@/lib/characterRaidProgress': raidProgress,
     '@/lib/runtimeResilience': resilience,
+    '@/lib/firebaseAccess': { firebaseWrite: (_type, _key, writer) => writer() },
   };
-  const profiles = load('src/lib/profiles.ts', deps).exports;
+  const profiles = load(profileModule, deps).exports;
   const directory = load('src/lib/profileDirectory.ts', {
     '@/lib/profiles': profiles, '@/lib/permissions': permissions, '@/lib/accessGroups': access,
     '@/lib/firebaseAdmin': firebase, '@/lib/db/firestoreCompat': compat, '@/lib/db/pgPool': pool,

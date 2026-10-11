@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import DashboardIdentity from "@/components/DashboardIdentity";
 import LogoutButton from "@/components/LogoutButton";
+import ProfileCharacterSetup from "@/components/ProfileCharacterSetup";
 import ProfileCandidateBulkActions from "@/components/ProfileCandidateBulkActions";
 import ProfileCandidateExpiryTimer from "@/components/ProfileCandidateExpiryTimer";
 import ProfileCandidateCharacterRow from "@/components/ProfileCandidateCharacterRow";
@@ -760,7 +761,11 @@ export default async function ProfilePage({
                   </div>
                 ) : null}
 
-                {canManageCharacters && hasAvailableBattleNetCandidates ? (
+                {canManageCharacters && !isRulesReturn && (profile.characters.length > 0 || hasAvailableBattleNetCandidates) ? (
+                  <ProfileCharacterSetup key={profile.profileId} profileId={profile.profileId} />
+                ) : null}
+
+                {canManageCharacters && isRulesReturn && hasAvailableBattleNetCandidates ? (
                   <div
                     id="profile-candidates"
                     className="profile-candidates-box"

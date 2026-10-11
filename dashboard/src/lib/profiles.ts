@@ -2827,16 +2827,16 @@ export async function addProfileCharacters(
     Array.from(normalized.values()),
   );
 
-  const addedKeys: string[] = [];
-  const skippedKeys: string[] = [];
-  const skippedReasons: Record<string, "duplicate"> = {};
   const ref = getFirebaseAdminDb()
     .collection("dashboardProfiles")
     .doc(profileId);
 
-  await writeProfileStorage(
+  const result = await writeProfileStorage(
     `profile:${profileId}:characters-bulk-add`,
     () => getFirebaseAdminDb().runTransaction(async (transaction: any) => {
+      const addedKeys: string[] = [];
+      const skippedKeys: string[] = [];
+      const skippedReasons: Record<string, "duplicate"> = {};
       const snapshot = await transaction.get(ref);
       if (!snapshot.exists) throw new Error("Профіль не знайдено.");
 
@@ -2861,7 +2861,7 @@ export async function addProfileCharacters(
         addedKeys.push(key);
       }
 
-      if (!addedKeys.length) return;
+      if (!addedKeys.length) return { addedKeys, skippedKeys, skippedReasons };
 
       transaction.set(
         ref,
@@ -2873,10 +2873,12 @@ export async function addProfileCharacters(
         },
         { merge: true },
       );
+      return { addedKeys, skippedKeys, skippedReasons };
     }),
     { timeoutMs: 6_000, logEvent: "profiles.characters_bulk_add_write_failed" },
   );
 
+  const { addedKeys, skippedKeys, skippedReasons } = result;
   if (addedKeys.length) clearProfileRuntimeCaches(profileId, { characterLinks: true });
 
   return {
