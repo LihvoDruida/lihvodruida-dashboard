@@ -125,3 +125,14 @@
   .admin-workspace .management-shortcut { grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 18px; }
   .admin-workspace .management-shortcut .btn { width: 100%; }
 }
+
+/* R5: drafts and revision review use the existing system colour tokens. */
+.admin-workspace .access-groups-editor { min-width: 0; }
+.admin-workspace .access-draft-badge { display: block; color: var(--accent); font-size: 12px; margin-top: 6px; }
+.admin-workspace .access-draft-notice { padding: 12px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--accent-soft); color: var(--text-soft); }
+.admin-workspace .access-draft-conflict { margin-bottom: 16px; padding: 16px; border-radius: 12px; border: 1px solid var(--border-strong); }
+.admin-workspace .access-draft-conflict h3 { margin-top: 0; }
+.admin-workspace .access-draft-comparison { overflow-x: auto; max-width: 100%; margin-block: 12px; }
+.admin-workspace .access-draft-comparison table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.admin-workspace .access-draft-comparison :is(th, td) { text-align: left; vertical-align: top; padding: 9px; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+.admin-workspace .access-draft-comparison caption { text-align: left; padding-bottom: 8px; color: var(--text-muted); }

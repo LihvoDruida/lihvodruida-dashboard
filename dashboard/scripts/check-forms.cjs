@@ -159,10 +159,19 @@ mustContain("src/app/content/page.tsx", [
 ]);
 
 // Snowflakes and URL fields should be bounded before submission.
-mustContain("src/components/AccessGroupsManager.tsx", [
-  'maxLength={32} pattern="[A-Za-z0-9_-]{1,32}"',
-  'maxLength={25} inputMode="numeric" pattern="[0-9]{16,25}"',
-]);
+// Inspect the actual control, so formatting changes cannot break this guard
+// and attributes on unrelated fields cannot accidentally satisfy it.
+const groupEditor = fs.readFileSync(path.join(root, "components/AccessGroupsManager.tsx"), "utf8");
+const groupControls = extractJsxControls(groupEditor);
+for (const [name, attributes] of [
+  ["id", ['maxLength={32}', 'pattern="[A-Za-z0-9_-]{1,32}"']],
+  ["discordRoleId", ['maxLength={25}', 'inputMode="numeric"', 'pattern="[0-9]{16,25}"']],
+]) {
+  const control = groupControls.find(item => new RegExp(`\\bname=["']${name}["']`).test(item.text));
+  if (!control || attributes.some(attribute => !control.text.includes(attribute))) {
+    throw new Error(`AccessGroupsManager: ${name} must retain its length/format bounds`);
+  }
+}
 mustContain("src/components/RaidViews.tsx", [
   'pattern="[0-9]{16,25}"',
   'maxLength={25}',

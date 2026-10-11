@@ -1,0 +1,85 @@
+{
+  "release": "R5",
+  "dashboard_version": "3.8.73",
+  "bot_version": "3.6.6",
+  "date": "2026-10-11",
+  "baseline_r4_sha256": "0b1cc943e6f054c144bf280719d1de71d3050d5fe3eceed7c868e1cfb670bbd6",
+  "results": {
+    "groups_native_postgresql": 21,
+    "draft_model": 7,
+    "api_module_with_actual_origin_guard": 10,
+    "actual_component_browser": {
+      "passed": 20,
+      "widths": 9,
+      "browserErrors": 0,
+      "apiWrites": 6
+    },
+    "standalone_unauthenticated_guards": 4,
+    "r1_postgresql": 23,
+    "r2_publication_postgresql": 26,
+    "r3_directory_postgresql": 32,
+    "r4_cleanup_postgresql": 11,
+    "bot": 45,
+    "build_ci": "passed",
+    "production_build_seconds": 11,
+    "typescript": "passed",
+    "forms": "passed",
+    "css_and_ui_audits": "passed",
+    "inspect_ci_blocking_issues": 0
+  },
+  "builder": {
+    "copy_inputs": 23,
+    "compared_source_files": 561,
+    "differences": []
+  },
+  "runtime": {
+    "node": "24.19.0",
+    "next": "16.3.5",
+    "react": "19.2.8",
+    "react_dom": "19.2.8",
+    "sharp": "0.35.4",
+    "postgresql": "16.15 native"
+  },
+  "protected_files_unchanged": 87,
+  "existing_warnings": [
+    {
+      "file": "dashboard/src/lib/discordWelcomeCard.ts",
+      "line": 273,
+      "message": "Dynamic filesystem access causes tracing of the whole project",
+      "unchanged_from_r4": true
+    },
+    {
+      "file": "dashboard/src/lib/discordWelcomeCard.ts",
+      "line": 487,
+      "message": "Dynamic filesystem access causes tracing of the whole project",
+      "unchanged_from_r4": true
+    }
+  ],
+  "not_run": [
+    "Docker engine/Compose runtime",
+    "Live Discord actions",
+    "Live VPS deployment",
+    "Authenticated production Discord session"
+  ],
+  "qa_notes": [
+    "UI uses actual component with controlled local HTTP fixture; DB concurrency uses actual PostgreSQL adapter.",
+    "Native PostgreSQL uses a test-container-only UID shim, excluded from deliverable."
+  ],
+  "log_sha256": {
+    "roadmap-r5-lint.log": "7125f194612fcff2f454c05d848e7cb71facc1967b4d5017e25b34fdee3ba74f",
+    "roadmap-r5-bot.log": "61b0f46b4421e4683d4eb85b67648799871ac3a29c7205f757aebf31d5804ab2",
+    "roadmap-r5-drafts.log": "bf337513e4aabd451ccdf3b8fcb7fa43b51127ecb1fac1b4798a3784cb4afad4",
+    "r5-test-discord-publication-pg.cjs.log": "cc7d598c8ad45db92d87aa92640874e069f1c9ffbcc03f03219ee1d245be9a81",
+    "roadmap-r5-style.log": "589de8a34a9fba7732eafefdb0fe386e27d757eaa5848f52c16ab9c28ffc7f19",
+    "roadmap-r5-http.log": "8f390c449b094dab2e7cb76cd699eed03040d0e1e3d296b8e40f68552994a657",
+    "roadmap-r5-build-ci.log": "f251bb2466c878cadd8bba0bdba9217006db84375838f16028fea56525e3e84c",
+    "r5-test-document-store-pg.cjs.log": "5e01113d0b9fd18eb9c0910703b21c180f8a0bc134a6b81104a212e0e61321f6",
+    "roadmap-r5-typecheck.log": "ab1238ddbccf36bdcf6bf7dcb550aa0eb86d65f638e4acb0fd902f53996e24c7",
+    "roadmap-r5-groups-pg.log": "2ddea074084f807a1112ad27824bf65d23b7f7f617322af99647ffaea0f35294",
+    "r5-test-profile-directory-pg.cjs.log": "871d56a3e7f486b5acc8f6a700cb7eb5b1ca4961d3f53c0c8944487d7d04b8ae",
+    "r5-test-discord-cleanup-pg.cjs.log": "107109049338d79ba6a55559975007e8271ea6e565895d5e9a0dd5b67e6572c4",
+    "roadmap-r5-ui.log": "a6ab4923feaa4aa488972d3dd9d45e253a141316f0c3dea694c3c7d6c091b069",
+    "roadmap-r5-pg-server.log": "3de56999c7eaf16ef6b5f8565a3ef856bb8b084138187dc4c7645f3c3d794049",
+    "roadmap-r5-verify.log": "ecc3197399ae6d9870b3b77f2e32ba4cf5ee9e663491c3f9f4d3adf2fc244c62"
+  }
+}
