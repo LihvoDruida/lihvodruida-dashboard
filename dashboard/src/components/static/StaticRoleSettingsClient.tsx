@@ -1,5 +1,8 @@
 "use client";
 import Link from "next/link";
+import { dashboardApiJson } from "@/lib/dashboardApiClient";
+import { ApiHttpError } from "@/lib/apiHttp";
+import { useDashboardRequests } from "@/lib/useDashboardRequests";
 import { useEffect, useState } from "react";
 import styles from "./static.module.css";
 type Role = { id: string; name: string; color: number; manageable: boolean; blockedReason?: string | null; position: number };
@@ -11,23 +14,44 @@ export default function StaticRoleSettingsClient() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  async function load(signal?: AbortSignal) {
-    const res = await fetch("/api/dashboard/static-roles", { cache: "no-store", signal });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || "Немає доступу до налаштувань.");
-    const state = json as Response;
-    setData(state); setMemberRoleId(state.settings.memberRoleId); setManagerRoleId(state.settings.managerRoleId);
+  const requests = useDashboardRequests();
+  async function read(signal: AbortSignal) {
+    return dashboardApiJson<Response>("/api/dashboard/static-roles", { signal, timeoutMs: 12_000, retries: 0 });
   }
-  useEffect(() => { const controller = new AbortController(); void load(controller.signal).catch(cause => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Помилка завантаження."); }); return () => controller.abort(); }, []);
+  async function load() {
+    const request = requests.begin("load", 15_000);
+    setError("");
+    try {
+      const state = await read(request.signal);
+      if (!request.current()) return;
+      setData(state); setMemberRoleId(state.settings.memberRoleId); setManagerRoleId(state.settings.managerRoleId);
+    } catch (cause) {
+      if (request.current()) setError(cause instanceof ApiHttpError ? cause.message : "Не вдалося завантажити ролі за відведений час. Повтори оновлення.");
+    } finally { request.finish(); }
+  }
+  useEffect(() => { void load(); }, []);
   async function save() {
+    if (requests.pending("save")) return;
+    const request = requests.begin("save", 40_000);
+    const attempted = { memberRoleId, managerRoleId };
     setBusy(true); setError(""); setNotice("");
     try {
-      const res = await fetch("/api/dashboard/static-roles", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ memberRoleId, managerRoleId }) });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Помилка збереження.");
+      const result = await dashboardApiJson<{ settings: Response["settings"] }>("/api/dashboard/static-roles", { method: "POST", json: attempted, signal: request.signal, timeoutMs: 20_000, retries: 0 });
+      if (!request.current()) return;
       setData(current => current ? { ...current, settings: result.settings } : current); setNotice("Discord-ролі Статика оновлено.");
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Не вдалося зберегти ролі."); }
-    finally { setBusy(false); }
+    } catch (cause) {
+      if (!request.current()) return;
+      if (cause instanceof ApiHttpError && cause.status >= 400 && cause.status < 500 && cause.status !== 408) setError(cause.message);
+      else {
+        setNotice("Відповідь не отримано. Перевіряємо збережені ролі; зміну автоматично не повторюємо.");
+        try {
+          const current = await read(request.signal);
+          if (!request.current()) return;
+          setData(current);
+          setNotice(current.settings.memberRoleId === attempted.memberRoleId && current.settings.managerRoleId === attempted.managerRoleId ? "Збережені ролі відповідають вибраним. Повторне збереження не потрібне." : "Збережений стан оновлено. Завершення попередньої зміни не підтверджено; вибір у формі збережено.");
+        } catch { if (request.current()) setError("Стан збереження не підтверджено. Онови сторінку перед наступною зміною."); }
+      }
+    } finally { if (request.current()) setBusy(false); request.finish(); }
   }
   const memberValid = data?.roles.some(role => role.id === memberRoleId && role.manageable);
   const managerValid = data?.roles.some(role => role.id === managerRoleId);
@@ -39,7 +63,7 @@ export default function StaticRoleSettingsClient() {
       <p className={styles.muted}>Налаштування змінюють тільки адміністратори або власник сервера. РЛ керує Статиком, але не може змінити власні повноваження.</p>
       {error ? <div className="notice panel error-note" role="alert">{error}</div> : null}
       {notice ? <div className="notice panel success" role="status">{notice}</div> : null}
-      {!data ? !error ? <p>Завантаження ролей Discord-сервера…</p> : null : <>
+      {!data ? !error ? <p>Завантаження ролей Discord-сервера…</p> : <button type="button" className="btn subtle" onClick={() => void load()}>Оновити ролі</button> : <>
         <p className={styles.muted}>Сервер: {data.guildName || "не визначено"} • {data.roles.length} доступних ролей</p>
         {data.warning ? <div className="notice error-note" role="alert">Discord API: {data.warning}. Збереження вимкнене до відновлення зв’язку.</div> : null}
         {!data.botCanManageRoles ? <p role="alert" className={styles.muted}>Бот не має права Manage Roles або не може керувати вибраною роллю.</p> : null}

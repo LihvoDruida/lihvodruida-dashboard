@@ -10,9 +10,9 @@ import {
   getMainCharacter,
   getOwnProfilePath,
   getProfilePublicName,
-  listDashboardProfiles,
   type DashboardProfile,
 } from "@/lib/profiles";
+import { listDashboardProfilePage, profileDirectoryFilters } from "@/lib/profileDirectory";
 import { redirect } from "next/navigation";
 import { buildPageMetadata } from "@/lib/seo";
 import { fetchDiscordGuildMembersCachedForUi } from "@/lib/discordAdmin";
@@ -27,15 +27,6 @@ export const metadata = buildPageMetadata({
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-const PROFILE_PAGE_SIZE = 20;
-const VALID_LINK_FILTERS = new Set(["all", "linked", "unlinked"]);
-const VALID_ROLE_FILTERS = new Set(["all", "admin", "moderator", "mentor", "member"]);
-const VALID_SORTS = new Set(["activity", "name", "characters"]);
-
-type LinkFilter = "all" | "linked" | "unlinked";
-type RoleFilter = "all" | "admin" | "moderator" | "mentor" | "member";
-type ProfileSort = "activity" | "name" | "characters";
 
 function parseDate(value?: string | null) {
   if (!value) return null;
@@ -61,42 +52,13 @@ function formatNumber(value: number) {
   return new Intl.NumberFormat("uk-UA", { maximumFractionDigits: 0 }).format(value);
 }
 
-function parsePage(value?: string) {
-  const page = Number(value || "1");
-  return Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
-}
-
-function parseLinkFilter(value?: string): LinkFilter {
-  return VALID_LINK_FILTERS.has(String(value || "")) ? (value as LinkFilter) : "all";
-}
-
-function parseRoleFilter(value?: string): RoleFilter {
-  return VALID_ROLE_FILTERS.has(String(value || "")) ? (value as RoleFilter) : "all";
-}
-
-function parseSort(value?: string): ProfileSort {
-  return VALID_SORTS.has(String(value || "")) ? (value as ProfileSort) : "activity";
-}
-
-function buildProfilesHref({
-  query,
-  link,
-  role,
-  sort,
-  page,
-}: {
-  query: string;
-  link: LinkFilter;
-  role: RoleFilter;
-  sort: ProfileSort;
-  page: number;
-}) {
+function buildProfilesHref({ query, link, role, sort, cursor }: ReturnType<typeof profileDirectoryFilters> & { cursor?: string | null }) {
   const params = new URLSearchParams();
   if (query) params.set("q", query);
   if (link !== "all") params.set("link", link);
   if (role !== "all") params.set("role", role);
   if (sort !== "activity") params.set("sort", sort);
-  if (page > 1) params.set("page", String(page));
+  if (cursor) params.set("cursor", cursor);
   const suffix = params.toString();
   return suffix ? `/profiles?${suffix}` : "/profiles";
 }
@@ -116,10 +78,6 @@ function battleNetStatus(profile: DashboardProfile) {
   if (!profile.battlenet?.linked) return "Не підключено";
   const synced = profile.battlenet.lastSyncAt || profile.battlenet.lastConnectedAt;
   return synced ? `Синхр. ${formatDate(synced)}` : "Підключено";
-}
-
-function profileActivityTime(profile: DashboardProfile) {
-  return parseDate(profile.lastLoginAt || profile.updatedAt)?.getTime() || 0;
 }
 
 function roleLabel(role: DashboardProfile["role"]) {
@@ -208,39 +166,10 @@ export default async function ProfilesPage({
   if (!canViewProfiles(user)) redirect(await getOwnProfilePath(user));
 
   const params = await searchParams;
-  const query = String(params.q || "").trim();
-  const linkFilter = parseLinkFilter(params.link);
-  const roleFilter = parseRoleFilter(params.role);
-  const sort = parseSort(params.sort);
-  const requestedPage = parsePage(params.page);
-
-  const matchedProfiles = await listDashboardProfiles({
-    viewer: user,
-    query,
-    limit: 500,
-  });
-
-  const filteredProfiles = matchedProfiles.filter((profile) => {
-    if (linkFilter === "linked" && !profile.battlenet?.linked) return false;
-    if (linkFilter === "unlinked" && profile.battlenet?.linked) return false;
-    if (roleFilter !== "all" && profile.role !== roleFilter) return false;
-    return true;
-  });
-
-  filteredProfiles.sort((a, b) => {
-    if (sort === "name") {
-      return getProfilePublicName(a).localeCompare(getProfilePublicName(b), "uk", { sensitivity: "base" });
-    }
-    if (sort === "characters") {
-      return b.characters.length - a.characters.length || profileActivityTime(b) - profileActivityTime(a);
-    }
-    return profileActivityTime(b) - profileActivityTime(a);
-  });
-
-  const pageCount = Math.max(1, Math.ceil(filteredProfiles.length / PROFILE_PAGE_SIZE));
-  const page = Math.min(requestedPage, pageCount);
-  const pageStart = (page - 1) * PROFILE_PAGE_SIZE;
-  const profiles = filteredProfiles.slice(pageStart, pageStart + PROFILE_PAGE_SIZE);
+  const filters = profileDirectoryFilters({ query: params.q, link: params.link, role: params.role, sort: params.sort });
+  const { query, link: linkFilter, role: roleFilter, sort } = filters;
+  const result = await listDashboardProfilePage({ viewer: user, ...filters, cursor: params.cursor });
+  const { profiles, total, characterCount, linkedCount: linkedBattleNetCount } = result;
   const hasDiscordProfiles = profiles.some((profile) =>
     profile.provider === "discord" && /^\d{16,25}$/.test(profile.providerUserId)
   );
@@ -251,13 +180,9 @@ export default async function ProfilesPage({
       if (member.avatarUrl) liveDiscordAvatars.set(member.userId, member.avatarUrl);
     }
   }
-  const pageEnd = Math.min(pageStart + profiles.length, filteredProfiles.length);
   const canManageCleanup = canManageDiscordMembers(user);
-  const linkedBattleNetCount = filteredProfiles.filter((profile) => profile.battlenet?.linked).length;
-  const characterCount = filteredProfiles.reduce((sum, profile) => sum + profile.characters.length, 0);
   const hasFilters = Boolean(query || linkFilter !== "all" || roleFilter !== "all" || sort !== "activity");
-
-  const paginationState = { query, link: linkFilter, role: roleFilter, sort };
+  const paginationState = filters;
 
   return (
     <main className="container app-page profile-directory-page profile-directory-page--modern">
@@ -286,12 +211,18 @@ export default async function ProfilesPage({
               </div>
             </div>
             <div className="profile-directory-hero-metrics">
-              <div><span>Знайдено</span><strong>{formatNumber(filteredProfiles.length)}</strong></div>
+              <div><span>Знайдено</span><strong>{formatNumber(total)}</strong></div>
               <div><span>Персонажі</span><strong>{formatNumber(characterCount)}</strong></div>
               <div><span>Battle.net</span><strong>{formatNumber(linkedBattleNetCount)}</strong></div>
             </div>
           </div>
         </header>
+
+        {result.unavailable || result.cursorReset ? (
+          <div className="notice" role="status">
+            {result.unavailable ? "Каталог тимчасово недоступний: сховище не налаштоване." : "Список або умови доступу змінилися. Показано першу доступну сторінку."}
+          </div>
+        ) : null}
 
         <section className="profile-directory-panel panel" aria-label="Список профілів">
           <div className="profile-directory-toolbar">
@@ -299,9 +230,9 @@ export default async function ProfilesPage({
               <span className="eyebrow">Ростер профілів</span>
               <h2>{hasFilters ? "Результати" : "Усі доступні профілі"}</h2>
               <p>
-                {filteredProfiles.length
-                  ? `Показано ${pageStart + 1}–${pageEnd} із ${filteredProfiles.length}`
-                  : "Немає профілів, які відповідають поточним умовам."}
+                {total
+                  ? `Показано ${result.start}–${result.end} із ${total}`
+                  : result.unavailable ? "Каталог тимчасово недоступний." : "Немає профілів, які відповідають поточним умовам."}
               </p>
             </div>
 
@@ -343,7 +274,7 @@ export default async function ProfilesPage({
                 <span>Сортування</span>
                 <select name="sort" defaultValue={sort}>
                   <option value="activity">За активністю</option>
-                  <option value="name">За іменем</option>
+                  <option value="name">За іменем профілю</option>
                   <option value="characters">За персонажами</option>
                 </select>
               </label>
@@ -356,9 +287,9 @@ export default async function ProfilesPage({
           </div>
 
           <div className="profile-directory-context" aria-label="Поточний стан списку">
-            <div><span>Профілі</span><strong>{formatNumber(filteredProfiles.length)}</strong></div>
+            <div><span>Профілі</span><strong>{formatNumber(total)}</strong></div>
             <div><span>На сторінці</span><strong>{formatNumber(profiles.length)}</strong></div>
-            <div><span>Сторінка</span><strong>{page} / {pageCount}</strong></div>
+            <div><span>Позиція</span><strong>{result.start}–{result.end}</strong></div>
             {canManageCleanup ? (
               <a className="profile-directory-maintenance-link" href="/dashboard/discord#discord-profiles">
                 <span>Обслуговування профілів</span>
@@ -385,9 +316,9 @@ export default async function ProfilesPage({
                 ) : (
                   <div className="profile-directory-empty" role="row">
                     <span className="profile-directory-empty-icon" aria-hidden="true">⌕</span>
-                    <strong>{hasFilters ? "Нічого не знайдено" : "Профілі ще не доступні"}</strong>
+                    <strong>{result.unavailable ? "Каталог недоступний" : hasFilters ? "Нічого не знайдено" : "Профілі ще не доступні"}</strong>
                     <p>
-                      {hasFilters
+                      {result.unavailable ? "Спробуй відкрити каталог пізніше." : hasFilters
                         ? "Зміни пошук або фільтри. Можна шукати за Discord-ніком, персонажем чи реалмом."
                         : "Профіль зʼявиться після входу учасника через Discord."}
                     </p>
@@ -400,25 +331,21 @@ export default async function ProfilesPage({
 
           <footer className="profile-directory-footer">
             <div>
-              <strong>{filteredProfiles.length ? `${pageStart + 1}–${pageEnd}` : "0"}</strong>
-              <span> із {filteredProfiles.length} профілів</span>
+              <strong>{total ? `${result.start}–${result.end}` : "0"}</strong>
+              <span> із {total} профілів</span>
             </div>
             <nav className="dashboard-table-pagination" aria-label="Навігація сторінками профілів">
-              <a
-                className={`btn subtle${page <= 1 ? " is-disabled" : ""}`}
-                aria-disabled={page <= 1}
-                href={buildProfilesHref({ ...paginationState, page: page <= 1 ? 1 : page - 1 })}
-              >
-                ← Назад
-              </a>
-              <span className="profile-directory-page-indicator">{page} / {pageCount}</span>
-              <a
-                className={`btn subtle${page >= pageCount ? " is-disabled" : ""}`}
-                aria-disabled={page >= pageCount}
-                href={buildProfilesHref({ ...paginationState, page: page >= pageCount ? pageCount : page + 1 })}
-              >
-                Далі →
-              </a>
+              {result.previousCursor ? (
+                <a className="btn subtle" rel="prev" href={buildProfilesHref({ ...paginationState, cursor: result.previousCursor })}>
+                  ← Назад
+                </a>
+              ) : <span className="btn subtle is-disabled" aria-disabled="true">← Назад</span>}
+              <span className="profile-directory-page-indicator">{result.start}–{result.end} із {formatNumber(total)}</span>
+              {result.nextCursor ? (
+                <a className="btn subtle" rel="next" href={buildProfilesHref({ ...paginationState, cursor: result.nextCursor })}>
+                  Далі →
+                </a>
+              ) : <span className="btn subtle is-disabled" aria-disabled="true">Далі →</span>}
             </nav>
           </footer>
         </section>

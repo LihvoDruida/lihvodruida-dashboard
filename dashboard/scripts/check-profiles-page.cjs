@@ -8,6 +8,9 @@ const page = fs.readFileSync(pagePath, "utf8");
 const css = fs.readFileSync(cssPath, "utf8");
 
 const checks = [
+  ["catalog uses server page contract", page.includes("listDashboardProfilePage") && !page.includes("filteredProfiles.slice") && !page.includes("limit: 500")],
+  ["cursor navigation preserves filters", page.includes("result.previousCursor") && page.includes("result.nextCursor") && page.includes('params.set("cursor", cursor)')],
+  ["empty storage is explicit unavailable state", page.includes("result.unavailable") && page.includes("Каталог недоступний")],
   ["profiles use dedicated roster rows", page.includes('className="profile-directory-row"')],
   ["profile avatar is visible", page.includes('className="profile-directory-avatar"')],
   ["search supports Battle.net filter", page.includes('name="link"') && page.includes('value="linked"')],

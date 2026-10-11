@@ -30,7 +30,8 @@ export async function POST(request: NextRequest) {
       if (!guard.session.isServerOwner) return NextResponse.json({ ok: false, error: "Автоматичне виключення може налаштовувати лише власник сервера." }, { status: 403, headers: noStoreHeaders() });
       const settings = body.action === "pause" ? await pauseDiscordCleanup(guard.session.id) : await saveDiscordCleanupSettings({ enabled: body.enabled, roleId: body.roleId, period: body.period }, guard.session.id);
       await auditDiscordAdmin("discord.member_cleanup.settings", guard.session, { status: "success", enabled: settings.enabled, roleId: settings.roleId, period: settings.period, summary: `Автоматичне виключення ${settings.enabled ? "увімкнено" : "призупинено"}.` });
-      return NextResponse.json({ ok: true, settings }, { headers: noStoreHeaders() });
+      const overview = await getDiscordCleanupOverview();
+      return NextResponse.json({ ok: true, settings, execution: overview.execution }, { headers: noStoreHeaders() });
     }
     if (body.action !== "scan") throw new Error("Невідома дія.");
     const result = await runDiscordMemberCleanup({ source: "manual", inspectOnly: true });

@@ -673,10 +673,15 @@ function mergeCanonicalCharacter(current: ProfileCharacter, canonical: Canonical
   return normalized ? { ...normalized, addedAt: current.addedAt || normalized.addedAt, isMain: current.isMain } : current;
 }
 
-async function hydrateProfilesFromCanonicalCharacterData(profiles: DashboardProfile[]) {
+export async function hydrateProfilesFromCanonicalCharacterData(profiles: DashboardProfile[]) {
   const keys = profiles.flatMap((profile) => profile.characters.map((character) => character.key));
   if (!keys.length) return profiles;
-  const canonical = await readCanonicalCharacterDataMany(keys).catch(() => new Map<string, CanonicalCharacterData>());
+  const canonical = new Map<string, CanonicalCharacterData>();
+  const uniqueKeys = Array.from(new Set(keys));
+  for (let start = 0; start < uniqueKeys.length; start += 600) {
+    const chunk = await readCanonicalCharacterDataMany(uniqueKeys.slice(start, start + 600)).catch(() => new Map<string, CanonicalCharacterData>());
+    for (const [key, record] of chunk) canonical.set(key, record);
+  }
   if (!canonical.size) return profiles;
   return profiles.map((profile) => ({
     ...profile,
@@ -735,7 +740,7 @@ function groupForProfile(
   return groups.find((group) => group.role === profile.role) || null;
 }
 
-function applyCurrentProfileGroup(
+export function applyCurrentProfileGroup(
   profile: DashboardProfile,
   groups: AccessGroup[],
 ) {
@@ -784,7 +789,7 @@ function normalizeRaidRolePreference(
   };
 }
 
-function normalizeProfile(
+export function normalizeProfile(
   profileId: string,
   data: Record<string, unknown>,
 ): DashboardProfile {
@@ -1269,82 +1274,6 @@ export async function getProfileByDiscordUserId(discordUserId: string) {
       logEvent: "profiles.discord_lookup_read_failed",
     },
   );
-}
-
-export async function listDashboardProfiles(params: {
-  viewer: DashboardSession;
-  query?: string;
-  limit?: number;
-}): Promise<DashboardProfile[]> {
-  if (!hasFirebaseProfileConfig()) return [];
-
-  const safeLimit = Math.max(10, Math.min(200, Number(params.limit || 120)));
-  const query = String(params.query || "")
-    .trim()
-    .toLocaleLowerCase("uk");
-  const [profilesFromStore, groups] = await Promise.all([
-    resilientRead(
-      `profiles:list:${safeLimit}`,
-      async () => {
-        const snapshot = await getFirebaseAdminDb().collection("dashboardProfiles").limit(safeLimit).get();
-        return snapshot.docs.map((doc: any) => normalizeProfile(doc.id, doc.data() || {}));
-      },
-      {
-        ttlMs: Math.max(30_000, Math.min(300_000, Number((await getSiteRuntimeSettings().catch(() => null))?.profileListCacheTtlMs || process.env.PROFILE_LIST_CACHE_TTL_MS || 60_000))),
-        timeoutMs: 3_000,
-        circuitKey: "firebase-profile-read",
-        circuitTtlMs: 90_000,
-        fallback: () => getRuntimeCachedValue<DashboardProfile[]>(`profiles:list:${safeLimit}`, 24 * 60 * 60 * 1000) || [],
-        logEvent: "profiles.list_read_failed",
-      },
-    ),
-    listAccessGroups().catch(() => [] as AccessGroup[]),
-  ]);
-  const hydratedProfiles = await hydrateProfilesFromCanonicalCharacterData(profilesFromStore);
-  const profiles: DashboardProfile[] = hydratedProfiles
-    .map((profile: DashboardProfile) =>
-      groups.length ? applyCurrentProfileGroup(profile, groups) : profile,
-    )
-    .filter((profile: DashboardProfile) =>
-      canViewProfile(params.viewer, profile.profileId, profile),
-    );
-
-  const filtered = query
-    ? profiles.filter((profile: DashboardProfile) =>
-        [
-          getProfilePublicName(profile),
-          getProfileSiteName(profile),
-          getProfileServerStyleName(profile),
-          profile.displayName,
-          profile.preferredName,
-          profile.login,
-          profile.role,
-          profile.provider,
-          profile.characters
-            .map((item: ProfileCharacter) => item.name)
-            .join(" "),
-          profile.characters
-            .map((item: ProfileCharacter) => item.realmName || item.realmSlug)
-            .join(" "),
-          getMainCharacter(profile)?.name,
-        ].some((value) =>
-          String(value || "")
-            .toLocaleLowerCase("uk")
-            .includes(query),
-        ),
-      )
-    : profiles;
-
-  return filtered.sort((a: DashboardProfile, b: DashboardProfile) => {
-    const aTime =
-      Date.parse(a.lastLoginAt || a.updatedAt || a.createdAt || "") || 0;
-    const bTime =
-      Date.parse(b.lastLoginAt || b.updatedAt || b.createdAt || "") || 0;
-    return (
-      bTime - aTime ||
-      getProfilePublicName(a).localeCompare(getProfilePublicName(b), "uk")
-    );
-  });
 }
 
 export async function listDashboardProfilesForDiscordSync(

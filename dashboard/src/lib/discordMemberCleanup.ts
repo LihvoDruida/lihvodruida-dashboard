@@ -20,6 +20,11 @@ export type DiscordCleanupSettings = {
   enabled: boolean; roleId: string; roleName: string; period: DiscordCleanupPeriod; revision: string;
   updatedAt: string | null; updatedBy: string | null;
 };
+export type DiscordCleanupExecution = {
+  token: string; paused: boolean; pauseRequestedAt: string | null; pauseRequestedBy: string | null; pauseObservedAt: string | null;
+  inFlight: { attemptId: string; operationId?: string; userId: string; displayName: string; startedAt: string } | null;
+};
+class CleanupDispatchStopped extends Error {}
 export type DiscordCleanupState = {
   activeScanId: string | null; scan: Scan | null; lastScanAt: string | null;
   checked: number; candidates: number; overdue: number; blocked: number;
@@ -41,18 +46,21 @@ function guildId() {
 }
 function refs(id = guildId()) {
   const db = getFirebaseAdminDb();
-  return { db, settings: db.collection("dashboardSettings").doc(`discordMemberCleanup_${id}`), state: db.collection("dashboardSettings").doc(`discordMemberCleanupState_${id}`), events: db.collection(`discordCleanupEvents_${id}`), candidates: (scanId: string) => db.collection(`discordCleanupCandidates_${id}_${scanId}`) };
+  return { db, settings: db.collection("dashboardSettings").doc(`discordMemberCleanup_${id}`), execution: db.collection("dashboardSettings").doc(`discordMemberCleanupControl_${id}`), lease: db.collection("automationLeases").doc(`discord-member-cleanup_${id}`), state: db.collection("dashboardSettings").doc(`discordMemberCleanupState_${id}`), events: db.collection(`discordCleanupEvents_${id}`), candidates: (scanId: string) => db.collection(`discordCleanupCandidates_${id}_${scanId}`) };
 }
+function defaultExecution(): DiscordCleanupExecution { return { token: "legacy", paused: false, pauseRequestedAt: null, pauseRequestedBy: null, pauseObservedAt: null, inFlight: null }; }
 function defaultSettings(): DiscordCleanupSettings { return { enabled: false, roleId: "", roleName: "", period: "month", revision: "unconfigured", updatedAt: null, updatedBy: null }; }
 function defaultState(): DiscordCleanupState { return { activeScanId: null, scan: null, lastScanAt: null, checked: 0, candidates: 0, overdue: 0, blocked: 0, kickedTotal: 0, uncertainTotal: 0, lastRunAt: null, lastAutomaticRunAt: null, lastError: null, recentRuns: [], garbage: [] }; }
 export async function getDiscordCleanupOverview() {
   const store = refs();
-  const [settings, state] = await Promise.all([store.settings.get(), store.state.get()]);
-  return { settings: { ...defaultSettings(), ...settings.data() } as DiscordCleanupSettings, state: { ...defaultState(), ...state.data() } as DiscordCleanupState };
+  const [settings, state, execution] = await Promise.all([store.settings.get(), store.state.get(), store.execution.get()]);
+  return { settings: { ...defaultSettings(), ...settings.data() } as DiscordCleanupSettings, state: { ...defaultState(), ...state.data() } as DiscordCleanupState, execution: { ...defaultExecution(), ...execution.data() } as DiscordCleanupExecution };
 }
 export async function saveDiscordCleanupSettings(input: { enabled: unknown; roleId: unknown; period: unknown }, actorId: string) {
   assertFirebaseWriteAvailable("settings");
   if (typeof input.enabled !== "boolean" || !isCleanupPeriod(input.period) || !/^\d{16,25}$/.test(String(input.roleId || ""))) throw new Error("Вибери одну роль і строк очищення.");
+  const store = refs();
+  const requestToken = (await store.execution.get()).data()?.token || "legacy";
   const control = await fetchDiscordCleanupControl();
   const role = control.roles.find((item) => item.id === input.roleId);
   if (!role) throw new Error("Вибрану роль не знайдено на сервері.");
@@ -62,27 +70,50 @@ export async function saveDiscordCleanupSettings(input: { enabled: unknown; role
   const lease = await acquireAutomationLease(`discord-member-cleanup_${control.guildId}`, `settings:${actorId}`);
   if (!lease) throw new Error("Перевірка вже виконується. Збережи налаштування після її завершення.");
   try {
-    const { settings: current, state } = await getDiscordCleanupOverview();
-    const changed = current.roleId !== role.id || current.period !== input.period;
-    const settings: DiscordCleanupSettings = { enabled: input.enabled, roleId: role.id, roleName: role.name, period: input.period, revision: changed ? randomUUID() : current.revision, updatedAt: new Date().toISOString(), updatedBy: actorId };
-    const store = refs();
-    await store.db.runTransaction(async (tx) => {
+    await lease.assertOwned();
+    return await store.db.runTransaction(async (tx) => {
+      const [saved, savedState, execution, held] = await Promise.all([tx.get(store.settings), tx.get(store.state), tx.get(store.execution), tx.get(store.lease)]);
+      if (held.data()?.owner !== lease.owner || Number(held.data()?.expiresAtMs || 0) <= Date.now()) throw new Error("Захист налаштувань втрачено. Онови сторінку.");
+      if ((execution.data()?.token || "legacy") !== requestToken) throw new Error("Стан очищення змінився під час збереження. Онови сторінку; призупинення збережене.");
+      const current = { ...defaultSettings(), ...saved.data() } as DiscordCleanupSettings;
+      const state = { ...defaultState(), ...savedState.data() } as DiscordCleanupState;
+      const changed = current.roleId !== role.id || current.period !== input.period;
+      const settings: DiscordCleanupSettings = { enabled: input.enabled as boolean, roleId: role.id, roleName: role.name, period: input.period as DiscordCleanupPeriod, revision: changed ? randomUUID() : current.revision, updatedAt: new Date().toISOString(), updatedBy: actorId };
       tx.set(store.settings, settings);
+      tx.set(store.execution, { ...defaultExecution(), ...execution.data(), token: randomUUID(), paused: !settings.enabled, pauseRequestedAt: settings.enabled ? null : settings.updatedAt, pauseRequestedBy: settings.enabled ? null : actorId, pauseObservedAt: null });
       if (changed) tx.set(store.state, { ...state, activeScanId: null, scan: null, lastScanAt: null, candidates: 0, overdue: 0, blocked: 0, garbage: [...new Set([...state.garbage, state.activeScanId, state.scan?.id].filter(Boolean) as string[])] });
+      return settings;
     });
-    return settings;
   } finally { await lease.release(); }
 }
 export async function pauseDiscordCleanup(actorId: string) {
-  const lease = await acquireAutomationLease(`discord-member-cleanup_${guildId()}`, `pause:${actorId}`);
-  if (!lease) throw new Error("Перевірка вже виконується. Повтори призупинення після її завершення.");
-  try {
-    const store = refs();
-    const { settings } = await getDiscordCleanupOverview();
-    const paused = { ...settings, enabled: false, updatedAt: new Date().toISOString(), updatedBy: actorId };
-    await store.settings.set(paused);
+  assertFirebaseWriteAvailable("settings");
+  const store = refs();
+  // Separate control document: stopping never waits for the worker's lease or Discord HTTP.
+  return store.db.runTransaction(async (tx) => {
+    const [saved, execution] = await Promise.all([tx.get(store.settings), tx.get(store.execution)]);
+    const paused = { ...defaultSettings(), ...saved.data(), enabled: false, updatedAt: new Date().toISOString(), updatedBy: actorId } as DiscordCleanupSettings;
+    tx.set(store.settings, paused);
+    tx.set(store.execution, { ...defaultExecution(), ...execution.data(), token: randomUUID(), paused: true, pauseRequestedAt: paused.updatedAt, pauseRequestedBy: actorId, pauseObservedAt: null });
     return paused;
-  } finally { await lease.release(); }
+  });
+}
+async function observePause(token: string, revision: string) {
+  const store = refs();
+  return store.db.runTransaction(async (tx) => {
+    const [saved, control] = await Promise.all([tx.get(store.settings), tx.get(store.execution)]);
+    const execution = { ...defaultExecution(), ...control.data() } as DiscordCleanupExecution;
+    const stop = !saved.data()?.enabled || saved.data()?.revision !== revision || execution.paused || execution.token !== token;
+    if (stop && execution.paused && !execution.pauseObservedAt) tx.set(store.execution, { pauseObservedAt: new Date().toISOString() }, { merge: true });
+    return stop;
+  });
+}
+async function clearInFlight(attemptId: string) {
+  const store = refs();
+  await store.db.runTransaction(async (tx) => {
+    const control = (await tx.get(store.execution)).data() as DiscordCleanupExecution | undefined;
+    if (control?.inFlight?.attemptId === attemptId) tx.set(store.execution, { inFlight: null }, { merge: true });
+  });
 }
 function message(error: unknown) { return (error instanceof Error ? error.message : String(error)).slice(0, 1000); }
 function operationId(member: CleanupMember) { return createHash("sha256").update(`${member.userId}:${new Date(member.joinedAt!).toISOString()}`).digest("hex"); }
@@ -118,7 +149,7 @@ async function markUncertain(operation: Operation, candidate: Candidate, scanId:
   await store.db.runTransaction(async (tx) => {
     const eventRef = store.events.doc(operation.id);
     const [event, state] = await Promise.all([tx.get(eventRef), tx.get(store.state)]);
-    if (event.data()?.status === "kicked") return;
+    if (event.data()?.status === "kicked" || event.data()?.attemptId !== operation.attemptId) return;
     const alreadyUncertain = event.data()?.status === "uncertain";
     tx.set(eventRef, { ...operation, status: "uncertain", outcome: "uncertain", lastError: error, sortKey: `u_${operation.attemptedAt}_${operation.id}` });
     tx.set(store.candidates(scanId).doc(candidate.id), { ...candidate, blockedReason: "Результат попереднього виключення не підтверджено. Повтор заблоковано.", lastError: error, nextAttemptAt: NEVER });
@@ -135,7 +166,14 @@ export async function runDiscordMemberCleanup(options: { source: "automatic" | "
   try {
     const overview = await getDiscordCleanupOverview();
     const settings = overview.settings;
+    const executionToken = overview.execution.token;
     let state = overview.state;
+    // Finalization may commit before a process dies while clearing this UI signal.
+    const unfinished = overview.execution.inFlight;
+    if (unfinished?.operationId) {
+      const receipt = (await store.events.doc(unfinished.operationId).get()).data() as Operation | undefined;
+      if (receipt?.attemptId === unfinished.attemptId && ["kicked", "uncertain", "retry"].includes(receipt.status)) await clearInFlight(unfinished.attemptId);
+    }
     if (options.source === "automatic") await store.state.set({ lastAutomaticRunAt: new Date().toISOString() }, { merge: true });
     if (!settings.roleId || !isCleanupPeriod(settings.period)) return { skipped: true, reason: "not_configured", checked, kicked, failed, nextRunInSeconds: IDLE_INTERVAL_SECONDS };
     // A process may die after Discord accepted the kick but before the DB commit.
@@ -150,6 +188,7 @@ export async function runDiscordMemberCleanup(options: { source: "automatic" | "
         tx.set(doc.ref, { ...operation, status: "uncertain", outcome: "uncertain", sortKey: `u_${operation.attemptedAt}_${operation.id}`, lastError: "Спробу перервано до збереження підтвердження. Перевір журнал аудиту Discord." });
         tx.set(store.state, { uncertainTotal: Number(current.data()?.uncertainTotal || 0) + 1 }, { merge: true });
       });
+      await clearInFlight(operation.attemptId);
     }
     const scanDue = !state.scan && (options.source === "manual" || !state.lastScanAt || Date.now() - Date.parse(state.lastScanAt) >= SCAN_INTERVAL_MS);
     // Waiting only needs the persisted queue. Never refetch guild/roles/bot
@@ -197,14 +236,18 @@ export async function runDiscordMemberCleanup(options: { source: "automatic" | "
       const due = await store.candidates(scanId).where("nextAttemptAt", "<", new Date().toISOString()).orderBy("nextAttemptAt").limit(KICK_BATCH_SIZE).get();
       for (const document of due.docs) {
         if (Date.now() - started >= 30_000) break;
+        if (await observePause(executionToken, settings.revision)) break;
         let candidate = document.data() as Candidate;
         if (candidate.outcome !== "candidate" || candidate.revision !== settings.revision) continue;
         let operation: Operation | null = null;
+        let prepared = false;
+        let dispatched = false;
         try {
           await lease.assertOwned();
-          const fresh = await fetchDiscordGuildMemberSnapshot(candidate.userId, id);
-          // joined_at changes on rejoin. Roles and membership must be checked immediately before each kick.
           const latestControl = await fetchDiscordCleanupControl();
+          // joined_at changes on rejoin. Fetch membership after guild permissions, nearest dispatch.
+          const fresh = await fetchDiscordGuildMemberSnapshot(candidate.userId, id);
+          const verifiedAt = Date.now();
           const assessment = evaluateCleanupMember(fresh, settings.roleId, settings.period, latestControl);
           if (!assessment.matches || !assessment.eligible || new Date(fresh.joinedAt || 0).toISOString() !== candidate.joinedAt) {
             if (!assessment.matches) await document.ref.set({ listKey: `x_${candidate.id}`, nextAttemptAt: NEVER }, { merge: true });
@@ -212,8 +255,7 @@ export async function runDiscordMemberCleanup(options: { source: "automatic" | "
             continue;
           }
           candidate = candidateRow(fresh, settings, latestControl);
-          const currentSettings = (await getDiscordCleanupOverview()).settings;
-          if (!currentSettings.enabled || currentSettings.revision !== settings.revision) break;
+          if (await observePause(executionToken, settings.revision)) break;
           const eventRef = store.events.doc(operationId(fresh));
           const prior = (await eventRef.get()).data() as Operation | undefined;
           if (prior && ["prepared", "uncertain", "kicked"].includes(prior.status)) {
@@ -223,27 +265,45 @@ export async function runDiscordMemberCleanup(options: { source: "automatic" | "
           }
           const attemptId = randomUUID();
           operation = { ...candidate, id: eventRef.id, status: "prepared", attemptId, attemptedAt: new Date().toISOString(), sortKey: `p_${attemptId}`, reason: `Guild cleanup ${attemptId}: ${settings.period}; joined ${candidate.joinedAt}; role ${candidate.roleId || "none"}` };
-          await eventRef.set(operation);
-          await lease.assertOwned();
           // One attempt only. A 429/403 is safe to defer; a timeout/5xx is ambiguous and must never be replayed.
-          await kickDiscordCleanupMember(id, candidate.userId, operation.reason);
+          const attempt = operation;
+          await kickDiscordCleanupMember(id, candidate.userId, operation.reason, async () => {
+            // Queue waits can outlive a pause or lease. The receipt and authorization commit together.
+            const accepted = await store.db.runTransaction(async (tx) => {
+              const [saved, execution, held, event] = await Promise.all([tx.get(store.settings), tx.get(store.execution), tx.get(store.lease), tx.get(eventRef)]);
+              const control = { ...defaultExecution(), ...execution.data() } as DiscordCleanupExecution;
+              const stopped = !saved.data()?.enabled || saved.data()?.revision !== settings.revision || control.paused || control.token !== executionToken;
+              if (stopped) {
+                if (control.paused && !control.pauseObservedAt) tx.set(store.execution, { pauseObservedAt: new Date().toISOString() }, { merge: true });
+                return false;
+              }
+              if (held.data()?.owner !== lease.owner || Number(held.data()?.expiresAtMs || 0) <= Date.now() || Date.now() - started >= 30_000 || Date.now() - verifiedAt > 5_000) return false;
+              if (["prepared", "uncertain", "kicked"].includes(String(event.data()?.status))) return false;
+              tx.set(eventRef, attempt);
+              tx.set(store.execution, { inFlight: { attemptId: attempt.attemptId, operationId: attempt.id, userId: candidate.userId, displayName: candidate.displayName, startedAt: new Date().toISOString() } }, { merge: true });
+              return true;
+            });
+            if (!accepted) throw new CleanupDispatchStopped("Виключення зупинено до відправлення.");
+            prepared = true;
+          }, () => { dispatched = true; });
           await confirmedKick(operation, candidate, scanId);
           kicked++;
           logDashboardEvent("info", "discord.member_cleanup.kicked", undefined, { userId: candidate.userId, joinedAt: candidate.joinedAt, roleId: candidate.roleId, attemptId }, { category: "action" });
         } catch (error) {
+          if (error instanceof CleanupDispatchStopped) break;
           const text = message(error);
           failed++;
-          if (operation && !/Discord API (?:400|401|403|404|429):/.test(text)) {
+          if (operation && prepared && dispatched && !/Discord API (?:400|401|403|404|429):/.test(text)) {
             await markUncertain(operation, candidate, scanId, text);
           } else {
-            if (operation) await store.events.doc(operation.id).set({ status: "retry", lastError: text }, { merge: true });
+            if (operation && prepared) await store.events.doc(operation.id).set({ status: "retry", lastError: text }, { merge: true });
             if (/Discord API 404:/.test(text)) await document.ref.set({ listKey: `x_${candidate.id}`, nextAttemptAt: NEVER }, { merge: true });
             else await document.ref.set({ lastError: text, nextAttemptAt: new Date(Date.now() + 15 * 60_000).toISOString() }, { merge: true });
           }
           logDashboardEvent("warn", "discord.member_cleanup.member_failed", undefined, { userId: candidate.userId, message: text }, { category: "action" });
           // Permission loss and transport errors should stop the batch, rather than hammering Discord.
           if (!/Discord API 404:/.test(text)) break;
-        }
+        } finally { if (operation && prepared) await clearInFlight(operation.attemptId); }
       }
     }
     if (Date.now() - started < 30_000 && state.garbage.length) {

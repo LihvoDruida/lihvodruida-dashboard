@@ -1,0 +1,208 @@
+{
+  "date": "2026-10-11",
+  "release": "3.8.72",
+  "bot_version": "3.6.6",
+  "base_release": "3.8.71",
+  "base_archive_sha256": "962446e1aa784e1c3296eebe829fb434b229f2678983e265aba0d7ffd260e76a",
+  "completed_packages": [
+    "R1",
+    "R2",
+    "R3",
+    "R4"
+  ],
+  "pending_packages": [
+    "R5",
+    "R6",
+    "R7",
+    "R8"
+  ],
+  "tests": {
+    "postgresql_engine": "16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+    "cleanup_postgresql_rest_scenarios": 11,
+    "independent_process_lease_probe": true,
+    "r3_pause_defect_reproduced": true,
+    "r1_postgresql_regression": 23,
+    "r2_publication_postgresql_regression": 26,
+    "r3_profiles_postgresql_regression": 32,
+    "discord_rest_scenarios": 16,
+    "cleanup_policy_storage_cron_checks": 101,
+    "bounded_http_scenarios": 3,
+    "bot": 45,
+    "verify": "passed",
+    "build_ci": "passed",
+    "lint": "passed (verify)",
+    "inspect_ci_blocking_issues": 0,
+    "next_build_seconds": 19,
+    "actual_docker_builder_copy_inputs": 23,
+    "source_builder_files_compared": 555,
+    "source_builder_match": true,
+    "ui_widths": [
+      320,
+      360,
+      390,
+      430,
+      640,
+      768,
+      1024,
+      1280,
+      1920
+    ],
+    "ui_overflow": false,
+    "browser": {
+      "widths": 9,
+      "initialRows": 25,
+      "showMoreRows": 50,
+      "tabs": "passed",
+      "keyboard": "passed",
+      "saveAndPause": "passed",
+      "hungScanPause": "passed",
+      "lostPauseResponse": "passed",
+      "staleGet": "passed",
+      "getTimeout": "passed",
+      "unmountAbort": "passed",
+      "staticRecovery": "passed",
+      "ownerOnly": "passed",
+      "browserErrors": 0,
+      "mutations": [
+        "settings",
+        "pause",
+        "scan",
+        "pause",
+        "pause"
+      ]
+    },
+    "anonymous_standalone_guards": {
+      "standalone": "final Docker builder inputs",
+      "anonymousGuards": [
+        {
+          "method": "POST",
+          "route": "/api/dashboard/discord/member-cleanup",
+          "status": 401
+        },
+        {
+          "method": "GET",
+          "route": "/api/dashboard/discord/member-cleanup",
+          "status": 401
+        },
+        {
+          "method": "POST",
+          "route": "/api/dashboard/discord/member-cleanup/automation",
+          "status": 401
+        },
+        {
+          "method": "POST",
+          "route": "/api/dashboard/static-roles",
+          "status": 401
+        },
+        {
+          "method": "GET",
+          "route": "/api/dashboard/static-roles",
+          "status": 401
+        },
+        {
+          "method": "POST",
+          "route": "/api/raids/publish",
+          "status": 401
+        },
+        {
+          "method": "POST",
+          "route": "/api/raids",
+          "status": 401
+        },
+        {
+          "method": "POST",
+          "route": "/api/polls",
+          "status": 401
+        },
+        {
+          "method": "GET",
+          "route": "/profiles",
+          "status": 303,
+          "location": "/login?next=%2Fprofiles&reauth=1"
+        },
+        {
+          "method": "GET",
+          "route": "/profiles?q=Target250&role=member&link=linked&sort=name&cursor=bad",
+          "status": 303,
+          "location": "/login?next=%2Fprofiles%3Fq%3DTarget250%26role%3Dmember%26link%3Dlinked%26sort%3Dname%26cursor%3Dbad&reauth=1"
+        },
+        {
+          "method": "GET",
+          "route": "/profile",
+          "status": 303,
+          "location": "/login?next=%2Fprofile&reauth=1"
+        }
+      ],
+      "discordConfigured": false,
+      "databaseConfigured": false
+    }
+  },
+  "runtime": {
+    "node": "24.19.0",
+    "next": "16.3.5",
+    "react": "19.2.8",
+    "sharp": "0.35.4"
+  },
+  "preserved": {
+    "r3_files": 649,
+    "system_styles_vectors_bot_rules_security_and_historical_reports_checked": 94,
+    "changed_existing_files": [
+      "guild_header_work/README.md",
+      "guild_header_work/dashboard/package-lock.json",
+      "guild_header_work/dashboard/package.json",
+      "guild_header_work/dashboard/scripts/check-discord-member-cleanup.cjs",
+      "guild_header_work/dashboard/scripts/check-discord-rest.cjs",
+      "guild_header_work/dashboard/scripts/test-db-docker.cjs",
+      "guild_header_work/dashboard/src/app/api/dashboard/discord/member-cleanup/route.ts",
+      "guild_header_work/dashboard/src/components/DiscordMemberCleanupPanel.tsx",
+      "guild_header_work/dashboard/src/components/static/StaticRoleSettingsClient.tsx",
+      "guild_header_work/dashboard/src/lib/discordAdmin.ts",
+      "guild_header_work/dashboard/src/lib/discordMemberCleanup.ts",
+      "guild_header_work/dashboard/src/lib/discordRest.ts",
+      "guild_header_work/docs/DATABASE.md"
+    ]
+  },
+  "limits": {
+    "live_discord_tested": false,
+    "vps_deployed": false,
+    "production_database_used": false,
+    "docker_executed": false,
+    "docker_runner_includes": [
+      "R1",
+      "R2",
+      "R3",
+      "R4"
+    ],
+    "firestore_sdk_integration_tested": false,
+    "post_timeout_recovery": "GET current state; no mutation replay; not an exact operation receipt",
+    "already_started_kick": "may finish after pause; no subsequent action after stop observation",
+    "source_of_truth": "durable settings/control/event documents; no shared transaction with Discord",
+    "preexisting_build_warnings": [
+      "discordWelcomeCard.ts:273 dynamic filesystem tracing",
+      "discordWelcomeCard.ts:487 dynamic filesystem tracing"
+    ],
+    "postgresql_native_sandbox": "loopback-only private schemas; local startup UID adaptation; real SQL engine"
+  },
+  "qa_log_sha256": {
+    "roadmap-r4-final-verify.log": "3bc5ed5149c6f95dd95195c8c65b817b5aceaf752a1b3f66565e31760791f9c7",
+    "roadmap-r4-build-ci.log": "f5afe8a1344d85c19a661d8160abf30449ada2f2aaf78274688adc73902e34c6",
+    "roadmap-r4-final-cleanup-pg.log": "f081237d9bdb9070b82bb62df5a105b8645b99997dde9b15d916196d17bd464b",
+    "roadmap-r4-final-r2-regression-pg.log": "cc7d598c8ad45db92d87aa92640874e069f1c9ffbcc03f03219ee1d245be9a81",
+    "roadmap-r4-r1-regression-pg.log": "5e01113d0b9fd18eb9c0910703b21c180f8a0bc134a6b81104a212e0e61321f6",
+    "roadmap-r4-r3-regression-pg.log": "87a8a9b4abd9f2b9454f55ff15c9504c636dbaafc60ed15dc909565d74e070b8",
+    "roadmap-r4-bot.log": "e050a88b187bb510d8bbe781372595a041c4c23cff682e61a96313de0c162cc1",
+    "roadmap-r4-ui.log": "7b898499c7086f54d1904df71b9e7ab19abfe45539de781d0c2a2fc7dd0abaf9",
+    "roadmap-r4-http.log": "22940e1ccdc2cbfde4455696b493f42008415682ce780047f624f81df2ae97f6",
+    "roadmap-r4-before-pg.log": "bec6477dce771e8473339c5ad5d3748713948647b9273e8bdf9aa285fc2df5ee"
+  },
+  "source_sha256": {
+    "src/lib/discordMemberCleanup.ts": "2d0c1613061a610e6cac44b50fbd7bc716880c121ad543dc5bce1fa404db9e9a",
+    "src/lib/discordRest.ts": "6bc66b94175560267cfd4c420c53b83c28a70886f9840b54068da5463c742348",
+    "src/lib/discordAdmin.ts": "9907e1265b65a535de86cf4b25c31cd64b8853b90473abe578b66525771b5331",
+    "src/lib/useDashboardRequests.ts": "ba07b35244a3cef260c1eb07ca443dd4706ab76034ad90a802368088e0f32af9",
+    "src/components/DiscordMemberCleanupPanel.tsx": "69ca72d23b817f02c58abf3273b02cc676e6ec9ef3392abbbe5e545c36ab0ff3",
+    "src/components/static/StaticRoleSettingsClient.tsx": "b7c0683f9a684265e119c11357ba2debf2f1623a203673aa1a18ef03e8031031",
+    "scripts/test-discord-cleanup-pg.cjs": "9c2c032c0b8af02813ca72b71e64ec11cfe909bfc07d011aef7186c642c7482f",
+    "scripts/check-dashboard-requests.cjs": "2a0d7d9a13cb3d1fc7e64ae09b017f65430150df2cef0561712785a470395304"
+  }
+}

@@ -84,6 +84,9 @@ async function waitForCooldown(state: ClientState, key: string, signal: AbortSig
 }
 export async function discordRestRequest<T>(path: string, init: RequestInit, options: {
   token: string; retryNever?: boolean; deduplicatedMessage?: boolean; timeoutMs: number;
+  /** Runs after all queue/rate-limit waits, immediately before dispatch. Must fail closed. */
+  beforeSend?: () => Promise<void>;
+  onDispatch?: () => void;
   onFailure?: (status: number, detail: string, attempt: number) => void;
 }): Promise<T> {
   if (!path.startsWith("/") || path.startsWith("//")) throw new Error("Discord API path невалідний.");
@@ -119,6 +122,10 @@ export async function discordRestRequest<T>(path: string, init: RequestInit, opt
       if (startAt > Date.now()) await wait(startAt - Date.now(), signal);
       await waitForCooldown(state, key, signal);
       const requestSignal = AbortSignal.any([signal, AbortSignal.timeout(options.timeoutMs)]);
+      requestSignal.throwIfAborted();
+      await options.beforeSend?.();
+      requestSignal.throwIfAborted();
+      options.onDispatch?.();
       const response = await fetch(`${API_BASE}${path}`, { ...init, cache: "no-store", signal: requestSignal });
       if (response.status === 401) state.invalidToken = true;
       key = observeDiscordRateLimit(state, response, route, major);

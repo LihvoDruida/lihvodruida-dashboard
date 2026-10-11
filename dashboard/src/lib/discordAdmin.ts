@@ -297,6 +297,8 @@ type DiscordRequestInit = Omit<RequestInit, "headers"> & {
   auditReason?: string;
   expectedStatuses?: number[];
   retry?: "never";
+  beforeSend?: () => Promise<void>;
+  onDispatch?: () => void;
 };
 
 function getBotToken() {
@@ -356,7 +358,7 @@ const discordMetadataReads = new Map<string, Promise<unknown>>();
 export async function discordApi<T = any>(path: string, init: DiscordRequestInit = {}): Promise<T> {
   const token = getBotToken();
   if (!token) throw new DiscordRestError("Discord bot token не налаштований. Дії з ролями, ніками та учасниками не можуть виконуватись напряму через Discord API.", 401);
-  const { auditReason, expectedStatuses = [], headers: inputHeaders, retry, ...requestInit } = init;
+  const { auditReason, expectedStatuses = [], headers: inputHeaders, retry, beforeSend, onDispatch, ...requestInit } = init;
   const method = String(requestInit.method || "GET").toUpperCase();
   const headers = new Headers(inputHeaders || {});
   headers.set("Authorization", `Bot ${token}`);
@@ -379,7 +381,7 @@ export async function discordApi<T = any>(path: string, init: DiscordRequestInit
   }
   const request = async () => {
     const result = await discordRestRequest<T>(path, { ...requestInit, headers }, {
-      token, retryNever: retry === "never", deduplicatedMessage, timeoutMs: discordApiTimeoutMs(method),
+      token, retryNever: retry === "never", deduplicatedMessage, beforeSend, onDispatch, timeoutMs: discordApiTimeoutMs(method),
       onFailure: (status, detail, attempt) => {
         const telemetry = { method, path: sanitizeDiscordApiPath(path), status, detail, attempt };
         if (expectedStatuses.includes(status)) logDashboardEvent("debug", "discord.api.expected_response", undefined, telemetry);
@@ -1900,9 +1902,9 @@ export async function fetchDiscordCleanupControl(): Promise<import("@/lib/discor
 }
 
 /** Never retry a destructive request blindly: the member might have rejoined in between attempts. */
-export async function kickDiscordCleanupMember(guildId: string, userId: string, reason: string) {
+export async function kickDiscordCleanupMember(guildId: string, userId: string, reason: string, beforeSend?: () => Promise<void>, onDispatch?: () => void) {
   if (!cleanSnowflake(guildId) || !cleanSnowflake(userId)) throw new Error("Некоректний ID для виключення.");
-  await discordApi<void>(`/guilds/${guildId}/members/${userId}`, { method: "DELETE", auditReason: reason, retry: "never", expectedStatuses: [404] });
+  await discordApi<void>(`/guilds/${guildId}/members/${userId}`, { method: "DELETE", auditReason: reason, retry: "never", expectedStatuses: [404], beforeSend, onDispatch });
 }
 
 export async function removeGuildMemberRoles(params: {

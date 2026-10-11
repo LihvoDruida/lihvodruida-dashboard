@@ -96,6 +96,20 @@ const A = '111111111111111111'; const B = '222222222222222222';
     const controller = new AbortController(); const first = call(`/guilds/${A}/members/${B}`); const queued = call(`/guilds/${A}/members/${A}`, 'GET', { signal: controller.signal }); controller.abort();
     await assert.rejects(queued); await first; await call(`/guilds/${A}/members/${B}`); assert.equal(active, 0);
   });
+  await test('cleanup guard runs after the learned cooldown; cancelling before send releases permits', async () => {
+    let count = 0, paused = false, rejectedAt = 0;
+    const { admin } = fixture(() => { count++; rejectedAt = Date.now(); return new Response(null, { status: 204, headers: { 'x-ratelimit-bucket': 'cleanup', 'x-ratelimit-remaining': '0', 'x-ratelimit-reset-after': '.08' } }); });
+    await admin.kickDiscordCleanupMember(A, B, 'initial');
+    const pending = admin.kickDiscordCleanupMember(A, A, 'must not send', async () => { assert.ok(Date.now() - rejectedAt >= 80); if (paused) throw Error('controlled pause before dispatch'); });
+    paused = true; await assert.rejects(pending, /controlled pause/); assert.equal(count, 1);
+    await admin.kickDiscordCleanupMember(A, B, 'resumed', async () => {}); assert.equal(count, 2);
+  });
+  await test('abort after preflight but before fetch is known unsent, without a dispatch notification', async () => {
+    let calls = 0, dispatched = false;
+    const { rest } = fixture(() => { calls++; return json({}); }); const controller = new AbortController();
+    await assert.rejects(rest.discordRestRequest(`/guilds/${A}/members/${B}`, { method: 'DELETE', signal: controller.signal }, { token: 'test-only-token', timeoutMs: 1000, retryNever: true, beforeSend: async () => { controller.abort(); }, onDispatch: () => { dispatched = true; } }));
+    assert.equal(calls, 0); assert.equal(dispatched, false);
+  });
   await test('welcome nonce survives retries and changes for a rejoin or delivery purpose', async () => {
     const { discordMembershipMessageNonce: nonce } = load(source('discordMessageNonce'));
     const member = { guildId: A, userId: B, joinedAt: '2026-10-11T09:00:00Z' };

@@ -52,7 +52,7 @@ async function fixture(members) {
     fetchDiscordCleanupControl: async () => { apiCalls.control++; return liveControl; },
     fetchDiscordCleanupMemberPage: async (after, size) => { apiCalls.pages++; if (pageFailure) throw new Error(pageFailure); const page = members.filter((m) => BigInt(m.userId) > BigInt(after)).slice(0, size); return { members: page, after: page.at(-1)?.userId || after, complete: page.length < size }; },
     fetchDiscordGuildMemberSnapshot: async (id) => { apiCalls.members++; const m = members.find((value) => value.userId === id); if (!m) throw new Error('Discord API 404: Unknown Member'); return readMutation ? readMutation(m) : m; },
-    kickDiscordCleanupMember: async (guild, id, reason) => { check(guild === guildId && reason.includes('Guild cleanup'), 'kick guild and audit reason'); kicks.push(id); if (kickError) throw new Error(kickError); members = members.filter((m) => m.userId !== id); },
+    kickDiscordCleanupMember: async (guild, id, reason, beforeSend, onDispatch) => { await beforeSend?.(); onDispatch?.(); check(guild === guildId && reason.includes('Guild cleanup'), 'kick guild and audit reason'); kicks.push(id); if (kickError) throw new Error(kickError); members = members.filter((m) => m.userId !== id); },
   };
   const service = load('src/lib/discordMemberCleanup.ts', { '@/lib/automationLease': leases, '@/lib/firebaseAccess': access, '@/lib/firebaseAdmin': { getFirebaseAdminDb: () => db }, '@/lib/discordAdmin': discord, '@/lib/discordCleanupPolicy': policy, '@/lib/security': { logDashboardEvent: () => {} } });
   await service.saveDiscordCleanupSettings({ enabled: false, roleId, period: 'week' }, 'owner');

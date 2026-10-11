@@ -1,0 +1,176 @@
+{
+  "date": "2026-10-11",
+  "release": "3.8.71",
+  "bot_version": "3.6.6",
+  "base_release": "3.8.70",
+  "base_archive_sha256": "343e1344650e995fdab54d88f456997ba6034f12c6ad116d40ae0b43e86cdb2a",
+  "completed_packages": [
+    "R1",
+    "R2",
+    "R3"
+  ],
+  "pending_packages": [
+    "R4",
+    "R5",
+    "R6",
+    "R7",
+    "R8"
+  ],
+  "tests": {
+    "postgresql_engine": "16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+    "profile_catalog_postgresql_scenarios": 32,
+    "profile_catalog_controlled_firestore_checks": 7,
+    "dataset_sizes": [
+      201,
+      501,
+      2000
+    ],
+    "full_traversal_sorts": [
+      "activity",
+      "name",
+      "characters"
+    ],
+    "page_size": 20,
+    "r1_postgresql_regression": 23,
+    "r2_publication_postgresql_regression": 26,
+    "bot": 45,
+    "verify": "passed",
+    "build_ci": "passed",
+    "lint": "passed (verify)",
+    "inspect_ci_blocking_issues": 0,
+    "docker_builder_copy_inputs": 23,
+    "functional_source_builder_files_compared": 477,
+    "ui_widths": [
+      320,
+      390,
+      768,
+      1280
+    ],
+    "ui_overflow": false,
+    "browser_cases": {
+      "actualProfilesPage": true,
+      "actualCatalog": true,
+      "controlledAuthAndStore": true,
+      "widths": [
+        {
+          "width": 320,
+          "overflow": false,
+          "color": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "width": 390,
+          "overflow": false,
+          "color": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "width": 768,
+          "overflow": false,
+          "color": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "width": 1280,
+          "overflow": false,
+          "color": "rgba(0, 0, 0, 0)"
+        }
+      ],
+      "searchBeyond200": "passed",
+      "filterURL": "passed",
+      "backAndNext": "passed",
+      "newSearchResetsCursor": true,
+      "emptyAndUnavailable": "distinct",
+      "anonymousRedirect": true,
+      "errors": 0
+    },
+    "anonymous_http_statuses": [
+      401,
+      401,
+      401,
+      303,
+      303,
+      303
+    ],
+    "anonymous_profiles_guard": [
+      {
+        "method": "GET",
+        "route": "/profiles",
+        "status": 303,
+        "location": "/login?next=%2Fprofiles&reauth=1"
+      },
+      {
+        "method": "GET",
+        "route": "/profiles?q=Target250&role=member&link=linked&sort=name&cursor=bad",
+        "status": 303,
+        "location": "/login?next=%2Fprofiles%3Fq%3DTarget250%26role%3Dmember%26link%3Dlinked%26sort%3Dname%26cursor%3Dbad&reauth=1"
+      }
+    ],
+    "sql_p50_ms": 103.5,
+    "sql_p95_ms": 175.7,
+    "search_explain_execution_ms": 199.146,
+    "search_explain_planning_ms": 1.626
+  },
+  "scope": {
+    "vps_deployed": false,
+    "live_discord_calls": false,
+    "database_schema_migration_required": false,
+    "postgresql_minimum": 16,
+    "sql_parameters": true,
+    "page_and_aggregates_same_sql_snapshot": true,
+    "cursor_authority": "none; current permissions always applied",
+    "inter_request_frozen_snapshot": false,
+    "firestore_compatibility": "full bounded-batch scan; controlled boundary tested, live SDK not exercised",
+    "styles_unchanged_files": 20,
+    "bot_shared_deploy_byte_identical_to_r2": true
+  },
+  "not_executed": [
+    "VPS deployment",
+    "Live Discord/Firestore calls",
+    "Docker/PostgreSQL 17 runner",
+    "Production backup/restore"
+  ],
+  "build_warnings": [
+    "Existing Turbopack dynamic filesystem trace warnings at discordWelcomeCard.ts:273 and :487; source unchanged from R2"
+  ],
+  "validation_environment": "Loopback-only disposable private test schemas on native PostgreSQL 16.15; sandbox startup UID-check shim, SQL engine unchanged; strict trusted-proxy/CSRF policies retained in standalone HTTP guards.",
+  "logs": {
+    "profiles-pg": {
+      "file": "roadmap-r3-profiles-pg.log",
+      "exit_code": 0,
+      "sha256": "acdb0f783c60cbf84e2c4b2bb136ab0891040120bc623aa49a7661ffa77328b9"
+    },
+    "r1-regression-pg": {
+      "file": "roadmap-r3-r1-regression-pg.log",
+      "exit_code": 0,
+      "sha256": "5e01113d0b9fd18eb9c0910703b21c180f8a0bc134a6b81104a212e0e61321f6"
+    },
+    "r2-regression-pg": {
+      "file": "roadmap-r3-r2-regression-pg.log",
+      "exit_code": 0,
+      "sha256": "cc7d598c8ad45db92d87aa92640874e069f1c9ffbcc03f03219ee1d245be9a81"
+    },
+    "final-verify": {
+      "file": "roadmap-r3-final-verify.log",
+      "exit_code": 0,
+      "sha256": "4b6e83087ea7f6965a678641e4db9c1fc769505fbe8555e92667d243c21e5803"
+    },
+    "final-build-ci": {
+      "file": "roadmap-r3-final-build-ci.log",
+      "exit_code": 0,
+      "sha256": "5e52f0f6e7623f483a40177b1a80f36b4d359f5344b6a6daade76eb1edbde791"
+    },
+    "bot": {
+      "file": "roadmap-r3-bot.log",
+      "exit_code": 0,
+      "sha256": "baaed1dda60b4ce1fa1e99f9ab824a969e9a69cad3945b33963589d9033ae6e7"
+    },
+    "ui": {
+      "file": "roadmap-r3-ui.log",
+      "exit_code": 0,
+      "sha256": "b4508c2402a1087c8598aa7800530aed021092b989cfad52dab133e75421c9b0"
+    },
+    "http": {
+      "file": "roadmap-r3-http.log",
+      "exit_code": 0,
+      "sha256": "7e0db6202a016d08e7cb35b56351a87a4854134dafd16883c23e4d649b9c3b1c"
+    }
+  }
+}

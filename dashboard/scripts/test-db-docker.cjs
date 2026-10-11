@@ -5,7 +5,7 @@ const pg = require("pg");
 
 // Disposable QA container: no volumes, random port on loopback only.
 // Never use the production Compose project, environment or database.
-const name = "mistblossom-publication-qa-" + process.pid + "-" + randomBytes(6).toString("hex");
+const name = "mistblossom-roadmap-qa-" + process.pid + "-" + randomBytes(6).toString("hex");
 const password = randomBytes(24).toString("hex");
 const image = process.env.TEST_POSTGRES_IMAGE || "postgres:17.11-alpine";
 let started = false;
@@ -46,11 +46,11 @@ for (const [signal, code] of [["SIGINT", 130], ["SIGTERM", 143]]) {
   }
   if (!ready) throw new Error("Isolated PostgreSQL did not start within 60 seconds");
   console.log("[test:db:docker] " + image + "; temporary database; loopback only");
-  for (const script of ["test-document-store-pg.cjs", "test-discord-publication-pg.cjs"]) {
+  for (const script of ["test-document-store-pg.cjs", "test-discord-publication-pg.cjs", "test-profile-directory-pg.cjs", "test-discord-cleanup-pg.cjs"]) {
     const result = spawnSync(process.execPath, [path.join(__dirname, script)], {
       stdio: "inherit",
       env: { ...process.env, TEST_DATABASE_URL: url, TEST_DOCUMENT_STORE_SOURCE: "" },
-      timeout: 90000,
+      timeout: 300000,
     });
     if (result.error) throw result.error;
     if (result.status !== 0) { process.exitCode = result.status || 1; break; }

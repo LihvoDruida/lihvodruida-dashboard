@@ -203,7 +203,9 @@ if (exists('src/app/api/guild/sync/route.ts')) {
 if (exists('src/app/profiles/page.tsx')) {
   const profilesText = read('src/app/profiles/page.tsx');
   assert(profilesText.includes('profile-directory-panel') && profilesText.includes('profile-directory-row'), 'Profiles page must use the dedicated readable profile directory layout.');
-  assert(/const PROFILE_PAGE_SIZE = 20/.test(profilesText), 'Profiles page must keep 20 profiles per page.');
+  const directoryText = exists('src/lib/profileDirectory.ts') ? read('src/lib/profileDirectory.ts') : '';
+  assert(/export const PROFILE_DIRECTORY_PAGE_SIZE = 20/.test(directoryText) && profilesText.includes('listDashboardProfilePage'), 'Profiles catalog must keep a server page size of 20.');
+  assert(!profilesText.includes('filteredProfiles.slice') && directoryText.includes('previousCursor') && directoryText.includes('nextCursor'), 'Profiles catalog must use server cursor pagination over the complete permitted set.');
   assert(profilesText.includes('buildProfilesHref') && profilesText.includes('paginationState'), 'Profiles page must preserve pagination links with active filters and search query.');
 }
 
