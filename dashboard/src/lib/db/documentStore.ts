@@ -301,36 +301,81 @@ export class PgDocumentRef {
   }
 
   async set(data: DocData, options?: { merge?: boolean }) {
-    const nowIso = new Date().toISOString();
-    if (options?.merge) {
-      const current = (await this.get()).data() || {};
-      mergeInto(current, data, nowIso);
-      await this.write(current);
-      return;
-    }
-    const fresh: DocData = {};
-    mergeInto(fresh, data, nowIso);
-    await this.write(fresh);
+    await this.mutate(async (ref) => {
+      const current = options?.merge ? (await ref.getForUpdate()).data() || {} : {};
+      mergeInto(current, data, new Date().toISOString());
+      await ref.write(current);
+    });
   }
 
   async update(data: DocData) {
-    const snapshot = await this.get();
-    if (!snapshot.exists) {
-      // Firestore теж кидає помилку на update неіснуючого документа —
-      // повторюємо поведінку, щоб не ховати логічні баги виклику.
-      throw new Error(`No document to update: ${this.path}`);
-    }
-    const current = snapshot.data() || {};
-    applyUpdate(current, data, new Date().toISOString());
-    await this.write(current);
+    await this.mutate(async (ref) => {
+      const snapshot = await ref.getForUpdate();
+      if (!snapshot.exists) throw new Error(`No document to update: ${ref.path}`);
+      const current = snapshot.data() || {};
+      applyUpdate(current, data, new Date().toISOString());
+      // An update must never recreate a missing document via UPSERT.
+      const result = await pgQuery(
+        `UPDATE documents SET data = $3::jsonb, updated_at = now()
+         WHERE collection = $1 AND doc_id = $2`,
+        [ref.collectionName, ref.id, JSON.stringify(current)],
+        ref.client,
+      );
+      if (result.rowCount !== 1) throw new Error(`No document to update: ${ref.path}`);
+    });
+  }
+
+  async create(data: DocData) {
+    await this.mutate(async (ref) => {
+      const fresh: DocData = {};
+      mergeInto(fresh, data, new Date().toISOString());
+      const result = await pgQuery(
+        `INSERT INTO documents (collection, doc_id, data)
+         VALUES ($1, $2, $3::jsonb)
+         ON CONFLICT (collection, doc_id) DO NOTHING`,
+        [ref.collectionName, ref.id, JSON.stringify(fresh)],
+        ref.client,
+      );
+      if (result.rowCount !== 1) throw new Error(`Document already exists: ${ref.path}`);
+    });
   }
 
   async delete() {
-    await pgQuery(
-      "DELETE FROM documents WHERE collection = $1 AND doc_id = $2",
+    await this.mutate(async (ref) => {
+      await pgQuery(
+        "DELETE FROM documents WHERE collection = $1 AND doc_id = $2",
+        [ref.collectionName, ref.id],
+        ref.client,
+      );
+    });
+  }
+
+  /** All adapter writers share this lock, even when the document is absent.
+   * For a direct write, acquire it before reading in READ COMMITTED. An
+   * existing batch/transaction retains its client and isolation: PostgreSQL
+   * rejects stale writes and pgTransaction retries the entire database unit.
+   * Locks end at commit/rollback and never enclose external HTTP actions.
+   */
+  private async mutate(handler: (ref: PgDocumentRef) => Promise<void>) {
+    const execute = async (ref: PgDocumentRef) => {
+      await pgQuery(
+        "SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))",
+        [JSON.stringify([ref.collectionName, ref.id])],
+        ref.client,
+      );
+      await handler(ref);
+    };
+    if (this.client) await execute(this);
+    else await pgTransaction((client) => execute(this.withClient(client)), { isolation: "read committed" });
+  }
+
+  private async getForUpdate(): Promise<PgDocumentSnapshot> {
+    const result = await pgQuery<{ data: DocData }>(
+      "SELECT data FROM documents WHERE collection = $1 AND doc_id = $2 FOR UPDATE",
       [this.collectionName, this.id],
       this.client,
     );
+    return new PgDocumentSnapshot(this, result.rows[0]?.data ?? null);
   }
 
   private async write(data: DocData) {
@@ -592,15 +637,10 @@ export class PgTransaction {
   /**
    * create() у Firestore падає, якщо документ уже існує. Ця гарантія тут
    * важлива: на ній тримається захист від повторного створення записів,
-   * тому перевірку робимо явно, а не зводимо create до set.
+   * тому використовуємо INSERT без перезапису, а не зводимо create до set.
    */
   create(ref: PgDocumentRef, data: DocData) {
-    this.queue.push(async () => {
-      const scoped = ref.withClient(this.client);
-      const existing = await scoped.get();
-      if (existing.exists) throw new Error(`Document already exists: ${ref.path}`);
-      await scoped.set(data);
-    });
+    this.queue.push(() => ref.withClient(this.client).create(data));
   }
 
   update(ref: PgDocumentRef, data: DocData) {

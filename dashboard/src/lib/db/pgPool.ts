@@ -101,15 +101,24 @@ export async function pgQuery<T extends QueryResultRow = QueryResultRow>(
  */
 export async function pgTransaction<T>(
   handler: (client: PoolClient) => Promise<T>,
-  options: { retries?: number } = {},
+  options: { retries?: number; isolation?: "repeatable read" | "read committed" } = {},
 ): Promise<T> {
-  const retries = Math.max(0, Math.min(10, options.retries ?? 5));
+  const requestedRetries = options.retries ?? 5;
+  const retries = Number.isFinite(requestedRetries)
+    ? Math.max(0, Math.min(10, Math.floor(requestedRetries)))
+    : 5;
+  // Single-document adapter writes lock before reading, so READ COMMITTED
+  // supplies the latest committed value. Application transactions keep their
+  // existing stable-snapshot contract and retry the whole database operation.
+  const begin = options.isolation === "read committed"
+    ? "BEGIN ISOLATION LEVEL READ COMMITTED"
+    : "BEGIN ISOLATION LEVEL REPEATABLE READ";
   let lastError: unknown = null;
 
   for (let attempt = 0; attempt <= retries; attempt += 1) {
     const client = await getPgPool().connect();
     try {
-      await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ");
+      await client.query(begin);
       const result = await handler(client);
       await client.query("COMMIT");
       return result;
@@ -119,11 +128,14 @@ export async function pgTransaction<T>(
       const code = (error as { code?: string })?.code;
       // 40001 — serialization_failure, 40P01 — deadlock_detected.
       if (code !== "40001" && code !== "40P01") throw error;
-      const backoff = 25 * Math.pow(2, attempt) + Math.floor(Math.random() * 25);
-      await new Promise((resolve) => setTimeout(resolve, backoff));
+      if (attempt === retries) throw error;
     } finally {
       client.release();
     }
+    // Do not hold a scarce pool connection during backoff or sleep after the
+    // final attempt. Non-conflict errors are never automatically replayed.
+    const backoff = 25 * Math.pow(2, attempt) + Math.floor(Math.random() * 25);
+    await new Promise((resolve) => setTimeout(resolve, backoff));
   }
 
   throw lastError instanceof Error
