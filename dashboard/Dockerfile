@@ -85,9 +85,10 @@ COPY docs/content/static-rules.md /repo/docs/content/static-rules.md
 
 # CI scheduling audit also verifies the real VPS cron endpoint. The dashboard
 # build context is the repository root, but files are not present in a stage
-# until they are explicitly copied. Copy only this non-secret deployment
-# script for build-time validation; it is not copied into the runtime image.
+# until they are explicitly copied. Include both non-secret cron scripts for
+# build-time validation; they are not copied into the runtime image.
 COPY deploy/cron/run-cron.sh /repo/deploy/cron/run-cron.sh
+COPY deploy/cron/run-job.sh /repo/deploy/cron/run-job.sh
 COPY deploy/nginx/nginx.conf /repo/deploy/nginx/nginx.conf
 COPY deploy/nginx/dashboard.conf /repo/deploy/nginx/dashboard.conf
 COPY deploy/nginx/proxy-params.inc /repo/deploy/nginx/proxy-params.inc

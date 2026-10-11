@@ -10,8 +10,18 @@ const discordAdmin = read("src/lib/discordAdmin.ts");
 const picker = read("src/components/DiscordEmbedEditor.tsx");
 const shared = fs.readFileSync(path.join(root, "..", "shared", "index.mjs"), "utf8");
 const cron = fs.readFileSync(path.join(root, "..", "deploy", "cron", "run-cron.sh"), "utf8") + fs.readFileSync(path.join(root, "..", "deploy", "cron", "run-job.sh"), "utf8");
+// Check the builder inputs even when this audit runs from a full local checkout.
+// Otherwise local cron files can conceal a missing COPY in the Docker image.
+const dockerfile = read("Dockerfile");
+const builder = dockerfile.split(/^FROM .+ AS builder\s*$/im)[1]?.split(/^FROM /im)[0] || "";
+const builderCopies = builder.split(/\r?\n/).map((line) => line.trim().split(/\s+/));
+const copiesCronScript = (name) => builderCopies.some((parts) =>
+  parts[0]?.toUpperCase() === "COPY" && parts[1] === `deploy/cron/${name}` && parts[2] === `/repo/deploy/cron/${name}`
+);
 
 const checks = [
+  [copiesCronScript("run-cron.sh"), "Docker builder includes the cron dispatcher used by CI"],
+  [copiesCronScript("run-job.sh"), "Docker builder includes the cron worker executed by CI"],
   [documentStore.includes('field === "__name__") return "doc_id"'), "documentId ordering maps to doc_id"],
   [documentStore.includes('rawCursor instanceof PgDocumentSnapshot'), "Postgres startAfter understands document snapshots"],
   [documentStore.includes('NULLIF(${accessor}, \'\')::numeric'), "numeric JSON ordering is explicit"],
