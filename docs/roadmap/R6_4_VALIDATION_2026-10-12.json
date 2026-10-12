@@ -1,0 +1,159 @@
+{
+  "release": "R6.4",
+  "dashboard": "3.8.77",
+  "bot": "3.6.6",
+  "checked_at_utc": "2026-10-12T06:35:58.074150+00:00",
+  "new_postgresql_cases": 21,
+  "postgresql_scenarios": [
+    "Empty rename commits a receipt and reserves its former ID",
+    "One SQL migration moves 1500 profiles and preserves every unrelated field",
+    "Prefix, null and unassigned profiles are never migrated",
+    "A second rename flattens every redirect to its current destination",
+    "Merge, update, create, batch and transactional writers canonicalize old IDs",
+    "Production login profile writer cannot reintroduce an old session ID",
+    "Destination collisions do not change profiles, aliases or the source",
+    "Reserved IDs cannot be reused as rename destinations or new groups",
+    "Failure after profile migration rolls back profiles, redirects and group changes",
+    "Failure after chained alias updates rolls back those aliases too",
+    "A reader sees the complete old state until the transaction commits",
+    "A stale transaction begun before rename retries with the current mapping",
+    "A profile absent at the old snapshot is created in the new group",
+    "Legacy missing-guard snapshots also retry after the first rename",
+    "Concurrent renames of the same revision have one winner and one migration",
+    "Assigned groups cannot be deleted; empty groups still can",
+    "Deleting an empty rename destination keeps the old ID reserved and fails stale writes",
+    "Ordinary saves clear only the latest migration receipt and keep redirects",
+    "Shared catalog locks allow independent profile writers concurrently",
+    "Non-owner permission and system-ID restrictions still precede migrations",
+    "Firestore compatibility rejects rename before writing any document"
+  ],
+  "previous_postgresql_regressions": {
+    "test-document-store-pg.cjs": 23,
+    "test-discord-publication-pg.cjs": 26,
+    "test-profile-directory-pg.cjs": 32,
+    "test-discord-cleanup-pg.cjs": 11,
+    "test-access-groups-pg.cjs": 21,
+    "test-profile-identity-pg.cjs": 30,
+    "test-profile-character-setup-pg.cjs": 17
+  },
+  "total_postgresql_cases": 181,
+  "profile_migration_fixture_size": 1500,
+  "unit_checks": {
+    "migration": 8,
+    "R5_draft": 7,
+    "access_group_API": 10
+  },
+  "browser": {
+    "cases": 9,
+    "scenarios": [
+      "Typing an ID changes only the draft and explains automatic assignment transfer",
+      "Cancelling the existing rename confirmation sends no mutation",
+      "Successful rename displays its exact committed profile count and new ID",
+      "Lost response is verified by GET and keeps the migration summary without replay",
+      "Reload after an interrupted committed rename shows its recovered migration receipt",
+      "Revision conflict preserves the draft and never claims assignments were transferred",
+      "Assigned-group deletion keeps the group and displays the server refusal",
+      "A later ordinary save does not repeat the previous migration count",
+      "Migration help and a long receipt fit nine screen widths"
+    ],
+    "widths": [
+      320,
+      360,
+      390,
+      430,
+      640,
+      768,
+      1024,
+      1280,
+      1920
+    ],
+    "page_errors": 0,
+    "horizontal_overflow": false,
+    "visual_review_widths": [
+      390,
+      1280
+    ],
+    "fixture": "actual AccessGroupsManager and HTTP client; local HTTP fixtures, no production accounts"
+  },
+  "standalone_http_checks": 7,
+  "standalone_scope": "unauthenticated auth/origin/no-store gates",
+  "build_ci": "passed",
+  "production_build_final": "passed",
+  "typecheck_final": "passed",
+  "eslint": "passed",
+  "inspect": {
+    "files": 458,
+    "blocking_issues": 0
+  },
+  "builder_inputs": {
+    "copy_inputs": 23,
+    "checked_files": 581,
+    "differences": []
+  },
+  "preservation": {
+    "previous_archive_files": 687,
+    "missing": [],
+    "changed_previous_files": [
+      "README.md",
+      "dashboard/package-lock.json",
+      "dashboard/package.json",
+      "dashboard/src/app/api/dashboard/access-groups/route.ts",
+      "dashboard/src/app/dashboard/groups/page.tsx",
+      "dashboard/src/components/AccessGroupsManager.tsx",
+      "dashboard/src/lib/accessGroupSchema.ts",
+      "dashboard/src/lib/accessGroups.ts",
+      "dashboard/src/lib/db/documentStore.ts",
+      "docs/roadmap/IMPLEMENTATION_STATUS.md"
+    ],
+    "byte_identical_previous_files": 677,
+    "styles_background_rules_logging_and_bot_unchanged": true,
+    "R1_R6_3_history_and_modules_retained": true
+  },
+  "runtime": {
+    "node": "24.19.0",
+    "next": "16.3.5",
+    "react": "19.2.8",
+    "sharp": "0.35.4",
+    "postgresql": "16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+    "database_encoding": "UTF8"
+  },
+  "limits": {
+    "postgresql_required_for_rename": true,
+    "saved_assignment_match": "exact stored groupId",
+    "renamed_old_ID_reuse_allowed": false,
+    "old_ID_storage": "dashboardAccessGroupRedirects documents, no new table",
+    "locks_require_all_writers_on_updated_adapter": true,
+    "legacy_direct_SQL_writers_guarded": false,
+    "historical_orphans_repaired": false,
+    "full_legacy_foreign_key_control_added": false,
+    "instant_cookie_revocation_added": false,
+    "vps_changed": false,
+    "production_database_changed": false,
+    "live_Discord_or_BattleNet_tested": false,
+    "authenticated_live_Next_flow_tested": false,
+    "docker_engine_run": false,
+    "all_R6_completed": false,
+    "rollback_after_rename_requires_consistent_restore_or_forward_fix": true
+  },
+  "warnings": [
+    "Two existing dynamic filesystem Turbopack tracing warnings in discordWelcomeCard.ts"
+  ],
+  "log_sha256": {
+    "r6-4-build-ci.log": "a570ab30155ca0d1a87fc330243bc214f308c27543e62e2df7033aab97f2042f",
+    "r6-4-build-final.log": "89f9d7d59e02ae7860c40055da66eb823a6858b427e775e75d7ab69eea47443d",
+    "r6-4-lint.log": "98e7c69d7638b8f86b6c729cce37fa1dd751cbcafedcb5dc5032133d251cf512",
+    "r6-4-typecheck-final.log": "11bfe16aac386465dead4be8ba0639959710c50c509cf4b74c54b552e4b6326d",
+    "r6-4-group-checks.log": "650c331c7e93a966300bdfbb8a3f5811a145cc6c7452d45d850bd9d656c0c48f",
+    "r6-4-ui.log": "b84c0d324dc5bee817aa0c0acd5f1cc14f68b585eb4f792e98bf2a4d068edb5e",
+    "r6-4-http.log": "6504fe6579740a4bf0af34f3835642ae2c49e10a44af2a3736ea90cc2a346248",
+    "r6-4-test-group-assignment-migration-pg.cjs.log": "f918fee5947784d8464b2793843f755819f8d4c5d4a95561400077d64c77d570",
+    "r6-4-test-document-store-pg.cjs.log": "5e01113d0b9fd18eb9c0910703b21c180f8a0bc134a6b81104a212e0e61321f6",
+    "r6-4-test-discord-publication-pg.cjs.log": "cc7d598c8ad45db92d87aa92640874e069f1c9ffbcc03f03219ee1d245be9a81",
+    "r6-4-test-profile-directory-pg.cjs.log": "3f2f04b60a44194c08206fbc7e3ca978f022115c41419490eccad9323e260f11",
+    "r6-4-test-discord-cleanup-pg.cjs.log": "8704851aedcc2821f9dcd1fe904990569afc81fc5b5d16c478169e02ffa4bfde",
+    "r6-4-test-access-groups-pg.cjs.log": "e2c327aac78374a76a9c5403cce500411ef3d8137cd11d91b812e4a25cde9a6f",
+    "r6-4-test-profile-identity-pg.cjs.log": "f73bdb96e691d25e3bcffe532bbce49bfaf44f3650e8ee83e361a0e368591fdf",
+    "r6-4-test-profile-character-setup-pg.cjs.log": "095d7203b05616be013cac2e7870484539aeff85e1b2983f85b1feccaec7db27"
+  },
+  "browser_harness_sha256": "af489915fc18b465d7009dd9514f2d335caacfccaaadddb513a3d9aca7444066"
+}

@@ -1,0 +1,16 @@
+const assert=require('node:assert/strict'),load=require('./lib/load-server-ts.cjs');
+const {normalizeGroupAssignmentMigration}=load('src/lib/accessGroupSchema.ts').exports;
+let passed=0;async function check(name,fn){await fn();passed++;console.log('✓ '+name)}
+(async()=>{
+await check('Migration receipts contain only validated IDs and counts',()=>{const result=normalizeGroupAssignmentMigration({fromId:'old',toId:'new',profiles:0,redirects:1,contacts:['private']});assert.equal(JSON.stringify(result),JSON.stringify({fromId:'old',toId:'new',profiles:0,redirects:1}))});
+await check('Malformed, negative and fractional counts are rejected',()=>{for(const value of [-1,1.5,NaN,Infinity,Number.MAX_SAFE_INTEGER+1,'1'])assert.equal(normalizeGroupAssignmentMigration({fromId:'a',toId:'b',profiles:value,redirects:1}),null)});
+await check('Foreign, oversized and equal group IDs are rejected',()=>{for(const id of ['../admin','',null,'x'.repeat(33),'old'])assert.equal(normalizeGroupAssignmentMigration({fromId:'old',toId:id,profiles:1,redirects:1}),null)});
+await check('Old groups without migration receipts remain compatible',()=>{for(const value of [undefined,null,false,'receipt',[]])assert.equal(normalizeGroupAssignmentMigration(value),null)});
+const calls=[],db={pgQuery:async(sql,values=[],client)=>{calls.push({sql,values,client});return{rows:[{total:'4'}],rowCount:sql.startsWith('INSERT INTO documents')?1:4}},pgTransaction:async()=>{throw Error('Unexpected nested transaction')}};
+const {PgTransaction}=load('src/lib/db/documentStore.ts',{'@/lib/db/pgPool':db}).exports,client={fixture:true},tx=new PgTransaction(client);
+await check('Bulk migration cannot run without its exclusive catalog guard',async()=>{await assert.rejects(()=>tx.renameAccessGroupAssignments('old',{id:'new',name:'New',role:'member',rank:10}));assert.equal(calls.length,0)});
+await check('One shared catalog key and current guard precede a migration',async()=>{await tx.lockAccessGroupCatalog();assert.ok(calls[0].sql.includes('pg_advisory_xact_lock('));assert.equal(calls[0].values[0],JSON.stringify(['dashboardSettings','accessGroupsWriteGuard']));assert.ok(calls[1].sql.includes('ON CONFLICT'));assert.ok(calls[2].sql.includes('FOR UPDATE'));assert.ok(calls.every(call=>call.client===client))});
+await check('Migration uses three bounded statements, parameters and the same client',async()=>{calls.length=0;const result=await tx.renameAccessGroupAssignments('old',{id:'new',name:"New ' name",role:'mentor',rank:25});assert.equal(calls.length,3);assert.ok(calls.every(call=>call.client===client));assert.ok(!calls.some(call=>/SELECT.*data.*dashboardProfiles/s.test(call.sql)));assert.equal(result.profiles,4);assert.equal(result.redirects,5);const patch=JSON.parse(calls[0].values[1]);assert.equal(patch.groupId,'new');assert.equal(patch.groupName,"New ' name");assert.ok(!Object.hasOwn(patch,'characters'));assert.ok(!calls[0].sql.includes("New ' name"))});
+await check('Deletion count reads only a scalar and the exact group ID',async()=>{calls.length=0;assert.equal(await tx.countAccessGroupProfiles('old'),4);assert.ok(calls[0].sql.includes('count(*)'));assert.equal(calls[0].values[0],'old');assert.equal(calls[0].client,client)});
+console.log(`[check-group-assignment-migration] OK — ${passed} behavioural checks`);
+})().catch(error=>{console.error(error);process.exitCode=1});

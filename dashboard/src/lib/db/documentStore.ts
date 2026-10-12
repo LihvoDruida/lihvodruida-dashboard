@@ -21,6 +21,32 @@ import { pgQuery, pgTransaction } from "@/lib/db/pgPool";
 type DocData = Record<string, unknown>;
 type WhereOp = "==" | "<=" | "<" | ">=" | ">";
 
+const ACCESS_GROUP_GUARD = JSON.stringify(["dashboardSettings", "accessGroupsWriteGuard"]);
+async function lockAccessGroupCatalog(client: PoolClient, exclusive: boolean) {
+  await pgQuery(exclusive
+    ? "SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))"
+    : "SELECT pg_advisory_xact_lock_shared(hashtextextended($1::text, 0))", [ACCESS_GROUP_GUARD], client);
+  // Legacy databases may lack the guard. INSERT forces a stale REPEATABLE READ
+  // snapshot to retry if the first guard appeared while this writer waited.
+  await pgQuery(`INSERT INTO documents (collection, doc_id, data)
+    VALUES ('dashboardSettings', 'accessGroupsWriteGuard', '{"generation":null}'::jsonb)
+    ON CONFLICT (collection, doc_id) DO NOTHING`, [], client);
+  await pgQuery(`SELECT data FROM documents WHERE collection = 'dashboardSettings'
+    AND doc_id = 'accessGroupsWriteGuard' ${exclusive ? "FOR UPDATE" : "FOR SHARE"}`, [], client);
+}
+
+async function canonicalProfileGroup(data: DocData, client: PoolClient): Promise<DocData> {
+  if (typeof data.groupId !== "string") return data;
+  const redirect = await pgQuery<{ target_id: string }>(`SELECT data->>'targetId' AS target_id
+    FROM documents WHERE collection = 'dashboardAccessGroupRedirects' AND doc_id = $1`, [data.groupId], client);
+  if (!redirect.rows.length) return data;
+  const group = await pgQuery<{ data: DocData }>(`SELECT data FROM documents
+    WHERE collection = 'dashboardAccessGroups' AND doc_id = $1`, [redirect.rows[0].target_id], client);
+  if (!group.rows.length) throw new Error("Перейменовану групу вже видалено. Онови сесію перед записом профілю.");
+  const current = group.rows[0].data;
+  return { ...data, groupId: redirect.rows[0].target_id, groupName: current.name, groupRank: current.rank, role: current.role };
+}
+
 export class PgUnsupportedOperation extends Error {
   constructor(what: string) {
     super(`Document store: ${what} не підтримується адаптером PostgreSQL.`);
@@ -303,7 +329,8 @@ export class PgDocumentRef {
   async set(data: DocData, options?: { merge?: boolean }) {
     await this.mutate(async (ref) => {
       const current = options?.merge ? (await ref.getForUpdate()).data() || {} : {};
-      mergeInto(current, data, new Date().toISOString());
+      const incoming = ref.collectionName === "dashboardProfiles" ? await canonicalProfileGroup(data, ref.client!) : data;
+      mergeInto(current, incoming, new Date().toISOString());
       await ref.write(current);
     });
   }
@@ -313,7 +340,8 @@ export class PgDocumentRef {
       const snapshot = await ref.getForUpdate();
       if (!snapshot.exists) throw new Error(`No document to update: ${ref.path}`);
       const current = snapshot.data() || {};
-      applyUpdate(current, data, new Date().toISOString());
+      const incoming = ref.collectionName === "dashboardProfiles" ? await canonicalProfileGroup(data, ref.client!) : data;
+      applyUpdate(current, incoming, new Date().toISOString());
       // An update must never recreate a missing document via UPSERT.
       const result = await pgQuery(
         `UPDATE documents SET data = $3::jsonb, updated_at = now()
@@ -328,7 +356,8 @@ export class PgDocumentRef {
   async create(data: DocData) {
     await this.mutate(async (ref) => {
       const fresh: DocData = {};
-      mergeInto(fresh, data, new Date().toISOString());
+      const incoming = ref.collectionName === "dashboardProfiles" ? await canonicalProfileGroup(data, ref.client!) : data;
+      mergeInto(fresh, incoming, new Date().toISOString());
       const result = await pgQuery(
         `INSERT INTO documents (collection, doc_id, data)
          VALUES ($1, $2, $3::jsonb)
@@ -358,6 +387,9 @@ export class PgDocumentRef {
    */
   private async mutate(handler: (ref: PgDocumentRef) => Promise<void>) {
     const execute = async (ref: PgDocumentRef) => {
+      // Ordinary profile writers share this lock; a rename holds it exclusively
+      // before one set-based UPDATE, without loading complete profiles in Node.
+      if (ref.collectionName === "dashboardProfiles") await lockAccessGroupCatalog(ref.client!, false);
       await pgQuery(
         "SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))",
         [JSON.stringify([ref.collectionName, ref.id])],
@@ -620,6 +652,7 @@ function randomDocId() {
 
 export class PgTransaction {
   private readonly client: PoolClient;
+  private accessGroupCatalogLocked = false;
 
   constructor(client: PoolClient) {
     this.client = client;
@@ -628,6 +661,37 @@ export class PgTransaction {
   async get(target: PgDocumentRef | PgQuery) {
     if (target instanceof PgDocumentRef) return target.withClient(this.client).get();
     throw new PgUnsupportedOperation("читання запиту всередині транзакції");
+  }
+
+  async lockAccessGroupCatalog() {
+    await lockAccessGroupCatalog(this.client, true);
+    this.accessGroupCatalogLocked = true;
+  }
+
+  async countAccessGroupProfiles(groupId: string): Promise<number> {
+    const result = await pgQuery<{ total: string }>(`SELECT count(*) AS total FROM documents
+      WHERE collection = 'dashboardProfiles' AND data->>'groupId' = $1`, [groupId], this.client);
+    return Number(result.rows[0].total);
+  }
+
+  /** All statements use this transaction's client and roll back with the group.
+   * Only group metadata is patched; characters and unknown fields stay intact.
+   */
+  async renameAccessGroupAssignments(fromId: string, target: { id: string; name: string; role: string; rank: number }) {
+    if (!this.accessGroupCatalogLocked) throw new Error("Group catalog lock required before assignment migration");
+    const at = new Date().toISOString();
+    const profiles = await pgQuery(`UPDATE documents SET data = data || $2::jsonb, updated_at = now()
+      WHERE collection = 'dashboardProfiles' AND data->>'groupId' = $1`,
+    [fromId, JSON.stringify({ groupId: target.id, groupName: target.name, groupRank: target.rank, role: target.role, updatedAt: at })], this.client);
+    const redirected = await pgQuery(`UPDATE documents SET data = data || $2::jsonb, updated_at = now()
+      WHERE collection = 'dashboardAccessGroupRedirects' AND data->>'targetId' = $1`,
+    [fromId, JSON.stringify({ targetId: target.id, updatedAt: at })], this.client);
+    const created = await pgQuery(`INSERT INTO documents (collection, doc_id, data)
+      VALUES ('dashboardAccessGroupRedirects', $1, $2::jsonb)
+      ON CONFLICT (collection, doc_id) DO NOTHING`,
+    [fromId, JSON.stringify({ fromId, targetId: target.id, createdAt: at, updatedAt: at })], this.client);
+    if (created.rowCount !== 1) throw new Error("Старий ID уже зарезервований іншою зміною групи.");
+    return { fromId, toId: target.id, profiles: profiles.rowCount || 0, redirects: (redirected.rowCount || 0) + 1 };
   }
 
   set(ref: PgDocumentRef, data: DocData, options?: { merge?: boolean }) {

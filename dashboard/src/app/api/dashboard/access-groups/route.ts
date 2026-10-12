@@ -120,6 +120,7 @@ export async function POST(request: NextRequest) {
         groupId: group?.id || deletedId,
         mutationId: group?.lastMutationId || null,
         permissionCount: group?.permissions.length,
+        assignmentMigration: group?.assignmentMigration || null,
       },
     ).catch((error) =>
       logDashboardEvent("warn", "access_groups.audit_failed", request, {

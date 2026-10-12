@@ -98,6 +98,10 @@ function diffRows(server: GroupValues, draft: GroupValues) {
       ]);
   return rows;
 }
+function migrationSummary(group?: AccessGroup) {
+  const migration = group?.assignmentMigration;
+  return migration ? ` Призначення профілів перенесено: ${migration.profiles}. ID ${migration.fromId} → ${migration.toId}. Старий ID зарезервовано.` : "";
+}
 export default function AccessGroupsManager({
   groups: initialGroups,
   draftScope,
@@ -228,9 +232,10 @@ export default function AccessGroupsManager({
     if (confirmed) {
       select(groupDraftKey(confirmed.id));
       setNotice(
-        "Збереження підтверджено. Подальші зміни залишаються в чернетці.",
+        "Збереження підтверджено. Подальші зміни залишаються в чернетці." + migrationSummary(confirmed),
       );
     }
+    return confirmed || null;
   }
   useEffect(() => {
     let active = true,
@@ -292,8 +297,10 @@ export default function AccessGroupsManager({
           setNotice(
             `Відновлено чернетки: ${restored.size}. Права ще не змінено.`,
           );
-        else if (own.drafts.size)
-          setNotice("Попереднє збереження підтверджено; чернетку очищено.");
+        else if (own.drafts.size) {
+          const recovered = [...own.drafts.values()].map(item => item.pending && initialGroups.find(candidate => candidate.id === item.pending!.targetId && candidate.lastMutationId === item.pending!.mutationId)).find(Boolean);
+          setNotice("Попереднє збереження підтверджено; чернетку очищено." + migrationSummary(recovered || undefined));
+        }
         const selected = own.expanded;
         if (
           selected &&
@@ -351,8 +358,8 @@ export default function AccessGroupsManager({
         { signal: request.signal, timeoutMs: 12_000, retries: 0 },
       );
       if (request.current()) {
-        applyCatalog(result.groups);
-        setNotice(
+        const confirmed = applyCatalog(result.groups);
+        if (!confirmed) setNotice(
           "Список оновлено. Незбережені зміни залишаються в чернетках.",
         );
       }
@@ -383,7 +390,7 @@ export default function AccessGroupsManager({
       group &&
       values.id !== group.id &&
       !window.confirm(
-        "Змінити ID групи? Ручні призначення профілів не переносяться автоматично; перевір їх окремо.",
+        "Змінити ID групи? Призначення профілів перейдуть разом із групою. Старий ID залишиться зарезервованим для записів зі старих сесій.",
       )
     )
       return;
@@ -448,7 +455,7 @@ export default function AccessGroupsManager({
         applyCatalog(fresh);
         if (expandedRef.current === key) select(groupDraftKey(result.group.id));
         setNotice(
-          "Групу збережено. Нові права застосуються після оновлення сесії.",
+          "Групу збережено. Нові права застосуються після оновлення сесії." + migrationSummary(result.group),
         );
       }
     } catch (error) {
@@ -494,7 +501,7 @@ export default function AccessGroupsManager({
                 item.lastMutationId === mutationId && item.id === values.id,
             )
           )
-            setNotice("Збереження підтверджено. Повторний запис не потрібен.");
+            setNotice("Збереження підтверджено. Повторний запис не потрібен." + migrationSummary(fresh.groups.find(item => item.lastMutationId === mutationId && item.id === values.id)));
           else
             setNotice(
               definiteFailure
@@ -854,7 +861,7 @@ export default function AccessGroupsManager({
               <small>
                 {group?.lockedId
                   ? "Системний ID не змінюється."
-                  : "Латиниця, цифри, _ або -. Зміна ID не переносить ручні призначення профілів."}
+                  : "Латиниця, цифри, _ або -. При зміні ID призначення профілів переносяться разом із групою; старий ID залишається зарезервованим."}
               </small>
             </label>
             <label>

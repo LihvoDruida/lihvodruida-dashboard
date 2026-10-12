@@ -31,6 +31,7 @@ import {
   DEFAULT_MENTOR_GROUP_ID,
   DEFAULT_MODERATOR_GROUP_ID,
   FIXED_GROUP_IDS,
+  normalizeGroupAssignmentMigration,
   type AccessGroup,
   type DashboardPermissionKey,
 } from "@/lib/accessGroupSchema";
@@ -253,6 +254,7 @@ async function withGroupCatalog<T>(
     try {
       const result = await getFirebaseAdminDb().runTransaction(
         async (transaction) => {
+          if (typeof transaction.lockAccessGroupCatalog === "function") await transaction.lockAccessGroupCatalog();
           const guard = await transaction.get(writeGuardRef());
           if (generation(guard) !== generation(before))
             throw new CatalogChanged();
@@ -332,6 +334,7 @@ function normalizeGroup(
     revision: groupRevision(raw),
     lastMutationId:
       typeof raw.lastMutationId === "string" ? raw.lastMutationId : null,
+    assignmentMigration: normalizeGroupAssignmentMigration(raw.assignmentMigration),
     name: cleanName(raw.name, fallback?.name || "Група"),
     role,
     rank,
@@ -747,6 +750,15 @@ export async function upsertAccessGroup(
         `Discord-роль уже привʼязана до групи «${collision.name}».`,
         409,
       );
+    if (!currentId || nextId !== currentId) {
+      const reserved = await transaction.get(getFirebaseAdminDb().collection("dashboardAccessGroupRedirects").doc(nextId));
+      if (reserved.exists) throw new AccessGroupError("Цей ID зарезервований після перейменування групи. Обери інший ID.", 409);
+    }
+    let assignmentMigration = null;
+    if (currentId && nextId !== currentId) {
+      if (typeof transaction.renameAccessGroupAssignments !== "function") throw new AccessGroupError("Безпечне перенесення ID доступне лише у PostgreSQL. Групу не змінено.", 503);
+      assignmentMigration = await transaction.renameAccessGroupAssignments(currentId, { id: nextId, name: cleanName(input.name), role: effectiveRole, rank: effectiveRank });
+    }
     const doc = {
       ...(currentId ? snapshot.data() : {}),
       id: nextId,
@@ -762,6 +774,7 @@ export async function upsertAccessGroup(
       generation: randomUUID(),
       lastMutationId: mutationId,
       lastMutationBy: `${viewer.provider}:${viewer.id}`,
+      assignmentMigration,
       createdAt: current?.createdAt || nowIso(),
       updatedAt: nowIso(),
     };
@@ -792,6 +805,10 @@ export async function deleteAccessGroup(
         "Цю групу не можна видалити з поточного акаунта.",
         403,
       );
+    const assigned = typeof transaction.countAccessGroupProfiles === "function"
+      ? await transaction.countAccessGroupProfiles(id)
+      : (await transaction.get(getFirebaseAdminDb().collection("dashboardProfiles").where("groupId", "==", id).limit(1))).size;
+    if (assigned) throw new AccessGroupError("До групи ще прив’язані профілі. Спочатку зміни їхню групу; видалення не виконано.", 409);
     transaction.delete(doc);
   });
   return true;

@@ -8,6 +8,7 @@ import AccessGroupsManager from "@/components/AccessGroupsManager";
 import AdminTabs from "@/components/AdminTabs";
 import { buildPageMetadata } from "@/lib/seo";
 import { getSession, setSession } from "@/lib/auth";
+import { logDashboardEvent } from "@/lib/security";
 import {
   applyAccessGroupToSession,
   canManageGroups,
@@ -84,12 +85,14 @@ async function saveGroupAction(formData: FormData) {
       rank: savedGroup.rank,
       permissionCount: savedGroup.permissions.length,
       discordRoleIds: savedGroup.discordRoleIds,
-    });
+      assignmentMigration: savedGroup.assignmentMigration || null,
+    }).catch((error) => logDashboardEvent("warn", "access_groups.audit_failed", undefined, { message: error instanceof Error ? error.message : "audit unavailable" }));
     revalidatePath("/dashboard/groups");
+    revalidatePath("/profiles");
     await setActionToast(
       "success",
       isUpdate ? "Групу оновлено" : "Групу створено",
-      "Права, Discord role ID та іконку збережено у базі даних.",
+      savedGroup.assignmentMigration ? `Групу збережено. Призначення профілів перенесено: ${savedGroup.assignmentMigration.profiles}. Старий ID зарезервовано.` : "Права, Discord role ID та іконку збережено у базі даних.",
     );
   } catch (error) {
     const message =
@@ -126,7 +129,7 @@ async function deleteGroupAction(formData: FormData) {
       summary: `Групу доступу видалено: ${groupId}.`,
       groupId,
       changed: 1,
-    });
+    }).catch((error) => logDashboardEvent("warn", "access_groups.audit_failed", undefined, { message: error instanceof Error ? error.message : "audit unavailable" }));
     revalidatePath("/dashboard/groups");
     await setActionToast(
       "success",

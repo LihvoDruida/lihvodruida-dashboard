@@ -52,7 +52,17 @@ export type AccessGroup = {
   revision?: string;
   /** Confirmation receipt for an interrupted explicit save. */
   lastMutationId?: string | null;
+  /** Latest committed rename, tied to lastMutationId; counts only. */
+  assignmentMigration?: GroupAssignmentMigration | null;
 };
+
+export type GroupAssignmentMigration = { fromId: string; toId: string; profiles: number; redirects: number };
+export function normalizeGroupAssignmentMigration(value: unknown): GroupAssignmentMigration | null {
+  if (!value || typeof value !== "object") return null;
+  const item = value as GroupAssignmentMigration;
+  if (![item.fromId, item.toId].every(id => typeof id === "string" && /^[A-Za-z0-9_-]{1,32}$/.test(id)) || item.fromId === item.toId || ![item.profiles, item.redirects].every(count => Number.isSafeInteger(count) && count >= 0)) return null;
+  return { fromId: item.fromId, toId: item.toId, profiles: item.profiles, redirects: item.redirects };
+}
 
 export const PERMISSION_META: Record<
   DashboardPermissionKey,
