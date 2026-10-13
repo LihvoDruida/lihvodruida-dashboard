@@ -4,6 +4,8 @@ import AdminPageHeader from "@/components/AdminPageHeader";
 import ManagementSections from "@/components/ManagementSections";
 import AdminTabs from "@/components/AdminTabs";
 import IntegrationStatusPanel from "@/components/IntegrationStatusPanel";
+import AutomationOverview from "@/components/AutomationOverview";
+import { getAutomationOverview } from "@/lib/automationOverview";
 import { buildPageMetadata } from "@/lib/seo";
 import { getSession } from "@/lib/auth";
 import {
@@ -77,11 +79,12 @@ export default async function AdminOverviewPage() {
         roles: [] as Array<{ id: string; name: string; color: number; position: number; managed: boolean }>,
         error: "",
       });
-  const [policy, geoPolicy, authPolicy, rolesResult] = await Promise.all([
+  const [policy, geoPolicy, authPolicy, rolesResult, automationOverview] = await Promise.all([
     getGuildNicknamePolicy(),
     getGeoAccessPolicy(),
     getAuthAccessPolicy(),
     rolesPromise,
+    canManageDiscordMembers(user) ? getAutomationOverview() : Promise.resolve(null),
   ]);
   const discordRoles = rolesResult.roles;
   const authRolesError = rolesResult.error;
@@ -141,6 +144,7 @@ export default async function AdminOverviewPage() {
           { id: "overview-auth", label: "Вхід і реєстрація", description: "Хто може авторизуватися: членство на сервері, Discord-ролі й винятки." },
           { id: "overview-geo", label: "Географія доступу", description: "Країни та винятки для доступу до сайту." },
         ]}>
+          <div>
           <div className="admin-overview-top-grid">
             <IntegrationStatusPanel
               compact
@@ -163,6 +167,8 @@ export default async function AdminOverviewPage() {
                 <strong>{nicknameTemplateExample(policy.template)}</strong>
               </div>
             </article>
+          </div>
+          {automationOverview && <AutomationOverview overview={automationOverview} />}
           </div>
 
           <article className="panel admin-overview-card admin-overview-card--wide admin-policy-card auth-access-card">

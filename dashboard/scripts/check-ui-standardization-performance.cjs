@@ -40,7 +40,7 @@ const checks = [
   ['editor-heavy routes avoid passive full-page refreshes', liveSync.includes('isEditorHeavyPath') && liveSync.includes('allowPassiveFullRefresh')],
   ['profile independent reads are parallelized', profile.includes('query, nicknamePolicy, apiSettings] = await Promise.all') && profile.includes('[raidSignups, discordMember] = await Promise.all')],
   ['content editor independent reads are parallelized', content.includes('[params, authorIdentity, items] = await Promise.all')],
-  ['admin policies load in parallel', admin.includes('[policy, geoPolicy, authPolicy, rolesResult] = await Promise.all')],
+  ['admin policies and permission-scoped automation diagnostics load in parallel', admin.includes('[policy, geoPolicy, authPolicy, rolesResult, automationOverview] = await Promise.all') && admin.includes('canManageDiscordMembers(user) ? getAutomationOverview() : Promise.resolve(null)')],
   ['roster metadata and stored formations load in parallel', roster.includes('[authorIdentity, discordMetadata, formations] = await Promise.all')],
   ['Discord autorole metadata and edit message load in parallel', autoroles.includes('[channelData, roleControl, message] = await Promise.all')],
   ['Discord rules metadata and edit message load in parallel', rulesEdit.includes('[channelData, roleData, message] = await Promise.all')],

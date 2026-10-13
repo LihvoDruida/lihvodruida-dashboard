@@ -130,6 +130,8 @@ function normalizePolicyData(data: Record<string, unknown> | null | undefined, f
   };
 }
 
+export { normalizePolicyData as normalizeGuildNicknamePolicy };
+
 export function cleanNicknameTemplate(value: unknown) {
   const template = cleanTemplateText(value) || DEFAULT_NICKNAME_TEMPLATE;
   if (!isSupportedNicknameTemplate(template)) {

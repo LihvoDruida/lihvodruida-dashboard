@@ -197,6 +197,8 @@ function normalizeSettings(data: Record<string, unknown> | null | undefined): Ac
   };
 }
 
+export { normalizeSettings as normalizeAccountCleanupSettings };
+
 function setCache(value: AccountCleanupAutomationSettings) {
   globalThis.__mistblossomAccountCleanupSettingsCache = { value, cachedAt: Date.now() };
   return value;

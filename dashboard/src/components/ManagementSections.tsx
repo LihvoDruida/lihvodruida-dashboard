@@ -15,14 +15,23 @@ export default function ManagementSections({ sections, children, initialSection 
   const prefix = useId();
   const panels = Children.toArray(children);
   useEffect(() => {
+    let frame: number | undefined;
     const readHash = () => {
+      if (frame !== undefined) { cancelAnimationFrame(frame); frame = undefined; }
       const id = window.location.hash.slice(1);
-      if (sections.some(section => section.id === id)) setActive(id);
+      if (sections.some(section => section.id === id)) { setActive(id); return; }
+      // Context actions can target a specific card inside a hidden task panel.
+      const target = document.getElementById(id);
+      const panel = target?.closest('[role="tabpanel"]');
+      const section = sections.find(section => panel?.id === `${prefix}-panel-${section.id}`);
+      if (!target || !section) return;
+      setActive(section.id);
+      frame = requestAnimationFrame(() => target.scrollIntoView({ block: "start" }));
     };
     readHash();
     window.addEventListener("hashchange", readHash);
-    return () => window.removeEventListener("hashchange", readHash);
-  }, [sections]);
+    return () => { window.removeEventListener("hashchange", readHash); if (frame !== undefined) cancelAnimationFrame(frame); };
+  }, [sections, prefix]);
   function select(id: string) {
     setActive(id);
     window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${id}`);

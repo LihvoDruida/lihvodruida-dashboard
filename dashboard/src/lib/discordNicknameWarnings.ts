@@ -207,6 +207,8 @@ function normalizeState(data: Record<string, unknown> | null | undefined): Nickn
   };
 }
 
+export { normalizeState as normalizeNicknameWarningState };
+
 function setStateCache(value: NicknameWarningAutomationState) {
   globalThis.__mistblossomNicknameWarningStateCache = { value, cachedAt: Date.now() };
   return value;

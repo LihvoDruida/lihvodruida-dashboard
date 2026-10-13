@@ -10,7 +10,7 @@ import type { CleanupTab, DiscordCleanupRow, DiscordCleanupSettings, DiscordClea
 type Page = { rows: DiscordCleanupRow[]; cursor: string | null; scanId: string | null; stale?: boolean };
 type RoleOption = { id: string; name: string; blockedReason: string | null };
 type Overview = { settings: DiscordCleanupSettings; state: DiscordCleanupState; execution?: DiscordCleanupExecution; page: Page };
-type Props = { initial: Overview; roles: RoleOption[]; canConfigure: boolean; warning: string | null };
+type Props = { initial: Overview; initialTab?: CleanupTab; roles: RoleOption[]; canConfigure: boolean; warning: string | null };
 const API = "/api/dashboard/discord/member-cleanup";
 function date(value: string | null) {
   if (!value || !Number.isFinite(Date.parse(value))) return "Невідомо";
@@ -26,11 +26,11 @@ async function readOverview(url: string, signal: AbortSignal) {
   if (!data.ok) throw new Error(data.error || "Список недоступний.");
   return data;
 }
-export default function DiscordMemberCleanupPanel({ initial, roles, canConfigure, warning }: Props) {
+export default function DiscordMemberCleanupPanel({ initial, initialTab = "candidates", roles, canConfigure, warning }: Props) {
   const [settings, setSettings] = useState(initial.settings);
   const [state, setState] = useState(initial.state);
   const [page, setPage] = useState<Page>(initial.page);
-  const [tab, setTab] = useState<CleanupTab>("candidates");
+  const [tab, setTab] = useState<CleanupTab>(initialTab);
   const [roleId, setRoleId] = useState(initial.settings.roleId);
   const [period, setPeriod] = useState<DiscordCleanupPeriod>(initial.settings.period);
   const [enabled, setEnabled] = useState(initial.settings.enabled);
@@ -41,7 +41,7 @@ export default function DiscordMemberCleanupPanel({ initial, roles, canConfigure
   const [notice, setNotice] = useState<string | null>(null);
   const [now, setNow] = useState(0);
   const requests = useDashboardRequests();
-  const currentTab = useRef<CleanupTab>("candidates");
+  const currentTab = useRef<CleanupTab>(initialTab);
   const pageRef = useRef(page);
   pageRef.current = page;
   async function load(nextTab: CleanupTab, more = false, quiet = false) {

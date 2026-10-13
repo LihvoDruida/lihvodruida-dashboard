@@ -5,6 +5,8 @@ import AdminPageHeader from "@/components/AdminPageHeader";
 import ManagementSections from "@/components/ManagementSections";
 import AdminTabs from "@/components/AdminTabs";
 import DashboardIdentity from "@/components/DashboardIdentity";
+import AutomationOverview from "@/components/AutomationOverview";
+import { getAutomationOverview } from "@/lib/automationOverview";
 import { getSession } from "@/lib/auth";
 import {
   fetchDiscordRoleControlSnapshotCachedForUi,
@@ -138,12 +140,13 @@ export default async function AdminDiscordPage() {
     throw new Error("Access denied");
   }
 
-  const [policy, control, cleanupAutomation, nicknameWarningState, textChannels] = await Promise.all([
+  const [policy, control, cleanupAutomation, nicknameWarningState, textChannels, automationOverview] = await Promise.all([
     getGuildNicknamePolicy(),
     fetchDiscordRoleControlSnapshotCachedForUi(),
     getAccountCleanupAutomationSettings(),
     getNicknameWarningAutomationState(),
     fetchDiscordTextChannels().catch(() => ({ guild: null, channels: [], suggestedChannelId: "", suggestedRulesChannelId: "", warning: "Discord channels unavailable" })),
+    getAutomationOverview(),
   ]);
   const roles = control.roles;
   const manageableRoles = control.manageableRoles;
@@ -229,6 +232,8 @@ export default async function AdminDiscordPage() {
           <SectionHeader eyebrow="Автоматизація" title="Очищення Discord за роллю та строком" description="Люди без ролей або лише з однією вибраною роллю; дата вступу, автоматичне виключення та окрема історія." />
           <Link href="/dashboard/discord/cleanup" className="btn primary">Відкрити очищення Discord</Link>
         </section>
+
+        <AutomationOverview overview={automationOverview} />
 
         <ManagementSections sections={[
           { id: "discord-health", label: "Підключення", description: "Стан бота та доступні ролі. Перевір підключення перед змінами." },
@@ -515,7 +520,7 @@ export default async function AdminDiscordPage() {
               </div>
             </form>
 
-            <article className="panel discord-management-card discord-management-card--action nickname-warning-card">
+            <article id="nickname-automation" className="panel discord-management-card discord-management-card--action nickname-warning-card">
               <div className="profile-card-head profile-card-head--inline nickname-warning-card__head">
                 <div>
                   <span className="eyebrow">Серверні ніки</span>
@@ -623,7 +628,7 @@ export default async function AdminDiscordPage() {
               </div>
             </form>
 
-            <article className="panel discord-management-card discord-management-card--danger account-cleanup-card">
+            <article id="account-automation" className="panel discord-management-card discord-management-card--danger account-cleanup-card">
               <div className="profile-card-head profile-card-head--inline">
                 <div><span className="eyebrow">Автоматизація очищення</span><h2>Неактуальні акаунти</h2></div>
                 <span className={`status-pill ${cleanupAutomation.autoCleanupEnabled ? "warning" : cleanupAutomation.autoCheckEnabled ? "good" : "subtle"}`}>

@@ -1,0 +1,21 @@
+.overview { min-width: 0; margin-block: 24px; }
+.heading { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin-bottom: 16px; }
+.eyebrow { color: var(--c-accent-300); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; }
+.heading h2 { margin: 5px 0 0; color: var(--text-strong); font-size: clamp(1.25rem, 2.2vw, 1.65rem); }
+.heading p { margin: 0; color: var(--text-muted); font-size: .78rem; line-height: 1.6; }
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.card { display: flex; flex-direction: column; min-width: 0; padding: 20px; border-color: var(--border-subtle); background: var(--surface); }
+.cardHeading { display: flex; align-items: start; flex-wrap: wrap; gap: 10px; }
+.cardHeading h3 { flex: 1 1 140px; margin: 0; color: var(--text-strong); font-size: 1rem; line-height: 1.45; }
+.state { max-width: 100%; padding: 5px 9px; border: 1px solid var(--border-subtle); border-radius: 8px; color: var(--text-soft); background: var(--surface-sunken); font-size: .7rem; line-height: 1.4; }
+.card[data-state="attention"] .state, .card[data-state="running"] .state { color: var(--c-accent-300); border-color: var(--border-strong); background: var(--accent-soft); }
+.reason { margin: 16px 0; color: var(--text-body); font-size: .84rem; line-height: 1.65; overflow-wrap: anywhere; }
+.details { display: grid; gap: 14px; margin: auto 0 20px; }
+.details > div { border-top: 1px solid var(--border-subtle); padding-top: 12px; }
+.details dt { margin-bottom: 6px; color: var(--text-muted); font-size: .7rem; }
+.details dd { margin: 0; color: var(--text-soft); font-size: .8rem; line-height: 1.6; overflow-wrap: anywhere; }
+.details time { display: block; color: var(--text-strong); font-variant-numeric: tabular-nums; }
+.action { display: flex; justify-content: space-between; gap: 12px; width: 100%; white-space: normal; text-align: left; }
+:global(#nickname-automation), :global(#account-automation) { scroll-margin-top: 120px; }
+@media (max-width: 1050px) { .grid { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .heading { align-items: start; flex-direction: column; gap: 10px; } .card { padding: 16px; } }
