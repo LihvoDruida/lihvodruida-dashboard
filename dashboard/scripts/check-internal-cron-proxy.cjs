@@ -30,7 +30,7 @@ const security = load("src/lib/security.ts", {
   "@/lib/logPrivacy": privacy,
   "next/server": { NextResponse }, "@/lib/oauth": { getDashboardUrl: () => env.DASHBOARD_URL },
   "@/lib/values": { envFlag: (name) => env[name] === "true" },
-}, env, "getRequestHost,isAllowedHost,isLocalHost,getCanonicalDashboardOrigin,noStoreHeaders,forbiddenResponse,unauthorizedResponse,verifyTrustedOrigin,verifyInternalBearerToken");
+}, env, "getRequestHost,isAllowedHost,isLocalHost,getCanonicalDashboardOrigin,noStoreHeaders,forbiddenResponse,unauthorizedResponse,verifyTrustedOrigin,verifyInternalBearerToken,assertRequestBodySize,safeErrorMessage");
 const events = [];
 const { proxy } = load("src/proxy.ts", { "next/server": { NextResponse },
   "@/lib/security": { ...security, logDashboardEvent: (...args) => events.push(args) } }, env, "proxy");
@@ -46,6 +46,41 @@ function request(p = endpoint, { host = "dashboard:3000", token = env.INTERNAL_A
   r.nextUrl = new URL(r.url); r.cookies = { get: () => undefined }; return r;
 }
 async function through(r) { const response = proxy(r); return response.passed ? POST(r) : response; }
+
+// Exercise the real proxy, bearer check, Ed25519 verifier and modal route together.
+// A fake HTTP server returning type 9 cannot detect a missing proxy allowlist entry.
+const nodeCrypto = require("node:crypto");
+const keyPair = nodeCrypto.generateKeyPairSync("ed25519");
+env.DISCORD_GUILD_ID = "333333333333333333";
+env.DISCORD_PUBLIC_KEY = keyPair.publicKey.export({ type: "spki", format: "der" }).subarray(-32).toString("hex");
+const discordAdmin = load("src/lib/discordAdmin.ts", {
+  "node:crypto": nodeCrypto, "@/lib/discordRest": {}, "@/lib/concurrency": {},
+  "@/lib/rulesOnboarding": {}, "@/lib/security": security,
+  "@/lib/values": load("src/lib/values.ts", {}, env, "cleanSnowflake"),
+  "@/lib/discordAvatar": {}, "@/lib/discordRulesStats": {},
+}, env, "verifyDiscordInteractionSignature,getDiscordGuildId");
+const modalEndpoint = "/api/internal/discord/raid-modal";
+let modalCalls = 0;
+const modalRoute = load(`src/app${modalEndpoint}/route.ts`, {
+  "next/server": { NextResponse }, "@/lib/security": security, "@/lib/discordAdmin": discordAdmin,
+  "@/lib/raids": { prepareRaidSignupModal: async () => {
+    modalCalls++;
+    return { type: 9, data: { custom_id: "fixture", title: "Fixture", components: [] } };
+  } },
+}, env, "POST");
+function modalRequest({ token = env.INTERNAL_API_TOKEN, host = "dashboard:3000", source = "bot",
+  flags = 64, guild = env.DISCORD_GUILD_ID, tampered = false } = {}) {
+  const body = JSON.stringify({ type: 3, guild_id: guild, message: { flags },
+    member: { user: { id: "111111111111111111" } },
+    data: { custom_id: `mbv1:raid-modal:${"a".repeat(32)}:0:manual:0` } });
+  const timestamp = String(Math.floor(Date.now() / 1000));
+  const signature = nodeCrypto.sign(null, Buffer.from(timestamp + body), keyPair.privateKey).toString("hex");
+  const r = new Request(`http://${host}${modalEndpoint}`, { method: "POST", body: tampered ? body + " " : body,
+    headers: { host, ...(token === null ? {} : { authorization: `Bearer ${token}` }),
+      "x-mistblossom-source": source, "x-signature-ed25519": signature, "x-signature-timestamp": timestamp } });
+  r.nextUrl = new URL(r.url); r.cookies = { get: () => undefined }; return r;
+}
+async function throughModal(r) { const result = proxy(r); return result.passed ? modalRoute.POST(r) : result; }
 (async () => {
   let total = 0;
   async function check(name, fn) { await fn(); total++; console.log("PASS", name); }
@@ -90,6 +125,18 @@ async function through(r) { const response = proxy(r); return response.passed ? 
   });
   await check("queue storage failure returns retryable 503", async () => {
     queueFails = true; assert.equal((await through(request())).status, 503); assert.equal(calls, 3);
+  });
+  await check("signed modal request passes production service Host without session or Cloudflare", async () => {
+    const r = await throughModal(modalRequest()); assert.equal(r.status, 200); assert.equal((await r.json()).type, 9);
+    assert.match(r.headers.get("cache-control"), /no-store/); assert.equal(modalCalls, 1);
+  });
+  for (const [name, options, status] of [
+    ["missing bearer", { token: null }, 421], ["forged bearer", { token: "x".repeat(64) }, 401],
+    ["wrong source", { source: "browser" }, 401], ["tampered signed body", { tampered: true }, 401],
+    ["public message", { flags: 0 }, 400], ["foreign guild", { guild: "222222222222222222" }, 400],
+    ["unknown service Host", { host: "attacker.invalid" }, 421],
+  ]) await check(`modal rejects ${name} before reading a draft`, async () => {
+    assert.equal((await throughModal(modalRequest(options))).status, status); assert.equal(modalCalls, 1);
   });
   console.log(`[check-internal-cron-proxy] OK — ${total}/${total}`);
 })().catch((e) => { console.error(e); process.exitCode = 1; });
