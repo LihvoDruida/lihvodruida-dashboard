@@ -1,4 +1,5 @@
 import "server-only";
+import { decodeRaidSignupMenuId } from "@mistblossom/discord-contract";
 
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from "node:crypto";
 import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
@@ -54,7 +55,7 @@ function validate(payload: Envelope, now: number) {
   if (typeof payload.domain !== "string" || payload.domain.length > 80) throw new Error("invalid ingress domain");
   let body: Record<string, unknown>;
   try { body = JSON.parse(payload.rawBody); } catch { throw new Error("invalid ingress JSON"); }
-  if (String(body?.id || "") !== payload.id || Number(body?.type) !== 3) throw new Error("invalid interaction identity/type");
+  if (String(body?.id || "") !== payload.id || !(Number(body?.type) === 3 || (Number(body?.type) === 5 && decodeRaidSignupMenuId((body.data as any)?.custom_id)?.kind === "save"))) throw new Error("invalid interaction identity/type");
   const age = now - Number(payload.timestamp) * 1000;
   if (age < -30_000 || age >= SIGNATURE_MAX_AGE_MS - SAFETY_MARGIN_MS) throw new Error("expired ingress signature");
   return Number(payload.timestamp) * 1000 + SIGNATURE_MAX_AGE_MS - SAFETY_MARGIN_MS;

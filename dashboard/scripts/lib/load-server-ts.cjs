@@ -18,6 +18,7 @@ module.exports = function loadServerTs(relativePath, modules = {}, globals = {})
       if (name === "server-only") return {};
       if (Object.hasOwn(modules, name)) return modules[name];
       if (name === "@/lib/logPrivacy") return module.exports("src/lib/logPrivacy.ts", {}, globals).exports;
+      if (name === "@mistblossom/discord-contract") return require(path.resolve(__dirname, "../../../shared/index.mjs"));
       if (name.startsWith("node:")) return require(name);
       throw new Error("Unexpected test dependency: " + name);
     },

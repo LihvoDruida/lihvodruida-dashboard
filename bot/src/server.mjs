@@ -11,6 +11,8 @@ import {
   interactionDomainFor,
   isRaidPollPromptKind,
   decodeRaidPollCustomId,
+  decodeRaidSignupMenuId,
+  raidSignupModalFor,
 } from "@mistblossom/discord-contract";
 
 /**
@@ -141,7 +143,16 @@ async function handleInteraction(interaction, rawBody, signature, timestamp) {
   }
 
   // Do not ACK unsupported interaction types: the downstream outbox only handles components.
-  if (interaction.type !== InteractionType.MESSAGE_COMPONENT) {
+  const menuAction = decodeRaidSignupMenuId(customId);
+  if (interaction.type === InteractionType.MESSAGE_COMPONENT && menuAction?.kind === "form") {
+    // Pure UI response: no signup mutation, no queue, and no external lookup.
+    if (!(Number(interaction?.message?.flags || 0) & EPHEMERAL) || String(interaction.guild_id || "") !== String(process.env.DISCORD_GUILD_ID || "")) {
+      return { type: CallbackType.CHANNEL_MESSAGE, data: { flags: EPHEMERAL, content: "Відкрий власне меню запису на сервері гільдії." } };
+    }
+    return raidSignupModalFor(customId);
+  }
+  const supportedModal = interaction.type === InteractionType.MODAL_SUBMIT && menuAction?.kind === "save";
+  if (interaction.type !== InteractionType.MESSAGE_COMPONENT && !supportedModal) {
     return { type: CallbackType.CHANNEL_MESSAGE, data: { flags: EPHEMERAL, content: "Цей тип взаємодії поки не підтримується." } };
   }
 

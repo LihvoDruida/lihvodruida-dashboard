@@ -1,3 +1,6 @@
+import { randomUUID } from "node:crypto";
+import { decodeRaidSignupMenuId } from "@mistblossom/discord-contract";
+import { getRaidReminderPreference, prepareRaidReminderPreferenceWrite } from "@/lib/discordNotificationPreferences";
 import { withDiscordPublicationLease, runDiscordPublicationCreation, publicationRevision, getDiscordPublicationOperation, updateDiscordPublicationOperation, DiscordPublicationPendingError } from "@/lib/discordPublication";
 import { publishDiscordResourceMessage } from "@/lib/discordMessagePublication";
 import { FieldValue } from "@/lib/db/firestoreCompat";
@@ -51,6 +54,7 @@ import {
   wowSpecFullName,
 } from "@/lib/wowClassCatalog";
 import {
+  getDiscordGuildId,
   findDiscordPublicationScheduledEvent,
   parseDiscordMessageRef,
   createDiscordGuildScheduledEvent,
@@ -172,6 +176,8 @@ export type RaidItem = {
   composition: RaidComposition;
   status: "draft" | "published" | "closed";
   channelId?: string | null;
+  signupMenuVersion?: number;
+  signupMenuRetryAfter?: string | null;
   discordMessageChannelId?: string | null;
   voiceChannelId?: string | null;
   messageId?: string | null;
@@ -1220,6 +1226,8 @@ function normalizeRaid(id: string, data: Record<string, unknown>): RaidItem {
     composition: normalizeComposition(data.composition),
     status,
     channelId: cleanString(data.channelId, 32) || null,
+    signupMenuVersion: Number(data.signupMenuVersion || 0),
+    signupMenuRetryAfter: typeof data.signupMenuRetryAfter === "string" ? data.signupMenuRetryAfter : null,
     discordMessageChannelId: cleanSnowflake(data.discordMessageChannelId) || parseDiscordMessageRef(String(data.messageUrl || ""))?.channelId || cleanSnowflake(data.channelId) || null,
     voiceChannelId:
       cleanString(data.voiceChannelId || data.voice_channel_id, 32) || null,
@@ -1959,7 +1967,7 @@ function buildRaidReminderDirectMessage(raid: RaidItem, signup: RaidSignup) {
   return lines.join("\n");
 }
 
-async function sendRaidReminderDirectMessages(raid: RaidItem) {
+export async function sendRaidReminderDirectMessages(raid: RaidItem) {
   const targets = Array.from(
     new Map(
       raid.signups
@@ -1971,11 +1979,23 @@ async function sendRaidReminderDirectMessages(raid: RaidItem) {
 
   const settled = await mapConcurrentSettled(
     targets,
-    async (signup) =>
-      sendDiscordDirectMessage({
-        userId: signup.discordId,
-        content: buildRaidReminderDirectMessage(raid, signup),
-      }),
+    async (signup) => {
+      let optedOut = false;
+      try {
+        await sendDiscordDirectMessage({ userId: signup.discordId, content: buildRaidReminderDirectMessage(raid, signup),
+          beforeSend: async () => {
+            if (!(await getRaidReminderPreference(signup.discordId)).enabled) {
+              optedOut = true;
+              throw new Error("Особисті нагадування вимкнено.");
+            }
+          },
+        });
+      } catch (error) {
+        if (optedOut) return { skipped: true };
+        throw error;
+      }
+      return { skipped: false };
+    },
     { profile: "external-api", min: 1, max: 4 },
   );
 
@@ -1989,8 +2009,8 @@ async function sendRaidReminderDirectMessages(raid: RaidItem) {
     });
   }
   return {
-    attempted: targets.length,
-    sent: settled.results.filter((result) => result.ok).length,
+    attempted: settled.results.filter((result) => !result.ok || !result.value.skipped).length,
+    sent: settled.results.filter((result) => result.ok && !result.value.skipped).length,
     failed: settled.results.filter((result) => !result.ok).length,
   };
 }
@@ -2554,12 +2574,20 @@ async function reconcileRaidLifecycleTaskRecovery(limit: number) {
   const raids = await listRaidsForLifecycleRecovery(limit);
   let tasksPlanned = 0;
   let tasksChanged = 0;
+  let menuUpgradeAttempts = 0;
   for (const raid of raids) {
+    if (menuUpgradeAttempts < 3 && raid.messageId && raid.signupMenuVersion !== 2 && !(Date.parse(raid.signupMenuRetryAfter || "") > Date.now())) {
+      menuUpgradeAttempts += 1;
+      const synced = await syncRaidDiscordAfterSignup(raid);
+      await getFirebaseAdminDb().collection(RAID_COLLECTION).doc(raid.id).set(synced
+        ? { signupMenuVersion: 2, signupMenuRetryAfter: null }
+        : { signupMenuRetryAfter: new Date(Date.now() + 15 * 60_000).toISOString() }, { merge: true });
+    }
     const result = await reconcileRaidLifecycleTasksForRaid(raid);
     tasksPlanned += result.planned;
     tasksChanged += result.created + result.removed;
   }
-  return { scanned: raids.length, tasksPlanned, tasksChanged };
+  return { scanned: raids.length, tasksPlanned, tasksChanged, menuUpgradeAttempts };
 }
 
 async function listDueRaidLifecycleTasks(limit: number, nowMs = Date.now()) {
@@ -4624,7 +4652,6 @@ export function buildRaidAttendanceComponents(
 ) {
   const disabled =
     typeof options === "boolean" ? options : Boolean(options.disabled);
-  const full = typeof options === "object" && Boolean(options.full);
   const registrationLocked =
     typeof options === "object" && Boolean(options.registrationLocked);
   const personalized =
@@ -4637,55 +4664,12 @@ export function buildRaidAttendanceComponents(
   // будуємо приватну/ephemeral відповідь для конкретного користувача. У глобальному
   // embed кнопка лишається нейтральною, а реальний стан перевіряється на сервері.
   const activeJoinDisabled = disabled || registrationLocked;
-  const signupLabel = disabled
-    ? "Підписатися"
-    : registrationLocked
-      ? "Запис закрито"
-      : signed
-        ? "Змінити персонажа"
-        : full && personalized
-          ? "У лаву запасних"
-          : "Підписатися";
 
-  return [
-    {
-      type: 1,
-      components: [
-        {
-          type: 2,
-          style: 3,
-          label: signupLabel,
-          emoji: { name: "✅" },
-          custom_id: buildRaidAttendanceCustomId(raidId, "going"),
-          disabled: activeJoinDisabled,
-        },
-        {
-          type: 2,
-          style: 2,
-          label: "50/50",
-          emoji: { name: "❓" },
-          custom_id: buildRaidAttendanceCustomId(raidId, "tentative"),
-          disabled: activeJoinDisabled,
-        },
-        {
-          type: 2,
-          style: 2,
-          label: "Пропустити",
-          emoji: { name: "↩️" },
-          custom_id: buildRaidAttendanceCustomId(raidId, "skipped"),
-          disabled: activeJoinDisabled,
-        },
-        {
-          type: 2,
-          style: 4,
-          label: "Затримаюсь",
-          emoji: { name: "🕒" },
-          custom_id: buildRaidAttendanceCustomId(raidId, "late"),
-          disabled: activeJoinDisabled,
-        },
-      ],
-    },
-  ];
+  return [{ type: 1, components: [{ type: 2, style: 3,
+    label: registrationLocked ? "Запис закрито" : signed ? "Змінити запис" : "Записатися в рейд",
+    emoji: { name: "✅" }, custom_id: `mbv1:raid-menu:${cleanRaidId(raidId)}`,
+    disabled: activeJoinDisabled,
+  }] }];
 }
 
 export function buildRaidCharacterSelectCustomId(
@@ -5683,7 +5667,7 @@ async function enrichRaidSignupDiscordIdentity(signup: RaidSignup): Promise<Raid
 export async function recordRaidSignup(
   raidId: string,
   signup: RaidSignup,
-  options: { interaction?: boolean } = {},
+  options: { interaction?: boolean; menuCommit?: RaidMenuCommit } = {},
 ) {
   const id = cleanRaidId(raidId);
   if (!id || !hasRaidStorage())
@@ -5707,10 +5691,23 @@ export async function recordRaidSignup(
       const saved = await db.runTransaction(async (transaction: any) => {
         const snapshot = await transaction.get(ref);
         if (!snapshot.exists) throw new Error("Рейд не знайдено.");
+        let writePreference: (() => void) | null = null;
+        let menuRef: any = null;
+        let menuSignupUpdatedAt: string | null | undefined;
+        if (options.menuCommit) {
+          const commit = options.menuCommit;
+          menuRef = db.collection(RAID_SIGNUP_MENU_COLLECTION).doc(commit.draftId);
+          const menu = (await transaction.get(menuRef)).data() as RaidSignupMenuDraft | undefined;
+          assertRaidSignupMenuDraft(menu, persistedSignup.discordId, commit.revision);
+          if (menu!.raidId !== id || menu!.guildId !== getDiscordGuildId()) throw new Error("Меню належить іншому рейду або серверу.");
+          menuSignupUpdatedAt = menu!.signupUpdatedAt;
+          writePreference = await prepareRaidReminderPreferenceWrite(transaction, persistedSignup.discordId, commit.reminderEnabled, persistedSignup.profileId, menu!.preferenceRevision);
+        }
         const raid = {
           ...normalizeRaid(snapshot.id, snapshot.data() || {}),
           benchPriority,
         };
+        if (options.menuCommit && (raid.signups.find((item) => item.discordId === persistedSignup.discordId)?.updatedAt || null) !== menuSignupUpdatedAt) throw new Error("Запис уже змінився в іншому меню. Відкрий рейд ще раз.");
         if (isRaidClosed(raid))
           throw new Error("Рейд уже закритий, запис вимкнено.");
         if (raid.status !== "published")
@@ -5766,6 +5763,8 @@ export async function recordRaidSignup(
           updatedAt: now,
         });
         const normalizedSignups = normalizeRaidSignupNumbers(nextSignups);
+        if (writePreference) writePreference();
+        if (menuRef) transaction.set(menuRef, { state: "committed", interactionId: options.menuCommit!.interactionId, committedAt: now }, { merge: true });
         transaction.set(
           ref,
           {
@@ -6132,6 +6131,7 @@ export async function handleRaidDiscordAction(params: {
   messageRef?: DiscordMessageRefInput | null;
   interactionMessage?: unknown;
   syncDiscord?: boolean;
+  menuCommit?: RaidMenuCommit;
 }) {
   let raid: RaidItem | null = null;
   try {
@@ -6192,7 +6192,8 @@ export async function handleRaidDiscordAction(params: {
     : null;
   if (params.action !== "skipped") {
     profile = await getProfileByDiscordUserIdForInteraction(params.userId);
-    profile = await refreshProfileBeforeRaidSignup(profile, {
+    // Menu uses persisted character data; opening/confirming never triggers Blizzard fanout.
+    if (!params.menuCommit) profile = await refreshProfileBeforeRaidSignup(profile, {
       raidId: raid.id,
       userId: params.userId,
     });
@@ -6326,6 +6327,7 @@ export async function handleRaidDiscordAction(params: {
         selectedCharacter?.key || params.characterKey,
         params.signupRole,
       );
+  if (manualSelection && params.signupRole) signup.role = params.signupRole;
   const block = raidMinItemLevelBlockMessage(raid, signup);
   if (block)
     return {
@@ -6336,7 +6338,7 @@ export async function handleRaidDiscordAction(params: {
     };
   let updated: RaidItem;
   try {
-    updated = await recordRaidSignup(raid.id, signup, { interaction: true });
+    updated = await recordRaidSignup(raid.id, signup, { interaction: true, menuCommit: params.menuCommit });
   } catch (error) {
     return {
       ok: false,
@@ -6631,4 +6633,153 @@ export function raidLiveRevision(raid: RaidItem) {
 export function dashboardRaidUrl(raidId: string) {
   const base = dashboardBaseUrl();
   return `${base}/raids/${encodeURIComponent(raidId)}`;
+}
+
+// Durable private signup menus replace every old Discord signup flow.
+export const RAID_SIGNUP_MENU_COLLECTION = "discordRaidSignupMenus";
+type RaidMenuCommit = { draftId: string; revision: number; interactionId: string; reminderEnabled: boolean };
+export type RaidSignupMenuDraft = {
+  ownerId: string; guildId: string; raidId: string; revision: number; state: "editing" | "committed";
+  mode: "character" | "manual" | null; characterKeys: string[]; characterKey: string | null;
+  classKey: string | null; specKey: string | null; role: RaidCharacterRole; status: RaidSignupStatus;
+  signupUpdatedAt: string | null;
+  reminderEnabled: boolean; preferenceRevision: number; page: number; expiresAt: string;
+};
+export function assertRaidSignupMenuDraft(draft: RaidSignupMenuDraft | undefined, ownerId: string, revision: number) {
+  if (!draft || draft.ownerId !== ownerId) throw new Error("Це меню належить іншому учаснику або вже недоступне.");
+  if (draft.state !== "editing" || draft.revision !== revision || Date.parse(draft.expiresAt) <= Date.now() || !Number.isFinite(Date.parse(draft.expiresAt))) throw new Error("Меню застаріло або запис уже підтверджено. Натисни «Записатися в рейд» ще раз.");
+}
+function raidMenuComponentId(id: string, draft: RaidSignupMenuDraft, kind: string) {
+  return `mbv1:raid-draft:${id}:${draft.revision}:${kind}`;
+}
+export function buildRaidSignupMenuComponents(id: string, draft: RaidSignupMenuDraft, profile: DashboardProfile | null) {
+  const button = (label: string, kind: string, selected = false) => ({ type: 2, style: selected ? 1 : 2, label, custom_id: raidMenuComponentId(id, draft, kind) });
+  const select = (kind: string, placeholder: string, options: Array<Record<string, unknown>>) => ({ type: 1, components: [{ type: 3, custom_id: raidMenuComponentId(id, draft, kind), placeholder, min_values: 1, max_values: 1, options }] });
+  const rows: Array<Record<string, unknown>> = [{ type: 1, components: [button("Мої персонажі", "character", draft.mode === "character"), button("Інший / вручну", "manual", draft.mode === "manual")] }];
+  if (draft.mode === "character") {
+    const keys = draft.characterKeys.slice(draft.page * 25, (draft.page + 1) * 25);
+    const options = keys.flatMap((key, offset) => {
+      const character = profile?.characters.find((c) => c.key === key);
+      return character ? [{ label: `${character.name} · ${character.realmName || character.realmSlug || ""}`.slice(0, 100), value: String(draft.page * 25 + offset), description: `${character.className || ""} · ${character.activeSpecName || ""}`.slice(0, 100), default: key === draft.characterKey }] : [];
+    });
+    if (options.length) rows.push(select("pick", "Обери персонажа", options));
+    if (draft.characterKeys.length > 25) rows.push(select("page", "Сторінка персонажів", Array.from({ length: Math.ceil(draft.characterKeys.length / 25) }, (_, page) => ({ label: `Сторінка ${page + 1}`, value: String(page), default: page === draft.page }))));
+  }
+  if (draft.mode === "manual") {
+    rows.push(select("class", "Обери клас", WOW_CLASS_CATALOG.map((cls) => ({ label: cls.label, value: cls.key, default: draft.classKey === cls.key }))));
+    const cls = findWowClass(draft.classKey || "");
+    if (cls) rows.push(select("spec", "Обери спеціалізацію", cls.specs.map((spec) => ({ label: spec.label, value: spec.key, description: raidRoleLabel(spec.role), default: draft.specKey === spec.key }))));
+  }
+  const ready = draft.status === "skipped" || (draft.mode === "character" ? Boolean(draft.characterKey && profile?.characters.some((c) => c.key === draft.characterKey)) : Boolean(draft.mode === "manual" && findWowSpec(draft.classKey || "", draft.specKey || "")));
+  rows.push({ type: 1, components: [
+    { type: 2, style: 3, label: "Роль, нагадування та підтвердження", custom_id: `mbv1:raid-form:${id}:${draft.revision}:${draft.role}:${draft.reminderEnabled ? 1 : 0}:${draft.status}`, disabled: !ready }, button("Пропустити рейд", "skip"),
+  ] });
+  return rows;
+}
+export function raidSignupMenuText(draft: RaidSignupMenuDraft, profile: DashboardProfile | null) {
+  const empty = draft.mode === "character" && !draft.characterKeys.length ? "\nНемає прив’язаних персонажів. Можна вибрати «Інший / вручну»." : "";
+  const character = profile?.characters.find((c) => c.key === draft.characterKey);
+  const selection = draft.mode === "manual" ? findWowSpec(draft.classKey || "", draft.specKey || "") : null;
+  const selected = (draft.mode === "character" ? character?.name : null) || (selection ? `${selection.cls.label} · ${selection.spec.label}` : "ще не обрано");
+  return `🎯 **Запис на рейд**\nВибери свого персонажа або запишися вручну — обидва способи доступні завжди.\nВибір: **${selected}**.\nДалі відкрий форму, обери роль, участь і особисте нагадування.${empty}`;
+}
+export function raidSignupModalValues(components: unknown) {
+  const fields = new Map<string, any>();
+  function visit(items: unknown, depth = 0) {
+    if (!Array.isArray(items) || items.length > 5 || depth > 2) throw new Error("Некоректна форма запису.");
+    for (const item of items) {
+      if (!item || typeof item !== "object") throw new Error("Некоректне поле форми.");
+      if (item.type === 18 && item.component) visit([item.component], depth + 1);
+      else {
+        if (!["attendance", "role", "raid_reminder"].includes(item.custom_id) || fields.has(item.custom_id)) throw new Error("Невідоме або повторене поле форми.");
+        fields.set(item.custom_id, item);
+      }
+    }
+  }
+  visit(components);
+  const role = fields.get("role"), status = fields.get("attendance"), reminder = fields.get("raid_reminder");
+  if (role?.type !== 3 || role.values?.length !== 1 || !["tank", "healer", "dps"].includes(role.values[0]) || status?.type !== 3 || status.values?.length !== 1 || !["going", "tentative", "late", "skipped"].includes(status.values[0]) || reminder?.type !== 23 || typeof reminder.value !== "boolean") throw new Error("Обери роль, участь і нагадування у формі.");
+  return { role: role.values[0] as RaidCharacterRole, status: status.values[0] as RaidSignupStatus, reminderEnabled: reminder.value as boolean };
+}
+export async function handleRaidSignupMenuInteraction(params: {
+  customId: string; interaction: any; userId: string; userName: string; guildId: string;
+  legacy?: { raidId: string; action: RaidSignupStatus } | null;
+}) {
+  if (!/^\d{16,25}$/.test(params.userId) || params.guildId !== getDiscordGuildId()) throw new Error("Некоректний учасник або Discord-сервер.");
+  const action = decodeRaidSignupMenuId(params.customId);
+  const db = getFirebaseAdminDb();
+  if (action?.kind === "open" || params.legacy) {
+    const raidId = action?.kind === "open" ? action.raidId : params.legacy!.raidId;
+    const raid = await getRaidForDiscordInteraction(raidId, { channelId: params.interaction.channel_id, messageId: params.interaction.message?.id }, params.interaction.message);
+    if (!raid || raid.status !== "published" || isRaidClosed(raid)) throw new Error("Запис на цей рейд недоступний.");
+    const [profile, preference] = await Promise.all([getProfileByDiscordUserIdForInteraction(params.userId), getRaidReminderPreference(params.userId)]);
+    const current = raid.signups.find((s) => s.discordId === params.userId);
+    const id = randomUUID().replace(/-/g, "");
+    const draft: RaidSignupMenuDraft = {
+      ownerId: params.userId, guildId: params.guildId, raidId: raid.id, revision: 0, state: "editing",
+      mode: current?.manualClassKey ? "manual" : current?.characterKey ? "character" : null,
+      characterKeys: (profile?.characters || []).slice(0, 250).map((c) => c.key), characterKey: current?.characterKey || null,
+      classKey: current?.manualClassKey || null, specKey: current?.manualSpecKey || null, role: current?.role || "dps",
+      status: params.legacy?.action || current?.status || "going", reminderEnabled: preference.enabled, preferenceRevision: preference.revision,
+      signupUpdatedAt: current?.updatedAt || null,
+      page: 0, expiresAt: new Date(Date.now() + 20 * 60_000).toISOString(),
+    };
+    await db.collection(RAID_SIGNUP_MENU_COLLECTION).doc(id).set(draft);
+    return { content: raidSignupMenuText(draft, profile), components: buildRaidSignupMenuComponents(id, draft, profile) };
+  }
+  if (!action || !("draftId" in action)) throw new Error("Відкрий меню запису ще раз.");
+  const ref = db.collection(RAID_SIGNUP_MENU_COLLECTION).doc(action.draftId);
+  const draft = (await ref.get()).data() as RaidSignupMenuDraft | undefined;
+  assertRaidSignupMenuDraft(draft, params.userId, action.revision);
+  if (draft!.guildId !== params.guildId) throw new Error("Меню належить іншому серверу.");
+  if (action.kind === "save") {
+    if (params.interaction.type !== 5) throw new Error("Підтверди запис у формі Discord.");
+    const fields = raidSignupModalValues(params.interaction.data?.components);
+    if (fields.status !== "skipped" && !(draft!.mode === "character" ? draft!.characterKey : findWowSpec(draft!.classKey || "", draft!.specKey || ""))) throw new Error("Спочатку обери персонажа або клас і спек.");
+    const result = await handleRaidDiscordAction({ raidId: draft!.raidId, action: fields.status, userId: params.userId, userName: params.userName,
+      characterKey: draft!.mode === "character" ? draft!.characterKey : null, signupRole: fields.role,
+      manual: draft!.mode === "manual" ? { classKey: draft!.classKey || "", specKey: draft!.specKey || "" } : null,
+      commit: true, menuCommit: { draftId: action.draftId, revision: action.revision, interactionId: params.interaction.id, reminderEnabled: fields.reminderEnabled },
+    });
+    if (!result.ok || !("raid" in result)) return { ok: false, content: result.ok ? "Персонаж або профіль уже змінився. Відкрий меню й обери запис ще раз." : result.content, components: buildRaidAttendanceComponents(draft!.raidId, { personalized: true, signed: true }) };
+    return { ...result, content: `${result.content}\n${fields.reminderEnabled ? "🔔 Особисте нагадування за 15 хвилин увімкнено." : "🔕 Особисті нагадування про рейди вимкнено."} Налаштування збережено для твого Discord-акаунта.` };
+  }
+  if (params.interaction.type !== 3 || action.kind === "form") throw new Error("Онови повідомлення або перевір версію бота.");
+  const profile = await getProfileByDiscordUserIdForInteraction(params.userId);
+  const value = params.interaction.data?.values?.[0];
+  const updated = await db.runTransaction(async (tx) => {
+    const current = (await tx.get(ref)).data() as RaidSignupMenuDraft | undefined;
+    assertRaidSignupMenuDraft(current, params.userId, action.revision);
+    const next = { ...current!, revision: current!.revision + 1 };
+    if (action.kind === "character" || action.kind === "manual") next.mode = action.kind;
+    else if (action.kind === "skip") next.status = "skipped";
+    else if (action.kind === "page") {
+      if (!/^\d{1,2}$/.test(String(value)) || Number(value) >= Math.ceil(next.characterKeys.length / 25)) throw new Error("Некоректна сторінка.");
+      next.page = Number(value);
+    } else if (action.kind === "pick") {
+      const key = /^\d{1,3}$/.test(String(value)) ? next.characterKeys[Number(value)] : null;
+      const character = profile?.characters.find((c) => c.key === key);
+      if (!character || next.mode !== "character") throw new Error("Персонаж більше не доступний у твоєму профілі.");
+      next.characterKey = character.key; next.role = resolveRaidSignupRole(profile, character);
+    } else if (action.kind === "class") {
+      if (next.mode !== "manual" || !findWowClass(String(value))) throw new Error("Некоректний клас.");
+      next.classKey = String(value); next.specKey = null;
+    } else if (action.kind === "spec") {
+      const spec = findWowSpec(next.classKey || "", String(value));
+      if (next.mode !== "manual" || !spec) throw new Error("Некоректна спеціалізація.");
+      next.specKey = String(value); next.role = spec.spec.role;
+    } else throw new Error("Невідома дія меню.");
+    tx.set(ref, next);
+    return next;
+  });
+  return { content: raidSignupMenuText(updated, profile), components: buildRaidSignupMenuComponents(action.draftId, updated, profile) };
+}
+export async function pruneRaidSignupMenus(limit = 250) {
+  const db = getFirebaseAdminDb();
+  const expired = await db.collection(RAID_SIGNUP_MENU_COLLECTION).where("expiresAt", "<=", new Date().toISOString()).limit(limit).get();
+  for (const snapshot of expired.docs) await db.runTransaction(async (tx) => {
+    const current = await tx.get(snapshot.ref);
+    if (Date.parse(String(current.data()?.expiresAt || "")) <= Date.now()) tx.delete(snapshot.ref);
+  });
+  return expired.docs.length;
 }

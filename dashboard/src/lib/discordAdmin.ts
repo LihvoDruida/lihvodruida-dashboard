@@ -1960,6 +1960,7 @@ export async function sendDiscordDirectMessage(params: {
   content: string;
   components?: unknown[];
   nonce?: string;
+  beforeSend?: () => Promise<void>;
 }) {
   const userId = cleanSnowflake(params.userId);
   const content = String(params.content || "").trim().slice(0, 1900);
@@ -1969,6 +1970,7 @@ export async function sendDiscordDirectMessage(params: {
   const channel = await discordApi<{ id?: string }>("/users/@me/channels", {
     method: "POST",
     body: JSON.stringify({ recipient_id: userId }),
+    beforeSend: params.beforeSend,
   });
   const channelId = cleanSnowflake(channel?.id);
   if (!channelId) throw new Error("Discord не повернув DM-канал для користувача.");
@@ -1985,6 +1987,7 @@ export async function sendDiscordDirectMessage(params: {
   const message = await discordApi<any>(`/channels/${channelId}/messages`, {
     method: "POST",
     body: JSON.stringify(body),
+    beforeSend: params.beforeSend,
   });
   return { channelId, messageId: cleanSnowflake(message?.id) || null };
 }

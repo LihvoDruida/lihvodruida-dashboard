@@ -15,6 +15,7 @@ module.exports = function loadNodeTs(relativePath, modules = {}, globals = {}) {
     require(name) {
       if (Object.hasOwn(modules, name)) return modules[name];
       if (name === "@/lib/logPrivacy") return module.exports("src/lib/logPrivacy.ts", {}, globals);
+      if (name === "@mistblossom/discord-contract") return require(path.resolve(__dirname, "../../../shared/index.mjs"));
       if (name.startsWith("node:")) return require(name);
       throw Error("Unexpected test import: " + name);
     },

@@ -300,8 +300,7 @@ if (exists('src/app/api/discord/interactions/route.ts')) {
   assert(/handleRosterFormationDiscordAction\([\s\S]{0,650}interactionMessage:\s*interaction\?\.message/.test(interactionsText), 'Roster Discord interactions must pass message payload for orphan recovery.');
   assert(/handleRaidPollDiscordVote\([\s\S]{0,500}messageRef/.test(interactionsText), 'Raid-poll Discord interactions must pass messageRef to authoritative storage lookup.');
   assert(/handleRaidPollDiscordVote\([\s\S]{0,650}interactionMessage:\s*interaction\?\.message/.test(interactionsText), 'Raid-poll Discord interactions must pass message payload for orphan recovery.');
-  assert(/handleRaidDiscordAction\([\s\S]{0,500}messageRef:\s*getInteractionMessageRef\(interaction\)/.test(interactionsText), 'Raid Discord interactions must pass messageRef to authoritative storage lookup.');
-  assert(/handleRaidDiscordAction\([\s\S]{0,650}interactionMessage:\s*interaction\?\.message/.test(interactionsText), 'Raid Discord interactions must pass message payload for orphan recovery.');
+  assert(/handleRaidSignupMenuInteraction\([\s\S]{0,150}interaction,/.test(interactionsText), 'Raid menu interactions must pass the signed message payload to the menu handler.');
   assert(interactionsText.includes('getProfileByDiscordUserIdForInteraction'), 'Discord rules/raid signup must use authoritative profile lookup rather than the page cache.');
 }
 if (exists('src/lib/discordInteractionStorage.ts')) {
@@ -316,7 +315,8 @@ if (exists('src/lib/raids.ts')) {
   const raidsText = read('src/lib/raids.ts');
   assert(raidsText.includes('getRaidForDiscordInteraction'), 'Raid Discord actions must resolve the raid authoritatively.');
   assert(raidsText.includes('recoverEmptyRaidFromDiscordMessage'), 'Empty orphan raid Discord messages must keep safe self-recovery.');
-  assert(/recordRaidSignup\(raid\.id, signup, \{ interaction: true \}\)/.test(raidsText), 'Discord raid signup writes must be allowed to probe past a stale write circuit.');
+  assert(/getRaidForDiscordInteraction\(raidId, \{ channelId: params\.interaction\.channel_id, messageId: params\.interaction\.message\?\.id \}, params\.interaction\.message\)/.test(raidsText), 'Raid menu opening must preserve the public message reference and orphan recovery payload.');
+  assert(/recordRaidSignup\(raid\.id, signup, \{ interaction: true[, }]/.test(raidsText), 'Discord raid signup writes must be allowed to probe past a stale write circuit.');
 }
 if (exists('src/lib/raidPolls.ts')) {
   const pollsText = read('src/lib/raidPolls.ts');

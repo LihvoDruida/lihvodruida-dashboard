@@ -1,3 +1,4 @@
+import RaidReminderPreferenceControls from "@/components/RaidReminderPreferenceControls";
 import DashboardIdentity from "@/components/DashboardIdentity";
 import ListReturnLink from "@/components/ListReturnLink";
 import { listNavigationScope } from "@/lib/listNavigationScope";
@@ -914,6 +915,11 @@ export default async function ProfileSettingsPage({
                   returnTo={settingsRulesReturnPath}
                 />
               </article>
+
+              {profile.provider === "discord" ? <article id="profile-notifications-settings" className="panel profile-card profile-card--identity profile-card--clean-profile">
+                <div className="profile-card-head"><span className="eyebrow">Discord</span><h2>Нагадування про рейди</h2></div>
+                <RaidReminderPreferenceControls />
+              </article> : null}
 
               <article
                 id="profile-role-settings"

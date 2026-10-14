@@ -12,7 +12,7 @@ const checks = [
   [route.includes("const guildId = interactionGuildId || configuredGuildId;"), "DM rules resolve the configured guild explicitly"],
   [route.includes("rulesDmAction: Boolean(rulesAction)"), "guild rejection log records DM-safe rules classification"],
   [onboarding.includes("sendDiscordDirectMessage") && onboarding.includes("buildRulesAcceptCustomId"), "newcomer rules button is intentionally delivered via DM"],
-  [route.includes("const raidAction =") && route.includes("const pollAction =") && route.includes("const rosterAction ="), "server-bound interaction domains remain separately decoded"],
+  [route.includes("const newRaidMenuAction =") && route.includes("const legacyRaidAction =") && route.includes("const pollAction =") && route.includes("const rosterAction ="), "server-bound interaction domains remain separately decoded"],
   [route.includes("return ephemeral(\"⛔ Ця взаємодія не належить Discord-серверу Mistblossom Vanguard.\")"), "guild mismatch remains rejected"],
 ];
 

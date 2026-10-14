@@ -1,3 +1,4 @@
+import { DISCORD_NOTIFICATION_PREFERENCES, raidReminderPreference } from "@/lib/discordNotificationPreferences";
 import { FieldPath, FieldValue, Timestamp } from "@/lib/db/firestoreCompat";
 import type { DashboardRole, DashboardSession } from "@/lib/auth";
 import { createStableProfileId } from "@/lib/profileIds";
@@ -93,6 +94,7 @@ export type DashboardProfile = {
   provider: DashboardSession["provider"];
   providerUserId: string;
   displayName: string;
+  raidReminderDmEnabled?: boolean;
   preferredName?: string | null;
   publicNameMode?: ProfilePublicNameMode;
   grammaticalGender: ProfileGrammaticalGender;
@@ -814,6 +816,7 @@ export function normalizeProfile(
       0,
       120,
     ),
+    raidReminderDmEnabled: data.raidReminderDmEnabled !== false,
     preferredName: cleanProfileName(data.preferredName, 32) || null,
     publicNameMode: cleanProfilePublicNameMode(data.publicNameMode),
     grammaticalGender: cleanProfileGrammaticalGender(
@@ -1089,10 +1092,19 @@ export async function upsertProfileFromSession(session: DashboardSession) {
     async () => {
       const db = getFirebaseAdminDb();
       const ref = db.collection("dashboardProfiles").doc(profileId);
-      const snapshot = await ref.get();
-      await ref.set(
+      await db.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(ref);
+      const preferenceRef = session.provider === "discord" ? db.collection(DISCORD_NOTIFICATION_PREFERENCES).doc(session.id) : null;
+      const preference = preferenceRef ? await transaction.get(preferenceRef) : null;
+      const reminder = raidReminderPreference(preference?.data());
+      profile.raidReminderDmEnabled = reminder.enabled;
+      // Touch the canonical Discord row as well: registration and an anonymous
+      // opt-out must serialize, even when neither document existed before.
+      if (preferenceRef) transaction.set(preferenceRef, { discordId: session.id, profileId, raidReminderDmEnabled: reminder.enabled, revision: reminder.revision }, { merge: true });
+      transaction.set(ref,
         {
           profileId,
+          raidReminderDmEnabled: reminder.enabled,
           provider: profile.provider,
           providerUserId: profile.providerUserId,
           displayName: profile.displayName,
@@ -1121,6 +1133,7 @@ export async function upsertProfileFromSession(session: DashboardSession) {
         },
         { merge: true },
       );
+      });
     },
     { timeoutMs: 4_000, logEvent: "profiles.ensure_write_failed" },
   );

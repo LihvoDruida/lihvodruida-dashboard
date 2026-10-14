@@ -223,7 +223,7 @@ function store() {
       "@/lib/discordInteractionOutbox": outbox,
       "@/lib/raids": { decodeRaidSignupSubmitCustomId: empty, decodeRaidRoleSelectCustomId: empty, decodeRaidCharacterSelectCustomId: empty, decodeRaidManualSpecCustomId: empty, decodeRaidAttendanceCustomId: empty, decodeRaidManualClassCustomId: empty },
       "@/lib/rosterFormation": { decodeRosterCustomId: empty },
-      "@mistblossom/discord-contract": { decodeNicknameFixCustomId: empty, decodeRaidPollCustomId: empty, decodeAutoroleCustomId: empty, decodeApplicationCustomId: empty },
+      "@mistblossom/discord-contract": { decodeRaidSignupMenuId: empty, decodeNicknameFixCustomId: empty, decodeRaidPollCustomId: empty, decodeAutoroleCustomId: empty, decodeApplicationCustomId: empty },
     });
     const incomingId = "1977770001112223391";
     const body = JSON.stringify({ id: incomingId, token: "discord-token-for-route", type: 3, guild_id: "1999990001112223334", data: { custom_id: "unknown-action" } });

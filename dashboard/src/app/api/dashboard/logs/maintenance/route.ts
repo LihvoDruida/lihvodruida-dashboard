@@ -1,3 +1,4 @@
+import { pruneRaidSignupMenus } from "@/lib/raids";
 import { NextRequest, NextResponse } from "next/server";
 import { maintainStructuredLogs, recordStructuredLog } from "@/lib/structuredLogs";
 import { noStoreHeaders, verifyInternalBearerToken } from "@/lib/security";
@@ -19,15 +20,16 @@ export async function POST(request: NextRequest) {
   const result = await maintainStructuredLogs();
   // Security retention is best-effort; never prevent ordinary log maintenance.
   // The claims stay authoritative until their signed timestamp window closes.
-  const [replay, sessions, challenges, ingress] = await Promise.allSettled([
-    pruneInteractionOutbox(), pruneRevokedSessions(), pruneStaticChallengeQuotas(), pruneInteractionIngress(),
+  const [replay, sessions, challenges, ingress, raidMenus] = await Promise.allSettled([
+    pruneInteractionOutbox(), pruneRevokedSessions(), pruneStaticChallengeQuotas(), pruneInteractionIngress(), pruneRaidSignupMenus(),
   ]);
   const securityRetention = {
+    raidMenusDeleted: raidMenus.status === "fulfilled" ? raidMenus.value : 0,
     replayDeleted: replay.status === "fulfilled" ? replay.value : 0,
     sessionsDeleted: sessions.status === "fulfilled" ? sessions.value : 0,
     challengeQuotasDeleted: challenges.status === "fulfilled" ? challenges.value : 0,
     ingressDeleted: ingress.status === "fulfilled" ? ingress.value : 0,
-    failed: Number(replay.status === "rejected") + Number(sessions.status === "rejected") + Number(challenges.status === "rejected") + Number(ingress.status === "rejected"),
+    failed: Number(replay.status === "rejected") + Number(sessions.status === "rejected") + Number(challenges.status === "rejected") + Number(ingress.status === "rejected") + Number(raidMenus.status === "rejected"),
   };
   if (result.ok && result.deleted > 0) {
     void recordStructuredLog({

@@ -72,3 +72,7 @@ export declare function decodeAutoroleCustomId(customId: string): { action: "add
 
 export declare function buildNicknameFixCustomId(userId: string): string;
 export declare function decodeNicknameFixCustomId(customId: string): { userId: string } | null;
+
+export type RaidSignupMenuAction = { kind: "open"; raidId: string } | { kind: "character" | "manual" | "pick" | "class" | "spec" | "page" | "skip" | "form" | "save"; draftId: string; revision: number; role?: "tank" | "healer" | "dps"; reminder?: boolean; status?: "going" | "tentative" | "late" | "skipped" };
+export declare function decodeRaidSignupMenuId(value: unknown): RaidSignupMenuAction | null;
+export declare function raidSignupModalFor(customId: string): { type: number; data: Record<string, unknown> } | null;

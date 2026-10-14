@@ -9,11 +9,11 @@ import {
 } from "@/lib/discordAdmin";
 import { getMainCharacter, getProfileByDiscordUserIdForInteraction } from "@/lib/profiles";
 import { rulesAcceptUrlForDiscordUser } from "@/lib/rulesOnboarding";
-import { buildRaidManualSpecComponents, dashboardProfileUrl, dashboardRaidRulesUrl, decodeRaidAttendanceCustomId, decodeRaidCharacterSelectCustomId, decodeRaidManualClassCustomId, decodeRaidManualSpecCustomId, decodeRaidRoleSelectCustomId, decodeRaidSignupSubmitCustomId, handleRaidDiscordAction, raidActionHelpComponents, type RaidCharacterRole } from "@/lib/raids";
+import { handleRaidSignupMenuInteraction, dashboardProfileUrl, dashboardRaidRulesUrl, decodeRaidAttendanceCustomId, decodeRaidCharacterSelectCustomId, decodeRaidManualClassCustomId, decodeRaidManualSpecCustomId, decodeRaidRoleSelectCustomId, decodeRaidSignupSubmitCustomId, raidActionHelpComponents, type RaidCharacterRole } from "@/lib/raids";
 import { handleRaidPollDiscordVote } from "@/lib/raidPolls";
 // Розбір custom_id — зі спільного пакета: бот користується тим самим кодом,
 // тому нова дія не може «загубитись» на одній зі сторін.
-import { decodeApplicationCustomId, decodeAutoroleCustomId, decodeNicknameFixCustomId, decodeRaidPollCustomId } from "@mistblossom/discord-contract";
+import { decodeRaidSignupMenuId, decodeApplicationCustomId, decodeAutoroleCustomId, decodeNicknameFixCustomId, decodeRaidPollCustomId } from "@mistblossom/discord-contract";
 import { decodeRosterCustomId, handleRosterFormationDiscordAction } from "@/lib/rosterFormation";
 import { assertRequestBodySize, logDashboardEvent, noStoreHeaders, safeErrorMessage, verifyInternalBearerToken } from "@/lib/security";
 import { resolveAccessGroupFromDiscord } from "@/lib/accessGroups";
@@ -292,7 +292,7 @@ async function processInteraction(request: NextRequest, onClaimed: (id: string) 
     return json({ type: 1 });
   }
 
-  if (interaction?.type !== 3) {
+  if (interaction?.type !== 3 && !(interaction?.type === 5 && decodeRaidSignupMenuId(interaction?.data?.custom_id)?.kind === "save")) {
     logDashboardEvent("warn", "discord.interaction.unsupported_type", request, { interactionType: interaction?.type });
     return ephemeral("Цей тип Discord interaction не підтримується цією панеллю.");
   }
@@ -340,20 +340,24 @@ async function processInteraction(request: NextRequest, onClaimed: (id: string) 
     return ephemeral("⛔ Ця взаємодія не належить Discord-серверу Mistblossom Vanguard.");
   }
 
-  const raidSubmitAction = decodeRaidSignupSubmitCustomId(customId);
-  // Ручний запис: вибір класу лише перемальовує меню спеків,
-  // вибір спека вже комітить запис через handleRaidDiscordAction.
-  const raidManualClass = decodeRaidManualClassCustomId(customId, interaction?.data?.values);
-  const raidManualSpec = decodeRaidManualSpecCustomId(customId, interaction?.data?.values);
-  const raidRoleAction = decodeRaidRoleSelectCustomId(customId, interaction?.data?.values);
-  const raidSelectAction = decodeRaidCharacterSelectCustomId(customId, interaction?.data?.values);
-  const raidAction = raidSubmitAction || raidRoleAction || raidSelectAction || raidManualSpec || decodeRaidAttendanceCustomId(customId);
-  const pollAction = raidAction || raidManualClass ? null : decodeRaidPollCustomId(customId, interaction?.data?.values);
-  const rosterAction = raidAction || raidManualClass || pollAction ? null : decodeRosterCustomId(customId, interaction?.data?.values);
-  const autoroleAction = raidAction || raidManualClass || pollAction || rosterAction ? null : decodeAutoroleCustomId(customId);
-  const applicationAction = raidAction || raidManualClass || pollAction || rosterAction || autoroleAction ? null : decodeApplicationCustomId(customId);
-  const parsed = raidAction || raidManualClass || pollAction || rosterAction || autoroleAction || applicationAction || nicknameFixAction ? null : rulesAction;
-  if (!raidAction && !raidManualClass && !pollAction && !rosterAction && !autoroleAction && !applicationAction && !nicknameFixAction && !parsed) {
+  const newRaidMenuAction = decodeRaidSignupMenuId(customId);
+  const legacyRaidAction = decodeRaidSignupSubmitCustomId(customId) || decodeRaidRoleSelectCustomId(customId, interaction?.data?.values) || decodeRaidCharacterSelectCustomId(customId, interaction?.data?.values) || decodeRaidManualSpecCustomId(customId, interaction?.data?.values) || decodeRaidManualClassCustomId(customId, interaction?.data?.values) || decodeRaidAttendanceCustomId(customId);
+  if (newRaidMenuAction || legacyRaidAction) {
+    try {
+      const result = await handleRaidSignupMenuInteraction({ customId, interaction, userId: getInteractionUserId(interaction), userName: getInteractionUserName(interaction), guildId: interactionGuildId, legacy: legacyRaidAction });
+      return finishDecision(interaction, result.content, result.components || []);
+    } catch (error) {
+      logDashboardEvent("warn", "discord.raid.signup_menu_failed", request, { userId: getInteractionUserId(interaction), message: safeErrorMessage(error) });
+      return finishDecision(interaction, `⚠️ ${safeErrorMessage(error, "Не вдалося зберегти запис. Відкрий меню рейду ще раз.")}`, []);
+    }
+  }
+
+  const pollAction = decodeRaidPollCustomId(customId, interaction?.data?.values);
+  const rosterAction = pollAction ? null : decodeRosterCustomId(customId, interaction?.data?.values);
+  const autoroleAction = pollAction || rosterAction ? null : decodeAutoroleCustomId(customId);
+  const applicationAction = pollAction || rosterAction || autoroleAction ? null : decodeApplicationCustomId(customId);
+  const parsed = pollAction || rosterAction || autoroleAction || applicationAction || nicknameFixAction ? null : rulesAction;
+  if (!pollAction && !rosterAction && !autoroleAction && !applicationAction && !nicknameFixAction && !parsed) {
     logDashboardEvent("warn", "discord.rules.unknown_custom_id", request, { customId: customId.slice(0, 24) });
     return ephemeral("Ця кнопка не належить панелі Mistblossom або вже застаріла.");
   }
@@ -534,51 +538,6 @@ async function processInteraction(request: NextRequest, onClaimed: (id: string) 
     } catch (error) {
       logDashboardEvent("error", "discord.raid_poll.action_failed", request, { message: safeErrorMessage(error), pollId: pollAction.pollId, kind: pollAction.kind, userId });
       return ephemeral("❌ Не вдалося зберегти голос. Спробуй пізніше або звернись до офіцера.");
-    }
-  }
-
-  if (raidManualClass) {
-    // Проміжний крок без запису в базу: міняємо ефемерне меню на список спеків.
-    // Білдер кидає помилку, якщо custom_id не влазить у 100 символів Discord
-    // (можливо лише на дуже довгих raidId), тож не даємо їй стати 500-кою.
-    try {
-      return finishDecision(
-        interaction,
-        "Обери спек — роль визначиться автоматично.",
-        buildRaidManualSpecComponents(raidManualClass.raidId, raidManualClass.action, raidManualClass.classKey),
-      );
-    } catch (error) {
-      logDashboardEvent("error", "discord.raid.manual_spec_failed", request, {
-        message: safeErrorMessage(error),
-        raidId: raidManualClass.raidId,
-        userId,
-      });
-      return ephemeral("❌ Не вдалося показати список спеків. Запишись на сторінці рейду.");
-    }
-  }
-
-  if (raidAction) {
-    try {
-      const result = await handleRaidDiscordAction({
-        raidId: raidAction.raidId,
-        action: raidAction.action,
-        userId,
-        userName,
-        characterKey: "characterKey" in raidAction ? String(raidAction.characterKey || "") : null,
-        signupRole: "signupRole" in raidAction ? cleanRaidSignupRole(raidAction.signupRole) : null,
-        commit: Boolean((raidAction as { commit?: boolean }).commit),
-        manual: raidManualSpec ? raidManualSpec.manual : null,
-        messageRef: getInteractionMessageRef(interaction),
-        interactionMessage: interaction?.message,
-      });
-      logDashboardEvent(result.ok ? "info" : "warn", "discord.raid.action", request, { raidId: raidAction.raidId, action: raidAction.action, userId, ok: result.ok });
-
-      // Запис на рейд має оновлювати тільки саме рейдове повідомлення через handleRaidDiscordAction().
-      // Персональну відповідь із вибором персонажа редагуємо на місці, щоб не плодити приватні повідомлення.
-      return finishDecision(interaction, result.content, "components" in result ? result.components || [] : []);
-    } catch (error) {
-      logDashboardEvent("error", "discord.raid.action_failed", request, { message: safeErrorMessage(error), raidId: raidAction.raidId, action: raidAction.action, userId });
-      return ephemeral("❌ Не вдалося оновити запис на рейд. Спробуй ще раз пізніше або звернись до офіцера.");
     }
   }
 

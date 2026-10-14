@@ -14,7 +14,7 @@ function load(file, mocks) {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 }, fileName: file,
   }).outputText;
   const exports = {};
-  new Function("require", "exports", js)((name) => name === "server-only" ? {} : Object.hasOwn(mocks, name) ? mocks[name] : name.startsWith("node:") ? require(name) : (() => { throw Error("unmocked " + name); })(), exports);
+  new Function("require", "exports", js)((name) => name === "server-only" ? {} : Object.hasOwn(mocks, name) ? mocks[name] : name === "@mistblossom/discord-contract" ? require("../../shared/index.mjs") : name.startsWith("node:") ? require(name) : (() => { throw Error("unmocked " + name); })(), exports);
   return exports;
 }
 function storage() {
