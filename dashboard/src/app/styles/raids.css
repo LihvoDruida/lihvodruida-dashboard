@@ -470,12 +470,6 @@
   --tone: var(--c-info);
 }
 
-.raid-character-picker {
-  display: grid;
-  gap: var(--space-2xs);
-  max-width: 420px;
-}
-
 .raid-action-requirement {
   display: grid;
   gap: var(--space-xs);
@@ -1482,9 +1476,6 @@
     text-align: left;
   }
 
-  .raid-character-picker {
-    max-width: none;
-  }
 }
 
 @media (max-width: 520px) {
@@ -1911,63 +1902,8 @@
 }
 
 /* =========================================================
-   8. РУЧНИЙ ЗАПИС: КЛАС + СПЕК
-
-   Другий метод запису для тих, у кого немає персонажів
-   Battle.net. Показується замість вибору персонажа.
+   8. ПОЗНАЧЕННЯ УЧАСНИКІВ ІЗ РУЧНИМ ЗАПИСОМ
    ========================================================= */
-.raid-manual-picker {
-  display: grid;
-  gap: var(--space-sm);
-  padding: var(--pad-card-compact);
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--c-accent-400);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  min-width: 0;
-}
-
-.raid-manual-picker__head {
-  display: grid;
-  gap: var(--space-3xs);
-}
-
-.raid-manual-picker__head strong {
-  color: var(--c-accent-200);
-  font-size: var(--font-size-body);
-}
-
-.raid-manual-picker__head small {
-  color: var(--text-muted);
-  font-size: var(--font-size-ui);
-  line-height: var(--line-height-relaxed);
-}
-
-/* Два селекти поруч, на вузькому екрані — один під одним */
-.raid-manual-picker__row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
-  gap: var(--space-sm);
-}
-
-/* Виведена роль — не вибір користувача, а наслідок спеку,
-   тому це підпис-пігулка, а не ще один контрол. */
-.raid-manual-picker__role {
-  justify-self: start;
-  padding: var(--space-3xs) var(--space-sm);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
-  background: var(--accent-soft);
-  color: var(--c-accent-200);
-  font-size: var(--font-size-ui);
-  font-weight: var(--font-weight-bold);
-}
-
-.raid-manual-picker__hint {
-  color: var(--text-faint);
-  font-size: var(--font-size-meta);
-}
-
 /* Учасник без персонажа: пунктирна рамка аватара вже є,
    додаємо приглушений підпис «ручний запис». */
 .raid-party-row.is-manual .raid-party-member-copy small:last-child,
@@ -2470,10 +2406,6 @@
   font-size: var(--font-size-sm);
 }
 
-.raid-character-picker {
-  max-width: 520px;
-}
-
 .raid-preview-buttons--interactive {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -2728,7 +2660,7 @@
 .raid-signup-modal__header p { color: var(--text-muted); margin: 0; font-size: .9rem; line-height: 1.5; }
 .raid-signup-modal__close {
   border: 1px solid var(--border-subtle); border-radius: 10px; background: var(--surface-sunken);
-  color: inherit; width: 36px; height: 36px; flex-shrink: 0; font-size: 1.5rem; cursor: pointer;
+  color: inherit; width: 44px; height: 44px; flex-shrink: 0; font-size: 1.5rem; cursor: pointer;
 }
 .raid-signup-modal__form { display: grid; min-width: 0; }
 .raid-signup-modal__section { padding: 20px clamp(18px, 4vw, 28px); display: grid; gap: 14px; border: 0; border-bottom: 1px solid var(--border-subtle); margin: 0; min-width: 0; }

@@ -162,7 +162,7 @@ export default function RaidAttendanceClient({
               <div><span className="raid-signup-modal__eyebrow">Mistblossom Vanguard · Рейди</span>
                 <h2 id="raid-signup-modal-title">{viewerAlreadyActive ? "Змінити запис на рейд" : "Записатися в рейд"}</h2>
                 <p>Обери, ким і як береш участь. Усі зміни збережуться на сайті й у Discord.</p></div>
-              <button type="button" className="raid-signup-modal__close" onClick={closeModal} disabled={busy} aria-label="Закрити форму">×</button>
+              <button type="button" className="btn btn-icon raid-signup-modal__close" onClick={closeModal} disabled={busy} aria-label="Закрити форму">×</button>
             </header>
             {showRequirement ? (
               <div className="raid-action-requirement" role="note"><strong>{requirementTitle}</strong><span>{requirementMessage}</span>
@@ -173,9 +173,9 @@ export default function RaidAttendanceClient({
                 <div className="raid-signup-modal__section">
                   <strong>1. Спосіб запису</strong>
                   <div className="raid-signup-modal__tabs" role="group" aria-label="Спосіб запису">
-                    <button type="button" aria-pressed={mode === "character"} className={mode === "character" ? "is-active" : ""}
+                    <button type="button" aria-pressed={mode === "character"} className={`btn ${mode === "character" ? "is-active" : ""}`}
                       disabled={busy || !characterOptions.length} onClick={() => setMode("character")}>Мої персонажі</button>
-                    <button type="button" aria-pressed={mode === "manual"} className={mode === "manual" ? "is-active" : ""}
+                    <button type="button" aria-pressed={mode === "manual"} className={`btn ${mode === "manual" ? "is-active" : ""}`}
                       disabled={busy} onClick={() => setMode("manual")}>Клас і спеціалізація</button>
                   </div>
                   {mode === "character" ? (
@@ -230,7 +230,7 @@ export default function RaidAttendanceClient({
                   {preferenceState === "failed" ? <div className="raid-signup-modal__error" role="alert">Не вдалося отримати налаштування нагадувань. Закрий і відкрий форму знову, щоб уникнути його випадкової зміни.</div> : null}
                 </div>
                 <footer className="raid-signup-modal__footer">
-                  <button className="button button--ghost" type="button" onClick={closeModal} disabled={busy}>Скасувати</button>
+                  <button className="btn ghost" type="button" onClick={closeModal} disabled={busy}>Скасувати</button>
                   <button className="raid-action raid-action--go" type="submit" disabled={cannotSubmit}>
                     {busy ? "Зберігаємо…" : status === "skipped" ? "Підтвердити пропуск" : viewerAlreadyActive ? "Зберегти зміни" : "Підтвердити запис"}
                   </button>
