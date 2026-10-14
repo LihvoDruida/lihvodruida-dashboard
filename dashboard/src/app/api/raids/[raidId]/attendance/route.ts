@@ -1,7 +1,7 @@
 import { after, NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { handleRaidSessionAction, raidLiveRevision, syncRaidDiscordSignupUpdate, type RaidSignupStatus } from "@/lib/raids";
-import { assertRequestBodySize, noStoreHeaders, safeErrorMessage } from "@/lib/security";
+import { assertRequestBodySize, noStoreHeaders, safeErrorMessage, verifyTrustedOrigin, checkRateLimit, getClientIp } from "@/lib/security";
 import { dashboardToastCookie } from "@/lib/serverToasts";
 import { appBaseUrl, wantsJson } from "@/lib/apiRoute";
 
@@ -44,6 +44,8 @@ type AttendanceInput = {
   characterKey: string | null;
   /** Другий метод запису: клас+спек замість персонажа Battle.net. */
   manual: { classKey: string; specKey: string } | null;
+  signupRole: "tank" | "healer" | "dps" | null;
+  reminderPreference?: boolean;
 };
 
 function readManualSelection(classKey: unknown, specKey: unknown) {
@@ -55,11 +57,13 @@ function readManualSelection(classKey: unknown, specKey: unknown) {
 async function readAttendanceInput(request: NextRequest): Promise<AttendanceInput> {
   const contentType = request.headers.get("content-type") || "";
   if (contentType.includes("application/json")) {
-    const body = await request.json().catch(() => null) as { action?: unknown; characterKey?: unknown; character_key?: unknown; classKey?: unknown; specKey?: unknown } | null;
+    const body = await request.json().catch(() => null) as { action?: unknown; characterKey?: unknown; character_key?: unknown; classKey?: unknown; specKey?: unknown; signupRole?: unknown; reminderEnabled?: unknown } | null;
     return {
       action: cleanAction(body?.action),
       characterKey: String(body?.characterKey || body?.character_key || "").trim() || null,
       manual: readManualSelection(body?.classKey, body?.specKey),
+      signupRole: ["tank", "healer", "dps"].includes(String(body?.signupRole || "")) ? body!.signupRole as "tank" | "healer" | "dps" : null,
+      reminderPreference: typeof body?.reminderEnabled === "boolean" ? body.reminderEnabled : undefined,
     };
   }
   const form = await request.formData();
@@ -67,10 +71,13 @@ async function readAttendanceInput(request: NextRequest): Promise<AttendanceInpu
     action: cleanAction(form.get("action")),
     characterKey: String(form.get("characterKey") || "").trim() || null,
     manual: readManualSelection(form.get("classKey"), form.get("specKey")),
+    signupRole: ["tank", "healer", "dps"].includes(String(form.get("signupRole") || "")) ? String(form.get("signupRole")) as "tank" | "healer" | "dps" : null,
+    reminderPreference: ["true", "false"].includes(String(form.get("reminderEnabled"))) ? form.get("reminderEnabled") === "true" : undefined,
   };
 }
 
 export async function POST(request: NextRequest, context: { params: Promise<{ raidId: string }> }) {
+  if (!verifyTrustedOrigin(request)) return NextResponse.json({ ok: false, error: "untrusted_origin" }, { status: 403, headers: noStoreHeaders() });
   const tooLarge = assertRequestBodySize(request, 64 * 1024);
   if (tooLarge) return tooLarge;
 
@@ -89,9 +96,12 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ra
     return NextResponse.redirect(loginUrl, { status: 303, headers: noStoreHeaders() });
   }
 
+  if (!checkRateLimit(`raid-attendance:${raidId}:${user.id}:${getClientIp(request)}`, 30, 5 * 60_000).ok) {
+    return jsonToast({ ok: false, status: 429, tone: "warning", title: "Забагато запитів", message: "Повтори запис трохи пізніше." });
+  }
   try {
-    const { action, characterKey, manual } = await readAttendanceInput(request);
-    const result = await handleRaidSessionAction({ raidId, action, user, characterKey, manual, syncDiscord: false });
+    const { action, characterKey, manual, signupRole, reminderPreference } = await readAttendanceInput(request);
+    const result = await handleRaidSessionAction({ raidId, action, user, characterKey, manual, signupRole, reminderPreference, syncDiscord: false });
 
     if (!result.ok) {
       if (jsonMode) return jsonToast({ ok: false, tone: "error", title: "Запис не оновлено", message: result.content || "Дію не виконано." });

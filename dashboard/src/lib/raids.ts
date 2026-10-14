@@ -2576,11 +2576,11 @@ async function reconcileRaidLifecycleTaskRecovery(limit: number) {
   let tasksChanged = 0;
   let menuUpgradeAttempts = 0;
   for (const raid of raids) {
-    if (menuUpgradeAttempts < 3 && raid.messageId && raid.signupMenuVersion !== 2 && !(Date.parse(raid.signupMenuRetryAfter || "") > Date.now())) {
+    if (menuUpgradeAttempts < 3 && raid.messageId && raid.signupMenuVersion !== 3 && !(Date.parse(raid.signupMenuRetryAfter || "") > Date.now())) {
       menuUpgradeAttempts += 1;
       const synced = await syncRaidDiscordAfterSignup(raid);
       await getFirebaseAdminDb().collection(RAID_COLLECTION).doc(raid.id).set(synced
-        ? { signupMenuVersion: 2, signupMenuRetryAfter: null }
+        ? { signupMenuVersion: 3, signupMenuRetryAfter: null }
         : { signupMenuRetryAfter: new Date(Date.now() + 15 * 60_000).toISOString() }, { merge: true });
     }
     const result = await reconcileRaidLifecycleTasksForRaid(raid);
@@ -5667,7 +5667,7 @@ async function enrichRaidSignupDiscordIdentity(signup: RaidSignup): Promise<Raid
 export async function recordRaidSignup(
   raidId: string,
   signup: RaidSignup,
-  options: { interaction?: boolean; menuCommit?: RaidMenuCommit } = {},
+  options: { interaction?: boolean; menuCommit?: RaidMenuCommit; reminderPreference?: boolean } = {},
 ) {
   const id = cleanRaidId(raidId);
   if (!id || !hasRaidStorage())
@@ -5702,6 +5702,9 @@ export async function recordRaidSignup(
           if (menu!.raidId !== id || menu!.guildId !== getDiscordGuildId()) throw new Error("Меню належить іншому рейду або серверу.");
           menuSignupUpdatedAt = menu!.signupUpdatedAt;
           writePreference = await prepareRaidReminderPreferenceWrite(transaction, persistedSignup.discordId, commit.reminderEnabled, persistedSignup.profileId, menu!.preferenceRevision);
+        }
+        if (options.reminderPreference !== undefined && !options.menuCommit) {
+          writePreference = await prepareRaidReminderPreferenceWrite(transaction, persistedSignup.discordId, options.reminderPreference, persistedSignup.profileId);
         }
         const raid = {
           ...normalizeRaid(snapshot.id, snapshot.data() || {}),
@@ -6400,6 +6403,8 @@ export async function handleRaidSessionAction(params: {
   characterKey?: string | null;
   /** Ручний запис клас+спек для авторизованих без персонажів Battle.net. */
   manual?: RaidManualSelection | null;
+  signupRole?: RaidCharacterRole | null;
+  reminderPreference?: boolean;
   syncDiscord?: boolean;
 }) {
   const manualSelection = params.manual
@@ -6548,6 +6553,7 @@ export async function handleRaidSessionAction(params: {
         signupName,
         profile,
         selectedCharacter?.key || params.characterKey,
+        params.signupRole,
       );
   const block = raidMinItemLevelBlockMessage(raid, signup);
   if (block)
@@ -6559,7 +6565,7 @@ export async function handleRaidSessionAction(params: {
     };
   let updated: RaidItem;
   try {
-    updated = await recordRaidSignup(raid.id, signup);
+    updated = await recordRaidSignup(raid.id, signup, { reminderPreference: params.reminderPreference });
   } catch (error) {
     return {
       ok: false,
@@ -6649,41 +6655,84 @@ export function assertRaidSignupMenuDraft(draft: RaidSignupMenuDraft | undefined
   if (!draft || draft.ownerId !== ownerId) throw new Error("Це меню належить іншому учаснику або вже недоступне.");
   if (draft.state !== "editing" || draft.revision !== revision || Date.parse(draft.expiresAt) <= Date.now() || !Number.isFinite(Date.parse(draft.expiresAt))) throw new Error("Меню застаріло або запис уже підтверджено. Натисни «Записатися в рейд» ще раз.");
 }
-function raidMenuComponentId(id: string, draft: RaidSignupMenuDraft, kind: string) {
-  return `mbv1:raid-draft:${id}:${draft.revision}:${kind}`;
+// All signup data entry now lives in native Discord modals. The private
+// launcher has only buttons because a public Discord message cannot contain
+// personalized character options, and a modal cannot update its other fields
+// after selecting a WoW class.
+const RAID_MODAL_PAGE_SIZE = 25;
+function raidModalSpecs() {
+  return WOW_CLASS_CATALOG.flatMap((cls) => cls.specs.map((spec) => ({ cls, spec })));
+}
+function modalPages(length: number) {
+  return Math.max(1, Math.ceil(length / RAID_MODAL_PAGE_SIZE));
 }
 export function buildRaidSignupMenuComponents(id: string, draft: RaidSignupMenuDraft, profile: DashboardProfile | null) {
-  const button = (label: string, kind: string, selected = false) => ({ type: 2, style: selected ? 1 : 2, label, custom_id: raidMenuComponentId(id, draft, kind) });
-  const select = (kind: string, placeholder: string, options: Array<Record<string, unknown>>) => ({ type: 1, components: [{ type: 3, custom_id: raidMenuComponentId(id, draft, kind), placeholder, min_values: 1, max_values: 1, options }] });
-  const rows: Array<Record<string, unknown>> = [{ type: 1, components: [button("Мої персонажі", "character", draft.mode === "character"), button("Інший / вручну", "manual", draft.mode === "manual")] }];
-  if (draft.mode === "character") {
-    const keys = draft.characterKeys.slice(draft.page * 25, (draft.page + 1) * 25);
-    const options = keys.flatMap((key, offset) => {
-      const character = profile?.characters.find((c) => c.key === key);
-      return character ? [{ label: `${character.name} · ${character.realmName || character.realmSlug || ""}`.slice(0, 100), value: String(draft.page * 25 + offset), description: `${character.className || ""} · ${character.activeSpecName || ""}`.slice(0, 100), default: key === draft.characterKey }] : [];
-    });
-    if (options.length) rows.push(select("pick", "Обери персонажа", options));
-    if (draft.characterKeys.length > 25) rows.push(select("page", "Сторінка персонажів", Array.from({ length: Math.ceil(draft.characterKeys.length / 25) }, (_, page) => ({ label: `Сторінка ${page + 1}`, value: String(page), default: page === draft.page }))));
+  const rows: Array<Record<string, unknown>> = [];
+  const buttons: Array<Record<string, unknown>> = [];
+  const characters = draft.characterKeys.filter((key) => profile?.characters.some((c) => c.key === key));
+  for (let page = 0; page < modalPages(characters.length) && characters.length; page++) {
+    buttons.push({ type: 2, style: 3, label: modalPages(characters.length) === 1 ? "Мої персонажі" : `Персонажі · ${page + 1}/${modalPages(characters.length)}`,
+      custom_id: `mbv1:raid-modal:${id}:${draft.revision}:character:${page}` });
   }
-  if (draft.mode === "manual") {
-    rows.push(select("class", "Обери клас", WOW_CLASS_CATALOG.map((cls) => ({ label: cls.label, value: cls.key, default: draft.classKey === cls.key }))));
-    const cls = findWowClass(draft.classKey || "");
-    if (cls) rows.push(select("spec", "Обери спеціалізацію", cls.specs.map((spec) => ({ label: spec.label, value: spec.key, description: raidRoleLabel(spec.role), default: draft.specKey === spec.key }))));
+  const manualPages = modalPages(raidModalSpecs().length);
+  for (let page = 0; page < manualPages; page++) {
+    buttons.push({ type: 2, style: 1, label: manualPages === 1 ? "Без Battle.net · клас і спек" : `Вручну · спеки ${page + 1}/${manualPages}`,
+      custom_id: `mbv1:raid-modal:${id}:${draft.revision}:manual:${page}` });
   }
-  const ready = draft.status === "skipped" || (draft.mode === "character" ? Boolean(draft.characterKey && profile?.characters.some((c) => c.key === draft.characterKey)) : Boolean(draft.mode === "manual" && findWowSpec(draft.classKey || "", draft.specKey || "")));
-  rows.push({ type: 1, components: [
-    { type: 2, style: 3, label: "Роль, нагадування та підтвердження", custom_id: `mbv1:raid-form:${id}:${draft.revision}:${draft.role}:${draft.reminderEnabled ? 1 : 0}:${draft.status}`, disabled: !ready }, button("Пропустити рейд", "skip"),
-  ] });
+  if (buttons.length > 25) throw new Error("Забагато персонажів для Discord. Спробуй сайт.");
+  for (let i = 0; i < buttons.length; i += 5) rows.push({ type: 1, components: buttons.slice(i, i + 5) });
   return rows;
 }
 export function raidSignupMenuText(draft: RaidSignupMenuDraft, profile: DashboardProfile | null) {
-  const empty = draft.mode === "character" && !draft.characterKeys.length ? "\nНемає прив’язаних персонажів. Можна вибрати «Інший / вручну»." : "";
-  const character = profile?.characters.find((c) => c.key === draft.characterKey);
-  const selection = draft.mode === "manual" ? findWowSpec(draft.classKey || "", draft.specKey || "") : null;
-  const selected = (draft.mode === "character" ? character?.name : null) || (selection ? `${selection.cls.label} · ${selection.spec.label}` : "ще не обрано");
-  return `🎯 **Запис на рейд**\nВибери свого персонажа або запишися вручну — обидва способи доступні завжди.\nВибір: **${selected}**.\nДалі відкрий форму, обери роль, участь і особисте нагадування.${empty}`;
+  const count = draft.characterKeys.filter((key) => profile?.characters.some((c) => c.key === key)).length;
+  return `🎯 **Запис на рейд**\nНатисни спосіб запису, щоб відкрити **одну модальну форму Discord**.\n` +
+    (count ? `Персонажів у профілі: **${count}**. Можна записатися будь-яким із них або вручну.` : "Немає прив’язаних персонажів — скористайся ручним записом за класом і спеціалізацією.") +
+    `\nУ формі вибери участь, роль (для персонажа) та нагадування за 15 хвилин. Спек визначає роль ручного запису.`;
 }
-export function raidSignupModalValues(components: unknown) {
+function raidModalSelect(id: string, label: string, options: Array<Record<string, unknown>>, description?: string) {
+  return { type: 18, label, ...(description ? { description } : {}), component: {
+    type: 3, custom_id: id, required: true, min_values: 1, max_values: 1,
+    options,
+  } };
+}
+/** Called synchronously by the bot for a signed component click. No DB mutation. */
+export async function prepareRaidSignupModal(params: { customId: string; userId: string; guildId: string }) {
+  const action = decodeRaidSignupMenuId(params.customId);
+  if (action?.kind !== "modal" || params.guildId !== getDiscordGuildId() || !/^\d{16,25}$/.test(params.userId)) throw new Error("Форма належить іншому серверу.");
+  const draft = (await getFirebaseAdminDb().collection(RAID_SIGNUP_MENU_COLLECTION).doc(action.draftId).get()).data() as RaidSignupMenuDraft | undefined;
+  assertRaidSignupMenuDraft(draft, params.userId, action.revision);
+  if (draft!.guildId !== params.guildId || action.page < 0) throw new Error("Форма іншого користувача або сервера.");
+  const options: Array<Record<string, unknown>> = [];
+  let selection: Record<string, unknown>;
+  if (action.mode === "character") {
+    const profile = await getProfileByDiscordUserIdForInteraction(params.userId);
+    const keys = draft!.characterKeys.slice(action.page * RAID_MODAL_PAGE_SIZE, (action.page + 1) * RAID_MODAL_PAGE_SIZE);
+    for (let index = 0; index < keys.length; index++) {
+      const character = profile?.characters.find((c) => c.key === keys[index]);
+      if (!character) continue;
+      options.push({ label: `${character.name} · ${character.realmName || character.realmSlug || "WoW"}`.slice(0, 100), value: String(action.page * RAID_MODAL_PAGE_SIZE + index),
+        description: `${character.className || ""} · ${character.activeSpecName || ""}`.slice(0, 100), default: character.key === draft!.characterKey });
+    }
+    if (!options.length || action.page >= modalPages(draft!.characterKeys.length)) throw new Error("Немає персонажів на цій сторінці. Відкрий запис ще раз.");
+    selection = raidModalSelect("raid_character", "Персонаж", options);
+  } else {
+    const specs = raidModalSpecs().slice(action.page * RAID_MODAL_PAGE_SIZE, (action.page + 1) * RAID_MODAL_PAGE_SIZE);
+    if (!specs.length) throw new Error("Сторінки спеціалізацій не існує.");
+    specs.forEach(({ cls, spec }, index) => options.push({ label: `${cls.label} · ${spec.label}`.slice(0, 100),
+      value: String(action.page * RAID_MODAL_PAGE_SIZE + index), description: raidRoleLabel(spec.role), default: draft!.classKey === cls.key && draft!.specKey === spec.key }));
+    selection = raidModalSelect("raid_spec", "Клас і спеціалізація", options, "Роль визначається автоматично за спеціалізацією.");
+  }
+  const statusChoices: [RaidSignupStatus, string][] = [["going", "Буду"], ["tentative", "50/50"], ["late", "Затримаюся"], ["skipped", "Пропускаю"]];
+  const components: Array<Record<string, unknown>> = [selection,
+    raidModalSelect("attendance", "Участь", statusChoices.map(([value, label]) => ({ label, value, default: value === draft!.status }))),
+  ];
+  if (action.mode === "character") components.push(raidModalSelect("role", "Роль", (["tank", "healer", "dps"] as const).map((value) => ({ label: raidRoleLabel(value), value, default: value === draft!.role }))));
+  components.push({ type: 18, label: "Нагадати в особисті за 15 хвилин", description: "Прапорець зберігається в Discord і профілі сайту.",
+    component: { type: 23, custom_id: "raid_reminder", default: draft!.reminderEnabled } });
+  return { type: 9, data: { custom_id: `mbv1:raid-save:${action.draftId}:${action.revision}:${action.mode}:${action.page}`,
+    title: action.mode === "character" ? "Запис на рейд · персонаж" : "Запис на рейд · вручну", components } };
+}
+export function raidSignupModalValues(components: unknown, mode: "character" | "manual" | "legacy" = "legacy") {
   const fields = new Map<string, any>();
   function visit(items: unknown, depth = 0) {
     if (!Array.isArray(items) || items.length > 5 || depth > 2) throw new Error("Некоректна форма запису.");
@@ -6691,15 +6740,22 @@ export function raidSignupModalValues(components: unknown) {
       if (!item || typeof item !== "object") throw new Error("Некоректне поле форми.");
       if (item.type === 18 && item.component) visit([item.component], depth + 1);
       else {
-        if (!["attendance", "role", "raid_reminder"].includes(item.custom_id) || fields.has(item.custom_id)) throw new Error("Невідоме або повторене поле форми.");
+        if (!["attendance", "role", "raid_reminder", "raid_character", "raid_spec"].includes(item.custom_id) || fields.has(item.custom_id)) throw new Error("Невідоме або повторене поле форми.");
         fields.set(item.custom_id, item);
       }
     }
   }
   visit(components);
-  const role = fields.get("role"), status = fields.get("attendance"), reminder = fields.get("raid_reminder");
-  if (role?.type !== 3 || role.values?.length !== 1 || !["tank", "healer", "dps"].includes(role.values[0]) || status?.type !== 3 || status.values?.length !== 1 || !["going", "tentative", "late", "skipped"].includes(status.values[0]) || reminder?.type !== 23 || typeof reminder.value !== "boolean") throw new Error("Обери роль, участь і нагадування у формі.");
-  return { role: role.values[0] as RaidCharacterRole, status: status.values[0] as RaidSignupStatus, reminderEnabled: reminder.value as boolean };
+  const status = fields.get("attendance"), role = fields.get("role"), reminder = fields.get("raid_reminder");
+  if (status?.type !== 3 || status.values?.length !== 1 || !["going", "tentative", "late", "skipped"].includes(status.values[0]) || reminder?.type !== 23 || typeof reminder.value !== "boolean") throw new Error("Обери участь і нагадування у формі.");
+  if (mode !== "manual" && (role?.type !== 3 || role.values?.length !== 1 || !["tank", "healer", "dps"].includes(role.values[0]))) throw new Error("Обери роль у формі.");
+  const selectionId = mode === "character" ? "raid_character" : mode === "manual" ? "raid_spec" : null;
+  const selection = selectionId ? fields.get(selectionId) : null;
+  if (selectionId && (selection?.type !== 3 || selection.values?.length !== 1 || !/^\d{1,3}$/.test(String(selection.values[0])))) throw new Error("Обери персонажа або клас і спеціалізацію.");
+  if (mode !== "legacy" && fields.size !== (mode === "character" ? 4 : 3)) throw new Error("Некоректні поля форми.");
+  return { role: (mode === "manual" ? null : role.values[0]) as RaidCharacterRole | null,
+    status: status.values[0] as RaidSignupStatus, reminderEnabled: reminder.value as boolean,
+    selectionIndex: selectionId ? Number(selection.values[0]) : null };
 }
 export async function handleRaidSignupMenuInteraction(params: {
   customId: string; interaction: any; userId: string; userName: string; guildId: string;
@@ -6711,7 +6767,7 @@ export async function handleRaidSignupMenuInteraction(params: {
   if (action?.kind === "open" || params.legacy) {
     const raidId = action?.kind === "open" ? action.raidId : params.legacy!.raidId;
     const raid = await getRaidForDiscordInteraction(raidId, { channelId: params.interaction.channel_id, messageId: params.interaction.message?.id }, params.interaction.message);
-    if (!raid || raid.status !== "published" || isRaidClosed(raid)) throw new Error("Запис на цей рейд недоступний.");
+    if (!raid || raid.status !== "published" || isRaidClosed(raid) || isRaidRegistrationLocked(raid)) throw new Error("Запис на цей рейд недоступний.");
     const [profile, preference] = await Promise.all([getProfileByDiscordUserIdForInteraction(params.userId), getRaidReminderPreference(params.userId)]);
     const current = raid.signups.find((s) => s.discordId === params.userId);
     const id = randomUUID().replace(/-/g, "");
@@ -6721,58 +6777,52 @@ export async function handleRaidSignupMenuInteraction(params: {
       characterKeys: (profile?.characters || []).slice(0, 250).map((c) => c.key), characterKey: current?.characterKey || null,
       classKey: current?.manualClassKey || null, specKey: current?.manualSpecKey || null, role: current?.role || "dps",
       status: params.legacy?.action || current?.status || "going", reminderEnabled: preference.enabled, preferenceRevision: preference.revision,
-      signupUpdatedAt: current?.updatedAt || null,
-      page: 0, expiresAt: new Date(Date.now() + 20 * 60_000).toISOString(),
+      signupUpdatedAt: current?.updatedAt || null, page: 0, expiresAt: new Date(Date.now() + 20 * 60_000).toISOString(),
     };
     await db.collection(RAID_SIGNUP_MENU_COLLECTION).doc(id).set(draft);
     return { content: raidSignupMenuText(draft, profile), components: buildRaidSignupMenuComponents(id, draft, profile) };
   }
-  if (!action || !("draftId" in action)) throw new Error("Відкрий меню запису ще раз.");
+  if (!action || !("draftId" in action)) throw new Error("Відкрий запис на рейд ще раз.");
   const ref = db.collection(RAID_SIGNUP_MENU_COLLECTION).doc(action.draftId);
   const draft = (await ref.get()).data() as RaidSignupMenuDraft | undefined;
   assertRaidSignupMenuDraft(draft, params.userId, action.revision);
-  if (draft!.guildId !== params.guildId) throw new Error("Меню належить іншому серверу.");
+  if (draft!.guildId !== params.guildId) throw new Error("Форма належить іншому серверу.");
   if (action.kind === "save") {
-    if (params.interaction.type !== 5) throw new Error("Підтверди запис у формі Discord.");
-    const fields = raidSignupModalValues(params.interaction.data?.components);
-    if (fields.status !== "skipped" && !(draft!.mode === "character" ? draft!.characterKey : findWowSpec(draft!.classKey || "", draft!.specKey || ""))) throw new Error("Спочатку обери персонажа або клас і спек.");
+    if (params.interaction.type !== 5) throw new Error("Підтверди запис у модальному вікні Discord.");
+    const mode = action.mode || "legacy";
+    const fields = raidSignupModalValues(params.interaction.data?.components, mode);
+    let characterKey: string | null = null;
+    let manual: { classKey: string; specKey: string } | null = null;
+    if (mode === "character") {
+      const index = fields.selectionIndex!;
+      if (index < action.page! * RAID_MODAL_PAGE_SIZE || index >= (action.page! + 1) * RAID_MODAL_PAGE_SIZE) throw new Error("Персонаж не належить цій сторінці.");
+      characterKey = draft!.characterKeys[index] || null;
+      const profile = await getProfileByDiscordUserIdForInteraction(params.userId);
+      if (!characterKey || !profile?.characters.some((c) => c.key === characterKey)) throw new Error("Персонаж відсутній у твоєму профілі. Відкрий запис знову.");
+    } else if (mode === "manual") {
+      const index = fields.selectionIndex!;
+      if (index < action.page! * RAID_MODAL_PAGE_SIZE || index >= (action.page! + 1) * RAID_MODAL_PAGE_SIZE) throw new Error("Спек не належить цій сторінці.");
+      const choice = raidModalSpecs()[index];
+      if (!choice) throw new Error("Невідома спеціалізація.");
+      manual = { classKey: choice.cls.key, specKey: choice.spec.key };
+    } else {
+      characterKey = draft!.mode === "character" ? draft!.characterKey : null;
+      manual = draft!.mode === "manual" ? { classKey: draft!.classKey || "", specKey: draft!.specKey || "" } : null;
+    }
+    if (fields.status !== "skipped" && !characterKey && !manual) throw new Error("Спочатку обери персонажа або спеціалізацію.");
     const result = await handleRaidDiscordAction({ raidId: draft!.raidId, action: fields.status, userId: params.userId, userName: params.userName,
-      characterKey: draft!.mode === "character" ? draft!.characterKey : null, signupRole: fields.role,
-      manual: draft!.mode === "manual" ? { classKey: draft!.classKey || "", specKey: draft!.specKey || "" } : null,
-      commit: true, menuCommit: { draftId: action.draftId, revision: action.revision, interactionId: params.interaction.id, reminderEnabled: fields.reminderEnabled },
+      characterKey, signupRole: fields.role,
+      manual, commit: true,
+      menuCommit: { draftId: action.draftId, revision: action.revision, interactionId: params.interaction.id, reminderEnabled: fields.reminderEnabled },
     });
-    if (!result.ok || !("raid" in result)) return { ok: false, content: result.ok ? "Персонаж або профіль уже змінився. Відкрий меню й обери запис ще раз." : result.content, components: buildRaidAttendanceComponents(draft!.raidId, { personalized: true, signed: true }) };
-    return { ...result, content: `${result.content}\n${fields.reminderEnabled ? "🔔 Особисте нагадування за 15 хвилин увімкнено." : "🔕 Особисті нагадування про рейди вимкнено."} Налаштування збережено для твого Discord-акаунта.` };
+    if (!result.ok || !("raid" in result)) return { ok: false, content: result.content || "Запис не вдалося підтвердити. Відкрий форму знову.", components: [] };
+    return { ...result, content: `${result.content}\n${fields.reminderEnabled ? "🔔 Нагадування за 15 хвилин увімкнено." : "🔕 Нагадування вимкнено."} Налаштування збережено для Discord-акаунта.` };
   }
-  if (params.interaction.type !== 3 || action.kind === "form") throw new Error("Онови повідомлення або перевір версію бота.");
+  // Previously published private selectors are still recognizable; they no
+  // longer mutate draft state, but offer the new modal form instead.
+  if (params.interaction.type !== 3) throw new Error("Онови повідомлення рейду.");
   const profile = await getProfileByDiscordUserIdForInteraction(params.userId);
-  const value = params.interaction.data?.values?.[0];
-  const updated = await db.runTransaction(async (tx) => {
-    const current = (await tx.get(ref)).data() as RaidSignupMenuDraft | undefined;
-    assertRaidSignupMenuDraft(current, params.userId, action.revision);
-    const next = { ...current!, revision: current!.revision + 1 };
-    if (action.kind === "character" || action.kind === "manual") next.mode = action.kind;
-    else if (action.kind === "skip") next.status = "skipped";
-    else if (action.kind === "page") {
-      if (!/^\d{1,2}$/.test(String(value)) || Number(value) >= Math.ceil(next.characterKeys.length / 25)) throw new Error("Некоректна сторінка.");
-      next.page = Number(value);
-    } else if (action.kind === "pick") {
-      const key = /^\d{1,3}$/.test(String(value)) ? next.characterKeys[Number(value)] : null;
-      const character = profile?.characters.find((c) => c.key === key);
-      if (!character || next.mode !== "character") throw new Error("Персонаж більше не доступний у твоєму профілі.");
-      next.characterKey = character.key; next.role = resolveRaidSignupRole(profile, character);
-    } else if (action.kind === "class") {
-      if (next.mode !== "manual" || !findWowClass(String(value))) throw new Error("Некоректний клас.");
-      next.classKey = String(value); next.specKey = null;
-    } else if (action.kind === "spec") {
-      const spec = findWowSpec(next.classKey || "", String(value));
-      if (next.mode !== "manual" || !spec) throw new Error("Некоректна спеціалізація.");
-      next.specKey = String(value); next.role = spec.spec.role;
-    } else throw new Error("Невідома дія меню.");
-    tx.set(ref, next);
-    return next;
-  });
-  return { content: raidSignupMenuText(updated, profile), components: buildRaidSignupMenuComponents(action.draftId, updated, profile) };
+  return { content: raidSignupMenuText(draft!, profile), components: buildRaidSignupMenuComponents(action.draftId, draft!, profile) };
 }
 export async function pruneRaidSignupMenus(limit = 250) {
   const db = getFirebaseAdminDb();

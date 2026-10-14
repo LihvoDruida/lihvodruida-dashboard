@@ -236,6 +236,7 @@ const DOMAIN_PREFIXES = [
   ["mbv1:raid-menu:", INTERACTION_DOMAINS.RAID],
   ["mbv1:raid-draft:", INTERACTION_DOMAINS.RAID],
   ["mbv1:raid-form:", INTERACTION_DOMAINS.RAID],
+  ["mbv1:raid-modal:", INTERACTION_DOMAINS.RAID],
   ["mbv1:raid-save:", INTERACTION_DOMAINS.RAID],
   [`${CUSTOM_ID_NAMESPACE}:nf:`, INTERACTION_DOMAINS.NICKNAME],
   [`${CUSTOM_ID_NAMESPACE}:ar:`, INTERACTION_DOMAINS.AUTOROLE],
@@ -348,6 +349,10 @@ export function decodeRaidSignupMenuId(value) {
   if(m)return {kind:m[3],draftId:m[1],revision:Number(m[2])};
   m=id.match(/^mbv1:raid-form:([a-f0-9]{32}):(\d{1,8}):(tank|healer|dps):([01]):(going|tentative|late|skipped)$/);
   if(m)return {kind:'form',draftId:m[1],revision:Number(m[2]),role:m[3],reminder:m[4]==='1',status:m[5]};
+  m=id.match(/^mbv1:raid-modal:([a-f0-9]{32}):(\d{1,8}):(character|manual):(\d{1,2})$/);
+  if(m)return {kind:'modal',draftId:m[1],revision:Number(m[2]),mode:m[3],page:Number(m[4])};
+  m=id.match(/^mbv1:raid-save:([a-f0-9]{32}):(\d{1,8}):(character|manual):(\d{1,2})$/);
+  if(m)return {kind:'save',draftId:m[1],revision:Number(m[2]),mode:m[3],page:Number(m[4])};
   m=id.match(/^mbv1:raid-save:([a-f0-9]{32}):(\d{1,8})$/);
   return m?{kind:'save',draftId:m[1],revision:Number(m[2])}:null;
 }

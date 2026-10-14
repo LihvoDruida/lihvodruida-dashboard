@@ -29,3 +29,23 @@ test('signed modal opens immediately and submission persists before ACK',async()
   const unknown=await send({...submitted,id:'1977770001112224404',data:{custom_id:'unrelated-modal'}});assert.equal((await unknown.json()).type,4);assert.equal(receipts,1);
  }finally{const exit=once(child,'exit');child.kill('SIGTERM');await exit;await new Promise(r=>dashboard.close(r))}
 });
+
+test('signed raid-modal click fetches personalized native modal without ingress or public message edit',async()=>{
+ const {publicKey,privateKey}=generateKeyPairSync('ed25519');let renders=0,ingress=0;
+ const dashboard=createServer(async(req,res)=>{
+  for await(const _chunk of req){};
+  res.setHeader('content-type','application/json');
+  if(req.url==='/api/internal/discord/raid-modal'){
+   renders++;
+   res.end(JSON.stringify({type:9,data:{custom_id:`mbv1:raid-save:${draft}:0:character:0`,title:'Запис у рейд',components:[{type:18,label:'Персонаж',component:{type:3,custom_id:'raid_character',options:[{label:'Fixture',value:'0'}]}}]}}));
+  }else{if(req.url==='/api/internal/discord/interaction-ingress'&&req.method==='POST')ingress++;res.end(JSON.stringify({ok:true,jobs:[]}));}
+ });dashboard.listen(0,'127.0.0.1');await once(dashboard,'listening');
+ const reservation=createServer();reservation.listen(0,'127.0.0.1');await once(reservation,'listening');const port=reservation.address().port;await new Promise(r=>reservation.close(r));
+ const child=spawn(process.execPath,[new URL('../src/server.mjs',import.meta.url).pathname],{stdio:'ignore',env:{...process.env,PORT:String(port),HOST:'127.0.0.1',DASHBOARD_INTERNAL_URL:`http://127.0.0.1:${dashboard.address().port}`,INTERNAL_API_TOKEN:'fixture-internal-token-'+'x'.repeat(40),DISCORD_PUBLIC_KEY:publicKey.export({type:'spki',format:'der'}).subarray(-32).toString('hex'),DISCORD_GUILD_ID:guild,DISCORD_APPLICATION_ID:'1977770001112223000',DISCORD_GATEWAY_ENABLED:'0',BOT_LOG_SINK_LEVEL:'error'}});
+ async function send(id,flags){const body=JSON.stringify({id,type:3,guild_id:guild,token:'fixture-token',message:{flags},data:{custom_id:`mbv1:raid-modal:${draft}:0:character:0`}}),timestamp=String(Math.floor(Date.now()/1000)),signature=sign(null,Buffer.from(timestamp+body),privateKey).toString('hex');return fetch(`http://127.0.0.1:${port}/discord/interactions`,{method:'POST',headers:{'content-type':'application/json','x-signature-ed25519':signature,'x-signature-timestamp':timestamp},body,signal:AbortSignal.timeout(5000)})}
+ try{
+  let ready=false;for(let i=0;i<100;i++){if((await fetch(`http://127.0.0.1:${port}/healthz`).catch(()=>null))?.ok){ready=true;break}await wait(20)}assert.ok(ready);
+  const response=await send('1977770001112227701',64);assert.equal(response.status,200);const modal=await response.json();assert.equal(modal.type,9);assert.equal(modal.data.components[0].component.custom_id,'raid_character');assert.equal(renders,1);assert.equal(ingress,0);
+  const invalid=await send('1977770001112227702',0);assert.equal((await invalid.json()).type,4);assert.equal(renders,1);
+ }finally{const exit=once(child,'exit');child.kill('SIGTERM');await exit;await new Promise(r=>dashboard.close(r));}
+});

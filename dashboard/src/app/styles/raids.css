@@ -2703,3 +2703,67 @@
 .raid-list-filters { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; }
 .raid-list-filters label { display: grid; gap: .4rem; min-width: 0; flex: 1 1 180px; }
 .raid-list-filters input, .raid-list-filters select { width: 100%; min-width: 0; }
+
+/* Native, accessible raid signup dialog shared by raid details and preview. */
+.raid-signup-launcher { display: grid; gap: var(--space-xs); min-width: 0; }
+.raid-signup-launcher__button { width: 100%; min-height: 44px; }
+.raid-signup-launcher > small { color: var(--text-muted); }
+.raid-signup-modal {
+  position: fixed; inset: 0; margin: auto; padding: 0; width: min(680px, calc(100vw - 28px));
+  max-width: 680px; max-height: min(90dvh, 900px);
+  border: 1px solid var(--border-subtle); border-radius: 20px;
+  color: var(--text-primary, #f2efe8); background: var(--surface-raised, #161c22);
+  box-shadow: 0 24px 85px rgba(0, 0, 0, .7); overflow: auto; overscroll-behavior: contain;
+}
+.raid-signup-modal::backdrop { background: rgba(2, 7, 12, .8); backdrop-filter: blur(7px); }
+.raid-signup-modal__panel { display: grid; min-width: 0; }
+.raid-signup-modal__header {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  padding: clamp(18px, 4vw, 28px); border-bottom: 1px solid var(--border-subtle);
+  background: linear-gradient(145deg, rgba(194, 146, 74, .12), transparent 70%);
+}
+.raid-signup-modal__header > div { min-width: 0; display: grid; gap: 7px; }
+.raid-signup-modal__eyebrow { color: var(--accent, #d3ab72); font-size: .75rem; letter-spacing: .09em; text-transform: uppercase; }
+.raid-signup-modal__header h2 { font-size: clamp(1.2rem, 2.6vw, 1.65rem); margin: 0; line-height: 1.25; overflow-wrap: anywhere; }
+.raid-signup-modal__header p { color: var(--text-muted); margin: 0; font-size: .9rem; line-height: 1.5; }
+.raid-signup-modal__close {
+  border: 1px solid var(--border-subtle); border-radius: 10px; background: var(--surface-sunken);
+  color: inherit; width: 36px; height: 36px; flex-shrink: 0; font-size: 1.5rem; cursor: pointer;
+}
+.raid-signup-modal__form { display: grid; min-width: 0; }
+.raid-signup-modal__section { padding: 20px clamp(18px, 4vw, 28px); display: grid; gap: 14px; border: 0; border-bottom: 1px solid var(--border-subtle); margin: 0; min-width: 0; }
+.raid-signup-modal__section > strong, .raid-signup-modal__section > legend { font-size: .95rem; font-weight: 700; color: var(--text-primary, #f2efe8); padding: 0; }
+.raid-signup-modal__tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.raid-signup-modal__tabs button {
+  min-width: 0; min-height: 44px; padding: 9px 10px; border: 1px solid var(--border-subtle);
+  border-radius: 11px; background: var(--surface-sunken); color: inherit; cursor: pointer; font: inherit;
+}
+.raid-signup-modal__tabs button.is-active { border-color: var(--accent, #d3ab72); background: rgba(194, 146, 74, .14); }
+.raid-signup-modal__tabs button:disabled { opacity: .5; cursor: not-allowed; }
+.raid-signup-modal__fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; min-width: 0; }
+.raid-signup-modal__fields .field-label { display: grid; gap: 7px; min-width: 0; }
+.raid-signup-modal__fields select { min-width: 0; max-width: 100%; width: 100%; }
+.raid-signup-modal__fields small { color: var(--text-muted); overflow-wrap: anywhere; }
+.raid-signup-modal__attendance { display: block; }
+.raid-signup-modal__attendance legend { margin-bottom: 14px; }
+.raid-signup-modal__statuses { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.raid-signup-modal__statuses label { display: flex; align-items: center; gap: 11px; padding: 11px 12px; border: 1px solid var(--border-subtle); background: var(--surface-sunken); border-radius: 11px; min-width: 0; cursor: pointer; }
+.raid-signup-modal__statuses label.is-active { border-color: var(--accent, #d3ab72); background: rgba(194, 146, 74, .14); }
+.raid-signup-modal__statuses label > span { min-width: 0; display: grid; gap: 2px; }
+.raid-signup-modal__statuses label small { color: var(--text-muted); font-size: .8rem; }
+.raid-signup-modal__statuses input, .raid-signup-modal__reminder input { width: 17px; height: 17px; flex-shrink: 0; accent-color: var(--accent, #d3ab72); }
+.raid-signup-modal__reminder > label { display: flex; gap: 11px; align-items: flex-start; cursor: pointer; }
+.raid-signup-modal__reminder > label > span { display: grid; gap: 5px; line-height: 1.4; }
+.raid-signup-modal__reminder small { color: var(--text-muted); font-size: .8rem; }
+.raid-signup-modal__error { padding: 10px; border-radius: 9px; border: 1px solid #a44; color: #ffbdbd; }
+.raid-signup-modal__footer { padding: 18px clamp(18px, 4vw, 28px); display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+.raid-signup-modal__footer > button { min-height: 44px; min-width: 132px; }
+.raid-signup-modal .raid-action-requirement { margin: 18px; }
+@media (max-width: 580px) {
+  .raid-signup-modal { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); border-radius: 15px; }
+  .raid-signup-modal__fields { grid-template-columns: minmax(0, 1fr); }
+  .raid-signup-modal__statuses { grid-template-columns: minmax(0, 1fr); }
+  .raid-signup-modal__footer { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .raid-signup-modal__footer > button { width: 100%; min-width: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .raid-signup-modal, .raid-signup-modal::backdrop { animation: none; transition: none; } }

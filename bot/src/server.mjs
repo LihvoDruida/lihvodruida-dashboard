@@ -5,6 +5,7 @@ import { inspectDiscordSignature, isRoutineInvalidSignatureProbe } from "./signa
 import { drainInteractionIngress, enqueueVerifiedInteraction, startInteractionIngressWorker, startInteractionOutboxWorker } from "./dashboardClient.mjs";
 import { logger } from "./logger.mjs";
 import { wakeAfterInteractionAck } from "./interactionWorker.mjs";
+import { fetchRaidSignupModal } from "./raidModalClient.mjs";
 import { startDiscordGatewayBridge, discordGatewayHealth } from "./gateway.mjs";
 import {
   INTERACTION_DOMAINS,
@@ -144,6 +145,17 @@ async function handleInteraction(interaction, rawBody, signature, timestamp) {
 
   // Do not ACK unsupported interaction types: the downstream outbox only handles components.
   const menuAction = decodeRaidSignupMenuId(customId);
+  if (interaction.type === InteractionType.MESSAGE_COMPONENT && menuAction?.kind === "modal") {
+    if (!(Number(interaction?.message?.flags || 0) & EPHEMERAL) || String(interaction.guild_id || "") !== String(process.env.DISCORD_GUILD_ID || "")) {
+      return { type: CallbackType.CHANNEL_MESSAGE, data: { flags: EPHEMERAL, content: "Відкрий власну форму через кнопку запису на рейд." } };
+    }
+    try {
+      return await fetchRaidSignupModal({ rawBody, signature, timestamp });
+    } catch (error) {
+      logger.warn("Не вдалося відкрити форму рейду", { reason: error instanceof Error ? error.message : String(error) });
+      return { type: CallbackType.CHANNEL_MESSAGE, data: { flags: EPHEMERAL, content: "⚠️ Не вдалося завантажити форму. Натисни кнопку ще раз." } };
+    }
+  }
   if (interaction.type === InteractionType.MESSAGE_COMPONENT && menuAction?.kind === "form") {
     // Pure UI response: no signup mutation, no queue, and no external lookup.
     if (!(Number(interaction?.message?.flags || 0) & EPHEMERAL) || String(interaction.guild_id || "") !== String(process.env.DISCORD_GUILD_ID || "")) {

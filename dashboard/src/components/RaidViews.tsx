@@ -620,8 +620,7 @@ export function RaidAttendanceActions({
     closed ||
     registrationLocked ||
     needsLogin ||
-    needsDiscordLogin ||
-    needsCharacter;
+    needsDiscordLogin;
   const skipDisabled = closed || registrationLocked || !canSubmitAnyAction;
   const title = closed
     ? "Запис на цей рейд уже вимкнено."
@@ -638,7 +637,7 @@ export function RaidAttendanceActions({
               : newSignupWouldStartOnBench && !viewerAlreadyActive
                 ? "Основний склад заповнений. Новий запис піде в лаву запасних, якщо місця в основі не звільняться."
                 : undefined;
-  const showRequirement = needsLogin || needsDiscordLogin || needsCharacter;
+  const showRequirement = needsLogin || needsDiscordLogin;
   const requirementTitle =
     needsLogin || needsDiscordLogin
       ? "Потрібна авторизація"
@@ -673,6 +672,10 @@ export function RaidAttendanceActions({
       rulesHref={dashboardRaidRulesUrl()}
       characterOptions={characterOptions}
       selectedCharacterKey={selectedCharacterKey}
+      selectedStatus={viewerSignup?.status || "going"}
+      selectedRole={viewerSignup?.role || "dps"}
+      selectedManualClassKey={viewerSignup?.manualClassKey || ""}
+      selectedManualSpecKey={viewerSignup?.manualSpecKey || ""}
       manualClasses={raidManualClassOptions()}
       title={
         hiddenByMinItemLevel > 0 && !needsEligibleCharacter
