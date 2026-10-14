@@ -193,20 +193,11 @@ function hashBattleNetAccountId(value: string) {
 
 export async function fetchBattleNetUserInfo(accessToken: string, regionInput?: string | null): Promise<BattleNetAccountInfo | null> {
   const region = normalizeBattleNetRegion(regionInput || getDefaultBattleNetRegion());
-  const response = await fetch(`${battleNetOAuthBase(region)}/userinfo`, {
-    headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
-    cache: "no-store",
-  });
-
-  const raw = await response.text();
-  let data: any = null;
-  try {
-    data = raw ? JSON.parse(raw) : null;
-  } catch {
-    data = null;
-  }
-
-  if (!response.ok || !data) return null;
+  const data = await apiFetchJson<any>(`${battleNetOAuthBase(region)}/userinfo`, {
+    label: "Battle.net user info", timeoutMs: getBattleNetRequestTimeoutMs(), retries: 0,
+    headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" }, cache: "no-store",
+  }).catch(() => null);
+  if (!data) return null;
 
   const label = cleanText(data?.battletag || data?.battle_tag || data?.preferred_username || "", 120) || null;
   const rawId = cleanText(data?.id || data?.sub || "", 200) || null;
@@ -226,29 +217,13 @@ export async function exchangeBattleNetCode(code: string, regionInput?: string |
     redirect_uri: battleNetRedirectUri(),
   });
 
-  const response = await fetch(`${battleNetOAuthBase(region)}/token`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${basicAuth(clientId, clientSecret)}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body,
-    cache: "no-store",
+  const data = await apiFetchJson<any>(`${battleNetOAuthBase(region)}/token`, {
+    method: "POST", label: "Battle.net OAuth exchange",
+    timeoutMs: getBattleNetRequestTimeoutMs(), retries: 0, retryMethods: [],
+    headers: { Authorization: `Basic ${basicAuth(clientId, clientSecret)}`, "Content-Type": "application/x-www-form-urlencoded" },
+    body, cache: "no-store",
   });
-
-  const raw = await response.text();
-  let data: any = null;
-  try {
-    data = raw ? JSON.parse(raw) : null;
-  } catch {
-    data = null;
-  }
-
-  if (!response.ok) {
-    throw new Error(data?.error_description || data?.error || raw || `Battle.net OAuth error ${response.status}`);
-  }
-
-  if (!data?.access_token) {
+  if (typeof data?.access_token !== "string" || !data.access_token.trim()) {
     throw new Error("Battle.net OAuth response does not contain access_token.");
   }
 
@@ -276,28 +251,13 @@ async function fetchBattleNetApplicationToken(regionInput?: string | null) {
 
   const { clientId, clientSecret } = getBattleNetClient();
   const body = new URLSearchParams({ grant_type: "client_credentials" });
-  const response = await fetch(`${battleNetOAuthBase(region)}/token`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${basicAuth(clientId, clientSecret)}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-      Accept: "application/json",
-    },
-    body,
-    cache: "no-store",
+  const data = await apiFetchJson<any>(`${battleNetOAuthBase(region)}/token`, {
+    method: "POST", label: "Battle.net application token",
+    timeoutMs: getBattleNetRequestTimeoutMs(), retries: 0, retryMethods: [],
+    headers: { Authorization: `Basic ${basicAuth(clientId, clientSecret)}`, "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+    body, cache: "no-store",
   });
-
-  const raw = await response.text();
-  let data: any = null;
-  try {
-    data = raw ? JSON.parse(raw) : null;
-  } catch {
-    data = null;
-  }
-
-  if (!response.ok || !data?.access_token) {
-    throw new Error(data?.error_description || data?.error || raw || `Battle.net application token error ${response.status}`);
-  }
+  if (typeof data?.access_token !== "string" || !data.access_token.trim()) throw new Error("Battle.net application token response is incomplete.");
 
   const expiresIn = Number(data?.expires_in || 0);
   battleNetApplicationTokenCache.set(region, {

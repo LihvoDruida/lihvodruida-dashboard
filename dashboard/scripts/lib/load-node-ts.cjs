@@ -14,6 +14,7 @@ module.exports = function loadNodeTs(relativePath, modules = {}, globals = {}) {
   return vm.runInNewContext(`(() => {${js}\nreturn {${names.join(",")}};})()`, {
     require(name) {
       if (Object.hasOwn(modules, name)) return modules[name];
+      if (name === "@/lib/logPrivacy") return module.exports("src/lib/logPrivacy.ts", {}, globals);
       if (name.startsWith("node:")) return require(name);
       throw Error("Unexpected test import: " + name);
     },

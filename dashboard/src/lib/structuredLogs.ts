@@ -1,3 +1,4 @@
+import { redactLogText, isSensitiveLogKey } from "@/lib/logPrivacy";
 import "server-only";
 
 import { createHash, randomUUID } from "crypto";
@@ -45,7 +46,7 @@ const CATEGORY_VALUES = new Set<StructuredLogCategory>(["security", "api", "acti
 const LEVEL_VALUES = new Set<StructuredLogLevel>(["debug", "info", "success", "warning", "error"]);
 
 function cleanText(value: unknown, max = 500) {
-  const text = String(value ?? "").trim();
+  const text = redactLogText(value).trim();
   return text ? text.slice(0, max) : null;
 }
 
@@ -82,14 +83,14 @@ function redact(value: unknown, depth = 0): unknown {
   if (value === null || value === undefined) return value;
   if (depth > 4) return "[max-depth]";
   if (typeof value === "string") {
-    return value
+    return redactLogText(value)
       .replace(/ghp_[A-Za-z0-9_]+/g, "[redacted]")
       .replace(/github_pat_[A-Za-z0-9_]+/g, "[redacted]")
       .replace(/Bot\s+[A-Za-z0-9._~+\/-]+/gi, "Bot [redacted]")
       .replace(/Bearer\s+[A-Za-z0-9._~+\/-]+/gi, "Bearer [redacted]")
       .replace(/(postgres(?:ql)?:\/\/[^:\s/]+:)[^@\s/]+(@)/gi, "$1[redacted]$2")
       .replace(/(token|secret|password|client_secret)=([^&\s]+)/gi, "$1=[redacted]")
-      .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, "[email]")
+      .replace(/(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, "[email]")
       .replace(/-----BEGIN [^-]+-----[\s\S]*?-----END [^-]+-----/g, "[redacted-private-key]")
       .slice(0, depth === 0 ? 1500 : 700);
   }
@@ -99,7 +100,7 @@ function redact(value: unknown, depth = 0): unknown {
   if (typeof value === "object") {
     const out: Record<string, unknown> = {};
     for (const [key, child] of Object.entries(value as Record<string, unknown>).slice(0, 48)) {
-      if (/token|secret|password|authorization|cookie|signature|private.?key|raw.?body|html|stack/i.test(key)) {
+      if (isSensitiveLogKey(key) || /html|stack/i.test(key)) {
         out[key] = "[redacted]";
       } else {
         out[key] = redact(child, depth + 1);
@@ -122,10 +123,10 @@ function fingerprint(input: StructuredLogInput, category: StructuredLogCategory,
     event: input.event,
     actorId: input.actorId || null,
     method: input.method || null,
-    path: input.path || null,
+    path: redactLogText(input.path || "") || null,
     resourceType: input.resourceType || null,
     resourceId: input.resourceId || null,
-    message: input.message || null,
+    message: redactLogText(input.message || "") || null,
   });
   return createHash("sha256").update(stable).digest("hex");
 }
@@ -258,20 +259,20 @@ export async function listStructuredLogs(query: StructuredLogQuery = {}): Promis
     level: row.level,
     category: row.category,
     source: row.source,
-    event: row.event,
-    message: row.message,
-    actorId: row.actor_id,
-    actorName: row.actor_name,
-    actorGroupId: row.actor_group_id,
-    requestId: row.request_id,
-    method: row.method,
-    path: row.path,
+    event: cleanText(row.event, 180) || "system.event",
+    message: cleanText(redact(row.message), 1500),
+    actorId: cleanText(row.actor_id, 120),
+    actorName: cleanText(row.actor_name, 160),
+    actorGroupId: cleanText(row.actor_group_id, 120),
+    requestId: cleanText(row.request_id, 120),
+    method: cleanText(row.method, 12),
+    path: cleanText(row.path, 500),
     statusCode: row.status_code,
     durationMs: row.duration_ms,
-    ip: row.ip,
-    resourceType: row.resource_type,
-    resourceId: row.resource_id,
-    details: row.details || {},
+    ip: cleanText(row.ip, 80),
+    resourceType: cleanText(row.resource_type, 100),
+    resourceId: cleanText(row.resource_id, 160),
+    details: normalizedDetails(row.details || {}),
   }));
 }
 
@@ -340,20 +341,20 @@ export async function listStructuredLogsExportPage(query: {
     level: row.level,
     category: row.category,
     source: row.source,
-    event: row.event,
-    message: row.message,
-    actorId: row.actor_id,
-    actorName: row.actor_name,
-    actorGroupId: row.actor_group_id,
-    requestId: row.request_id,
-    method: row.method,
-    path: row.path,
+    event: cleanText(row.event, 180) || "system.event",
+    message: cleanText(redact(row.message), 1500),
+    actorId: cleanText(row.actor_id, 120),
+    actorName: cleanText(row.actor_name, 160),
+    actorGroupId: cleanText(row.actor_group_id, 120),
+    requestId: cleanText(row.request_id, 120),
+    method: cleanText(row.method, 12),
+    path: cleanText(row.path, 500),
     statusCode: row.status_code,
     durationMs: row.duration_ms,
-    ip: row.ip,
-    resourceType: row.resource_type,
-    resourceId: row.resource_id,
-    details: row.details || {},
+    ip: cleanText(row.ip, 80),
+    resourceType: cleanText(row.resource_type, 100),
+    resourceId: cleanText(row.resource_id, 160),
+    details: normalizedDetails(row.details || {}),
   }));
   const last = items.length ? items[items.length - 1] : undefined;
   return {

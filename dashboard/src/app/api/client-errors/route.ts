@@ -1,3 +1,5 @@
+import { redactLogText, safeClientLogLocation } from "@/lib/logPrivacy";
+import { isSuspectedInjectedScriptError } from "@/lib/clientErrorPolicy";
 import { NextRequest, NextResponse } from "next/server";
 import { recordDashboardSystemLog } from "@/lib/dashboardSystemLogs";
 import {
@@ -71,14 +73,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: "Payload too large." }, { status: 413, headers: noStoreHeaders() });
     }
     const data = (() => { try { return JSON.parse(rawBody); } catch { return {}; } })();
-    const message = clean(data?.message, 500);
+    const message = clean(redactLogText(data?.message), 500);
     if (!message)
       return NextResponse.json(
         { ok: false, error: "Empty client error." },
         { status: 400, headers: noStoreHeaders() },
       );
-    const stack = cleanStack(data?.stack);
-    const filename = clean(data?.filename, 500);
+    const stack = cleanStack(redactLogText(data?.stack));
+    const filename = safeClientLogLocation(data?.filename);
     if (isIgnorableClientErrorMessage(message, stack, filename)) {
       return NextResponse.json(
         { ok: true, ignored: true },
@@ -86,22 +88,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const suspectedInjection = isSuspectedInjectedScriptError(message, clean(data?.source, 80), stack, String(data?.filename || ""), String(data?.pathname || ""));
     const details = {
+      classification: suspectedInjection ? "suspected_injected_script" : "application_or_unknown",
       status: "error",
       summary: `Client-side помилка: ${message}`,
       message,
       source: clean(data?.source, 80) || "client",
-      pathname: clean(data?.pathname, 240),
+      pathname: safeClientLogLocation(data?.pathname).slice(0, 240),
       userAgent: clean(data?.userAgent, 240),
       stack,
-      filename,
+      filename: safeClientLogLocation(filename),
       ip,
     };
 
-    logDashboardEvent("error", "client.exception", request, details);
+    logDashboardEvent(suspectedInjection ? "warn" : "error", suspectedInjection ? "client.external_script_error" : "client.exception", request, details);
 
     const shouldPersist =
-      /Server Components render|react-error-boundary|page|route/i.test(
+      !suspectedInjection && /Server Components render|react-error-boundary|page|route/i.test(
         `${details.message} ${details.source}`,
       );
     if (shouldPersist) {

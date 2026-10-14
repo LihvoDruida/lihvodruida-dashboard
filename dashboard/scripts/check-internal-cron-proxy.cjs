@@ -8,6 +8,7 @@ const { stripTypeScriptTypes } = require("node:module");
 // effects are replaced. Node 24+ strips types without installing dependencies.
 function load(file, modules, env, names) {
   const js = stripTypeScriptTypes(fs.readFileSync(path.resolve(__dirname, "..", file), "utf8"), { mode: "strip" })
+    .replace(/import\s+(\w+)\s+from\s*["']([^"']+)["'];?/g, (_, binding, name) => `const ${binding} = require(${JSON.stringify(name)});`)
     .replace(/import\s*\{([^}]+)\}\s*from\s*["']([^"']+)["'];?/g,
       (_, bindings, name) => `const {${bindings}} = require(${JSON.stringify(name)});`)
     .replace(/export\s+(?=(?:async\s+)?function|const|let|class)/g, "");
@@ -24,7 +25,9 @@ class NextResponse extends Response {
 const env = { NODE_ENV: "production", DASHBOARD_URL: "https://guild.lihvodruida.pp.ua",
   DASHBOARD_ALLOWED_HOSTS: "guild.lihvodruida.pp.ua", SECURITY_REQUIRE_CLOUDFLARE: "strict",
   SECURITY_STRICT_ORIGIN_CHECKS: "true", INTERNAL_API_TOKEN: "isolated-cron-test-" + "a".repeat(40) };
+const privacy = load("src/lib/logPrivacy.ts", {}, {}, "redactLogText,isSensitiveLogKey");
 const security = load("src/lib/security.ts", {
+  "@/lib/logPrivacy": privacy,
   "next/server": { NextResponse }, "@/lib/oauth": { getDashboardUrl: () => env.DASHBOARD_URL },
   "@/lib/values": { envFlag: (name) => env[name] === "true" },
 }, env, "getRequestHost,isAllowedHost,isLocalHost,getCanonicalDashboardOrigin,noStoreHeaders,forbiddenResponse,unauthorizedResponse,verifyTrustedOrigin,verifyInternalBearerToken");
@@ -33,10 +36,10 @@ const { proxy } = load("src/proxy.ts", { "next/server": { NextResponse },
   "@/lib/security": { ...security, logDashboardEvent: (...args) => events.push(args) } }, env, "proxy");
 const endpoint = "/api/dashboard/discord/profile-nicknames/automation";
 let calls = 0, queueFails = false;
-const { POST } = load(`src/app${endpoint}/route.ts`, { "next/server": { NextResponse }, "@/lib/security": security,
-  "@/lib/profileNicknameSync": { processProfileNicknameSyncQueue: async () => {
+const { POST, GET } = load(`src/app${endpoint}/route.ts`, { "next/server": { NextResponse }, "@/lib/security": security,
+  "../../../../../../../package.json": { version: "3.8.85" }, "@/lib/profileNicknameSync": { processProfileNicknameSyncQueue: async () => {
     calls++; if (queueFails) throw Error("storage unavailable"); return { processed: 0 };
-  } } }, env, "POST");
+  } } }, env, "POST,GET");
 function request(p = endpoint, { host = "dashboard:3000", token = env.INTERNAL_API_TOKEN, headers = {} } = {}) {
   const r = new Request(`http://${host}${p}`, { method: "POST",
     headers: { host, ...(token === null ? {} : { authorization: `Bearer ${token}` }), ...headers } });
@@ -53,6 +56,12 @@ async function through(r) { const response = proxy(r); return response.passed ? 
   await check("valid cron executes queue without session or Cloudflare and emits no rejection", async () => {
     const r = await through(request()); assert.equal(r.status, 200); assert.equal(calls, 1);
     assert.match(r.headers.get("cache-control"), /no-store/); assert.equal(events.length, 0);
+  });
+  await check("exact cron GET probe authenticates and never drains the queue", async () => {
+    const before = calls;
+    const response = await GET(request()); assert.equal(response.status, 200); assert.equal(calls, before);
+    const body = await response.json(); assert.equal(body.mode, "read-only"); assert.equal(body.dashboardVersion, "3.8.85");
+    assert.equal((await GET(request(endpoint, { token: "forged" }))).status, 401); assert.equal(calls, before);
   });
   await check("missing bearer is blocked at Host gate", async () => {
     assert.equal((await through(request(endpoint, { token: null }))).status, 421); assert.equal(calls, 1);

@@ -1,3 +1,4 @@
+import { redactLogText } from "@/lib/logPrivacy";
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { canViewAdminLogs } from "@/lib/permissions";
@@ -41,7 +42,13 @@ export async function GET(request: NextRequest) {
           exportedAt,
           scope,
           retentionDays: 3,
-          filters: scope === "all" ? null : filters,
+          filters: scope === "all" ? null : {
+            hours: filters.hours,
+            category: redactLogText(filters.category),
+            level: redactLogText(filters.level),
+            // Sanitize the complete input before the display bound can cut a token.
+            search: redactLogText(url.searchParams.get("q") || "").trim().slice(0, 120),
+          },
         }).replace(/}$/, ",\"logs\":[")}\n`));
 
         do {

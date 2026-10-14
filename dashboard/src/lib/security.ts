@@ -1,3 +1,4 @@
+import { redactLogText, isSensitiveLogKey } from "@/lib/logPrivacy";
 import { NextRequest, NextResponse } from "next/server";
 import { getDashboardUrl } from "@/lib/oauth";
 import { envFlag } from "@/lib/values";
@@ -95,15 +96,15 @@ function redactLogValue(value: unknown, depth = 0): unknown {
   if (depth > 4) return "[max-depth]";
 
   if (typeof value === "string") {
-    return value
+    return redactLogText(value)
       .replace(/ghp_[A-Za-z0-9_]+/g, "[redacted]")
       .replace(/github_pat_[A-Za-z0-9_]+/g, "[redacted]")
       .replace(/mfa\.[A-Za-z0-9_-]+/g, "[redacted]")
-      .replace(/[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{20,}/g, "[redacted]")
+      .replace(/(?<![A-Za-z0-9_-])[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{20,}/g, "[redacted]")
       .replace(/Bot\s+[A-Za-z0-9._-]+/gi, "Bot [redacted]")
       .replace(/Bearer\s+[A-Za-z0-9._~+\/-]+/gi, "Bearer [redacted]")
       .replace(/(postgres(?:ql)?:\/\/[^:\s/]+:)[^@\s/]+(@)/gi, "$1[redacted]$2")
-      .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, "[email]")
+      .replace(/(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, "[email]")
       .slice(0, 500);
   }
 
@@ -116,7 +117,7 @@ function redactLogValue(value: unknown, depth = 0): unknown {
   if (typeof value === "object") {
     return Object.fromEntries(
       Object.entries(value as Record<string, unknown>).slice(0, 40).map(([key, item]) => {
-        if (/token|secret|password|authorization|cookie|signature/i.test(key)) {
+        if (isSensitiveLogKey(key)) {
           return [key, "[redacted]"];
         }
         return [key, redactLogValue(item, depth + 1)];
@@ -564,14 +565,14 @@ export function safeErrorMessage(error: unknown, fallback = "Операція н
   const message = error instanceof Error ? error.message : String(error || "");
   if (!message) return fallback;
 
-  const redacted = message
+  const redacted = redactLogText(message)
     .replace(/ghp_[A-Za-z0-9_]+/g, "[redacted]")
     .replace(/github_pat_[A-Za-z0-9_]+/g, "[redacted]")
     .replace(/Bot\s+[A-Za-z0-9._~+\/-]+/gi, "Bot [redacted]")
     .replace(/Bearer\s+[A-Za-z0-9._~+\/-]+/gi, "Bearer [redacted]")
     .replace(/(postgres(?:ql)?:\/\/[^:\s/]+:)[^@\s/]+(@)/gi, "$1[redacted]$2")
     .replace(/(token|secret|password|client_secret)=([^&\s]+)/gi, "$1=[redacted]")
-    .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, "[email]")
+    .replace(/(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, "[email]")
     .slice(0, 240);
 
   return userFriendlyErrorMessage(redacted, fallback).slice(0, 240);

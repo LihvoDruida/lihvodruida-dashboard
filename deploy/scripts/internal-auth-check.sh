@@ -73,3 +73,12 @@ else
   fail "cron → dashboard: INTERNAL_CRON_TOKEN не збігається з dashboard"
 fi
 
+
+# Probe the exact former 421 route; GET cannot mutate nicknames or run Discord work.
+if docker compose exec -T cron sh -lc \
+  'curl --silent --show-error --fail --location --max-redirs 0 --max-time 5 --header "Authorization: Bearer $INTERNAL_CRON_TOKEN" http://dashboard:3000/api/dashboard/discord/profile-nicknames/automation'
+then
+  ok "cron → profile-nicknames: Host і токен прийнято, перевірка без виконання черги"
+else
+  fail "profile-nicknames probe не пройшов: перевір версію dashboard, DASHBOARD_INTERNAL_HOSTS та токен cron; HTTP 308/421 означає відхилений Host, 401 — токен, 405 — старий dashboard"
+fi

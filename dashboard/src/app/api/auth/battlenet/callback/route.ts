@@ -1,3 +1,4 @@
+import { battleNetFailureDiagnostic, type BattleNetCallbackStage } from "@/lib/battleNetDiagnostics";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getSession, secureAuthCookiesEnabled } from "@/lib/auth";
@@ -137,15 +138,19 @@ export async function GET(request: NextRequest) {
     return redirectToProfile(session.profileId, "bnet_state");
   }
 
+  let stage: BattleNetCallbackStage = "profile_upsert";
+  const region = getRegionFromOAuthState(state);
   try {
     await upsertProfileFromSession(session);
-    const region = getRegionFromOAuthState(state);
+    stage = "oauth_exchange";
     const token = await exchangeBattleNetCode(code, region);
+    stage = "character_scan";
     const [scan, account] = await Promise.all([
       fetchBattleNetGuildCharacters(token.access_token, region),
       fetchBattleNetUserInfo(token.access_token, region).catch(() => null),
     ]);
 
+    stage = "conflict_check";
     const conflicts = await findProfileCharacterConflicts(
       session.profileId,
       scan.characters || [],
@@ -191,6 +196,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    stage = "save_sync";
     await saveBattleNetSyncState(session.profileId, scan, account);
 
     logDashboardEvent("info", "auth.battlenet.callback.success", request, {
@@ -213,13 +219,11 @@ export async function GET(request: NextRequest) {
       getNextPathFromOAuthState(state),
     );
   } catch (error) {
-    logDashboardEvent("error", "auth.battlenet.callback.failed", request, {
-      profileId: session.profileId,
-      message: safeErrorMessage(error),
-    });
+    const diagnostic = battleNetFailureDiagnostic(error, stage, region);
+    logDashboardEvent(diagnostic.status === "bnet_profile_unavailable" || diagnostic.status === "bnet_access_denied" ? "warn" : "error", "auth.battlenet.callback.failed", request, { profileId: session.profileId, ...diagnostic });
     return redirectToProfile(
       session.profileId,
-      "bnet_failed",
+      diagnostic.status,
       getNextPathFromOAuthState(state),
     );
   }

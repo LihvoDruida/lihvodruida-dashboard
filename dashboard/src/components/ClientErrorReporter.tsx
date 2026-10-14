@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { redactLogText, safeClientLogLocation } from "@/lib/logPrivacy";
+import { isSuspectedInjectedScriptError } from "@/lib/clientErrorPolicy";
 import { dispatchDashboardToast } from "@/lib/clientToasts";
 
 type ClientErrorPayload = {
@@ -41,11 +43,11 @@ function normalizeError(
   value: unknown,
   event?: ErrorEvent | PromiseRejectionEvent,
 ): NormalizedClientError {
-  const message = errorMessage(value).slice(0, 500);
-  const stack = errorStack(value).slice(0, 4000);
+  const message = redactLogText(errorMessage(value)).slice(0, 500);
+  const stack = redactLogText(errorStack(value)).slice(0, 4000);
   const filename =
     event && "filename" in event && typeof event.filename === "string"
-      ? event.filename.slice(0, 500)
+      ? safeClientLogLocation(event.filename)
       : "";
 
   return { message, stack, filename };
@@ -112,7 +114,13 @@ async function reportClientError(payload: ClientErrorPayload) {
       },
       credentials: "same-origin",
       cache: "no-store",
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        ...payload,
+        message: redactLogText(payload.message),
+        stack: redactLogText(payload.stack),
+        pathname: safeClientLogLocation(payload.pathname),
+        filename: safeClientLogLocation(payload.filename),
+      }),
     });
   } catch {
     // Logging must never create another visible failure.
@@ -177,6 +185,7 @@ export default function ClientErrorReporter() {
         filename: normalized.filename,
       });
 
+      if (isSuspectedInjectedScriptError(normalized.message, source, normalized.stack, normalized.filename, window.location.href)) return;
       if (!shouldShowVisibleToast(normalized)) return;
 
       dispatchDashboardToast({

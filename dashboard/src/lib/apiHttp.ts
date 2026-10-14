@@ -75,6 +75,9 @@ function shouldRetryResponse(status: number, method: string, options: ApiFetchJs
 }
 
 function shouldRetryNetworkError(error: unknown, method: string, options: ApiFetchJsonOptions) {
+  // HTTP failures have already been considered by shouldRetryResponse.
+  // Treating a rejected 403/404 as a network failure repeats it needlessly.
+  if (error instanceof ApiHttpError) return false;
   const methods = options.retryMethods || DEFAULT_RETRY_METHODS;
   if (!methods.map((item) => item.toUpperCase()).includes(method)) return false;
   const name = (error as Error | null)?.name || "";

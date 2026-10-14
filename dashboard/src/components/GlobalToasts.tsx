@@ -35,6 +35,18 @@ const CHARACTER_STATUS_MESSAGES: Record<string, Omit<Toast, "id">> = {
       "Battle.net не підтвердив персонажів Mistblossom Vanguard, але інших персонажів можна додавати для запису в рейд із позначкою 🤝.",
     ttl: 8200,
   },
+  bnet_profile_unavailable: {
+    tone: "warning", title: "Профіль WoW недоступний",
+    message: "Battle.net не повернув профіль WoW у вибраному регіоні. Перевір регіон і доступ wow.profile та запусти підключення знову. Збережені персонажі залишилися на місці.", ttl: 10000,
+  },
+  bnet_access_denied: {
+    tone: "warning", title: "Battle.net не дозволив читання профілю",
+    message: "Перевір дозвіл доступу до профілю WoW під час авторизації та вибраний регіон. Збережені персонажі залишилися на місці.", ttl: 10000,
+  },
+  bnet_unavailable: {
+    tone: "warning", title: "Battle.net тимчасово недоступний",
+    message: "Відповідь не надійшла вчасно або сервіс відхилив запит. Спробуй підключення пізніше. Збережені персонажі залишилися на місці.", ttl: 10000,
+  },
   bnet_failed: {
     tone: "error",
     title: "Battle.net не оновлено",
