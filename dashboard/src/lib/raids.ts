@@ -6701,25 +6701,30 @@ export async function prepareRaidSignupModal(params: { customId: string; userId:
   if (action?.kind !== "modal" || params.guildId !== getDiscordGuildId() || !/^\d{16,25}$/.test(params.userId)) throw new Error("Форма належить іншому серверу.");
   const draft = (await getFirebaseAdminDb().collection(RAID_SIGNUP_MENU_COLLECTION).doc(action.draftId).get()).data() as RaidSignupMenuDraft | undefined;
   assertRaidSignupMenuDraft(draft, params.userId, action.revision);
-  if (draft!.guildId !== params.guildId || action.page < 0) throw new Error("Форма іншого користувача або сервера.");
+  // Legacy menu actions have no page; only paginated modal launchers may open this form.
+  const page = action.page;
+  if (draft!.guildId !== params.guildId || (action.mode !== "character" && action.mode !== "manual") ||
+      page === undefined || !Number.isSafeInteger(page) || page < 0) {
+    throw new Error("Форма іншого користувача або сервера.");
+  }
   const options: Array<Record<string, unknown>> = [];
   let selection: Record<string, unknown>;
   if (action.mode === "character") {
     const profile = await getProfileByDiscordUserIdForInteraction(params.userId);
-    const keys = draft!.characterKeys.slice(action.page * RAID_MODAL_PAGE_SIZE, (action.page + 1) * RAID_MODAL_PAGE_SIZE);
+    const keys = draft!.characterKeys.slice(page * RAID_MODAL_PAGE_SIZE, (page + 1) * RAID_MODAL_PAGE_SIZE);
     for (let index = 0; index < keys.length; index++) {
       const character = profile?.characters.find((c) => c.key === keys[index]);
       if (!character) continue;
-      options.push({ label: `${character.name} · ${character.realmName || character.realmSlug || "WoW"}`.slice(0, 100), value: String(action.page * RAID_MODAL_PAGE_SIZE + index),
+      options.push({ label: `${character.name} · ${character.realmName || character.realmSlug || "WoW"}`.slice(0, 100), value: String(page * RAID_MODAL_PAGE_SIZE + index),
         description: `${character.className || ""} · ${character.activeSpecName || ""}`.slice(0, 100), default: character.key === draft!.characterKey });
     }
-    if (!options.length || action.page >= modalPages(draft!.characterKeys.length)) throw new Error("Немає персонажів на цій сторінці. Відкрий запис ще раз.");
+    if (!options.length || page >= modalPages(draft!.characterKeys.length)) throw new Error("Немає персонажів на цій сторінці. Відкрий запис ще раз.");
     selection = raidModalSelect("raid_character", "Персонаж", options);
   } else {
-    const specs = raidModalSpecs().slice(action.page * RAID_MODAL_PAGE_SIZE, (action.page + 1) * RAID_MODAL_PAGE_SIZE);
+    const specs = raidModalSpecs().slice(page * RAID_MODAL_PAGE_SIZE, (page + 1) * RAID_MODAL_PAGE_SIZE);
     if (!specs.length) throw new Error("Сторінки спеціалізацій не існує.");
     specs.forEach(({ cls, spec }, index) => options.push({ label: `${cls.label} · ${spec.label}`.slice(0, 100),
-      value: String(action.page * RAID_MODAL_PAGE_SIZE + index), description: raidRoleLabel(spec.role), default: draft!.classKey === cls.key && draft!.specKey === spec.key }));
+      value: String(page * RAID_MODAL_PAGE_SIZE + index), description: raidRoleLabel(spec.role), default: draft!.classKey === cls.key && draft!.specKey === spec.key }));
     selection = raidModalSelect("raid_spec", "Клас і спеціалізація", options, "Роль визначається автоматично за спеціалізацією.");
   }
   const statusChoices: [RaidSignupStatus, string][] = [["going", "Буду"], ["tentative", "50/50"], ["late", "Затримаюся"], ["skipped", "Пропускаю"]];
@@ -6729,7 +6734,7 @@ export async function prepareRaidSignupModal(params: { customId: string; userId:
   if (action.mode === "character") components.push(raidModalSelect("role", "Роль", (["tank", "healer", "dps"] as const).map((value) => ({ label: raidRoleLabel(value), value, default: value === draft!.role }))));
   components.push({ type: 18, label: "Нагадати в особисті за 15 хвилин", description: "Прапорець зберігається в Discord і профілі сайту.",
     component: { type: 23, custom_id: "raid_reminder", default: draft!.reminderEnabled } });
-  return { type: 9, data: { custom_id: `mbv1:raid-save:${action.draftId}:${action.revision}:${action.mode}:${action.page}`,
+  return { type: 9, data: { custom_id: `mbv1:raid-save:${action.draftId}:${action.revision}:${action.mode}:${page}`,
     title: action.mode === "character" ? "Запис на рейд · персонаж" : "Запис на рейд · вручну", components } };
 }
 export function raidSignupModalValues(components: unknown, mode: "character" | "manual" | "legacy" = "legacy") {
