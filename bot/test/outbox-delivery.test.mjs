@@ -17,7 +17,13 @@ const job = {
 
 async function scenario({ discordStatus = 200, discordBody = "", failAck = false }) {
   const calls = [];
+  let leased = false;
   globalThis.fetch = async (url, options) => {
+    if (url.endsWith("/api/dashboard/logs/ingest")) return new Response("{}", { status: 200 });
+    if (url.endsWith("/api/internal/discord/interaction-deliveries") && options.method === "GET") {
+      if (leased) return new Response('{"jobs":[]}', { status: 200 });
+      leased = true;
+    }
     calls.push({ url: String(url), options });
     if (url.endsWith("/api/internal/discord/interaction-deliveries") && options.method === "GET") {
       return new Response(JSON.stringify({ jobs: [job] }), { status: 200 });

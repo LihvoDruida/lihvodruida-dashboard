@@ -1,4 +1,5 @@
 import ApplicationStatusActions from "@/components/ApplicationStatusActions";
+import { ApplicationModerationProvider, ApplicationSelection } from "@/components/ApplicationModerationQueue";
 import ApplicationFilters from "@/components/ApplicationFilters";
 import ListViewMemory from "@/components/ListViewMemory";
 import { listNavigationScope } from "@/lib/listNavigationScope";
@@ -231,6 +232,7 @@ export default async function DashboardPage({
 
         {!mayManageApplications ? <div className="notice panel">Режим наставника: заявки можна переглядати, але Discord і BattleTag приховано, а рішення по кандидатах недоступні.</div> : null}
 
+        <ApplicationModerationProvider key={`${listNavigationScope(user)}:${currentUrl}`} canModerate={mayManageApplications} items={items.map((item) => ({ issueNumber: item.number, status: item.status_key, state: item.state }))}>
         <section className="applications-list" aria-live="polite">
           {items.length ? items.map((item) => {
             const characterName = item.character_name || item.title || "Персонаж";
@@ -282,8 +284,8 @@ export default async function DashboardPage({
 
                 <aside className="application-card__decision">
                   <div className="application-card__decision-title"><span>Рішення</span><small>#{item.number}</small></div>
+                  <ApplicationSelection issueNumber={item.number} />
                   <ApplicationStatusActions issueNumber={item.number} initialStatus={item.status_key} issueState={item.state} canModerate={mayManageApplications} canDelete={Boolean(user.isServerOwner)} />
-                  <div className="application-card__decision-state">{item.state === "closed" ? "Заявку закрито" : "Очікує рішення офіцера"}</div>
                 </aside>
               </article>
             );
@@ -295,6 +297,7 @@ export default async function DashboardPage({
             </div>
           )}
         </section>
+        </ApplicationModerationProvider>
       </section>
     </main>
   );

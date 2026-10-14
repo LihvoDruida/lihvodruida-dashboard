@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { settleWithConcurrency } from "@/lib/settleWithConcurrency";
 import { getIntegrationStatusSummary } from "@/lib/integrationStatus";
 import { getDashboardApiSettings, type DashboardApiSettings } from "@/lib/dashboardApiSettings";
 import { loadStoredGuildRosterData } from "@/lib/guildRoster";
@@ -209,18 +210,19 @@ export async function POST(request: NextRequest) {
   }
 
   const startedAt = Date.now();
-  const results = [];
-  for (let index = 0; index < resources.length; index += 1) {
-    const resource = resources[index];
+  // At most three independent reads; permissions are still checked per item.
+  const settled = await settleWithConcurrency(resources, async (resource, index) => {
     const key = resourceKey(resource, index);
     try {
       const result = await resolveResource(resource, session, settings);
-      results.push({ key, ...result });
+      return { key, ...result };
     } catch (error) {
-      results.push({ key, ok: false, error: error instanceof Error ? error.message : "resource_failed" });
+      return { key, ok: false, error: error instanceof Error ? error.message : "resource_failed" };
     }
-    if (Date.now() - startedAt > 4_000) break;
-  }
+  }, MAX_RESOURCES_PER_REQUEST);
+  const results = settled.map((item, index) => item.status === "fulfilled"
+    ? item.value
+    : { key: resourceKey(resources[index], index), ok: false, error: "resource_failed" });
 
   logDashboardEvent("debug", "background_api.refresh", request, {
     profileId: session.profileId || null,

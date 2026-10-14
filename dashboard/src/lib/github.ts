@@ -1174,40 +1174,31 @@ export async function setIssueStatus(params: {
   status: ApplicationStatus;
   moderator: string;
   source: "dashboard" | "discord";
+  requireReview?: boolean;
 }) {
   const issueNumber = Number(params.issueNumber);
-  if (!Number.isInteger(issueNumber) || issueNumber <= 0) {
-    throw new Error("Invalid application number");
-  }
-
+  if (!Number.isInteger(issueNumber) || issueNumber <= 0) throw new Error("Invalid application number");
   const status = normalizeStatus(params.status);
   const doc = await findFirebaseApplicationDoc(issueNumber);
-  if (!doc) throw new Error("Заявку не знайдено у Firebase.");
-
-  const nextLabel = statusLabel(status);
-  const now = new Date().toISOString();
-  await doc.ref.update({
-    status,
-    status_key: status,
-    status_text: statusText(status),
-    state: status === "review" ? "open" : "closed",
-    closed_at: status === "review" ? null : now,
-    updated_at: now,
-    updatedAtMs: Date.now(),
-    labels: labelsForFirebaseStatus(status),
-    moderation_events: FieldValue.arrayUnion({
-      status,
-      moderator: params.moderator,
-      source: params.source,
-      at: now,
-    }),
+  if (!doc) throw new Error("Заявку не знайдено у сховищі.");
+  // Only the winning final decision may trigger Discord side effects.
+  return getFirebaseAdminDb().runTransaction(async (tx: any) => {
+    const snapshot = await tx.get(doc.ref);
+    if (!snapshot.exists) throw new Error("Заявку не знайдено у сховищі.");
+    const current = mapFirebaseApplicationDoc(snapshot);
+    if ((params.requireReview && (current.status_key !== "review" || current.state === "closed")) || current.status_key === status) {
+      return { ok: true, status: current.status_key, state: current.state, changed: false, alreadyModerated: true, label: statusLabel(current.status_key) };
+    }
+    const now = new Date().toISOString();
+    tx.update(doc.ref, {
+      status, status_key: status, status_text: statusText(status),
+      state: status === "review" ? "open" : "closed",
+      closed_at: status === "review" ? null : now, updated_at: now,
+      updatedAtMs: Date.now(), labels: labelsForFirebaseStatus(status),
+      moderation_events: FieldValue.arrayUnion({ status, moderator: params.moderator, source: params.source, at: now }),
+    });
+    return { ok: true, status, state: status === "review" ? "open" : "closed", changed: true, alreadyModerated: false, label: statusLabel(status) };
   });
-
-  return {
-    ok: true,
-    status,
-    label: nextLabel,
-  };
 }
 
 export async function updateApplicationStatus(

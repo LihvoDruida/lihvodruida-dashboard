@@ -1724,13 +1724,16 @@ export async function syncRaidPollDiscordMessage(
   return "updated";
 }
 
-async function publishOrUpdatePollDiscordMessage(input: RaidPollItem, channelIdInput?: string | null) {
+async function publishOrUpdatePollDiscordMessage(input: RaidPollItem, channelIdInput?: string | null, manualRef?: DiscordMessageRef | null) {
   return withDiscordPublicationLease(`poll:${input.id}`, async assertOwned => {
-    const targetChannelId = cleanSnowflake(channelIdInput) || cleanSnowflake(input.channelId) || getDiscordDefaultChannelId();
+    const snapshot = await pollRef(input.id).get();
+    if (!snapshot.exists) throw new Error("Рейд-пул не знайдено.");
+    const fresh = normalizeRaidPoll(input.id, snapshot.data() || {});
+    const targetChannelId = cleanSnowflake(fresh.channelId) || cleanSnowflake(channelIdInput) || getDiscordDefaultChannelId();
     if (!targetChannelId) throw new Error("Discord-канал для рейд-пулу не вибрано.");
     const result = await publishDiscordResourceMessage({
       kind: "poll-message", collection: RAID_POLL_COLLECTION, resourceId: input.id,
-      channelId: targetChannelId, assertOwned,
+      channelId: targetChannelId, assertOwned, manualRef,
       build: async raw => {
         const current = normalizeRaidPoll(input.id, raw);
         // A scheduled claim renders the future open state. Stored votes and
@@ -2153,7 +2156,7 @@ async function claimScheduledRaidPoll(pollId: string, nowMs: number, lockId: str
   }, { logEvent: "raid_polls.scheduled_publish_claim_failed" });
 }
 
-async function publishClaimedScheduledRaidPoll(template: RaidPollItem, lockId: string) {
+async function publishClaimedScheduledRaidPoll(template: RaidPollItem, lockId: string, manualRef?: DiscordMessageRef | null) {
   const nowMs = Date.now();
   const nowIso = new Date(nowMs).toISOString();
   const closesAtMs = nowMs + template.closeAfterMinutes * 60 * 1000;
@@ -2179,7 +2182,7 @@ async function publishClaimedScheduledRaidPoll(template: RaidPollItem, lockId: s
 
   let published: { channelId: string; messageId: string; messageUrl: string } | null = null;
   try {
-    published = await publishOrUpdatePollDiscordMessage(openPoll, openPoll.channelId);
+    published = await publishOrUpdatePollDiscordMessage(openPoll, openPoll.channelId, manualRef);
     await firebaseWrite("raid", `raid-poll:publish-commit:${template.id}:${lockId}`, async () => {
       const ref = pollRef(template.id);
       await getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
@@ -2828,27 +2831,27 @@ export async function reopenRaidPoll(pollId: string, options: { minutes?: number
  * Ручна пересинхронізація з Discord. Якщо повідомлення зникло (видалене
  * вручну або канал перестворено) — публікує його заново замість тихої помилки.
  */
-export async function resyncRaidPollDiscord(pollId: string) {
+export async function resyncRaidPollDiscord(pollId: string, publicationMessageUrl = "") {
   if (!hasRaidPollStorage()) throw new Error(firebaseUnavailableMessage("raid", "write"));
-  const poll = await getRaidPoll(pollId, { bypassCache: true });
+  const poll = await getRaidPoll(pollId, { bypassCache: true, closeDue: false });
   if (!poll) throw new Error("Рейд-пул не знайдено.");
-  if (poll.status === "scheduled") throw new Error("Пул заплановано на майбутнє. Discord не синхронізується до часу публікації.");
-
-  clearRaidPollDiscordSignatureCache(poll.id);
-
-  if (poll.channelId && poll.messageId) {
-    try {
-      await syncRaidPollDiscordMessage(poll, { force: true });
-      return { poll, republished: false };
-    } catch (error) {
-      if (!isMissingDiscordMessageError(error)) throw error;
-    }
+  const manualRef = publicationMessageUrl ? parseDiscordMessageRef(publicationMessageUrl) : null;
+  if (publicationMessageUrl && !manualRef) throw new Error("Вкажи повне посилання на повідомлення Discord.");
+  if (poll.status === "scheduled") {
+    const lockId = randomUUID();
+    const claimed = await claimScheduledRaidPoll(poll.id, Date.now(), lockId);
+    if (!claimed) throw new Error("Час публікації ще не настав або її вже виконує інший процес. Онови стан пізніше.");
+    const published = await publishClaimedScheduledRaidPoll(claimed, lockId, manualRef);
+    return { poll: published, republished: published.messageId !== poll.messageId, warning: null };
   }
 
-  const ref = await publishOrUpdatePollDiscordMessage(poll, poll.channelId);
+  // Always enter the shared lease and resolve the durable receipt first,
+  // including a pending channel transfer with an old message still linked.
+  const ref = await publishOrUpdatePollDiscordMessage(poll, poll.channelId, manualRef);
   await savePollDiscordRef(poll.id, ref);
-  const refreshed = await getRaidPoll(poll.id, { bypassCache: true });
-  return { poll: refreshed || poll, republished: true };
+  const refreshed = await getRaidPoll(poll.id, { bypassCache: true, closeDue: false });
+  if (!refreshed) throw new Error("Рейд-пул видалено після синхронізації.");
+  return { poll: refreshed, republished: ref.messageId !== poll.messageId, warning: ref.cleanupWarning };
 }
 
 function normalizeVoteScheduleForPoll(poll: RaidPollItem, schedule: RaidPollSchedule) {

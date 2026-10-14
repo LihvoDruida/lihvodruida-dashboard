@@ -35,7 +35,7 @@ const checks = [
   ['scheduled publish failures are persisted for admin diagnostics and automatic retry', shared.includes('scheduledPublishLastError?: string | null') && polls.includes('scheduledPublishLastErrorAt: failedAt.toISOString()') && views.includes('Остання спроба публікації не вдалася')],
   ['lifecycle publishes scheduled polls before close/repeat work', lifecyclePublishIndex >= 0 && lifecycleRepeatIndex > lifecyclePublishIndex],
   ['recurrence cannot create a duplicate while the initial poll is still scheduled', polls.includes('if (poll.status === "scheduled" || !poll.autoRepeatWeekly') && polls.includes('if (poll.status === "scheduled" || !poll.repeatNextAtMs')],
-  ['manual Discord sync cannot publish a scheduled poll early', polls.includes('Пул заплановано на майбутнє. Discord не синхронізується до часу публікації.')],
+  ['manual Discord sync cannot publish a scheduled poll early', polls.includes('const claimed = await claimScheduledRaidPoll(poll.id, Date.now(), lockId);') && polls.includes('if (!claimed) throw new Error(') && polls.includes('poll.scheduledPublishAtMs > nowMs) return null;')],
   ['canceling a scheduled poll clears its schedule and repeat data', polls.includes('const cancelScheduled = poll.status === "scheduled"') && polls.includes('scheduledPublishAtMs: null') && polls.includes('autoRepeatWeekly: false')],
   ['create UI exposes publish-now and schedule choices', form.includes('Опублікувати зараз') && form.includes('Запланувати') && form.includes('name="publishMode"')],
   ['schedule controls work independently of weekly repeat', form.includes('publishMode === "scheduled" || autoRepeatWeekly')],

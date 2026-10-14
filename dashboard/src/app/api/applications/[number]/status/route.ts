@@ -73,21 +73,20 @@ export async function POST(
       status,
       moderator: `${moderatorName} (${hierarchyTitle(session.role)})`,
       source: "dashboard",
+      requireReview: true,
     });
 
-    const resultRecord = result as Record<string, unknown>;
-    const discordResult = resultRecord.discord && typeof resultRecord.discord === "object" && !Array.isArray(resultRecord.discord)
-      ? resultRecord.discord as Record<string, unknown>
-      : null;
-
-    logDashboardEvent("info", "applications.status.success", request, { issueNumber, status, userId: session.id });
+    const discordConfirmed = Boolean(result.discord.edited?.ok || (result.discord.notified as { ok?: boolean } | null)?.ok);
+    logDashboardEvent("info", "applications.status.success", request, { issueNumber, status: result.status, changed: result.changed, userId: session.id });
     await recordAdminAudit("applications.status.update", session, {
-      status: "success",
-      summary: `Заявка #${issueNumber}: статус змінено на ${status}.`,
+      status: result.changed && !discordConfirmed ? "warning" : "success",
+      summary: result.alreadyModerated ? `Заявка #${issueNumber}: збережений статус ${result.status}, повторне рішення не виконано.` : `Заявка #${issueNumber}: статус змінено на ${result.status}.`,
       issueNumber,
-      applicationStatus: status,
+      applicationStatus: result.status,
+      requestedStatus: status,
+      changed: result.changed,
       source: "dashboard",
-      discordUpdated: Boolean(resultRecord.discordUpdated || discordResult?.ok),
+      discordUpdated: discordConfirmed,
     }).catch((auditError) => {
       logDashboardEvent("warn", "applications.status.audit_failed", request, { issueNumber, status, message: auditError instanceof Error ? auditError.message : String(auditError || "unknown") });
     });
@@ -97,9 +96,9 @@ export async function POST(
     logDashboardEvent("error", "applications.status.failed", request, { issueNumber, status, message });
     await recordAdminAudit("applications.status.update_failed", session, {
       status: "error",
-      summary: `Заявка #${issueNumber}: статус не змінено. ${message}`,
+      summary: `Заявка #${issueNumber}: результат зміни статусу не підтверджено. ${message}`,
       issueNumber,
-      applicationStatus: status,
+      requestedStatus: status,
       error: error instanceof Error ? error.message : String(error || ""),
     }).catch(() => false);
     return NextResponse.json(

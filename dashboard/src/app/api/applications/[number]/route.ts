@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
+import { canViewApplications } from "@/lib/permissions";
 import { recordAdminAudit } from "@/lib/accessGroups";
 import { deleteDiscordApplicationMessage } from "@/lib/discord";
 import { deleteGuildApplication, getIssue } from "@/lib/github";
@@ -18,6 +19,24 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+// Reconciliation reads only the stored status; it never retries a decision or Discord action.
+export async function GET(request: NextRequest, context: { params: Promise<{ number: string }> }) {
+  const session = await getSession();
+  if (!session) return unauthorizedResponse();
+  if (!canViewApplications(session)) return forbiddenResponse();
+  const issueNumber = Number((await context.params).number);
+  if (!Number.isSafeInteger(issueNumber) || issueNumber <= 0) {
+    return NextResponse.json({ error: "Невірний номер заявки." }, { status: 400, headers: noStoreHeaders() });
+  }
+  try {
+    const issue = await getIssue(issueNumber);
+    return NextResponse.json({ ok: true, issueNumber, status: issue.status_key, state: issue.state, updatedAt: issue.updated_at || null }, { headers: noStoreHeaders() });
+  } catch (error) {
+    const missing = error instanceof Error && /Заявку не знайдено/.test(error.message);
+    return NextResponse.json({ error: missing ? "Заявку не знайдено." : "Не вдалося перевірити стан заявки." }, { status: missing ? 404 : 503, headers: noStoreHeaders() });
+  }
+}
 
 export async function DELETE(request: NextRequest, context: { params: Promise<{ number: string }> }) {
   if (!verifyTrustedOrigin(request)) return forbiddenResponse("Недовірене джерело видалення заявки.");

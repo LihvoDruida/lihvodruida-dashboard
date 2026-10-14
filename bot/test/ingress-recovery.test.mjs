@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { drainInteractionIngress, enqueueVerifiedInteraction } from "../src/dashboardClient.mjs";
+import { drainInteractionIngress, drainInteractionOutbox, enqueueVerifiedInteraction } from "../src/dashboardClient.mjs";
 
 const originalFetch = globalThis.fetch;
 const oldToken = process.env.INTERNAL_API_TOKEN;
@@ -39,8 +39,15 @@ try {
   });
   await test("worker replays signed request using original verification headers and settles", async () => {
     const calls = [];
+    let leased = false;
     globalThis.fetch = async (url, opts) => {
       const path = String(url);
+      if (path.endsWith("/api/dashboard/logs/ingest")) return new Response("{}", { status: 200 });
+      if (path.endsWith("/api/internal/discord/interaction-deliveries")) return new Response('{"jobs":[]}', { status: 200 });
+      if (path.endsWith(ingress) && !opts.method) {
+        if (leased) return new Response('{"jobs":[]}', { status: 200 });
+        leased = true;
+      }
       calls.push({ path, opts });
       if (path.endsWith(ingress) && !opts.method) return new Response(JSON.stringify({ jobs: [job] }), { status: 200 });
       if (path.endsWith("/api/discord/interactions") && opts.method === "POST") return new Response(JSON.stringify({ type: 4, data: { content: "ok" } }), { status: 200 });
@@ -48,6 +55,7 @@ try {
       throw new Error("unexpected fetch " + path);
     };
     await drainInteractionIngress();
+    await drainInteractionOutbox();
     assert.equal(calls.length, 3);
     assert.equal(calls[1].opts.headers["x-signature-ed25519"], envelope.signature);
     assert.equal(calls[1].opts.headers["x-interaction-id"], interaction.id);
@@ -55,8 +63,15 @@ try {
   });
   await test("dispatch 503 retains job for retry without claiming success", async () => {
     const calls = [];
+    let leased = false;
     globalThis.fetch = async (url, opts) => {
       const path = String(url);
+      if (path.endsWith("/api/dashboard/logs/ingest")) return new Response("{}", { status: 200 });
+      if (path.endsWith("/api/internal/discord/interaction-deliveries")) return new Response('{"jobs":[]}', { status: 200 });
+      if (path.endsWith(ingress) && !opts.method) {
+        if (leased) return new Response('{"jobs":[]}', { status: 200 });
+        leased = true;
+      }
       calls.push({ path, opts });
       if (path.endsWith(ingress) && !opts.method) return new Response(JSON.stringify({ jobs: [job] }), { status: 200 });
       if (path.endsWith("/api/discord/interactions")) return new Response("unavailable", { status: 503 });
@@ -64,13 +79,21 @@ try {
       throw new Error("unexpected fetch " + path);
     };
     await drainInteractionIngress();
+    await drainInteractionOutbox();
     assert.equal(JSON.parse(calls.at(-1).opts.body).success, false);
     assert.equal(JSON.parse(calls.at(-1).opts.body).permanent, false);
   });
   await test("invalid signed replay returned 401 stops retry attempts", async () => {
     const calls = [];
+    let leased = false;
     globalThis.fetch = async (url, opts) => {
       const path = String(url);
+      if (path.endsWith("/api/dashboard/logs/ingest")) return new Response("{}", { status: 200 });
+      if (path.endsWith("/api/internal/discord/interaction-deliveries")) return new Response('{"jobs":[]}', { status: 200 });
+      if (path.endsWith(ingress) && !opts.method) {
+        if (leased) return new Response('{"jobs":[]}', { status: 200 });
+        leased = true;
+      }
       calls.push({ path, opts });
       if (path.endsWith(ingress) && !opts.method) return new Response(JSON.stringify({ jobs: [job] }), { status: 200 });
       if (path.endsWith("/api/discord/interactions")) return new Response("invalid signature", { status: 401 });
@@ -78,6 +101,7 @@ try {
       throw new Error("unexpected fetch " + path);
     };
     await drainInteractionIngress();
+    await drainInteractionOutbox();
     assert.equal(JSON.parse(calls.at(-1).opts.body).permanent, true);
   });
 } finally {

@@ -1,3 +1,4 @@
+import { listNavigationScope } from "@/lib/listNavigationScope";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { canManageRaids, canViewRaidDirectory } from "@/lib/permissions";
@@ -55,7 +56,7 @@ export default async function PollsPage() {
         <div className="notice panel error-note raid-notice">Публікація рейд-пулів у Discord недоступна: не налаштовано bot token або worker relay.</div>
       ) : null}
 
-      <RaidPollList polls={polls} relatedPolls={publishedPolls} canManage={canManage} createHref="/polls/new" />
+      <RaidPollList navigationScope={listNavigationScope(user)} polls={polls} relatedPolls={publishedPolls} canManage={canManage} createHref="/polls/new" />
     </RaidPollPageShell>
   );
 }

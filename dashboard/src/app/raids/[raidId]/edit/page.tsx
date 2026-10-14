@@ -1,3 +1,6 @@
+import ListReturnLink from "@/components/ListReturnLink";
+import { listNavigationScope } from "@/lib/listNavigationScope";
+import DiscordPublicationWorkbench from "@/components/DiscordPublicationWorkbench";
 import { getDiscordPublicationOperation } from "@/lib/discordPublication";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
@@ -72,6 +75,9 @@ export default async function EditRaidPage({
       {!discordEnabled ? <div className="notice panel error-note raid-notice">Публікація в Discord тимчасово недоступна. Зміни можна зберегти й опублікувати пізніше.</div> : null}
       {discordEnabled && channelWarning ? <div className="notice panel warning-note raid-notice">Список Discord-каналів прочитано з попередженням: {channelWarning}</div> : null}
       {discordEnabled && voiceChannelWarning ? <div className="notice panel warning-note raid-notice">Список голосових каналів прочитано з попередженням: {voiceChannelWarning}</div> : null}
+
+      <ListReturnLink kind="raids" scope={listNavigationScope(user)} />
+      {raid ? <DiscordPublicationWorkbench kind="raid" id={raid.id} /> : null}
 
       {raid ? (
         <section className="raid-editor-layout">

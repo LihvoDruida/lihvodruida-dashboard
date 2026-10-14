@@ -510,16 +510,12 @@
     flex: 1 1 auto;
   }
 
-  /* Вкладки прокручуються вбік замість переносу в три ряди */
+  /* Вкладки й пошук мають окремі рядки, щоб поле не стискалося. */
   .poll-browser__controls {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    overflow: visible;
     padding-bottom: var(--space-3xs);
-  }
-
-  .poll-browser__controls::-webkit-scrollbar {
-    display: none;
   }
 
   .poll-tab {

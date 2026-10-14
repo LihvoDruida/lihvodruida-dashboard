@@ -1,3 +1,7 @@
+import ListViewMemory from "@/components/ListViewMemory";
+import { listNavigationScope } from "@/lib/listNavigationScope";
+import { listViewUrl } from "@/lib/listViewState";
+import { matchesRaidListSearch } from "@/lib/raidListSearch";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { canManageRaids, canViewRaidDirectory } from "@/lib/permissions";
@@ -67,6 +71,15 @@ export default async function RaidsListPage({
     ? [...activeRaids, ...draftRaids]
     : activeRaids;
   const nextRaid = activeRaids[0] || null;
+  const rawQuery = new URLSearchParams();
+  for (const key of ["q", "state", "archive"]) if (typeof params[key] === "string") rawQuery.set(key, params[key]!);
+  const currentUrl = listViewUrl("raids", `/raids?${rawQuery}`) || "/raids";
+  const filters = new URL(currentUrl, "https://list.invalid").searchParams;
+  const query = filters.get("q") || "";
+  const state = filters.get("state") || "all";
+  const visibleCurrent = currentRaids.filter(raid => matchesRaidListSearch(raid, query) && (state === "all" || state === "active" && raid.status === "published" || state === "draft" && raid.status === "draft"));
+  const visibleArchive = closedRaids.filter(raid => matchesRaidListSearch(raid, query));
+
 
   return (
     <RaidPageShell
@@ -97,7 +110,32 @@ export default async function RaidsListPage({
         </div>
       ) : null}
 
-      <section className="panel raid-list-page-panel dashboard-list-panel">
+      <section className="panel raid-list-navigation" aria-label="Перегляд рейдів">
+        <ListViewMemory key={listNavigationScope(user)} kind="raids" scope={listNavigationScope(user)} currentUrl={currentUrl} clientLocation />
+          {canManage ? (
+            <div className="raid-list-head-actions">
+              <a className="btn subtle" href="/roster">Збір рейдового складу на сезон</a>
+              <a className="btn subtle" href="/polls">Рейд-пули</a>
+              <a className="btn subtle" href="/raids/bench-priority">
+                🩶 Сірий список
+              </a>
+              <a className="btn primary" href="/raids/new">
+                ＋ Створити рейд
+              </a>
+            </div>
+          ) : null}
+        <form key={`${query}:${state}`} action="/raids" method="get" data-list-filter="raids" className="raid-list-filters">
+          <label>Пошук рейду<input name="q" type="search" maxLength={160} defaultValue={query} placeholder="Назва, дата або ID" /></label>
+          <label>Стан рейдів<select name="state" defaultValue={state}>
+            <option value="all">Усі</option><option value="active">Активні</option>
+            {canManage ? <option value="draft">Чернетки</option> : null}<option value="closed">Архів</option>
+          </select></label>
+          <button type="submit" className="btn primary">Застосувати</button>
+          <a href="/raids?view=all" data-list-reset-position className="btn subtle">Скинути</a>
+        </form>
+      </section>
+
+      {state !== "closed" ? <section className="panel raid-list-page-panel dashboard-list-panel">
         <div className="raid-list-page-head dashboard-list-head">
           <div>
             <h2>{canManage ? "Поточні рейди" : "Доступні рейди"}</h2>
@@ -127,31 +165,20 @@ export default async function RaidsListPage({
               </span>
             </div>
           </div>
-          {canManage ? (
-            <div className="raid-list-head-actions">
-              <a className="btn subtle" href="/roster">Збір рейдового складу на сезон</a>
-              <a className="btn subtle" href="/polls">Рейд-пули</a>
-              <a className="btn subtle" href="/raids/bench-priority">
-                🩶 Сірий список
-              </a>
-              <a className="btn primary" href="/raids/new">
-                ＋ Створити рейд
-              </a>
-            </div>
-          ) : null}
+
         </div>
         <div className="raid-manager-list dashboard-list">
-          {currentRaids.length ? (
-            currentRaids.map((raid) => (
+          {visibleCurrent.length ? (
+            visibleCurrent.map((raid) => (
               <RaidListCard key={raid.id} raid={raid} canManage={canManage} />
             ))
           ) : (
-            <p className="raid-empty">Активних рейдів поки немає.</p>
+            <p className="raid-empty">Рейдів за цими фільтрами немає.</p>
           )}
         </div>
-      </section>
+      </section> : null}
 
-      <section className="panel raid-list-page-panel raid-list-page-panel--archive dashboard-list-panel dashboard-list-panel--archive">
+      {state === "all" || state === "closed" ? <section className="panel raid-list-page-panel raid-list-page-panel--archive dashboard-list-panel dashboard-list-panel--archive">
         <div className="raid-list-page-head raid-list-page-head--archive dashboard-list-head">
           <div>
             <h2>Минулі рейди</h2>
@@ -164,24 +191,24 @@ export default async function RaidsListPage({
               className="raid-list-summary dashboard-list-summary"
               aria-label="Статистика архіву рейдів"
             >
-              <span>Закрито: {closedRaids.length}</span>
+              <span>Знайдено: {visibleArchive.length}</span>
             </div>
           </div>
         </div>
-        {closedRaids.length ? (
-          <RaidArchiveLoadMore step={6} total={closedRaids.length}>
-            {closedRaids.map((raid) => (
+        {visibleArchive.length ? (
+          <RaidArchiveLoadMore step={6} total={visibleArchive.length}>
+            {visibleArchive.map((raid) => (
               <RaidListCard key={raid.id} raid={raid} canManage={canManage} />
             ))}
           </RaidArchiveLoadMore>
         ) : (
           <div className="raid-manager-list raid-manager-list--archive dashboard-list dashboard-list--archive">
             <p className="raid-empty">
-              Минулі рейди з’являться тут після завершення.
+              Минулі рейди за цими фільтрами не знайдені.
             </p>
           </div>
         )}
-      </section>
+      </section> : null}
     </RaidPageShell>
   );
 }

@@ -90,6 +90,13 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({} as BulkStatusInput));
   const items = parseBulkItems(body).slice(0, 50);
 
+  const decisions = new Map<number, ApplicationStatus>();
+  for (const item of items) {
+    if (decisions.has(item.issueNumber) && decisions.get(item.issueNumber) !== item.status) {
+      return NextResponse.json({ error: "Одна заявка не може мати два різні рішення." }, { status: 400, headers: noStoreHeaders() });
+    }
+    decisions.set(item.issueNumber, item.status);
+  }
   if (!items.length) {
     return NextResponse.json({ error: "Вибери заявки й потрібний статус." }, { status: 400, headers: noStoreHeaders() });
   }
@@ -114,10 +121,12 @@ export async function POST(request: NextRequest) {
     });
 
     await recordAdminAudit("applications.bulk_status.update", session, {
-      status: result.failed ? "warning" : "success",
-      summary: `Масово оновлено заявки: успішно ${result.succeeded}/${result.total}, помилок ${result.failed}.`,
+      status: result.failed || result.discordPending ? "warning" : "success",
+      summary: `Заявки: змінено ${result.changed}, вже розглянуто ${result.unchanged}, помилок ${result.failed}, Discord не підтверджено ${result.discordPending}.`,
       total: result.total,
-      changed: result.succeeded,
+      changed: result.changed,
+      unchanged: result.unchanged,
+      discordPending: result.discordPending,
       failed: result.failed,
       concurrency: result.concurrency,
       durationMs: result.durationMs,

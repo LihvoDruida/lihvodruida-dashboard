@@ -2,8 +2,9 @@ import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import botPackage from "../package.json" with { type: "json" };
 import { inspectDiscordSignature, isRoutineInvalidSignatureProbe } from "./signature.mjs";
-import { enqueueVerifiedInteraction, startInteractionIngressWorker, startInteractionOutboxWorker } from "./dashboardClient.mjs";
+import { drainInteractionIngress, enqueueVerifiedInteraction, startInteractionIngressWorker, startInteractionOutboxWorker } from "./dashboardClient.mjs";
 import { logger } from "./logger.mjs";
+import { wakeAfterInteractionAck } from "./interactionWorker.mjs";
 import { startDiscordGatewayBridge, discordGatewayHealth } from "./gateway.mjs";
 import {
   INTERACTION_DOMAINS,
@@ -240,6 +241,7 @@ function registerInvalidSignature(ip, now = Date.now()) {
 }
 
 const server = createServer(async (request, response) => {
+  const started = Date.now();
   const path = requestPath(request);
 
   if (request.method === "GET" && HEALTH_PATHS.has(path)) {
@@ -340,6 +342,10 @@ const server = createServer(async (request, response) => {
 
   try {
     const payload = await handleInteraction(interaction, rawBody, signature, timestamp);
+    wakeAfterInteractionAck(response, payload, drainInteractionIngress);
+    response.once("finish", () => {
+      logger.info("Discord interaction acknowledged", { eventName: "discord.interaction.acknowledged", interactionId: interaction.id, durationMs: Date.now() - started });
+    });
     return json(response, 200, payload);
   } catch (error) {
     logger.error("Збій обробки взаємодії", {

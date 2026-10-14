@@ -69,23 +69,24 @@ export default function RaidPollActions({
         },
         credentials: "same-origin",
         cache: "no-store",
+        signal: AbortSignal.timeout(45_000),
         body: kind === "close" || kind === "reopen" ? JSON.stringify({ action: kind }) : undefined,
       });
       const data = await response.json().catch(() => ({ error: "Сервер повернув неочікувану відповідь." }));
       if (!response.ok || data?.ok === false) throw new Error(errorFromPayload(data, "Дію не виконано."));
 
       dispatchDashboardToast({
-        tone: data?.discordDeleteFailed ? "warning" : "success",
+        tone: data?.discordDeleteFailed || data?.warning ? "warning" : "success",
         title:
           kind === "close" ? (state === "scheduled" ? "План публікації скасовано" : "Рейд-пул закрито")
             : kind === "reopen" ? "Рейд-пул відкрито"
               : kind === "sync" ? (data?.republished ? "Повідомлення опубліковано заново" : "Discord синхронізовано")
                 : "Рейд-пул видалено",
-        message:
+        message: data?.warning || (
           kind === "close" ? (state === "scheduled" ? "Пул не буде автоматично опубліковано в Discord." : "Кнопки голосування в Discord вимкнено, фінальний результат оновлено.")
             : kind === "reopen" ? "Голосування знову приймає голоси."
-              : kind === "sync" ? (data?.republished ? "Старе повідомлення не знайдено, тому створено нове." : "Embed і кнопки приведено у відповідність до стану на сайті.")
-                : data?.warning || "Запис і Discord-повідомлення прибрано.",
+              : kind === "sync" ? (data?.republished ? "Привʼязку повідомлення збережено. Онови стан публікації для подробиць." : "Embed і кнопки приведено у відповідність до стану на сайті.")
+                : data?.warning || "Запис і Discord-повідомлення прибрано."),
         ttl: 6200,
       });
 

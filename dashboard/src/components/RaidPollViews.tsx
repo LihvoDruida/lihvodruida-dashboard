@@ -174,16 +174,18 @@ export function RaidPollList({
   polls,
   relatedPolls,
   canManage = false,
+  navigationScope,
   createHref = "/polls/new",
 }: {
   polls: RaidPollItem[];
   relatedPolls?: RaidPollItem[];
   canManage?: boolean;
+  navigationScope: string;
   createHref?: string;
 }) {
   const related = relatedPolls?.length ? relatedPolls : polls;
   const cards = polls.map((poll) => buildRaidPollCardModel(poll, related));
-  return <RaidPollBrowser cards={cards} canManage={canManage} createHref={createHref} />;
+  return <RaidPollBrowser key={navigationScope} cards={cards} canManage={canManage} createHref={createHref} navigationScope={navigationScope} />;
 }
 
 function pollDays(poll: RaidPollItem) {

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 import { dashboardApiJson } from "@/lib/dashboardApiClient";
+import { settleWithConcurrency } from "@/lib/settleWithConcurrency";
 import type { DashboardDataScope } from "@/lib/dashboardLiveRefresh";
 
 export const DASHBOARD_BACKGROUND_REFRESH_MIN_MS = 10 * 60 * 1000;
@@ -133,15 +134,6 @@ function resourceMatchesId(record: ResourceRecord, resourceId?: string) {
   const id = cleanResourceId(resourceId);
   if (!id) return true;
   return record.key.toLowerCase().includes(id);
-}
-
-async function settleInSmallBatches<T>(items: T[], worker: (item: T) => Promise<unknown>) {
-  const results: PromiseSettledResult<unknown>[] = [];
-  for (let index = 0; index < items.length; index += DASHBOARD_BACKGROUND_RESOURCE_CONCURRENCY) {
-    const batch = items.slice(index, index + DASHBOARD_BACKGROUND_RESOURCE_CONCURRENCY);
-    results.push(...await Promise.allSettled(batch.map(worker)));
-  }
-  return results;
 }
 
 function optionScopes(scope?: DashboardDataScope | DashboardDataScope[]) {
@@ -312,8 +304,9 @@ export async function refreshDashboardApiResources(options: RefreshOptions = {})
   const selected = Array.from(records.values()).filter(
     (record) => scopeMatches(record, options.scope) && resourceMatchesId(record, options.resourceId),
   );
-  const results = await settleInSmallBatches(selected, (record) =>
+  const results = await settleWithConcurrency(selected, (record) =>
     refreshDashboardApiResource(record.key, options),
+    DASHBOARD_BACKGROUND_RESOURCE_CONCURRENCY,
   );
   return results;
 }

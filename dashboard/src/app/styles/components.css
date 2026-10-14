@@ -1399,3 +1399,15 @@ input[type="radio"] {
   font-style: normal;
   line-height: 1.15;
 }
+
+/* R6.7 publication recovery, scoped to its own panel. */
+.publication-workbench { display: grid; gap: 1rem; min-width: 0; padding: clamp(1rem, 2vw, 1.5rem); }
+.publication-workbench h2, .publication-workbench p { margin: 0; }
+.publication-workbench__states { display: grid; gap: 1rem; margin: 0; }
+.publication-workbench__states dt { font-weight: 700; }
+.publication-workbench__states dd { margin: .35rem 0 0; overflow-wrap: anywhere; }
+.publication-workbench__link { display: grid; gap: .5rem; min-width: 0; }
+.publication-workbench__link input { width: 100%; min-width: 0; }
+.publication-workbench__actions { display: flex; flex-wrap: wrap; gap: .65rem; }
+.publication-workbench__actions .btn { white-space: normal; overflow-wrap: anywhere; max-width: 100%; }
+.publication-workbench [role="status"]:empty { display: none; }

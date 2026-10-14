@@ -1,4 +1,4 @@
-export type ListKind = "profiles" | "applications";
+export type ListKind = "profiles" | "applications" | "raids" | "polls";
 export const LIST_MEMORY_TTL = 24 * 60 * 60 * 1000;
 export type ListPosition = { url: string; row: string; next: string; previous: string; offset: number; scroll: number; at: number; opened: boolean };
 export type SavedListView = { name: string; url: string };
@@ -24,12 +24,22 @@ export function listViewUrl(kind: ListKind, input: string, includeCursor = true)
     }
     const cursor = url.searchParams.get("cursor");
     if (includeCursor && cursor && /^[\w-]{1,1800}$/.test(cursor)) params.set("cursor", cursor);
-  } else {
+  } else if (kind === "applications") {
     const status = url.searchParams.get("status");
     if (status && ["review", "accepted", "declined"].includes(status)) params.set("status", status);
     const className = clean(url.searchParams.get("class"), 80);
     if (className && className !== "all") params.set("class", className);
     if (url.searchParams.get("sort") === "updated") params.set("sort", "updated");
+  }
+  if (kind === "raids") {
+    const state = url.searchParams.get("state");
+    if (state && ["active", "draft", "closed"].includes(state)) params.set("state", state);
+    const count = Number(url.searchParams.get("archive"));
+    if (includeCursor && Number.isFinite(count) && count > 6) params.set("archive", String(Math.min(120, Math.floor(count))));
+  }
+  if (kind === "polls") {
+    const tab = url.searchParams.get("tab");
+    if (tab && ["all", "scheduled", "open", "paused", "closed"].includes(tab)) params.set("tab", tab);
   }
   const query = params.toString();
   return `/${kind}${query ? `?${query}` : ""}`;

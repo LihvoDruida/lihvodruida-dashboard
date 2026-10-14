@@ -1,3 +1,4 @@
+import { listEntryId } from "@/lib/listViewState";
 import { randomUUID } from "node:crypto";
 import type { ReactNode } from "react";
 import DashboardIdentity from "@/components/DashboardIdentity";
@@ -947,7 +948,7 @@ export function RaidListCard({
   );
   const benchCount = layout.bench.members.length;
   return (
-    <article className={`raid-list-item dashboard-list-row raid-list-item--${statusClass}`}>
+    <article id={listEntryId("raids", raid.id)} data-list-entry="raids" className={`raid-list-item dashboard-list-row raid-list-item--${statusClass}`}>
       <a
         className="raid-list-main-link"
         href={`/raids/${encodeURIComponent(raid.id)}`}
@@ -1622,18 +1623,8 @@ export function RaidForm({
               {publishLabel}
             </button>
           </div>
-          {publicationEventPending && !publicationPending ? (
-            <div className="notice warning-note raid-publication-recovery" role="status">
-              <p>Оголошення рейду збережене. Discord-подія потребує звірки: натисни «Перевірити Discord», щоб перевірити результат її створення.</p>
-            </div>
-          ) : null}
-          {publicationPending ? (
-            <div className="notice warning-note raid-publication-recovery" role="status">
-              <p>Перевіряємо попереднє надсилання. Натисни «Перевірити Discord», щоб звірити результат.</p>
-              <label htmlFor="raid-publication-message">Посилання на вже створене оголошення (необовʼязково)</label>
-              <input id="raid-publication-message" name="publicationMessageUrl" type="url" placeholder="https://discord.com/channels/…" maxLength={300} />
-              <p className="muted">Якщо оголошення видно в Discord, скопіюй його посилання. Воно має належати цьому рейду й бути надіслане нашим ботом.</p>
-            </div>
+          {publicationPending || publicationEventPending ? (
+            <p className="notice warning-note raid-publication-recovery">Є незавершена публікація. <a href="#discord-publication">Перейди до стану й відновлення Discord</a>, щоб звірити її без надсилання форми.</p>
           ) : null}
           {!canPublish ? (
             <p className="raid-publish-panel__warning">

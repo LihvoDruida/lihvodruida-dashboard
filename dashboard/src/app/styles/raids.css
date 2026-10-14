@@ -2697,3 +2697,9 @@
     flex-wrap: wrap;
   }
 }
+
+/* R6.8 list navigation uses shared controls and existing palette. */
+.raid-list-navigation { padding: 1rem; min-width: 0; }
+.raid-list-filters { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; }
+.raid-list-filters label { display: grid; gap: .4rem; min-width: 0; flex: 1 1 180px; }
+.raid-list-filters input, .raid-list-filters select { width: 100%; min-width: 0; }

@@ -97,7 +97,7 @@ export async function retireStalledInteractionResults(now = Date.now()) {
   const db = getFirebaseAdminDb();
   const collection = db.collection(COLLECTION);
   const cutoff = new Date(now - 4 * 60_000).toISOString();
-  const stuck = await collection.where("deliveryState", "==", "processing").limit(150).get();
+  const stuck = await dueQuery(collection.where("deliveryState", "==", "processing"), "claimedAt", now - 4 * 60_000).limit(150).get();
   let retired = 0;
   for (const snapshot of stuck.docs) {
     const candidate = snapshot.data() as RecordData | undefined;
@@ -131,10 +131,22 @@ function dueQuery<T extends { where?: (field: string, op: "<=", value: string) =
   return typeof query.where === "function" ? query.where(field, "<=", new Date(now).toISOString()) : query;
 }
 
+const recoveryReads = new WeakMap<object, { checkedAt: number; pending: Promise<number> | null }>();
+async function recoverOutboxWhenDue(db: object, now: number) {
+  let state = recoveryReads.get(db);
+  if (!state) { state = { checkedAt: -Infinity, pending: null }; recoveryReads.set(db, state); }
+  if (state.pending) { await state.pending; return; }
+  if (now >= state.checkedAt && now - state.checkedAt < 15_000) return;
+  const pending = retireStalledInteractionResults(now);
+  state.pending = pending;
+  try { await pending; state.checkedAt = now; }
+  finally { state.pending = null; }
+}
+
 export async function leaseInteractionDeliveries(limit = 10, now = Date.now()) {
-  // Resolve abandoned executions before looking for pending deliveries.
-  await retireStalledInteractionResults(now);
   const db = getFirebaseAdminDb();
+  // Recovery is shared across rapid delivery reads. Failed scans remain retryable.
+  await recoverOutboxWhenDue(db, now);
   const coll = db.collection(COLLECTION);
   const size = Math.min(25, Math.max(1, Math.floor(limit)));
   // Scan a bounded set of eligible statuses; individual claims are guarded by
@@ -197,7 +209,7 @@ export async function pruneInteractionOutbox(limit = 250) {
   // replay protection. This also retires unfinished work after 14 minutes.
   const collection = db.collection(COLLECTION);
   for (const state of ["processing", "ready", "leased"] as const) {
-    const snapshots = await collection.where("deliveryState", "==", state).limit(Math.min(150, Math.max(1, limit))).get();
+    const snapshots = await dueQuery(collection.where("deliveryState", "==", state), "deliveryExpiresAt", Date.parse(now)).limit(Math.min(150, Math.max(1, limit))).get();
     for (const snapshot of snapshots.docs) {
       const ref = collection.doc(snapshot.id);
       await db.runTransaction(async (tx) => {

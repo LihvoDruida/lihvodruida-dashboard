@@ -789,15 +789,32 @@ async function fetchDiscordRawRoles(guildId: string) {
     .filter(Boolean) as Array<DiscordRoleOption & { permissionsRaw?: bigint }>;
 }
 
+// Only credential identity is retained. Guild membership/permissions stay fresh.
+const discordBotIdentityCache = new Map<string, {
+  checkedAt: number;
+  user: { id: string; username: string; displayName: string };
+}>();
 async function fetchDiscordCurrentBotUser() {
+  const key = discordCredentialKey(getBotToken());
+  const cached = discordBotIdentityCache.get(key);
+  const age = cached ? Date.now() - cached.checkedAt : -1;
+  if (cached && age >= 0 && age < 5 * 60_000) return cached.user;
   const user = await discordApi<any>("/users/@me");
   const id = cleanSnowflake(user?.id);
   if (!id) throw new Error("Discord bot token не повернув ID бота.");
-  return {
+  const identity = {
     id,
     username: cleanText(user?.username, 80) || "Discord bot",
     displayName: cleanText(user?.global_name || user?.username, 100) || "Discord bot",
   };
+  discordBotIdentityCache.delete(key);
+  while (discordBotIdentityCache.size >= 4) {
+    const oldest = discordBotIdentityCache.keys().next().value;
+    if (oldest === undefined) break;
+    discordBotIdentityCache.delete(oldest);
+  }
+  discordBotIdentityCache.set(key, { checkedAt: Date.now(), user: identity });
+  return identity;
 }
 
 function isDiscordRoleOption(value: DiscordRoleOption | undefined): value is DiscordRoleOption {

@@ -1,4 +1,5 @@
 import { logger } from "./logger.mjs";
+import { createInteractionWorker } from "./interactionWorker.mjs";
 import { validateInteractionComponents } from "@mistblossom/discord-contract";
 
 /**
@@ -162,7 +163,7 @@ async function patchOriginalResponse(interactionToken, payload) {
 }
 
 const INGRESS_ENDPOINT = "/api/internal/discord/interaction-ingress";
-let ingressDraining = false;
+
 
 // The ACK is returned only after durable persistence; keep well below Discord's
 // three-second deadline. A failed persistence never schedules the action.
@@ -180,25 +181,27 @@ export async function enqueueVerifiedInteraction({ rawBody, signature, timestamp
 
 // Reuse the dashboard's existing signed Discord route. Its shared outbox claim
 // ensures that an uncertain delivery response cannot replay the business action.
-export async function drainInteractionIngress() {
-  if (ingressDraining) return;
-  ingressDraining = true;
+async function drainIngressOnce() {
   try {
     const response = await fetchWithTimeout(`${DASHBOARD_URL()}${INGRESS_ENDPOINT}`, {
       headers: outboxHeaders(),
     }, DASHBOARD_TIMEOUT_MS);
     if (!response.ok) throw new Error(`ingress fetch HTTP ${response.status}`);
     const data = await response.json();
-    for (const job of Array.isArray(data?.jobs) ? data.jobs.slice(0, 1) : []) {
+    const jobs = Array.isArray(data?.jobs) ? data.jobs.slice(0, 1) : [];
+    for (const job of jobs) {
       if (!/^\d{16,25}$/.test(String(job?.id || "")) || !job.leaseId) continue;
       let success = false;
       let permanent = false;
+      const started = Date.now();
       try {
         await callDashboard({
           rawBody: job.rawBody, signature: job.signature, timestamp: job.timestamp,
           domain: job.domain, interactionId: job.id, maxAttempts: 1,
         });
         success = true;
+        void drainInteractionOutbox();
+        logger.info("Discord interaction processed", { eventName: "discord.interaction.processed", interactionId: job.id, domain: job.domain, durationMs: Date.now() - started });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         permanent = /Панель відповіла 4(00|01|03|04|13):/.test(message);
@@ -215,12 +218,15 @@ export async function drainInteractionIngress() {
         logger.warn("Discord ingress settlement failed", { interactionId: job.id, error: error instanceof Error ? error.message : String(error) });
       }
     }
+    return jobs.length > 0;
   } catch (error) {
     logger.warn("Discord ingress poll deferred", { error: error instanceof Error ? error.message : String(error) });
-  } finally {
-    ingressDraining = false;
+    return false;
   }
 }
+
+const ingressWorker = createInteractionWorker(drainIngressOnce);
+export function drainInteractionIngress() { return ingressWorker.drain(); }
 
 export function startInteractionIngressWorker() {
   const interval = setInterval(() => { void drainInteractionIngress(); }, 3_000);
@@ -230,7 +236,7 @@ export function startInteractionIngressWorker() {
 }
 
 const OUTBOX_ENDPOINT = "/api/internal/discord/interaction-deliveries";
-let outboxDraining = false;
+
 
 function outboxHeaders() {
   const token = INTERNAL_TOKEN();
@@ -253,9 +259,7 @@ async function acknowledgeDelivery(job, success, permanent = false) {
   if (!response.ok) throw new Error(`outbox ack HTTP ${response.status}`);
 }
 
-export async function drainInteractionOutbox() {
-  if (outboxDraining) return;
-  outboxDraining = true;
+async function drainOutboxOnce() {
   try {
     const response = await fetchWithTimeout(`${DASHBOARD_URL()}${OUTBOX_ENDPOINT}`, {
       method: "GET",
@@ -263,7 +267,8 @@ export async function drainInteractionOutbox() {
     }, DASHBOARD_TIMEOUT_MS);
     if (!response.ok) throw new Error(`outbox fetch HTTP ${response.status}`);
     const body = await response.json();
-    for (const job of Array.isArray(body?.jobs) ? body.jobs.slice(0, 10) : []) {
+    const jobs = Array.isArray(body?.jobs) ? body.jobs.slice(0, 10) : [];
+    for (const job of jobs) {
       if (!/^\d{16,25}$/.test(String(job?.id || "")) || !job?.leaseId || !job?.interactionToken) continue;
       let payload = messagePayloadFrom(job.result) || {
         content: "⚠️ Відповідь не надійшла. Перевірте стан дії на сайті.",
@@ -275,9 +280,11 @@ export async function drainInteractionOutbox() {
       }
       let success = false;
       let permanent = false;
+      const started = Date.now();
       try {
         await patchOriginalResponse(job.interactionToken, payload);
         success = true;
+        logger.info("Discord interaction delivered", { eventName: "discord.interaction.delivered", interactionId: job.id, durationMs: Date.now() - started });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         // Invalid/expired interaction webhook tokens cannot be repaired by
@@ -293,12 +300,15 @@ export async function drainInteractionOutbox() {
         logger.warn("Discord outbox settlement unavailable", { interactionId: job.id, error: error instanceof Error ? error.message : String(error) });
       }
     }
+    return jobs.length > 0;
   } catch (error) {
     logger.warn("Discord outbox poll deferred", { error: error instanceof Error ? error.message : String(error) });
-  } finally {
-    outboxDraining = false;
+    return false;
   }
 }
+
+const outboxWorker = createInteractionWorker(drainOutboxOnce);
+export function drainInteractionOutbox() { return outboxWorker.drain(); }
 
 export function startInteractionOutboxWorker() {
   const interval = setInterval(() => { void drainInteractionOutbox(); }, 5_000);

@@ -1,5 +1,8 @@
+import ListReturnLink from "@/components/ListReturnLink";
+import { listNavigationScope } from "@/lib/listNavigationScope";
+import DiscordPublicationWorkbench from "@/components/DiscordPublicationWorkbench";
 import { getSession } from "@/lib/auth";
-import { canManageRaids, canViewRaidRoster } from "@/lib/permissions";
+import { canManageRaids, canViewRaidRoster, canViewRaidDirectory } from "@/lib/permissions";
 import { getProfileByDiscordUserId, getProfileById } from "@/lib/profiles";
 import { getRaid, hasRaidStorage, raidLiveRevision } from "@/lib/raids";
 import RaidLiveSync from "@/components/RaidLiveSync";
@@ -48,10 +51,12 @@ export default async function RaidDetailsPage({
       {visibleRaid ? <RaidLiveSync raidId={visibleRaid.id} initialRevision={raidLiveRevision(visibleRaid)} /> : null}
       {!hasRaidStorage() ? <div className="notice panel error-note raid-notice">Запис на рейди тимчасово недоступний. Повтори пізніше або звернись до офіцера.</div> : null}
 
+      {canManage && visibleRaid ? <DiscordPublicationWorkbench kind="raid" id={visibleRaid.id} /> : null}
+
       {visibleRaid ? (
         <>
           <nav className="raid-detail-toolbar" aria-label="Навігація рейду">
-            <a className="raid-detail-back" href="/raids">← До списку рейдів</a>
+            {user && canViewRaidDirectory(user) ? <ListReturnLink kind="raids" scope={listNavigationScope(user)} className="raid-detail-back" /> : null}
             <span className="raid-detail-toolbar__spacer" />
             {visibleRaid.messageUrl ? (
               <a className="btn subtle btn-sm" href={visibleRaid.messageUrl} target="_blank" rel="noreferrer">

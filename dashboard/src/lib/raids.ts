@@ -5221,11 +5221,15 @@ async function syncRaidDiscordScheduledEvent(
 export async function publishOrUpdateRaid(
   input: RaidItem,
   channelId?: string | null,
-  options?: { syncScheduledEvent?: boolean; publicationMessageUrl?: string },
+  options?: { syncScheduledEvent?: boolean; publicationMessageUrl?: string; recoverClosedOnly?: boolean },
 ) {
   return withDiscordPublicationLease(`raid:${input.id}`, async assertOwned => {
     const raid = await readRaidForLifecycleTask(input.id);
     if (!raid) throw new Error("Рейд не знайдено.");
+    if (options?.recoverClosedOnly && isRaidClosed(raid) && !raid.messageId) {
+      const receipts = await Promise.all([getDiscordPublicationOperation("raid-message", raid.id), getDiscordPublicationOperation("raid-event", raid.id)]);
+      if (!receipts.some(receipt => receipt && !["complete", "rejected"].includes(receipt.state))) throw new Error("Рейд уже закрито. Першу публікацію не виконано.");
+    }
     const targetChannelId = cleanSnowflake(channelId || raid.channelId || getDiscordDefaultChannelId());
     if (!targetChannelId) throw new Error("Канал Discord для рейду не вибрано. Вибери канал у формі рейду.");
     const manualRef = options?.publicationMessageUrl ? parseDiscordMessageRef(options.publicationMessageUrl) : null;
@@ -5272,6 +5276,13 @@ export async function publishOrUpdateRaid(
       : await syncRaidDiscordScheduledEvent(publishedRaid, result.messageUrl, assertOwned);
     return { ...result, raid: publishedRaid, scheduledEvent };
   });
+}
+
+/** Synchronize saved state without submitting or resetting the editor form. */
+export async function resyncRaidDiscord(raidId: string, publicationMessageUrl = "") {
+  const raid = await readRaidForLifecycleTask(raidId);
+  if (!raid) throw new Error("Рейд не знайдено.");
+  return publishOrUpdateRaid(raid, null, { publicationMessageUrl, recoverClosedOnly: true });
 }
 
 export async function saveAndMaybePublishRaid(

@@ -5,11 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { emptyListMemory, listMemoryKey, listViewUrl, parseListMemory, rememberListPosition, type ListKind, type ListMemory, type ListPosition } from "@/lib/listViewState";
 import styles from "./ListViewMemory.module.css";
 
-export default function ListViewMemory({ kind, scope, currentUrl, restorePosition = true }: { kind: ListKind; scope: string; currentUrl: string; restorePosition?: boolean }) {
+export default function ListViewMemory({ kind, scope, currentUrl, restorePosition = true, clientLocation = false }: { kind: ListKind; scope: string; currentUrl: string; restorePosition?: boolean; clientLocation?: boolean }) {
   const router = useRouter();
   const navigationQuery = useSearchParams().toString();
   const key = listMemoryKey(kind, scope);
-  const allHref = kind === "profiles" ? "/profiles?view=all" : "/applications?view=all";
+  const allHref = `/${kind}?view=all`;
+  const effectiveUrl = clientLocation ? listViewUrl(kind, `/${kind}?${navigationQuery}`) || currentUrl : currentUrl;
   const memory = useRef<ListMemory>(emptyListMemory(kind));
   const blocked = useRef(false);
   const first = useRef(true);
@@ -28,7 +29,7 @@ export default function ListViewMemory({ kind, scope, currentUrl, restorePositio
   }
 
   useEffect(() => {
-    const url = listViewUrl(kind, currentUrl) || `/${kind}`;
+    const url = listViewUrl(kind, effectiveUrl) || `/${kind}`;
     let cancelled = false, leaving = false, timer = 0, frame = 0, highlightTimer = 0;
     let highlighted: HTMLElement | null = null;
     const isArrival = first.current || historyArrival.current === url;
@@ -125,7 +126,7 @@ export default function ListViewMemory({ kind, scope, currentUrl, restorePositio
     };
     // The URL changes after filters/navigation; capture always uses its current canonical value.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kind, key, currentUrl, navigationQuery, restorePosition, router]);
+  }, [kind, key, effectiveUrl, navigationQuery, restorePosition, router]);
 
   function saveView(event: React.FormEvent) {
     event.preventDefault();
@@ -133,7 +134,7 @@ export default function ListViewMemory({ kind, scope, currentUrl, restorePositio
     if (!title) return;
     const existing = memory.current.views.filter(view => view.name !== title);
     if (existing.length >= 5) { setMessage("Можна зберегти до 5 подань. Видаліть одне або використайте його назву для заміни."); return; }
-    persist({ ...memory.current, at: Date.now(), views: [...existing, { name: title, url: listViewUrl(kind, currentUrl, false) || `/${kind}` }] });
+    persist({ ...memory.current, at: Date.now(), views: [...existing, { name: title, url: listViewUrl(kind, effectiveUrl, false) || `/${kind}` }] });
     setEditing(false); setName("");
   }
   function clearMemory() {

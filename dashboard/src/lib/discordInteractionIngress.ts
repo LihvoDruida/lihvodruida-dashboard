@@ -138,7 +138,7 @@ export async function pruneInteractionIngress(limit = 250, now = Date.now()) {
   const collection = getFirebaseAdminDb().collection(COLLECTION);
   const time = new Date(now).toISOString();
   for (const status of ["ready", "leased"] as const) {
-    const records = await collection.where("status", "==", status).limit(Math.min(limit, 150)).get();
+    const records = await dueQuery(collection.where("status", "==", status), "dispatchDeadlineAt", now).limit(Math.min(limit, 150)).get();
     for (const snapshot of records.docs) {
       await getFirebaseAdminDb().runTransaction(async (tx) => {
         const ref = collection.doc(snapshot.id);
