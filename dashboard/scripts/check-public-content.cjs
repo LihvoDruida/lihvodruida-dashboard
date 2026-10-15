@@ -13,6 +13,7 @@ const media=read('dashboard/src/app/api/site/media/[id]/route.ts');
 const catalog=read('dashboard/src/app/api/site/content/route.ts');
 const schema=read('dashboard/src/lib/db/schema.sql');
 const compose=read('docker-compose.yml');
+const dockerfile=read('dashboard/Dockerfile');
 const checks=[
  [content.includes('collection(STORE)')&&content.includes('siteArticles'),'Articles live in the dashboard document store'],
  [!content.includes('deleteRepoFile')&&!content.includes('createRepoFile')&&!content.includes('updateRepoFile'),'No GitHub publishing in CMS'],
@@ -27,6 +28,7 @@ const checks=[
  [proxy.includes('isInternalSiteRead')&&proxy.includes('request.method === "GET"')&&proxy.includes('PUBLIC_SITE_BRIDGE_TOKEN'),'Internal transport read only'],
  [compose.includes('PUBLIC_SITE_BRIDGE_TOKEN: ${PUBLIC_SITE_BRIDGE_TOKEN:-}'),'Internal bridge secret explicitly wired'],
  [fs.existsSync(path.join(repo,'import/legacy-site/migrate_site_articles.sql')),'SQL content import available'],
+ [dockerfile.includes('COPY import/legacy-site/migrate_site_articles.sql /repo/import/legacy-site/migrate_site_articles.sql'),'SQL import is explicitly copied into the Docker build stage'],
 ];
 for(const [condition,message] of checks)assert.ok(condition,message);
 console.log(`[check-public-content] OK — ${checks.length} CMS, transport and import invariants checked.`);

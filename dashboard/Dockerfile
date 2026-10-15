@@ -90,6 +90,11 @@ COPY dashboard/ ./
 # stage deliberately does not copy /repo/docs.
 COPY docs/content/static-rules.md /repo/docs/content/static-rules.md
 
+# The CMS integrity check requires the legacy PostgreSQL import in the
+# builder filesystem. Docker does not copy the full build context by default.
+# Keep this source confined to builder; never COPY it into the runner image.
+COPY import/legacy-site/migrate_site_articles.sql /repo/import/legacy-site/migrate_site_articles.sql
+
 # CI scheduling audit also verifies the real VPS cron endpoint. The dashboard
 # build context is the repository root, but files are not present in a stage
 # until they are explicitly copied. Include both non-secret cron scripts for
