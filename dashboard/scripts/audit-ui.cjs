@@ -56,6 +56,7 @@ for (const file of pageFiles) {
 }
 
 const semanticControlTokens = [
+  'guild-agreement-submit', // Standalone public scene has its own frame and button sizes.
   'global-toast__close',
   'raid-image-picker__item',
   'nav-burger',

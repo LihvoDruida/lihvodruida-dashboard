@@ -46,6 +46,9 @@ for (const file of walk(apiRoot).filter((name) => name.endsWith(`${path.sep}rout
   }
   // Public Static onboarding creates only a short-lived DM proof of agreement,
   // never accepts an arbitrary Discord ID or grants roles itself.
+  if (rel === 'rules/accept/complete/route.ts') {
+    if (['verifyTrustedOrigin(', 'checkRateLimit(', 'assertRequestBodySize(', 'parseRulesRoleTokenDetails(', 'tokenRulesRolesAreCurrentlyAllowed(', 'document.revision', 'form.get("agree")'].every(signal => source.includes(signal))) continue;
+  }
   if (rel === 'static/accept/route.ts') {
     if (source.includes('verifyTrustedOrigin(') && source.includes('checkRateLimit(') && source.includes('assertRequestBodySize(') && source.includes('createStaticChallenge(')) continue;
   }

@@ -13,8 +13,8 @@ const video = read("src/components/LoginBackground.tsx");
 const playback = read("src/lib/loginVideoBackground.ts");
 const checks = [
   ["login mounts the rotating template background", page.includes("<LoginBackground />") && video.includes("mountLoginVideoBackground")],
-  ["all three original MP4 sources remain explicit", ["Hyjal02.mp4", "Zephras_01.mp4", "WowF_TheBarrens_01.mp4"].every(name => playback.includes(name))],
-  ["background videos are silent inline decorative media", video.includes("muted playsInline") && video.includes('preload="auto"') && video.includes('aria-hidden="true"') && !video.includes("<iframe")],
+  ["all three template scenes have local optimized sources", ["Hyjal02-1280.mp4", "Zephras_01-1280.mp4", "WowF_TheBarrens_01-1280.mp4"].every(name => playback.includes(name))],
+  ["background videos are silent inline decorative media", video.includes("muted playsInline") && video.includes('preload="none"') && video.includes('aria-hidden="true"') && !video.includes("<iframe")],
   ["template fade timings and cover geometry are retained", css.includes("transition: opacity 1.6s") && css.includes("transition: opacity 1s") && css.includes("scale(1.06)") && css.includes("scale(1.12)")],
   ["loading failures, visibility and motion policy have explicit handling", playback.includes("visibilitychange") && playback.includes("saveData") && playback.includes("prefers-reduced-motion") && playback.includes("PLAYBACK_DEADLINE_MS = 15_000")],
   ["login remains a centered single-shell layout", page.includes('className="login-screen"') && page.includes('className="login-shell"') && css.includes("place-items: center")],
@@ -26,7 +26,7 @@ const checks = [
   ["auth screen contains no navigation or extra trust badges", !page.includes("<nav") && !page.includes("login-trust-row") && !page.includes("login-pill") && !page.includes("/terms") && !page.includes("/privacy")],
   ["template landscape is bundled locally", css.includes('/assets/img/auth/forever-landscape.avif') && fs.existsSync(path.join(root, "public/assets/img/auth/forever-landscape.avif"))],
   ["template navy, gold and ember styling is scoped to login", css.includes("#0c1734") && css.includes("#d8b25e") && css.includes("#8e1b16")],
-  ["login skips decorative starfield initialization", read("public/js/dashboard-starfield.js").includes('document.querySelector(".login-screen")')],
+  ["login skips decorative starfield initialization", read("public/js/dashboard-starfield.js").includes('document.querySelector(".login-screen, .guild-agreement-screen")')],
   ["emergency owner access remains conditional", page.includes("authPolicy.allowEmergencyTokenLogin") && page.includes("{hasTokenFallback ? (") && page.includes('action="/api/auth/login"')],
   ["logged out state is explicit", page.includes("loggedOut?: string") && page.includes("Сесію завершено.")],
   ["session-required error has purpose-specific copy", page.includes("session_required:") && page.includes("Після перевірки ролей повернемо тебе")],

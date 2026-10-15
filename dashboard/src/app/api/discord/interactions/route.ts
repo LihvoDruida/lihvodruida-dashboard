@@ -604,7 +604,7 @@ async function processInteraction(request: NextRequest, onClaimed: (id: string) 
       return finishDecision(
         interaction,
         alreadyAccepted
-          ? "✅ Discord підтвердив твою особу. Потрібна роль уже є, але сторінку правил можна відкрити для перевірки кнопки й профілю без повторної авторизації."
+          ? "✅ Discord підтвердив твою особу. Потрібна роль уже є, але сторінку правил можна відкрити для перевірки повторного прийняття."
           : "✅ Discord підтвердив твою особу. Натисни кнопку нижче — сайт відкриється з персональним підписаним посиланням і зможе видати роль без Discord OAuth. У публічному повідомленні ці дані не показуються.",
         rulesPublicLinkComponents(acceptUrl),
       );

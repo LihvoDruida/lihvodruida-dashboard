@@ -3,7 +3,7 @@ import "server-only";
 import { FieldValue } from "@/lib/db/firestoreCompat";
 import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
 import { firebaseWrite } from "@/lib/firebaseAccess";
-import { resilientRead } from "@/lib/runtimeResilience";
+import { withTimeout, resilientRead } from "@/lib/runtimeResilience";
 import type { DashboardSession } from "@/lib/auth";
 import { timestampToIso } from "@/lib/values";
 
@@ -18,6 +18,7 @@ declare global {
 
 export type RulesAcceptanceSettings = {
   allowRepeatedAcceptForTesting: boolean;
+  publicRulesMessageUrl?: string | null;
   updatedAt?: string | null;
   updatedBy?: string | null;
 };
@@ -33,6 +34,7 @@ function cleanBoolean(value: unknown, fallback = false) {
 function normalizeSettings(data: Record<string, unknown> | null | undefined): RulesAcceptanceSettings {
   return {
     allowRepeatedAcceptForTesting: cleanBoolean(data?.allowRepeatedAcceptForTesting, false),
+    publicRulesMessageUrl: typeof data?.publicRulesMessageUrl === "string" ? data.publicRulesMessageUrl : null,
     updatedAt: timestampToIso(data?.updatedAt),
     updatedBy: typeof data?.updatedBy === "string" ? data.updatedBy : null,
   };
@@ -81,6 +83,7 @@ export async function getRulesAcceptanceSettings(options: { bypassCache?: boolea
 
 export async function setRulesAcceptanceSettings(input: { allowRepeatedAcceptForTesting?: unknown }, actor?: DashboardSession | null) {
   const allowRepeatedAcceptForTesting = cleanBoolean(input.allowRepeatedAcceptForTesting, false);
+  const previous = await getRulesAcceptanceSettings({ bypassCache: true });
   if (!hasFirebaseProfileConfig()) throw new Error("Firebase не налаштований для збереження налаштувань правил.");
 
   await firebaseWrite(
@@ -95,8 +98,29 @@ export async function setRulesAcceptanceSettings(input: { allowRepeatedAcceptFor
   );
 
   return setSettingsCache({
+    ...previous,
     allowRepeatedAcceptForTesting,
     updatedAt: new Date().toISOString(),
     updatedBy: actor?.name || actor?.login || actor?.id || null,
   });
+}
+
+/** Called only by the guarded guild-rules publisher after Discord confirms save. */
+export async function setPublicRulesMessage(url: string, actor: DashboardSession) {
+  if (!/^https:\/\/discord\.com\/channels\/\d{16,25}\/\d{16,25}\/\d{16,25}$/.test(url)) throw new Error("Invalid rules publication reference");
+  if (!hasFirebaseProfileConfig()) throw new Error("Rules publication storage unavailable");
+  const previous = await getRulesAcceptanceSettings({ bypassCache: true });
+  await firebaseWrite("settings", "rules-publication:save", () => getFirebaseAdminDb().collection(SETTINGS_COLLECTION).doc(SETTINGS_DOC_ID).set({
+    publicRulesMessageUrl: url, updatedAt: FieldValue.serverTimestamp(), updatedBy: actor.id,
+  }, { merge: true }), { timeoutMs: 3_000, logEvent: "rules.publication_write_failed" });
+  setSettingsCache({ ...previous, publicRulesMessageUrl: url, updatedAt: new Date().toISOString(), updatedBy: actor.id });
+  globalThis.__mistblossomConfiguredRulesRoleIdsCache = undefined;
+}
+
+/** Role-grant decisions require a fresh publication binding, never a stale
+ * resilience fallback after an administrator switches the current rules. */
+export async function getPublicRulesMessageUrl(): Promise<string | null> {
+  if (!hasFirebaseProfileConfig()) return null;
+  const snapshot = await withTimeout(getFirebaseAdminDb().collection(SETTINGS_COLLECTION).doc(SETTINGS_DOC_ID).get(), 2_000, "rules-publication-read");
+  return snapshot.exists ? normalizeSettings(snapshot.data() || null).publicRulesMessageUrl || null : null;
 }

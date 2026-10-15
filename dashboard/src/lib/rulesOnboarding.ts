@@ -140,7 +140,7 @@ export function createRulesRoleToken(
   options: CreateRulesRoleTokenOptions = {},
 ) {
   const roleIds = cleanRoleIds(roleIdsInput);
-  if (!roleIds.length) throw new Error("Для правил потрібно вибрати роль, яка буде видана після реєстрації.");
+  if (!roleIds.length) throw new Error("Для правил потрібно вибрати роль, яка буде видана після прийняття правил.");
   const discordUserId = cleanDiscordUserId(options.discordUserId);
   const discordGuildId = cleanDiscordUserId(options.discordGuildId);
   const memberRoleIds = cleanRoleIds(options.memberRoleIds || []);

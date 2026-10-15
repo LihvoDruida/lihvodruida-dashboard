@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { setPublicRulesMessage } from "@/lib/rulesAcceptanceSettings";
 import { getSession } from "@/lib/auth";
 import { resolveAuthorIdentity } from "@/lib/authorIdentity";
 import { canManageDiscordMembers, canManageGeneralEmbeds, canManageRulesEmbeds, hierarchyTitle } from "@/lib/permissions";
@@ -234,7 +235,7 @@ export async function POST(request: NextRequest) {
 
     if (isRules && ruleType === "guild" && roleIds.length === 0) {
       logDashboardEvent("warn", "discord.embed.validation_failed", request, { reason: "missing_rules_role", actorId: session.id });
-      return respondTo(request, { error: "Для правил потрібно вибрати роль, яка буде видана після завершення реєстрації." }, returnTo, 400);
+      return respondTo(request, { error: "Для правил потрібно вибрати роль, яка буде видана після прийняття правил." }, returnTo, 400);
     }
 
     if (messageLink && !editRef) {
@@ -279,6 +280,8 @@ export async function POST(request: NextRequest) {
         auditReason,
       });
 
+      if (isRules && ruleType === "guild") await setPublicRulesMessage(discordMessageUrl(editRef.channelId, editRef.messageId), session);
+
       logDashboardEvent("info", "discord.embed.updated", request, {
         mode,
         channelId: editRef.channelId,
@@ -304,6 +307,8 @@ export async function POST(request: NextRequest) {
       components: autoroleComponents,
       auditReason,
     });
+
+    if (isRules && ruleType === "guild" && created?.id) await setPublicRulesMessage(discordMessageUrl(channelId, String(created.id)), session);
 
     logDashboardEvent("info", "discord.embed.published", request, {
       mode,

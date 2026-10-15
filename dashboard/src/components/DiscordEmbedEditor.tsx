@@ -1,5 +1,6 @@
 "use client";
 
+import { StaticMarkdown } from "@/components/static/StaticMarkdown";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import AuthorSuggestionChips from "@/components/AuthorSuggestionChips";
 import { dashboardErrorMessage, dispatchDashboardToast } from "@/lib/clientToasts";
@@ -463,7 +464,7 @@ function roleColor(value: number) {
   return value > 0 ? colorNumberToHex(value) : "#B8E986";
 }
 
-export function RolePicker({ roles, selectedRoleIds, onChange, fieldName = "roleIds", ariaLabel = "Вибір ролей", emptyLabel = "Ролі ще не вибрані", helperText = "Ця роль буде видана не одразу після кнопки, а тільки після завершення профілю на сайті." }: {
+export function RolePicker({ roles, selectedRoleIds, onChange, fieldName = "roleIds", ariaLabel = "Вибір ролей", emptyLabel = "Ролі ще не вибрані", helperText = "Ця роль буде видана після прочитання правил і підтвердження згоди на сайті." }: {
   roles: DiscordRoleOption[];
   selectedRoleIds: string[];
   onChange: (ids: string[]) => void;
@@ -1203,15 +1204,20 @@ function DiscordEmbedEditorInner({
             {isRules && !isRaidRules ? (
               <div className="content-form-section discord-visual-section discord-visual-section--roles">
                 <div className="content-form-section-head">
-                  <strong>Роль після завершення реєстрації</strong>
+                  <strong>Роль після прийняття правил</strong>
                   <small>Вибрано: {selectedRolesCount}</small>
                 </div>
+                <p className="guild-rules-editor-note">Одне джерело тексту для Discord і сайту. Збереження робить це повідомлення чинними правилами; заголовок, опис, текст над повідомленням і додаткові поля зʼявляться на сторінці прийняття.</p>
+                <details className="guild-rules-editor-preview">
+                  <summary>Попередній перегляд на сайті</summary>
+                  <div className="guild-agreement-text"><h2>{titleValue || "Правила гільдії"}</h2><StaticMarkdown value={[content, descriptionValue, ...fields.map(field => `### ${field.name}\n\n${field.value}`)].filter(Boolean).join("\n\n")} /></div>
+                </details>
                 <RolePicker
                   roles={roles}
                   selectedRoleIds={roleIds}
                   onChange={setRoleIds}
-                  ariaLabel="Роль, яка видається після завершення реєстрації"
-                  helperText="Кнопка відкриває авторизацію та профіль. Роль видається тільки після повного завершення реєстрації."
+                  ariaLabel="Роль, яка видається після прийняття правил"
+                  helperText="Кнопка відкриває правила на сайті. Галочка згоди й підтвердження видають роль без входу та реєстрації."
                 />
               </div>
             ) : null}

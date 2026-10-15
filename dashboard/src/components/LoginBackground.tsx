@@ -9,7 +9,7 @@ export default function LoginBackground() {
   return <div ref={root} className="login-background" aria-hidden="true">
     <div className="login-background-poster" />
     <div className="login-background-video">
-      {LOGIN_BACKGROUND_VIDEOS.map(source => <video key={source} data-src={source} muted playsInline preload="auto" tabIndex={-1} disablePictureInPicture disableRemotePlayback controlsList="nodownload noplaybackrate nofullscreen" />)}
+      {LOGIN_BACKGROUND_VIDEOS.map(source => <video key={source} data-src={source} data-mobile-src={source.replace("-1280.mp4", "-640.mp4")} muted playsInline preload="none" tabIndex={-1} disablePictureInPicture disableRemotePlayback controlsList="nodownload noplaybackrate nofullscreen" />)}
     </div>
   </div>;
 }

@@ -38,6 +38,9 @@ function removeStaleBuildLocks() {
 
 function runBuild() {
   removeStaleBuildLocks();
+  // Next's tracing copy may retain existing files with stable chunk names.
+  // Recreate only the deployable output; keep .next/cache for fast compilation.
+  fs.rmSync(path.join(root, '.next/standalone'), { recursive: true, force: true });
 
   const startedAt = performance.now();
   const elapsedSeconds = () => Math.round((performance.now() - startedAt) / 1000);
@@ -85,6 +88,32 @@ function runBuild() {
     }
 
     if (code === 0) {
+      // Trace copying can reuse a cached chunk with a stable name. Overlay the
+      // finalized server output after Next exits, then verify bytes in CI.
+      try {
+        const dist = path.join(root, '.next');
+        const runtime = path.join(dist, 'standalone', path.basename(root));
+        if (!fs.existsSync(path.join(runtime, 'server.js'))) throw new Error('Standalone entry is missing');
+        function overlayServer(relative = '') {
+          const source = path.join(dist, 'server', relative);
+          const destination = path.join(runtime, '.next/server', relative);
+          // Refresh exactly the files Next traced; do not ship extra build maps.
+          if (!fs.existsSync(destination)) return;
+          if (fs.statSync(source).isDirectory()) {
+            for (const name of fs.readdirSync(source)) overlayServer(path.join(relative, name));
+          } else fs.copyFileSync(source, destination);
+        }
+        overlayServer();
+        const required = JSON.parse(fs.readFileSync(path.join(dist, 'required-server-files.json'), 'utf8'));
+        for (const relative of required.files) {
+          const destination = path.join(runtime, relative);
+          fs.mkdirSync(path.dirname(destination), { recursive: true });
+          fs.copyFileSync(path.join(root, relative), destination);
+        }
+      } catch (error) {
+        console.error('[next-build] standalone synchronization failed:', error.message);
+        process.exit(1);
+      }
       console.log(`[next-build] OK in ${elapsedSeconds()}s`);
       process.exit(0);
     }

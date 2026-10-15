@@ -1,14 +1,9 @@
 import "server-only";
 
-import { listRulesEmbedMessages } from "@/lib/discordAdmin";
-import { MISTBLOSSOM_DISCORD_CHANNELS } from "@/lib/discordGuildLinks";
+import { listPublishedGuildRulesMessages } from "@/lib/guildRulesDocument";
 import { getGuildNicknamePolicy, type GuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
 
 const RULE_IDS_CACHE_TTL_MS = 5 * 60_000;
-const RULES_CHANNEL_ID = String(
-  process.env.DISCORD_GUILD_RULES_CHANNEL_ID || MISTBLOSSOM_DISCORD_CHANNELS.rules.id,
-).trim();
-
 declare global {
   // eslint-disable-next-line no-var
   var __mistblossomConfiguredRulesRoleIdsCache:
@@ -41,7 +36,7 @@ export async function resolveConfiguredRulesRoleIds(
     return [...cached.roleIds];
   }
 
-  const messages = await listRulesEmbedMessages(RULES_CHANNEL_ID, 50).catch(() => []);
+  const messages = await listPublishedGuildRulesMessages();
   const rulesMessage = messages.find(
     (message) => message.rulesType === "guild" && message.roleIds.length > 0,
   );

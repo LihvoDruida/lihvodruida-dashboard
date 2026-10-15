@@ -1,72 +1,9 @@
-/* =========================================================
-   ONBOARDING — спільний шаблон реєстрації
-
-   /rules/accept і /profile/[id]/settings показують по суті
-   один і той самий блок: прогрес заповнення, список кроків
-   із позначкою ✓ / ! та пари «значення + підпис».
-
-   Раніше жоден із цих класів не мав правил, тому пари
-   `<strong>значення</strong><small>підпис</small>` злипалися
-   в один рядок («ДмитроІмʼя», «ЧоловічаЗвертання»).
-
-   Тут вони описані один раз і згруповані селекторами.
-   Жодного !important.
-   ========================================================= */
-
-/* =========================================================
-   1. БАЗОВА ПАРА «ЗНАЧЕННЯ + ПІДПИС»
-
-   Найпоширеніша форма на обох сторінках. Виносимо окремо,
-   щоб не повторювати в кожному блоці.
-   ========================================================= */
-.rules-onboarding-summary > span,
-.rules-onboarding-progress__meta,
-.rules-onboarding-step__body,
+/* PROFILE SETUP — registration remains separate from public guild rules acceptance. */
 .profile-setup-progress-panel__head > span:not(:where([class])) {
   display: grid;
   gap: var(--space-3xs);
   min-width: 0;
 }
-
-.rules-onboarding-summary > span > strong,
-.rules-onboarding-step__body > strong {
-  font-size: 0.92rem;
-  color: var(--text-strong);
-  overflow-wrap: anywhere;
-}
-
-.rules-onboarding-summary > span > small,
-.rules-onboarding-step__body > small {
-  font-size: var(--font-size-meta);
-  line-height: var(--line-height-body);
-  color: var(--text-muted);
-}
-
-/* =========================================================
-   2. ОБОЛОНКА СТОРІНКИ РЕЄСТРАЦІЇ
-   ========================================================= */
-.rules-onboarding-page {
-  min-width: 0;
-}
-
-.rules-onboarding-shell {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-grid);
-  min-width: 0;
-}
-
-.rules-onboarding-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-stack);
-  min-width: 0;
-}
-
-/* =========================================================
-   3. ПРОГРЕС ЗАПОВНЕННЯ
-   ========================================================= */
-.rules-onboarding-progress,
 .profile-setup-progress-panel {
   display: grid;
   gap: var(--space-sm);
@@ -78,17 +15,13 @@
   min-width: 0;
 }
 
-.profile-setup-progress-panel.is-complete,
-.rules-onboarding-progress.is-complete {
+.profile-setup-progress-panel.is-complete {
   border-left-color: var(--c-success);
 }
 
-.profile-setup-progress-panel.is-missing,
-.rules-onboarding-progress.is-missing {
+.profile-setup-progress-panel.is-missing {
   border-left-color: var(--c-warning);
 }
-
-/* Шапка: іконка стану, текст, лічильник */
 .profile-setup-progress-panel__head {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -97,9 +30,7 @@
 }
 
 .profile-setup-progress-panel__icon,
-.rules-onboarding-step__state,
-.profile-setup-callout__icon,
-.rules-registration-locked-card__icon {
+.profile-setup-callout__icon {
   display: grid;
   place-items: center;
   width: 28px;
@@ -114,38 +45,18 @@
   line-height: 1;
 }
 
-.is-complete .profile-setup-progress-panel__icon,
-.is-complete > .rules-onboarding-step__state {
+.is-complete .profile-setup-progress-panel__icon {
   border-color: rgba(124, 196, 143, 0.4);
   background: rgba(124, 196, 143, 0.14);
   color: var(--c-success);
 }
 
-.is-missing .profile-setup-progress-panel__icon,
-.is-missing > .rules-onboarding-step__state {
+.is-missing .profile-setup-progress-panel__icon {
   border-color: rgba(232, 179, 74, 0.4);
   background: rgba(232, 179, 74, 0.14);
   color: var(--c-warning);
 }
 
-/* Значення відсотка окремим рядком над смугою */
-.rules-onboarding-progress__meta {
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: baseline;
-  gap: var(--space-xs);
-}
-
-.rules-onboarding-progress__meta > strong {
-  font-size: 1.15rem;
-  color: var(--c-accent-200);
-}
-
-.rules-onboarding-progress__meta > small {
-  font-size: var(--font-size-ui-lg);
-  color: var(--text-muted);
-}
-
-.rules-onboarding-progress__bar,
 .profile-setup-progress-panel__bar {
   display: block;
   height: 6px;
@@ -155,7 +66,6 @@
   overflow: hidden;
 }
 
-.rules-onboarding-progress__bar > span,
 .profile-setup-progress-panel__bar > span {
   display: block;
   height: 100%;
@@ -163,36 +73,12 @@
   background: var(--accent-gradient);
   transition: width var(--dur-base) var(--ease-out);
 }
-
-.rules-onboarding-progress > small {
-  font-size: var(--font-size-ui);
-  color: var(--text-muted);
-}
-
-/* =========================================================
-   4. СПИСОК КРОКІВ
-   ========================================================= */
-.rules-onboarding-steps,
 .profile-setup-progress-panel__steps {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
   gap: var(--space-sm);
   min-width: 0;
 }
-
-.rules-onboarding-step {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-raised);
-  min-width: 0;
-}
-
-/* Крок у профілі — посилання-якір, тому реагує на наведення */
 .profile-setup-progress-step {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -215,8 +101,6 @@
   transform: translateY(-2px);
   color: inherit;
 }
-
-/* Позначка стану займає перший стовпчик обох рядків */
 .profile-setup-progress-step > span[aria-hidden] {
   grid-row: span 2;
   display: grid;
@@ -262,105 +146,7 @@
 .profile-setup-progress-step.is-missing {
   border-left: 3px solid var(--c-warning);
 }
-
-.rules-onboarding-step.is-next {
-  border-color: var(--border-strong);
-  background: var(--accent-soft);
-}
-
-.rules-onboarding-step.is-missing {
-  border-left: 3px solid var(--c-warning);
-}
-
-.rules-onboarding-step.is-complete {
-  border-left: 3px solid var(--c-success);
-}
-
-/* Стан «проблем немає» */
-.rules-onboarding-problems {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: var(--space-2xs) var(--space-sm);
-  padding: var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--c-ink-500);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  min-width: 0;
-}
-
-.rules-onboarding-problems > span[aria-hidden] {
-  grid-row: span 2;
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  font-size: 0.95rem;
-  font-weight: var(--font-weight-bold);
-}
-
-.rules-onboarding-problems > strong {
-  color: var(--text-strong);
-  font-size: 0.92rem;
-}
-
-.rules-onboarding-problems > small {
-  font-size: var(--font-size-ui);
-  line-height: var(--line-height-relaxed);
-  color: var(--text-muted);
-}
-
-.rules-onboarding-problems.is-clear {
-  border-left-color: var(--c-success);
-}
-
-.rules-onboarding-problems.is-clear > span[aria-hidden] {
-  border: 1px solid rgba(124, 196, 143, 0.4);
-  background: rgba(124, 196, 143, 0.14);
-  color: var(--c-success);
-}
-
-/* =========================================================
-   5. ПІДСУМОК ПРОФІЛЮ
-   ========================================================= */
-.rules-onboarding-summary {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
-  gap: var(--space-sm);
-  padding: var(--pad-card-compact);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  min-width: 0;
-}
-
-/* Підпис під значенням має читатися як підпис, а не як текст */
-.rules-onboarding-summary > span > small {
-  font-size: var(--font-size-2xs);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-  order: -1;
-}
-
-.rules-onboarding-summary > span {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3xs);
-}
-
-/* =========================================================
-   6. ВРІЗКИ Й ПІДКАЗКИ
-   ========================================================= */
-.rules-onboarding-notice,
-.profile-setup-callout,
-.rules-onboarding-data-warning,
-.rules-registration-block__note,
-#rules-complete-help,
-#rules-public-action-help {
+.profile-setup-callout {
   display: grid;
   gap: var(--space-2xs);
   padding: var(--space-sm) var(--space-md);
@@ -380,204 +166,23 @@
   gap: var(--space-sm);
 }
 
-.rules-onboarding-notice--warning,
-.rules-onboarding-data-warning {
-  border-left-color: var(--c-warning);
-  border-color: var(--tint-warning-border);
-  background: var(--tint-warning-bg);
-  color: var(--text-on-warning);
-}
-
-.rules-onboarding-notice--success,
-.rules-onboarding-notice--ok {
-  border-left-color: var(--c-success);
-  background: var(--tint-success-bg);
-  color: var(--text-on-success);
-}
-
-.rules-onboarding-notice--error {
-  border-left-color: var(--c-danger);
-  border-color: var(--tint-danger-border);
-  background: var(--tint-danger-bg);
-  color: var(--text-on-danger);
-}
-
-.rules-onboarding-notice strong,
 .profile-setup-callout strong {
   color: var(--text-strong);
 }
-
-.rules-onboarding-benefits {
-  color: var(--text-muted);
-  font-size: var(--font-size-ui-lg);
-  line-height: var(--line-height-copy);
-}
-
-.rules-onboarding-benefits {
-  display: grid;
-  gap: var(--space-2xs);
-  margin: 0;
-  padding-left: var(--space-md);
-}
-
-/* =========================================================
-   7. РЕЄСТРАЦІЙНІ БЛОКИ Й ФІНАЛЬНА ДІЯ
-   ========================================================= */
-/* Кроки реєстрації йдуть ОДИН ЗА ОДНИМ.
-
-   Чотири колонки змушували стрибати очима по сторінці й ламали
-   логіку «зверху вниз»: імʼя → звертання → персонажі → нік → роль.
-   Кожен крок тепер на всю ширину і має свій номер. */
-.rules-registration-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  counter-reset: rules-step;
-  gap: var(--gap-grid);
-  align-items: start;
-  min-width: 0;
-}
-
-.rules-registration-block--wide {
-  grid-column: 1 / -1;
-}
-
-.rules-registration-editor {
-  display: grid;
-  gap: var(--space-md);
-  min-width: 0;
-}
-
-.rules-registration-editor--locked {
-  opacity: 0.65;
-  pointer-events: none;
-}
-
-/* Іконка + текст + дія в один рядок. Двоколонкова версія кидала
-   кнопку на другий ряд, а <span> із <strong>+<small> усередині
-   лишався інлайновим — звідси «Увійти через DiscordПісля входу…». */
-.rules-registration-locked-card {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-md);
-  border: 1px dashed var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  color: var(--text-muted);
-}
-
-.rules-registration-bnet-action,
-#rules-profile-candidate-bulk-add {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-}
-
-.rules-onboarding-final-action {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-md);
-  padding: var(--pad-card-compact);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md);
-  background: var(--accent-soft);
-  min-width: 0;
-}
-
-.rules-onboarding-final-action__copy {
-  display: grid;
-  gap: var(--space-3xs);
-  min-width: 0;
-}
-
-.rules-onboarding-final-action__copy strong {
-  color: var(--text-strong);
-  font-size: 0.95rem;
-}
-
-.rules-onboarding-final-action__copy small {
-  color: var(--text-soft);
-  font-size: var(--font-size-ui-lg);
-  line-height: var(--line-height-relaxed);
-}
-
-.rules-onboarding-role-box {
-  display: grid;
-  gap: var(--space-xs);
-  padding: var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-}
-
-#rules-profile-name {
-  font-family: var(--font-mono);
-  color: var(--c-accent-200);
-  overflow-wrap: anywhere;
-}
-
-/* =========================================================
-   8. ДАНІ ПРОФІЛЮ Й МЕТРИКИ
-   ========================================================= */
-
-/* =========================================================
-   9. СПИСОК ПРАВИЛ (бібліотека)
-   ========================================================= */
-
-#rules-public-action-title {
-  font-size: 0.95rem;
-  font-weight: var(--font-weight-bold);
-  color: var(--text-strong);
-}
-
-/* =========================================================
-   10. АДАПТИВ
-   ========================================================= */
 @media (max-width: 860px) {
   .profile-setup-progress-panel__head {
     grid-template-columns: auto minmax(0, 1fr);
   }
-
-  /* Лічильник кроків переїжджає під текст, щоб не тиснути його */
   .profile-setup-progress-panel__head > .profile-count-pill {
     grid-column: 2;
     justify-self: start;
   }
 
-  .rules-onboarding-final-action {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .rules-onboarding-final-action .btn {
-    width: 100%;
-  }
-
   
 
   
 
 }
-
-@media (max-width: 520px) {
-  .rules-onboarding-summary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  
-}
-
-/* =========================================================
-   10. НАЛАШТУВАННЯ ПРОФІЛЮ (?setup=1)
-
-   Та сама сторінка сценарію реєстрації, але окремим маршрутом.
-   Класи `profile-*` тут описані поруч із `rules-*`, бо обидві
-   сторінки показують ті самі пари «значення + підпис» і ті самі
-   блоки-кроки — розводити їх по файлах означало б дублювати.
-   ========================================================= */
 .profile-settings-page {
   min-width: 0;
 }
@@ -590,8 +195,6 @@
   gap: var(--space-sm);
   min-width: 0;
 }
-
-/* Смуга «Реєстраційні дані заповнені» */
 .profile-account-overview {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
@@ -602,8 +205,6 @@
 .profile-account-overview-card--primary {
   border-left: 3px solid var(--c-accent-400);
 }
-
-/* Друга колонка картки — знову пара «назва + пояснення» */
 .profile-account-overview-card > div,
 .profile-account-overview-card > span:not(:where([class$="__icon"])) {
   display: grid;
@@ -623,8 +224,6 @@
   line-height: var(--line-height-body);
   color: var(--text-muted);
 }
-
-/* ---------- Бічна колонка ---------- */
 .profile-account-sidebar__nav {
   display: grid;
   gap: var(--space-2xs);
@@ -657,8 +256,6 @@
   justify-content: center;
   gap: var(--space-2xs);
 }
-
-/* ---------- Сітка карток налаштувань ---------- */
 .profile-gender-box,
 .profile-raid-role-box,
 .profile-name-panel {
@@ -711,14 +308,10 @@
   line-height: var(--line-height-body);
   color: var(--text-muted);
 }
-
-/* ---------- Вибір звертання ---------- */
 .profile-gender-form {
   display: grid;
   gap: var(--space-xs);
 }
-
-/* Варіанти — картки з радіо, а не голий список */
 .profile-gender-form label {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -787,8 +380,6 @@
 .profile-discord-standard__head {
     grid-template-columns: auto minmax(0, 1fr);
   }
-
-  /* Пігулка стану переїжджає під заголовок, щоб не тиснути текст */
   .profile-gender-box__head > *:nth-child(3),
 .profile-raid-role-box__head > *:nth-child(3),
 .profile-discord-standard__head > *:nth-child(3) {
@@ -796,8 +387,6 @@
     justify-self: start;
   }
 }
-
-/* ---------- Дрібні модифікатори, які лишались без правил ---------- */
 .profile-account-page,
 #profile-gender-settings {
   min-width: 0;
@@ -822,8 +411,6 @@
 .profile-account-overview-card--main-role {
   border-left: 3px solid var(--c-accent-400);
 }
-
-/* Варіант звертання — та сама картка, що й у profile-gender-form */
 .profile-gender-option {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -845,8 +432,6 @@
   border-color: var(--border-strong);
   background: var(--accent-soft);
 }
-
-/* Пігулка стану звертання: тон уже заданий вище через --tone */
 .profile-gender-pill {
   display: inline-flex;
   align-items: center;
@@ -867,238 +452,6 @@
 .profile-gender-pill.is-missing {
   --tone: var(--c-warning);
 }
-
-.rules-onboarding-hero {
-  min-width: 0;
-}
-
-/* Шапка блоку реєстрації: іконка + текст + пігулка стану в один рядок.
-   Двоколонкова версія в pages.css кидала пігулку на власний рядок. */
-.rules-registration-block__head {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-sm);
-  min-width: 0;
-}
-
-.rules-registration-block__head > span:not(:where(.rules-registration-block__icon)):not(:where(.profile-gender-pill)) {
-  display: grid;
-  gap: var(--space-3xs);
-  min-width: 0;
-}
-
-@media (max-width: 860px) {
-  .rules-registration-block__head {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .rules-registration-block__head > .profile-gender-pill {
-    grid-column: 1 / -1;
-    justify-self: start;
-  }
-}
-
-/* =========================================================
-   11. КРОКИ РЕЄСТРАЦІЇ: НУМЕРАЦІЯ Й ПОСЛІДОВНІСТЬ
-
-   Сторінка правил — це майстер, а не набір карток. Нумерація
-   робиться лічильником CSS, тож порядок у розмітці лишається
-   єдиним джерелом правди: додали крок — номери зсунулись самі.
-   ========================================================= */
-.rules-registration-grid > .rules-registration-block {
-  counter-increment: rules-step;
-}
-
-.rules-registration-block--wide {
-  grid-column: 1 / -1;
-}
-
-/* Номер замість декоративної іконки, коли крок пронумерований */
-.rules-registration-grid > .rules-registration-block > .rules-registration-block__head > .rules-registration-block__icon::before {
-  content: counter(rules-step);
-  font-family: var(--font-brand);
-  font-size: 0.86rem;
-  font-weight: var(--font-weight-bold);
-}
-
-.rules-registration-grid > .rules-registration-block > .rules-registration-block__head > .rules-registration-block__icon {
-  font-size: 0;
-}
-
-/* Виконаний крок — зелена грань і приглушений номер */
-.rules-registration-block:not(:where(.is-problem)) > .rules-registration-block__head > .rules-registration-block__icon {
-  border-color: color-mix(in srgb, var(--c-success) 40%, transparent);
-  background: color-mix(in srgb, var(--c-success) 12%, transparent);
-  color: var(--c-success);
-}
-
-.rules-registration-block.is-problem > .rules-registration-block__head > .rules-registration-block__icon {
-  border-color: color-mix(in srgb, var(--c-warning) 40%, transparent);
-  background: color-mix(in srgb, var(--c-warning) 12%, transparent);
-  color: var(--c-warning);
-}
-
-/* Тіло кроку відступає під номер, щоб форма читалась як його частина */
-.rules-registration-editor,
-.rules-registration-block > form,
-.rules-registration-block > .profile-gender-form {
-  display: grid;
-  gap: var(--space-sm);
-  min-width: 0;
-}
-
-/* Текстова колонка замкненої картки — вертикальна пара */
-.rules-registration-locked-card > span:not(:where(.rules-registration-locked-card__icon)) {
-  display: grid;
-  gap: var(--space-3xs);
-  min-width: 0;
-}
-
-.rules-registration-locked-card strong {
-  font-size: 0.92rem;
-  color: var(--text-strong);
-}
-
-.rules-registration-locked-card small {
-  font-size: var(--font-size-ui);
-  line-height: var(--line-height-relaxed);
-  color: var(--text-muted);
-}
-
-.rules-registration-locked-card > .btn {
-  flex: 0 0 auto;
-}
-
-@media (max-width: 860px) {
-  .rules-registration-locked-card {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  /* Кнопка свідомо переїжджає вниз на всю ширину — на телефоні
-     тиснути її зручніше, ніж тиснути текст у вузьку колонку. */
-  .rules-registration-locked-card > .btn {
-    grid-column: 1 / -1;
-    width: 100%;
-  }
-}
-
-/* =========================================================
-   12. RULES ACCEPT — інтерактивні вибори й адаптивні привʼязки
-   ========================================================= */
-.rules-onboarding-context-card {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--c-accent-400);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  min-width: 0;
-}
-
-.rules-onboarding-context-card > span:not(.rules-onboarding-context-card__icon) {
-  display: grid;
-  gap: var(--space-3xs);
-  min-width: 0;
-}
-
-.rules-onboarding-context-card strong {
-  color: var(--text-strong);
-  font-size: var(--font-size-body);
-}
-
-.rules-onboarding-context-card small {
-  color: var(--text-muted);
-  font-size: var(--font-size-ui);
-  line-height: var(--line-height-relaxed);
-}
-
-.rules-onboarding-context-card__icon,
-.rules-onboarding-entry-card__step {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  background: var(--surface-raised);
-  color: var(--c-accent-300);
-  font-size: var(--font-size-ui);
-  font-weight: var(--font-weight-heavy);
-  line-height: 1;
-}
-
-.rules-onboarding-context-card.is-warning {
-  border-left-color: var(--c-warning);
-  background: var(--tint-warning-bg);
-}
-
-.rules-onboarding-context-card.is-warning .rules-onboarding-context-card__icon {
-  border-color: color-mix(in srgb, var(--c-warning) 42%, transparent);
-  color: var(--c-warning);
-}
-
-.rules-onboarding-context-card.is-error {
-  border-left-color: var(--c-danger);
-  background: var(--tint-danger-bg);
-}
-
-.rules-onboarding-context-card.is-error .rules-onboarding-context-card__icon {
-  border-color: color-mix(in srgb, var(--c-danger) 42%, transparent);
-  color: var(--c-danger);
-}
-
-.rules-onboarding-entry-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-sm);
-  min-width: 0;
-}
-
-.rules-onboarding-entry-card {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  gap: var(--space-sm);
-  padding: var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  min-width: 0;
-}
-
-.rules-onboarding-entry-card.is-primary {
-  border-left: 3px solid var(--c-accent-400);
-}
-
-.rules-onboarding-entry-card > span:not(.rules-onboarding-entry-card__step) {
-  display: grid;
-  gap: var(--space-3xs);
-  min-width: 0;
-}
-
-.rules-onboarding-entry-card strong {
-  color: var(--text-strong);
-  font-size: var(--font-size-body);
-}
-
-.rules-onboarding-entry-card small {
-  color: var(--text-muted);
-  font-size: var(--font-size-ui);
-  line-height: var(--line-height-relaxed);
-}
-
-.rules-onboarding-entry-card > .btn {
-  grid-column: 1 / -1;
-  width: 100%;
-}
-
-/* Radio/checkbox cards use the same geometry. Previously only gender had
-   a full card style, while raid-role and nickname-alt choices rendered as
-   nearly unstyled rows. */
 .profile-gender-form,
 .profile-raid-role-form {
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1178,121 +531,15 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.rules-choice-feedback {
-  grid-column: 1 / -1;
-  margin: 0;
-  padding: var(--space-2xs) 0;
-  color: var(--text-muted);
-  font-size: var(--font-size-meta);
-  line-height: var(--line-height-body);
-}
-
-.rules-choice-feedback.is-pending {
-  color: var(--c-warning);
-}
-
-.rules-choice-feedback.is-ok {
-  color: var(--text-muted);
-}
-
-.rules-choice-feedback.is-warning {
-  color: var(--c-warning);
-}
-
-.rules-choice-save {
-  grid-column: 1 / -1;
-  justify-self: start;
-  min-width: 180px;
-}
-
-.rules-registration-bnet-action {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(180px, 240px);
-  align-items: stretch;
-}
-
-.rules-registration-bnet-action > span {
-  display: grid;
-  align-content: center;
-  gap: var(--space-3xs);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  min-width: 0;
-}
-
-.rules-registration-bnet-action > span > small {
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  line-height: var(--line-height-compact);
-}
-
-.rules-registration-bnet-action > span > strong {
-  color: var(--text-strong);
-  font-size: var(--font-size-body);
-}
-
-.rules-onboarding-page .profile-character-candidate:has(input[data-profile-candidate-checkbox="true"]:checked) {
-  border-color: color-mix(in srgb, var(--c-accent-400) 58%, var(--border-strong));
-  background: var(--accent-soft);
-}
-
-.rules-onboarding-page .profile-candidate-select {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-sm);
-}
-
-.rules-onboarding-page .profile-character-candidate__body small {
-  overflow-wrap: anywhere;
-}
-
-.rules-onboarding-final-action.is-ready {
-  border-color: color-mix(in srgb, var(--c-success) 42%, var(--border-strong));
-  box-shadow: var(--shadow-sm);
-}
-
-/* Картки персонажів і Battle.net-кандидатів тут навмисно НЕ мають
-   окремої rules-розкладки. /rules/accept використовує той самий компонент
-   і ті самі profile.css/desktop.css правила, що й /profile, щоб дизайн,
-   кількість колонок, висота арту та адаптивність не розходилися. */
-
 @media (max-width: 760px) {
-  .rules-onboarding-page {
-    --pad-card-compact: var(--space-md);
-  }
 
-  .rules-onboarding-entry-grid,
-.profile-gender-form,
+  .profile-gender-form,
 .profile-raid-role-form,
-.profile-nickname-character-list,
-.rules-registration-bnet-action {
+.profile-nickname-character-list {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .rules-onboarding-context-card {
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: start;
-  }
-
-  .rules-onboarding-context-card > .btn {
-    grid-column: 1 / -1;
-    width: 100%;
-  }
-
-  .rules-registration-block__head > .profile-count-pill,
-.rules-registration-block__head > .profile-raid-role-pill,
-.rules-registration-block__head > .profile-gender-pill {
-    grid-column: 1 / -1;
-    justify-self: start;
-  }
-
-  .rules-choice-save,
-.rules-registration-bnet-action .profile-bnet-cta,
-.profile-candidate-bulk-buttons .btn {
+  .profile-candidate-bulk-buttons .btn {
     width: 100%;
     min-width: 0;
     justify-self: stretch;
@@ -1305,41 +552,10 @@
     padding: 8px 10px;
   }
 
-  .rules-onboarding-summary > span:last-child {
-    grid-column: 1 / -1;
-  }
-
-  .rules-onboarding-role-box,
-.rules-onboarding-final-action,
-.rules-registration-block,
-.profile-candidates-box {
+  .profile-candidates-box {
     border-radius: var(--radius-md);
   }
 }
-
-@media (max-width: 460px) {
-  .rules-onboarding-summary {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .rules-onboarding-summary > span:last-child {
-    grid-column: auto;
-  }
-
-  .rules-onboarding-context-card__icon,
-.rules-onboarding-entry-card__step {
-    width: 28px;
-    height: 28px;
-  }
-
-  .rules-onboarding-page .profile-character-candidate {
-    grid-template-columns: auto auto minmax(0, 1fr);
-    gap: var(--space-xs);
-    padding: var(--space-xs);
-  }
-}
-
-/* Native controls stay visible, but get a predictable touch/focus target. */
 .profile-gender-option input[type="radio"],
 .profile-raid-role-option input[type="radio"],
 .profile-nickname-character-option input[type="checkbox"] {
@@ -1359,9 +575,7 @@
 
 .profile-gender-option,
 .profile-raid-role-option,
-.profile-nickname-character-option,
-.rules-onboarding-page .profile-character-candidate,
-.rules-onboarding-page .btn {
+.profile-nickname-character-option {
   touch-action: manipulation;
 }
 
@@ -1381,78 +595,5 @@
 .profile-nickname-character-option:has(input:checked) {
     border-color: color-mix(in srgb, var(--c-accent-400) 58%, var(--border-strong));
     background: var(--accent-soft);
-  }
-}
-
-/* =========================================================
-   RULES ACCEPT — завершений стан
-
-   Після успішної public/authenticated видачі ролі сторінка більше не
-   показує ту саму destructive/submit дію вдруге. Замість неї — короткий
-   підтверджений результат і наступний безпечний крок.
-   ========================================================= */
-.rules-onboarding-complete {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-md);
-  padding: var(--space-md);
-  border: 1px solid var(--tint-success-border);
-  border-left: 3px solid var(--c-success);
-  border-radius: var(--radius-md);
-  background: var(--tint-success-bg);
-  min-width: 0;
-}
-
-.rules-onboarding-complete__icon {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border: 1px solid color-mix(in srgb, var(--c-success) 38%, transparent);
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--c-success) 12%, transparent);
-  color: var(--c-success);
-  font-size: 1.2rem;
-  font-weight: var(--font-weight-heavy);
-}
-
-.rules-onboarding-complete__copy {
-  display: grid;
-  gap: var(--space-3xs);
-  min-width: 0;
-}
-
-.rules-onboarding-complete__copy > strong {
-  color: var(--text-strong);
-  font-size: var(--font-size-base);
-}
-
-.rules-onboarding-complete__copy > small,
-.rules-onboarding-complete__meta {
-  color: var(--text-muted);
-  font-size: var(--font-size-ui-lg);
-  line-height: var(--line-height-relaxed);
-  overflow-wrap: anywhere;
-}
-
-.rules-onboarding-complete__meta b {
-  color: var(--text-soft);
-}
-
-.rules-onboarding-complete__action {
-  min-width: 190px;
-}
-
-@media (max-width: 760px) {
-  .rules-onboarding-complete {
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: start;
-  }
-
-  .rules-onboarding-complete__action {
-    grid-column: 1 / -1;
-    width: 100%;
-    min-width: 0;
   }
 }

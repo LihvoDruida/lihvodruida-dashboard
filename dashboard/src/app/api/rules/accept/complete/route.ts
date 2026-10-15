@@ -1,25 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { appBaseUrl } from "@/lib/apiRoute";
-import { getSession } from "@/lib/auth";
 import {
   addGuildMemberRoles,
   fetchDiscordGuildMemberSnapshot,
-  fetchDiscordGuildSnapshot,
   fetchDiscordRoles,
   getDiscordGuildId,
-  updateGuildMemberNickname,
 } from "@/lib/discordAdmin";
-import {
-  buildProfileDiscordNicknamePlan,
-  getProfileById,
-  markProfileDiscordNicknameSynced,
-} from "@/lib/profiles";
-import {
-  markRulesOnboardingCompleted,
-  parseRulesRoleTokenDetails,
-  rulesOnboardingStatus,
-} from "@/lib/rulesOnboarding";
-import { getGuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
+import { parseRulesRoleTokenDetails } from "@/lib/rulesOnboarding";
+import { getGuildRulesDocument } from "@/lib/guildRulesDocument";
 import { tokenRulesRolesAreCurrentlyAllowed } from "@/lib/discordRulesRolePolicy";
 import { processNewcomerNicknameRoleGrant } from "@/lib/discordNicknameWarnings";
 import { markDiscordNewcomerRulesAccepted } from "@/lib/discordNewcomerOnboarding";
@@ -65,158 +53,6 @@ function rulesTokenFromReferrer(request: NextRequest) {
   }
 }
 
-async function completeAuthenticatedRulesOnboarding(params: {
-  request: NextRequest;
-  token: string;
-  profileId: string;
-  roleIds: string[];
-  tokenDiscordUserId?: string | null;
-  ip: string;
-}) {
-  const { request, token, profileId, roleIds, tokenDiscordUserId, ip } = params;
-  const limit = checkRateLimit(
-    `rules-accept-complete:${profileId}:${ip}`,
-    10,
-    10 * 60 * 1000,
-  );
-  if (!limit.ok) return redirectToToken(request, token, "rate_limit");
-
-  try {
-    const profile = await getProfileById(profileId);
-    const nicknamePolicy = await getGuildNicknamePolicy();
-    const onboarding = rulesOnboardingStatus(profile, nicknamePolicy.template);
-    if (!profile || !onboarding.complete) {
-      logDashboardEvent("warn", "rules.onboarding.incomplete", request, {
-        profileId,
-        missing: onboarding.missing.map((step) => step.key),
-      });
-      return redirectToToken(request, token, "incomplete");
-    }
-    if (
-      profile.provider !== "discord" ||
-      !/^\d{16,25}$/.test(profile.providerUserId)
-    ) {
-      return redirectToToken(request, token, "not_discord_profile");
-    }
-
-    if (
-      tokenDiscordUserId &&
-      tokenDiscordUserId !== profile.providerUserId
-    ) {
-      logDashboardEvent("warn", "rules.onboarding.identity_mismatch", request, {
-        profileId,
-        tokenUserId: tokenDiscordUserId,
-        sessionUserId: profile.providerUserId,
-      });
-      return redirectToToken(request, token, "discord_identity_mismatch");
-    }
-
-    const guildId = getDiscordGuildId();
-    if (!guildId)
-      return redirectToToken(request, token, "discord_not_configured");
-
-    const guild = await fetchDiscordGuildSnapshot().catch(() => null);
-    const nicknamePlan = buildProfileDiscordNicknamePlan(
-      profile,
-      nicknamePolicy.template,
-    );
-    const nickname = nicknamePlan.value;
-    let nicknameSynced = false;
-    const isGuildOwner = Boolean(
-      guild?.ownerId && guild.ownerId === profile.providerUserId,
-    );
-
-    if (nickname && !isGuildOwner) {
-      try {
-        await updateGuildMemberNickname({
-          guildId,
-          userId: profile.providerUserId,
-          nickname,
-          reason: `Mistblossom rules registration nickname: ${profile.profileId}`,
-        });
-        await markProfileDiscordNicknameSynced(
-          profile.profileId,
-          nickname,
-          nicknamePlan,
-        ).catch(() => null);
-        nicknameSynced = true;
-      } catch (error) {
-        logDashboardEvent("warn", "rules.onboarding.nickname_failed", request, {
-          profileId: profile.profileId,
-          message: safeErrorMessage(error),
-        });
-      }
-    }
-
-    await addGuildMemberRoles({
-      guildId,
-      userId: profile.providerUserId,
-      roleIds,
-      reason: `Rules onboarding completed by ${profile.displayName || profile.providerUserId}`,
-    });
-    await markDiscordNewcomerRulesAccepted(profile.providerUserId).catch((error) => {
-      logDashboardEvent("warn", "rules.onboarding.newcomer_state_failed", request, {
-        profileId: profile.profileId,
-        message: safeErrorMessage(error),
-      });
-    });
-    await processNewcomerNicknameRoleGrant({ userId: profile.providerUserId, grantedRoleIds: roleIds }).catch((error) => {
-      logDashboardEvent("warn", "rules.onboarding.nickname_gate_failed", request, {
-        profileId: profile.profileId,
-        message: safeErrorMessage(error),
-      });
-    });
-    await markRulesOnboardingCompleted(profile.profileId, {
-      roleIds,
-      nickname: nicknameSynced ? nickname : null,
-    });
-
-    // Запис для статистики правил. Раніше лічильник жив у Cloudflare KV і
-    // його вів воркер; тепер це запис у нашій базі, який робить та сама
-    // дія, що видає ролі, — тож статистика не може розійтись із фактом.
-    // Помилка запису не має зривати онбординг: ролі вже видані.
-    await recordRulesDecision({
-      guildId,
-      discordId: profile.providerUserId,
-      discordName: profile.displayName || profile.providerUserId,
-      scope: "guild",
-      action: "accepted",
-      profileId: profile.profileId,
-    }).catch((error) => {
-      logDashboardEvent("warn", "rules.stats.record_failed", request, {
-        profileId: profile.profileId,
-        message: safeErrorMessage(error),
-      });
-    });
-
-    logDashboardEvent("info", "rules.onboarding.completed", request, {
-      profileId: profile.profileId,
-      roles: roleIds.length,
-      nicknameSynced,
-      nicknameManualReason: isGuildOwner
-        ? "guild_owner"
-        : nickname && !nicknameSynced
-          ? "discord_denied"
-          : null,
-    });
-    return redirectToToken(
-      request,
-      token,
-      nicknameSynced
-        ? "completed"
-        : isGuildOwner
-          ? "completed_owner_nickname_manual"
-          : "completed_nickname_manual",
-    );
-  } catch (error) {
-    logDashboardEvent("error", "rules.onboarding.complete_failed", request, {
-      profileId,
-      message: safeErrorMessage(error),
-    });
-    return redirectToToken(request, token, "failed");
-  }
-}
-
 async function completePublicRulesAcceptance(params: {
   request: NextRequest;
   token: string;
@@ -251,10 +87,12 @@ async function completePublicRulesAcceptance(params: {
       throw error;
     }
 
-    await addGuildMemberRoles({
+    // Discord role PUTs are idempotent; skip already-held roles on retries.
+    const missingRoleIds = roleIds.filter(id => !member.roleIds.includes(id));
+    if (missingRoleIds.length) await addGuildMemberRoles({
       guildId,
       userId: discordUserId,
-      roleIds,
+      roleIds: missingRoleIds,
       reason: `Rules accepted without dashboard auth by ${member.displayName || discordUserId}`,
     });
     await markDiscordNewcomerRulesAccepted(discordUserId).catch((error) => {
@@ -270,10 +108,14 @@ async function completePublicRulesAcceptance(params: {
       });
     });
 
+    await recordRulesDecision({ guildId, discordId: discordUserId, discordName: member.displayName, scope: "guild", action: "accepted" }).catch(error => {
+      logDashboardEvent("warn", "rules.stats.record_failed", request, { userId: discordUserId, message: safeErrorMessage(error) });
+    });
+
     logDashboardEvent("info", "rules.public.completed", request, {
       userId: discordUserId,
       roles: roleIds.length,
-      memberName: member.displayName || null,
+      newlyGrantedRoles: missingRoleIds.length,
     });
     return redirectToToken(request, token, "completed_public");
   } catch (error) {
@@ -296,10 +138,15 @@ export async function POST(request: NextRequest) {
     return redirectToToken(request, fallbackToken, "request_too_large");
   }
 
-  const form = await request.formData();
+  let form: FormData;
+  try { form = await request.formData(); }
+  catch { return redirectToToken(request, "", "failed"); }
   const token = String(form.get("rt") || "").trim();
+  if (form.get("agree") !== "yes") return redirectToToken(request, token, "agreement_required");
   const parsedToken = parseRulesRoleTokenDetails(token);
   const roleIds = parsedToken.roleIds;
+
+  if (!checkRateLimit(`rules-accept-request:${getClientIp(request)}`, 20, 10 * 60 * 1000).ok) return redirectToToken(request, token, "rate_limit");
 
   const geoDecision = await checkGeoAccess(request, "auth");
   if (geoDecision.blocked) {
@@ -357,31 +204,14 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const ip = getClientIp(request);
-  const session = await getSession().catch(() => null);
-  if (session?.profileId) {
-    return completeAuthenticatedRulesOnboarding({
-      request,
-      token,
-      profileId: session.profileId,
-      roleIds,
-      tokenDiscordUserId: parsedToken.discordUserId,
-      ip,
-    });
-  }
-
-  if (parsedToken.discordUserId) {
-    return completePublicRulesAcceptance({
-      request,
-      token,
-      discordUserId: parsedToken.discordUserId,
-      roleIds,
-      ip,
-    });
-  }
-
-  logDashboardEvent("warn", "rules.public.discord_user_missing", request, {
-    roles: roleIds.length,
+  // A personal signed Discord token is the identity for this separate flow.
+  // Site sessions/profile registration never select or replace its recipient.
+  if (!parsedToken.discordUserId) return redirectToToken(request, token, "discord_user_missing");
+  const document = await getGuildRulesDocument(roleIds).catch(error => {
+    logDashboardEvent("warn", "rules.public.document_unavailable", request, { message: safeErrorMessage(error) });
+    return null;
   });
-  return redirectToToken(request, token, "discord_user_missing");
+  if (!document) return redirectToToken(request, token, "rules_unavailable");
+  if (form.get("revision") !== document.revision) return redirectToToken(request, token, "rules_changed");
+  return completePublicRulesAcceptance({ request, token, discordUserId: parsedToken.discordUserId, roleIds, ip: getClientIp(request) });
 }

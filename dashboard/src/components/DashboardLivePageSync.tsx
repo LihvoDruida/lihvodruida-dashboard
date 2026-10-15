@@ -34,7 +34,7 @@ function hasUnsafeEditorState() {
 }
 
 function shouldSkipPath(pathname: string) {
-  return pathname === "/login" || pathname.startsWith("/api/");
+  return pathname === "/login" || pathname === "/rules/accept" || pathname.startsWith("/api/");
 }
 
 function isEditorHeavyPath(pathname: string) {

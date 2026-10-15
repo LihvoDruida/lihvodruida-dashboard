@@ -32,6 +32,15 @@ function filesUnder(directory) {
     for (const relative of ['src', 'scripts', 'Dockerfile', '.env', '.env.local', '.env.production', '.env.example', 'tsconfig.json', 'next.config.mjs']) assert.ok(!fs.existsSync(path.join(output, 'dashboard', relative)), 'Unexpected build input in runtime: ' + relative);
     for (const file of traced) assert.ok(!file.startsWith(path.join(root, 'src') + path.sep) && !file.startsWith(path.join(root, 'scripts') + path.sep), 'Unbounded dashboard trace: ' + file);
   });
+  await check('packaged server chunks match the current build byte for byte', () => {
+    const source = path.join(root, '.next/server/chunks');
+    for (const file of filesUnder(source).filter(file => file.endsWith('.js'))) {
+      const relative = path.relative(source, file);
+      const packaged = path.join(output, 'dashboard/.next/server/chunks', relative);
+      assert.ok(fs.existsSync(packaged), 'Missing server chunk: ' + relative);
+      assert.ok(fs.readFileSync(file).equals(fs.readFileSync(packaged)), 'Stale packaged server chunk: ' + relative);
+    }
+  });
   await check('Sharp resolves from standalone rather than the source node_modules', () => {
     const resolved = createRequire(entry).resolve('sharp'); assert.ok(resolved.startsWith(output + path.sep), resolved);
   });

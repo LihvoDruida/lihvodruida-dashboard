@@ -38,7 +38,7 @@
 
   ready(() => {
     const body = document.body;
-    if (!body || document.getElementById(CONFIG.canvasId) || body.dataset.starfield === "off" || document.querySelector(".login-screen")) return;
+    if (!body || document.getElementById(CONFIG.canvasId) || body.dataset.starfield === "off" || document.querySelector(".login-screen, .guild-agreement-screen")) return;
 
     body.classList.add("has-starfield");
 

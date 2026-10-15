@@ -1,8 +1,9 @@
-// Direct MP4 sources from the supplied 3IRD UA MHTML. No embed/player scripts.
+// The three template scenes, encoded locally as silent, fast-start H.264.
+// Desktop 720p and mobile 360p are selected once per mount to avoid resize downloads.
 export const LOGIN_BACKGROUND_VIDEOS = [
-  "https://blz-contentstack-assets.akamaized.net/v3/assets/blt9c12f249ac15c7ec/blt9e4944aa1727b4d3/6a97ea4cf8f1247522bcb8c2/Hyjal02.mp4",
-  "https://blz-contentstack-assets.akamaized.net/v3/assets/blt9c12f249ac15c7ec/bltecda2e16d91ab78f/6a97ea009b942e961bf7425b/Zephras_01.mp4",
-  "https://blz-contentstack-assets.akamaized.net/v3/assets/blt9c12f249ac15c7ec/blt103ca55446d8a591/6aa354218102319c8681e341/WowF_TheBarrens_01.mp4",
+  "/assets/video/auth/Hyjal02-1280.mp4",
+  "/assets/video/auth/Zephras_01-1280.mp4",
+  "/assets/video/auth/WowF_TheBarrens_01-1280.mp4",
 ] as const;
 const CROSSFADE_MS = 1_000;
 const PLAYBACK_DEADLINE_MS = 15_000;
@@ -15,7 +16,8 @@ export function mountLoginVideoBackground(root: HTMLElement) {
   const connection = (navigator as Navigator & { connection?: Connection }).connection;
   const failed = new Set<number>();
   const listeners: (() => void)[] = [];
-  let disposed = false, suppressed = false, loaded = false;
+  let disposed = false, suppressed = false;
+  const mobile = window.matchMedia("(max-width: 760px)").matches;
   let active = -1, pending = -1, generation = 0;
   let fadeTimer: ReturnType<typeof setTimeout> | undefined;
   let playbackTimer: ReturnType<typeof setTimeout> | undefined;
@@ -27,7 +29,7 @@ export function mountLoginVideoBackground(root: HTMLElement) {
   }
   function hide() {
     root.classList.remove("is-on");
-    videos.forEach(video => { video.classList.remove("is-shown"); video.pause(); });
+    videos.forEach(video => { video.classList.remove("is-shown", "is-retiring"); video.pause(); });
   }
   function nextAfter(index: number) {
     for (let step = 1; step <= videos.length; step++) {
@@ -36,10 +38,22 @@ export function mountLoginVideoBackground(root: HTMLElement) {
     }
     return -1;
   }
+  function load(index: number) {
+    if (index < 0 || videos[index].hasAttribute("src")) return;
+    const video = videos[index];
+    video.preload = "auto";
+    video.src = (mobile ? video.dataset.mobileSrc : video.dataset.src) || "";
+    video.load();
+  }
+  function release(video: HTMLVideoElement) {
+    video.pause(); video.removeAttribute("src"); video.preload = "none"; video.load();
+  }
   function fail(index: number) {
-    if (paused() || (index !== active && index !== pending)) return;
+    if (paused()) return;
+    const relevant = index === active || index === pending;
     failed.add(index); videos[index].pause();
     videos[index].removeAttribute("src"); videos[index].load();
+    if (!relevant) return;
     if (index === active) {
       active = -1; root.classList.remove("is-on");
       videos.forEach(video => video.classList.remove("is-shown"));
@@ -56,6 +70,7 @@ export function mountLoginVideoBackground(root: HTMLElement) {
     pending = index;
     const ticket = ++generation;
     clearTimeout(playbackTimer); clearTimeout(stallTimer);
+    load(index);
     const video = videos[index];
     video.muted = true; video.defaultMuted = true; video.playsInline = true;
     if (index !== active || video.ended) video.currentTime = 0;
@@ -75,12 +90,21 @@ export function mountLoginVideoBackground(root: HTMLElement) {
       if (paused()) { video.pause(); return; }
       if (index !== pending) { if (index !== active) video.pause(); else clearTimeout(stallTimer); return; }
       clearTimeout(playbackTimer); clearTimeout(stallTimer); clearTimeout(fadeTimer);
+      const previous = active;
       active = index; pending = -1;
       root.classList.add("is-on");
-      videos.forEach((item, number) => item.classList.toggle("is-shown", number === index));
-      fadeTimer = setTimeout(() => { if (!disposed) videos.forEach((item, number) => { if (number !== active && number !== pending) item.pause(); }); }, CROSSFADE_MS);
+      videos.forEach((item, number) => {
+        item.classList.toggle("is-retiring", number === previous && number !== index);
+        item.classList.toggle("is-shown", number === index);
+      });
+      fadeTimer = setTimeout(() => { if (!disposed) videos.forEach((item, number) => { if (number !== active && number !== pending) { item.classList.remove("is-retiring"); release(item); } }); }, CROSSFADE_MS);
     });
     listen(video, "timeupdate", () => {
+      // Prefetch just the next scene near the end; never download all scenes on entry.
+      if (index === active && !paused() && Number.isFinite(video.duration) && video.duration - video.currentTime < 5) {
+        const next = nextAfter(index);
+        if (next !== active) load(next);
+      }
       if (Number.isFinite(video.duration) && video.duration > 0 && video.duration - video.currentTime <= CROSSFADE_MS / 1_000) advance(index);
     });
     listen(video, "ended", () => advance(index));
@@ -96,15 +120,11 @@ export function mountLoginVideoBackground(root: HTMLElement) {
     suppressed = motion.matches || Boolean(connection?.saveData);
     generation++; pending = -1; clearTimers();
     if (suppressed) {
-      hide(); active = -1; loaded = false; failed.clear();
+      hide(); active = -1; failed.clear();
       videos.forEach(video => { video.removeAttribute("src"); video.load(); });
       return;
     }
     if (document.hidden) { videos.forEach(video => video.pause()); return; }
-    if (!loaded) {
-      loaded = true;
-      videos.forEach(video => { video.src = video.dataset.src || ""; video.load(); });
-    }
     const next = active >= 0 && !failed.has(active) ? active : nextAfter(-1);
     if (next >= 0) play(next);
   }

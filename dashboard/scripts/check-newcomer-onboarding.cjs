@@ -33,7 +33,7 @@ assert(rulesComplete.includes('markDiscordNewcomerRulesAccepted'), 'rules comple
 assert(onboarding.includes('nicknameMatchesTemplate') && onboarding.includes('nicknameCheckedAt'), 'nickname must be checked and recorded once in newcomer onboarding');
 assert(onboarding.includes('resolveConfiguredRulesRoleIds'), 'newcomer onboarding must use the shared rules-role policy');
 assert(onboarding.includes('MISTBLOSSOM_DISCORD_CHANNELS') && onboarding.includes('discordGuildChannelUrl'), 'newcomer onboarding must import and use shared Discord channel constants');
-assert(rulesRolePolicy.includes('listRulesEmbedMessages') && rulesRolePolicy.includes('nicknameNewcomerRoleId'), 'shared role resolution must reuse existing rules/newcomer configuration');
+assert(rulesRolePolicy.includes('listPublishedGuildRulesMessages') && rulesRolePolicy.includes('nicknameNewcomerRoleId'), 'shared role resolution must reuse existing rules/newcomer configuration');
 assert(dmApi.includes('components?: unknown[]') && dmApi.includes('body.components = params.components.slice(0, 5)'), 'DM transport must support Discord buttons without changing existing callers');
 assert(route.includes('verifyInternalBearerToken') && route.includes('__mistblossomDiscordNewcomerOnboardingInFlight'), 'automation route must be bearer-protected and guarded against overlap');
 assert(proxy.includes('pathname === "/api/dashboard/discord/onboarding/automation"'), 'internal Docker host gate must allow the onboarding scheduler route');
