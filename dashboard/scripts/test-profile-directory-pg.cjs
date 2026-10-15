@@ -13,8 +13,8 @@ pool.on('error', () => {});
 let statements = [], groupsFail = false;
 const db = load('src/lib/db/pgPool.ts', { pg }, { __mistblossomPgPool: pool, process: { env: { DATABASE_URL: url } } }).exports;
 const monitored = { ...db, pgQuery: async (sql, values, client) => { const start = performance.now(); const result = await db.pgQuery(sql, values, client); statements.push({ sql, values, rows: result.rows.length, ms: performance.now() - start }); return result; } };
-const { PgFirestore } = load('src/lib/db/documentStore.ts', { '@/lib/db/pgPool': monitored }).exports;
-const store = new PgFirestore();
+const { PgDocumentStore } = load('src/lib/db/documentStore.ts', { '@/lib/db/pgPool': monitored }).exports;
+const store = new PgDocumentStore();
 const groups = [
   { id: 'custom-admin', name: 'High', role: 'admin', rank: 100 },
   { id: 'admin', name: 'Admin', role: 'admin', rank: 90 },
@@ -23,7 +23,7 @@ const groups = [
   { id: 'member', name: 'Member', role: 'member', rank: 10 },
 ];
 const mod = subject(monitored, store, () => { if (groupsFail) throw Error('Groups unavailable'); return groups; });
-const legacy = subject(monitored, store, groups, 'firestore');
+const legacy = subject(monitored, store, groups, 'documentStore');
 const admin = { id: '999', provider: 'discord', role: 'admin' };
 const member = { id: '999', provider: 'discord', role: 'member', groupId: 'member', groupRank: 10, permissions: ['profiles.group.view'] };
 const id = i => 'id' + i.toString(16).padStart(32, '0');
@@ -189,7 +189,7 @@ async function traverse(params, expected) {
   await check('Unconfigured storage is explicit unavailable state', async () => {
     const page = await subject(db, store, groups, 'unconfigured').listDashboardProfilePage({ viewer: admin }); assert.ok(page.unavailable);
   });
-  await check('Firestore compatibility scans beyond 200 with full filtered totals', async () => {
+  await check('DocumentStore compatibility scans beyond 200 with full filtered totals', async () => {
     const page = await legacy.listDashboardProfilePage({ viewer: member, query: dataset.at(-1).providerUserId });
     const expected = await oracle(member, { query: dataset.at(-1).providerUserId }); assert.equal(page.total, expected.length);
     const params = { viewer: member, query: 'Гравець', role: 'member', link: 'linked', sort: 'name' };

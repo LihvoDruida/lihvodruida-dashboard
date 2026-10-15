@@ -1,13 +1,13 @@
 import "server-only";
 
-import { FieldValue } from "@/lib/db/firestoreCompat";
+import { FieldValue } from "@/lib/db/documentValues";
 import type { DashboardSession } from "@/lib/auth";
 import {
-  getFirebaseAdminDb,
-  hasFirebaseProfileConfig,
-} from "@/lib/firebaseAdmin";
+  getDocumentDb,
+  hasDocumentDbConfig,
+} from "@/lib/documentDb";
 import { resilientRead } from "@/lib/runtimeResilience";
-import { firebaseWrite } from "@/lib/firebaseAccess";
+import { storageWrite } from "@/lib/storageAccess";
 import { timestampToIso } from "@/lib/values";
 
 const SETTINGS_COLLECTION = "dashboardSettings";
@@ -69,8 +69,6 @@ const DEFAULT_RAID_ITEM_CACHE_TTL_MS = 60_000;
 const DEFAULT_ECO_RAID_ITEM_CACHE_TTL_MS = 180_000;
 const DEFAULT_RAID_DISCORD_DELETE_AFTER_START_HOURS = 24;
 const DEFAULT_GUILD_ROSTER_RECORDS_CHUNK_SIZE = 64;
-const DEFAULT_GUILD_ROSTER_READ_LEGACY_MEMBER_DOCS = false;
-const DEFAULT_GUILD_ROSTER_WRITE_LEGACY_MEMBER_DOCS = false;
 
 const SETTINGS_CACHE_TTL_MS = Math.max(
   60_000,
@@ -101,7 +99,7 @@ function setSettingsCache(settings: DashboardApiSettings) {
   return settings;
 }
 
-export type DashboardApiSettingsSource = "firestore" | "defaults";
+export type DashboardApiSettingsSource = "documentStore" | "defaults";
 
 export type DashboardApiSettings = {
   backgroundRefreshMinSeconds: number;
@@ -136,8 +134,6 @@ export type DashboardApiSettings = {
   raidItemCacheTtlMs: number;
   raidDiscordDeleteAfterStartHours: number;
   guildRosterRecordsChunkSize: number;
-  guildRosterReadLegacyMemberDocs: boolean;
-  guildRosterWriteLegacyMemberDocs: boolean;
   raiderIoCharacterCacheTtlMs: number;
   guildRosterMemberLimit: number;
   guildRosterRefreshStepBudgetMs: number;
@@ -191,16 +187,16 @@ function envFlagValue(names: string[], fallback = false) {
   return fallback;
 }
 
-function firebaseEcoModeEnabled() {
-  return envFlagValue(["FIREBASE_ECO_MODE", "FIRESTORE_ECO_MODE", "DASHBOARD_ECO_MODE"], false);
+function storageEcoModeEnabled() {
+  return envFlagValue(["STORAGE_ECO_MODE", "STORAGE_ECO_MODE", "DASHBOARD_ECO_MODE"], false);
 }
 
 function ecoFallback(normal: number, economy: number) {
-  return firebaseEcoModeEnabled() ? economy : normal;
+  return storageEcoModeEnabled() ? economy : normal;
 }
 
 function ecoFlagFallback(normal: boolean, economy: boolean) {
-  return firebaseEcoModeEnabled() ? economy : normal;
+  return storageEcoModeEnabled() ? economy : normal;
 }
 function envDashboardApiDebugAuditLogs() {
   const raw = cleanText(process.env.DASHBOARD_API_DEBUG_AUDIT_LOGS, 20);
@@ -305,19 +301,6 @@ function envRaidDiscordDeleteAfterStartHours() {
 function envGuildRosterRecordsChunkSize() {
   return integerEnv("GUILD_ROSTER_RECORDS_CHUNK_SIZE", DEFAULT_GUILD_ROSTER_RECORDS_CHUNK_SIZE, 25, 120);
 }
-
-function envGuildRosterReadLegacyMemberDocs() {
-  const raw = cleanText(process.env.GUILD_ROSTER_READ_LEGACY_MEMBER_DOCS, 20);
-  if (!raw) return DEFAULT_GUILD_ROSTER_READ_LEGACY_MEMBER_DOCS;
-  return booleanValue(raw, DEFAULT_GUILD_ROSTER_READ_LEGACY_MEMBER_DOCS);
-}
-
-function envGuildRosterWriteLegacyMemberDocs() {
-  const raw = cleanText(process.env.GUILD_ROSTER_WRITE_LEGACY_MEMBER_DOCS, 20);
-  if (!raw) return DEFAULT_GUILD_ROSTER_WRITE_LEGACY_MEMBER_DOCS;
-  return booleanValue(raw, DEFAULT_GUILD_ROSTER_WRITE_LEGACY_MEMBER_DOCS);
-}
-
 
 function envRaiderIoCharacterCacheTtlMs() {
   return integerEnv("RAIDERIO_CHARACTER_CACHE_TTL_MS", ecoFallback(DEFAULT_CHARACTER_CACHE_TTL_MS, DEFAULT_ECO_CHARACTER_CACHE_TTL_MS), 0, MAX_CHARACTER_CACHE_TTL_MS);
@@ -434,8 +417,6 @@ function defaultDashboardApiSettings(): DashboardApiSettings {
     raidItemCacheTtlMs: envRaidItemCacheTtlMs(),
     raidDiscordDeleteAfterStartHours: envRaidDiscordDeleteAfterStartHours(),
     guildRosterRecordsChunkSize: envGuildRosterRecordsChunkSize(),
-    guildRosterReadLegacyMemberDocs: envGuildRosterReadLegacyMemberDocs(),
-    guildRosterWriteLegacyMemberDocs: envGuildRosterWriteLegacyMemberDocs(),
     raiderIoCharacterCacheTtlMs: envRaiderIoCharacterCacheTtlMs(),
     guildRosterMemberLimit: envGuildRosterMemberLimit(),
     guildRosterRefreshStepBudgetMs: envGuildRosterRefreshStepBudgetMs(),
@@ -458,7 +439,7 @@ function defaultDashboardApiSettings(): DashboardApiSettings {
 
 function normalizeSettings(
   data?: DashboardApiSettingsInput | null,
-  source: DashboardApiSettingsSource = "firestore",
+  source: DashboardApiSettingsSource = "documentStore",
 ): DashboardApiSettings {
   const fallback = defaultDashboardApiSettings();
   const backgroundRefreshMinSeconds = integerValue(data?.backgroundRefreshMinSeconds, fallback.backgroundRefreshMinSeconds, MIN_BACKGROUND_REFRESH_SECONDS, MAX_REFRESH_SECONDS);
@@ -500,8 +481,6 @@ function normalizeSettings(
     raidItemCacheTtlMs: integerValue(data?.raidItemCacheTtlMs, fallback.raidItemCacheTtlMs, 10_000, 300_000),
     raidDiscordDeleteAfterStartHours: DEFAULT_RAID_DISCORD_DELETE_AFTER_START_HOURS,
     guildRosterRecordsChunkSize: integerValue(data?.guildRosterRecordsChunkSize, fallback.guildRosterRecordsChunkSize, 25, 120),
-    guildRosterReadLegacyMemberDocs: booleanValue(data?.guildRosterReadLegacyMemberDocs, fallback.guildRosterReadLegacyMemberDocs),
-    guildRosterWriteLegacyMemberDocs: booleanValue(data?.guildRosterWriteLegacyMemberDocs, fallback.guildRosterWriteLegacyMemberDocs),
     raiderIoCharacterCacheTtlMs: integerValue(data?.raiderIoCharacterCacheTtlMs, fallback.raiderIoCharacterCacheTtlMs, 0, MAX_CHARACTER_CACHE_TTL_MS),
     guildRosterMemberLimit: integerValue(data?.guildRosterMemberLimit, fallback.guildRosterMemberLimit, 1, 1000),
     guildRosterRefreshStepBudgetMs: integerValue(data?.guildRosterRefreshStepBudgetMs, fallback.guildRosterRefreshStepBudgetMs, 5_000, 38_000),
@@ -527,23 +506,23 @@ export async function getDashboardApiSettings(options: { bypassCache?: boolean }
     return globalThis.__mistblossomDashboardApiSettingsCache!.settings;
   }
 
-  if (!hasFirebaseProfileConfig()) return setSettingsCache(defaultDashboardApiSettings());
+  if (!hasDocumentDbConfig()) return setSettingsCache(defaultDashboardApiSettings());
 
   const settings = await resilientRead(
     "dashboard-api-settings",
     async () => {
-      const snapshot = await getFirebaseAdminDb()
+      const snapshot = await getDocumentDb()
         .collection(SETTINGS_COLLECTION)
         .doc(DASHBOARD_API_SETTINGS_DOC_ID)
         .get();
       return snapshot.exists
-        ? normalizeSettings(snapshot.data() || null, "firestore")
+        ? normalizeSettings(snapshot.data() || null, "documentStore")
         : globalThis.__mistblossomDashboardApiSettingsCache?.settings || defaultDashboardApiSettings();
     },
     {
       ttlMs: SETTINGS_CACHE_TTL_MS,
       timeoutMs: 2_500,
-      circuitKey: "firebase-settings-read",
+      circuitKey: "storage-settings-read",
       circuitTtlMs: 90_000,
       bypassCache: Boolean(options.bypassCache),
       fallback: () => globalThis.__mistblossomDashboardApiSettingsCache?.settings || defaultDashboardApiSettings(),
@@ -555,14 +534,14 @@ export async function getDashboardApiSettings(options: { bypassCache?: boolean }
 }
 
 export async function setDashboardApiSettings(input: DashboardApiSettingsInput, actor?: DashboardSession | null) {
-  if (!hasFirebaseProfileConfig()) {
-    throw new Error("Firebase не налаштований для збереження параметрів фонового API.");
+  if (!hasDocumentDbConfig()) {
+    throw new Error("Storage не налаштований для збереження параметрів фонового API.");
   }
 
-  const doc = getFirebaseAdminDb()
+  const doc = getDocumentDb()
     .collection(SETTINGS_COLLECTION)
     .doc(DASHBOARD_API_SETTINGS_DOC_ID);
-  const settings = normalizeSettings(input, "firestore");
+  const settings = normalizeSettings(input, "documentStore");
 
   const payload: Record<string, unknown> = {
     backgroundRefreshMinSeconds: settings.backgroundRefreshMinSeconds,
@@ -597,8 +576,6 @@ export async function setDashboardApiSettings(input: DashboardApiSettingsInput, 
     raidItemCacheTtlMs: settings.raidItemCacheTtlMs,
     raidDiscordDeleteAfterStartHours: settings.raidDiscordDeleteAfterStartHours,
     guildRosterRecordsChunkSize: settings.guildRosterRecordsChunkSize,
-    guildRosterReadLegacyMemberDocs: settings.guildRosterReadLegacyMemberDocs,
-    guildRosterWriteLegacyMemberDocs: settings.guildRosterWriteLegacyMemberDocs,
     raiderIoCharacterCacheTtlMs: settings.raiderIoCharacterCacheTtlMs,
     guildRosterMemberLimit: settings.guildRosterMemberLimit,
     guildRosterRefreshStepBudgetMs: settings.guildRosterRefreshStepBudgetMs,
@@ -617,7 +594,7 @@ export async function setDashboardApiSettings(input: DashboardApiSettingsInput, 
     updatedBy: actor?.name || actor?.login || actor?.id || null,
   };
 
-  await firebaseWrite(
+  await storageWrite(
     "settings",
     "dashboard-api-settings:save",
     () => doc.set(payload, { merge: true }),
@@ -628,7 +605,7 @@ export async function setDashboardApiSettings(input: DashboardApiSettingsInput, 
     ...settings,
     updatedAt: new Date().toISOString(),
     updatedBy: actor?.name || actor?.login || actor?.id || null,
-    source: "firestore",
+    source: "documentStore",
   });
 }
 
@@ -649,8 +626,6 @@ export async function getGuildRosterSyncSettings() {
     cacheReadTtlMs: settings.guildRosterCacheReadTtlMs,
     cacheWriteBatchSize: settings.guildRosterCacheWriteBatchSize,
     recordsChunkSize: settings.guildRosterRecordsChunkSize,
-    readLegacyMemberDocs: settings.guildRosterReadLegacyMemberDocs,
-    writeLegacyMemberDocs: settings.guildRosterWriteLegacyMemberDocs,
     cacheDeleteStaleMembers: settings.guildRosterCacheDeleteStaleMembers,
     refreshConcurrency: settings.guildRosterRefreshConcurrency,
     refreshMaxConcurrency: settings.guildRosterRefreshMaxConcurrency,
@@ -696,7 +671,7 @@ export async function getSiteRuntimeSettings() {
 export function dashboardApiSettingsSummary(settings: DashboardApiSettings) {
   const rosterSync = `Guild roster: ${settings.guildRosterName}-${settings.guildRosterRealm}-${settings.guildRosterRegion}; ${settings.guildRosterMemberLimit} перс.; Battle.net крок ${settings.guildRosterBattleNetStepSize}; Raider.IO крок ${settings.guildRosterRaiderIoStepSize}; cooldown ${settings.raiderIoRateLimitCooldownSeconds}с; кеш ${settings.guildRosterCacheTtlSeconds}с; бюджет ${settings.guildRosterRefreshStepBudgetMs}мс; client ${settings.guildRosterClientDrivenSyncEnabled ? "ON" : "OFF"}`;
   const apiDiagnostics = `API diagnostics: debug ${settings.dashboardApiDebugAuditLogs ? "ON" : "OFF"}, warnings ${settings.dashboardApiWarningAuditLogs ? "ON" : "OFF"}`;
-  return `Оновлення: ${Math.round(settings.backgroundRefreshMinSeconds / 60)} хв; Discord-повідомлення рейду зберігається ${settings.raidDiscordDeleteAfterStartHours} год після старту; персонажі: ${Math.round(settings.profileViewRefreshMinSeconds / 60)} хв; batch: ${settings.profileExternalRefreshBatchLimit}; ${apiDiagnostics}; ${rosterSync}; chunks ${settings.guildRosterRecordsChunkSize}; legacy read ${settings.guildRosterReadLegacyMemberDocs ? "ON" : "OFF"}; legacy write ${settings.guildRosterWriteLegacyMemberDocs ? "ON" : "OFF"}.`;
+  return `Оновлення: ${Math.round(settings.backgroundRefreshMinSeconds / 60)} хв; Discord-повідомлення рейду зберігається ${settings.raidDiscordDeleteAfterStartHours} год після старту; персонажі: ${Math.round(settings.profileViewRefreshMinSeconds / 60)} хв; batch: ${settings.profileExternalRefreshBatchLimit}; ${apiDiagnostics}; ${rosterSync}; chunks ${settings.guildRosterRecordsChunkSize}.`;
 }
 
 export function dashboardApiSettingsMinBackgroundRefreshSeconds() {

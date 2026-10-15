@@ -1,5 +1,5 @@
 import "server-only";
-import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
+import { getDocumentDb } from "@/lib/documentDb";
 
 export const DISCORD_NOTIFICATION_PREFERENCES = "discordNotificationPreferences";
 export type RaidReminderPreference = { enabled: boolean; revision: number };
@@ -10,18 +10,18 @@ export function raidReminderPreference(data?: Record<string, unknown> | null): R
 
 export async function getRaidReminderPreference(discordId: string): Promise<RaidReminderPreference> {
   if (!/^\d{16,25}$/.test(discordId)) throw new Error("Некоректний Discord ID.");
-  const snapshot = await getFirebaseAdminDb().collection(DISCORD_NOTIFICATION_PREFERENCES).doc(discordId).get();
+  const snapshot = await getDocumentDb().collection(DISCORD_NOTIFICATION_PREFERENCES).doc(discordId).get();
   return raidReminderPreference(snapshot.data());
 }
 
-// Reads precede every transaction write, for PostgreSQL and Firestore alike.
+// Reads precede every transaction write, for PostgreSQL and DocumentStore alike.
 // The returned closure joins the caller's signup transaction: a preference can
 // never be acknowledged without the corresponding durable signup commit.
 export async function prepareRaidReminderPreferenceWrite(
   transaction: any, discordId: string, enabled: boolean, profileId?: string | null, expectedRevision?: number,
 ) {
   if (!/^\d{16,25}$/.test(discordId) || typeof enabled !== "boolean") throw new Error("Некоректне налаштування нагадування.");
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   const ref = db.collection(DISCORD_NOTIFICATION_PREFERENCES).doc(discordId);
   const snapshot = await transaction.get(ref);
   const current = raidReminderPreference(snapshot.data());
@@ -38,7 +38,7 @@ export async function prepareRaidReminderPreferenceWrite(
 }
 
 export async function setRaidReminderPreference(discordId: string, enabled: boolean, profileId?: string | null) {
-  await getFirebaseAdminDb().runTransaction(async (transaction) => {
+  await getDocumentDb().runTransaction(async (transaction) => {
     const write = await prepareRaidReminderPreferenceWrite(transaction, discordId, enabled, profileId);
     write();
   });

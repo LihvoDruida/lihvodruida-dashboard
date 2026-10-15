@@ -9,6 +9,13 @@ const path = require('node:path');
 const dashboardRoot = path.resolve(__dirname, '..');
 
 const legacyPaths = [
+  'src/lib/firebaseAdmin.ts',
+  'src/lib/firebaseAccess.ts',
+  'src/lib/db/firestoreCompat.ts',
+  'src/lib/github.ts',
+  'src/lib/legacyProfileImport.ts',
+  'src/app/api/dashboard/discord/profiles/import-firestore',
+  'scripts/migrate-firestore-to-postgres.mjs',
   'src/components/HomeDashboardLiveSync.tsx',
   'src/components/HomeLocalTime.tsx',
   'src/components/HomeUpcomingRaidList.tsx',

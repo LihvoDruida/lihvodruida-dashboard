@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from "node:crypto";
-import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
+import { getDocumentDb } from "@/lib/documentDb";
 
 // Interaction tokens are short lived. The outbox retains delivery state longer
 // than the delivery window to prevent replay of already executed actions.
@@ -54,7 +54,7 @@ export async function beginInteractionOutbox(id: string, token: string, now = Da
   if (!ID_PATTERN.test(id)) throw new Error("invalid interaction id");
   // Never change the first claim, even after delivery expires. A duplicate
   // interaction must not repeat an irreversible Discord moderation action.
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   const ref = db.collection(COLLECTION).doc(id);
   return db.runTransaction(async (tx) => {
     const current = (await tx.get(ref)).data() as RecordData | undefined;
@@ -78,7 +78,7 @@ export async function finishInteractionOutbox(id: string, callback: Callback, no
   const safeCallback: Callback = Buffer.byteLength(serialized, "utf8") <= MAX_RESULT_BYTES
     ? callback
     : { type: 4, data: { content: "⚠️ Відповідь завелика. Перевірте результат дії на сайті.", components: [] } };
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   const ref = db.collection(COLLECTION).doc(id);
   await db.runTransaction(async (tx) => {
     const current = (await tx.get(ref)).data() as RecordData | undefined;
@@ -94,7 +94,7 @@ export async function finishInteractionOutbox(id: string, callback: Callback, no
 // Retire the abandoned claim with a warning callback instead of leaving the
 // Discord client on an endless deferred response.
 export async function retireStalledInteractionResults(now = Date.now()) {
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   const collection = db.collection(COLLECTION);
   const cutoff = new Date(now - 4 * 60_000).toISOString();
   const stuck = await dueQuery(collection.where("deliveryState", "==", "processing"), "claimedAt", now - 4 * 60_000).limit(150).get();
@@ -124,7 +124,7 @@ export async function retireStalledInteractionResults(now = Date.now()) {
   return retired;
 }
 
-// PostgreSQL and Firestore support chained where predicates. Keep the old
+// PostgreSQL and DocumentStore support chained where predicates. Keep the old
 // mocked collection contract for independent unit tests that expose only a
 // single filter; the transaction still validates due time before claiming.
 function dueQuery<T extends { where?: (field: string, op: "<=", value: string) => T }>(query: T, field: string, now: number): T {
@@ -144,7 +144,7 @@ async function recoverOutboxWhenDue(db: object, now: number) {
 }
 
 export async function leaseInteractionDeliveries(limit = 10, now = Date.now()) {
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   // Recovery is shared across rapid delivery reads. Failed scans remain retryable.
   await recoverOutboxWhenDue(db, now);
   const coll = db.collection(COLLECTION);
@@ -184,7 +184,7 @@ export async function leaseInteractionDeliveries(limit = 10, now = Date.now()) {
 
 export async function settleInteractionDelivery(id: string, leaseId: string, success: boolean, permanent = false, now = Date.now()) {
   if (!ID_PATTERN.test(id) || !/^[0-9a-f-]{36}$/.test(leaseId)) return false;
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   const ref = db.collection(COLLECTION).doc(id);
   return db.runTransaction(async (tx) => {
     const current = (await tx.get(ref)).data() as RecordData | undefined;
@@ -203,7 +203,7 @@ export async function settleInteractionDelivery(id: string, leaseId: string, suc
 }
 
 export async function pruneInteractionOutbox(limit = 250) {
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   const now = new Date().toISOString();
   // Scrub expired webhook credentials even while retaining the claim for
   // replay protection. This also retires unfinished work after 14 minutes.

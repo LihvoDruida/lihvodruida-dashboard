@@ -1,10 +1,10 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import {
-  getFirebaseAdminDb,
-  hasFirebaseProfileConfig,
-} from "@/lib/firebaseAdmin";
-import { FieldValue } from "@/lib/db/firestoreCompat";
+  getDocumentDb,
+  hasDocumentDbConfig,
+} from "@/lib/documentDb";
+import { FieldValue } from "@/lib/db/documentValues";
 import {
   assertNoProfileCharacterConflicts,
   getMainCharacter,
@@ -35,9 +35,9 @@ export class ProfileCharacterSetupError extends Error {
 function refFor(profileId: string) {
   if (!/^id[a-f0-9]{16,40}$/.test(profileId))
     throw new ProfileCharacterSetupError("Некоректний профіль.");
-  if (!hasFirebaseProfileConfig())
+  if (!hasDocumentDbConfig())
     throw new ProfileCharacterSetupError("Профілі тимчасово недоступні.", 503);
-  return getFirebaseAdminDb().collection("dashboardProfiles").doc(profileId);
+  return getDocumentDb().collection("dashboardProfiles").doc(profileId);
 }
 function choice(character: ProfileCharacter): CharacterSetupChoice {
   return {
@@ -211,7 +211,7 @@ export async function saveProfileCharacterSetup(
       throw error;
     }
   }
-  const state = await getFirebaseAdminDb().runTransaction(
+  const state = await getDocumentDb().runTransaction(
     async (transaction: any) => {
       const snapshot = await transaction.get(ref);
       if (!snapshot.exists)

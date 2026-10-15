@@ -6,7 +6,7 @@ import { dashboardErrorMessage, dispatchDashboardToast } from "@/lib/clientToast
 import { dashboardApiJson } from "@/lib/dashboardApiClient";
 import { notifyDashboardDataChanged } from "@/lib/dashboardLiveRefresh";
 import { ApplicationNextReview, useApplicationModerationQueue } from "@/components/ApplicationModerationQueue";
-import type { ApplicationStatus } from "@/lib/github";
+import type { ApplicationStatus } from "@/lib/applicationsStore";
 import { useActionFocus } from "@/lib/useActionFocus";
 
 const LABELS: Record<ApplicationStatus, string> = { review: "На розгляді", accepted: "Прийнято", declined: "Відхилено" };

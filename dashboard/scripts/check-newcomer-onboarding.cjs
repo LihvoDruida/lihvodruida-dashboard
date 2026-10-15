@@ -39,7 +39,7 @@ assert(route.includes('verifyInternalBearerToken') && route.includes('__mistblos
 assert(proxy.includes('pathname === "/api/dashboard/discord/onboarding/automation"'), 'internal Docker host gate must allow the onboarding scheduler route');
 assert(cron.includes('call "/api/dashboard/discord/onboarding/automation"'), 'self-hosted cron must remain as newcomer recovery fallback');
 
-assert(onboarding.includes('if (!doc || doc.exists === false) return null;'), 'missing Firestore documents must not be normalized into fake 1970-era members');
+assert(onboarding.includes('if (!doc || doc.exists === false) return null;'), 'missing DocumentStore documents must not be normalized into fake 1970-era members');
 assert(onboarding.includes('priorityUserIds?: string[]') && onboarding.includes('fetchDiscordGuildMemberSnapshot(userId)'), 'priority onboarding must target a specific gateway member without scanning the whole guild');
 assert(onboarding.includes('const candidates = members.filter') && onboarding.includes('aFresh !== bFresh') && onboarding.includes('aRoleless !== bRoleless'), 'newcomer queue must prioritize fresh and roleless members');
 const lifecycleRoleMarker = onboarding.indexOf('Lifecycle priority: role first');

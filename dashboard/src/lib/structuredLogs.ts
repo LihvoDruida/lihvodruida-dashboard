@@ -73,7 +73,7 @@ export function inferStructuredLogCategory(eventInput: unknown, details: Record<
   if (/security|forbidden|blocked|reject|signature|csrf|origin|rate.?limit|cloudflare|unauthori|ban(?:ned)?|permission_denied/.test(event)) return "security";
   if (/^auth\.|oauth|session|login|logout/.test(event)) return "auth";
   if (/^discord\.|discord_|\.discord|roster\.discord|raid_polls\.discord/.test(event)) return "discord";
-  if (/postgres|database|\bdb\b|storage|firestore|document_store|pg\./.test(event)) return "database";
+  if (/postgres|database|\bdb\b|storage|documentStore|document_store|pg\./.test(event)) return "database";
   if (/raiderio|battle.?net|github|external/.test(event)) return "integration";
   if (details.method || details.path || /^api\.|\.api\.|request/.test(event)) return "api";
   return "system";

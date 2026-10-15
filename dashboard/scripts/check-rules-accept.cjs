@@ -4,8 +4,8 @@ const load = require('./lib/load-server-ts.cjs');
 const read = file => fs.readFileSync(path.join(__dirname,'..',file),'utf8');
 const role='111111111111111111', user='222222222222222222', guild='333333333333333333';
 const tokens = load('src/lib/rulesOnboarding.ts', {
- crypto, '@/lib/db/firestoreCompat':{}, '@/lib/oauth':{getDashboardUrl:()=> 'https://guild.test'},
- '@/lib/firebaseAdmin':{}, '@/lib/firebaseAccess':{}, '@/lib/profiles':{}, '@/lib/wowRoles':{},
+ crypto, '@/lib/db/documentValues':{}, '@/lib/oauth':{getDashboardUrl:()=> 'https://guild.test'},
+ '@/lib/documentDb':{}, '@/lib/storageAccess':{}, '@/lib/profiles':{}, '@/lib/wowRoles':{},
 }, {process:{env:{NODE_ENV:'production',DASHBOARD_RULES_TOKEN_SECRET:'fixture-rules-key-with-at-least-32-characters'}}}).exports;
 const expiredPayload=Buffer.from(JSON.stringify({v:2,aud:'mistblossom-rules-onboarding',iat:Math.floor(Date.now()/1000)-3600,exp:Math.floor(Date.now()/1000)-60,r:[role],u:user,g:guild})).toString('base64url');
 const expiredToken=expiredPayload+'.'+crypto.createHmac('sha256','fixture-rules-key-with-at-least-32-characters').update(expiredPayload).digest('base64url');
@@ -76,15 +76,15 @@ function rig(options={}){
   '@/lib/discordGuildLinks':{MISTBLOSSOM_DISCORD_CHANNELS:{rules:{id:'555555555555555555'}}},
  }).exports;assert.equal((await source.getGuildRulesDocument([role])).title,'Правила');assert.equal(refSeen.channelId,'777777777777777777');});
  await check('saving the current publication preserves the test setting and invalidates role cache',async()=>{let data={allowRepeatedAcceptForTesting:true},saved;const source=load('src/lib/rulesAcceptanceSettings.ts',{
-  '@/lib/db/firestoreCompat':{FieldValue:{serverTimestamp:()=> 'fixture-time'}},
-  '@/lib/firebaseAdmin':{hasFirebaseProfileConfig:()=>true,getFirebaseAdminDb:()=>({collection:()=>({doc:()=>({get:async()=>({exists:true,data:()=>data}),set:async value=>{saved=value;data={...data,...value};}})})})},
-  '@/lib/firebaseAccess':{firebaseWrite:async(scope,key,run)=>run()},
+  '@/lib/db/documentValues':{FieldValue:{serverTimestamp:()=> 'fixture-time'}},
+  '@/lib/documentDb':{hasDocumentDbConfig:()=>true,getDocumentDb:()=>({collection:()=>({doc:()=>({get:async()=>({exists:true,data:()=>data}),set:async value=>{saved=value;data={...data,...value};}})})})},
+  '@/lib/storageAccess':{storageWrite:async(scope,key,run)=>run()},
   '@/lib/runtimeResilience':{resilientRead:async(key,run)=>run(),withTimeout:async value=>value},'@/lib/values':{timestampToIso:()=>null},
  });source.context.__mistblossomConfiguredRulesRoleIdsCache={roleIds:[role],cachedAt:Date.now()};const url='https://discord.com/channels/'+guild+'/777777777777777777/'+message.id;await source.exports.setPublicRulesMessage(url,{id:'fixture-admin'});assert.equal(saved.publicRulesMessageUrl,url);assert.equal((await source.exports.getRulesAcceptanceSettings()).allowRepeatedAcceptForTesting,true);assert.equal(source.context.__mistblossomConfiguredRulesRoleIdsCache,undefined);});
  await check('publication storage outage cannot use a stale cached binding',async()=>{const source=load('src/lib/rulesAcceptanceSettings.ts',{
-  '@/lib/db/firestoreCompat':{},
-  '@/lib/firebaseAdmin':{hasFirebaseProfileConfig:()=>true,getFirebaseAdminDb:()=>({collection:()=>({doc:()=>({get:async()=>{throw Error('Publication storage offline');}})})})},
-  '@/lib/firebaseAccess':{},'@/lib/runtimeResilience':{withTimeout:async value=>value},'@/lib/values':{},
+  '@/lib/db/documentValues':{},
+  '@/lib/documentDb':{hasDocumentDbConfig:()=>true,getDocumentDb:()=>({collection:()=>({doc:()=>({get:async()=>{throw Error('Publication storage offline');}})})})},
+  '@/lib/storageAccess':{},'@/lib/runtimeResilience':{withTimeout:async value=>value},'@/lib/values':{},
  });source.context.__mistblossomRulesAcceptanceSettingsCache={settings:{publicRulesMessageUrl:'https://discord.com/channels/'+guild+'/777777777777777777/'+message.id},cachedAt:Date.now()};await assert.rejects(()=>source.exports.getPublicRulesMessageUrl(),/Publication storage offline/);});
  await check('public rules publisher updates the canonical document reference',()=>{const source=read('src/app/api/discord/embeds/publish/route.ts');assert.ok(source.includes('await setPublicRulesMessage'));assert.ok(source.includes('canManageRulesEmbeds(session)'));});
  console.log(`[check-rules-accept] OK — ${passed} separate acceptance / signature / editor checks.`);

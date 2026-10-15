@@ -26,13 +26,13 @@ function fixture() {
       return result;
     }); queue = pending.catch(() => {}); return pending;
   } };
-  const { exports: github } = load("src/lib/github.ts", {
-    "@/lib/firebaseAdmin": { getFirebaseAdminDb: () => db },
-    "@/lib/db/firestoreCompat": { FieldValue: { arrayUnion: (value) => ({ union: value }) } },
+  const { exports: github } = load("src/lib/applicationsStore.ts", {
+    "@/lib/documentDb": { getDocumentDb: () => db },
+    "@/lib/db/documentValues": { FieldValue: { arrayUnion: (value) => ({ union: value }) } },
     "@/lib/concurrency": concurrency,
   });
   const { exports: moderation } = load("src/lib/moderation.ts", {
-    "./github": github, "@/lib/concurrency": concurrency,
+    "./applicationsStore": github, "@/lib/concurrency": concurrency,
     "./discord": {
       editDiscordApplicationMessage: async (v) => { edits.push(v); if (failDiscord) throw Error("Discord offline"); return { ok: true }; },
       notifyDiscordStatusChange: async (v) => { notices.push(v); if (failDiscord) throw Error("Discord offline"); return { ok: true }; },
@@ -127,7 +127,7 @@ function fixture() {
     "@/lib/accessGroups": { recordAdminAudit: async (...args) => { audits.push(args); } },
     "@/lib/permissions": { canViewApplications: () => view, canManageApplications: () => manage, hierarchyTitle: () => "staff" },
     "@/lib/authorIdentity": { resolveAuthorIdentity: async () => ({ primaryName: "staff" }) },
-    "@/lib/github": f.github, "@/lib/moderation": f.moderation, "@/lib/discord": { deleteDiscordApplicationMessage: () => assert.fail("Unexpected Discord delete") } };
+    "@/lib/applicationsStore": f.github, "@/lib/moderation": f.moderation, "@/lib/discord": { deleteDiscordApplicationMessage: () => assert.fail("Unexpected Discord delete") } };
   const { exports: route } = load("src/app/api/applications/[number]/route.ts", dependencies, { Response });
   const { exports: single } = load("src/app/api/applications/[number]/status/route.ts", dependencies, { Response });
   const { exports: bulk } = load("src/app/api/applications/bulk-status/route.ts", dependencies, { Response });

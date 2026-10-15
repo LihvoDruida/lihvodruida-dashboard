@@ -19,7 +19,7 @@ module.exports = function loadServerTs(relativePath, modules = {}, globals = {})
       if (Object.hasOwn(modules, name)) return modules[name];
       if (name === "@/lib/guildRosterViewState") return module.exports("src/lib/guildRosterViewState.ts", {}, globals).exports;
       if (name === "@/lib/automationTaskCatalog") return module.exports("src/lib/automationTaskCatalog.ts", {}, globals).exports;
-      if (name === "@/lib/automationTaskRuns") return module.exports("src/lib/automationTaskRuns.ts", { '@/lib/firebaseAdmin': { hasFirebaseProfileConfig: () => false } }, globals).exports;
+      if (name === "@/lib/automationTaskRuns") return module.exports("src/lib/automationTaskRuns.ts", { '@/lib/documentDb': { hasDocumentDbConfig: () => false } }, globals).exports;
       if (name === "@/lib/stableUiText") return module.exports("src/lib/stableUiText.ts", {}, globals).exports;
       if (name === "@/lib/logPrivacy") return module.exports("src/lib/logPrivacy.ts", {}, globals).exports;
       if (name === "@mistblossom/discord-contract") return require(path.resolve(__dirname, "../../../shared/index.mjs"));

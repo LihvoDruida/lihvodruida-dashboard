@@ -1,6 +1,6 @@
 import "server-only";
 import { randomUUID, createHash } from "node:crypto";
-import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
+import { getDocumentDb, hasDocumentDbConfig } from "@/lib/documentDb";
 import { AUTOMATION_TASKS, AUTOMATION_TASK_RUN_COLLECTION, automationRunResult, type AutomationTaskId } from "@/lib/automationTaskCatalog";
 
 export function automationExpectedIntervalSeconds(id: AutomationTaskId) {
@@ -25,11 +25,11 @@ async function bounded<T>(work: () => Promise<T>): Promise<T | undefined> {
   finally { if (timer) clearTimeout(timer); }
 }
 export async function observeAutomationRun<T>(id: AutomationTaskId, operation: () => Promise<T>): Promise<T> {
-  if (!hasFirebaseProfileConfig()) return operation();
+  if (!hasDocumentDbConfig()) return operation();
   const runId = randomUUID(), contextHash = automationTaskContextHash(), startedAtMs = Date.now(), startedAt = new Date(startedAtMs).toISOString();
   // Constructing a DB client may fail too; telemetry must not suppress a task.
   const store = (() => {
-    try { const db = getFirebaseAdminDb(); return { db, ref: db.collection(AUTOMATION_TASK_RUN_COLLECTION).doc(id) }; }
+    try { const db = getDocumentDb(); return { db, ref: db.collection(AUTOMATION_TASK_RUN_COLLECTION).doc(id) }; }
     catch { return null; }
   })();
   if (!store) return operation();

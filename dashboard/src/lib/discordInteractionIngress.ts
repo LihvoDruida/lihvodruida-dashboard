@@ -2,7 +2,7 @@ import "server-only";
 import { decodeRaidSignupMenuId } from "@mistblossom/discord-contract";
 
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from "node:crypto";
-import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
+import { getDocumentDb } from "@/lib/documentDb";
 
 // One durable receipt per signed Discord interaction. Processing a receipt is
 // separate from ACK and always passes through the existing outbox dedupe gate.
@@ -64,8 +64,8 @@ function validate(payload: Envelope, now: number) {
 export async function enqueueInteractionIngress(payload: Envelope, now = Date.now()) {
   const deadline = validate(payload, now);
   const fingerprint = createHash("sha256").update(payload.timestamp).update("\0").update(payload.signature).update("\0").update(payload.rawBody).update("\0").update(payload.domain).digest("hex");
-  const ref = getFirebaseAdminDb().collection(COLLECTION).doc(payload.id);
-  return getFirebaseAdminDb().runTransaction(async (tx) => {
+  const ref = getDocumentDb().collection(COLLECTION).doc(payload.id);
+  return getDocumentDb().runTransaction(async (tx) => {
     const current = (await tx.get(ref)).data() as Receipt | undefined;
     if (current) {
       if (current.fingerprint !== fingerprint) throw new Error("interaction id reused with different payload");
@@ -81,7 +81,7 @@ export async function enqueueInteractionIngress(payload: Envelope, now = Date.no
   });
 }
 
-// PostgreSQL and Firestore support chained where predicates. Keep the old
+// PostgreSQL and DocumentStore support chained where predicates. Keep the old
 // mocked collection contract for independent unit tests that expose only a
 // single filter; the transaction still validates due time before claiming.
 function dueQuery<T extends { where?: (field: string, op: "<=", value: string) => T }>(query: T, field: string, now: number): T {
@@ -89,7 +89,7 @@ function dueQuery<T extends { where?: (field: string, op: "<=", value: string) =
 }
 
 export async function leaseInteractionIngress(limit = 10, now = Date.now()) {
-  const collection = getFirebaseAdminDb().collection(COLLECTION);
+  const collection = getDocumentDb().collection(COLLECTION);
   const size = Math.max(1, Math.min(20, Math.floor(limit)));
   const [ready, leased] = await Promise.all([
     dueQuery(collection.where("status", "==", "ready"), "nextAttemptAt", now).limit(150).get(),
@@ -100,7 +100,7 @@ export async function leaseInteractionIngress(limit = 10, now = Date.now()) {
     if (results.length >= size) break;
     const ref = collection.doc(snapshot.id);
     const leaseId = randomUUID();
-    const cipher = await getFirebaseAdminDb().runTransaction(async (tx) => {
+    const cipher = await getDocumentDb().runTransaction(async (tx) => {
       const current = (await tx.get(ref)).data() as Receipt | undefined;
       if (!current?.payloadCipher || !["ready", "leased"].includes(current.status)) return null;
       if (Date.parse(current.dispatchDeadlineAt) <= now || current.attempts >= MAX_ATTEMPTS) {
@@ -119,8 +119,8 @@ export async function leaseInteractionIngress(limit = 10, now = Date.now()) {
 
 export async function settleInteractionIngress(id: string, leaseId: string, success: boolean, permanent = false, now = Date.now()) {
   if (!ID.test(id) || !/^[0-9a-f-]{36}$/.test(leaseId)) return false;
-  const ref = getFirebaseAdminDb().collection(COLLECTION).doc(id);
-  return getFirebaseAdminDb().runTransaction(async (tx) => {
+  const ref = getDocumentDb().collection(COLLECTION).doc(id);
+  return getDocumentDb().runTransaction(async (tx) => {
     const current = (await tx.get(ref)).data() as Receipt | undefined;
     if (!current || current.status !== "leased" || current.leaseId !== leaseId || Date.parse(current.leaseUntil || "") <= now) return false;
     const failed = permanent || current.attempts >= MAX_ATTEMPTS || Date.parse(current.dispatchDeadlineAt) <= now;
@@ -136,12 +136,12 @@ export async function settleInteractionIngress(id: string, leaseId: string, succ
 }
 
 export async function pruneInteractionIngress(limit = 250, now = Date.now()) {
-  const collection = getFirebaseAdminDb().collection(COLLECTION);
+  const collection = getDocumentDb().collection(COLLECTION);
   const time = new Date(now).toISOString();
   for (const status of ["ready", "leased"] as const) {
     const records = await dueQuery(collection.where("status", "==", status), "dispatchDeadlineAt", now).limit(Math.min(limit, 150)).get();
     for (const snapshot of records.docs) {
-      await getFirebaseAdminDb().runTransaction(async (tx) => {
+      await getDocumentDb().runTransaction(async (tx) => {
         const ref = collection.doc(snapshot.id);
         const doc = (await tx.get(ref)).data() as Receipt | undefined;
         if (doc?.status === status && doc.dispatchDeadlineAt <= time) tx.set(ref, { ...doc, status: "failed", payloadCipher: "", leaseId: "", leaseUntil: "" });

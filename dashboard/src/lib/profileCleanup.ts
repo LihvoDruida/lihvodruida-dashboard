@@ -1,13 +1,13 @@
-import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
+import { getDocumentDb, hasDocumentDbConfig } from "@/lib/documentDb";
 import { createStableProfileId } from "@/lib/profileIds";
-import { firebaseWrite } from "@/lib/firebaseAccess";
+import { storageWrite } from "@/lib/storageAccess";
 
 const DASHBOARD_PROFILES_COLLECTION = "dashboardProfiles";
 const PROFILE_CHARACTER_LINKS_COLLECTION = "dashboardProfileCharacterLinks";
 
 export type DashboardProfileDeleteResult =
   | { deleted: number; profileIds: string[]; reason: "deleted" }
-  | { deleted: 0; profileIds: string[]; reason: "invalid-discord-id" | "invalid-profile-id" | "firebase-not-configured" | "not-found" };
+  | { deleted: 0; profileIds: string[]; reason: "invalid-discord-id" | "invalid-profile-id" | "storage-not-configured" | "not-found" };
 
 function clearProfileDerivedCaches() {
   (globalThis as typeof globalThis & { __mistblossomCharacterProfileLinksCache?: unknown }).__mistblossomCharacterProfileLinksCache = undefined;
@@ -41,11 +41,11 @@ export async function deleteDashboardProfileById(profileId: string): Promise<boo
 export async function deleteDashboardProfilesByIds(profileIdsInput: Iterable<unknown>): Promise<DashboardProfileDeleteResult> {
   const profileIds = cleanProfileIds(profileIdsInput);
   if (!profileIds.length) return { deleted: 0, profileIds: [], reason: "invalid-profile-id" };
-  if (!hasFirebaseProfileConfig()) {
-    return { deleted: 0, profileIds: [], reason: "firebase-not-configured" };
+  if (!hasDocumentDbConfig()) {
+    return { deleted: 0, profileIds: [], reason: "storage-not-configured" };
   }
 
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   const refs = new Map<string, any>();
   for (const profileId of profileIds) {
     const ref = db.collection(DASHBOARD_PROFILES_COLLECTION).doc(profileId);
@@ -55,7 +55,7 @@ export async function deleteDashboardProfilesByIds(profileIdsInput: Iterable<unk
 
   if (!refs.size) return { deleted: 0, profileIds, reason: "not-found" };
 
-  await firebaseWrite(
+  await storageWrite(
     "profile",
     `profile:${Array.from(refs.keys()).join(",")}:delete`,
     async () => {
@@ -78,11 +78,11 @@ export async function deleteDashboardProfilesByDiscordUserId(discordUserId: stri
   if (!/^\d{16,25}$/.test(cleanDiscordId)) {
     return { deleted: 0, profileIds: [], reason: "invalid-discord-id" };
   }
-  if (!hasFirebaseProfileConfig()) {
-    return { deleted: 0, profileIds: [], reason: "firebase-not-configured" };
+  if (!hasDocumentDbConfig()) {
+    return { deleted: 0, profileIds: [], reason: "storage-not-configured" };
   }
 
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   const refs = new Map<string, any>();
 
   const stableProfileId = await createStableProfileId("discord", cleanDiscordId);
@@ -113,7 +113,7 @@ export async function deleteDashboardProfilesByDiscordUserId(discordUserId: stri
 
   if (!refs.size) return { deleted: 0, profileIds: [], reason: "not-found" };
 
-  await firebaseWrite(
+  await storageWrite(
     "profile",
     `profile:discord:${cleanDiscordId}:delete`,
     async () => {

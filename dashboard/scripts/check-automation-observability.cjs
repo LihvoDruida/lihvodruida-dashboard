@@ -41,7 +41,7 @@ function storage() {
   return { rows, db };
 }
 function observation(store, globals = {}) {
-  return load('src/lib/automationTaskRuns.ts', { '@/lib/firebaseAdmin': { hasFirebaseProfileConfig: () => true, getFirebaseAdminDb: () => store.db } }, globals).exports;
+  return load('src/lib/automationTaskRuns.ts', { '@/lib/documentDb': { hasDocumentDbConfig: () => true, getDocumentDb: () => store.db } }, globals).exports;
 }
 let passed = 0;
 async function check(name, fn) { await fn(); passed++; console.log('PASS', name); }

@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 import { getSessionUser } from "@/lib/auth";
 import { canManageApplications, canViewApplicationBattleTag, canViewApplications } from "@/lib/permissions";
-import { ApplicationItem, listApplicationFilterOptions, listApplications, sanitizeApplicationsForMentorViewer } from "@/lib/github";
+import { ApplicationItem, listApplicationFilterOptions, listApplications, sanitizeApplicationsForMentorViewer } from "@/lib/applicationsStore";
 import { getOwnProfilePath } from "@/lib/profiles";
 
 function formatDate(value?: string | null) {

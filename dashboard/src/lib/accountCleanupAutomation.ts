@@ -2,8 +2,8 @@ import "server-only";
 import { acquireAutomationLease } from "@/lib/automationLease";
 
 import type { DashboardSession } from "@/lib/auth";
-import { firebaseWrite } from "@/lib/firebaseAccess";
-import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
+import { storageWrite } from "@/lib/storageAccess";
+import { getDocumentDb, hasDocumentDbConfig } from "@/lib/documentDb";
 import { resilientRead } from "@/lib/runtimeResilience";
 import { timestampToIso } from "@/lib/values";
 
@@ -212,12 +212,12 @@ function cacheFresh() {
 export async function getAccountCleanupAutomationSettings(options: { fresh?: boolean } = {}) {
   if (!options.fresh && cacheFresh()) return globalThis.__mistblossomAccountCleanupSettingsCache!.value;
   const fallback = globalThis.__mistblossomAccountCleanupSettingsCache?.value || defaultSettings();
-  if (!hasFirebaseProfileConfig()) return setCache(fallback);
+  if (!hasDocumentDbConfig()) return setCache(fallback);
 
   const value = await resilientRead(
     "account-cleanup-automation-settings",
     async () => {
-      const snapshot = await getFirebaseAdminDb().collection(SETTINGS_COLLECTION).doc(SETTINGS_DOC_ID).get();
+      const snapshot = await getDocumentDb().collection(SETTINGS_COLLECTION).doc(SETTINGS_DOC_ID).get();
       return snapshot.exists ? normalizeSettings(snapshot.data() || null) : fallback;
     },
     {
@@ -243,7 +243,7 @@ export async function updateAccountCleanupAutomationSettings(
   },
   actor: DashboardSession,
 ) {
-  if (!hasFirebaseProfileConfig()) throw new Error("Сховище налаштувань не налаштоване.");
+  if (!hasDocumentDbConfig()) throw new Error("Сховище налаштувань не налаштоване.");
   const current = await getAccountCleanupAutomationSettings({ fresh: true });
   const autoCleanupEnabled = bool(input.autoCleanupEnabled, false);
   const next: AccountCleanupAutomationSettings = {
@@ -257,10 +257,10 @@ export async function updateAccountCleanupAutomationSettings(
     updatedBy: actor.name || actor.login || actor.id,
   };
 
-  await firebaseWrite(
+  await storageWrite(
     "settings",
     "account-cleanup-automation-settings:save",
-    () => getFirebaseAdminDb().collection(SETTINGS_COLLECTION).doc(SETTINGS_DOC_ID).set(next, { merge: true }),
+    () => getDocumentDb().collection(SETTINGS_COLLECTION).doc(SETTINGS_DOC_ID).set(next, { merge: true }),
     { timeoutMs: 3_500, logEvent: "profiles.orphan_cleanup.settings_write_failed" },
   );
   return setCache(next);
@@ -297,7 +297,7 @@ export async function recordAccountCleanupRun(input: {
   summary?: string;
   error?: string | null;
 }) {
-  if (!hasFirebaseProfileConfig()) return null;
+  if (!hasDocumentDbConfig()) return null;
   const current = await getAccountCleanupAutomationSettings({ fresh: true });
   const completedAt = input.completedAt || new Date().toISOString();
   const run: AccountCleanupRunSummary = {
@@ -333,10 +333,10 @@ export async function recordAccountCleanupRun(input: {
     recentRuns: [run, ...current.recentRuns.filter((item) => item.id !== run.id)].slice(0, MAX_RECENT_RUNS),
   };
 
-  await firebaseWrite(
+  await storageWrite(
     "settings",
     `account-cleanup-automation-state:${input.mode}`,
-    () => getFirebaseAdminDb().collection(SETTINGS_COLLECTION).doc(SETTINGS_DOC_ID).set({
+    () => getDocumentDb().collection(SETTINGS_COLLECTION).doc(SETTINGS_DOC_ID).set({
       lastCheckAt: next.lastCheckAt,
       lastCheckStatus: next.lastCheckStatus,
       lastCheckCandidates: next.lastCheckCandidates,

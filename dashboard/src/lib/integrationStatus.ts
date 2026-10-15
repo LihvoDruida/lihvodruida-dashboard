@@ -1,14 +1,13 @@
 import { checkBattleNetApplicationAccess, getDefaultBattleNetRegion } from "@/lib/battlenet";
 import { discordApi, getDiscordGuildId, hasDiscordEmbedConfig } from "@/lib/discordAdmin";
-import { hasFirebaseProfileConfig, getFirebaseAdminDb } from "@/lib/firebaseAdmin";
-import { firebaseCapability } from "@/lib/firebaseAccess";
-import { githubFetch } from "@/lib/github";
+import { hasDocumentDbConfig, getDocumentDb } from "@/lib/documentDb";
+import { storageCapability } from "@/lib/storageAccess";
 import { envFlag } from "@/lib/values";
 
 export type IntegrationState = "ok" | "warning" | "error" | "unconfigured";
 
 export type IntegrationStatusItem = {
-  key: "discord" | "battlenet" | "github" | "firebase" | "firebase-write";
+  key: "discord" | "battlenet" | "applications" | "database" | "database-write";
   label: string;
   state: IntegrationState;
   message: string;
@@ -29,7 +28,7 @@ declare global {
   var __mistblossomIntegrationStatusCache: { checkedAtMs: number; value: IntegrationStatusSummary } | undefined;
 }
 function integrationStatusCacheTtlMs() {
-  const fallback = envFlag(["FIREBASE_ECO_MODE", "FIRESTORE_ECO_MODE", "DASHBOARD_ECO_MODE"], false) ? 10 * 60_000 : 120_000;
+  const fallback = envFlag(["STORAGE_ECO_MODE", "STORAGE_ECO_MODE", "DASHBOARD_ECO_MODE"], false) ? 10 * 60_000 : 120_000;
   const value = Number(process.env.INTEGRATION_STATUS_CACHE_TTL_MS || fallback);
   return Number.isFinite(value) ? Math.max(60_000, Math.min(Math.floor(value), 60 * 60_000)) : fallback;
 }
@@ -74,42 +73,42 @@ async function checkBattleNet(checkedAt: string): Promise<IntegrationStatusItem>
   }
 }
 
-async function checkGitHub(checkedAt: string): Promise<IntegrationStatusItem> {
+async function checkApplications(checkedAt: string): Promise<IntegrationStatusItem> {
   try {
-    await githubFetch("/issues?per_page=1&state=all");
-    return item("github", "Заявки", "ok", "працює", checkedAt);
+    await getDocumentDb().collection(process.env.STORAGE_APPLICATIONS_COLLECTION || "guildApplications").limit(1).get();
+    return item("applications", "Заявки", "ok", "працює", checkedAt);
   } catch (error) {
     const message = safeMessage(error, "Заявки тимчасово недоступні");
     if (/env is not configured|not configured/i.test(message)) {
-      return item("github", "Заявки", "unconfigured", "потребує уваги", checkedAt);
+      return item("applications", "Заявки", "unconfigured", "потребує уваги", checkedAt);
     }
-    return item("github", "Заявки", "error", message, checkedAt);
+    return item("applications", "Заявки", "error", message, checkedAt);
   }
 }
 
-async function checkFirebaseProfiles(checkedAt: string): Promise<IntegrationStatusItem> {
-  if (!hasFirebaseProfileConfig()) {
-    return item("firebase", "Профілі", "unconfigured", "потребує уваги", checkedAt);
+async function checkStorageProfiles(checkedAt: string): Promise<IntegrationStatusItem> {
+  if (!hasDocumentDbConfig()) {
+    return item("database", "Профілі", "unconfigured", "потребує уваги", checkedAt);
   }
 
   try {
-    const db = getFirebaseAdminDb();
+    const db = getDocumentDb();
     await db.collection("dashboardProfiles").limit(1).get();
-    return item("firebase", "Профілі", "ok", "працює", checkedAt);
+    return item("database", "Профілі", "ok", "працює", checkedAt);
   } catch (error) {
-    return item("firebase", "Профілі", "error", safeMessage(error, "Профілі тимчасово недоступні"), checkedAt);
+    return item("database", "Профілі", "error", safeMessage(error, "Профілі тимчасово недоступні"), checkedAt);
   }
 }
 
-async function checkFirebaseWrites(checkedAt: string): Promise<IntegrationStatusItem> {
-  const capability = firebaseCapability("profile", "write");
+async function checkStorageWrites(checkedAt: string): Promise<IntegrationStatusItem> {
+  const capability = storageCapability("profile", "write");
   if (!capability.configured) {
-    return item("firebase-write", "Запис Firebase", "unconfigured", "потребує уваги", checkedAt);
+    return item("database-write", "Запис PostgreSQL", "unconfigured", "потребує уваги", checkedAt);
   }
   if (!capability.available) {
-    return item("firebase-write", "Запис Firebase", "warning", "режим тільки читання", checkedAt);
+    return item("database-write", "Запис PostgreSQL", "warning", "режим тільки читання", checkedAt);
   }
-  return item("firebase-write", "Запис Firebase", "ok", "доступний", checkedAt);
+  return item("database-write", "Запис PostgreSQL", "ok", "доступний", checkedAt);
 }
 
 export async function getIntegrationStatusSummary(): Promise<IntegrationStatusSummary> {
@@ -120,17 +119,17 @@ export async function getIntegrationStatusSummary(): Promise<IntegrationStatusSu
   const results = await Promise.allSettled([
     checkDiscord(checkedAt),
     checkBattleNet(checkedAt),
-    checkGitHub(checkedAt),
-    checkFirebaseProfiles(checkedAt),
-    checkFirebaseWrites(checkedAt),
+    checkApplications(checkedAt),
+    checkStorageProfiles(checkedAt),
+    checkStorageWrites(checkedAt),
   ]);
 
   const fallbackKeys: Array<[IntegrationStatusItem["key"], string]> = [
     ["discord", "Discord"],
     ["battlenet", "Battle.net"],
-    ["github", "Заявки"],
-    ["firebase", "Профілі"],
-    ["firebase-write", "Запис Firebase"],
+    ["applications", "Заявки"],
+    ["database", "Профілі"],
+    ["database-write", "Запис PostgreSQL"],
   ];
 
   const value = {

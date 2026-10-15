@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
     const imageValue = form.get("image");
     const result = await updateSiteContent({
       path: String(form.get("path") || ""),
+      expectedRevision: String(form.get("revision") || ""),
       kind,
       title: String(form.get("title") || ""),
       description: String(form.get("description") || ""),

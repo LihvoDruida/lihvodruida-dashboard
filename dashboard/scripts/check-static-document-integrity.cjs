@@ -53,7 +53,7 @@ function doc(table,id){return {get:async()=>({data:()=>store.get(`${table}/${id}
 const db = {collection: table=>({doc: id=>doc(table,id)})};
 const staticRules = moduleFor(read('lib/staticRules.ts'),'staticRules.ts', {
   'server-only':{},'node:crypto':require('node:crypto'),
-  '@/lib/firebaseAdmin':{getFirebaseAdminDb:()=>db},
+  '@/lib/documentDb':{getDocumentDb:()=>db},
   '@/lib/discordAdmin':{},
   '@/lib/permissions':{isDashboardAdmin:()=>false},
   '@/lib/staticRulesDefault':{DEFAULT_STATIC_RULES_MARKDOWN:template}

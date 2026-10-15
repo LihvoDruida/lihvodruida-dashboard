@@ -27,7 +27,7 @@ const database = load(
 const compat = load("src/lib/db/documentStore.ts", {
     "@/lib/db/pgPool": database,
   }).exports,
-  store = new compat.PgFirestore();
+  store = new compat.PgDocumentStore();
 const normalizers = require("./lib/profile-directory-subject.cjs")(
   database,
   store,
@@ -53,11 +53,11 @@ const adapter = {
     }),
 };
 const deps = {
-  "@/lib/firebaseAdmin": {
-    getFirebaseAdminDb: () => adapter,
-    hasFirebaseProfileConfig: () => configured,
+  "@/lib/documentDb": {
+    getDocumentDb: () => adapter,
+    hasDocumentDbConfig: () => configured,
   },
-  "@/lib/db/firestoreCompat": compat,
+  "@/lib/db/documentValues": compat,
   "@/lib/wowCharacters": load("src/lib/wowCharacters.ts", {
     crypto: require("node:crypto"),
   }).exports,

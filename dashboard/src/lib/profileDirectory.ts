@@ -4,9 +4,9 @@ import { createHash } from "node:crypto";
 import type { DashboardSession } from "@/lib/auth";
 import { listAccessGroups } from "@/lib/accessGroups";
 import type { AccessGroup } from "@/lib/accessGroupSchema";
-import { documentStoreMode, getFirebaseAdminDb } from "@/lib/firebaseAdmin";
+import { documentStoreMode, getDocumentDb } from "@/lib/documentDb";
 import { pgQuery } from "@/lib/db/pgPool";
-import { FieldPath } from "@/lib/db/firestoreCompat";
+import { FieldPath } from "@/lib/db/documentValues";
 import { canViewAllProfiles, canViewProfilesInOwnGroupOrBelow, dashboardRoleRank } from "@/lib/permissions";
 import {
   applyCurrentProfileGroup, canViewProfile, getProfileSiteName,
@@ -195,14 +195,14 @@ function finishPage(profiles: DashboardProfile[], keys: Key[], total: number, ch
   };
 }
 
-async function readFirestore(params: ProfileDirectoryParams, groups: AccessGroup[], filters: ReturnType<typeof profileDirectoryFilters>, scope: string, cursor: Cursor | null) {
+async function readDocumentStore(params: ProfileDirectoryParams, groups: AccessGroup[], filters: ReturnType<typeof profileDirectoryFilters>, scope: string, cursor: Cursor | null) {
   const collator = new Intl.Collator("uk", { sensitivity: "base" });
   const compare = (a: Key, b: Key) => (filters.sort === "name" ? collator.compare(a.name, b.name)
     : filters.sort === "characters" ? b.count - a.count || b.activity - a.activity : b.activity - a.activity) || Buffer.compare(Buffer.from(a.id), Buffer.from(b.id));
   let candidates: { profile: DashboardProfile; key: Key }[] = [];
   let total = 0, characterCount = 0, linkedCount = 0, eligibleCount = 0;
   let after = "";
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   const q = filters.query.toLocaleLowerCase("uk");
   // Migration compatibility: complete scan in bounded batches, bounded page
   // memory, no truncation/cache pretending to be the full search result.
@@ -246,9 +246,9 @@ export async function listDashboardProfilePage(params: ProfileDirectoryParams): 
     params.viewer.role, params.viewer.groupRank, params.viewer.groupId, params.viewer.permissions, params.viewer.isServerOwner,
     groups.map(g => [g.id, g.role, g.rank])])).digest("hex");
   const cursor = decodeCursor(params.cursor, scope);
-  const page = await (mode === "postgres" ? readPostgres(params, groups, filters, scope, cursor, collation) : readFirestore(params, groups, filters, scope, cursor));
+  const page = await (mode === "postgres" ? readPostgres(params, groups, filters, scope, cursor, collation) : readDocumentStore(params, groups, filters, scope, cursor));
   // A deleted last row or changed sort key can leave a valid URL empty. Return
   // the first live page with an explicit notice, not a false "not found".
-  if (cursor && !page.profiles.length && page.total) return { ...await (mode === "postgres" ? readPostgres(params, groups, filters, scope, null, collation) : readFirestore(params, groups, filters, scope, null)), cursorReset: true };
+  if (cursor && !page.profiles.length && page.total) return { ...await (mode === "postgres" ? readPostgres(params, groups, filters, scope, null, collation) : readDocumentStore(params, groups, filters, scope, null)), cursorReset: true };
   return page;
 }

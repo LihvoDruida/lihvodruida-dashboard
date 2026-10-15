@@ -32,7 +32,7 @@ const security = load("src/lib/security.ts", {
   "@/lib/values": { envFlag: (name) => env[name] === "true" },
 }, env, "getRequestHost,isAllowedHost,isLocalHost,getCanonicalDashboardOrigin,noStoreHeaders,forbiddenResponse,unauthorizedResponse,verifyTrustedOrigin,verifyInternalBearerToken,assertRequestBodySize,safeErrorMessage");
 const events = [];
-const { proxy } = load("src/proxy.ts", { "next/server": { NextResponse },
+const { proxy } = load("src/proxy.ts", { "@/lib/siteBridgeAuth": {hasSiteBridgeToken:()=>false}, "next/server": { NextResponse },
   "@/lib/security": { ...security, logDashboardEvent: (...args) => events.push(args) } }, env, "proxy");
 const endpoint = "/api/dashboard/discord/profile-nicknames/automation";
 let calls = 0, queueFails = false;

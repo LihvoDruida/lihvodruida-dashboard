@@ -1,15 +1,15 @@
-/** Content source of truth: dashboard document store (PostgreSQL / Firestore).
+/** Content source of truth: dashboard document store (PostgreSQL).
  * The public site is a read-only consumer; no GitHub commits on mutations.
  */
 import { createHash } from "node:crypto";
-import { getFirebaseAdminDb, documentStoreMode } from "@/lib/firebaseAdmin";
+import { getDocumentDb, documentStoreMode } from "@/lib/documentDb";
 import { pgQuery } from "@/lib/db/pgPool";
 import type { DashboardSession } from "@/lib/auth";
 import { canManageSiteContent } from "@/lib/permissions";
 
 export type ContentKind = "news" | "guides";
 export type CreateContentInput = { kind: ContentKind; title: string; description: string; body: string; categories: string; tags: string; slug?: string; image?: File | null; author: string; user: DashboardSession };
-export type UpdateContentInput = CreateContentInput & { path: string; date?: string; lastModifiedAt?: string; existingImage?: string; removeImage?: boolean };
+export type UpdateContentInput = CreateContentInput & { path: string; expectedRevision: string; date?: string; lastModifiedAt?: string; existingImage?: string; removeImage?: boolean };
 export type SiteContentItem = { kind: ContentKind; path: string; sha?: string; name: string; title: string; slug: string; description: string; date: string; last_modified_at: string; author: string; categories: string; tags: string; image: string; body: string };
 export const CONTENT_TEXT_LIMITS = { title:160, slug:90, description:600, categories:400, tags:400, author:120, body:200_000 } as const;
 const STORE = "siteArticles";
@@ -47,7 +47,8 @@ function normalized(input:CreateContentInput) {
 function validDate(raw?:string) { const value=String(raw||'');return /^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value))?value:new Date().toISOString().slice(0,10); }
 function safeImage(url:string) {
  const value=String(url||'').trim();
- if(/^https:\/\/(?:guild|admin)\.lihvodruida\.pp\.ua\/api\/site\/media\/[a-f0-9]{64}$/.test(value))return value;
+ if(/^\/api\/site\/media\/[a-f0-9]{64}$/.test(value))return value;
+ if(/^https:\/\/(?:guild|admin)\.lihvodruida\.pp\.ua\/api\/site\/media\/[a-f0-9]{64}$/.test(value))return new URL(value).pathname;
  if(/^\/assets\/img-content\/[A-Za-z0-9_./-]+$/.test(value)&&!value.includes('..'))return value;
  return '/assets/img/news-placeholder.webp';
 }
@@ -61,24 +62,25 @@ async function saveImage(file?:File|null) {
  const bytes=Buffer.from(await file.arrayBuffer()); if(!imageSignatureMatches(bytes,file.type))throw new Error('Зображення не відповідає заявленому формату.');
  const id=createHash('sha256').update(bytes).digest('hex');
  await pgQuery('INSERT INTO site_content_media(id, mime_type, payload) VALUES($1,$2,$3) ON CONFLICT(id) DO NOTHING',[id,file.type,bytes]);
- const base=String(process.env.PUBLIC_DASHBOARD_BASE_URL||'https://guild.lihvodruida.pp.ua').replace(/\/+$/,'');
- if(!/^https:\/\/(guild|admin)\.lihvodruida\.pp\.ua$/.test(base))throw new Error('PUBLIC_DASHBOARD_BASE_URL має вказувати на довірений домен дашборда.');
- return `${base}/api/site/media/${id}`;
+ return `/api/site/media/${id}`;
 }
-function docRef(kind:ContentKind,slug:string) {return getFirebaseAdminDb().collection(STORE).doc(docKey(kind,slug));}
+function docRef(kind:ContentKind,slug:string) {return getDocumentDb().collection(STORE).doc(docKey(kind,slug));}
 async function assertNotExists(kind:ContentKind,slug:string,except?:string) {const id=docKey(kind,slug);if(id!==except&&(await docRef(kind,slug).get()).exists)throw new Error('Матеріал із таким slug уже існує.');}
 function toItem(raw:any):SiteContentItem|null {
  if(!raw||!isContentKind(String(raw.kind))||!slugify(String(raw.slug||''))||typeof raw.title!=='string'||typeof raw.body!=='string')return null;
- const slug=slugify(raw.slug);return {kind:raw.kind,path:publicPath(raw.kind,slug),name:`${slug}.md`,slug,title:raw.title,description:String(raw.description||''),body:raw.body,date:String(raw.date||''),last_modified_at:String(raw.last_modified_at||raw.date||''),author:String(raw.author||''),categories:String(raw.categories||''),tags:String(raw.tags||''),image:safeImage(raw.image),sha:String(raw.revision||'')};
+ const slug=slugify(raw.slug);return {kind:raw.kind,path:publicPath(raw.kind,slug),name:`${slug}.md`,slug,title:raw.title,description:String(raw.description||''),body:raw.body,date:String(raw.date||''),last_modified_at:String(raw.last_modified_at||raw.date||''),author:String(raw.author||''),categories:String(raw.categories||''),tags:String(raw.tags||''),image:safeImage(raw.image),sha:String(raw.revision||1)};
 }
 export async function listSiteContent():Promise<SiteContentItem[]> {
- const rows=await getFirebaseAdminDb().collection(STORE).limit(500).get();
+ const rows=await getDocumentDb().collection(STORE).limit(500).get();
  return rows.docs.map(doc=>toItem(doc.data())).filter((v):v is SiteContentItem=>!!v).sort((a,b)=>b.date.localeCompare(a.date)||a.title.localeCompare(b.title));
 }
-export async function publicSiteContent() {
+export async function publicSiteContent(page=1) {
  const items=await listSiteContent();
- return {schema:'mistblossom.public-content.v1',updated_at:new Date().toISOString(),items:items.map(({path,name,sha,...item})=>({...item,tags:item.tags.split(',').map(x=>x.trim()).filter(Boolean),categories:item.categories.split(',').map(x=>x.trim()).filter(Boolean)}))};
+ const revision=createHash('sha256').update(JSON.stringify(items)).digest('hex');
+ const limit=20,start=(page-1)*limit;
+ return {schema:'mistblossom.public-content.v2',revision,total:items.length,next_page:start+limit<items.length?page+1:null,updated_at:new Date().toISOString(),items:items.slice(start,start+limit).map(({path,name,sha,...item})=>({...item,tags:item.tags.split(',').map(x=>x.trim()).filter(Boolean),categories:item.categories.split(',').map(x=>x.trim()).filter(Boolean)}))};
 }
+
 export async function createSiteContent(input:CreateContentInput) {
  const norm=normalized(input);await assertNotExists(norm.kind,norm.slug);
  const date=validDate(),image=(await saveImage(input.image))||'/assets/img/news-placeholder.webp';
@@ -87,12 +89,26 @@ export async function createSiteContent(input:CreateContentInput) {
  return {ok:true,slug:norm.slug,path:publicPath(norm.kind,norm.slug),image};
 }
 export async function updateSiteContent(input:UpdateContentInput) {
- const old=parsePath(input.path),norm=normalized(input); const previous=await docRef(old.kind,old.slug).get();
- if(!previous.exists)throw new Error('Матеріал не знайдено. Онови список.');
- const before=previous.data()||{};const oldKey=docKey(old.kind,old.slug);await assertNotExists(norm.kind,norm.slug,oldKey);
- const image=input.removeImage?'/assets/img/news-placeholder.webp':(await saveImage(input.image))||safeImage(input.existingImage||String(before.image||''));
- const record={...norm,date:validDate(input.date||String(before.date||'')),last_modified_at:validDate(input.lastModifiedAt),image,revision:Number(before.revision||0)+1,updated_at:new Date().toISOString()};
- const key=docKey(norm.kind,norm.slug);if(key===oldKey)await docRef(norm.kind,norm.slug).set(record);else {await docRef(norm.kind,norm.slug).create(record);await docRef(old.kind,old.slug).delete();}
- return {ok:true,slug:norm.slug,path:publicPath(norm.kind,norm.slug),image};
+ const old=parsePath(input.path),norm=normalized(input);
+ const uploaded=await saveImage(input.image);
+ return getDocumentDb().runTransaction(async tx=>{
+  const oldRef=docRef(old.kind,old.slug),previous=await tx.get(oldRef);
+  if(!previous.exists)throw new Error('Матеріал не знайдено. Онови список.');
+  const before=previous.data()||{};
+  if(String(before.revision||1)!==input.expectedRevision)throw new Error('Матеріал уже змінено іншим редактором. Онови сторінку перед збереженням.');
+  const key=docKey(norm.kind,norm.slug),oldKey=docKey(old.kind,old.slug),nextRef=docRef(norm.kind,norm.slug);
+  if(key!==oldKey&&(await tx.get(nextRef)).exists)throw new Error('Матеріал із таким slug уже існує.');
+  const image=input.removeImage?'/assets/img/news-placeholder.webp':uploaded||safeImage(String(before.image||''));
+  const record={...norm,date:validDate(input.date||String(before.date||'')),last_modified_at:validDate(input.lastModifiedAt),image,revision:Number(before.revision||1)+1,updated_at:new Date().toISOString()};
+  if(key===oldKey)tx.set(oldRef,record);else {tx.create(nextRef,record);tx.delete(oldRef);}
+  return {ok:true,slug:norm.slug,path:publicPath(norm.kind,norm.slug),image};
+ });
 }
-export async function deleteSiteContent(path:string) {const {kind,slug}=parsePath(path);const ref=docRef(kind,slug);if(!(await ref.get()).exists)throw new Error('Матеріал не знайдено.');await ref.delete();}
+export async function deleteSiteContent(path:string,expectedRevision:string) {
+ const {kind,slug}=parsePath(path),ref=docRef(kind,slug);
+ await getDocumentDb().runTransaction(async tx=>{
+  const previous=await tx.get(ref);if(!previous.exists)throw new Error('Матеріал не знайдено.');
+  if(String(previous.data()?.revision||1)!==expectedRevision)throw new Error('Матеріал уже змінено. Онови сторінку перед видаленням.');
+  tx.delete(ref);
+ });
+}

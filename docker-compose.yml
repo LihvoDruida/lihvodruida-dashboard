@@ -107,9 +107,12 @@ services:
       # override this intentionally for emergency diagnostics.
       SECURITY_REQUIRE_CLOUDFLARE: ${SECURITY_REQUIRE_CLOUDFLARE:-strict}
       SECURITY_STRICT_ORIGIN_CHECKS: ${SECURITY_STRICT_ORIGIN_CHECKS:-true}
+      DASHBOARD_URL: ${DASHBOARD_PUBLIC_URL:?set DASHBOARD_PUBLIC_URL}
+      NEXT_PUBLIC_DASHBOARD_URL: ${DASHBOARD_PUBLIC_URL:?set DASHBOARD_PUBLIC_URL}
+      PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-https://lihvodruida.pp.ua}
       PUBLIC_SITE_ORIGINS: ${PUBLIC_SITE_ORIGINS:-https://lihvodruida.pp.ua,https://www.lihvodruida.pp.ua}
-      # Optional, read-only internal bridge for public site SSR (no bypass for writes).
-      PUBLIC_SITE_BRIDGE_TOKEN: ${PUBLIC_SITE_BRIDGE_TOKEN:-}
+      # Required scoped site bridge (reads + application submission).
+      PUBLIC_SITE_BRIDGE_TOKEN: ${PUBLIC_SITE_BRIDGE_TOKEN:?set the same bridge token in both projects}
     depends_on:
       postgres:
         condition: service_healthy
@@ -151,6 +154,7 @@ services:
     volumes:
       - ./deploy/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./deploy/nginx/dashboard.conf:/etc/nginx/conf.d/dashboard.conf:ro
+      - ./deploy/nginx/public-site.conf:/etc/nginx/conf.d/public-site.conf:ro
       - ./deploy/nginx/proxy-params.inc:/etc/nginx/conf.d/proxy-params.inc:ro
       - ./deploy/nginx/proxy-params-fast.inc:/etc/nginx/conf.d/proxy-params-fast.inc:ro
       - certbot-webroot:/var/www/certbot:ro

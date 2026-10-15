@@ -965,7 +965,7 @@ export async function cleanupDashboardProfilesDiscordMembership(input: {
         name: fresh.member?.displayName || fresh.ban?.globalName || fresh.ban?.username || firstProfile?.name || target.userId,
         status: fresh.status,
         skipped,
-        skipReason: skipped ? `Профіль уже відсутній у Firebase або не знайдений: ${deleted.reason}.` : "",
+        skipReason: skipped ? `Профіль уже відсутній у Storage або не знайдений: ${deleted.reason}.` : "",
         profileIds: target.profilesForUser.map((item) => item.profileId),
         deletedProfileIds: deleted.profileIds,
         deletedProfiles: deleted.deleted,

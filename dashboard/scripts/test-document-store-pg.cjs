@@ -48,10 +48,10 @@ const instrumentedPool = {
   },
 };
 const source = process.env.TEST_DOCUMENT_STORE_SOURCE || "src/lib/db/documentStore.ts";
-const { PgFirestore, FieldValue, Timestamp } = load(source, {
+const { PgDocumentStore, FieldValue, Timestamp } = load(source, {
   "@/lib/db/pgPool": instrumentedPool,
 }).exports;
-const store = new PgFirestore();
+const store = new PgDocumentStore();
 const ref = id => store.collection("profiles").doc(id);
 const data = async doc => JSON.parse(JSON.stringify((await doc.get()).data()));
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));

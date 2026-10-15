@@ -2,10 +2,8 @@ import "server-only";
 
 import {
   documentStoreMode,
-  getFirebaseAdminDb,
-  getLegacyFirestoreAdminDb,
-  hasFirebaseCredentials,
-} from "@/lib/firebaseAdmin";
+  getDocumentDb,
+} from "@/lib/documentDb";
 
 export type DiscordInteractionMessageRef = {
   channelId?: string | null;
@@ -15,7 +13,7 @@ export type DiscordInteractionMessageRef = {
 export type DiscordInteractionDocument = {
   id: string;
   data: Record<string, unknown>;
-  source: "primary-id" | "primary-message" | "primary-query" | "legacy-id" | "legacy-message" | "legacy-query";
+  source: "primary-id" | "primary-message" | "primary-query";
   recovered: boolean;
 };
 
@@ -33,19 +31,9 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function discordInteractionRequiresPostgres() {
-  const raw = String(process.env.DISCORD_INTERACTION_REQUIRE_POSTGRES || "").trim().toLowerCase();
-  if (["0", "false", "off", "no"].includes(raw)) return false;
-  if (["1", "true", "on", "yes"].includes(raw)) return true;
-  // This project is self-hosted in production. A production interaction that
-  // silently falls back to Firestore means Discord is hitting an old runtime
-  // and would mutate a different database than the website.
-  return process.env.NODE_ENV === "production";
-}
-
 export function assertDiscordInteractionStore() {
   const mode = documentStoreMode();
-  if (discordInteractionRequiresPostgres() && mode !== "postgres") {
+  if (mode !== "postgres") {
     throw new Error(
       `Discord interaction storage mismatch: expected PostgreSQL, active store is ${mode}. ` +
       "Check the Discord Interactions Endpoint URL and DATABASE_URL in the runtime receiving the click.",
@@ -203,57 +191,6 @@ async function scanStoreForResource(
   return null;
 }
 
-/** Convert Firestore values into JSON-safe values accepted by the PostgreSQL document adapter. */
-function toPlainJson(value: unknown): unknown {
-  if (value === null || value === undefined) return value;
-  if (value instanceof Date) return value.toISOString();
-  if (Array.isArray(value)) return value.map(toPlainJson);
-  if (typeof value !== "object") return value;
-
-  const item = value as Record<string, unknown> & {
-    toDate?: () => Date;
-    seconds?: number;
-    path?: string;
-    id?: string;
-  };
-
-  if (typeof item.toDate === "function" && typeof item.seconds === "number") {
-    try {
-      return item.toDate().toISOString();
-    } catch {
-      // Fall through to the generic object conversion.
-    }
-  }
-  if (typeof item.path === "string" && typeof item.id === "string") return item.path;
-
-  const out: Record<string, unknown> = {};
-  for (const [key, child] of Object.entries(item)) {
-    const normalized = toPlainJson(child);
-    if (normalized !== undefined) out[key] = normalized;
-  }
-  return out;
-}
-
-async function backfillLegacyDocument(collection: string, id: string, data: Record<string, unknown>) {
-  const primary = getFirebaseAdminDb();
-  const normalized = toPlainJson(data) as Record<string, unknown>;
-  await primary.collection(collection).doc(id).set(normalized, { merge: true });
-  return normalized;
-}
-
-/**
- * Resolve the resource behind a Discord button.
- *
- * Order is deliberate:
- *   1. exact ID in the active store;
- *   2. same Discord message in the active store (republished/recreated item);
- *   3. exact ID in legacy Firestore, then copy it into PostgreSQL;
- *   4. same Discord message in legacy Firestore, then copy it into PostgreSQL.
- *
- * This makes already-published Discord messages survive both transient cache
- * failures and the Firestore -> PostgreSQL migration. Missing really means
- * missing only after every authoritative source has been checked.
- */
 export async function resolveDiscordInteractionDocument(params: {
   collection: string;
   resourceId: string;
@@ -264,7 +201,7 @@ export async function resolveDiscordInteractionDocument(params: {
   if (!collection || !resourceId) return null;
 
   assertDiscordInteractionStore();
-  const primary = getFirebaseAdminDb();
+  const primary = getDocumentDb();
   const direct = await authoritativeGet(
     primary.collection(collection).doc(resourceId),
     `${collection}/${resourceId}`,
@@ -298,60 +235,6 @@ export async function resolveDiscordInteractionDocument(params: {
     };
   }
 
-  // During/after migration old Discord messages may still reference documents
-  // that exist only in Firestore. Read-through is intentionally limited to
-  // interaction misses; normal page traffic remains PostgreSQL-only.
-  if (documentStoreMode() !== "postgres" || !hasFirebaseCredentials()) {
-    console.warn("[discordInteractionStorage] resource missing from active store", {
-      collection,
-      resourceId,
-      channelId: cleanMessageRef(params.messageRef)?.channelId || null,
-      messageId: cleanMessageRef(params.messageRef)?.messageId || null,
-      storeMode: documentStoreMode(),
-      legacyFirestoreAvailable: hasFirebaseCredentials(),
-    });
-    return null;
-  }
-
-  const legacy = getLegacyFirestoreAdminDb();
-  const legacyDirect = await authoritativeGet(
-    legacy.collection(collection).doc(resourceId),
-    `legacy:${collection}/${resourceId}`,
-  );
-  if (legacyDirect?.exists) {
-    const raw = (legacyDirect.data?.() || {}) as Record<string, unknown>;
-    const data = await backfillLegacyDocument(collection, resourceId, raw);
-    return { id: resourceId, data, source: "legacy-id", recovered: true };
-  }
-
-  const legacyByMessage = await queryByMessageRef(legacy, collection, params.messageRef);
-  if (legacyByMessage?.id) {
-    const data = await backfillLegacyDocument(collection, legacyByMessage.id, legacyByMessage.data);
-    return {
-      id: legacyByMessage.id,
-      data,
-      source: "legacy-message",
-      recovered: true,
-    };
-  }
-
-  const legacyScan = await scanStoreForResource(legacy, collection, resourceId, params.messageRef);
-  if (legacyScan?.id) {
-    const data = await backfillLegacyDocument(collection, legacyScan.id, legacyScan.data);
-    return {
-      id: legacyScan.id,
-      data,
-      source: "legacy-query",
-      recovered: true,
-    };
-  }
-
-  console.warn("[discordInteractionStorage] resource missing from active and legacy stores", {
-    collection,
-    resourceId,
-    channelId: cleanMessageRef(params.messageRef)?.channelId || null,
-    messageId: cleanMessageRef(params.messageRef)?.messageId || null,
-  });
   return null;
 }
 
@@ -403,7 +286,7 @@ export async function resolveDiscordInteractionProfileDocument(params: {
     return null;
   }
 
-  const primary = getFirebaseAdminDb();
+  const primary = getDocumentDb();
   const primaryMatch = await findInStore(primary);
   if (primaryMatch?.id) {
     return {
@@ -414,30 +297,5 @@ export async function resolveDiscordInteractionProfileDocument(params: {
     };
   }
 
-  if (documentStoreMode() !== "postgres" || !hasFirebaseCredentials()) {
-    console.warn("[discordInteractionStorage] profile missing from active store", {
-      discordUserId,
-      stableProfileId: stableProfileId || null,
-      storeMode: documentStoreMode(),
-      legacyFirestoreAvailable: hasFirebaseCredentials(),
-    });
-    return null;
-  }
-
-  const legacy = getLegacyFirestoreAdminDb();
-  const legacyMatch = await findInStore(legacy);
-  if (!legacyMatch?.id) {
-    console.warn("[discordInteractionStorage] profile missing from active and legacy stores", {
-      discordUserId,
-      stableProfileId: stableProfileId || null,
-    });
-    return null;
-  }
-  const data = await backfillLegacyDocument("dashboardProfiles", legacyMatch.id, legacyMatch.data);
-  return {
-    id: legacyMatch.id,
-    data,
-    source: legacyMatch.matchedBy === "id" ? "legacy-id" : "legacy-query",
-    recovered: true,
-  };
+  return null;
 }

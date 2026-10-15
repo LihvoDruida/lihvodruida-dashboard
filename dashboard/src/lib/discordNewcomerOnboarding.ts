@@ -19,8 +19,8 @@ import { createDiscordWelcomeArtifact } from "@/lib/discordWelcomeArtifact";
 import { mapConcurrent, mapConcurrentSettled } from "@/lib/concurrency";
 import { getDiscordWelcomeCardSettings, type DiscordWelcomeCardSettings } from "@/lib/discordWelcomeCardSettings";
 import { MISTBLOSSOM_DISCORD_CHANNELS, discordGuildChannelUrl } from "@/lib/discordGuildLinks";
-import { firebaseWrite } from "@/lib/firebaseAccess";
-import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
+import { storageWrite } from "@/lib/storageAccess";
+import { getDocumentDb, hasDocumentDbConfig } from "@/lib/documentDb";
 import { getGuildNicknamePolicy, nicknameMatchesTemplate, VALID_NICKNAME_STRUCTURES, type GuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
 import { logDashboardEvent, safeErrorMessage } from "@/lib/security";
 import { timestampToIso } from "@/lib/values";
@@ -162,8 +162,8 @@ function normalizeRecord(doc: any): OnboardingMemberRecord | null {
 }
 
 async function loadState() {
-  if (!hasFirebaseProfileConfig()) return { initializedAt: null as string | null, recordVersion: null as string | null };
-  const snapshot = await getFirebaseAdminDb().collection(STATE_COLLECTION).doc(STATE_DOC_ID).get();
+  if (!hasDocumentDbConfig()) return { initializedAt: null as string | null, recordVersion: null as string | null };
+  const snapshot = await getDocumentDb().collection(STATE_COLLECTION).doc(STATE_DOC_ID).get();
   const data = snapshot.exists ? snapshot.data() || {} : {};
   return { initializedAt: timestampToIso(data.initializedAt), recordVersion: typeof data.recordVersion === "string" ? data.recordVersion : null };
 }
@@ -185,7 +185,7 @@ function cacheOnboardingRecord(record: OnboardingMemberRecord) {
 
 async function loadRecords(memberIds: string[], expectedVersion: string | null) {
   const records = new Map<string, OnboardingMemberRecord>();
-  if (!hasFirebaseProfileConfig() || !memberIds.length) return { records, cacheHits: 0, dbReads: 0 };
+  if (!hasDocumentDbConfig() || !memberIds.length) return { records, cacheHits: 0, dbReads: 0 };
 
   const cleanIds = Array.from(new Set(memberIds.filter((value) => /^\d{16,25}$/.test(String(value || "")))));
   const cache = onboardingRecordCache();
@@ -205,7 +205,7 @@ async function loadRecords(memberIds: string[], expectedVersion: string | null) 
   const idsToRead = cacheFresh ? cleanIds.filter((id) => !records.has(id)) : cleanIds;
   if (!idsToRead.length) return { records, cacheHits, dbReads };
 
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   const refreshed = cacheFresh ? cache.records : new Map<string, OnboardingMemberRecord>();
   for (let index = 0; index < idsToRead.length; index += 250) {
     const ids = idsToRead.slice(index, index + 250);
@@ -229,10 +229,10 @@ async function loadRecords(memberIds: string[], expectedVersion: string | null) 
 }
 
 async function writeRecords(records: OnboardingMemberRecord[]) {
-  if (!hasFirebaseProfileConfig() || !records.length) return;
-  const db = getFirebaseAdminDb();
+  if (!hasDocumentDbConfig() || !records.length) return;
+  const db = getDocumentDb();
   for (const record of records) cacheOnboardingRecord(record);
-  await firebaseWrite(
+  await storageWrite(
     "settings",
     "discord-newcomer-onboarding:members",
     async () => {
@@ -249,15 +249,15 @@ async function writeRecords(records: OnboardingMemberRecord[]) {
 }
 
 async function writeRecord(record: OnboardingMemberRecord) {
-  if (!hasFirebaseProfileConfig()) return;
+  if (!hasDocumentDbConfig()) return;
   // Keep the process-local state optimistic even if the backing write has a
   // transient failure. This prevents an immediate duplicate burst on the next
   // cron tick; the error still propagates and is logged.
   cacheOnboardingRecord(record);
-  await firebaseWrite(
+  await storageWrite(
     "settings",
     `discord-newcomer-onboarding:member:${record.userId}`,
-    () => getFirebaseAdminDb().collection(MEMBER_COLLECTION).doc(record.userId).set(
+    () => getDocumentDb().collection(MEMBER_COLLECTION).doc(record.userId).set(
       { ...record, updatedAt: record.lastSeenAt },
       { merge: true },
     ),
@@ -266,11 +266,11 @@ async function writeRecord(record: OnboardingMemberRecord) {
 }
 
 async function markInitialized(at: string, memberCount: number, recordVersion: string) {
-  if (!hasFirebaseProfileConfig()) return;
-  await firebaseWrite(
+  if (!hasDocumentDbConfig()) return;
+  await storageWrite(
     "settings",
     "discord-newcomer-onboarding:initialize",
-    () => getFirebaseAdminDb().collection(STATE_COLLECTION).doc(STATE_DOC_ID).set({
+    () => getDocumentDb().collection(STATE_COLLECTION).doc(STATE_DOC_ID).set({
       initializedAt: at,
       lastScanAt: at,
       lastMemberCount: memberCount,
@@ -282,19 +282,19 @@ async function markInitialized(at: string, memberCount: number, recordVersion: s
 }
 
 async function patchState(patch: Record<string, unknown>) {
-  if (!hasFirebaseProfileConfig()) return;
+  if (!hasDocumentDbConfig()) return;
   const now = new Date().toISOString();
-  await firebaseWrite(
+  await storageWrite(
     "settings",
     "discord-newcomer-onboarding:state",
-    () => getFirebaseAdminDb().collection(STATE_COLLECTION).doc(STATE_DOC_ID).set({ ...patch, updatedAt: now }, { merge: true }),
+    () => getDocumentDb().collection(STATE_COLLECTION).doc(STATE_DOC_ID).set({ ...patch, updatedAt: now }, { merge: true }),
     { timeoutMs: 4_000, logEvent: "discord.newcomer_onboarding.state_write_failed" },
   );
 }
 
 async function acquireOnboardingLease(owner: string) {
-  if (!hasFirebaseProfileConfig()) return false;
-  const db = getFirebaseAdminDb();
+  if (!hasDocumentDbConfig()) return false;
+  const db = getDocumentDb();
   const ref = db.collection(STATE_COLLECTION).doc(STATE_DOC_ID);
   const nowMs = Date.now();
   return db.runTransaction(async (transaction: any) => {
@@ -314,8 +314,8 @@ async function acquireOnboardingLease(owner: string) {
 }
 
 async function releaseOnboardingLease(owner: string) {
-  if (!hasFirebaseProfileConfig()) return;
-  const db = getFirebaseAdminDb();
+  if (!hasDocumentDbConfig()) return;
+  const db = getDocumentDb();
   const ref = db.collection(STATE_COLLECTION).doc(STATE_DOC_ID);
   await db.runTransaction(async (transaction: any) => {
     const snapshot = await transaction.get(ref);
@@ -507,7 +507,7 @@ export async function runDiscordNewcomerOnboarding(options: {
   priorityUserIds?: string[];
   source?: "cron" | "gateway" | "manual" | "auth_self_heal";
 } = {}): Promise<DiscordNewcomerOnboardingResult> {
-  if (!hasFirebaseProfileConfig()) throw new Error("Сховище стану onboarding не налаштоване.");
+  if (!hasDocumentDbConfig()) throw new Error("Сховище стану onboarding не налаштоване.");
 
   const startedAt = Date.now();
   const leaseOwner = randomUUID();
@@ -643,7 +643,7 @@ export async function runDiscordNewcomerOnboarding(options: {
     if (targets.length) {
       // Invalidate other process-local caches only when member records can
       // actually change. Quiet cron ticks keep the same generation and avoid
-      // forcing a full Firestore reread on another dashboard instance.
+      // forcing a full DocumentStore reread on another dashboard instance.
       await patchState({ recordVersion: leaseOwner, runStartedAt: now });
       onboardingRecordCache().version = leaseOwner;
     }
@@ -945,12 +945,12 @@ export async function runDiscordNewcomerOnboarding(options: {
 
 export async function markDiscordNewcomerRulesAccepted(userIdInput: string) {
   const userId = String(userIdInput || "").trim();
-  if (!hasFirebaseProfileConfig() || !/^\d{16,25}$/.test(userId)) return;
+  if (!hasDocumentDbConfig() || !/^\d{16,25}$/.test(userId)) return;
   const now = new Date().toISOString();
-  await firebaseWrite(
+  await storageWrite(
     "rules",
     `discord-newcomer-onboarding:accepted:${userId}`,
-    () => getFirebaseAdminDb().collection(MEMBER_COLLECTION).doc(userId).set({
+    () => getDocumentDb().collection(MEMBER_COLLECTION).doc(userId).set({
       userId,
       rulesAcceptedAt: now,
       updatedAt: now,

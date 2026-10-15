@@ -17,27 +17,27 @@ module.exports = function subject(pool, store, groups, mode = 'postgres', profil
     }
     return deps;
   }
-  const firebase = { getFirebaseAdminDb: () => store, hasFirebaseProfileConfig: () => mode !== 'unconfigured', documentStoreMode: () => mode };
+  const storage = { getDocumentDb: () => store, hasDocumentDbConfig: () => mode !== 'unconfigured', documentStoreMode: () => mode };
   const values = load('src/lib/values.ts').exports;
   const compat = load('src/lib/db/documentStore.ts', { '@/lib/db/pgPool': pool }).exports;
   const resilience = { resilientRead: (_key, read) => read(), resilientWrite: (_key, write) => write(), clearRuntimeCachedValue() {}, clearRuntimeCachedValuesByPrefix() {} };
   const access = { listAccessGroups: async () => typeof groups === 'function' ? groups() : groups };
   const permissions = load('src/lib/permissions.ts', { '@/lib/accessGroupSchema': { DASHBOARD_PERMISSION_KEYS: [] } }).exports;
-  const guildPolicy = load('src/lib/guildNicknamePolicy.ts', { '@/lib/db/firestoreCompat': compat, '@/lib/firebaseAdmin': firebase, '@/lib/runtimeResilience': resilience, '@/lib/firebaseAccess': { firebaseWrite: (_key, _type, write) => write() }, '@/lib/values': values }).exports;
+  const guildPolicy = load('src/lib/guildNicknamePolicy.ts', { '@/lib/db/documentValues': compat, '@/lib/documentDb': storage, '@/lib/runtimeResilience': resilience, '@/lib/storageAccess': { storageWrite: (_key, _type, write) => write() }, '@/lib/values': values }).exports;
   const raidProgress = load('src/lib/characterRaidProgress.ts').exports;
-  const canonical = load('src/lib/characterDataStore.ts', { '@/lib/db/firestoreCompat': compat, '@/lib/firebaseAdmin': firebase, '@/lib/runtimeResilience': resilience, '@/lib/characterRaidProgress': raidProgress }).exports;
-  const deps = { ...dependencies(profileModule), crypto: require('node:crypto'), '@/lib/db/firestoreCompat': compat, '@/lib/firebaseAdmin': firebase,
+  const canonical = load('src/lib/characterDataStore.ts', { '@/lib/db/documentValues': compat, '@/lib/documentDb': storage, '@/lib/runtimeResilience': resilience, '@/lib/characterRaidProgress': raidProgress }).exports;
+  const deps = { ...dependencies(profileModule), crypto: require('node:crypto'), '@/lib/db/documentValues': compat, '@/lib/documentDb': storage,
     '@/lib/values': values, '@/lib/permissions': permissions, '@/lib/accessGroups': access, '@/lib/guildNicknamePolicy': guildPolicy,
     '@/lib/wowCharacters': load('src/lib/wowCharacters.ts', { crypto: require('node:crypto') }).exports,
     '@/lib/wowRoles': load('src/lib/wowRoles.ts').exports,
     '@/lib/characterDataStore': canonical, '@/lib/characterRaidProgress': raidProgress,
     '@/lib/runtimeResilience': resilience,
-    '@/lib/firebaseAccess': { firebaseWrite: (_type, _key, writer) => writer() },
+    '@/lib/storageAccess': { storageWrite: (_type, _key, writer) => writer() },
   };
   const profiles = load(profileModule, deps).exports;
   const directory = load('src/lib/profileDirectory.ts', {
     '@/lib/profiles': profiles, '@/lib/permissions': permissions, '@/lib/accessGroups': access,
-    '@/lib/firebaseAdmin': firebase, '@/lib/db/firestoreCompat': compat, '@/lib/db/pgPool': pool,
+    '@/lib/documentDb': storage, '@/lib/db/documentValues': compat, '@/lib/db/pgPool': pool,
   }).exports;
   return { ...directory, normalizers: profiles };
 };

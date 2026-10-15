@@ -163,14 +163,14 @@ const CHARACTER_STATUS_MESSAGES: Record<string, Omit<Toast, "id">> = {
       "Сесія активна, але профіль ще не створився. Вийди й увійди через Discord, потім повтори Battle.net перевірку.",
     ttl: 9200,
   },
-  character_add_firebase_unconfigured: {
+  character_add_storage_unconfigured: {
     tone: "error",
     title: "Збереження профілів недоступне",
     message:
       "Сервер тимчасово не може зберігати профілі. Звернись до гільдмайстра або повтори пізніше.",
     ttl: 9200,
   },
-  character_add_firebase_failed: {
+  character_add_storage_failed: {
     tone: "error",
     title: "Персонажа не збережено",
     message: "Профіль не вдалося оновити. Онови сторінку і повтори дію.",
@@ -210,7 +210,7 @@ const CHARACTER_STATUS_MESSAGES: Record<string, Omit<Toast, "id">> = {
       "Не вдалося знайти профіль поточної сесії. Увійди через Discord ще раз.",
     ttl: 8600,
   },
-  character_remove_firebase_unconfigured: {
+  character_remove_storage_unconfigured: {
     tone: "error",
     title: "Профіль недоступний для видалення",
     message:
@@ -251,7 +251,7 @@ const CHARACTER_STATUS_MESSAGES: Record<string, Omit<Toast, "id">> = {
       "Не вдалося знайти твій профіль. Вийди й увійди через Discord, потім повтори дію.",
     ttl: 8600,
   },
-  main_character_firebase_unconfigured: {
+  main_character_storage_unconfigured: {
     tone: "error",
     title: "Профіль недоступний для мейна",
     message:

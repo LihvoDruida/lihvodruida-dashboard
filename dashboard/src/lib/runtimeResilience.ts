@@ -83,7 +83,7 @@ export function isUnavailableLikeError(error: unknown) {
 }
 
 export function isConfigurationLikeError(error: unknown) {
-  return /credential|private key|client_email|project_id|Firebase.*not configured|Profile storage is not configured|invalid.*key|parse.*key/i.test(safeErrorText(error));
+  return /credential|private key|client_email|project_id|Storage.*not configured|Profile storage is not configured|invalid.*key|parse.*key/i.test(safeErrorText(error));
 }
 
 export function isRecoverableRuntimeError(error: unknown) {
@@ -208,7 +208,7 @@ export async function resilientRead<T>(
   },
 ): Promise<T> {
   const valueKey = circuitKey(key);
-  const breakerKey = options.circuitKey || "firebase-read";
+  const breakerKey = options.circuitKey || "storage-read";
   if (!options.bypassCache) {
     const cached = getRuntimeCachedValue<T>(valueKey, options.ttlMs);
     if (cached !== null) return cached;
@@ -252,7 +252,7 @@ export async function resilientWrite<T>(
     bypassCircuit?: boolean;
   },
 ): Promise<T> {
-  const breakerKey = options.circuitKey || "firebase-write";
+  const breakerKey = options.circuitKey || "storage-write";
   const circuit = getRuntimeCircuit(breakerKey);
   if (circuit && !options.bypassCircuit) return options.fallback();
   try {

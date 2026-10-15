@@ -150,8 +150,9 @@ function publicRaid(raid: RaidItem) {
 export async function buildPublicGuildSnapshot() {
   const [roster, raids] = await Promise.all([
     loadStoredGuildRosterData(),
-    listRaids(40).catch(() => []),
+    listRaids(40),
   ]);
+  if(!Number.isFinite(Date.parse(roster.stats.updatedAt||'')))throw new Error('Guild snapshot unavailable or not initialized');
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Kyiv", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
   const scheduledRaids = raids
     .filter((raid) => raid.status === "published")
@@ -178,6 +179,7 @@ export async function buildPublicGuildSnapshot() {
     schema: "mistblossom.public-guild.v1",
     generated_at: new Date().toISOString(),
     metadata: {
+      stale: Boolean(roster.error),
       updated_at: roster.stats.updatedAt || roster.stats.rosterUpdatedAt || new Date().toISOString(),
       roster_updated_at: roster.stats.rosterUpdatedAt || roster.stats.updatedAt || null,
       raid_progress_source: (roster.stats.raidProgression || []).length ? 'raiderio-or-persisted' : 'not-yet-available',

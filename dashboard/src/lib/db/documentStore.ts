@@ -5,7 +5,7 @@ import type { PoolClient } from "pg";
 import { pgQuery, pgTransaction } from "@/lib/db/pgPool";
 
 /**
- * Сумісний із Firestore фасад над PostgreSQL.
+ * Сумісний із DocumentStore фасад над PostgreSQL.
  *
  * Мета — переїзд без переписування двадцяти девʼяти модулів. Реалізовано рівно
  * той зріз API, який проєкт справді використовує (перевірено пошуком по
@@ -193,7 +193,7 @@ function resolveSentinel(sentinel: Sentinel, current: unknown, nowIso: string): 
 
 const DELETE_MARK = Symbol("delete");
 
-/** Глибоке злиття для set({ merge: true }) — так само, як це робить Firestore. */
+/** Глибоке злиття для set({ merge: true }) — так само, як це робить DocumentStore. */
 function mergeInto(target: DocData, patch: DocData, nowIso: string) {
   for (const [key, raw] of Object.entries(patch)) {
     const sentinel = asSentinel(raw);
@@ -422,7 +422,7 @@ export class PgDocumentRef {
   }
 
   /**
-   * Підколекція. У Firestore це вкладений шлях; у нас — просто інша
+   * Підколекція. У DocumentStore це вкладений шлях; у нас — просто інша
    * «колекція» з повним шляхом у назві: `guildRecords/abc/chunks`.
    * Індекс по (collection) працює для неї так само, як для кореневих.
    */
@@ -483,7 +483,7 @@ export class PgQuery {
   }
 
   /**
-   * select() у Firestore зменшує обсяг переданих даних. У нас документ і так
+   * select() у DocumentStore зменшує обсяг переданих даних. У нас документ і так
    * лежить одним рядком JSON, тож обрізати нічого — просто повертаємо себе.
    */
   select(..._fields: string[]) {
@@ -522,7 +522,7 @@ export class PgQuery {
       const direction = order.direction === "desc" ? "DESC" : "ASC";
       return `${queryOrderExpression(order.field)} ${direction}`;
     });
-    // Firestore implicitly stabilizes ordering with the document id. Keep the
+    // DocumentStore implicitly stabilizes ordering with the document id. Keep the
     // same invariant here so pagination cannot skip/duplicate equal values.
     const tailDirection = this.state.orders.at(-1)?.direction === "desc" ? "DESC" : "ASC";
     if (!this.state.orders.some((order) => order.field === "__name__")) {
@@ -699,7 +699,7 @@ export class PgTransaction {
   }
 
   /**
-   * create() у Firestore падає, якщо документ уже існує. Ця гарантія тут
+   * create() у DocumentStore падає, якщо документ уже існує. Ця гарантія тут
    * важлива: на ній тримається захист від повторного створення записів,
    * тому використовуємо INSERT без перезапису, а не зводимо create до set.
    */
@@ -716,7 +716,7 @@ export class PgTransaction {
   }
 
   /**
-   * Firestore відкладає записи до кінця транзакції, і код на це розраховує:
+   * DocumentStore відкладає записи до кінця транзакції, і код на це розраховує:
    * прочитати, порахувати, записати. Виконуємо їх у тому ж порядку вже після
    * того, як тіло транзакції відпрацювало.
    */
@@ -759,7 +759,7 @@ export class PgWriteBatch {
  * Точка входу
  * ------------------------------------------------------------------ */
 
-export class PgFirestore {
+export class PgDocumentStore {
   collection(name: string) {
     return new PgCollectionRef(name);
   }
@@ -776,7 +776,7 @@ export class PgFirestore {
   /**
    * Пакетне читання документів одним запитом.
    *
-   * Firestore-версія економить кругові поїздки до мережі; тут та сама
+   * DocumentStore-версія економить кругові поїздки до мережі; тут та сама
    * мотивація: склад гільдії читається чанками по 1100 записів, і окремий
    * SELECT на кожен чанк перетворив би одне читання на десятки.
    * Порядок результатів зберігаємо той самий, у якому передані посилання, —
@@ -814,9 +814,9 @@ export class PgFirestore {
   }
 }
 
-let cachedStore: PgFirestore | null = null;
+let cachedStore: PgDocumentStore | null = null;
 
 export function getPgDocumentStore() {
-  if (!cachedStore) cachedStore = new PgFirestore();
+  if (!cachedStore) cachedStore = new PgDocumentStore();
   return cachedStore;
 }

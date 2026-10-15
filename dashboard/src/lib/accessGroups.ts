@@ -2,9 +2,9 @@ import "server-only";
 
 import { createHash, randomUUID } from "node:crypto";
 import {
-  getFirebaseAdminDb,
-  hasFirebaseProfileConfig,
-} from "@/lib/firebaseAdmin";
+  getDocumentDb,
+  hasDocumentDbConfig,
+} from "@/lib/documentDb";
 import {
   getRuntimeCachedValue,
   setRuntimeCachedValue,
@@ -14,9 +14,9 @@ import {
   safeErrorText,
 } from "@/lib/runtimeResilience";
 import {
-  assertFirebaseWriteAvailable,
-  firebaseWrite,
-} from "@/lib/firebaseAccess";
+  assertStorageWriteAvailable,
+  storageWrite,
+} from "@/lib/storageAccess";
 import {
   inferStructuredLogCategory,
   listStructuredLogs,
@@ -220,7 +220,7 @@ export class AccessGroupError extends Error {
 }
 class CatalogChanged extends Error {}
 function writeGuardRef() {
-  return getFirebaseAdminDb()
+  return getDocumentDb()
     .collection("dashboardSettings")
     .doc("accessGroupsWriteGuard");
 }
@@ -229,7 +229,7 @@ function generation(snapshot: any) {
 }
 /** Editor reads never replace unavailable storage with cached/default rights. */
 export async function listAccessGroupsForManagement(): Promise<AccessGroup[]> {
-  if (!hasFirebaseProfileConfig())
+  if (!hasDocumentDbConfig())
     throw new AccessGroupError("Сховище груп недоступне.", 503);
   const snapshot = await collectionRef().get();
   return snapshot.docs
@@ -241,18 +241,18 @@ export async function listAccessGroupsForManagement(): Promise<AccessGroup[]> {
         a.name.localeCompare(b.name, "uk"),
     );
 }
-// PgFirestore supports document reads, not query reads in transactions. A
+// PgDocumentStore supports document reads, not query reads in transactions. A
 // catalogue snapshot read after its guard is accepted only if the guard still
 // matches. All group writers change that guard in the same atomic transaction.
 async function withGroupCatalog<T>(
   writer: (transaction: any, groups: AccessGroup[]) => Promise<T>,
 ): Promise<T> {
-  assertFirebaseWriteAvailable("access-groups");
+  assertStorageWriteAvailable("access-groups");
   for (let attempt = 0; attempt < 4; attempt++) {
     const before = await writeGuardRef().get();
     const groups = await listAccessGroupsForManagement();
     try {
-      const result = await getFirebaseAdminDb().runTransaction(
+      const result = await getDocumentDb().runTransaction(
         async (transaction) => {
           if (typeof transaction.lockAccessGroupCatalog === "function") await transaction.lockAccessGroupCatalog();
           const guard = await transaction.get(writeGuardRef());
@@ -403,13 +403,13 @@ function cachedAccessGroups() {
 }
 
 function collectionRef() {
-  return getFirebaseAdminDb().collection("dashboardAccessGroups");
+  return getDocumentDb().collection("dashboardAccessGroups");
 }
 
 export async function listAccessGroups(): Promise<AccessGroup[]> {
   const cached = cachedAccessGroups();
   if (cached) return cached;
-  if (!hasFirebaseProfileConfig()) return cacheAccessGroups(fallbackGroups());
+  if (!hasDocumentDbConfig()) return cacheAccessGroups(fallbackGroups());
 
   return resilientRead(
     "access-groups",
@@ -447,7 +447,7 @@ export async function listAccessGroups(): Promise<AccessGroup[]> {
     {
       ttlMs: ACCESS_GROUPS_CACHE_TTL_MS,
       timeoutMs: 2_500,
-      circuitKey: "firebase-access-groups-read",
+      circuitKey: "storage-access-groups-read",
       circuitTtlMs: 90_000,
       fallback: () => cachedAccessGroups() || fallbackGroups(),
       logEvent: "access_groups.read_failed",
@@ -456,8 +456,8 @@ export async function listAccessGroups(): Promise<AccessGroup[]> {
 }
 
 export async function ensureDefaultAccessGroups() {
-  if (!hasFirebaseProfileConfig()) return fallbackGroups();
-  await firebaseWrite(
+  if (!hasDocumentDbConfig()) return fallbackGroups();
+  await storageWrite(
     "access-groups",
     "access-group:defaults:ensure",
     () =>
@@ -751,7 +751,7 @@ export async function upsertAccessGroup(
         409,
       );
     if (!currentId || nextId !== currentId) {
-      const reserved = await transaction.get(getFirebaseAdminDb().collection("dashboardAccessGroupRedirects").doc(nextId));
+      const reserved = await transaction.get(getDocumentDb().collection("dashboardAccessGroupRedirects").doc(nextId));
       if (reserved.exists) throw new AccessGroupError("Цей ID зарезервований після перейменування групи. Обери інший ID.", 409);
     }
     let assignmentMigration = null;
@@ -807,7 +807,7 @@ export async function deleteAccessGroup(
       );
     const assigned = typeof transaction.countAccessGroupProfiles === "function"
       ? await transaction.countAccessGroupProfiles(id)
-      : (await transaction.get(getFirebaseAdminDb().collection("dashboardProfiles").where("groupId", "==", id).limit(1))).size;
+      : (await transaction.get(getDocumentDb().collection("dashboardProfiles").where("groupId", "==", id).limit(1))).size;
     if (assigned) throw new AccessGroupError("До групи ще прив’язані профілі. Спочатку зміни їхню групу; видалення не виконано.", 409);
     transaction.delete(doc);
   });

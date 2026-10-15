@@ -1,3 +1,5 @@
+import {normalizeApplication,validateApplication as validatePublicApplication} from '@/lib/applicationContract';
+import {hasSiteBridgeToken,siteBridgeClientIp} from '@/lib/siteBridgeAuth';
 import { NextRequest, NextResponse } from "next/server";
 import {
   createGuildApplication,
@@ -7,7 +9,7 @@ import {
   sanitizeApplicationsForPublicSite,
   setApplicationDiscordMessageRef,
   type CreateGuildApplicationInput,
-} from "@/lib/github";
+} from "@/lib/applicationsStore";
 import { notifyDiscordNewApplication } from "@/lib/discord";
 import {
   assertRequestBodySize,
@@ -22,63 +24,14 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const CHARACTER_RE = /^\p{L}{2,12}$/u;
-const REALM_RE = /^\p{Script=Latin}[\p{Script=Latin}\p{N} '’.()\-]{1,31}$/u;
-const BATTLETAG_RE = /^\p{L}[\p{L}\p{N}]{2,11}#\d{4,6}$/u;
-const DISCORD_RE = /^[a-z0-9._]{2,32}$/;
-const VALID_FACTIONS = new Set(["Alliance", "Horde"]);
-const VALID_CLASSES = new Set(["Warrior", "Paladin", "Hunter", "Rogue", "Priest", "Death Knight", "Shaman", "Mage", "Warlock", "Monk", "Druid", "Demon Hunter", "Evoker"]);
-
 function json(request: NextRequest, payload: unknown, status = 200) {
   return NextResponse.json(payload, { status, headers: publicSiteCorsHeaders(request) });
 }
 
-function clean(value: unknown, max = 240) {
-  return String(value || "").normalize("NFC").replace(/\s+/g, " ").trim().slice(0, max);
-}
-
-function validateApplication(body: Record<string, unknown>): { ok: true; value: CreateGuildApplicationInput } | { ok: false; error: string } {
-  const characterName = clean(body.characterName, 32);
-  const realm = clean(body.realm, 48);
-  const faction = clean(body.faction, 16);
-  const className = clean(body.className, 32);
-  const discord = clean(body.discord, 40).toLowerCase();
-  const battleTag = clean(body.battleTag, 48);
-  const availability = clean(body.availability, 1200);
-  const sourceCreator = clean(body.sourceCreator, 80);
-  const sourcePlatform = clean(body.sourcePlatform, 80);
-  const sourceOther = clean(body.sourceOther, 160);
-  const source = clean(body.source, 240);
-  const website = clean(body.website, 200);
-
-  if (website) return { ok: false, error: "Заявку відхилено." };
-  if (!CHARACTER_RE.test(characterName)) return { ok: false, error: "Ім’я персонажа має містити лише літери, 2–12 символів." };
-  if (!REALM_RE.test(realm)) return { ok: false, error: "Некоректна назва реалму." };
-  if (!VALID_FACTIONS.has(faction)) return { ok: false, error: "Обери фракцію." };
-  if (!VALID_CLASSES.has(className)) return { ok: false, error: "Обери клас персонажа." };
-  if (!DISCORD_RE.test(discord)) return { ok: false, error: "Некоректний Discord username." };
-  if (battleTag && !BATTLETAG_RE.test(battleTag)) return { ok: false, error: "BattleTag має бути у форматі Name#12345." };
-  if (faction === "Horde" && !battleTag) return { ok: false, error: "Для Horde BattleTag є обов’язковим." };
-  if (availability.length < 10) return { ok: false, error: "Опиши, коли зазвичай граєш, хоча б кількома словами." };
-  if (!source && !sourceCreator && !sourceOther) return { ok: false, error: "Вкажи, звідки дізнався про гільдію." };
-
-  return {
-    ok: true,
-    value: {
-      characterName,
-      realm,
-      region: clean(body.region, 8).toLowerCase() || "eu",
-      faction,
-      className,
-      discord,
-      battleTag,
-      sourceCreator,
-      sourcePlatform,
-      sourceOther,
-      source,
-      availability,
-    },
-  };
+function validateApplication(body:Record<string,unknown>):{ok:true;value:CreateGuildApplicationInput}|{ok:false;error:string}{
+ const error=validatePublicApplication(body);if(error)return {ok:false,error};
+ const value=normalizeApplication(body);
+ return {ok:true,value:{characterName:value.characterName,realm:value.realm,region:value.region,faction:value.faction,className:value.className,discord:value.discord,battleTag:value.battleTag,sourceCreator:value.sourceCreator,sourcePlatform:value.sourcePlatform,sourceOther:value.sourceOther,source:value.source,availability:value.availability}};
 }
 
 export async function OPTIONS(request: NextRequest) {
@@ -87,13 +40,14 @@ export async function OPTIONS(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  const ip = getClientIp(request);
-  const limit = checkRateLimit(`public-site:applications:get:${ip}`, 120, 60 * 1000);
+  const ip = hasSiteBridgeToken(request) ? siteBridgeClientIp(request) : getClientIp(request);
+  const limit = hasSiteBridgeToken(request) ? {ok:true} : checkRateLimit(`public-site:applications:get:${ip}`, 120, 60 * 1000);
   if (!limit.ok) return json(request, { error: "Забагато запитів. Спробуй трохи пізніше." }, 429);
 
   try {
     const url = new URL(request.url);
-    const requestedLimit = Math.max(1, Math.min(Number(url.searchParams.get("limit") || 50), 100));
+    const rawLimit = Number(url.searchParams.get("limit") || 50);
+    const requestedLimit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(Math.floor(rawLimit), 100)) : 50;
     const stored = await listStoredApplications();
     const items = sanitizeApplicationsForPublicSite(filterStoredApplications(stored, url.searchParams).slice(0, requestedLimit));
     const all = sanitizeApplicationsForPublicSite(stored);
@@ -111,7 +65,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  if (!isAllowedPublicSiteOrigin(request)) {
+  if (!hasSiteBridgeToken(request) || !isAllowedPublicSiteOrigin(request)) {
     logDashboardEvent("warn", "public_site.applications.origin_rejected", request);
     return json(request, { error: "Недозволене джерело заявки." }, 403);
   }
@@ -119,7 +73,7 @@ export async function POST(request: NextRequest) {
   const tooLarge = assertRequestBodySize(request, 16 * 1024);
   if (tooLarge) return json(request, { error: "Запит завеликий." }, 413);
 
-  const ip = getClientIp(request);
+  const ip = hasSiteBridgeToken(request) ? siteBridgeClientIp(request) : getClientIp(request);
   const burst = checkRateLimit(`public-site:applications:post:${ip}`, 4, 10 * 60 * 1000);
   const hourly = checkRateLimit(`public-site:applications:post-hour:${ip}`, 10, 60 * 60 * 1000);
   if (!burst.ok || !hourly.ok) {

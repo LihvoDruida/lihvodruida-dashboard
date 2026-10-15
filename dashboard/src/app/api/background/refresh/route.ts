@@ -141,7 +141,7 @@ async function resolveProfileExternal(resource: BackgroundResourceRequest, sessi
 
   const minSpacingSeconds = requestedSpacingSeconds(resource.minSpacingSeconds, settings.profileViewRefreshMinSeconds, settings.profileViewRefreshMinSeconds);
   // Background polling must never perform expensive external API refreshes or
-  // Firestore writes. Full profile refresh is handled by the explicit
+  // DocumentStore writes. Full profile refresh is handled by the explicit
   // /api/profile/[profileId]/refresh-external-data route and admin actions.
   void minSpacingSeconds;
   return {

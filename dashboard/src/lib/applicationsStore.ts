@@ -1,7 +1,7 @@
-import { randomBytes } from "node:crypto";
-import { FieldValue } from "@/lib/db/firestoreCompat";
+import { randomBytes, createHash } from "node:crypto";
+import { FieldValue } from "@/lib/db/documentValues";
 import { mapConcurrent } from "@/lib/concurrency";
-import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
+import { getDocumentDb } from "@/lib/documentDb";
 
 export const STATUS_LABELS = [
   "status:review",
@@ -17,15 +17,6 @@ export const STATUS_LABELS = [
   "statusapproved",
   "statusrejected",
 ];
-
-const LABEL_COLORS: Record<string, string> = {
-  "guild-application": "5865F2",
-  "status:review": "D4A63A",
-  "status:accepted": "3BA55D",
-  "status:declined": "ED4245",
-  "status:approved": "3BA55D",
-  "status:rejected": "ED4245",
-};
 
 export type ApplicationStatus = "accepted" | "declined" | "review";
 
@@ -180,94 +171,6 @@ export function statusColor(status: ApplicationStatus) {
   if (status === "accepted") return 0x3ba55d;
   if (status === "declined") return 0xed4245;
   return 0xd4a63a;
-}
-
-function isMissingLabelError(error: unknown) {
-  return String((error as Error)?.message || error || "")
-    .toLowerCase()
-    .includes("label does not exist");
-}
-
-function isAlreadyExistsError(error: unknown) {
-  return String((error as Error)?.message || error || "")
-    .toLowerCase()
-    .includes("already_exists");
-}
-
-export async function githubFetch(path: string, init: RequestInit = {}) {
-  const owner = process.env.GITHUB_OWNER;
-  const repo = process.env.GITHUB_REPO;
-  const token = process.env.GITHUB_TOKEN;
-
-  if (!owner || !repo || !token) {
-    throw new Error("GitHub env is not configured");
-  }
-
-  const response = await fetch(`https://api.github.com/repos/${owner}/${repo}${path}`, {
-    ...init,
-    headers: {
-      Accept: "application/vnd.github+json",
-      Authorization: `Bearer ${token}`,
-      "X-GitHub-Api-Version": "2022-11-28",
-      "User-Agent": "mistblossom-dashboard",
-      "Content-Type": "application/json; charset=utf-8",
-      ...(init.headers || {}),
-    },
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    const raw = await response.text().catch(() => "");
-    let message = raw || `GitHub API error ${response.status}`;
-    try {
-      const data = raw ? JSON.parse(raw) : null;
-      message = data?.message || message;
-    } catch {}
-    throw new Error(message);
-  }
-
-  if (response.status === 204) return null;
-  const raw = await response.text();
-  return raw ? JSON.parse(raw) : null;
-}
-
-export async function ensureGitHubLabel(name: string) {
-  const color = LABEL_COLORS[name] || "5865F2";
-
-  try {
-    await githubFetch(`/labels/${encodeURIComponent(name)}`);
-    return { ok: true, existed: true };
-  } catch {
-    try {
-      await githubFetch(`/labels`, {
-        method: "POST",
-        body: JSON.stringify({
-          name,
-          color,
-          description: name.startsWith("status:")
-            ? "Guild application status"
-            : "Guild application",
-        }),
-      });
-
-      return { ok: true, created: true };
-    } catch (error) {
-      if (isAlreadyExistsError(error)) {
-        return { ok: true, existed: true };
-      }
-
-      throw error;
-    }
-  }
-}
-
-export async function ensureApplicationLabels() {
-  await Promise.all([
-    ensureGitHubLabel(process.env.GUILD_APPLICATIONS_LABEL || "guild-application"),
-    ensureGitHubLabel("status:review"),
-    ensureGitHubLabel("status:accepted"),
-    ensureGitHubLabel("status:declined"),
-  ]);
 }
 
 export function getIssueStatusFromLabels(labels: Array<{ name?: string } | string>): ApplicationStatus {
@@ -596,27 +499,6 @@ export function mapApplicationIssue(issue: any): ApplicationItem {
   };
 }
 
-export async function listIssues() {
-  const label = process.env.GUILD_APPLICATIONS_LABEL || "guild-application";
-
-  try {
-    await ensureGitHubLabel(label);
-
-    const issues = await githubFetch(
-      `/issues?state=all&labels=${encodeURIComponent(label)}&per_page=100&sort=created&direction=desc`
-    );
-
-    return Array.isArray(issues) ? issues.filter((issue: any) => !issue.pull_request) : [];
-  } catch (error) {
-    if (isMissingLabelError(error)) {
-      return [];
-    }
-
-    throw error;
-  }
-}
-
-
 const SENSITIVE_APPLICATION_FIELD_RE = /battle[_-]?tag|battletag|bnet[_-]?tag|^discord$|discord[_-]?id|discord[_-]?tag|discord[_-]?ref|discord[_-]?message[_-]?ref/i;
 const BATTLE_TAG_TEXT_RE = /(^|[^\p{L}\p{N}_-])([\p{L}\p{N}_-]{2,32}#\d{3,6})(?=$|[^\p{L}\p{N}_-])/gu;
 
@@ -664,7 +546,7 @@ export const sanitizeApplicationsForReadOnlyViewer = sanitizeApplicationsForMent
 
 
 function applicationsCollectionName() {
-  return process.env.FIREBASE_APPLICATIONS_COLLECTION || process.env.GUILD_APPLICATIONS_FIREBASE_COLLECTION || "guildApplications";
+  return process.env.STORAGE_APPLICATIONS_COLLECTION || "guildApplications";
 }
 
 function normalizeTimestamp(value: any): string | undefined {
@@ -683,7 +565,7 @@ function normalizeApplicationNumber(value: unknown, fallback: string) {
   return Number.isInteger(fromId) && fromId > 0 && fromId < 1000000 ? fromId : 0;
 }
 
-function labelsForFirebaseStatus(status: ApplicationStatus) {
+function labelsForStorageStatus(status: ApplicationStatus) {
   return [process.env.GUILD_APPLICATIONS_LABEL || "guild-application", statusLabel(status)];
 }
 
@@ -823,7 +705,7 @@ function mergeRaiderIoApplicationData(
   };
 }
 
-function buildFirebaseApplicationBody(item: ApplicationItem) {
+function buildStorageApplicationBody(item: ApplicationItem) {
   return [
     "### Заявка",
     `- Номер заявки: #${item.number}`,
@@ -849,7 +731,7 @@ function buildFirebaseApplicationBody(item: ApplicationItem) {
   ].filter(Boolean).join("\n");
 }
 
-function mapFirebaseApplicationDoc(doc: any): ApplicationItem {
+function mapStorageApplicationDoc(doc: any): ApplicationItem {
   const data = (doc.data() || {}) as Record<string, any>;
   const status = normalizeStatus(String(data.status_key || data.status || "review"));
   const number = normalizeApplicationNumber(data.application_number || data.applicationNumber || data.number, doc.id);
@@ -894,7 +776,7 @@ function mapFirebaseApplicationDoc(doc: any): ApplicationItem {
     raider_io_error: data.raider_io_error || data.raiderIoError || data.verification?.raider_io?.error || null,
     discord_ref: discordMessageRef,
     discord_message_ref: discordMessageRef,
-    labels: Array.isArray(data.labels) ? data.labels.map((label: unknown) => String(label)) : labelsForFirebaseStatus(status),
+    labels: Array.isArray(data.labels) ? data.labels.map((label: unknown) => String(label)) : labelsForStorageStatus(status),
   };
 
   if (!item.raider_io && rawRaiderIo) item.raider_io = normalizeRaiderIoApplicationData(rawRaiderIo);
@@ -903,22 +785,16 @@ function mapFirebaseApplicationDoc(doc: any): ApplicationItem {
   return item;
 }
 
-async function listFirebaseApplicationsBase(): Promise<ApplicationItem[]> {
-  const db = getFirebaseAdminDb();
+async function listStorageApplicationsBase(): Promise<ApplicationItem[]> {
+  const db = getDocumentDb();
   const collection = db.collection(applicationsCollectionName());
-  const limit = Math.max(1, Math.min(Number(process.env.FIREBASE_APPLICATIONS_LIST_LIMIT || 300), 1000));
-  const snapshot = await collection.orderBy("createdAtMs", "desc").limit(limit).get().catch(async (error: unknown) => {
-    const message = error instanceof Error ? error.message : String(error || "");
-    if (message.toLowerCase().includes("createdatms")) {
-      return collection.limit(limit).get();
-    }
-    throw error;
-  });
-  return snapshot.docs.map((doc: unknown) => mapFirebaseApplicationDoc(doc));
+  // Filters and counters must see the whole store, including older applications.
+  const snapshot = await collection.orderBy("createdAtMs", "desc").get();
+  return snapshot.docs.map((doc: unknown) => mapStorageApplicationDoc(doc));
 }
 
-async function findFirebaseApplicationDoc(issueNumber: number) {
-  const db = getFirebaseAdminDb();
+async function findStorageApplicationDoc(issueNumber: number) {
+  const db = getDocumentDb();
   const collection = db.collection(applicationsCollectionName());
   const direct = await collection.doc(`application-${issueNumber}`).get();
   if (direct.exists) return direct;
@@ -941,10 +817,10 @@ function applicationTrackingNumber() {
 }
 
 async function allocateApplicationNumber() {
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   const collection = db.collection(applicationsCollectionName());
   const counterRef = db.collection("guildApplicationRuntime").doc("counter");
-  const seedSnapshot = await collection.limit(1000).get();
+  const seedSnapshot = await collection.get();
   const seedMax = seedSnapshot.docs.reduce((max: number, doc: any) => {
     const data = doc.data() || {};
     return Math.max(max, normalizeApplicationNumber(data.application_number || data.applicationNumber || data.number, doc.id));
@@ -1020,7 +896,7 @@ export function filterStoredApplications(items: ApplicationItem[], params?: URLS
 }
 
 export async function listStoredApplications(params?: URLSearchParams) {
-  return filterStoredApplications(await listFirebaseApplicationsBase(), params);
+  return filterStoredApplications(await listStorageApplicationsBase(), params);
 }
 
 export async function createGuildApplication(input: CreateGuildApplicationInput): Promise<CreateGuildApplicationResult> {
@@ -1035,20 +911,11 @@ export async function createGuildApplication(input: CreateGuildApplicationInput)
   const availability = normalizeApplicationField(input.availability, 1200);
   const now = new Date();
   const nowIso = now.toISOString();
-  const collection = getFirebaseAdminDb().collection(applicationsCollectionName());
+  const collection = getDocumentDb().collection(applicationsCollectionName());
 
-  const recent = await collection.orderBy("createdAtMs", "desc").limit(60).get().catch(() => collection.limit(60).get());
-  const duplicateDoc = recent.docs.find((doc: any) => {
-    const data = doc.data() || {};
-    const createdAtMs = Number(data.createdAtMs || Date.parse(data.created_at || data.createdAt || "") || 0);
-    return Date.now() - createdAtMs < 10 * 60 * 1000
-      && normalizeApplicationField(data.character_name || data.characterName, 32).toLowerCase() === characterName.toLowerCase()
-      && normalizeApplicationField(data.realm, 48).toLowerCase() === realm.toLowerCase();
-  });
-  if (duplicateDoc) {
-    return { item: mapFirebaseApplicationDoc(duplicateDoc), duplicate: true };
-  }
-
+  const db=getDocumentDb();
+  const fingerprint=createHash('sha256').update(JSON.stringify([region,realm.toLowerCase(),characterName.toLowerCase(),discord])).digest('hex');
+  const submission=db.collection('guildApplicationSubmissions').doc(fingerprint);
   const number = await allocateApplicationNumber();
   const trackingNumber = applicationTrackingNumber();
   const id = `application-${number}`;
@@ -1073,7 +940,7 @@ export async function createGuildApplication(input: CreateGuildApplicationInput)
     source_platform: normalizeApplicationField(input.sourcePlatform, 80),
     source_other: normalizeApplicationField(input.sourceOther, 160),
     availability,
-    labels: labelsForFirebaseStatus("review"),
+    labels: labelsForStorageStatus("review"),
     created_at: nowIso,
     updated_at: nowIso,
     closed_at: null,
@@ -1082,14 +949,23 @@ export async function createGuildApplication(input: CreateGuildApplicationInput)
     source_system: "public-site",
   };
 
-  const ref = collection.doc(id);
-  await ref.set(payload, { merge: false });
-  const snapshot = await ref.get();
-  return { item: mapFirebaseApplicationDoc(snapshot), duplicate: false };
+  return db.runTransaction(async tx=>{
+    const prior=await tx.get(submission);
+    const previous=prior.data();
+    if(previous&&Date.now()-Number(previous.createdAtMs||0)<10*60*1000&&typeof previous.applicationId==='string'){
+      const existing=await tx.get(collection.doc(previous.applicationId));
+      if(existing.exists)return {item:mapStorageApplicationDoc(existing),duplicate:true};
+    }
+    const ref=collection.doc(id);
+    tx.set(ref,payload);
+    // Both records commit together. PostgreSQL retries concurrent conflicting submissions.
+    tx.set(submission,{applicationId:id,createdAtMs:now.getTime()});
+    return {item:mapStorageApplicationDoc({id,data:()=>payload}),duplicate:false};
+  });
 }
 
 export async function setApplicationDiscordMessageRef(issueNumber: number, ref: DiscordMessageRef) {
-  const doc = await findFirebaseApplicationDoc(issueNumber);
+  const doc = await findStorageApplicationDoc(issueNumber);
   if (!doc) return false;
   await doc.ref.update({
     discord_message_ref: { channel_id: ref.channel_id, message_id: ref.message_id },
@@ -1103,15 +979,15 @@ export async function setApplicationDiscordMessageRef(issueNumber: number, ref: 
 export async function deleteGuildApplication(issueNumber: number) {
   const normalized = Number(issueNumber);
   if (!Number.isInteger(normalized) || normalized <= 0) throw new Error("Invalid application number");
-  const doc = await findFirebaseApplicationDoc(normalized);
+  const doc = await findStorageApplicationDoc(normalized);
   if (!doc) throw new Error("Заявку не знайдено у сховищі.");
-  const item = mapFirebaseApplicationDoc(doc);
+  const item = mapStorageApplicationDoc(doc);
   await doc.ref.delete();
   return { ok: true, item };
 }
 
 export async function listApplicationFilterOptions() {
-  const items = await listFirebaseApplicationsBase();
+  const items = await listStorageApplicationsBase();
   return {
     classes: Array.from(new Set(items.map((item) => String(item.class_name || "").trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, "uk")),
     total: items.length,
@@ -1158,12 +1034,12 @@ export async function listApplications(params?: URLSearchParams) {
 }
 
 export async function getIssue(issueNumber: number) {
-  const doc = await findFirebaseApplicationDoc(issueNumber);
-  if (!doc) throw new Error("Заявку не знайдено у Firebase.");
-  const item = mapFirebaseApplicationDoc(doc);
+  const doc = await findStorageApplicationDoc(issueNumber);
+  if (!doc) throw new Error("Заявку не знайдено у Storage.");
+  const item = mapStorageApplicationDoc(doc);
   return {
     ...item,
-    body: buildFirebaseApplicationBody(item),
+    body: buildStorageApplicationBody(item),
     html_url: item.html_url || "",
     labels: item.labels.map((name) => ({ name })),
   };
@@ -1179,13 +1055,13 @@ export async function setIssueStatus(params: {
   const issueNumber = Number(params.issueNumber);
   if (!Number.isInteger(issueNumber) || issueNumber <= 0) throw new Error("Invalid application number");
   const status = normalizeStatus(params.status);
-  const doc = await findFirebaseApplicationDoc(issueNumber);
+  const doc = await findStorageApplicationDoc(issueNumber);
   if (!doc) throw new Error("Заявку не знайдено у сховищі.");
   // Only the winning final decision may trigger Discord side effects.
-  return getFirebaseAdminDb().runTransaction(async (tx: any) => {
+  return getDocumentDb().runTransaction(async (tx: any) => {
     const snapshot = await tx.get(doc.ref);
     if (!snapshot.exists) throw new Error("Заявку не знайдено у сховищі.");
-    const current = mapFirebaseApplicationDoc(snapshot);
+    const current = mapStorageApplicationDoc(snapshot);
     if ((params.requireReview && (current.status_key !== "review" || current.state === "closed")) || current.status_key === status) {
       return { ok: true, status: current.status_key, state: current.state, changed: false, alreadyModerated: true, label: statusLabel(current.status_key) };
     }
@@ -1194,7 +1070,7 @@ export async function setIssueStatus(params: {
       status, status_key: status, status_text: statusText(status),
       state: status === "review" ? "open" : "closed",
       closed_at: status === "review" ? null : now, updated_at: now,
-      updatedAtMs: Date.now(), labels: labelsForFirebaseStatus(status),
+      updatedAtMs: Date.now(), labels: labelsForStorageStatus(status),
       moderation_events: FieldValue.arrayUnion({ status, moderator: params.moderator, source: params.source, at: now }),
     });
     return { ok: true, status, state: status === "review" ? "open" : "closed", changed: true, alreadyModerated: false, label: statusLabel(status) };

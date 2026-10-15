@@ -26,24 +26,24 @@ const database = load(
   { pg },
   { __mistblossomPgPool: pool, process: { env: { DATABASE_URL: url } } },
 ).exports;
-const { PgFirestore } = load("src/lib/db/documentStore.ts", {
+const { PgDocumentStore } = load("src/lib/db/documentStore.ts", {
   "@/lib/db/pgPool": database,
 }).exports;
-const store = new PgFirestore(),
+const store = new PgDocumentStore(),
   cache = new Map();
 let configured = true;
 const groupSchema = load("src/lib/accessGroupSchema.ts").exports;
 function subject(source = "src/lib/accessGroups.ts", db = store) {
   return load(source, {
-    "@/lib/firebaseAdmin": {
-      getFirebaseAdminDb: () => db,
-      hasFirebaseProfileConfig: () => configured,
+    "@/lib/documentDb": {
+      getDocumentDb: () => db,
+      hasDocumentDbConfig: () => configured,
     },
-    "@/lib/firebaseAccess": {
-      assertFirebaseWriteAvailable: () => {
+    "@/lib/storageAccess": {
+      assertStorageWriteAvailable: () => {
         if (!configured) throw Error("Offline");
       },
-      firebaseWrite: async (a, k, fn) => fn(),
+      storageWrite: async (a, k, fn) => fn(),
     },
     "@/lib/runtimeResilience": {
       getRuntimeCachedValue: (k) => cache.get(k) || null,

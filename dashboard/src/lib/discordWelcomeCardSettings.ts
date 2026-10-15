@@ -1,9 +1,9 @@
 import "server-only";
 
-import { FieldValue } from "@/lib/db/firestoreCompat";
-import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
+import { FieldValue } from "@/lib/db/documentValues";
+import { getDocumentDb, hasDocumentDbConfig } from "@/lib/documentDb";
 import { resilientRead } from "@/lib/runtimeResilience";
-import { firebaseWrite } from "@/lib/firebaseAccess";
+import { storageWrite } from "@/lib/storageAccess";
 import type { DashboardSession } from "@/lib/auth";
 import { timestampToIso } from "@/lib/values";
 
@@ -146,19 +146,19 @@ export function renderDiscordWelcomeMessageTemplate(templateInput: unknown, para
 export async function getDiscordWelcomeCardSettings(options: { bypassCache?: boolean } = {}): Promise<DiscordWelcomeCardSettings> {
   if (!options.bypassCache && cacheFresh()) return globalThis.__mistblossomDiscordWelcomeCardSettingsCache!.settings;
   const fallback = globalThis.__mistblossomDiscordWelcomeCardSettingsCache?.settings || normalizeSettings(null);
-  if (!hasFirebaseProfileConfig()) return setCache(fallback);
+  if (!hasDocumentDbConfig()) return setCache(fallback);
 
   const settings = await resilientRead(
     "discord-welcome-card-settings",
     async () => {
-      const snapshot = await getFirebaseAdminDb().collection(SETTINGS_COLLECTION).doc(SETTINGS_DOC_ID).get();
+      const snapshot = await getDocumentDb().collection(SETTINGS_COLLECTION).doc(SETTINGS_DOC_ID).get();
       return snapshot.exists ? normalizeSettings(snapshot.data() || null) : fallback;
     },
     {
       ttlMs: SETTINGS_CACHE_TTL_MS,
       timeoutMs: 2_000,
       fallback: () => fallback,
-      circuitKey: "firebase-discord-welcome-card-settings-read",
+      circuitKey: "storage-discord-welcome-card-settings-read",
       circuitTtlMs: 60_000,
       logEvent: "discord.welcome_card_settings_read_failed",
       bypassCache: options.bypassCache,
@@ -195,14 +195,14 @@ export async function setDiscordWelcomeCardSettings(input: {
   if (enabled && !channelId) {
     throw new Error("Для картки привітання потрібно вибрати Discord-канал.");
   }
-  if (!hasFirebaseProfileConfig()) {
-    throw new Error("Firebase не налаштований для збереження welcome-карток.");
+  if (!hasDocumentDbConfig()) {
+    throw new Error("Storage не налаштований для збереження welcome-карток.");
   }
 
-  await firebaseWrite(
+  await storageWrite(
     "settings",
     "discord-welcome-card-settings:save",
-    () => getFirebaseAdminDb().collection(SETTINGS_COLLECTION).doc(SETTINGS_DOC_ID).set({
+    () => getDocumentDb().collection(SETTINGS_COLLECTION).doc(SETTINGS_DOC_ID).set({
       enabled,
       enabledAt,
       channelId,

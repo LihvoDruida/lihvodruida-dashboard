@@ -4,7 +4,7 @@ import {
   statusColor,
   statusEmoji,
   statusText,
-} from "./github";
+} from "./applicationsStore";
 import { discordApi, getDiscordDefaultChannelId } from "@/lib/discordAdmin";
 import { getGuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
 import { buildApplicationCustomId } from "@mistblossom/discord-contract";

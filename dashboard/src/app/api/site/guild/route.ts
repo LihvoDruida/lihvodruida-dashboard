@@ -1,3 +1,4 @@
+import {hasSiteBridgeToken} from '@/lib/siteBridgeAuth';
 import { NextRequest, NextResponse } from "next/server";
 import { buildPublicGuildSnapshot, publicSiteCorsHeaders } from "@/lib/publicSiteBridge";
 import { checkRateLimit, getClientIp, logDashboardEvent, safeErrorMessage } from "@/lib/security";
@@ -12,7 +13,7 @@ export async function OPTIONS(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   const ip = getClientIp(request);
-  const limit = checkRateLimit(`public-site:guild:get:${ip}`, 120, 60 * 1000);
+  const limit = hasSiteBridgeToken(request) ? {ok:true} : checkRateLimit(`public-site:guild:get:${ip}`, 120, 60 * 1000);
   if (!limit.ok) {
     return NextResponse.json({ error: "Забагато запитів." }, { status: 429, headers: publicSiteCorsHeaders(request, "GET, OPTIONS") });
   }

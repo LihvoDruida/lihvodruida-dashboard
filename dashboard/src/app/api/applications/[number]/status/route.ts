@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { recordAdminAudit } from "@/lib/accessGroups";
 import { resolveAuthorIdentity } from "@/lib/authorIdentity";
-import { ApplicationStatus } from "@/lib/github";
+import { ApplicationStatus } from "@/lib/applicationsStore";
 import { moderateApplication } from "@/lib/moderation";
 import { canManageApplications, hierarchyTitle } from "@/lib/permissions";
 import {

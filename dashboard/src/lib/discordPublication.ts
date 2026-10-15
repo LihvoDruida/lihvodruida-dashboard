@@ -1,9 +1,9 @@
 import "server-only";
 
 import { createHash, randomUUID } from "node:crypto";
-import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
+import { getDocumentDb } from "@/lib/documentDb";
 import { acquireAutomationLease } from "@/lib/automationLease";
-import type { Transaction } from "@/lib/db/firestoreCompat";
+import type { Transaction } from "@/lib/db/documentValues";
 import { DiscordRestError } from "@/lib/discordRest";
 
 export type PublicationOperation = {
@@ -36,7 +36,7 @@ export function publicationRevision(value: unknown) {
 }
 
 function operationRef(kind: string, resourceId: string) {
-  return getFirebaseAdminDb().collection("discordPublications")
+  return getDocumentDb().collection("discordPublications")
     .doc(publicationRevision([kind, resourceId]));
 }
 
@@ -46,7 +46,7 @@ export async function getDiscordPublicationOperation(kind: string, resourceId: s
 
 export async function updateDiscordPublicationOperation(kind: string, resourceId: string, nonce: string, patch: Partial<PublicationOperation>) {
   const ref = operationRef(kind, resourceId);
-  await getFirebaseAdminDb().runTransaction(async tx => {
+  await getDocumentDb().runTransaction(async tx => {
     const current = (await tx.get(ref)).data();
     if (current?.nonce !== nonce) throw new DiscordPublicationPendingError("uncertain");
     tx.update(ref, patch);
@@ -80,7 +80,7 @@ type CreationOptions = {
  * receipt is reconciled even if the requested channel or payload changed.
  * Missing history/nonce never proves that Discord did not create the object. */
 export async function runDiscordPublicationCreation(options: CreationOptions) {
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   const ref = operationRef(options.kind, options.resourceId);
   const resource = db.collection(options.collection).doc(options.resourceId);
   const key = publicationRevision([options.kind, options.resourceId, options.target, options.revision, options.previousId || ""]);

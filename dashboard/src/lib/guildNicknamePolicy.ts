@@ -1,9 +1,9 @@
 import "server-only";
 
-import { FieldValue } from "@/lib/db/firestoreCompat";
-import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
+import { FieldValue } from "@/lib/db/documentValues";
+import { getDocumentDb, hasDocumentDbConfig } from "@/lib/documentDb";
 import { resilientRead } from "@/lib/runtimeResilience";
-import { firebaseWrite } from "@/lib/firebaseAccess";
+import { storageWrite } from "@/lib/storageAccess";
 import type { DashboardSession } from "@/lib/auth";
 import { timestampToIso } from "@/lib/values";
 
@@ -153,12 +153,12 @@ export async function getGuildNicknamePolicy(options: { bypassCache?: boolean } 
     return globalThis.__mistblossomGuildNicknamePolicyCache!.policy;
   }
   const fallback = globalThis.__mistblossomGuildNicknamePolicyCache?.policy || normalizePolicyData(null);
-  if (!hasFirebaseProfileConfig()) return setNicknamePolicyCache(fallback);
+  if (!hasDocumentDbConfig()) return setNicknamePolicyCache(fallback);
 
   const policy = await resilientRead(
     "guild-nickname-policy",
     async () => {
-      const snapshot = await getFirebaseAdminDb()
+      const snapshot = await getDocumentDb()
         .collection(SETTINGS_COLLECTION)
         .doc(POLICY_DOC_ID)
         .get();
@@ -168,7 +168,7 @@ export async function getGuildNicknamePolicy(options: { bypassCache?: boolean } 
       ttlMs: POLICY_CACHE_TTL_MS,
       timeoutMs: 2_000,
       fallback: () => fallback,
-      circuitKey: "firebase-guild-nickname-policy-read",
+      circuitKey: "storage-guild-nickname-policy-read",
       circuitTtlMs: 2 * 60_000,
       logEvent: "guild.nickname_policy_read_failed",
       bypassCache: options.bypassCache,
@@ -179,11 +179,11 @@ export async function getGuildNicknamePolicy(options: { bypassCache?: boolean } 
 
 export async function setGuildNicknamePolicy(templateInput: unknown, actor?: DashboardSession | null) {
   const template = cleanNicknameTemplate(templateInput);
-  if (!hasFirebaseProfileConfig()) throw new Error("Firebase не налаштований для збереження шаблону ніку.");
-  await firebaseWrite(
+  if (!hasDocumentDbConfig()) throw new Error("Storage не налаштований для збереження шаблону ніку.");
+  await storageWrite(
     "settings",
     "guild-nickname-policy:save",
-    () => getFirebaseAdminDb().collection(SETTINGS_COLLECTION).doc(POLICY_DOC_ID).set({
+    () => getDocumentDb().collection(SETTINGS_COLLECTION).doc(POLICY_DOC_ID).set({
       template,
       updatedAt: FieldValue.serverTimestamp(),
       updatedBy: actor?.name || actor?.login || actor?.id || null,
@@ -229,11 +229,11 @@ export async function setGuildDiscordManagementSettings(input: {
     throw new Error("Для перевірки новоприбулих вибери Discord-роль, після отримання якої дозволена перевірка ніку.");
   }
 
-  if (!hasFirebaseProfileConfig()) throw new Error("Firebase не налаштований для збереження Discord-налаштувань.");
-  await firebaseWrite(
+  if (!hasDocumentDbConfig()) throw new Error("Storage не налаштований для збереження Discord-налаштувань.");
+  await storageWrite(
     "settings",
     "guild-discord-management:save",
-    () => getFirebaseAdminDb().collection(SETTINGS_COLLECTION).doc(POLICY_DOC_ID).set({
+    () => getDocumentDb().collection(SETTINGS_COLLECTION).doc(POLICY_DOC_ID).set({
       template,
       nicknameCleanupConcurrency,
       nicknameCleanupMaxConcurrency,

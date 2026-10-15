@@ -25,8 +25,8 @@ const checks=[
  [schema.includes('CREATE TABLE IF NOT EXISTS site_content_media'),'Database supports CMS media'],
  [content.includes('MAX_IMAGE_SIZE')&&content.includes('imageSignatureMatches(bytes,file.type)'),'Media MIME and size verified'],
  [proxy.includes('pathname === "/api/site/content"')&&proxy.includes('/site\\/media\\/'),'Public routes explicitly allowlisted'],
- [proxy.includes('isInternalSiteRead')&&proxy.includes('request.method === "GET"')&&proxy.includes('PUBLIC_SITE_BRIDGE_TOKEN'),'Internal transport read only'],
- [compose.includes('PUBLIC_SITE_BRIDGE_TOKEN: ${PUBLIC_SITE_BRIDGE_TOKEN:-}'),'Internal bridge secret explicitly wired'],
+ [proxy.includes('isInternalSiteRead')&&proxy.includes('request.method === "GET"')&&proxy.includes('hasSiteBridgeToken'),'Internal transport read only'],
+ [compose.includes('PUBLIC_SITE_BRIDGE_TOKEN: ${PUBLIC_SITE_BRIDGE_TOKEN:?set the same bridge token in both projects}'),'Internal bridge secret explicitly wired'],
  [fs.existsSync(path.join(repo,'import/legacy-site/migrate_site_articles.sql')),'SQL content import available'],
  [dockerfile.includes('COPY import/legacy-site/migrate_site_articles.sql /repo/import/legacy-site/migrate_site_articles.sql'),'SQL import is explicitly copied into the Docker build stage'],
 ];

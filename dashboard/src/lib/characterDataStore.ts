@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { FieldValue } from "@/lib/db/firestoreCompat";
-import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
+import { FieldValue } from "@/lib/db/documentValues";
+import { getDocumentDb, hasDocumentDbConfig } from "@/lib/documentDb";
 import { resilientRead, resilientWrite } from "@/lib/runtimeResilience";
 import { currentSeasonRaidProgress, primaryCurrentRaidProgress, type CharacterRaidProgressLike } from "@/lib/characterRaidProgress";
 import type { RaidSeasonSnapshot } from "@/lib/raidSeasonResolver";
@@ -85,7 +85,7 @@ function cleanRecord(raw: unknown): CanonicalCharacterData | null {
 }
 
 function canonicalDoc(scope: "guild" | "external", key: string) {
-  return getFirebaseAdminDb()
+  return getDocumentDb()
     .collection(scope === "guild" ? GUILD_CHARACTER_DATA_COLLECTION : EXTERNAL_CHARACTER_DATA_COLLECTION)
     .doc(docId(key));
 }
@@ -139,11 +139,11 @@ export function canonicalGuildCharacter(member: GuildMemberLike, snapshot: RaidS
 
 
 export async function writeCharacterRaidSeasonSnapshot(snapshot: RaidSeasonSnapshot | null | undefined) {
-  if (!hasFirebaseProfileConfig() || !snapshot) return false;
+  if (!hasDocumentDbConfig() || !snapshot) return false;
   return resilientWrite(
     "canonical-raid-season-write",
     async () => {
-      await getFirebaseAdminDb().collection(CHARACTER_DATA_META_COLLECTION).doc(RAID_SEASON_META_DOCUMENT).set(
+      await getDocumentDb().collection(CHARACTER_DATA_META_COLLECTION).doc(RAID_SEASON_META_DOCUMENT).set(
         { snapshot, updatedAt: FieldValue.serverTimestamp() },
         { merge: true },
       );
@@ -154,11 +154,11 @@ export async function writeCharacterRaidSeasonSnapshot(snapshot: RaidSeasonSnaps
 }
 
 export async function readCharacterRaidSeasonSnapshot() {
-  if (!hasFirebaseProfileConfig()) return null;
+  if (!hasDocumentDbConfig()) return null;
   return resilientRead<RaidSeasonSnapshot | null>(
     "canonical-raid-season",
     async () => {
-      const doc = await getFirebaseAdminDb().collection(CHARACTER_DATA_META_COLLECTION).doc(RAID_SEASON_META_DOCUMENT).get();
+      const doc = await getDocumentDb().collection(CHARACTER_DATA_META_COLLECTION).doc(RAID_SEASON_META_DOCUMENT).get();
       const data = doc.exists ? doc.data() || {} : {};
       return data.snapshot && typeof data.snapshot === "object" ? data.snapshot as RaidSeasonSnapshot : null;
     },
@@ -172,7 +172,7 @@ export async function writeGuildCharacterDataRecords(
   changedKeys?: Set<string>,
   replaceAll = false,
 ) {
-  if (!hasFirebaseProfileConfig() || !members.length) return 0;
+  if (!hasDocumentDbConfig() || !members.length) return 0;
   const targets = changedKeys instanceof Set
     ? members.filter((member) => changedKeys.has(member.key))
     : members;
@@ -184,17 +184,17 @@ export async function writeGuildCharacterDataRecords(
       let written = 0;
       if (replaceAll) {
         const liveIds = new Set(members.map((member) => docId(member.key)));
-        const existing = await getFirebaseAdminDb().collection(GUILD_CHARACTER_DATA_COLLECTION).limit(1200).get();
+        const existing = await getDocumentDb().collection(GUILD_CHARACTER_DATA_COLLECTION).limit(1200).get();
         const stale = existing.docs.filter((item) => !liveIds.has(item.id));
         for (let start = 0; start < stale.length; start += 400) {
-          const cleanup = getFirebaseAdminDb().batch();
+          const cleanup = getDocumentDb().batch();
           for (const item of stale.slice(start, start + 400)) cleanup.delete(item.ref);
           await cleanup.commit();
         }
       }
 
       for (let start = 0; start < targets.length; start += 350) {
-        const batch = getFirebaseAdminDb().batch();
+        const batch = getDocumentDb().batch();
         for (const member of targets.slice(start, start + 350)) {
           const record = canonicalGuildCharacter(member, snapshot);
           batch.set(canonicalDoc("guild", member.key), { ...record, updatedAtServer: FieldValue.serverTimestamp() }, { merge: true });
@@ -218,7 +218,7 @@ export async function writeGuildCharacterDataRecords(
 }
 
 export async function readGuildCharacterData(key: string) {
-  if (!hasFirebaseProfileConfig() || !key) return null;
+  if (!hasDocumentDbConfig() || !key) return null;
   return resilientRead<CanonicalCharacterData | null>(
     `canonical-guild-character:${docId(key)}`,
     async () => {
@@ -230,7 +230,7 @@ export async function readGuildCharacterData(key: string) {
 }
 
 export async function readExternalCharacterData(key: string) {
-  if (!hasFirebaseProfileConfig() || !key) return null;
+  if (!hasDocumentDbConfig() || !key) return null;
   return resilientRead<CanonicalCharacterData | null>(
     `canonical-external-character:${docId(key)}`,
     async () => {
@@ -247,12 +247,12 @@ export async function readCanonicalCharacterData(key: string) {
 
 
 export async function readCanonicalCharacterDataMany(keys: string[]) {
-  if (!hasFirebaseProfileConfig()) return new Map<string, CanonicalCharacterData>();
+  if (!hasDocumentDbConfig()) return new Map<string, CanonicalCharacterData>();
   const unique = Array.from(new Set(keys.map((key) => String(key || "").trim()).filter(Boolean))).slice(0, 600);
   const result = new Map<string, CanonicalCharacterData>();
   if (!unique.length) return result;
 
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   for (let start = 0; start < unique.length; start += 250) {
     const chunk = unique.slice(start, start + 250);
     const guildRefs = chunk.map((key) => canonicalDoc("guild", key));
@@ -276,7 +276,7 @@ export async function readCanonicalCharacterDataMany(keys: string[]) {
 }
 
 export async function writeExternalCharacterData(record: CanonicalCharacterData) {
-  if (!hasFirebaseProfileConfig() || !record?.key) return false;
+  if (!hasDocumentDbConfig() || !record?.key) return false;
   // Guild data always wins. Never create a parallel non-guild copy when the
   // guild canonical record already exists.
   if (await readGuildCharacterData(record.key)) return false;

@@ -28,7 +28,7 @@ function lifecycleGuard() {
 }
 
 function lifecycleMinIntervalMs() {
-  const eco = envFlag(["FIREBASE_ECO_MODE", "FIRESTORE_ECO_MODE", "DASHBOARD_ECO_MODE"], false);
+  const eco = envFlag(["STORAGE_ECO_MODE", "STORAGE_ECO_MODE", "DASHBOARD_ECO_MODE"], false);
   // The task worker wakes once per minute, but each raid event keeps its own
   // absolute dueAtMs. The tick only claims records whose exact deadline is due.
   const fallback = eco ? 60_000 : 45_000;
@@ -38,7 +38,7 @@ function lifecycleMinIntervalMs() {
 }
 
 function lifecycleDefaultLimit() {
-  return envFlag(["FIREBASE_ECO_MODE", "FIRESTORE_ECO_MODE", "DASHBOARD_ECO_MODE"], false) ? 20 : 40;
+  return envFlag(["STORAGE_ECO_MODE", "STORAGE_ECO_MODE", "DASHBOARD_ECO_MODE"], false) ? 20 : 40;
 }
 
 function wantsForceRun(request: NextRequest) {

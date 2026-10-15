@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       throw new Error("Можна видаляти тільки матеріали новин або гайдів.");
     }
 
-    await deleteSiteContent(path);
+    await deleteSiteContent(path,String(form.get("revision") || ""));
     logDashboardEvent("info", "content.delete.success", request, { path, userId: session.id });
     await recordAdminAudit("content.delete", session, {
       status: "success",

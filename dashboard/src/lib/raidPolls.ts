@@ -5,12 +5,12 @@ import {
   FieldValue,
   type QueryDocumentSnapshot,
   type Transaction,
-} from "@/lib/db/firestoreCompat";
+} from "@/lib/db/documentValues";
 import type { DashboardSession } from "@/lib/auth";
-import { firebaseRead, firebaseWrite, firebaseUnavailableMessage } from "@/lib/firebaseAccess";
+import { storageRead, storageWrite, storageUnavailableMessage } from "@/lib/storageAccess";
 import { clearRuntimeCachedValue, clearRuntimeCachedValuesByPrefix, getRuntimeCachedValue, setRuntimeCachedValue } from "@/lib/runtimeResilience";
 import { mapConcurrentSettled } from "@/lib/concurrency";
-import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
+import { getDocumentDb, hasDocumentDbConfig } from "@/lib/documentDb";
 import {
   deleteDiscordRaidMessage,
   discordMessageUrl,
@@ -116,7 +116,7 @@ const RAID_POLL_GET_CACHE_PREFIX = "raid-poll:";
 const RAID_POLL_DISCORD_SIGNATURE_PREFIX = "raid-poll:discord-signature:";
 const RAID_POLL_DISCORD_SIGNATURE_TTL_MS = 6 * 60 * 60_000;
 function raidPollEcoModeEnabled() {
-  return envFlag(["FIREBASE_ECO_MODE", "FIRESTORE_ECO_MODE", "DASHBOARD_ECO_MODE"], false);
+  return envFlag(["STORAGE_ECO_MODE", "STORAGE_ECO_MODE", "DASHBOARD_ECO_MODE"], false);
 }
 
 function envDurationMs(names: string[], fallback: number, min: number, max: number) {
@@ -476,7 +476,7 @@ export function raidPollPublishScheduleLabel(poll: Pick<RaidPollItem, "status" |
 }
 
 export function hasRaidPollStorage() {
-  return hasFirebaseProfileConfig();
+  return hasDocumentDbConfig();
 }
 
 function newPollId() {
@@ -619,7 +619,7 @@ export function normalizeRaidPoll(id: string, data: Record<string, unknown>): Ra
 function pollRef(pollId: string) {
   const id = cleanString(pollId, 80);
   if (!/^[A-Za-z0-9_-]{8,80}$/.test(id)) throw new Error("Некоректний ID рейд-пулу.");
-  return getFirebaseAdminDb().collection(RAID_POLL_COLLECTION).doc(id);
+  return getDocumentDb().collection(RAID_POLL_COLLECTION).doc(id);
 }
 
 
@@ -1162,7 +1162,7 @@ function voteDraftFromPollData(data: Record<string, unknown>, userId: string, fa
   return normalizeVoteDraft(drafts[userId], fallback);
 }
 
-function voteDraftToFirestore(draft: RaidPollVoteDraft) {
+function voteDraftToDocumentStore(draft: RaidPollVoteDraft) {
   return {
     ...draft,
     selectedDays: activeDaysFromSchedule(draft.schedule),
@@ -1754,9 +1754,9 @@ async function publishOrUpdatePollDiscordMessage(input: RaidPollItem, channelIdI
 
 async function savePollDiscordRef(pollId: string, ref: { channelId: string; messageId: string; messageUrl: string }) {
   const updatedAt = new Date().toISOString();
-  await firebaseWrite("raid", `raid-poll:discord-ref:${pollId}`, async () => {
+  await storageWrite("raid", `raid-poll:discord-ref:${pollId}`, async () => {
     const document = pollRef(pollId);
-    await getFirebaseAdminDb().runTransaction(async tx => {
+    await getDocumentDb().runTransaction(async tx => {
       const current = (await tx.get(document)).data();
       if (current?.messageId !== ref.messageId || current?.discordMessageChannelId !== ref.channelId)
         throw new Error("Посилання на Discord-повідомлення вже змінилося. Онови сторінку.");
@@ -1794,7 +1794,7 @@ export function raidPollLiveRevision(poll: Pick<RaidPollItem, "id" | "status" | 
 
 export async function getRaidPoll(pollId: string, options: { closeDue?: boolean; bypassCache?: boolean } = {}) {
   if (!hasRaidPollStorage()) return null;
-  const poll = await firebaseRead<RaidPollItem | null>(
+  const poll = await storageRead<RaidPollItem | null>(
     "raid",
     `raid-poll:${pollId}`,
     async () => {
@@ -1810,11 +1810,11 @@ export async function getRaidPoll(pollId: string, options: { closeDue?: boolean;
 
 export async function listRaidPolls(limit = 100) {
   if (!hasRaidPollStorage()) return [];
-  return firebaseRead<RaidPollItem[]>(
+  return storageRead<RaidPollItem[]>(
     "raid",
     `${RAID_POLL_LIST_CACHE_KEY}:${limit}`,
     async () => {
-      const snap = await getFirebaseAdminDb()
+      const snap = await getDocumentDb()
         .collection(RAID_POLL_COLLECTION)
         .orderBy("createdAtMs", "desc")
         .limit(Math.max(1, Math.min(200, Math.floor(limit))))
@@ -1826,7 +1826,7 @@ export async function listRaidPolls(limit = 100) {
 }
 
 export async function saveRaidPollFromInput(input: RaidPollCreateInput, user: DashboardSession) {
-  if (!hasRaidPollStorage()) throw new Error(firebaseUnavailableMessage("raid", "write"));
+  if (!hasRaidPollStorage()) throw new Error(storageUnavailableMessage("raid", "write"));
 
   const title = cleanString(input.title, 160);
   if (title.length < 3) throw new Error("Вкажи назву рейду для голосування.");
@@ -1896,7 +1896,7 @@ export async function saveRaidPollFromInput(input: RaidPollCreateInput, user: Da
     updatedAt: nowIso,
   };
 
-  await firebaseWrite("raid", `raid-poll:create:${id}`, async () => {
+  await storageWrite("raid", `raid-poll:create:${id}`, async () => {
     await pollRef(id).set({
       ...basePoll,
       days: activeDays,
@@ -1947,7 +1947,7 @@ export async function saveRaidPollFromForm(form: FormData, user: DashboardSessio
 }
 
 export async function updateRaidPollFromInput(pollId: string, input: RaidPollUpdateInput) {
-  if (!hasRaidPollStorage()) throw new Error(firebaseUnavailableMessage("raid", "write"));
+  if (!hasRaidPollStorage()) throw new Error(storageUnavailableMessage("raid", "write"));
 
   const title = cleanString(input.title, 160);
   if (title.length < 3) throw new Error("Вкажи назву рейду для голосування.");
@@ -1965,9 +1965,9 @@ export async function updateRaidPollFromInput(pollId: string, input: RaidPollUpd
   if (!channelId) throw new Error("Discord-канал для рейд-пулу не вибрано.");
 
   const updatedAt = new Date().toISOString();
-  const updatedPoll = await firebaseWrite<RaidPollItem>("raid", `raid-poll:update:${pollId}`, async () => {
+  const updatedPoll = await storageWrite<RaidPollItem>("raid", `raid-poll:update:${pollId}`, async () => {
     const ref = pollRef(pollId);
-    return getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
+    return getDocumentDb().runTransaction(async (tx: Transaction) => {
       const snap = await tx.get(ref);
       if (!snap.exists) throw new Error("Рейд-пул не знайдено.");
       const raw = snap.data() || {};
@@ -2118,7 +2118,7 @@ export async function updateRaidPollFromForm(pollId: string, form: FormData) {
 }
 
 async function markRaidPollPublishFailed(pollId: string, message: string) {
-  await firebaseWrite("raid", `raid-poll:publish-failed:${pollId}`, async () => {
+  await storageWrite("raid", `raid-poll:publish-failed:${pollId}`, async () => {
     const failedAt = new Date();
     await pollRef(pollId).update({
       scheduledPublishLockedAtMs: FieldValue.delete(),
@@ -2133,9 +2133,9 @@ async function markRaidPollPublishFailed(pollId: string, message: string) {
 }
 
 async function claimScheduledRaidPoll(pollId: string, nowMs: number, lockId: string) {
-  return firebaseWrite<RaidPollItem | null>("raid", `raid-poll:publish-claim:${pollId}:${lockId}`, async () => {
+  return storageWrite<RaidPollItem | null>("raid", `raid-poll:publish-claim:${pollId}:${lockId}`, async () => {
     const ref = pollRef(pollId);
-    return getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
+    return getDocumentDb().runTransaction(async (tx: Transaction) => {
       const snap = await tx.get(ref);
       if (!snap.exists) return null;
       const raw = snap.data() || {};
@@ -2183,9 +2183,9 @@ async function publishClaimedScheduledRaidPoll(template: RaidPollItem, lockId: s
   let published: { channelId: string; messageId: string; messageUrl: string } | null = null;
   try {
     published = await publishOrUpdatePollDiscordMessage(openPoll, openPoll.channelId, manualRef);
-    await firebaseWrite("raid", `raid-poll:publish-commit:${template.id}:${lockId}`, async () => {
+    await storageWrite("raid", `raid-poll:publish-commit:${template.id}:${lockId}`, async () => {
       const ref = pollRef(template.id);
-      await getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
+      await getDocumentDb().runTransaction(async (tx: Transaction) => {
         const snap = await tx.get(ref);
         if (!snap.exists) throw new Error("Запланований рейд-пул більше не існує.");
         const raw = snap.data() || {};
@@ -2235,7 +2235,7 @@ export async function publishDueRaidPolls(options: { limit?: number } = {}) {
   let docs: QueryDocumentSnapshot[] = [];
 
   try {
-    const snap = await getFirebaseAdminDb()
+    const snap = await getDocumentDb()
       .collection(RAID_POLL_COLLECTION)
       .where("status", "==", "scheduled")
       .where("scheduledPublishAtMs", "<=", nowMs)
@@ -2246,7 +2246,7 @@ export async function publishDueRaidPolls(options: { limit?: number } = {}) {
   } catch {
     // Працює і без нового composite index; просто відфільтровуємо невелику
     // порцію scheduled-документів у застосунку.
-    const snap = await getFirebaseAdminDb()
+    const snap = await getDocumentDb()
       .collection(RAID_POLL_COLLECTION)
       .where("status", "==", "scheduled")
       .limit(Math.min(200, Math.max(limit * 8, 50)))
@@ -2289,7 +2289,7 @@ export async function publishDueRaidPolls(options: { limit?: number } = {}) {
 }
 
 async function markRaidPollRepeatFailed(pollId: string, message: string) {
-  await firebaseWrite("raid", `raid-poll:repeat-failed:${pollId}`, async () => {
+  await storageWrite("raid", `raid-poll:repeat-failed:${pollId}`, async () => {
     await pollRef(pollId).update({
       repeatLockedAtMs: FieldValue.delete(),
       repeatLockId: FieldValue.delete(),
@@ -2302,9 +2302,9 @@ async function markRaidPollRepeatFailed(pollId: string, message: string) {
 }
 
 async function claimRaidPollRepeat(pollId: string, nowMs: number, lockId: string) {
-  return firebaseWrite<RaidPollItem | null>("raid", `raid-poll:repeat-claim:${pollId}:${lockId}`, async () => {
+  return storageWrite<RaidPollItem | null>("raid", `raid-poll:repeat-claim:${pollId}:${lockId}`, async () => {
     const ref = pollRef(pollId);
-    return getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
+    return getDocumentDb().runTransaction(async (tx: Transaction) => {
       const snap = await tx.get(ref);
       if (!snap.exists) return null;
       const raw = snap.data() || {};
@@ -2366,8 +2366,8 @@ async function createRepeatedRaidPoll(template: RaidPollItem) {
     updatedAt: nowIso,
   };
 
-  await firebaseWrite("raid", `raid-poll:repeat-create:${template.id}:${id}`, async () => {
-    await getFirebaseAdminDb().runTransaction(async tx => {
+  await storageWrite("raid", `raid-poll:repeat-create:${template.id}:${id}`, async () => {
+    await getDocumentDb().runTransaction(async tx => {
       const ref = pollRef(id);
       if ((await tx.get(ref)).exists) return;
       tx.create(ref, {
@@ -2391,7 +2391,7 @@ async function createRepeatedRaidPoll(template: RaidPollItem) {
     const updatedAt = await savePollDiscordRef(id, published);
     const publishedPoll = { ...nextPoll, ...published, updatedAt };
     const deleteResult = await deleteRaidPoll(template.id).catch(async (error) => {
-      await firebaseWrite("raid", `raid-poll:repeat-old-disable:${template.id}`, async () => {
+      await storageWrite("raid", `raid-poll:repeat-old-disable:${template.id}`, async () => {
         await pollRef(template.id).update({
           autoRepeatWeekly: false,
           repeatWeeklyDay: null,
@@ -2429,7 +2429,7 @@ export async function repeatDueRaidPolls(options: { limit?: number } = {}) {
   let docs: QueryDocumentSnapshot[] = [];
 
   try {
-    const snap = await getFirebaseAdminDb()
+    const snap = await getDocumentDb()
       .collection(RAID_POLL_COLLECTION)
       .where("autoRepeatWeekly", "==", true)
       .where("repeatNextAtMs", "<=", nowMs)
@@ -2438,7 +2438,7 @@ export async function repeatDueRaidPolls(options: { limit?: number } = {}) {
       .get();
     docs = snap.docs;
   } catch {
-    const snap = await getFirebaseAdminDb()
+    const snap = await getDocumentDb()
       .collection(RAID_POLL_COLLECTION)
       .where("autoRepeatWeekly", "==", true)
       .limit(Math.min(200, Math.max(limit * 8, 50)))
@@ -2499,7 +2499,7 @@ export async function closeDueRaidPoll(input: RaidPollItem) {
 
 async function readDueRaidPolls(nowMs: number, limit: number) {
   try {
-    const snap = await getFirebaseAdminDb()
+    const snap = await getDocumentDb()
       .collection(RAID_POLL_COLLECTION)
       .where("status", "==", "open")
       .where("closesAtMs", "<=", nowMs)
@@ -2508,7 +2508,7 @@ async function readDueRaidPolls(nowMs: number, limit: number) {
       .get();
     return snap.docs.map((doc: QueryDocumentSnapshot) => normalizeRaidPoll(doc.id, doc.data() || {}));
   } catch {
-    const snap = await getFirebaseAdminDb()
+    const snap = await getDocumentDb()
       .collection(RAID_POLL_COLLECTION)
       .where("status", "==", "open")
       .limit(limit)
@@ -2593,11 +2593,11 @@ export async function closeDueRaidPolls() {
 }
 
 export async function closeRaidPoll(pollId: string, reason: "manual" | "auto" = "manual") {
-  if (!hasRaidPollStorage()) throw new Error(firebaseUnavailableMessage("raid", "write"));
+  if (!hasRaidPollStorage()) throw new Error(storageUnavailableMessage("raid", "write"));
   const closedAt = new Date().toISOString();
-  const updated = await firebaseWrite<RaidPollItem>("raid", `raid-poll:close:${pollId}:${reason}`, async () => {
+  const updated = await storageWrite<RaidPollItem>("raid", `raid-poll:close:${pollId}:${reason}`, async () => {
     const ref = pollRef(pollId);
-    return getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
+    return getDocumentDb().runTransaction(async (tx: Transaction) => {
       const snap = await tx.get(ref);
       if (!snap.exists) throw new Error("Рейд-пул не знайдено.");
       const poll = normalizeRaidPoll(snap.id, snap.data() || {});
@@ -2662,14 +2662,14 @@ const RAID_POLL_MIN_RESUME_WINDOW_MS = 5 * 60_000;
  * тому призупинений пул не буде закрито автоматично.
  */
 export async function pauseRaidPoll(pollId: string, options: { actorName?: string; note?: string } = {}) {
-  if (!hasRaidPollStorage()) throw new Error(firebaseUnavailableMessage("raid", "write"));
+  if (!hasRaidPollStorage()) throw new Error(storageUnavailableMessage("raid", "write"));
   const pausedAt = new Date().toISOString();
   const actorName = cleanString(options.actorName, 120) || "Dashboard";
   const note = cleanString(options.note, 300);
 
-  const updated = await firebaseWrite<RaidPollItem>("raid", `raid-poll:pause:${pollId}`, async () => {
+  const updated = await storageWrite<RaidPollItem>("raid", `raid-poll:pause:${pollId}`, async () => {
     const ref = pollRef(pollId);
-    return getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
+    return getDocumentDb().runTransaction(async (tx: Transaction) => {
       const snap = await tx.get(ref);
       if (!snap.exists) throw new Error("Рейд-пул не знайдено.");
       const poll = normalizeRaidPoll(snap.id, snap.data() || {});
@@ -2709,13 +2709,13 @@ export async function pauseRaidPoll(pollId: string, options: { actorName?: strin
  * щоб пауза не з'їдала час голосування.
  */
 export async function resumeRaidPoll(pollId: string, options: { actorName?: string; extendMinutes?: number } = {}) {
-  if (!hasRaidPollStorage()) throw new Error(firebaseUnavailableMessage("raid", "write"));
+  if (!hasRaidPollStorage()) throw new Error(storageUnavailableMessage("raid", "write"));
   const resumedAt = new Date().toISOString();
   const extendMs = Math.max(0, Math.floor(Number(options.extendMinutes) || 0)) * 60_000;
 
-  const updated = await firebaseWrite<RaidPollItem>("raid", `raid-poll:resume:${pollId}`, async () => {
+  const updated = await storageWrite<RaidPollItem>("raid", `raid-poll:resume:${pollId}`, async () => {
     const ref = pollRef(pollId);
-    return getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
+    return getDocumentDb().runTransaction(async (tx: Transaction) => {
       const snap = await tx.get(ref);
       if (!snap.exists) throw new Error("Рейд-пул не знайдено.");
       const poll = normalizeRaidPoll(snap.id, snap.data() || {});
@@ -2774,13 +2774,13 @@ export async function resumeRaidPoll(pollId: string, options: { actorName?: stri
  * помилковий клік означав видалення пулу й створення нового з нуля.
  */
 export async function reopenRaidPoll(pollId: string, options: { minutes?: number } = {}) {
-  if (!hasRaidPollStorage()) throw new Error(firebaseUnavailableMessage("raid", "write"));
+  if (!hasRaidPollStorage()) throw new Error(storageUnavailableMessage("raid", "write"));
   const reopenedAt = new Date().toISOString();
   const minutes = Math.max(5, Math.min(20160, Math.floor(Number(options.minutes) || 0) || 1440));
 
-  const updated = await firebaseWrite<RaidPollItem>("raid", `raid-poll:reopen:${pollId}`, async () => {
+  const updated = await storageWrite<RaidPollItem>("raid", `raid-poll:reopen:${pollId}`, async () => {
     const ref = pollRef(pollId);
-    return getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
+    return getDocumentDb().runTransaction(async (tx: Transaction) => {
       const snap = await tx.get(ref);
       if (!snap.exists) throw new Error("Рейд-пул не знайдено.");
       const poll = normalizeRaidPoll(snap.id, snap.data() || {});
@@ -2832,7 +2832,7 @@ export async function reopenRaidPoll(pollId: string, options: { minutes?: number
  * вручну або канал перестворено) — публікує його заново замість тихої помилки.
  */
 export async function resyncRaidPollDiscord(pollId: string, publicationMessageUrl = "") {
-  if (!hasRaidPollStorage()) throw new Error(firebaseUnavailableMessage("raid", "write"));
+  if (!hasRaidPollStorage()) throw new Error(storageUnavailableMessage("raid", "write"));
   const poll = await getRaidPoll(pollId, { bypassCache: true, closeDue: false });
   if (!poll) throw new Error("Рейд-пул не знайдено.");
   const manualRef = publicationMessageUrl ? parseDiscordMessageRef(publicationMessageUrl) : null;
@@ -2962,7 +2962,7 @@ async function recoverEmptyRaidPollFromDiscordMessage(
     recoveredFromDiscordMessage: true,
   };
 
-  await firebaseWrite(
+  await storageWrite(
     "raid",
     `raid-poll:${id}:discord-orphan-recovery`,
     async () => {
@@ -3083,9 +3083,9 @@ export async function handleRaidPollDiscordVote(params: {
     };
   }
 
-  const result = await firebaseWrite<RaidPollVoteResult>("raid", `raid-poll:vote:${effectivePollId}:${userId}:${params.kind}`, async () => {
+  const result = await storageWrite<RaidPollVoteResult>("raid", `raid-poll:vote:${effectivePollId}:${userId}:${params.kind}`, async () => {
     const ref = pollRef(effectivePollId);
-    return getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
+    return getDocumentDb().runTransaction(async (tx: Transaction) => {
       const snap = await tx.get(ref);
       if (!snap.exists) return { ok: false, content: "❌ Рейд-пул не знайдено або його було видалено." };
 
@@ -3168,7 +3168,7 @@ export async function handleRaidPollDiscordVote(params: {
 
       if (params.kind !== "submit") {
         tx.update(ref, {
-          [`voteDraftsByDiscordId.${userId}`]: voteDraftToFirestore(draft),
+          [`voteDraftsByDiscordId.${userId}`]: voteDraftToDocumentStore(draft),
           voteDraftsUpdatedAtMs: Date.now(),
           ...(params.messageRef?.channelId ? { channelId: params.messageRef.channelId } : {}),
           ...(params.messageRef?.messageId ? { messageId: params.messageRef.messageId } : {}),
@@ -3252,7 +3252,7 @@ export async function deleteRaidPoll(pollId: string) {
 }
 
 async function deleteRaidPollUnderPublicationLease(pollId: string) {
-  if (!hasRaidPollStorage()) throw new Error(firebaseUnavailableMessage("raid", "write"));
+  if (!hasRaidPollStorage()) throw new Error(storageUnavailableMessage("raid", "write"));
 
   const ref = pollRef(pollId);
   const snap = await ref.get();
@@ -3282,7 +3282,7 @@ async function deleteRaidPollUnderPublicationLease(pollId: string) {
     }
   }
 
-  await firebaseWrite("raid", `raid-poll:delete:${poll.id}`, async () => {
+  await storageWrite("raid", `raid-poll:delete:${poll.id}`, async () => {
     await ref.delete();
     return true;
   }, { logEvent: "raid_polls.delete_failed" });
@@ -3361,12 +3361,12 @@ export async function removeRaidPollVotesForAccounts(input: {
     if (input.dryRun) continue;
 
     const nowIso = new Date().toISOString();
-    const cleaned = await firebaseWrite<RaidPollItem | null>(
+    const cleaned = await storageWrite<RaidPollItem | null>(
       "raid",
       `raid-poll:account-cleanup:${poll.id}:${Date.now()}`,
       async () => {
         const ref = pollRef(poll.id);
-        return getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
+        return getDocumentDb().runTransaction(async (tx: Transaction) => {
           const snap = await tx.get(ref);
           if (!snap.exists) return null;
           const current = normalizeRaidPoll(snap.id, snap.data() || {});

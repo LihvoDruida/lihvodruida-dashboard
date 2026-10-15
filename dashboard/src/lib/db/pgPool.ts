@@ -94,10 +94,10 @@ export async function pgQuery<T extends QueryResultRow = QueryResultRow>(
  * Транзакція з повторами на serialization failure.
  *
  * Ізоляція REPEATABLE READ обрана свідомо: код, написаний під
- * Firestore-транзакції, розраховує, що прочитане всередині транзакції не
+ * DocumentStore-транзакції, розраховує, що прочитане всередині транзакції не
  * зміниться під ним. PostgreSQL у такому разі може відхилити транзакцію з
  * кодом 40001, і єдина правильна реакція — перезапустити її цілком, як це
- * робить і сам Firestore.
+ * робить і сам DocumentStore.
  */
 export async function pgTransaction<T>(
   handler: (client: PoolClient) => Promise<T>,

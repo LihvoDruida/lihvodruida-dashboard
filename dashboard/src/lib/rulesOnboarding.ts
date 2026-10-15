@@ -1,10 +1,10 @@
 import "server-only";
 
 import { createHmac, timingSafeEqual } from "crypto";
-import { FieldValue } from "@/lib/db/firestoreCompat";
+import { FieldValue } from "@/lib/db/documentValues";
 import { getDashboardUrl } from "@/lib/oauth";
-import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
-import { firebaseWrite } from "@/lib/firebaseAccess";
+import { getDocumentDb, hasDocumentDbConfig } from "@/lib/documentDb";
+import { storageWrite } from "@/lib/storageAccess";
 import {
   buildProfileDiscordNicknamePlan,
   cleanProfileGrammaticalGender,
@@ -394,13 +394,13 @@ export function rulesOnboardingStatus(profile: DashboardProfile | null | undefin
 }
 
 export async function markRulesOnboardingCompleted(profileId: string, input: { roleIds: string[]; nickname?: string | null }) {
-  if (!hasFirebaseProfileConfig()) return;
+  if (!hasDocumentDbConfig()) return;
   const cleanProfileId = String(profileId || "").trim();
   if (!/^id[a-f0-9]{16,40}$/.test(cleanProfileId)) return;
-  await firebaseWrite(
+  await storageWrite(
     "rules",
     `profile:${cleanProfileId}:rules-onboarding`,
-    () => getFirebaseAdminDb().collection("dashboardProfiles").doc(cleanProfileId).set({
+    () => getDocumentDb().collection("dashboardProfiles").doc(cleanProfileId).set({
       rulesOnboarding: {
         completedAt: FieldValue.serverTimestamp(),
         roleIds: cleanRoleIds(input.roleIds),

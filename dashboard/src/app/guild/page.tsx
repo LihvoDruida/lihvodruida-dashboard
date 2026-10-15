@@ -90,7 +90,7 @@ export default async function GuildRosterPage() {
     }),
   ]);
   const members = roster.members;
-  const storageLimited = roster.source === "firebase-temporary-unavailable" && members.length === 0;
+  const storageLimited = roster.source === "storage-temporary-unavailable" && members.length === 0;
 
   if (storageLimited) {
     return (

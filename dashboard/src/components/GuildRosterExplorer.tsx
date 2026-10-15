@@ -190,7 +190,7 @@ function friendlySource(value: string) {
   const source = String(value || "").toLowerCase();
   if (source.includes("raider")) return "Raider.IO → PostgreSQL";
   if (source.includes("battle")) return "Battle.net → PostgreSQL";
-  if (source.includes("firebase") || source.includes("database") || source.includes("records")) return "PostgreSQL";
+  if (source.includes("storage") || source.includes("database") || source.includes("records")) return "PostgreSQL";
   if (source.includes("live-sync")) return "Battle.net + Raider.IO";
   return value || "PostgreSQL";
 }

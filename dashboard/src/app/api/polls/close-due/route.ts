@@ -28,7 +28,7 @@ function pollCloseDueGuard() {
 }
 
 function pollCloseDueMinIntervalMs() {
-  const eco = envFlag(["FIREBASE_ECO_MODE", "FIRESTORE_ECO_MODE", "DASHBOARD_ECO_MODE"], false);
+  const eco = envFlag(["STORAGE_ECO_MODE", "STORAGE_ECO_MODE", "DASHBOARD_ECO_MODE"], false);
   const fallback = eco ? 10 * 60_000 : 5 * 60_000;
   const value = Number(process.env.RAID_POLL_CLOSE_DUE_MIN_INTERVAL_MS || process.env.DASHBOARD_RAID_POLL_CLOSE_DUE_MIN_INTERVAL_MS || fallback);
   if (!Number.isFinite(value)) return fallback;

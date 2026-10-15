@@ -2232,10 +2232,6 @@
   min-width: 0;
 }
 
-.discord-management-card--import {
-  border-left-color: var(--c-success);
-}
-
 .discord-management-card--danger {
   border-left-color: var(--c-danger);
 }
@@ -2419,12 +2415,6 @@
   line-height: var(--line-height-copy);
 }
 
-.discord-import-safety-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
 .discord-inline-warning {
   margin: 0;
   padding: 9px 11px;
@@ -2532,7 +2522,6 @@
 }
 
 /* Automated inactive-account maintenance -------------------------------- */
-.discord-profile-maintenance-grid > .discord-management-card--import,
 .account-cleanup-card {
   grid-column: 1 / -1;
   min-width: 0;

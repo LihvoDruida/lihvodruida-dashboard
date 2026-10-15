@@ -1,5 +1,5 @@
 import "server-only";
-import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
+import { getDocumentDb, hasDocumentDbConfig } from "@/lib/documentDb";
 import { getDiscordGuildId } from "@/lib/discordAdmin";
 import { normalizeAccountCleanupSettings } from "@/lib/accountCleanupAutomation";
 import { normalizeNicknameWarningState } from "@/lib/discordNicknameWarnings";
@@ -12,10 +12,10 @@ import { automationTaskContextHash, automationExpectedIntervalSeconds } from "@/
 // PostgreSQL getAll uses one SELECT. Neither this loader nor the projections call Discord.
 export async function getAutomationOverview(): Promise<AutomationOverview> {
   const now = Date.now(), checkedAt = new Date(now).toISOString();
-  if (!hasFirebaseProfileConfig()) return { checkedAt, cards: unavailableAutomationStatuses("Сховище не налаштоване. Стан автоматизацій недоступний.") };
+  if (!hasDocumentDbConfig()) return { checkedAt, cards: unavailableAutomationStatuses("Сховище не налаштоване. Стан автоматизацій недоступний.") };
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    const db = getFirebaseAdminDb();
+    const db = getDocumentDb();
     const guild = getDiscordGuildId(), validGuild = /^\d{16,25}$/.test(guild);
     const keys = [
       ["dashboardSettings", "discordNicknamePolicy"],

@@ -10,11 +10,11 @@ const testing = read('src/lib/discordWelcomeCardTesting.ts');
 const preview = read('src/app/api/dashboard/welcome-card/preview/route.ts');
 
 const checks = [
-  ['Firestore state reads fail closed', !onboarding.includes('get().catch(() => null)') && !onboarding.includes('getAll(...refs).catch(() => [])')],
-  ['missing Firestore documents are not normalized as existing members', onboarding.includes('doc.exists === false')],
+  ['DocumentStore state reads fail closed', !onboarding.includes('get().catch(() => null)') && !onboarding.includes('getAll(...refs).catch(() => [])')],
+  ['missing DocumentStore documents are not normalized as existing members', onboarding.includes('doc.exists === false')],
   ['cross-run onboarding record cache exists', onboarding.includes('__mistblossomOnboardingRecordCache') && onboarding.includes('RECORD_CACHE_TTL_MS')],
   ['record cache is invalidated across dashboard processes', onboarding.includes('recordVersion') && onboarding.includes('cache.version === expectedVersion')],
-  ['distributed Firestore lease prevents cross-instance duplicate runs', onboarding.includes('acquireOnboardingLease') && onboarding.includes('leaseUntilMs') && onboarding.includes('releaseOnboardingLease')],
+  ['distributed DocumentStore lease prevents cross-instance duplicate runs', onboarding.includes('acquireOnboardingLease') && onboarding.includes('leaseUntilMs') && onboarding.includes('releaseOnboardingLease')],
   ['onboarding work uses bounded adaptive concurrency', onboarding.includes('mapConcurrent(') && onboarding.includes('DISCORD_ONBOARDING_CONCURRENCY')],
   ['onboarding burst size is configurable and bounded', onboarding.includes('DISCORD_ONBOARDING_BATCH_LIMIT') && onboarding.includes('Math.min(max, Math.floor(parsed))')],
   ['only processed newcomer records are persisted each normal run', onboarding.includes('await writeRecord(record)') && !onboarding.includes('for (const member of members) {\n    if (currentIds.has(member.userId)) continue;')],

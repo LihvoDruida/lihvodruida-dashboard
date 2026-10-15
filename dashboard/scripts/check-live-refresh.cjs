@@ -34,6 +34,6 @@ check("idle guild sync ticks are demoted to debug", /guildSyncHasActivity/.test(
 check("poll cron retains forced five-minute scheduling precision", /close-due\?force=1/.test(cron));
 check("nickname retry uses capped exponential backoff", /backoffMultiplier/.test(nicknames) && /24 \* 60 \* 60_000/.test(nicknames) && /lastCheckErrorCount/.test(nicknames));
 check("Discord owner autorole limitation is not logged as an internal error", /discord\.autorole\.owner_unsupported/.test(interactions) && /expectedOwnerLimitation \? "info" : "error"/.test(interactions));
-check("Next.js is pinned to the current security release", pkg.dependencies?.next === "16.3.3" && pkg.devDependencies?.["eslint-config-next"] === "16.3.3");
+check("Next.js is pinned to the current security release", pkg.dependencies?.next === "16.3.5" && pkg.devDependencies?.["eslint-config-next"] === "16.3.5");
 
 console.log(`[check-live-refresh] OK — ${checks.length}/${checks.length} automation/live-refresh invariants checked.`);

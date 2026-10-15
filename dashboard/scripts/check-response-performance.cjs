@@ -37,7 +37,7 @@ function store() {
   return db;
 }
 const secret = { env: { SESSION_SECRET: "isolated-performance-test-" + "x".repeat(48) } };
-function outbox(db) { return load("src/lib/discordInteractionOutbox.ts", { "@/lib/firebaseAdmin": { getFirebaseAdminDb: () => db } }, { process: secret }); }
+function outbox(db) { return load("src/lib/discordInteractionOutbox.ts", { "@/lib/documentDb": { getDocumentDb: () => db } }, { process: secret }); }
 const id = (n) => String(1977770001112224401n + BigInt(n));
 
 (async () => {
@@ -138,7 +138,7 @@ const id = (n) => String(1977770001112224401n + BigInt(n));
   });
   await check("ingress retention skips fresh encrypted receipts and retires only expired signatures", async () => {
     const db = store();
-    const lib = load("src/lib/discordInteractionIngress.ts", { "@/lib/firebaseAdmin": { getFirebaseAdminDb: () => db } }, { process: secret });
+    const lib = load("src/lib/discordInteractionIngress.ts", { "@/lib/documentDb": { getDocumentDb: () => db } }, { process: secret });
     const now = Date.now();
     for (const [n, at] of [[0, now], [1, now - 6 * 60_000]]) {
       await lib.enqueueInteractionIngress({ id: id(n), rawBody: JSON.stringify({ id: id(n), type: 3 }), signature: "a".repeat(128), timestamp: String(Math.floor(at / 1000)), domain: "raid" }, at);

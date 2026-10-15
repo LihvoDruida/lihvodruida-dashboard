@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
+import { getDocumentDb, hasDocumentDbConfig } from "@/lib/documentDb";
 import { timestampToIso } from "@/lib/values";
 
 export const DISCORD_NEWCOMER_MEMBER_COLLECTION = "discordNewcomerOnboardingMembers";
@@ -12,9 +12,9 @@ function cleanSnowflake(value: unknown) {
 
 export async function loadDiscordNewcomerRulesAccepted(userIdsInput: unknown[]) {
   const result = new Map<string, string | null>();
-  if (!hasFirebaseProfileConfig()) return result;
+  if (!hasDocumentDbConfig()) return result;
   const userIds = Array.from(new Set(userIdsInput.map(cleanSnowflake).filter(Boolean)));
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   for (let index = 0; index < userIds.length; index += 250) {
     const refs = userIds.slice(index, index + 250).map((id) => db.collection(DISCORD_NEWCOMER_MEMBER_COLLECTION).doc(id));
     const snapshots = await db.getAll(...refs);

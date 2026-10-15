@@ -10,10 +10,11 @@ function check(condition, message) {
   if (!condition) throw new Error(`[check-site-bridge] ${message}`);
 }
 
+const applicationContract=read('dashboard/src/lib/applicationContract.ts');
 const applicationsRoute = read('dashboard/src/app/api/site/applications/route.ts');
 const guildRoute = read('dashboard/src/app/api/site/guild/route.ts');
 const bridge = read('dashboard/src/lib/publicSiteBridge.ts');
-const applications = read('dashboard/src/lib/github.ts');
+const applications = read('dashboard/src/lib/applicationsStore.ts');
 const roster = read('dashboard/src/lib/guildRoster.ts');
 const raidSeasonResolver = read('dashboard/src/lib/raidSeasonResolver.ts');
 const compose = read('docker-compose.yml');
@@ -30,7 +31,7 @@ const guildSyncRoute = read('dashboard/src/app/api/guild/sync/route.ts');
 const guildPage = read('dashboard/src/app/guild/page.tsx');
 
 check(proxy.includes('pathname === \"/api/site/content\"') && proxy.includes('site\\/media'), 'public CMS and media routes must be admitted by proxy without Dashboard session');
-check(proxy.includes('isInternalSiteRead') && proxy.includes('PUBLIC_SITE_BRIDGE_TOKEN'), 'site Docker SSR transport must authenticate read-only GET requests');
+check(proxy.includes('isInternalSiteRead') && proxy.includes('hasSiteBridgeToken'), 'site Docker SSR transport must authenticate read-only GET requests');
 check(proxy.includes('function isPublicSiteBridgePath'), 'proxy must explicitly identify public Main Site bridge routes');
 check(proxy.includes('pathname === "/api/site/applications"') && proxy.includes('pathname === "/api/site/guild"'), 'both Main Site bridge routes must be public at proxy level');
 check(proxy.includes('isPublicSiteBridgePath(pathname) ||'), 'public bridge routes must bypass Dashboard session protection');
@@ -40,7 +41,7 @@ check(applicationsRoute.includes('assertRequestBodySize'), 'application POST mus
 check(applicationsRoute.includes('Buffer.byteLength(rawBody, "utf8") > 16 * 1024'), 'application POST must enforce body limit after reading chunked payloads');
 check(applicationsRoute.includes('checkRateLimit'), 'public applications route must be rate limited');
 check(applicationsRoute.includes('validateApplication'), 'public applications must use server-side validation');
-check(applicationsRoute.includes('website'), 'public applications must keep honeypot validation');
+check(applicationContract.includes('website') && applicationsRoute.includes('validatePublicApplication(body)'), 'public applications must keep honeypot validation');
 check(applicationsRoute.includes('notifyDiscordNewApplication'), 'new public applications must notify Discord');
 check(applicationsRoute.includes('setApplicationDiscordMessageRef'), 'Discord message ref must be persisted for two-way status updates');
 check(applicationsRoute.includes('filterStoredApplications(stored'), 'public applications GET should filter one stored snapshot instead of rereading the collection');

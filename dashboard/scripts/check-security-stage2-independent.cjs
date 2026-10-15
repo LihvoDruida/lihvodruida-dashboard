@@ -83,7 +83,7 @@ function fakeDb() {
 }
 (async () => {
   const storage = fakeDb();
-  const deps = { "@/lib/firebaseAdmin": { getFirebaseAdminDb: () => storage.db } };
+  const deps = { "@/lib/documentDb": { getDocumentDb: () => storage.db } };
   const dedupe = load("src/lib/discordInteractionDedupe.ts", deps);
   const revocation = load("src/lib/sessionRevocation.ts", deps);
   const id = "1449767282195562569";

@@ -4,7 +4,7 @@ import {
   getIssueStatusFromLabels,
   normalizeStatus,
   setIssueStatus,
-} from "./github";
+} from "./applicationsStore";
 import {
   editDiscordApplicationMessage,
   notifyDiscordStatusChange,

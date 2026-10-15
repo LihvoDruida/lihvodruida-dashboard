@@ -16,7 +16,7 @@
  * а різна поведінка на однакових на вигляд викликах.
  */
 
-/** Firestore Timestamp, ISO-рядок або Date → ISO-рядок. */
+/** DocumentStore Timestamp, ISO-рядок або Date → ISO-рядок. */
 export function timestampToIso(value: unknown): string | null {
   if (!value) return null;
   if (typeof value === "string") return value;

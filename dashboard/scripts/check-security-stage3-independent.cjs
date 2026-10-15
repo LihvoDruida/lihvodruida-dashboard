@@ -60,7 +60,7 @@ function store() {
   let passed = 0;
   async function test(name, fn) { await fn(); passed++; console.log(`PASS ${name}`); }
   const storage = store();
-  const outbox = load("src/lib/discordInteractionOutbox.ts", { "@/lib/firebaseAdmin": { getFirebaseAdminDb: () => storage.db } });
+  const outbox = load("src/lib/discordInteractionOutbox.ts", { "@/lib/documentDb": { getDocumentDb: () => storage.db } });
   const id = "1977770001112223334";
   const token = "super-sensitive-discord-interaction-token";
   const base = Date.now();
@@ -166,7 +166,7 @@ function store() {
     process.env.SESSION_SECRET = "independent-stage3-key-" + "k".repeat(48);
   });
   await test("claims survive process restart while keeping replay protection", async () => {
-    const restarted = load("src/lib/discordInteractionOutbox.ts", { "@/lib/firebaseAdmin": { getFirebaseAdminDb: () => storage.db } });
+    const restarted = load("src/lib/discordInteractionOutbox.ts", { "@/lib/documentDb": { getDocumentDb: () => storage.db } });
     assert.equal((await restarted.beginInteractionOutbox(id, token)).claimed, false);
   });
   await test("outbox HTTP API rejects unauthenticated read and write", async () => {

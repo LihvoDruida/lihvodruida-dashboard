@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import type { ApplicationStatus } from "@/lib/github";
+import type { ApplicationStatus } from "@/lib/applicationsStore";
 import { dashboardApiJson } from "@/lib/dashboardApiClient";
 import { notifyDashboardDataChanged } from "@/lib/dashboardLiveRefresh";
 import { dispatchDashboardToast } from "@/lib/clientToasts";

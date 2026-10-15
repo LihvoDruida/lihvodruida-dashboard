@@ -739,7 +739,7 @@ export async function clearSession() {
 
 /**
  * Legacy sync resolver kept only for older imports. Real access is resolved
- * asynchronously from Firestore groups in accessGroups.ts.
+ * asynchronously from DocumentStore groups in accessGroups.ts.
  */
 export function resolveDashboardRole(_roleIds: string[]): DashboardRole | null {
   return null;

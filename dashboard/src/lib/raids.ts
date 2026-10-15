@@ -3,7 +3,7 @@ import { decodeRaidSignupMenuId } from "@mistblossom/discord-contract";
 import { getRaidReminderPreference, prepareRaidReminderPreferenceWrite } from "@/lib/discordNotificationPreferences";
 import { withDiscordPublicationLease, runDiscordPublicationCreation, publicationRevision, getDiscordPublicationOperation, updateDiscordPublicationOperation, DiscordPublicationPendingError } from "@/lib/discordPublication";
 import { publishDiscordResourceMessage } from "@/lib/discordMessagePublication";
-import { FieldValue } from "@/lib/db/firestoreCompat";
+import { FieldValue } from "@/lib/db/documentValues";
 import {
   cleanRaidImageUrl,
   defaultRaidThumbnailPath,
@@ -18,16 +18,16 @@ import {
   clearRuntimeCachedValuesByPrefix,
 } from "@/lib/runtimeResilience";
 import {
-  firebaseRead,
-  firebaseWrite,
-  firebaseUnavailableMessage,
-} from "@/lib/firebaseAccess";
+  storageRead,
+  storageWrite,
+  storageUnavailableMessage,
+} from "@/lib/storageAccess";
 import { getSiteRuntimeSettings } from "@/lib/dashboardApiSettings";
 import type { DashboardSession } from "@/lib/auth";
 import {
-  getFirebaseAdminDb,
-  hasFirebaseProfileConfig,
-} from "@/lib/firebaseAdmin";
+  getDocumentDb,
+  hasDocumentDbConfig,
+} from "@/lib/documentDb";
 import {
   getMainCharacter,
   getProfileByDiscordUserId,
@@ -876,11 +876,11 @@ export async function getRaidEditorDefaults(user: DashboardSession): Promise<Rai
   };
   if (!hasRaidStorage()) return empty;
   const docId = raidEditorDefaultsDocumentId(user);
-  return firebaseRead<RaidEditorDefaults>(
+  return storageRead<RaidEditorDefaults>(
     "raid",
     `raids:editor-defaults:${docId}`,
     async () => {
-      const snapshot = await getFirebaseAdminDb().collection(RAID_SETTINGS_COLLECTION).doc(docId).get();
+      const snapshot = await getDocumentDb().collection(RAID_SETTINGS_COLLECTION).doc(docId).get();
       return snapshot.exists ? normalizeRaidEditorDefaults(snapshot.data() || {}) : empty;
     },
     {
@@ -898,11 +898,11 @@ async function saveRaidEditorDefaults(
 ) {
   if (!hasRaidStorage()) return;
   const docId = raidEditorDefaultsDocumentId(user);
-  await firebaseWrite(
+  await storageWrite(
     "raid",
     `raids:editor-defaults:${docId}:save`,
     async () => {
-      await getFirebaseAdminDb().collection(RAID_SETTINGS_COLLECTION).doc(docId).set(
+      await getDocumentDb().collection(RAID_SETTINGS_COLLECTION).doc(docId).set(
         {
           accountDiscordId: user.provider === "discord" ? cleanSnowflake(user.id) : "",
           accountName: user.name || user.login || user.id || "",
@@ -923,11 +923,11 @@ export async function getRaidBenchPrioritySettings(
 ): Promise<RaidBenchPrioritySettings> {
   if (!hasRaidStorage()) return { ...EMPTY_RAID_BENCH_PRIORITY_SETTINGS };
 
-  return firebaseRead<RaidBenchPrioritySettings>(
+  return storageRead<RaidBenchPrioritySettings>(
     "raid",
     RAID_BENCH_PRIORITY_CACHE_KEY,
     async () => {
-      const snapshot = await getFirebaseAdminDb()
+      const snapshot = await getDocumentDb()
         .collection(RAID_SETTINGS_COLLECTION)
         .doc(RAID_BENCH_PRIORITY_DOCUMENT)
         .get();
@@ -996,11 +996,11 @@ export async function saveRaidBenchPrioritySettingsFromForm(
     updatedAt: FieldValue.serverTimestamp(),
   };
 
-  const saved = await firebaseWrite(
+  const saved = await storageWrite(
     "raid",
     "raids:bench-priority:save",
     async () => {
-      const ref = getFirebaseAdminDb()
+      const ref = getDocumentDb()
         .collection(RAID_SETTINGS_COLLECTION)
         .doc(RAID_BENCH_PRIORITY_DOCUMENT);
       await ref.set(payload, { merge: true });
@@ -1694,7 +1694,7 @@ export function raidSignupCharacterMinimumNote(
 }
 
 export function hasRaidStorage() {
-  return hasFirebaseProfileConfig();
+  return hasDocumentDbConfig();
 }
 
 function clearRaidRuntimeCaches(raidId?: string | null) {
@@ -1759,18 +1759,18 @@ function scheduleRaidAutoCloseSync(raid: RaidItem, source: string) {
 function raidWriteErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : String(error || "");
   if (
-    /збереження|write|permission|quota|firestore|firebase|timed out|timeout|resource/i.test(
+    /збереження|write|permission|quota|documentStore|storage|timed out|timeout|resource/i.test(
       message,
     )
   ) {
-    return firebaseUnavailableMessage("raid", "write");
+    return storageUnavailableMessage("raid", "write");
   }
   return message || "Запис на рейд тимчасово недоступний. Спробуй пізніше.";
 }
 
 /**
  * Раніше тут стояв ще один шар кешу — список рейдів у Cloudflare KV поверх
- * кешу `firebaseRead` нижче. Він мав сенс, поки KV був спільним для всіх
+ * кешу `storageRead` нижче. Він мав сенс, поки KV був спільним для всіх
  * екземплярів і жив за межами процесу. Після переїзду на власний сервер це
  * перетворилось на другий кеш тих самих даних у тій самій памʼяті: користі
  * нуль, а ризик показати застарілий склад рейду — цілком реальний.
@@ -1778,19 +1778,19 @@ function raidWriteErrorMessage(error: unknown) {
 export async function listRaids(limit = 60): Promise<RaidItem[]> {
   const safeLimit = Math.max(1, Math.min(100, limit));
   if (!hasRaidStorage()) return [];
-  const raids = await firebaseRead<RaidItem[]>(
+  const raids = await storageRead<RaidItem[]>(
     "raid",
     `raids:list:${safeLimit}`,
     async () => {
       let snapshot: any;
       try {
-        snapshot = await getFirebaseAdminDb()
+        snapshot = await getDocumentDb()
           .collection(RAID_COLLECTION)
           .orderBy("date", "desc")
           .limit(safeLimit)
           .get();
       } catch {
-        snapshot = await getFirebaseAdminDb()
+        snapshot = await getDocumentDb()
           .collection(RAID_COLLECTION)
           .limit(safeLimit)
           .get();
@@ -1809,7 +1809,7 @@ export async function listRaids(limit = 60): Promise<RaidItem[]> {
             Date.parse(a.updatedAt || a.createdAt || ""),
       );
       sorted.forEach((raid) =>
-        scheduleRaidAutoCloseSync(raid, "firebase-list-read"),
+        scheduleRaidAutoCloseSync(raid, "storage-list-read"),
       );
       return sorted;
     },
@@ -1843,17 +1843,17 @@ export async function getRaid(raidId: string): Promise<RaidItem | null> {
   const id = cleanRaidId(raidId);
   if (!id) return null;
   if (!hasRaidStorage()) return null;
-  const raid = await firebaseRead(
+  const raid = await storageRead(
     "raid",
     `raid:${id}`,
     async () => {
-      const snapshot = await getFirebaseAdminDb()
+      const snapshot = await getDocumentDb()
         .collection(RAID_COLLECTION)
         .doc(id)
         .get();
       if (!snapshot.exists) return null;
       const raid = normalizeRaid(snapshot.id, snapshot.data() || {});
-      scheduleRaidAutoCloseSync(raid, "firebase-item-read");
+      scheduleRaidAutoCloseSync(raid, "storage-item-read");
       return raid;
     },
     {
@@ -2026,12 +2026,12 @@ async function syncAutoClosedRaid(raid: RaidItem) {
   if (raid.status === "closed" && raid.closedReason === "auto") return false;
 
   let closed = false;
-  await firebaseWrite(
+  await storageWrite(
     "raid",
     `raid:${raid.id}:auto-close`,
     async () => {
-      const ref = getFirebaseAdminDb().collection(RAID_COLLECTION).doc(raid.id);
-      await getFirebaseAdminDb().runTransaction(async (transaction: any) => {
+      const ref = getDocumentDb().collection(RAID_COLLECTION).doc(raid.id);
+      await getDocumentDb().runTransaction(async (transaction: any) => {
         const snapshot = await transaction.get(ref);
         if (!snapshot.exists) return;
         const current = normalizeRaid(snapshot.id, snapshot.data() || {});
@@ -2111,12 +2111,12 @@ async function syncRaidReminder(raid: RaidItem) {
     return false;
 
   let claimed = false;
-  await firebaseWrite(
+  await storageWrite(
     "raid",
     `raid:${raid.id}:reminder-claim`,
     async () => {
-      const ref = getFirebaseAdminDb().collection(RAID_COLLECTION).doc(raid.id);
-      await getFirebaseAdminDb().runTransaction(async (transaction: any) => {
+      const ref = getDocumentDb().collection(RAID_COLLECTION).doc(raid.id);
+      await getDocumentDb().runTransaction(async (transaction: any) => {
         const snapshot = await transaction.get(ref);
         if (!snapshot.exists) return;
         const data = snapshot.data() || {};
@@ -2144,11 +2144,11 @@ async function syncRaidReminder(raid: RaidItem) {
   if (!claimed) return false;
 
   const clearClaim = async () => {
-    await firebaseWrite(
+    await storageWrite(
       "raid",
       `raid:${raid.id}:reminder-clear-claim`,
       async () => {
-        await getFirebaseAdminDb().collection(RAID_COLLECTION).doc(raid.id).set(
+        await getDocumentDb().collection(RAID_COLLECTION).doc(raid.id).set(
           { reminderClaimedAt: null, updatedAt: FieldValue.serverTimestamp() },
           { merge: true },
         );
@@ -2194,11 +2194,11 @@ async function syncRaidReminder(raid: RaidItem) {
   });
 
   let persisted = false;
-  await firebaseWrite(
+  await storageWrite(
     "raid",
     `raid:${raid.id}:reminder-sent`,
     async () => {
-      await getFirebaseAdminDb().collection(RAID_COLLECTION).doc(raid.id).set(
+      await getDocumentDb().collection(RAID_COLLECTION).doc(raid.id).set(
         {
           reminderChannelId: channelId,
           reminderMessageId: messageId,
@@ -2259,11 +2259,11 @@ async function syncRaidReminderDeletion(raid: RaidItem) {
     }
   }
 
-  await firebaseWrite(
+  await storageWrite(
     "raid",
     `raid:${raid.id}:reminder-delete`,
     async () => {
-      await getFirebaseAdminDb().collection(RAID_COLLECTION).doc(raid.id).set(
+      await getDocumentDb().collection(RAID_COLLECTION).doc(raid.id).set(
         {
           reminderDeletedAt: FieldValue.serverTimestamp(),
           reminderMessageId: null,
@@ -2307,11 +2307,11 @@ async function syncRaidDiscordDeletionAfterStart(raid: RaidItem) {
     }
   }
 
-  await firebaseWrite(
+  await storageWrite(
     "raid",
     `raid:${raid.id}:discord-auto-delete`,
     async () => {
-      await getFirebaseAdminDb().collection(RAID_COLLECTION).doc(raid.id).set(
+      await getDocumentDb().collection(RAID_COLLECTION).doc(raid.id).set(
         {
           discordDeletedAt: FieldValue.serverTimestamp(),
           discordDeleteReason: "auto",
@@ -2345,7 +2345,7 @@ function raidLifecycleTaskId(raidId: string, type: RaidLifecycleTaskType) {
 }
 
 function raidLifecycleTaskRef(raidId: string, type: RaidLifecycleTaskType) {
-  return getFirebaseAdminDb()
+  return getDocumentDb()
     .collection(RAID_LIFECYCLE_TASK_COLLECTION)
     .doc(raidLifecycleTaskId(raidId, type));
 }
@@ -2445,7 +2445,7 @@ function raidLifecycleTaskPlan(raid: RaidItem): PlannedRaidLifecycleTask[] {
 }
 
 async function readRaidForLifecycleTask(raidId: string): Promise<RaidItem | null> {
-  const snapshot = await getFirebaseAdminDb()
+  const snapshot = await getDocumentDb()
     .collection(RAID_COLLECTION)
     .doc(raidId)
     .get();
@@ -2527,7 +2527,7 @@ function lifecycleDateKey(offsetDays: number) {
 async function listRaidsForLifecycleRecovery(limit: number) {
   if (!hasRaidStorage()) return [] as RaidItem[];
   const safeLimit = Math.max(1, Math.min(200, Math.floor(Number(limit) || 100)));
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   const docsById = new Map<
     string,
     { id: string; data: () => Record<string, unknown> | undefined }
@@ -2579,7 +2579,7 @@ async function reconcileRaidLifecycleTaskRecovery(limit: number) {
     if (menuUpgradeAttempts < 3 && raid.messageId && raid.signupMenuVersion !== 3 && !(Date.parse(raid.signupMenuRetryAfter || "") > Date.now())) {
       menuUpgradeAttempts += 1;
       const synced = await syncRaidDiscordAfterSignup(raid);
-      await getFirebaseAdminDb().collection(RAID_COLLECTION).doc(raid.id).set(synced
+      await getDocumentDb().collection(RAID_COLLECTION).doc(raid.id).set(synced
         ? { signupMenuVersion: 3, signupMenuRetryAfter: null }
         : { signupMenuRetryAfter: new Date(Date.now() + 15 * 60_000).toISOString() }, { merge: true });
     }
@@ -2594,7 +2594,7 @@ async function listDueRaidLifecycleTasks(limit: number, nowMs = Date.now()) {
   if (!hasRaidStorage()) return [] as RaidLifecycleTask[];
   const safeLimit = Math.max(1, Math.min(100, Math.floor(Number(limit) || 40)));
   try {
-    const snapshot = await getFirebaseAdminDb()
+    const snapshot = await getDocumentDb()
       .collection(RAID_LIFECYCLE_TASK_COLLECTION)
       .where("dueAtMs", "<=", nowMs)
       .orderBy("dueAtMs", "asc")
@@ -2607,7 +2607,7 @@ async function listDueRaidLifecycleTasks(limit: number, nowMs = Date.now()) {
     console.warn("[raids] Due lifecycle task query failed; using bounded task scan", {
       message: error instanceof Error ? error.message : String(error),
     });
-    const snapshot = await getFirebaseAdminDb()
+    const snapshot = await getDocumentDb()
       .collection(RAID_LIFECYCLE_TASK_COLLECTION)
       .limit(Math.min(250, safeLimit * 5))
       .get();
@@ -2620,8 +2620,8 @@ async function listDueRaidLifecycleTasks(limit: number, nowMs = Date.now()) {
 }
 
 async function claimRaidLifecycleTask(task: RaidLifecycleTask, nowMs: number, lockId: string) {
-  return getFirebaseAdminDb().runTransaction(async (transaction: any) => {
-    const ref = getFirebaseAdminDb().collection(RAID_LIFECYCLE_TASK_COLLECTION).doc(task.id);
+  return getDocumentDb().runTransaction(async (transaction: any) => {
+    const ref = getDocumentDb().collection(RAID_LIFECYCLE_TASK_COLLECTION).doc(task.id);
     const snapshot = await transaction.get(ref);
     if (!snapshot.exists) return null;
     const current = normalizeRaidLifecycleTask(snapshot.id, snapshot.data() || {});
@@ -2650,8 +2650,8 @@ async function releaseRaidLifecycleTaskWithError(
   lockId: string,
   error: unknown,
 ) {
-  const ref = getFirebaseAdminDb().collection(RAID_LIFECYCLE_TASK_COLLECTION).doc(task.id);
-  await getFirebaseAdminDb().runTransaction(async (transaction: any) => {
+  const ref = getDocumentDb().collection(RAID_LIFECYCLE_TASK_COLLECTION).doc(task.id);
+  await getDocumentDb().runTransaction(async (transaction: any) => {
     const snapshot = await transaction.get(ref);
     if (!snapshot.exists) return;
     const current = normalizeRaidLifecycleTask(snapshot.id, snapshot.data() || {});
@@ -2670,8 +2670,8 @@ async function releaseRaidLifecycleTaskWithError(
 }
 
 async function completeRaidLifecycleTask(task: RaidLifecycleTask, lockId: string) {
-  const ref = getFirebaseAdminDb().collection(RAID_LIFECYCLE_TASK_COLLECTION).doc(task.id);
-  await getFirebaseAdminDb().runTransaction(async (transaction: any) => {
+  const ref = getDocumentDb().collection(RAID_LIFECYCLE_TASK_COLLECTION).doc(task.id);
+  await getDocumentDb().runTransaction(async (transaction: any) => {
     const snapshot = await transaction.get(ref);
     if (!snapshot.exists) return;
     const current = normalizeRaidLifecycleTask(snapshot.id, snapshot.data() || {});
@@ -2882,12 +2882,12 @@ export async function closeRaid(raidId: string) {
           closedAt: raid.closedAt || new Date().toISOString(),
         };
 
-  await firebaseWrite(
+  await storageWrite(
     "raid",
     `raid:${raid.id}:close`,
     async () => {
-      const ref = getFirebaseAdminDb().collection(RAID_COLLECTION).doc(raid.id);
-      await getFirebaseAdminDb().runTransaction(async (transaction: any) => {
+      const ref = getDocumentDb().collection(RAID_COLLECTION).doc(raid.id);
+      await getDocumentDb().runTransaction(async (transaction: any) => {
         const snapshot = await transaction.get(ref);
         if (!snapshot.exists) throw new Error("Рейд не знайдено.");
         const current = normalizeRaid(snapshot.id, snapshot.data() || {});
@@ -3033,11 +3033,11 @@ async function deleteRaidUnderPublicationLease(raidId: string) {
     }
   }
 
-  await firebaseWrite(
+  await storageWrite(
     "raid",
     `raid:${raid.id}:delete`,
     async () => {
-      await getFirebaseAdminDb()
+      await getDocumentDb()
         .collection(RAID_COLLECTION)
         .doc(raid.id)
         .delete();
@@ -3154,11 +3154,11 @@ export async function syncRaidSignupGenderForProfile(
     });
 
     if (!changed) continue;
-    await firebaseWrite(
+    await storageWrite(
       "raid",
       `raid:${raid.id}:gender-sync`,
       async () => {
-        await getFirebaseAdminDb().collection(RAID_COLLECTION).doc(raid.id).set(
+        await getDocumentDb().collection(RAID_COLLECTION).doc(raid.id).set(
           {
             signups: nextSignups,
             updatedAt: FieldValue.serverTimestamp(),
@@ -3286,7 +3286,7 @@ export async function removeRaidSignupsForAccounts(input: {
     ? Math.min(500, Math.floor(parsedLimit))
     : Math.max(80, Math.min(300, Number(process.env.RAID_ACCOUNT_CLEANUP_SCAN_LIMIT || 250) || 250));
 
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   let snapshot: any;
   try {
     snapshot = await db.collection(RAID_COLLECTION).orderBy("date", "desc").limit(safeLimit).get();
@@ -3332,7 +3332,7 @@ export async function removeRaidSignupsForAccounts(input: {
     };
   }
 
-  await firebaseWrite(
+  await storageWrite(
     "raid",
     `raids:account-cleanup:${Array.from(filters.discordUserIds).join(",") || Array.from(filters.profileIds).join(",")}`,
     async () => {
@@ -3531,11 +3531,11 @@ export async function saveRaidFromForm(
   const creationToken = String(form.get("creationToken") || "");
   const raidId = cleanRaidId(form.get("raidId")) || (/^[a-f0-9-]{36}$/.test(creationToken) ? publicationRevision([user.provider, user.id, creationToken]).slice(0, 32) : "");
   const payload = formRaidPayload(form, user, profile);
-  const savedRaid = await firebaseWrite(
+  const savedRaid = await storageWrite(
     "raid",
     raidId ? `raid:${raidId}:save` : "raid:new:save",
     async () => {
-      const db = getFirebaseAdminDb();
+      const db = getDocumentDb();
       const ref = raidId
         ? db.collection(RAID_COLLECTION).doc(raidId)
         : db.collection(RAID_COLLECTION).doc();
@@ -5050,11 +5050,11 @@ async function persistRaidDiscordScheduledEventState(
   raidId: string,
   patch: Record<string, unknown>,
 ) {
-  await firebaseWrite(
+  await storageWrite(
     "raid",
     `raid:${raidId}:discord-event-state`,
     async () => {
-      await getFirebaseAdminDb()
+      await getDocumentDb()
         .collection(RAID_COLLECTION)
         .doc(raidId)
         .update({ ...patch, updatedAt: FieldValue.serverTimestamp() });
@@ -5682,11 +5682,11 @@ export async function recordRaidSignup(
     () => ({ ...EMPTY_RAID_BENCH_PRIORITY_SETTINGS }),
   );
 
-  const updated = await firebaseWrite<RaidItem>(
+  const updated = await storageWrite<RaidItem>(
     "raid",
     `raid:${id}:signup:${persistedSignup.discordId}`,
     async () => {
-      const db = getFirebaseAdminDb();
+      const db = getDocumentDb();
       const ref = db.collection(RAID_COLLECTION).doc(id);
       const saved = await db.runTransaction(async (transaction: any) => {
         const snapshot = await transaction.get(ref);
@@ -6070,11 +6070,11 @@ async function recoverEmptyRaidFromDiscordMessage(
     recoveredFromDiscordMessage: true,
   };
 
-  await firebaseWrite(
+  await storageWrite(
     "raid",
     `raid:${id}:discord-orphan-recovery`,
     async () => {
-      await getFirebaseAdminDb().collection(RAID_COLLECTION).doc(id).set(raw, { merge: true });
+      await getDocumentDb().collection(RAID_COLLECTION).doc(id).set(raw, { merge: true });
       return true;
     },
     { timeoutMs: 5_000, bypassCircuit: true, logEvent: "raids.discord_orphan_recovered" },
@@ -6721,7 +6721,7 @@ function raidModalSelect(id: string, label: string, options: Array<Record<string
 export async function prepareRaidSignupModal(params: { customId: string; userId: string; guildId: string }) {
   const action = decodeRaidSignupMenuId(params.customId);
   if (action?.kind !== "modal" || params.guildId !== getDiscordGuildId() || !/^\d{16,25}$/.test(params.userId)) throw new Error("Форма належить іншому серверу.");
-  const draft = (await getFirebaseAdminDb().collection(RAID_SIGNUP_MENU_COLLECTION).doc(action.draftId).get()).data() as RaidSignupMenuDraft | undefined;
+  const draft = (await getDocumentDb().collection(RAID_SIGNUP_MENU_COLLECTION).doc(action.draftId).get()).data() as RaidSignupMenuDraft | undefined;
   assertRaidSignupMenuDraft(draft, params.userId, action.revision);
   // Legacy menu actions have no page; only paginated modal launchers may open this form.
   const page = action.page;
@@ -6790,7 +6790,7 @@ export async function handleRaidSignupMenuInteraction(params: {
 }) {
   if (!/^\d{16,25}$/.test(params.userId) || params.guildId !== getDiscordGuildId()) throw new Error("Некоректний учасник або Discord-сервер.");
   const action = decodeRaidSignupMenuId(params.customId);
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   if (action?.kind === "open" || params.legacy) {
     const raidId = action?.kind === "open" ? action.raidId : params.legacy!.raidId;
     const raid = await getRaidForDiscordInteraction(raidId, { channelId: params.interaction.channel_id, messageId: params.interaction.message?.id }, params.interaction.message);
@@ -6882,7 +6882,7 @@ export async function handleRaidSignupMenuInteraction(params: {
   return { content: raidSignupMenuText(updated, profile), components: buildRaidSignupMenuComponents(action.draftId, updated, profile) };
 }
 export async function pruneRaidSignupMenus(limit = 250) {
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   const expired = await db.collection(RAID_SIGNUP_MENU_COLLECTION).where("expiresAt", "<=", new Date().toISOString()).limit(limit).get();
   for (const snapshot of expired.docs) await db.runTransaction(async (tx) => {
     const current = await tx.get(snapshot.ref);

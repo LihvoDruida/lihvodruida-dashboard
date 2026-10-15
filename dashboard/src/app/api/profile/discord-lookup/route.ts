@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getProfileByDiscordUserId, getMainCharacter, getProfilePublicName } from "@/lib/profiles";
-import { hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
+import { hasDocumentDbConfig } from "@/lib/documentDb";
 import {
   assertRequestBodySize,
   checkRateLimit,
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ found: false, error: "Forbidden", reason: "forbidden" }, { status: 403, headers: noStoreHeaders() });
   }
 
-  if (!hasFirebaseProfileConfig()) {
+  if (!hasDocumentDbConfig()) {
     return NextResponse.json({ found: false, error: "Збереження профілів тимчасово недоступне.", reason: "profile-storage-unavailable" }, { status: 503, headers: noStoreHeaders() });
   }
 

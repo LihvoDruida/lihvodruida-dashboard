@@ -9,7 +9,7 @@ pool.on('error', () => {});
 const db = load('src/lib/db/pgPool.ts', { pg }, { __mistblossomPgPool: pool, process: { env: { DATABASE_URL: url } } }).exports;
 let queries = [];
 const adapter = load('src/lib/db/documentStore.ts', { '@/lib/db/pgPool': { ...db, pgQuery: (...args) => { queries.push(args); return db.pgQuery(...args); } } }).exports;
-const store = new adapter.PgFirestore(), guild = '123456789012345678', read = loadOverview(store, guild);
+const store = new adapter.PgDocumentStore(), guild = '123456789012345678', read = loadOverview(store, guild);
 const settings = id => store.collection('dashboardSettings').doc(id), lease = id => store.collection('automationLeases').doc(id);
 const digest = async () => (await pool.query('SELECT collection,doc_id,data FROM documents ORDER BY collection,doc_id')).rows;
 const iso = offset => new Date(Date.now() + offset).toISOString();

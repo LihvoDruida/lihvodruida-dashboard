@@ -22,8 +22,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 function sitePreviewBaseUrl() {
   return (
-    process.env.NEXT_PUBLIC_SITE_BASE_URL ||
-    process.env.SITE_BASE_URL ||
+    process.env.PUBLIC_SITE_URL ||
     "https://lihvodruida.pp.ua"
   ).replace(/\/+$/, "");
 }
@@ -31,6 +30,7 @@ function sitePreviewBaseUrl() {
 function publicAssetUrl(path?: string) {
   const value = String(path || "").trim();
   if (!value) return "";
+  if (/^\/api\/site\/media\/[a-f0-9]{64}$/.test(value)) return value;
   if (/^(https?:)?\/\//i.test(value) || value.startsWith("data:") || value.startsWith("blob:")) return value;
   return `${sitePreviewBaseUrl()}/${value.replace(/^\/+/, "")}`;
 }
@@ -174,7 +174,7 @@ function EditContentForm({ item, author, authorSuggestions }: { item: SiteConten
       <EditorHeader mode="edit" eyebrow={`Редагування • ${contentTypeLabel(item.kind)}`} title={item.title} meta={item.path} />
 
       <form className="content-form content-form--modern" method="post" action="/api/content/update" encType="multipart/form-data">
-        <input type="hidden" name="path" value={item.path} />
+        <input type="hidden" name="path" value={item.path} /><input type="hidden" name="revision" value={item.sha || "1"} />
 
         <FormSection title="Основне" hint="Тип, дати, заголовок, slug і опис сторінки.">
           <div className="form-row three">
@@ -255,7 +255,7 @@ function EditContentForm({ item, author, authorSuggestions }: { item: SiteConten
       </form>
 
       <form className="content-delete-form content-delete-form--standalone" method="post" action="/api/content/delete">
-        <input type="hidden" name="path" value={item.path} />
+        <input type="hidden" name="path" value={item.path} /><input type="hidden" name="revision" value={item.sha || "1"} />
         <div>
           <strong>Небезпечна дія</strong>
           <small>Видаляє матеріал зі списку. Обкладинка лишається, щоб не зламати інші сторінки.</small>
@@ -312,7 +312,7 @@ function ContentLibraryGroup({
                 <div className="content-row-actions dashboard-list-actions">
                   <a className="btn subtle" href={contentPublicHref(item)} target="_blank" rel="noreferrer">Превʼю</a>
                   <form method="post" action="/api/content/delete">
-                    <input type="hidden" name="path" value={item.path} />
+                    <input type="hidden" name="path" value={item.path} /><input type="hidden" name="revision" value={item.sha || "1"} />
                     <button className="btn danger" type="submit">Видалити</button>
                   </form>
                 </div>

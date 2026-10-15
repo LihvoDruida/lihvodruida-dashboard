@@ -12,7 +12,7 @@ import type { RaidComposition, RaidCharacterRole, RaidDifficulty, RaidItem, Raid
 /**
  * Чисті помічники для роботи зі складом рейду.
  *
- * `raids.ts` імпортує `firebase-admin/firestore`, тому клієнтські компоненти
+ * `raids.ts` імпортує `storage-admin/documentStore`, тому клієнтські компоненти
  * не можуть його імпортувати — і `RaidEditorLivePreview` тримав власні копії
  * тринадцяти функцій. Копії вже почали розходитись, а це логіка, від якої
  * залежить, що людина бачить у прев'ю проти того, що потім піде в Discord.

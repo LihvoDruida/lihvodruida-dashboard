@@ -15,8 +15,8 @@ if (!/^r2_[a-f0-9]{24}$/.test(schema)) throw Error('Invalid private schema');
 const pool = new pg.Pool({ connectionString: url, max: 8, options: '-c search_path=' + schema + ' -c statement_timeout=10000 -c lock_timeout=3000 -c idle_in_transaction_session_timeout=10000' });
 pool.on('error', () => {});
 const dbPool = load('src/lib/db/pgPool.ts', { pg }, { __mistblossomPgPool: pool, process: { env: { DATABASE_URL: url } } }).exports;
-const { PgFirestore, FieldValue } = load('src/lib/db/documentStore.ts', { '@/lib/db/pgPool': dbPool }).exports;
-const store = new PgFirestore();
+const { PgDocumentStore, FieldValue } = load('src/lib/db/documentStore.ts', { '@/lib/db/pgPool': dbPool }).exports;
+const store = new PgDocumentStore();
 let fault = null;
 const faultyStore = Object.create(store);
 faultyStore.runTransaction = handler => store.runTransaction(tx => handler(new Proxy(tx, {
@@ -50,9 +50,9 @@ const discord = {
   discordMessageUrl: (c, m) => 'https://discord.com/channels/333333333333333333/' + c + '/' + m,
 };
 function modules() {
-  const lease = load('src/lib/automationLease.ts', { '@/lib/firebaseAdmin': { getFirebaseAdminDb: () => faultyStore }, '@/lib/firebaseAccess': { assertFirebaseWriteAvailable() {} } }, globals).exports;
-  const publication = load('src/lib/discordPublication.ts', { '@/lib/firebaseAdmin': { getFirebaseAdminDb: () => faultyStore }, '@/lib/automationLease': lease, '@/lib/discordRest': rest }, globals).exports;
-  const publisher = load('src/lib/discordMessagePublication.ts', { '@/lib/firebaseAdmin': { getFirebaseAdminDb: () => faultyStore }, '@/lib/discordAdmin': discord, '@/lib/discordPublication': publication }, globals).exports;
+  const lease = load('src/lib/automationLease.ts', { '@/lib/documentDb': { getDocumentDb: () => faultyStore }, '@/lib/storageAccess': { assertStorageWriteAvailable() {} } }, globals).exports;
+  const publication = load('src/lib/discordPublication.ts', { '@/lib/documentDb': { getDocumentDb: () => faultyStore }, '@/lib/automationLease': lease, '@/lib/discordRest': rest }, globals).exports;
+  const publisher = load('src/lib/discordMessagePublication.ts', { '@/lib/documentDb': { getDocumentDb: () => faultyStore }, '@/lib/discordAdmin': discord, '@/lib/discordPublication': publication }, globals).exports;
   return { ...publication, ...publisher };
 }
 let moduleSet = modules();
@@ -80,10 +80,10 @@ function subject(entry, publication = moduleSet) {
   Object.assign(deps, {
     crypto: require('node:crypto'), '@/lib/values': values,
     '@/lib/raidPollShared': load('src/lib/raidPollShared.ts').exports,
-    '@/lib/db/firestoreCompat': { FieldValue }, '@/lib/discordPublication': publication,
+    '@/lib/db/documentValues': { FieldValue }, '@/lib/discordPublication': publication,
     '@/lib/discordMessagePublication': { publishDiscordResourceMessage: publication.publishDiscordResourceMessage },
-    '@/lib/firebaseAdmin': { getFirebaseAdminDb: () => faultyStore, hasFirebaseProfileConfig: () => true },
-    '@/lib/firebaseAccess': { firebaseWrite: (_domain, _key, run) => run(), firebaseRead: (_domain, _key, run) => run() },
+    '@/lib/documentDb': { getDocumentDb: () => faultyStore, hasDocumentDbConfig: () => true },
+    '@/lib/storageAccess': { storageWrite: (_domain, _key, run) => run(), storageRead: (_domain, _key, run) => run() },
     '@/lib/security': { getCanonicalDashboardOrigin: () => 'https://guild.test' },
     '@/lib/runtimeResilience': { clearRuntimeCachedValue() {}, clearRuntimeCachedValuesByPrefix() {} },
     '@/lib/discordAdmin': { ...discord, getDiscordDefaultChannelId: () => channel,

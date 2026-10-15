@@ -2,8 +2,8 @@ import "server-only";
 
 import { createHash, randomUUID } from "node:crypto";
 import { acquireAutomationLease } from "@/lib/automationLease";
-import { assertFirebaseWriteAvailable } from "@/lib/firebaseAccess";
-import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
+import { assertStorageWriteAvailable } from "@/lib/storageAccess";
+import { getDocumentDb } from "@/lib/documentDb";
 import { fetchDiscordCleanupControl, fetchDiscordCleanupMemberPage, fetchDiscordGuildMemberSnapshot, getDiscordGuildId, kickDiscordCleanupMember } from "@/lib/discordAdmin";
 import { cleanupRoleBlockedReason, evaluateCleanupMember, isCleanupPeriod, type CleanupControl, type CleanupMember, type DiscordCleanupPeriod } from "@/lib/discordCleanupPolicy";
 import { logDashboardEvent } from "@/lib/security";
@@ -45,7 +45,7 @@ function guildId() {
   return id;
 }
 function refs(id = guildId()) {
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   return { db, settings: db.collection("dashboardSettings").doc(`discordMemberCleanup_${id}`), execution: db.collection("dashboardSettings").doc(`discordMemberCleanupControl_${id}`), lease: db.collection("automationLeases").doc(`discord-member-cleanup_${id}`), state: db.collection("dashboardSettings").doc(`discordMemberCleanupState_${id}`), events: db.collection(`discordCleanupEvents_${id}`), candidates: (scanId: string) => db.collection(`discordCleanupCandidates_${id}_${scanId}`) };
 }
 function defaultExecution(): DiscordCleanupExecution { return { token: "legacy", paused: false, pauseRequestedAt: null, pauseRequestedBy: null, pauseObservedAt: null, inFlight: null }; }
@@ -57,7 +57,7 @@ export async function getDiscordCleanupOverview() {
   return { settings: { ...defaultSettings(), ...settings.data() } as DiscordCleanupSettings, state: { ...defaultState(), ...state.data() } as DiscordCleanupState, execution: { ...defaultExecution(), ...execution.data() } as DiscordCleanupExecution };
 }
 export async function saveDiscordCleanupSettings(input: { enabled: unknown; roleId: unknown; period: unknown }, actorId: string) {
-  assertFirebaseWriteAvailable("settings");
+  assertStorageWriteAvailable("settings");
   if (typeof input.enabled !== "boolean" || !isCleanupPeriod(input.period) || !/^\d{16,25}$/.test(String(input.roleId || ""))) throw new Error("Вибери одну роль і строк очищення.");
   const store = refs();
   const requestToken = (await store.execution.get()).data()?.token || "legacy";
@@ -87,7 +87,7 @@ export async function saveDiscordCleanupSettings(input: { enabled: unknown; role
   } finally { await lease.release(); }
 }
 export async function pauseDiscordCleanup(actorId: string) {
-  assertFirebaseWriteAvailable("settings");
+  assertStorageWriteAvailable("settings");
   const store = refs();
   // Separate control document: stopping never waits for the worker's lease or Discord HTTP.
   return store.db.runTransaction(async (tx) => {

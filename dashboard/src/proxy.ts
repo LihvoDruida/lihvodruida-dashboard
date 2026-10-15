@@ -1,3 +1,4 @@
+import {hasSiteBridgeToken} from '@/lib/siteBridgeAuth';
 import { NextRequest, NextResponse } from "next/server";
 import {
   forbiddenResponse,
@@ -58,6 +59,7 @@ function isPublicSiteBridgePath(pathname: string) {
     pathname === "/api/site/applications" ||
     pathname === "/api/site/guild" ||
     pathname === "/api/site/content" ||
+    pathname === "/api/site/status" ||
     /^\/api\/site\/media\/[a-f0-9]{64}$/.test(pathname)
   );
 }
@@ -253,15 +255,13 @@ export function proxy(request: NextRequest) {
   const hasInternalBearerAuth =
     isInternalBearerApiPath(pathname) &&
     hasPotentialInternalBearerToken(request);
-  // Authenticated, READ-ONLY bridge from the public site's Next.js server inside
-  // the Docker edge network. This never authorizes writes or privileged routes.
-  const siteBridgeToken = String(process.env.PUBLIC_SITE_BRIDGE_TOKEN || "").trim();
+  // Authenticated, narrowly scoped bridge from the public site's Next.js server inside
+  // the Docker edge network. Only application submission may write; privileged routes are excluded.
   const isInternalSiteRead =
-    siteBridgeToken.length >= 32 &&
-    (request.method === "GET" || request.method === "HEAD") &&
+    hasSiteBridgeToken(request) &&
+    (request.method === "GET" || request.method === "HEAD" || (request.method === "POST" && pathname === "/api/site/applications")) &&
     isPublicSiteBridgePath(pathname) &&
-    isInternalServiceHost(host) &&
-    request.headers.get("authorization") === `Bearer ${siteBridgeToken}`;
+    isInternalServiceHost(host);
   const isInternalServiceRequest =
     (hasInternalBearerAuth && isInternalServiceHost(host)) || isInternalSiteRead;
 

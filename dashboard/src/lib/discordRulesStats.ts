@@ -1,7 +1,7 @@
 import "server-only";
 
-import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
-import { firebaseRead, firebaseWrite } from "@/lib/firebaseAccess";
+import { getDocumentDb, hasDocumentDbConfig } from "@/lib/documentDb";
+import { storageRead, storageWrite } from "@/lib/storageAccess";
 import { cleanSnowflake, timestampToIso } from "@/lib/values";
 
 /**
@@ -78,7 +78,7 @@ export async function recordRulesDecision(input: {
   action?: RulesRecordAction;
   profileId?: string | null;
 }) {
-  if (!hasFirebaseProfileConfig()) return { ok: false as const, reason: "unconfigured" as const };
+  if (!hasDocumentDbConfig()) return { ok: false as const, reason: "unconfigured" as const };
 
   const discordId = cleanSnowflake(input.discordId);
   if (!discordId) return { ok: false as const, reason: "invalid_user" as const };
@@ -95,8 +95,8 @@ export async function recordRulesDecision(input: {
     profileId: String(input.profileId || "").trim() || null,
   };
 
-  await firebaseWrite("rules", `rules-record:${record.scope}:${discordId}`, async () => {
-    await getFirebaseAdminDb()
+  await storageWrite("rules", `rules-record:${record.scope}:${discordId}`, async () => {
+    await getDocumentDb()
       .collection(RULES_RECORDS_COLLECTION)
       .doc(recordId(guildId, discordId, scope))
       .set(record);
@@ -106,10 +106,10 @@ export async function recordRulesDecision(input: {
 }
 
 async function loadRecords(scope: RulesRecordScope, guildId?: string | null): Promise<RulesRecord[] | null> {
-  if (!hasFirebaseProfileConfig()) return null;
+  if (!hasDocumentDbConfig()) return null;
 
-  return firebaseRead("rules", `rules-records:${scope}`, async () => {
-    const snapshot = await getFirebaseAdminDb()
+  return storageRead("rules", `rules-records:${scope}`, async () => {
+    const snapshot = await getDocumentDb()
       .collection(RULES_RECORDS_COLLECTION)
       .where("scope", "==", scope)
       .get();

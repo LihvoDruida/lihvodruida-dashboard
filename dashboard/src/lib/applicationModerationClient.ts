@@ -1,4 +1,4 @@
-import type { ApplicationStatus } from "@/lib/github";
+import type { ApplicationStatus } from "@/lib/applicationsStore";
 import type { DashboardApiJsonOptions } from "@/lib/dashboardApiClient";
 
 export type ApplicationDecision = Exclude<ApplicationStatus, "review">;

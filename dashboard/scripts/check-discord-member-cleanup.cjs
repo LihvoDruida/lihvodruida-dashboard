@@ -45,8 +45,8 @@ const evaluate = (m, c = control, period = 'week') => policy.evaluateCleanupMemb
 async function fixture(members) {
   const db = memoryStore(); let writable = true; let liveControl = control; let kickError = null; let readMutation = null; let pageFailure = null; const kicks = [];
   const apiCalls = { control: 0, pages: 0, members: 0 };
-  const access = { assertFirebaseWriteAvailable: () => { if (!writable) throw new Error('read-only'); } };
-  const leases = load('src/lib/automationLease.ts', { '@/lib/firebaseAdmin': { getFirebaseAdminDb: () => db }, '@/lib/firebaseAccess': access });
+  const access = { assertStorageWriteAvailable: () => { if (!writable) throw new Error('read-only'); } };
+  const leases = load('src/lib/automationLease.ts', { '@/lib/documentDb': { getDocumentDb: () => db }, '@/lib/storageAccess': access });
   const discord = {
     getDiscordGuildId: () => guildId,
     fetchDiscordCleanupControl: async () => { apiCalls.control++; return liveControl; },
@@ -54,7 +54,7 @@ async function fixture(members) {
     fetchDiscordGuildMemberSnapshot: async (id) => { apiCalls.members++; const m = members.find((value) => value.userId === id); if (!m) throw new Error('Discord API 404: Unknown Member'); return readMutation ? readMutation(m) : m; },
     kickDiscordCleanupMember: async (guild, id, reason, beforeSend, onDispatch) => { await beforeSend?.(); onDispatch?.(); check(guild === guildId && reason.includes('Guild cleanup'), 'kick guild and audit reason'); kicks.push(id); if (kickError) throw new Error(kickError); members = members.filter((m) => m.userId !== id); },
   };
-  const service = load('src/lib/discordMemberCleanup.ts', { '@/lib/automationLease': leases, '@/lib/firebaseAccess': access, '@/lib/firebaseAdmin': { getFirebaseAdminDb: () => db }, '@/lib/discordAdmin': discord, '@/lib/discordCleanupPolicy': policy, '@/lib/security': { logDashboardEvent: () => {} } });
+  const service = load('src/lib/discordMemberCleanup.ts', { '@/lib/automationLease': leases, '@/lib/storageAccess': access, '@/lib/documentDb': { getDocumentDb: () => db }, '@/lib/discordAdmin': discord, '@/lib/discordCleanupPolicy': policy, '@/lib/security': { logDashboardEvent: () => {} } });
   await service.saveDiscordCleanupSettings({ enabled: false, roleId, period: 'week' }, 'owner');
   return { db, service, leases, kicks, apiCalls, writable: (v) => { writable = v; }, control: (v) => { liveControl = v; }, kickError: (v) => { kickError = v; }, readMutation: (v) => { readMutation = v; }, pageFailure: (v) => { pageFailure = v; }, enable: () => service.saveDiscordCleanupSettings({ enabled: true, roleId, period: 'week' }, 'owner') };
 }
@@ -154,7 +154,7 @@ async function main() {
   // Execute the real production proxy too: direct route tests missed the old
   // Host allowlist omission that blocked every Docker cron request with 421.
   const { NextRequest, NextResponse } = require('next/server');
-  const proxyModules = { 'next/server': { NextRequest, NextResponse }, '@/lib/security': {
+  const proxyModules = { '@/lib/siteBridgeAuth': {hasSiteBridgeToken:()=>false}, 'next/server': { NextRequest, NextResponse }, '@/lib/security': {
     forbiddenResponse: (error) => NextResponse.json({ ok: false, error }, { status: 403 }),
     getCanonicalDashboardOrigin: () => 'https://guild.example', getRequestHost: (r) => r.headers.get('host') || r.nextUrl.host,
     isAllowedHost: (host) => host === 'guild.example', isLocalHost: () => false,

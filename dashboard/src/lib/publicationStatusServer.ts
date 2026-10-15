@@ -1,12 +1,12 @@
 import "server-only";
-import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
+import { getDocumentDb } from "@/lib/documentDb";
 import { publicationRevision, type PublicationOperation } from "@/lib/discordPublication";
 import { buildPublicationStatus, unknownPublicationStatus } from "@/lib/publicationStatus";
 
 /** Fresh local reads only. Receipt payload, nonce and raw Discord errors never leave the server. */
 export async function readPublicationStatus(kind: "raid" | "poll", id: string) {
   try {
-    const db = getFirebaseAdminDb();
+    const db = getDocumentDb();
     return await db.runTransaction(async tx => {
       // Resource + receipts share a transaction snapshot; avoid a transient
       // "unpublished" decision across a concurrent publication commit.

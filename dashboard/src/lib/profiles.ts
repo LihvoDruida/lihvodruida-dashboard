@@ -1,11 +1,11 @@
 import { DISCORD_NOTIFICATION_PREFERENCES, raidReminderPreference } from "@/lib/discordNotificationPreferences";
-import { FieldPath, FieldValue, Timestamp } from "@/lib/db/firestoreCompat";
+import { FieldPath, FieldValue, Timestamp } from "@/lib/db/documentValues";
 import type { DashboardRole, DashboardSession } from "@/lib/auth";
 import { createStableProfileId } from "@/lib/profileIds";
 import {
-  getFirebaseAdminDb,
-  hasFirebaseProfileConfig,
-} from "@/lib/firebaseAdmin";
+  getDocumentDb,
+  hasDocumentDbConfig,
+} from "@/lib/documentDb";
 import {
   getAdaptiveConcurrency,
   mapConcurrent,
@@ -50,7 +50,7 @@ import {
 import { listAccessGroups } from "@/lib/accessGroups";
 import type { AccessGroup } from "@/lib/accessGroupSchema";
 import { resilientRead, resilientWrite, getRuntimeCachedValue, clearRuntimeCachedValue, clearRuntimeCachedValuesByPrefix } from "@/lib/runtimeResilience";
-import { firebaseWrite, firebaseUnavailableMessage } from "@/lib/firebaseAccess";
+import { storageWrite, storageUnavailableMessage } from "@/lib/storageAccess";
 import { timestampToIso } from "@/lib/values";
 import { resolveDiscordInteractionProfileDocument } from "@/lib/discordInteractionStorage";
 import {
@@ -1079,18 +1079,18 @@ export async function upsertProfileFromSession(session: DashboardSession) {
     battlenet: null,
   };
 
-  if (!hasFirebaseProfileConfig()) {
+  if (!hasDocumentDbConfig()) {
     return {
       profile,
       stored: false,
-      reason: "firebase-not-configured" as const,
+      reason: "storage-not-configured" as const,
     };
   }
 
   await writeProfileStorage(
     `profile:${profileId}:ensure`,
     async () => {
-      const db = getFirebaseAdminDb();
+      const db = getDocumentDb();
       const ref = db.collection("dashboardProfiles").doc(profileId);
       await db.runTransaction(async (transaction) => {
       const snapshot = await transaction.get(ref);
@@ -1144,12 +1144,12 @@ export async function upsertProfileFromSession(session: DashboardSession) {
 
 export async function getProfileById(profileId: string) {
   if (!/^id[a-f0-9]{16,40}$/.test(profileId)) return null;
-  if (!hasFirebaseProfileConfig()) return null;
+  if (!hasDocumentDbConfig()) return null;
 
   return resilientRead(
     `profile:${profileId}`,
     async () => {
-      const ref = getFirebaseAdminDb()
+      const ref = getDocumentDb()
         .collection("dashboardProfiles")
         .doc(profileId);
       const snapshot = await ref.get();
@@ -1172,7 +1172,7 @@ export async function getProfileById(profileId: string) {
             updatedAt: FieldValue.serverTimestamp(),
           }),
           {
-            circuitKey: "firebase-profile-write",
+            circuitKey: "storage-profile-write",
             timeoutMs: 2_000,
             fallback: () => undefined,
             logEvent: "profiles.candidate_cleanup_failed",
@@ -1187,7 +1187,7 @@ export async function getProfileById(profileId: string) {
     {
       ttlMs: Math.max(30_000, Math.min(300_000, Number((await getSiteRuntimeSettings().catch(() => null))?.profileReadCacheTtlMs || process.env.PROFILE_READ_CACHE_TTL_MS || 60_000))),
       timeoutMs: 3_000,
-      circuitKey: "firebase-profile-read",
+      circuitKey: "storage-profile-read",
       circuitTtlMs: 90_000,
       fallback: () => getRuntimeCachedValue<DashboardProfile | null>(`profile:${profileId}`, 24 * 60 * 60 * 1000),
       logEvent: "profiles.item_read_failed",
@@ -1199,7 +1199,7 @@ export async function getProfileById(profileId: string) {
 export async function getProfileByDiscordUserIdForInteraction(discordUserId: string) {
   const cleanDiscordId = String(discordUserId || "").trim();
   if (!/^\d{16,25}$/.test(cleanDiscordId)) return null;
-  if (!hasFirebaseProfileConfig()) return null;
+  if (!hasDocumentDbConfig()) return null;
 
   const stableProfileId = await createStableProfileId("discord", cleanDiscordId);
   const resolved = await resolveDiscordInteractionProfileDocument({
@@ -1225,7 +1225,7 @@ export async function getProfileByDiscordUserIdForInteraction(discordUserId: str
 export async function getProfileByDiscordUserId(discordUserId: string) {
   const cleanDiscordId = String(discordUserId || "").trim();
   if (!/^\d{16,25}$/.test(cleanDiscordId)) return null;
-  if (!hasFirebaseProfileConfig()) return null;
+  if (!hasDocumentDbConfig()) return null;
 
   // Fast path: current stable document id. This is what new Discord logins use.
   const stableProfileId = await createStableProfileId(
@@ -1235,14 +1235,14 @@ export async function getProfileByDiscordUserId(discordUserId: string) {
   const stableProfile = await getProfileById(stableProfileId);
   if (stableProfile) return stableProfile;
 
-  // Compatibility path for existing Firebase profiles. If PROFILE_ID_SECRET or
+  // Compatibility path for existing Storage profiles. If PROFILE_ID_SECRET or
   // SESSION_SECRET was rotated after a profile was created, the deterministic
-  // document id changes. Querying Firestore by providerUserId keeps already
+  // document id changes. Querying DocumentStore by providerUserId keeps already
   // stored dashboardProfiles documents usable for Worker lookups.
   return resilientRead(
     `profile:discord:${cleanDiscordId}`,
     async () => {
-      const db = getFirebaseAdminDb();
+      const db = getDocumentDb();
       const byProviderUserId = await db
         .collection("dashboardProfiles")
         .where("providerUserId", "==", cleanDiscordId)
@@ -1281,7 +1281,7 @@ export async function getProfileByDiscordUserId(discordUserId: string) {
     {
       ttlMs: 60_000,
       timeoutMs: 3_000,
-      circuitKey: "firebase-profile-read",
+      circuitKey: "storage-profile-read",
       circuitTtlMs: 90_000,
       fallback: () => getRuntimeCachedValue<DashboardProfile | null>(`profile:discord:${cleanDiscordId}`, 24 * 60 * 60 * 1000),
       logEvent: "profiles.discord_lookup_read_failed",
@@ -1292,7 +1292,7 @@ export async function getProfileByDiscordUserId(discordUserId: string) {
 export async function listDashboardProfilesForDiscordSync(
   limit = 1000,
 ): Promise<DashboardProfile[]> {
-  if (!hasFirebaseProfileConfig()) return [];
+  if (!hasDocumentDbConfig()) return [];
   const safeLimit = Math.max(
     10,
     Math.min(1000, Math.floor(Number(limit) || 1000)),
@@ -1300,7 +1300,7 @@ export async function listDashboardProfilesForDiscordSync(
   const snapshotProfiles = await resilientRead(
     `profiles:discord-sync:${safeLimit}`,
     async () => {
-      const snapshot = await getFirebaseAdminDb()
+      const snapshot = await getDocumentDb()
         .collection("dashboardProfiles")
         .limit(safeLimit)
         .get();
@@ -1309,7 +1309,7 @@ export async function listDashboardProfilesForDiscordSync(
     {
       ttlMs: 60_000,
       timeoutMs: 4_000,
-      circuitKey: "firebase-profile-read",
+      circuitKey: "storage-profile-read",
       circuitTtlMs: 90_000,
       fallback: () => getRuntimeCachedValue<DashboardProfile[]>(`profiles:discord-sync:${safeLimit}`, 10 * 60_000) || [],
       logEvent: "profiles.discord_sync_read_failed",
@@ -1325,7 +1325,7 @@ export async function listDashboardProfilesForDiscordSync(
 export async function listAllDashboardProfilesForDiscordSync(
   maxTotalInput?: unknown,
 ): Promise<DashboardProfile[]> {
-  if (!hasFirebaseProfileConfig()) return [];
+  if (!hasDocumentDbConfig()) return [];
 
   const maxTotalNumber = Number(maxTotalInput);
   const maxTotal =
@@ -1336,7 +1336,7 @@ export async function listAllDashboardProfilesForDiscordSync(
   const profiles = await resilientRead(
     `profiles:discord-sync:all:${maxTotal}`,
     async () => {
-      const db = getFirebaseAdminDb();
+      const db = getDocumentDb();
       const baseQuery = db
         .collection("dashboardProfiles")
         .orderBy(FieldPath.documentId());
@@ -1364,7 +1364,7 @@ export async function listAllDashboardProfilesForDiscordSync(
     {
       ttlMs: 60_000,
       timeoutMs: 8_000,
-      circuitKey: "firebase-profile-read",
+      circuitKey: "storage-profile-read",
       circuitTtlMs: 90_000,
       fallback: () => getRuntimeCachedValue<DashboardProfile[]>(`profiles:discord-sync:all:${maxTotal}`, 10 * 60_000) || [],
       logEvent: "profiles.discord_sync_all_read_failed",
@@ -1447,7 +1447,7 @@ function clearProfileRuntimeCaches(profileId?: string | null, options: { charact
 }
 
 function profileWriteUnavailableError() {
-  return new Error(firebaseUnavailableMessage("profile", "write"));
+  return new Error(storageUnavailableMessage("profile", "write"));
 }
 
 async function writeProfileStorage<T>(
@@ -1455,7 +1455,7 @@ async function writeProfileStorage<T>(
   writer: () => Promise<T>,
   options: { timeoutMs?: number; logEvent?: string } = {},
 ) {
-  return firebaseWrite("profile", key, writer, {
+  return storageWrite("profile", key, writer, {
     timeoutMs: options.timeoutMs || 4_000,
     logEvent: options.logEvent || "profiles.write_failed",
     fallback: () => {
@@ -1521,8 +1521,8 @@ function buildProfileCharacterLinkDocuments(profile: DashboardProfile) {
 }
 
 export async function syncCharacterProfileLinksForProfileId(profileId: string) {
-  if (!/^id[a-f0-9]{16,40}$/.test(profileId) || !hasFirebaseProfileConfig()) return;
-  const db = getFirebaseAdminDb();
+  if (!/^id[a-f0-9]{16,40}$/.test(profileId) || !hasDocumentDbConfig()) return;
+  const db = getDocumentDb();
   const profileRef = db.collection("dashboardProfiles").doc(profileId);
   const snapshot = await profileRef.get();
   const profile = snapshot.exists ? normalizeProfile(profileId, snapshot.data() || {}) : null;
@@ -1560,7 +1560,7 @@ export async function syncCharacterProfileLinksForProfileId(profileId: string) {
 
 async function readCharacterProfileLinksFromIndex(keys?: Iterable<string>) {
   const links = new Map<string, CharacterProfileLink>();
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   const normalizedKeys = Array.from(
     new Set(Array.from(keys || []).map(characterProfileLinkDocId).filter(Boolean)),
   );
@@ -1596,7 +1596,7 @@ async function repairCharacterProfileLinksIndex(
   links: Map<string, CharacterProfileLink>,
 ) {
   if (!links.size || !profileCharacterLinksReadRepairEnabled()) return;
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   const entries = Array.from(links.entries()).filter(([key, link]) =>
     Boolean(characterProfileLinkDocId(key) && link?.profileId),
   );
@@ -1638,7 +1638,7 @@ async function scanCharacterProfileLinksFromProfiles() {
     string,
     { link: CharacterProfileLink; profileIds: Set<string>; duplicate: boolean }
   >();
-  const snapshot = await getFirebaseAdminDb()
+  const snapshot = await getDocumentDb()
     .collection("dashboardProfiles")
     .limit(profileCharacterLinksScanFallbackLimit())
     .get();
@@ -1680,7 +1680,7 @@ async function scanCharacterProfileLinksFromProfiles() {
 
 export async function listCharacterProfileLinks() {
   const emptyLinks = new Map<string, CharacterProfileLink>();
-  if (!hasFirebaseProfileConfig()) return emptyLinks;
+  if (!hasDocumentDbConfig()) return emptyLinks;
 
   const cached = globalThis.__mistblossomCharacterProfileLinksCache;
   const ttlMs = await characterProfileLinksCacheTtlMs();
@@ -1705,7 +1705,7 @@ export async function listCharacterProfileLinks() {
     {
       ttlMs,
       timeoutMs: 3_500,
-      circuitKey: "firebase-profile-links-read",
+      circuitKey: "storage-profile-links-read",
       circuitTtlMs: 90_000,
       fallback: () => cached ? new Map(cached.links) : emptyLinks,
       logEvent: "profiles.character_links_read_failed",
@@ -1715,7 +1715,7 @@ export async function listCharacterProfileLinks() {
 
 export async function listCharacterProfileLinksForKeys(keysInput: Iterable<string>) {
   const emptyLinks = new Map<string, CharacterProfileLink>();
-  if (!hasFirebaseProfileConfig()) return emptyLinks;
+  if (!hasDocumentDbConfig()) return emptyLinks;
   const keys = Array.from(new Set(Array.from(keysInput || []).map(characterProfileLinkDocId).filter(Boolean)));
   if (!keys.length) return emptyLinks;
 
@@ -1751,7 +1751,7 @@ export async function listCharacterProfileLinksForKeys(keysInput: Iterable<strin
     {
       ttlMs,
       timeoutMs: 2_500,
-      circuitKey: "firebase-profile-links-read",
+      circuitKey: "storage-profile-links-read",
       circuitTtlMs: 90_000,
       fallback: () => {
         if (!cached) return emptyLinks;
@@ -1813,7 +1813,7 @@ export async function findProfileCharacterConflicts(
 ): Promise<ProfileCharacterConflict[]> {
   const requestedByKey = normalizedConflictCharacters(characterInputs);
   const cleanProfileId = String(profileId || "").trim();
-  if (!requestedByKey.size || !hasFirebaseProfileConfig()) return [];
+  if (!requestedByKey.size || !hasDocumentDbConfig()) return [];
 
   const maxProfiles = Math.max(
     100,
@@ -1827,7 +1827,7 @@ export async function findProfileCharacterConflicts(
     options.excludeProviderUserId || "",
   ).trim();
   const pageSize = 500;
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   const baseQuery = db
     .collection("dashboardProfiles")
     .orderBy(FieldPath.documentId());
@@ -1891,9 +1891,9 @@ export async function assertNoProfileCharacterConflicts(
   let excludeProviderUserId = "";
   if (
     /^id[a-f0-9]{16,40}$/.test(String(profileId || "")) &&
-    hasFirebaseProfileConfig()
+    hasDocumentDbConfig()
   ) {
-    const snapshot = await getFirebaseAdminDb()
+    const snapshot = await getDocumentDb()
       .collection("dashboardProfiles")
       .doc(profileId)
       .get()
@@ -1955,10 +1955,10 @@ export async function saveBattleNetSyncState(
 ) {
   if (!/^id[a-f0-9]{16,40}$/.test(profileId))
     throw new Error("Некоректний ID профілю.");
-  if (!hasFirebaseProfileConfig())
+  if (!hasDocumentDbConfig())
     throw new Error("Профілі тимчасово недоступні.");
 
-  const ref = getFirebaseAdminDb()
+  const ref = getDocumentDb()
     .collection("dashboardProfiles")
     .doc(profileId);
   const snapshot = await ref.get();
@@ -2046,10 +2046,10 @@ export async function clearProfileBattleNetCandidates(
   profileId: string,
   expectedExpiresAt?: string | null,
 ) {
-  if (!/^id[a-f0-9]{16,40}$/.test(profileId) || !hasFirebaseProfileConfig())
+  if (!/^id[a-f0-9]{16,40}$/.test(profileId) || !hasDocumentDbConfig())
     return false;
 
-  const ref = getFirebaseAdminDb()
+  const ref = getDocumentDb()
     .collection("dashboardProfiles")
     .doc(profileId);
   const snapshot = await ref.get();
@@ -2069,7 +2069,7 @@ export async function clearProfileBattleNetCandidates(
 
   // A stale tab must not clear a freshly refreshed candidate list.
   // But once the stored list is already expired, clear it even if string formatting
-  // differs between Firestore Timestamp and ISO sent by the client.
+  // differs between DocumentStore Timestamp and ISO sent by the client.
   if (
     expectedExpiresMs !== null &&
     currentExpiresMs !== null &&
@@ -2104,17 +2104,17 @@ export async function removeProfileBattleNetCandidates(
   if (
     !removeKeys.size ||
     !/^id[a-f0-9]{16,40}$/.test(profileId) ||
-    !hasFirebaseProfileConfig()
+    !hasDocumentDbConfig()
   )
     return;
 
-  const ref = getFirebaseAdminDb()
+  const ref = getDocumentDb()
     .collection("dashboardProfiles")
     .doc(profileId);
   await writeProfileStorage(
     `profile:${profileId}:candidate-remove`,
     async () => {
-      await getFirebaseAdminDb().runTransaction(async (transaction: any) => {
+      await getDocumentDb().runTransaction(async (transaction: any) => {
         const snapshot = await transaction.get(ref);
         if (!snapshot.exists) return;
 
@@ -2412,7 +2412,7 @@ async function refreshProfileExternalDataInternal(
   if (
     !profile?.profileId ||
     !profile.characters.length ||
-    !hasFirebaseProfileConfig()
+    !hasDocumentDbConfig()
   ) {
     return {
       profile: profile || null,
@@ -2496,7 +2496,7 @@ async function refreshProfileExternalDataInternal(
   });
 
   const firstCharacter = nextCharacters[0] || null;
-  const ref = getFirebaseAdminDb()
+  const ref = getDocumentDb()
     .collection("dashboardProfiles")
     .doc(profile.profileId);
   const battlenetPayload: Record<string, unknown> = {
@@ -2574,7 +2574,7 @@ export async function refreshProfileExternalData(
   if (
     !profile?.profileId ||
     !profile.characters.length ||
-    !hasFirebaseProfileConfig()
+    !hasDocumentDbConfig()
   ) {
     return {
       profile: profile || null,
@@ -2668,7 +2668,7 @@ export async function refreshAllProfilesExternalData(
     reason?: "manual" | "cron";
   } = {},
 ) {
-  if (!hasFirebaseProfileConfig()) {
+  if (!hasDocumentDbConfig()) {
     return {
       checked: 0,
       refreshedProfiles: 0,
@@ -2700,7 +2700,7 @@ export async function refreshAllProfilesExternalData(
   const profiles: DashboardProfile[] = await resilientRead(
     `profiles:external-refresh:${limit}`,
     async () => {
-      const snapshot = await getFirebaseAdminDb()
+      const snapshot = await getDocumentDb()
         .collection("dashboardProfiles")
         .limit(limit)
         .get();
@@ -2711,7 +2711,7 @@ export async function refreshAllProfilesExternalData(
     {
       ttlMs: 60_000,
       timeoutMs: 4_000,
-      circuitKey: "firebase-profile-read",
+      circuitKey: "storage-profile-read",
       circuitTtlMs: 90_000,
       fallback: () => getRuntimeCachedValue<DashboardProfile[]>(`profiles:external-refresh:${limit}`, 10 * 60_000) || [],
       logEvent: "profiles.external_refresh_list_read_failed",
@@ -2771,17 +2771,17 @@ export async function addProfileCharacter(
       "Цей персонаж не підтверджений через Battle.net або має некоректні дані.",
     );
   }
-  if (!hasFirebaseProfileConfig())
+  if (!hasDocumentDbConfig())
     throw new Error("Профілі тимчасово недоступні.");
 
   await assertNoProfileCharacterConflicts(profileId, [candidate]);
 
-  const ref = getFirebaseAdminDb()
+  const ref = getDocumentDb()
     .collection("dashboardProfiles")
     .doc(profileId);
   const result = await writeProfileStorage<{ added: boolean; reason?: "duplicate"; key: string }>(
     `profile:${profileId}:character-add:${cleanKey}`,
-    () => getFirebaseAdminDb().runTransaction(async (transaction: any) => {
+    () => getDocumentDb().runTransaction(async (transaction: any) => {
       const snapshot = await transaction.get(ref);
       if (!snapshot.exists) throw new Error("Профіль не знайдено.");
       const profile = normalizeProfile(profileId, snapshot.data() || {});
@@ -2832,7 +2832,7 @@ export async function addProfileCharacters(
   if (!normalized.size) {
     throw new Error("Немає підтверджених Battle.net персонажів для додавання.");
   }
-  if (!hasFirebaseProfileConfig())
+  if (!hasDocumentDbConfig())
     throw new Error("Профілі тимчасово недоступні.");
 
   await assertNoProfileCharacterConflicts(
@@ -2840,13 +2840,13 @@ export async function addProfileCharacters(
     Array.from(normalized.values()),
   );
 
-  const ref = getFirebaseAdminDb()
+  const ref = getDocumentDb()
     .collection("dashboardProfiles")
     .doc(profileId);
 
   const result = await writeProfileStorage(
     `profile:${profileId}:characters-bulk-add`,
-    () => getFirebaseAdminDb().runTransaction(async (transaction: any) => {
+    () => getDocumentDb().runTransaction(async (transaction: any) => {
       const addedKeys: string[] = [];
       const skippedKeys: string[] = [];
       const skippedReasons: Record<string, "duplicate"> = {};
@@ -2911,15 +2911,15 @@ export async function removeProfileCharacter(
 ) {
   const cleanKey = cleanCharacterKey(characterKey);
   if (!cleanKey) throw new Error("Некоректний персонаж.");
-  if (!hasFirebaseProfileConfig())
+  if (!hasDocumentDbConfig())
     throw new Error("Профілі тимчасово недоступні.");
 
-  const ref = getFirebaseAdminDb()
+  const ref = getDocumentDb()
     .collection("dashboardProfiles")
     .doc(profileId);
   await writeProfileStorage(
     `profile:${profileId}:character-remove:${cleanKey}`,
-    () => getFirebaseAdminDb().runTransaction(async (transaction: any) => {
+    () => getDocumentDb().runTransaction(async (transaction: any) => {
       const snapshot = await transaction.get(ref);
       if (!snapshot.exists) throw new Error("Профіль не знайдено.");
       const profile = normalizeProfile(profileId, snapshot.data() || {});
@@ -2965,15 +2965,15 @@ export async function setMainProfileCharacter(
 ) {
   const cleanKey = cleanCharacterKey(characterKey);
   if (!cleanKey) throw new Error("Некоректний персонаж.");
-  if (!hasFirebaseProfileConfig())
+  if (!hasDocumentDbConfig())
     throw new Error("Профілі тимчасово недоступні.");
 
-  const ref = getFirebaseAdminDb()
+  const ref = getDocumentDb()
     .collection("dashboardProfiles")
     .doc(profileId);
   await writeProfileStorage(
     `profile:${profileId}:character-main:${cleanKey}`,
-    () => getFirebaseAdminDb().runTransaction(async (transaction: any) => {
+    () => getDocumentDb().runTransaction(async (transaction: any) => {
       const snapshot = await transaction.get(ref);
       if (!snapshot.exists) throw new Error("Профіль не знайдено.");
       const profile = normalizeProfile(profileId, snapshot.data() || {});
@@ -3255,14 +3255,14 @@ export async function setProfilePreferredName(
 ) {
   if (!/^id[a-f0-9]{16,40}$/.test(profileId))
     throw new Error("Некоректний ID профілю.");
-  if (!hasFirebaseProfileConfig())
+  if (!hasDocumentDbConfig())
     throw new Error("Профілі тимчасово недоступні.");
 
   const preferredName = normalizeProfilePreferredName(nameInput);
   if (codePointLength(preferredName) < 2)
     throw new Error("Імʼя має містити щонайменше 2 символи.");
 
-  const ref = getFirebaseAdminDb()
+  const ref = getDocumentDb()
     .collection("dashboardProfiles")
     .doc(profileId);
   await writeProfileStorage(
@@ -3287,13 +3287,13 @@ export async function setProfilePublicNameMode(
 ) {
   if (!/^id[a-f0-9]{16,40}$/.test(profileId))
     throw new Error("Некоректний ID профілю.");
-  if (!hasFirebaseProfileConfig())
+  if (!hasDocumentDbConfig())
     throw new Error("Профілі тимчасово недоступні.");
 
   const publicNameMode = cleanProfilePublicNameMode(modeInput);
   await writeProfileStorage(
     `profile:${profileId}:public-name-mode`,
-    () => getFirebaseAdminDb().collection("dashboardProfiles").doc(profileId).set(
+    () => getDocumentDb().collection("dashboardProfiles").doc(profileId).set(
       {
         publicNameMode,
         updatedAt: FieldValue.serverTimestamp(),
@@ -3313,13 +3313,13 @@ export async function setProfileGrammaticalGender(
 ) {
   if (!/^id[a-f0-9]{16,40}$/.test(profileId))
     throw new Error("Некоректний ID профілю.");
-  if (!hasFirebaseProfileConfig())
+  if (!hasDocumentDbConfig())
     throw new Error("Профілі тимчасово недоступні.");
 
   const grammaticalGender = cleanProfileGrammaticalGender(genderInput);
   await writeProfileStorage(
     `profile:${profileId}:grammatical-gender`,
-    () => getFirebaseAdminDb().collection("dashboardProfiles").doc(profileId).set(
+    () => getDocumentDb().collection("dashboardProfiles").doc(profileId).set(
       {
         grammaticalGender,
         updatedAt: FieldValue.serverTimestamp(),
@@ -3340,7 +3340,7 @@ export async function markProfileDiscordNicknameSynced(
 ) {
   if (!/^id[a-f0-9]{16,40}$/.test(profileId))
     throw new Error("Некоректний ID профілю.");
-  if (!hasFirebaseProfileConfig())
+  if (!hasDocumentDbConfig())
     throw new Error("Профілі тимчасово недоступні.");
 
   const sourceCharacterNames = Array.isArray(source?.characterNames)
@@ -3349,7 +3349,7 @@ export async function markProfileDiscordNicknameSynced(
 
   await writeProfileStorage(
     `profile:${profileId}:discord-nickname-synced`,
-    () => getFirebaseAdminDb()
+    () => getDocumentDb()
       .collection("dashboardProfiles")
       .doc(profileId)
       .set(
@@ -3379,17 +3379,17 @@ export async function setProfileNicknameCharacters(
 ) {
   if (!/^id[a-f0-9]{16,40}$/.test(profileId))
     throw new Error("Некоректний ID профілю.");
-  if (!hasFirebaseProfileConfig())
+  if (!hasDocumentDbConfig())
     throw new Error("Профілі тимчасово недоступні.");
 
   const requestedKeys = cleanNicknameCharacterKeys(characterKeysInput);
-  const ref = getFirebaseAdminDb()
+  const ref = getDocumentDb()
     .collection("dashboardProfiles")
     .doc(profileId);
 
   const selected = await writeProfileStorage(
     `profile:${profileId}:nickname-characters`,
-    () => getFirebaseAdminDb().runTransaction(async (transaction: any) => {
+    () => getDocumentDb().runTransaction(async (transaction: any) => {
     const snapshot = await transaction.get(ref);
     if (!snapshot.exists) throw new Error("Профіль не знайдено.");
 
@@ -3422,17 +3422,17 @@ export async function setProfileRaidRolePreference(
   profileId: string,
   roleInput: unknown,
 ) {
-  if (!hasFirebaseProfileConfig())
+  if (!hasDocumentDbConfig())
     throw new Error("Профілі тимчасово недоступні.");
 
   const role = normalizeWowRole(roleInput);
-  const ref = getFirebaseAdminDb()
+  const ref = getDocumentDb()
     .collection("dashboardProfiles")
     .doc(profileId);
 
   await writeProfileStorage(
     `profile:${profileId}:raid-role`,
-    () => getFirebaseAdminDb().runTransaction(async (transaction: any) => {
+    () => getDocumentDb().runTransaction(async (transaction: any) => {
     const snapshot = await transaction.get(ref);
     if (!snapshot.exists) throw new Error("Профіль не знайдено.");
 

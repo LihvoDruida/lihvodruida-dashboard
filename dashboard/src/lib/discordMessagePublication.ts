@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
+import { getDocumentDb } from "@/lib/documentDb";
 import {
   createDiscordRaidMessage, editDiscordRaidMessage, deleteDiscordRaidMessage,
   findDiscordPublicationMessage, discordMessageUrl, parseDiscordMessageRef, type DiscordMessageRef,
@@ -27,7 +27,7 @@ const missing = (error: unknown) => /404|unknown message|10008/i.test(error inst
 
 /** Caller owns a per-resource lease, shared by all publishers and deletion. */
 export async function publishDiscordResourceMessage(options: Options): Promise<MessageResult & { cleanupWarning: string | null }> {
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   const ref = db.collection(options.collection).doc(options.resourceId);
   const read = async () => {
     const snapshot = await ref.get();

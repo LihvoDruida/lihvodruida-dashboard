@@ -19,7 +19,7 @@ export const revalidate = 0;
 /**
  * Discord-інтеракції обробляє окремий сервіс бота (контейнер `bot`):
  * він перевіряє підпис Discord, робить швидкий ACK і ПРОКСУЄ дію сюди. Уся логіка
- * складу живе в панелі (rosterFormation.ts), тому воркеру не треба знати Firestore —
+ * складу живе в панелі (rosterFormation.ts), тому воркеру не треба знати DocumentStore —
  * він лише пересилає {rosterId, kind, classKey, values, userId, userName} і показує
  * повернутий content + components. Так само вже влаштовані рейд-пули й рейд-оголошення.
  */

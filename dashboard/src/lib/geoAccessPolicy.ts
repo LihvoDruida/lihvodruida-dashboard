@@ -1,12 +1,12 @@
 import "server-only";
 
-import { FieldValue } from "@/lib/db/firestoreCompat";
+import { FieldValue } from "@/lib/db/documentValues";
 import { NextRequest, NextResponse } from "next/server";
-import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
+import { getDocumentDb, hasDocumentDbConfig } from "@/lib/documentDb";
 import type { DashboardSession } from "@/lib/auth";
 import { isTrustedCloudflareRequest, logDashboardEvent, noStoreHeaders, applyNoStoreHeaders } from "@/lib/security";
 import { resilientRead } from "@/lib/runtimeResilience";
-import { firebaseWrite } from "@/lib/firebaseAccess";
+import { storageWrite } from "@/lib/storageAccess";
 import { dashboardPublicOrigin, envFlag, timestampToIso } from "@/lib/values";
 
 const SETTINGS_COLLECTION = "dashboardSettings";
@@ -138,12 +138,12 @@ export async function getGeoAccessPolicy(options: { bypassCache?: boolean } = {}
   if (!options.bypassCache && geoPolicyCacheFresh()) {
     return globalThis.__mistblossomGeoAccessPolicyCache!.policy;
   }
-  if (!hasFirebaseProfileConfig()) return setGeoPolicyCache(defaultGeoAccessPolicy());
+  if (!hasDocumentDbConfig()) return setGeoPolicyCache(defaultGeoAccessPolicy());
 
   const policy = await resilientRead(
     "getGeoAccessPolicy",
     async () => {
-      const snapshot = await getFirebaseAdminDb()
+      const snapshot = await getDocumentDb()
         .collection(SETTINGS_COLLECTION)
         .doc(GEO_ACCESS_DOC_ID)
         .get();
@@ -154,7 +154,7 @@ export async function getGeoAccessPolicy(options: { bypassCache?: boolean } = {}
     {
       ttlMs: POLICY_CACHE_TTL_MS,
       timeoutMs: 2_000,
-      circuitKey: "firebase-geo-policy-read",
+      circuitKey: "storage-geo-policy-read",
       circuitTtlMs: 90_000,
       bypassCache: Boolean(options.bypassCache),
       fallback: () => globalThis.__mistblossomGeoAccessPolicyCache?.policy || defaultGeoAccessPolicy(),
@@ -171,7 +171,7 @@ export async function setGeoAccessPolicy(input: {
   blockUnknownCountries?: unknown;
   blockedCountries?: unknown;
 }, actor?: DashboardSession | null) {
-  if (!hasFirebaseProfileConfig()) throw new Error("Firebase не налаштований для збереження геообмежень.");
+  if (!hasDocumentDbConfig()) throw new Error("Storage не налаштований для збереження геообмежень.");
 
   const invalidCountries = invalidCountryCodeTokens(input.blockedCountries);
   if (invalidCountries.length) {
@@ -186,10 +186,10 @@ export async function setGeoAccessPolicy(input: {
     blockedCountries: parseBlockedCountries(input.blockedCountries, []),
   });
 
-  await firebaseWrite(
+  await storageWrite(
     "settings",
     "geo-access-policy:save",
-    () => getFirebaseAdminDb().collection(SETTINGS_COLLECTION).doc(GEO_ACCESS_DOC_ID).set({
+    () => getDocumentDb().collection(SETTINGS_COLLECTION).doc(GEO_ACCESS_DOC_ID).set({
       enabled: nextPolicy.enabled,
       blockApplications: nextPolicy.blockApplications,
       blockAuth: nextPolicy.blockAuth,

@@ -49,7 +49,7 @@ function storage() {
   let count = 0;
   async function check(label, fn) { await fn(); count++; console.log("PASS", label); }
   const store = storage();
-  const lib = load("src/lib/discordInteractionIngress.ts", { "@/lib/firebaseAdmin": { getFirebaseAdminDb: () => store.db } });
+  const lib = load("src/lib/discordInteractionIngress.ts", { "@/lib/documentDb": { getDocumentDb: () => store.db } });
   const base = Date.now();
   const original = { id: "1977770001112224401", type: 3, data: { custom_id: "test" }, token: "secret-should-be-encrypted" };
   const envelope = (id = original.id, at = base) => ({ id, rawBody: JSON.stringify({ ...original, id }), signature: "a".repeat(128), timestamp: String(Math.floor(at / 1000)), domain: "raid_poll" });
@@ -132,7 +132,7 @@ function storage() {
     assert.equal(store.rows.has(original.id), false);
   });
   const outboxStore = storage();
-  const outbox = load("src/lib/discordInteractionOutbox.ts", { "@/lib/firebaseAdmin": { getFirebaseAdminDb: () => outboxStore.db } });
+  const outbox = load("src/lib/discordInteractionOutbox.ts", { "@/lib/documentDb": { getDocumentDb: () => outboxStore.db } });
   const crashed = "1977770001112224498";
   const later = base + 26 * 60 * 60_000;
   await check("crashed outbox claim cannot execute a second time", async () => {

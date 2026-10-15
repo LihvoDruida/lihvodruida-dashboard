@@ -1,4 +1,4 @@
-/** Independent regression checks for PostgreSQL/Firestore cursor and violation API response. */
+/** Independent regression checks for PostgreSQL/DocumentStore cursor and violation API response. */
 'use strict';
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -61,7 +61,7 @@ function getQuery(table, start, pageSize) {
 }
 const db = {collection:getCollection};
 const mocks = {
-  '@/lib/firebaseAdmin':{getFirebaseAdminDb:()=>db},
+  '@/lib/documentDb':{getDocumentDb:()=>db},
   '@/lib/discordAdmin':{
     getDiscordGuildId:()=> '723456789012345678',
     fetchDiscordGuildMemberSnapshot:async id => ({userId:id,roleIds:roles.get(id)||[],joinedAt:'2026-10-01'}),

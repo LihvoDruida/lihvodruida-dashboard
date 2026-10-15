@@ -23,7 +23,7 @@ function fixture(state) {
     }); queue = pending.catch(() => {}); return pending;
   } };
   const publication = load('src/lib/discordPublication.ts', {
-    '@/lib/firebaseAdmin': { getFirebaseAdminDb: () => db }, '@/lib/automationLease': { acquireAutomationLease: async () => ({ assertOwned: async () => {}, release: async () => {} }) },
+    '@/lib/documentDb': { getDocumentDb: () => db }, '@/lib/automationLease': { acquireAutomationLease: async () => ({ assertOwned: async () => {}, release: async () => {} }) },
     '@/lib/discordRest': { DiscordRestError: class extends Error {} },
   });
   const opKey = 'discordPublications/' + publication.publicationRevision(['poll-message', 'fixture00']);
@@ -37,8 +37,8 @@ function fixture(state) {
     findDiscordPublicationMessage: async () => { calls.reconcile++; return found; },
     deleteDiscordRaidMessage: async () => { calls.delete++; if (cleanupFails) throw Error('403'); },
   };
-  const messages = load('src/lib/discordMessagePublication.ts', { '@/lib/firebaseAdmin': { getFirebaseAdminDb: () => db }, '@/lib/discordAdmin': admin, '@/lib/discordPublication': publication });
-  const server = load('src/lib/publicationStatusServer.ts', { '@/lib/firebaseAdmin': { getFirebaseAdminDb: () => db }, '@/lib/discordPublication': publication, '@/lib/publicationStatus': status });
+  const messages = load('src/lib/discordMessagePublication.ts', { '@/lib/documentDb': { getDocumentDb: () => db }, '@/lib/discordAdmin': admin, '@/lib/discordPublication': publication });
+  const server = load('src/lib/publicationStatusServer.ts', { '@/lib/documentDb': { getDocumentDb: () => db }, '@/lib/discordPublication': publication, '@/lib/publicationStatus': status });
   const publish = () => messages.publishDiscordResourceMessage({ kind: 'poll-message', collection: 'dashboardRaidPolls', resourceId: 'fixture00', channelId: channel, assertOwned: async () => {}, build: async () => ({ payload: { content: '', embed: {}, components: [], mentionRoleIds: [] }, resourceUrl: 'https://guild.test/polls/fixture00' }) });
   return { rows, calls, db, publication, admin, messages, server, opKey, publish, found: v => found = v, cleanupFails: v => cleanupFails = v, offline: v => offline = v };
 }
@@ -114,10 +114,10 @@ function fixture(state) {
         Object.assign(f.rows.get('dashboardRaidPolls/fixture00'), { messageId:id, discordMessageChannelId:channel });
         return { channelId:channel, messageId:id, messageUrl:f.admin.discordMessageUrl(channel,id), cleanupWarning:null };
       } },
-      '@/lib/db/firestoreCompat': { FieldValue: { delete: () => null } },
-      '@/lib/firebaseAccess': { firebaseRead: async (_domain,_key,fn) => fn(), firebaseWrite: async (_domain,_key,fn) => fn(), firebaseUnavailableMessage: () => 'offline' },
+      '@/lib/db/documentValues': { FieldValue: { delete: () => null } },
+      '@/lib/storageAccess': { storageRead: async (_domain,_key,fn) => fn(), storageWrite: async (_domain,_key,fn) => fn(), storageUnavailableMessage: () => 'offline' },
       '@/lib/runtimeResilience': { clearRuntimeCachedValue(){}, clearRuntimeCachedValuesByPrefix(){}, getRuntimeCachedValue(){}, setRuntimeCachedValue(){} },
-      '@/lib/concurrency': {}, '@/lib/firebaseAdmin': { getFirebaseAdminDb: () => f.db, hasFirebaseProfileConfig: () => true },
+      '@/lib/concurrency': {}, '@/lib/documentDb': { getDocumentDb: () => f.db, hasDocumentDbConfig: () => true },
       '@/lib/discordAdmin': { ...f.admin, getDiscordDefaultChannelId: () => channel },
       '@/lib/raidCompositionAlgorithm': {}, '@/lib/raidPollShared': shared, '@/lib/values': values,
       '@/lib/discordInteractionStorage': {}, '@/lib/discordInteractionRecovery': {},

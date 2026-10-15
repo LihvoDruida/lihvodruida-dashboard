@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { documentStoreMode } from "@/lib/firebaseAdmin";
+import { documentStoreMode } from "@/lib/documentDb";
 import { noStoreHeaders, verifyInternalBearerToken } from "@/lib/security";
 
 export const runtime = "nodejs";

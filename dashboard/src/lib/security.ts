@@ -546,7 +546,7 @@ function userFriendlyErrorMessage(message: string, fallback: string) {
   const text = message.trim();
   if (!text) return fallback;
 
-  if (/firebase|profile storage|firestore/i.test(text)) {
+  if (/storage|profile storage|documentStore/i.test(text)) {
     return "Збереження тимчасово недоступне. Спробуй пізніше або звернись до гільдмайстра.";
   }
 

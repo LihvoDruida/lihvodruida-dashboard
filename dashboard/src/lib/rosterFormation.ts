@@ -1,8 +1,8 @@
 import { randomUUID } from "crypto";
-import { FieldValue, type QueryDocumentSnapshot, type Transaction } from "@/lib/db/firestoreCompat";
+import { FieldValue, type QueryDocumentSnapshot, type Transaction } from "@/lib/db/documentValues";
 import type { DashboardSession } from "@/lib/auth";
-import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
-import { firebaseRead, firebaseUnavailableMessage, firebaseWrite } from "@/lib/firebaseAccess";
+import { getDocumentDb, hasDocumentDbConfig } from "@/lib/documentDb";
+import { storageRead, storageUnavailableMessage, storageWrite } from "@/lib/storageAccess";
 import { clearRuntimeCachedValue, clearRuntimeCachedValuesByPrefix } from "@/lib/runtimeResilience";
 import {
   createDiscordRaidMessage,
@@ -38,7 +38,7 @@ import {
 /* ==========================================================================
    Система «Формування складу».
 
-   Побудована на тій самій інфраструктурі, що й рейд-пули (Firebase +
+   Побудована на тій самій інфраструктурі, що й рейд-пули (Storage +
    Discord embed + інтеракції), але без ітем-левелу та привʼязки до
    dashboard-профілю: учасник обирає клас і спеку прямо в Discord, а система
    фіксує його серверний нік. Мета — зібрати 20 гравців так, щоб був
@@ -62,7 +62,7 @@ const ROSTER_GET_CACHE_PREFIX = "roster-formation:";
    інший, у якого копія ще стара. У рейдів це закриває інвалідація
    публічного кеша Cloudflare, у складу такої немає — тож вікно
    розбіжності обмежуємо коротшим TTL. Документів мало (до 60),
-   тож зайві читання Firestore дешеві. */
+   тож зайві читання DocumentStore дешеві. */
 const ROSTER_LIST_TTL_MS = 15_000;
 const ROSTER_GET_TTL_MS = 15_000;
 
@@ -106,7 +106,7 @@ export type RosterCreateInput = {
 };
 
 export function hasRosterStorage() {
-  return hasFirebaseProfileConfig();
+  return hasDocumentDbConfig();
 }
 
 export function rosterSeasonLabel(season: RosterSeason) {
@@ -134,7 +134,7 @@ function newRosterId() {
 }
 
 function rosterRef(rosterId: string) {
-  return getFirebaseAdminDb().collection(ROSTER_COLLECTION).doc(rosterId);
+  return getDocumentDb().collection(ROSTER_COLLECTION).doc(rosterId);
 }
 
 function normalizePick(raw: unknown): RosterMemberPick | null {
@@ -148,7 +148,7 @@ function normalizePick(raw: unknown): RosterMemberPick | null {
   const resolved = findWowSpec(data.classKey, data.specKey);
   const createdAt = typeof data.createdAt === "string" ? data.createdAt : new Date().toISOString();
 
-  // Раніше нерозпізнаний спек ТИХО викидав учасника зі складу: у Firestore
+  // Раніше нерозпізнаний спек ТИХО викидав учасника зі складу: у DocumentStore
   // і в ембеді Discord він лишався, а на сайті зникав. Досить було нового
   // спека в грі або старого ключа в базі. Тепер падаємо на збережені
   // назви — краще показати незвіданий спек, ніж загубити людину.
@@ -201,11 +201,11 @@ export function normalizeRosterFormation(id: string, data: Record<string, unknow
 
 export async function listRosterFormations(limit = 60): Promise<RosterFormation[]> {
   if (!hasRosterStorage()) return [];
-  return firebaseRead<RosterFormation[]>(
+  return storageRead<RosterFormation[]>(
     "raid",
     ROSTER_LIST_CACHE_KEY,
     async () => {
-      const snap = await getFirebaseAdminDb()
+      const snap = await getDocumentDb()
         .collection(ROSTER_COLLECTION)
         .orderBy("createdAt", "desc")
         .limit(Math.max(1, Math.min(limit, 120)))
@@ -220,7 +220,7 @@ export async function getRosterFormation(rosterId: string): Promise<RosterFormat
   if (!hasRosterStorage()) return null;
   const id = String(rosterId || "").trim();
   if (!id) return null;
-  return firebaseRead<RosterFormation | null>(
+  return storageRead<RosterFormation | null>(
     "raid",
     `${ROSTER_GET_CACHE_PREFIX}${id}`,
     async () => {
@@ -279,7 +279,7 @@ async function recoverEmptyRosterFromDiscordMessage(
     recoveredFromDiscordMessage: true,
   };
 
-  await firebaseWrite(
+  await storageWrite(
     "raid",
     `roster:${id}:discord-orphan-recovery`,
     async () => {
@@ -774,12 +774,12 @@ async function applyPickTransaction(
   rosterId: string,
   mutate: (roster: RosterFormation) => { picks: RosterMemberPick[] },
 ): Promise<RosterFormation> {
-  const saved = await firebaseWrite<RosterFormation>(
+  const saved = await storageWrite<RosterFormation>(
     "raid",
     `roster:mutate:${rosterId}:${Date.now()}`,
     async () => {
       const ref = rosterRef(rosterId);
-      return getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
+      return getDocumentDb().runTransaction(async (tx: Transaction) => {
         const snap = await tx.get(ref);
         if (!snap.exists) throw new Error("Формування складу не знайдено.");
         const roster = normalizeRosterFormation(snap.id, snap.data() || {});
@@ -806,7 +806,7 @@ async function applyPickTransaction(
  * Обробляє всі кроки Discord-інтеракції складу:
  *  pick  → показати меню класів (ефемерно)
  *  class → показати меню спек обраного класу (ефемерно)
- *  spec  → зберегти вибір у Firebase, оновити публічний ембед
+ *  spec  → зберегти вибір у Storage, оновити публічний ембед
  *  leave → прибрати гравця зі складу, оновити ембед
  */
 export async function handleRosterFormationDiscordAction(params: {
@@ -938,7 +938,7 @@ export async function saveRosterFormationFromInput(
   input: RosterCreateInput,
   user: DashboardSession,
 ): Promise<RosterFormation> {
-  if (!hasRosterStorage()) throw new Error(firebaseUnavailableMessage("raid", "write"));
+  if (!hasRosterStorage()) throw new Error(storageUnavailableMessage("raid", "write"));
 
   const season = cleanSeason(input.season);
   const description = cleanText(input.description, 1500);
@@ -969,7 +969,7 @@ export async function saveRosterFormationFromInput(
   // Persist the backing document BEFORE publishing the Discord message.
   // Otherwise a transient DB failure leaves a perfectly clickable orphan in
   // Discord that can never resolve its custom_id.
-  await firebaseWrite<void>(
+  await storageWrite<void>(
     "raid",
     `roster:create:${id}`,
     async () => {
@@ -998,7 +998,7 @@ export async function saveRosterFormationFromInput(
   try {
     published = await publishRosterMessage(draft, channelId);
     const finalRoster: RosterFormation = { ...draft, ...published, updatedAt: new Date().toISOString() };
-    await firebaseWrite<void>(
+    await storageWrite<void>(
       "raid",
       `roster:create:${id}:discord-ref`,
       async () => {
@@ -1021,7 +1021,7 @@ export async function saveRosterFormationFromInput(
         auditReason: `Rollback failed roster create: ${id}`,
       }).catch(() => null);
     }
-    await firebaseWrite(
+    await storageWrite(
       "raid",
       `roster:create:${id}:rollback`,
       async () => {
@@ -1037,14 +1037,14 @@ export async function saveRosterFormationFromInput(
 
 /** Очистка складу: прибирає всі вибори гравців (лише адмін). */
 export async function clearRosterFormation(rosterId: string): Promise<RosterFormation> {
-  if (!hasRosterStorage()) throw new Error(firebaseUnavailableMessage("raid", "write"));
+  if (!hasRosterStorage()) throw new Error(storageUnavailableMessage("raid", "write"));
 
-  const cleared = await firebaseWrite<RosterFormation>(
+  const cleared = await storageWrite<RosterFormation>(
     "raid",
     `roster:clear:${rosterId}`,
     async () => {
       const ref = rosterRef(rosterId);
-      return getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
+      return getDocumentDb().runTransaction(async (tx: Transaction) => {
         const snap = await tx.get(ref);
         if (!snap.exists) throw new Error("Формування складу не знайдено.");
         const roster = normalizeRosterFormation(snap.id, snap.data() || {});
@@ -1069,14 +1069,14 @@ export async function setRosterFormationStatus(
   rosterId: string,
   status: "open" | "closed",
 ): Promise<RosterFormation> {
-  if (!hasRosterStorage()) throw new Error(firebaseUnavailableMessage("raid", "write"));
+  if (!hasRosterStorage()) throw new Error(storageUnavailableMessage("raid", "write"));
 
-  const updated = await firebaseWrite<RosterFormation>(
+  const updated = await storageWrite<RosterFormation>(
     "raid",
     `roster:status:${rosterId}:${status}`,
     async () => {
       const ref = rosterRef(rosterId);
-      return getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
+      return getDocumentDb().runTransaction(async (tx: Transaction) => {
         const snap = await tx.get(ref);
         if (!snap.exists) throw new Error("Формування складу не знайдено.");
         const roster = normalizeRosterFormation(snap.id, snap.data() || {});
@@ -1096,7 +1096,7 @@ export async function setRosterFormationStatus(
 
 /** Закриття набору + видалення повідомлення (опційно для адміна). */
 export async function deleteRosterFormation(rosterId: string): Promise<void> {
-  if (!hasRosterStorage()) throw new Error(firebaseUnavailableMessage("raid", "write"));
+  if (!hasRosterStorage()) throw new Error(storageUnavailableMessage("raid", "write"));
   const roster = await getRosterFormation(rosterId);
   if (!roster) return;
 
@@ -1107,7 +1107,7 @@ export async function deleteRosterFormation(rosterId: string): Promise<void> {
     }).catch(() => null);
   }
 
-  await firebaseWrite<void>(
+  await storageWrite<void>(
     "raid",
     `roster:delete:${rosterId}`,
     async () => {
@@ -1187,12 +1187,12 @@ export async function removeRosterPicksForAccounts(input: {
 
     // Пишемо через транзакцію: між читанням списку і записом хтось
     // міг натиснути кнопку в Discord, і його вибір не має зникнути.
-    const saved = await firebaseWrite<RosterFormation>(
+    const saved = await storageWrite<RosterFormation>(
       "raid",
       `roster:cleanup:${roster.id}:${Date.now()}`,
       async () => {
         const ref = rosterRef(roster.id);
-        return getFirebaseAdminDb().runTransaction(async (tx: Transaction) => {
+        return getDocumentDb().runTransaction(async (tx: Transaction) => {
           const snap = await tx.get(ref);
           if (!snap.exists) throw new Error("Формування складу не знайдено.");
           const current = normalizeRosterFormation(snap.id, snap.data() || {});

@@ -29,7 +29,7 @@ const database = load(
 const compat = load("src/lib/db/documentStore.ts", {
     "@/lib/db/pgPool": database,
   }).exports,
-  store = new compat.PgFirestore();
+  store = new compat.PgDocumentStore();
 const profiles = require("./lib/profile-directory-subject.cjs")(
   database,
   store,
@@ -92,11 +92,11 @@ const transport = {
   },
 };
 const deps = {
-  "@/lib/firebaseAdmin": {
-    getFirebaseAdminDb: () => store,
-    hasFirebaseProfileConfig: () => configured,
+  "@/lib/documentDb": {
+    getDocumentDb: () => store,
+    hasDocumentDbConfig: () => configured,
   },
-  "@/lib/db/firestoreCompat": compat,
+  "@/lib/db/documentValues": compat,
   "@/lib/profiles": { ...profiles, invalidateProfileIdentityCaches() {} },
   "@/lib/discordAdmin": transport,
   "@/lib/guildNicknamePolicy": {

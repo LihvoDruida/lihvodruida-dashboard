@@ -262,7 +262,7 @@ if (exists('src/lib/securityLogDiscord.ts')) {
 if (exists('src/lib/logSettings.ts')) {
   const logSettingsText = read('src/lib/logSettings.ts');
   assert(logSettingsText.includes('system_log_settings'), 'Structured log settings must use PostgreSQL system_log_settings.');
-  assert(!/firebaseRead|firebaseWrite|dashboardSettings/.test(logSettingsText), 'Structured log settings must not depend on the legacy Firebase settings path.');
+  assert(!/storageRead|storageWrite|dashboardSettings/.test(logSettingsText), 'Structured log settings must not depend on the legacy Storage settings path.');
 }
 assert(!/listAdminAuditLogsFromDiscord|publishAdminAuditToDiscord|ADMIN_AUDIT_(?:READ|DEDUPE|MAX|POLICY)/.test(runtimeCombined), 'Legacy Discord audit-storage code/config detected.');
 
@@ -294,7 +294,7 @@ if (exists('src/lib/structuredLogs.ts')) {
 // Discord buttons are mutations and must not interpret a stale/null page cache as
 // "resource deleted". Keep their backing reads authoritative and preserve the
 // public Discord message reference so already-published messages can self-heal
-// after resource recreation or the Firestore -> PostgreSQL migration.
+// after resource recreation or the DocumentStore -> PostgreSQL migration.
 if (exists('src/app/api/discord/interactions/route.ts')) {
   const interactionsText = read('src/app/api/discord/interactions/route.ts');
   assert(/handleRosterFormationDiscordAction\([\s\S]{0,500}messageRef:\s*getInteractionMessageRef\(interaction\)/.test(interactionsText), 'Roster Discord interactions must pass the public messageRef to authoritative storage lookup.');
@@ -307,10 +307,10 @@ if (exists('src/app/api/discord/interactions/route.ts')) {
 if (exists('src/lib/discordInteractionStorage.ts')) {
   const discordStorageText = read('src/lib/discordInteractionStorage.ts');
   assert(discordStorageText.includes('resolveDiscordInteractionDocument'), 'Missing authoritative Discord resource resolver.');
-  assert(discordStorageText.includes('legacy-message') && discordStorageText.includes('backfillLegacyDocument'), 'Discord resource resolver must retain legacy Firestore read-through/backfill support.');
+  assert(!discordStorageText.includes('backfillLegacyDocument') && !discordStorageText.includes('getLegacyFirestoreAdminDb'), 'Discord resource resolver must use PostgreSQL without cloud-store read-through.');
   assert(discordStorageText.includes('resolveDiscordInteractionProfileDocument'), 'Discord interaction profile lookup must bypass the shared page-read circuit.');
   assert(discordStorageText.includes('scanStoreForResource') && discordStorageText.includes('discordMessageId'), 'Discord resource resolver must keep compatibility scan for legacy message-reference field names.');
-  assert(discordStorageText.includes('assertDiscordInteractionStore') && discordStorageText.includes('DISCORD_INTERACTION_REQUIRE_POSTGRES'), 'Production Discord interactions must reject old Firestore-only runtimes.');
+  assert(discordStorageText.includes('assertDiscordInteractionStore') && discordStorageText.includes('mode !== "postgres"'), 'Production Discord interactions must reject old DocumentStore-only runtimes.');
 }
 if (exists('src/lib/raids.ts')) {
   const raidsText = read('src/lib/raids.ts');

@@ -3,7 +3,7 @@ const subject = require('./lib/profile-directory-subject.cjs');
 const groups = [{ id: 'admin', role: 'admin', rank: 100 }, { id: 'member', role: 'member', rank: 10 }];
 const records = Array.from({ length: 257 }, (_, i) => ({ id: 'id' + i.toString(16).padStart(32, '0'), data: { displayName: i === 250 ? 'Target250' : 'Name' + (i % 5), providerUserId: String(i), role: i % 2 ? 'member' : 'admin', battlenet: { linked: i % 3 === 0 }, lastLoginAt: '2026-10-01T00:00:00Z', characters: [] } }));
 let reads = 0;
-// Controlled Firestore boundary; production permissions, normalization,
+// Controlled DocumentStore boundary; production permissions, normalization,
 // filtering, cursors and aggregation run unchanged, without network/config.
 const store = {
   collection(name) {
@@ -16,7 +16,7 @@ const store = {
   },
   getAll: async (...refs) => refs.map(r => ({ id: r.id, exists: false })),
 };
-const mod = subject({}, store, groups, 'firestore');
+const mod = subject({}, store, groups, 'documentStore');
 const admin = { provider: 'discord', id: 'no-own', role: 'admin' };
 const member = { ...admin, role: 'member', groupId: 'member', groupRank: 10, permissions: ['profiles.group.view'] };
 let passed = 0;
@@ -39,5 +39,5 @@ async function check(name, run) { await run(); passed++; console.log('✓ ' + na
   await check('Invalid cursor and unconfigured store expose explicit states', async () => { assert.ok((await mod.listDashboardProfilePage({ viewer: admin, cursor: 'bad!' })).cursorReset); assert.ok((await subject({}, store, groups, 'unconfigured').listDashboardProfilePage({ viewer: admin })).unavailable); });
   await check('Filter parsing is bounded and defaults are deterministic', async () => { const f = mod.profileDirectoryFilters({ query: 'x'.repeat(500), role: 'invalid', link: 'invalid', sort: 'invalid' }); assert.equal(f.query.length, 120); assert.equal(f.role, 'all'); assert.equal(f.sort, 'activity'); assert.equal(f.link, 'all'); });
   assert.ok(reads > 30);
-  console.log(`[check-profile-directory] OK — ${passed}/${passed}; actual catalog and permission functions; controlled Firestore boundary`);
+  console.log(`[check-profile-directory] OK — ${passed}/${passed}; actual catalog and permission functions; controlled DocumentStore boundary`);
 })().catch(error => { console.error(error); process.exitCode = 1; });

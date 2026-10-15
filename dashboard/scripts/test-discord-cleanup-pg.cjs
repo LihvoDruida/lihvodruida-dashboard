@@ -13,14 +13,14 @@ if (!/^r4_[a-f0-9]{24}$/.test(schema)) throw Error('Invalid private schema');
 const pool = new pg.Pool({ connectionString: url, max: 6, options: '-c search_path=' + schema + ' -c statement_timeout=10000 -c lock_timeout=3000' });
 pool.on('error', () => {});
 const db = load('src/lib/db/pgPool.ts', { pg }, { __mistblossomPgPool: pool, process: { env: { DATABASE_URL: url } } }).exports;
-const { PgFirestore } = load('src/lib/db/documentStore.ts', { '@/lib/db/pgPool': db }).exports;
-const store = new PgFirestore();
+const { PgDocumentStore } = load('src/lib/db/documentStore.ts', { '@/lib/db/pgPool': db }).exports;
+const store = new PgDocumentStore();
 let clockOffset = 0;
 class TestDate extends Date { constructor(...args) { super(...(args.length ? args : [Date.now() + clockOffset])); } static now() { return Date.now() + clockOffset; } }
 const globals = { setInterval, clearInterval, Date: TestDate };
-const access = { assertFirebaseWriteAvailable() {} };
-const adminDb = { getFirebaseAdminDb: () => store };
-const leases = load('src/lib/automationLease.ts', { '@/lib/firebaseAdmin': adminDb, '@/lib/firebaseAccess': access }, globals).exports;
+const access = { assertStorageWriteAvailable() {} };
+const adminDb = { getDocumentDb: () => store };
+const leases = load('src/lib/automationLease.ts', { '@/lib/documentDb': adminDb, '@/lib/storageAccess': access }, globals).exports;
 const policy = load('src/lib/discordCleanupPolicy.ts').exports;
 const guild = '111111111111111111', role = '222222222222222222';
 const member = i => ({ userId: String(500000000000000000n + BigInt(i)), displayName: 'Учасник ' + i, roleIds: [role], joinedAt: '2020-01-01T12:00:00Z', bot: false });
@@ -37,7 +37,7 @@ const discord = {
   fetchDiscordGuildMemberSnapshot: async id => { await beforeMember?.(); return members.find(m => m.userId === id); },
   kickDiscordCleanupMember: async (...args) => { await beforeDispatch?.(); return actualAdmin.kickDiscordCleanupMember(...args); },
 };
-const service = load(process.env.TEST_CLEANUP_SOURCE || 'src/lib/discordMemberCleanup.ts', { '@/lib/automationLease': leases, '@/lib/firebaseAccess': access, '@/lib/firebaseAdmin': adminDb, '@/lib/discordAdmin': discord, '@/lib/discordCleanupPolicy': policy, '@/lib/security': { logDashboardEvent() {} } }, globals).exports;
+const service = load(process.env.TEST_CLEANUP_SOURCE || 'src/lib/discordMemberCleanup.ts', { '@/lib/automationLease': leases, '@/lib/storageAccess': access, '@/lib/documentDb': adminDb, '@/lib/discordAdmin': discord, '@/lib/discordCleanupPolicy': policy, '@/lib/security': { logDashboardEvent() {} } }, globals).exports;
 const settingsRef = store.collection('dashboardSettings').doc('discordMemberCleanup_' + guild);
 const executionRef = store.collection('dashboardSettings').doc('discordMemberCleanupControl_' + guild);
 const leaseRef = store.collection('automationLeases').doc('discord-member-cleanup_' + guild);

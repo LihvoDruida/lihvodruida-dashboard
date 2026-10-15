@@ -1,8 +1,8 @@
 import "server-only";
 
-import { FieldValue } from "@/lib/db/firestoreCompat";
-import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
-import { firebaseWrite } from "@/lib/firebaseAccess";
+import { FieldValue } from "@/lib/db/documentValues";
+import { getDocumentDb, hasDocumentDbConfig } from "@/lib/documentDb";
+import { storageWrite } from "@/lib/storageAccess";
 import { withTimeout, resilientRead } from "@/lib/runtimeResilience";
 import type { DashboardSession } from "@/lib/auth";
 import { timestampToIso } from "@/lib/values";
@@ -56,12 +56,12 @@ export async function getRulesAcceptanceSettings(options: { bypassCache?: boolea
   }
 
   const fallback = globalThis.__mistblossomRulesAcceptanceSettingsCache?.settings || normalizeSettings(null);
-  if (!hasFirebaseProfileConfig()) return setSettingsCache(fallback);
+  if (!hasDocumentDbConfig()) return setSettingsCache(fallback);
 
   const settings = await resilientRead(
     "rules-acceptance-settings",
     async () => {
-      const snapshot = await getFirebaseAdminDb()
+      const snapshot = await getDocumentDb()
         .collection(SETTINGS_COLLECTION)
         .doc(SETTINGS_DOC_ID)
         .get();
@@ -71,7 +71,7 @@ export async function getRulesAcceptanceSettings(options: { bypassCache?: boolea
       ttlMs: SETTINGS_CACHE_TTL_MS,
       timeoutMs: 2_000,
       fallback: () => fallback,
-      circuitKey: "firebase-rules-acceptance-settings-read",
+      circuitKey: "storage-rules-acceptance-settings-read",
       circuitTtlMs: 60_000,
       logEvent: "rules.acceptance_settings_read_failed",
       bypassCache: options.bypassCache,
@@ -84,12 +84,12 @@ export async function getRulesAcceptanceSettings(options: { bypassCache?: boolea
 export async function setRulesAcceptanceSettings(input: { allowRepeatedAcceptForTesting?: unknown }, actor?: DashboardSession | null) {
   const allowRepeatedAcceptForTesting = cleanBoolean(input.allowRepeatedAcceptForTesting, false);
   const previous = await getRulesAcceptanceSettings({ bypassCache: true });
-  if (!hasFirebaseProfileConfig()) throw new Error("Firebase не налаштований для збереження налаштувань правил.");
+  if (!hasDocumentDbConfig()) throw new Error("Storage не налаштований для збереження налаштувань правил.");
 
-  await firebaseWrite(
+  await storageWrite(
     "settings",
     "rules-acceptance-settings:save",
-    () => getFirebaseAdminDb().collection(SETTINGS_COLLECTION).doc(SETTINGS_DOC_ID).set({
+    () => getDocumentDb().collection(SETTINGS_COLLECTION).doc(SETTINGS_DOC_ID).set({
       allowRepeatedAcceptForTesting,
       updatedAt: FieldValue.serverTimestamp(),
       updatedBy: actor?.name || actor?.login || actor?.id || null,
@@ -108,9 +108,9 @@ export async function setRulesAcceptanceSettings(input: { allowRepeatedAcceptFor
 /** Called only by the guarded guild-rules publisher after Discord confirms save. */
 export async function setPublicRulesMessage(url: string, actor: DashboardSession) {
   if (!/^https:\/\/discord\.com\/channels\/\d{16,25}\/\d{16,25}\/\d{16,25}$/.test(url)) throw new Error("Invalid rules publication reference");
-  if (!hasFirebaseProfileConfig()) throw new Error("Rules publication storage unavailable");
+  if (!hasDocumentDbConfig()) throw new Error("Rules publication storage unavailable");
   const previous = await getRulesAcceptanceSettings({ bypassCache: true });
-  await firebaseWrite("settings", "rules-publication:save", () => getFirebaseAdminDb().collection(SETTINGS_COLLECTION).doc(SETTINGS_DOC_ID).set({
+  await storageWrite("settings", "rules-publication:save", () => getDocumentDb().collection(SETTINGS_COLLECTION).doc(SETTINGS_DOC_ID).set({
     publicRulesMessageUrl: url, updatedAt: FieldValue.serverTimestamp(), updatedBy: actor.id,
   }, { merge: true }), { timeoutMs: 3_000, logEvent: "rules.publication_write_failed" });
   setSettingsCache({ ...previous, publicRulesMessageUrl: url, updatedAt: new Date().toISOString(), updatedBy: actor.id });
@@ -120,7 +120,7 @@ export async function setPublicRulesMessage(url: string, actor: DashboardSession
 /** Role-grant decisions require a fresh publication binding, never a stale
  * resilience fallback after an administrator switches the current rules. */
 export async function getPublicRulesMessageUrl(): Promise<string | null> {
-  if (!hasFirebaseProfileConfig()) return null;
-  const snapshot = await withTimeout(getFirebaseAdminDb().collection(SETTINGS_COLLECTION).doc(SETTINGS_DOC_ID).get(), 2_000, "rules-publication-read");
+  if (!hasDocumentDbConfig()) return null;
+  const snapshot = await withTimeout(getDocumentDb().collection(SETTINGS_COLLECTION).doc(SETTINGS_DOC_ID).get(), 2_000, "rules-publication-read");
   return snapshot.exists ? normalizeSettings(snapshot.data() || null).publicRulesMessageUrl || null : null;
 }

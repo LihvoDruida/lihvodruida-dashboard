@@ -4,7 +4,7 @@ import { getSession } from "@/lib/auth";
 import { canViewApplications } from "@/lib/permissions";
 import { recordAdminAudit } from "@/lib/accessGroups";
 import { deleteDiscordApplicationMessage } from "@/lib/discord";
-import { deleteGuildApplication, getIssue } from "@/lib/github";
+import { deleteGuildApplication, getIssue } from "@/lib/applicationsStore";
 import {
   checkRateLimit,
   forbiddenResponse,

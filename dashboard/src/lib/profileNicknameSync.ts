@@ -1,10 +1,10 @@
 import "server-only";
 import { createHash, randomUUID } from "node:crypto";
 import {
-  getFirebaseAdminDb,
-  hasFirebaseProfileConfig,
-} from "@/lib/firebaseAdmin";
-import { FieldValue } from "@/lib/db/firestoreCompat";
+  getDocumentDb,
+  hasDocumentDbConfig,
+} from "@/lib/documentDb";
+import { FieldValue } from "@/lib/db/documentValues";
 import {
   buildProfileDiscordNicknamePlan,
   normalizeProfile,
@@ -85,9 +85,9 @@ function revision(data: Record<string, unknown>) {
 function refs(profileId: string) {
   if (!ID.test(profileId))
     throw new ProfileIdentityError("Некоректний профіль.");
-  if (!hasFirebaseProfileConfig())
+  if (!hasDocumentDbConfig())
     throw new ProfileIdentityError("Профілі тимчасово недоступні.", 503);
-  const db = getFirebaseAdminDb();
+  const db = getDocumentDb();
   return {
     db,
     profile: db.collection("dashboardProfiles").doc(profileId),
@@ -432,9 +432,9 @@ export async function runProfileNicknameSync(profileId: string) {
   return { processed: true };
 }
 export async function processProfileNicknameSyncQueue() {
-  if (!hasFirebaseProfileConfig())
+  if (!hasDocumentDbConfig())
     throw new ProfileIdentityError("Профілі тимчасово недоступні.", 503);
-  const due = await getFirebaseAdminDb()
+  const due = await getDocumentDb()
     .collection(JOBS)
     .where("dueAtMs", "<=", Date.now())
     .orderBy("dueAtMs")

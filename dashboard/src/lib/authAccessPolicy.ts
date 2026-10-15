@@ -1,10 +1,10 @@
 import "server-only";
 
-import { FieldValue } from "@/lib/db/firestoreCompat";
-import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
+import { FieldValue } from "@/lib/db/documentValues";
+import { getDocumentDb, hasDocumentDbConfig } from "@/lib/documentDb";
 import type { DashboardSession } from "@/lib/auth";
 import { resilientRead } from "@/lib/runtimeResilience";
-import { firebaseWrite } from "@/lib/firebaseAccess";
+import { storageWrite } from "@/lib/storageAccess";
 import { envFlag, timestampToIso } from "@/lib/values";
 
 const SETTINGS_COLLECTION = "dashboardSettings";
@@ -93,12 +93,12 @@ export async function getAuthAccessPolicy(options: { bypassCache?: boolean } = {
   if (!options.bypassCache && authPolicyCacheFresh()) {
     return globalThis.__mistblossomAuthAccessPolicyCache!.policy;
   }
-  if (!hasFirebaseProfileConfig()) return setAuthPolicyCache(defaultAuthAccessPolicy());
+  if (!hasDocumentDbConfig()) return setAuthPolicyCache(defaultAuthAccessPolicy());
 
   const policy = await resilientRead(
     "getAuthAccessPolicy",
     async () => {
-      const snapshot = await getFirebaseAdminDb()
+      const snapshot = await getDocumentDb()
         .collection(SETTINGS_COLLECTION)
         .doc(AUTH_ACCESS_DOC_ID)
         .get();
@@ -109,7 +109,7 @@ export async function getAuthAccessPolicy(options: { bypassCache?: boolean } = {
     {
       ttlMs: POLICY_CACHE_TTL_MS,
       timeoutMs: 2_000,
-      circuitKey: "firebase-auth-policy-read",
+      circuitKey: "storage-auth-policy-read",
       circuitTtlMs: 90_000,
       bypassCache: Boolean(options.bypassCache),
       fallback: () => globalThis.__mistblossomAuthAccessPolicyCache?.policy || defaultAuthAccessPolicy(),
@@ -127,7 +127,7 @@ export async function setAuthAccessPolicy(input: {
   requiredRoleIds?: unknown;
   requiredRoleIdsText?: unknown;
 }, actor?: DashboardSession | null) {
-  if (!hasFirebaseProfileConfig()) throw new Error("Firebase не налаштований для збереження правил авторизації.");
+  if (!hasDocumentDbConfig()) throw new Error("Storage не налаштований для збереження правил авторизації.");
 
   const selectedRoleIds = [
     ...cleanDiscordRoleIds(input.requiredRoleIds),
@@ -141,10 +141,10 @@ export async function setAuthAccessPolicy(input: {
     requiredRoleIds: selectedRoleIds,
   });
 
-  await firebaseWrite(
+  await storageWrite(
     "settings",
     "auth-access-policy:save",
-    () => getFirebaseAdminDb().collection(SETTINGS_COLLECTION).doc(AUTH_ACCESS_DOC_ID).set({
+    () => getDocumentDb().collection(SETTINGS_COLLECTION).doc(AUTH_ACCESS_DOC_ID).set({
       enabled: nextPolicy.enabled,
       requireConfiguredRole: nextPolicy.requireConfiguredRole,
       allowServerOwner: nextPolicy.allowServerOwner,

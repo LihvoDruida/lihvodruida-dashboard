@@ -16,7 +16,6 @@ import {
   type DiscordManageableRoleOption,
 } from "@/lib/discordAdmin";
 import { DEFAULT_NICKNAME_TEMPLATE, VALID_NICKNAME_STRUCTURES, getGuildNicknamePolicy, nicknameTemplateExample } from "@/lib/guildNicknamePolicy";
-import { documentStoreMode, hasFirebaseCredentials } from "@/lib/firebaseAdmin";
 import { canManageDiscordMembers } from "@/lib/permissions";
 import { buildPageMetadata } from "@/lib/seo";
 import { getAccountCleanupAutomationSettings, nextAccountCleanupAt, type AccountCleanupRunStatus } from "@/lib/accountCleanupAutomation";
@@ -154,20 +153,6 @@ export default async function AdminDiscordPage() {
   const guild = control.guild;
   const guildId = getDiscordGuildId();
   const legacyApplicationsChannelId = getDiscordDefaultChannelId();
-  const importTargetMode = documentStoreMode();
-  const importSourceConfigured = hasFirebaseCredentials();
-  const importAvailability = {
-    sourceConfigured: importSourceConfigured,
-    targetMode: importTargetMode,
-    ready: importSourceConfigured && importTargetMode === "postgres",
-    reason: !importSourceConfigured
-      ? "Не задані Firebase credentials для читання старого Firestore."
-      : importTargetMode !== "postgres"
-        ? "Цільове сховище має бути PostgreSQL; імпорт Firestore → Firestore заблоковано."
-        : null,
-  } as const;
-  const ownerDiscordId = guild?.ownerId || (user.isServerOwner && user.provider === "discord" ? user.id : null);
-  const canImportProfiles = Boolean(user.isServerOwner && importAvailability.ready && (ownerDiscordId || user.profileId));
   const nextCleanupCheckAt = nextAccountCleanupAt(cleanupAutomation.lastCheckAt, cleanupAutomation.checkIntervalHours, cleanupAutomation.autoCheckEnabled);
   const nextCleanupApplyAt = nextAccountCleanupAt(cleanupAutomation.lastCleanupAt, cleanupAutomation.cleanupIntervalHours, cleanupAutomation.autoCleanupEnabled);
 
@@ -592,42 +577,10 @@ export default async function AdminDiscordPage() {
             <SectionHeader
               eyebrow="Профілі"
               title="Дані та обслуговування dashboardProfiles"
-              description="Імпорт старих Firestore-профілів і безпечне очищення неактуальних акаунтів розділені на дві незалежні операції."
+              description="Профілі зберігаються у PostgreSQL. Очищення перевіряє актуальний склад гільдії та Discord."
             />
           </div>
           <div className="discord-profile-maintenance-grid">
-            <form className="panel discord-management-card discord-management-card--import" action="/api/dashboard/discord/profiles/import-firestore" method="post" data-dashboard-action-form="true" data-dashboard-live-submit="true">
-              <div className="profile-card-head profile-card-head--inline">
-                <div><span className="eyebrow">Firestore → PostgreSQL</span><h2>Імпорт dashboardProfiles</h2></div>
-                <span className={`status-pill ${canImportProfiles ? "good" : "warning"}`}>{canImportProfiles ? "Готово" : "Заблоковано"}</span>
-              </div>
-              <div className="discord-management-card__body">
-                <p className="profile-card-lead">Імпорт проходить по старій колекції <code>dashboardProfiles</code>. <strong>Профіль власника сервера завжди виключається на сервері</strong> — це не залежить від значень форми.</p>
-                <div className="discord-import-safety-grid" aria-label="Умови імпорту">
-                  <InfoChip title={importAvailability.sourceConfigured ? "Готово" : "Немає ключів"} text="Firestore source" />
-                  <InfoChip title={importAvailability.targetMode === "postgres" ? "PostgreSQL" : importAvailability.targetMode} text="ціль" />
-                  <InfoChip title={ownerDiscordId ? maskSnowflake(ownerDiscordId) : user.profileId ? "profileId" : "не визначено"} text="owner захищений" />
-                </div>
-                {!importAvailability.ready ? <p className="discord-inline-warning">{importAvailability.reason}</p> : null}
-                {!user.isServerOwner ? <p className="discord-inline-warning">Імпорт доступний тільки власнику Discord-сервера.</p> : null}
-                <label className="field-label">Стратегія злиття
-                  <select className="input" name="strategy" defaultValue="safe" disabled={!canImportProfiles}>
-                    <option value="safe">Безпечно — поточна PostgreSQL-база має пріоритет</option>
-                    <option value="firestore-priority">Firestore має пріоритет для наявних полів</option>
-                  </select>
-                  <small>Рекомендовано «Безпечно»: нові профілі створюються, а наявні дані не відкочуються старим Firestore.</small>
-                </label>
-                <label className="field-label discord-management-limit-field">Ліміт профілів
-                  <input className="input" name="limit" type="number" min="0" max="50000" defaultValue="0" disabled={!canImportProfiles} />
-                  <small>0 = усі. Для першої перевірки можна поставити 20–50.</small>
-                </label>
-                <div className="form-actions form-actions--split">
-                  <button className="btn subtle" name="mode" value="inspect" type="submit" disabled={!canImportProfiles}>Preview імпорту</button>
-                  <button className="btn primary" name="mode" value="apply" type="submit" disabled={!canImportProfiles} data-confirm-message="Імпортувати dashboardProfiles зі старого Firestore в PostgreSQL? Власник Discord-сервера буде примусово виключений. Перед застосуванням рекомендовано виконати Preview.">Імпортувати профілі</button>
-                </div>
-              </div>
-            </form>
-
             <article id="account-automation" className="panel discord-management-card discord-management-card--danger account-cleanup-card">
               <div className="profile-card-head profile-card-head--inline">
                 <div><span className="eyebrow">Автоматизація очищення</span><h2>Неактуальні акаунти</h2></div>

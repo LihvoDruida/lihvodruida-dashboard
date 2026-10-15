@@ -1,13 +1,13 @@
 import "server-only";
 
 import { randomUUID } from "node:crypto";
-import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
-import { assertFirebaseWriteAvailable } from "@/lib/firebaseAccess";
+import { getDocumentDb } from "@/lib/documentDb";
+import { assertStorageWriteAvailable } from "@/lib/storageAccess";
 
 /** Shared by manual and scheduled work across processes; never keep a DB transaction open during HTTP calls. */
 export async function acquireAutomationLease(key: string, source: string, ttlMs = 180_000) {
-  assertFirebaseWriteAvailable("settings");
-  const db = getFirebaseAdminDb();
+  assertStorageWriteAvailable("settings");
+  const db = getDocumentDb();
   const ref = db.collection("automationLeases").doc(key.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 160));
   const owner = randomUUID();
   const acquired = await db.runTransaction(async (tx) => {

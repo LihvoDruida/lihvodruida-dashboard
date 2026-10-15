@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { FieldValue } from "@/lib/db/firestoreCompat";
+import { FieldValue } from "@/lib/db/documentValues";
 import { ApiHttpError, apiFetchJson } from "@/lib/apiHttp";
 import {
   fetchBattleNetApplicationData,
@@ -27,9 +27,9 @@ import {
 } from "@/lib/runtimeResilience";
 import {
   documentStoreMode,
-  getFirebaseAdminDb,
-  hasFirebaseProfileConfig,
-} from "@/lib/firebaseAdmin";
+  getDocumentDb,
+  hasDocumentDbConfig,
+} from "@/lib/documentDb";
 import {
   resolveRaidSeasonSnapshot,
   type RaidSeasonSnapshot,
@@ -198,7 +198,6 @@ const DEFAULT_GUILD_REALM = "terokkar";
 const CACHE_COLLECTION = "guildRuntimeCache";
 const CACHE_DOCUMENT = "guildRoster";
 const GUILD_RECORDS_COLLECTION = "guildRosterRecords";
-const GUILD_RECORDS_MEMBERS_COLLECTION = "members";
 const GUILD_RECORDS_CHUNKS_COLLECTION = "memberChunks";
 const GUILD_RECORDS_CHUNK_FORMAT_VERSION = 2;
 const GUILD_RECORDS_MAX_CHUNKS = 80;
@@ -207,16 +206,15 @@ const SYNC_JOB_DOCUMENT = "guildRosterSyncJob";
 function guildRosterPersistentSource() {
   const mode = documentStoreMode();
   if (mode === "postgres") return "postgres-records";
-  if (mode === "firestore") return "firestore-records";
   return "document-store-unconfigured";
 }
 
 function normalizeGuildRosterSource(value: unknown) {
   const source = cleanText(value);
-  // Old rows used "firebase-records" even when getFirebaseAdminDb() was already
+  // Old rows used "storage-records" even when getDocumentDb() was already
   // backed by PostgreSQL. Rewrite those labels at read time so logs/UI describe
   // the storage that is actually active.
-  if (!source || ["firebase-records", "firestore-records", "postgres-records", "database-records"].includes(source)) {
+  if (!source || ["storage-records", "documentStore-records", "postgres-records", "database-records"].includes(source)) {
     return guildRosterPersistentSource();
   }
   return source;
@@ -675,7 +673,7 @@ function updatedSince(value: string | null | undefined, since?: string | null) {
   const valueTime = Date.parse(value || "");
   const sinceTime = Date.parse(since || "");
   if (!Number.isFinite(valueTime) || !Number.isFinite(sinceTime)) return false;
-  // Допускаємо невеликий розбіг годинника між сервером, Firebase і браузером.
+  // Допускаємо невеликий розбіг годинника між сервером, Storage і браузером.
   return valueTime + 2_000 >= sinceTime;
 }
 
@@ -799,7 +797,7 @@ function memberProfileLookupKeys(member: GuildRosterMember) {
 async function enrichGuildMembersWithProfileLinks(
   members: GuildRosterMember[],
 ) {
-  if (!members.length || !hasFirebaseProfileConfig()) return members;
+  if (!members.length || !hasDocumentDbConfig()) return members;
   const lookupKeys = new Set<string>();
   for (const member of members) {
     for (const key of memberProfileLookupKeys(member)) lookupKeys.add(key);
@@ -828,7 +826,7 @@ async function enrichGuildMembersWithProfileLinks(
 async function hydrateCachedRosterProfileLinks(
   cache: CachedRoster | null,
 ): Promise<CachedRoster | null> {
-  if (!cache?.members?.length || !hasFirebaseProfileConfig()) return cache;
+  if (!cache?.members?.length || !hasDocumentDbConfig()) return cache;
 
   const members = await enrichGuildMembersWithProfileLinks(cache.members).catch(
     () => cache.members,
@@ -1622,18 +1620,6 @@ function guildRosterRecordsChunkSize(
   return Math.max(25, Math.min(120, Math.floor(parsed)));
 }
 
-function guildRosterLegacyMemberDocsReadEnabled(
-  settings?: Pick<GuildRosterRuntimeSettings, "readLegacyMemberDocs"> | null,
-) {
-  return Boolean(settings?.readLegacyMemberDocs);
-}
-
-function guildRosterLegacyMemberDocsWriteEnabled(
-  settings?: Pick<GuildRosterRuntimeSettings, "writeLegacyMemberDocs"> | null,
-) {
-  return Boolean(settings?.writeLegacyMemberDocs);
-}
-
 function guildRosterChunkDocId(index: number) {
   return `chunk-${String(index).padStart(4, "0")}`;
 }
@@ -1683,16 +1669,6 @@ function normalizeMembersFromChunkData(data: any): GuildRosterMember[] {
   return members;
 }
 
-function memberDocId(
-  member: Pick<GuildRosterMember, "key" | "region" | "realmSlug" | "name">,
-) {
-  const source =
-    member.key ||
-    memberBattleNetKey(member) ||
-    `${member.region}:${member.realmSlug}:${member.name}`;
-  return createHash("sha1").update(source.toLowerCase()).digest("hex");
-}
-
 function guildRecordsDocId(
   settings?: Pick<GuildRosterRuntimeSettings, "region" | "realm" | "guildName"> | null,
 ) {
@@ -1705,7 +1681,7 @@ function guildRecordsDocId(
 function guildRecordsDoc(
   settings?: Pick<GuildRosterRuntimeSettings, "region" | "realm" | "guildName"> | null,
 ) {
-  return getFirebaseAdminDb()
+  return getDocumentDb()
     .collection(GUILD_RECORDS_COLLECTION)
     .doc(guildRecordsDocId(settings));
 }
@@ -1780,7 +1756,7 @@ function normalizeMemberRecord(data: any): GuildRosterMember | null {
   } satisfies GuildRosterMember);
 }
 
-function buildRosterFromFirebaseRecords(data: any, members: GuildRosterMember[]) {
+function buildRosterFromStorageRecords(data: any, members: GuildRosterMember[]) {
   if (!members.length || data?.authoritativeRoster !== true) return null;
   const config = getGuildConfig({
     region: data?.region,
@@ -1838,11 +1814,10 @@ async function readGuildRosterRecords(
     | "guildName"
     | "cacheTtlSeconds"
     | "cacheReadTtlMs"
-    | "readLegacyMemberDocs"
   > | null,
   options: { bypassCache?: boolean } = {},
 ): Promise<CachedRoster | null> {
-  if (!hasFirebaseProfileConfig()) return null;
+  if (!hasDocumentDbConfig()) return null;
 
   const recordsDocId = guildRecordsDocId(settings);
   const cacheKey = guildRosterRecordsRuntimeCacheKey(settings);
@@ -1862,28 +1837,19 @@ async function readGuildRosterRecords(
         const refs = Array.from({ length: chunkCount }, (_, index) =>
           doc.collection(GUILD_RECORDS_CHUNKS_COLLECTION).doc(guildRosterChunkDocId(index)),
         );
-        const chunkSnapshots = await getFirebaseAdminDb().getAll(...refs);
+        const chunkSnapshots = await getDocumentDb().getAll(...refs);
         members = chunkSnapshots.flatMap((item: { data: () => unknown }) => normalizeMembersFromChunkData(item.data() || {}));
         markGuildRosterChunkStoreReady(recordsDocId);
-      } else if (guildRosterLegacyMemberDocsReadEnabled(settings)) {
-        const memberSnapshots = await doc
-          .collection(GUILD_RECORDS_MEMBERS_COLLECTION)
-          .limit(1100)
-          .get();
-        const memberDocs = memberSnapshots.docs as Array<{ data: () => unknown }>;
-        members = memberDocs
-          .map((item) => normalizeMemberRecord(item.data()))
-          .filter((member: GuildRosterMember | null): member is GuildRosterMember => Boolean(member?.key));
       }
 
-      const cache = buildRosterFromFirebaseRecords(data, members);
+      const cache = buildRosterFromStorageRecords(data, members);
       if (cache) globalThis.__mistblossomGuildRosterCache = cache;
       return cache;
     },
     {
       ttlMs: Math.max(10_000, Math.min(300_000, Number(settings?.cacheReadTtlMs || process.env.GUILD_ROSTER_CACHE_READ_TTL_MS || 120_000))),
       timeoutMs: 3_500,
-      circuitKey: "firebase-guild-roster-records-read",
+      circuitKey: "storage-guild-roster-records-read",
       circuitTtlMs: 300_000,
       fallback: () => getRuntimeCachedValue<CachedRoster | null>(cacheKey, 24 * 60 * 60 * 1000) || null,
       logEvent: "guild.roster.records_read_failed",
@@ -1896,7 +1862,7 @@ async function writeGuildRosterRecords(
   cache: CachedRoster,
   options: CachedRosterWriteOptions = {},
 ) {
-  if (!hasFirebaseProfileConfig()) return false;
+  if (!hasDocumentDbConfig()) return false;
   const config = getGuildConfig(options.settings);
   const recordsDocId = guildRecordsDocId(options.settings);
   const doc = guildRecordsDoc(options.settings);
@@ -1961,7 +1927,7 @@ async function writeGuildRosterRecords(
   const chunkBatchSize = guildRosterCacheWriteBatchSize(options.settings);
   const chunkIndexes = Array.from(changedChunkIndexes).sort((a, b) => a - b);
   for (let index = 0; index < chunkIndexes.length; index += chunkBatchSize) {
-    const batch = getFirebaseAdminDb().batch();
+    const batch = getDocumentDb().batch();
     for (const chunkIndex of chunkIndexes.slice(index, index + chunkBatchSize)) {
       batch.set(
         doc.collection(GUILD_RECORDS_CHUNKS_COLLECTION).doc(guildRosterChunkDocId(chunkIndex)),
@@ -1985,7 +1951,7 @@ async function writeGuildRosterRecords(
       (_, index) => memberChunks.length + index,
     );
     for (let index = 0; index < staleChunkIndexes.length; index += chunkBatchSize) {
-      const batch = getFirebaseAdminDb().batch();
+      const batch = getDocumentDb().batch();
       for (const chunkIndex of staleChunkIndexes.slice(index, index + chunkBatchSize)) {
         batch.delete(
           doc.collection(GUILD_RECORDS_CHUNKS_COLLECTION).doc(guildRosterChunkDocId(chunkIndex)),
@@ -1997,50 +1963,11 @@ async function writeGuildRosterRecords(
 
   markGuildRosterChunkStoreReady(recordsDocId);
 
-  if (!guildRosterLegacyMemberDocsWriteEnabled(options.settings)) return true;
-
-  const membersToWrite = changedKeysProvided
-    ? cache.members.filter((member) => changedKeys.has(member.key))
-    : cache.members;
-  const memberBatchSize = guildRosterCacheWriteBatchSize(options.settings);
-  for (let index = 0; index < membersToWrite.length; index += memberBatchSize) {
-    const batch = getFirebaseAdminDb().batch();
-    for (const member of membersToWrite.slice(index, index + memberBatchSize)) {
-      batch.set(
-        doc.collection(GUILD_RECORDS_MEMBERS_COLLECTION).doc(memberDocId(member)),
-        stripUndefined({
-          key: member.key,
-          battleNetKey: memberBattleNetKey(member),
-          name: member.name,
-          realmSlug: member.realmSlug,
-          region: member.region,
-          presentInGuild: true,
-          member: { ...member, key: member.key },
-          updatedAtIso,
-          updatedAt: FieldValue.serverTimestamp(),
-        }),
-        { merge: true },
-      );
-    }
-    await batch.commit();
-  }
-
-  if (options.fullMemberRewrite && options.settings?.cacheDeleteStaleMembers) {
-    const activeDocIds = new Set(cache.members.map((member) => memberDocId(member)));
-    const existing = await doc.collection(GUILD_RECORDS_MEMBERS_COLLECTION).limit(1500).get();
-    const staleDocs = existing.docs.filter((item: { id: string }) => !activeDocIds.has(item.id));
-    for (let index = 0; index < staleDocs.length; index += memberBatchSize) {
-      const batch = getFirebaseAdminDb().batch();
-      for (const item of staleDocs.slice(index, index + memberBatchSize)) batch.delete(item.ref);
-      await batch.commit();
-    }
-  }
-
   return true;
 }
 
 async function readCachedRoster(
-  settings?: Pick<GuildRosterRuntimeSettings, "region" | "realm" | "guildName" | "cacheTtlSeconds" | "cacheReadTtlMs" | "readLegacyMemberDocs"> | null,
+  settings?: Pick<GuildRosterRuntimeSettings, "region" | "realm" | "guildName" | "cacheTtlSeconds" | "cacheReadTtlMs"> | null,
   options: { bypassCache?: boolean } = {},
 ): Promise<CachedRoster | null> {
   if (!options.bypassCache && globalThis.__mistblossomGuildRosterCache &&
@@ -2069,9 +1996,9 @@ async function readCachedRoster(
 
 function guildRosterStorageLimited() {
   return (
-    runtimeCircuitOpen("firebase-guild-roster-records-read") ||
-    runtimeCircuitOpen("firebase-guild-roster-read") ||
-    runtimeCircuitOpen("firebase-guild-roster-write")
+    runtimeCircuitOpen("storage-guild-roster-records-read") ||
+    runtimeCircuitOpen("storage-guild-roster-read") ||
+    runtimeCircuitOpen("storage-guild-roster-write")
   );
 }
 
@@ -2108,7 +2035,7 @@ async function writeCachedRoster(
   globalThis.__mistblossomGuildRosterCache = cache;
   clearRuntimeCachedValue(guildRosterRecordsRuntimeCacheKey(options.settings));
 
-  if (hasFirebaseProfileConfig()) {
+  if (hasDocumentDbConfig()) {
     await resilientWrite(
       "guild-roster-cache-write",
       async () => {
@@ -2120,7 +2047,7 @@ async function writeCachedRoster(
           options.fullMemberRewrite ? undefined : options.changedMemberKeys,
           Boolean(options.fullMemberRewrite),
         );
-        const doc = getFirebaseAdminDb()
+        const doc = getDocumentDb()
           .collection(CACHE_COLLECTION)
           .doc(CACHE_DOCUMENT);
         await doc.set(
@@ -2143,7 +2070,7 @@ async function writeCachedRoster(
         return true;
       },
       {
-        circuitKey: "firebase-guild-roster-write",
+        circuitKey: "storage-guild-roster-write",
         circuitTtlMs: 120_000,
         timeoutMs: 12_000,
         fallback: () => false,
@@ -2190,7 +2117,7 @@ async function refreshGuildRosterAndCache(
       "warning",
       "guild.roster.cache_write_failed",
       {
-        summary: "Guild roster live data was fetched, but Firebase record write failed. Using volatile in-memory data for this step.",
+        summary: "Guild roster live data was fetched, but Storage record write failed. Using volatile in-memory data for this step.",
         error: message,
         memberCount: live.members.length,
       },
@@ -2199,7 +2126,7 @@ async function refreshGuildRosterAndCache(
 
     const volatileCache = stripUndefined({
       ...live,
-      source: `${live.source} • volatile-Firebase-records`,
+      source: `${live.source} • volatile-Storage-records`,
       cachedAt: new Date().toISOString(),
     } satisfies CachedRoster);
     globalThis.__mistblossomGuildRosterCache = volatileCache;
@@ -2588,8 +2515,8 @@ async function enrichGuildMembersWithRaiderIoStep(
 }
 
 function syncJobDoc() {
-  if (!hasFirebaseProfileConfig()) return null;
-  return getFirebaseAdminDb()
+  if (!hasDocumentDbConfig()) return null;
+  return getDocumentDb()
     .collection(CACHE_COLLECTION)
     .doc(SYNC_JOB_DOCUMENT);
 }
@@ -2644,7 +2571,7 @@ async function readGuildRosterSyncJob(
     {
       ttlMs: 10_000,
       timeoutMs: 2_000,
-      circuitKey: "firebase-guild-roster-read",
+      circuitKey: "storage-guild-roster-read",
       circuitTtlMs: 90_000,
       fallback: () => globalThis.__mistblossomGuildRosterSyncJob ? normalizeSyncJob(globalThis.__mistblossomGuildRosterSyncJob) : null,
       logEvent: "guild.roster.sync_job_read_failed",
@@ -2662,7 +2589,7 @@ async function writeGuildRosterSyncJob(job: GuildRosterSyncJob) {
       "guild-roster-sync-job-write",
       () => doc.set(next, { merge: false }),
       {
-        circuitKey: "firebase-guild-roster-write",
+        circuitKey: "storage-guild-roster-write",
         circuitTtlMs: 120_000,
         timeoutMs: 2_000,
         fallback: () => undefined,

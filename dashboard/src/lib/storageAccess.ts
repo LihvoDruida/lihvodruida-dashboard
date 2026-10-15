@@ -1,6 +1,6 @@
 import "server-only";
 
-import { hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
+import { hasDocumentDbConfig } from "@/lib/documentDb";
 import {
   clearRuntimeCircuit,
   getRuntimeCircuit,
@@ -12,7 +12,7 @@ import {
 } from "@/lib/runtimeResilience";
 import { envFlag } from "@/lib/values";
 
-export type FirebaseArea =
+export type StorageArea =
   | "settings"
   | "profile"
   | "raid"
@@ -23,9 +23,9 @@ export type FirebaseArea =
   | "rules"
   | "generic";
 
-export type FirebaseOperation = "read" | "write";
+export type StorageOperation = "read" | "write";
 
-const AREA_LABELS: Record<FirebaseArea, string> = {
+const AREA_LABELS: Record<StorageArea, string> = {
   settings: "налаштування",
   profile: "профілі",
   raid: "рейди",
@@ -34,11 +34,11 @@ const AREA_LABELS: Record<FirebaseArea, string> = {
   audit: "журнал дій",
   content: "контент",
   rules: "правила",
-  generic: "Firebase",
+  generic: "Storage",
 };
 
-function cleanArea(area: FirebaseArea | string | undefined): FirebaseArea {
-  const value = String(area || "generic") as FirebaseArea;
+function cleanArea(area: StorageArea | string | undefined): StorageArea {
+  const value = String(area || "generic") as StorageArea;
   return [
     "settings",
     "profile",
@@ -53,45 +53,45 @@ function cleanArea(area: FirebaseArea | string | undefined): FirebaseArea {
     ? value
     : "generic";
 }
-function firebaseReadsDisabled() {
-  return envFlag(["FIREBASE_READS_DISABLED", "FIRESTORE_READS_DISABLED"], false);
+function storageReadsDisabled() {
+  return envFlag(["STORAGE_READS_DISABLED", "STORAGE_READS_DISABLED"], false);
 }
 
-function firebaseWritesDisabled() {
+function storageWritesDisabled() {
   return envFlag([
-    "FIREBASE_WRITES_DISABLED",
-    "FIRESTORE_WRITES_DISABLED",
-    "FIREBASE_READ_ONLY_MODE",
-    "FIREBASE_ECO_READ_ONLY",
+    "STORAGE_WRITES_DISABLED",
+    "STORAGE_WRITES_DISABLED",
+    "STORAGE_READ_ONLY_MODE",
+    "STORAGE_ECO_READ_ONLY",
   ], false);
 }
 
-export function firebaseCircuitKey(area: FirebaseArea | string, operation: FirebaseOperation) {
-  return `firebase-${cleanArea(area)}-${operation}`;
+export function storageCircuitKey(area: StorageArea | string, operation: StorageOperation) {
+  return `storage-${cleanArea(area)}-${operation}`;
 }
 
-export function firebaseCapability(area: FirebaseArea | string, operation: FirebaseOperation) {
+export function storageCapability(area: StorageArea | string, operation: StorageOperation) {
   const clean = cleanArea(area);
-  if (!hasFirebaseProfileConfig()) {
+  if (!hasDocumentDbConfig()) {
     return {
       configured: false,
       available: false,
       mode: "unconfigured" as const,
-      reason: "Firebase не налаштований.",
+      reason: "Storage не налаштований.",
       circuit: null,
-      circuitKey: firebaseCircuitKey(clean, operation),
+      circuitKey: storageCircuitKey(clean, operation),
       label: AREA_LABELS[clean],
     };
   }
 
-  const key = firebaseCircuitKey(clean, operation);
-  const disabled = operation === "read" ? firebaseReadsDisabled() : firebaseWritesDisabled();
+  const key = storageCircuitKey(clean, operation);
+  const disabled = operation === "read" ? storageReadsDisabled() : storageWritesDisabled();
   if (disabled) {
     return {
       configured: true,
       available: false,
       mode: "disabled" as const,
-      reason: operation === "read" ? "Firebase reads disabled by env." : "Firebase writes disabled by env.",
+      reason: operation === "read" ? "Storage reads disabled by env." : "Storage writes disabled by env.",
       circuit: null,
       circuitKey: key,
       label: AREA_LABELS[clean],
@@ -110,23 +110,23 @@ export function firebaseCapability(area: FirebaseArea | string, operation: Fireb
   };
 }
 
-export function canAttemptFirebaseRead(area: FirebaseArea | string = "generic") {
-  return firebaseCapability(area, "read").available;
+export function canAttemptStorageRead(area: StorageArea | string = "generic") {
+  return storageCapability(area, "read").available;
 }
 
-export function canAttemptFirebaseWrite(area: FirebaseArea | string = "generic") {
-  return firebaseCapability(area, "write").available;
+export function canAttemptStorageWrite(area: StorageArea | string = "generic") {
+  return storageCapability(area, "write").available;
 }
 
-export function firebaseReadOnlyMode(area: FirebaseArea | string = "generic") {
-  return canAttemptFirebaseRead(area) && !canAttemptFirebaseWrite(area);
+export function storageReadOnlyMode(area: StorageArea | string = "generic") {
+  return canAttemptStorageRead(area) && !canAttemptStorageWrite(area);
 }
 
-export function firebaseUnavailableMessage(area: FirebaseArea | string, operation: FirebaseOperation) {
-  const capability = firebaseCapability(area, operation);
+export function storageUnavailableMessage(area: StorageArea | string, operation: StorageOperation) {
+  const capability = storageCapability(area, operation);
   const label = capability.label;
   if (!capability.configured) {
-    return `Firebase для розділу “${label}” не налаштований. Читання і запис вимкнені.`;
+    return `Storage для розділу “${label}” не налаштований. Читання і запис вимкнені.`;
   }
   if (operation === "write") {
     return `Збереження для розділу “${label}” тимчасово недоступне. Дані можна переглядати, але зміни зараз не записуються.`;
@@ -134,19 +134,19 @@ export function firebaseUnavailableMessage(area: FirebaseArea | string, operatio
   return `Читання для розділу “${label}” тимчасово недоступне. Показуємо кеш або безпечний порожній стан.`;
 }
 
-export function assertFirebaseWriteAvailable(area: FirebaseArea | string = "generic") {
-  const capability = firebaseCapability(area, "write");
+export function assertStorageWriteAvailable(area: StorageArea | string = "generic") {
+  const capability = storageCapability(area, "write");
   if (!capability.available) {
-    throw new Error(firebaseUnavailableMessage(area, "write"));
+    throw new Error(storageUnavailableMessage(area, "write"));
   }
 }
 
-export function clearFirebaseOperationCircuit(area: FirebaseArea | string, operation: FirebaseOperation) {
-  clearRuntimeCircuit(firebaseCircuitKey(area, operation));
+export function clearStorageOperationCircuit(area: StorageArea | string, operation: StorageOperation) {
+  clearRuntimeCircuit(storageCircuitKey(area, operation));
 }
 
-export async function firebaseRead<T>(
-  area: FirebaseArea | string,
+export async function storageRead<T>(
+  area: StorageArea | string,
   key: string,
   loader: () => Promise<T>,
   options: {
@@ -160,12 +160,12 @@ export async function firebaseRead<T>(
 ): Promise<T> {
   return resilientRead(key, loader, {
     ...options,
-    circuitKey: firebaseCircuitKey(area, "read"),
+    circuitKey: storageCircuitKey(area, "read"),
   });
 }
 
-export async function firebaseWrite<T>(
-  area: FirebaseArea | string,
+export async function storageWrite<T>(
+  area: StorageArea | string,
   key: string,
   writer: () => Promise<T>,
   options: {
@@ -177,45 +177,45 @@ export async function firebaseWrite<T>(
     bypassCircuit?: boolean;
   } = {},
 ): Promise<T> {
-  const capability = firebaseCapability(area, "write");
+  const capability = storageCapability(area, "write");
   const mayProbeOpenCircuit = options.bypassCircuit && capability.mode === "circuit-open";
   if (!capability.available && !mayProbeOpenCircuit) {
     logThrottled(
       "warn",
-      "firebase.write.skipped",
+      "storage.write.skipped",
       { area: cleanArea(area), mode: capability.mode, reason: capability.reason || "unavailable" },
       60_000,
     );
     if (options.fallback) return options.fallback();
-    throw new Error(firebaseUnavailableMessage(area, "write"));
+    throw new Error(storageUnavailableMessage(area, "write"));
   }
 
   return resilientWrite(key, writer, {
-    circuitKey: firebaseCircuitKey(area, "write"),
+    circuitKey: storageCircuitKey(area, "write"),
     circuitTtlMs: options.circuitTtlMs || 120_000,
     timeoutMs: options.timeoutMs,
-    logEvent: options.logEvent || `firebase.${cleanArea(area)}.write_failed`,
+    logEvent: options.logEvent || `storage.${cleanArea(area)}.write_failed`,
     bypassCircuit: Boolean(options.bypassCircuit),
     fallback: async () => {
-      const reason = firebaseCapability(area, "write").reason;
+      const reason = storageCapability(area, "write").reason;
       logThrottled(
         "warn",
-        "firebase.write.fallback",
+        "storage.write.fallback",
         { area: cleanArea(area), reason: reason || "unknown" },
         60_000,
       );
       if (options.fallback) return options.fallback();
-      throw new Error(firebaseUnavailableMessage(area, "write"));
+      throw new Error(storageUnavailableMessage(area, "write"));
     },
   });
 }
 
-export function firebaseWriteFailureDetails(area: FirebaseArea | string, error: unknown) {
+export function storageWriteFailureDetails(area: StorageArea | string, error: unknown) {
   const clean = cleanArea(area);
   return {
     area: clean,
-    writeCircuitOpen: runtimeCircuitOpen(firebaseCircuitKey(clean, "write")),
-    readStillAvailable: canAttemptFirebaseRead(clean),
+    writeCircuitOpen: runtimeCircuitOpen(storageCircuitKey(clean, "write")),
+    readStillAvailable: canAttemptStorageRead(clean),
     message: safeErrorText(error),
   };
 }

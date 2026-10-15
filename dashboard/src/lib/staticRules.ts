@@ -2,7 +2,7 @@ import "server-only";
 
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import type { DashboardSession } from "@/lib/auth";
-import { getFirebaseAdminDb } from "@/lib/firebaseAdmin";
+import { getDocumentDb } from "@/lib/documentDb";
 import { addGuildMemberRoles, assertDiscordRolesManageable, fetchDiscordGuildMemberSnapshot, fetchDiscordGuildSnapshot, fetchDiscordGuildMembersCachedForUi, fetchDiscordRoleControlSnapshot, getDiscordGuildId, removeGuildMemberRoles } from "@/lib/discordAdmin";
 import { isDashboardAdmin } from "@/lib/permissions";
 import { DEFAULT_STATIC_RULES_MARKDOWN } from "@/lib/staticRulesDefault";
@@ -21,7 +21,7 @@ const snowflake = (value: unknown) => /^\d{16,25}$/.test(String(value || "")) ? 
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 const secret = (length = 32) => randomBytes(length).toString("base64url");
 const nowIso = () => new Date().toISOString();
-const db = () => getFirebaseAdminDb();
+const db = () => getDocumentDb();
 
 export type StaticSettings = { text: string; version: number; updatedAt: string | null; memberRoleId: string; managerRoleId: string };
 export type StaticInvite = { id: string; createdAt: string; expiresAt: string; createdBy: string; revokedAt: string | null };
@@ -247,7 +247,7 @@ export async function enforceStaticMemberRole(userIdInput: string) {
 export async function sweepStaticForbiddenRoles() {
   // Paginate by doc id: a guild larger than 1000 members must not skip bans.
   // Store-agnostic cursor: __name__ ordering accepts the last document ID
-  // both in the PostgreSQL adapter and in Firestore.
+  // both in the PostgreSQL adapter and in DocumentStore.
   let cursorId: string | undefined;
   let checked = 0, revoked = 0, failed = 0;
   for (let page = 0; page < 50; page++) {

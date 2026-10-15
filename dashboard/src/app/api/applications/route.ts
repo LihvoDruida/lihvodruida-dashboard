@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { canManageApplications, canViewApplicationBattleTag, canViewApplications } from "@/lib/permissions";
-import { listApplicationFilterOptions, listApplications, sanitizeApplicationsForMentorViewer } from "@/lib/github";
+import { listApplicationFilterOptions, listApplications, sanitizeApplicationsForMentorViewer } from "@/lib/applicationsStore";
 import { logDashboardEvent, noStoreHeaders, safeErrorMessage, unauthorizedResponse } from "@/lib/security";
 
 export const runtime = "nodejs";

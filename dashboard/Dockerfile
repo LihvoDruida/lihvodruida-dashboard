@@ -190,7 +190,6 @@ COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/assets/fonts/welcome .
 # CI/audit/build scripts stay in the builder stage and never reach production.
 COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/scripts/db-init.mjs ./dashboard/scripts/db-init.mjs
 COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/scripts/discord-storage-diagnose.mjs ./dashboard/scripts/discord-storage-diagnose.mjs
-COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/scripts/migrate-firestore-to-postgres.mjs ./dashboard/scripts/migrate-firestore-to-postgres.mjs
 COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/src/lib/db/schema.sql ./dashboard/src/lib/db/schema.sql
 
 USER nextjs

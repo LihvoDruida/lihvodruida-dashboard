@@ -10,8 +10,8 @@ import {
   sendDiscordDirectMessage,
   type DiscordGuildMemberModerationItem,
 } from "@/lib/discordAdmin";
-import { firebaseWrite } from "@/lib/firebaseAccess";
-import { getFirebaseAdminDb, hasFirebaseProfileConfig } from "@/lib/firebaseAdmin";
+import { storageWrite } from "@/lib/storageAccess";
+import { getDocumentDb, hasDocumentDbConfig } from "@/lib/documentDb";
 import { explainNicknameValidation, getGuildNicknamePolicy, nicknameMatchesTemplate, nicknameTemplateExample, suggestNicknameFromObservedText, DEFAULT_NICKNAME_TEMPLATE, VALID_NICKNAME_STRUCTURES, type GuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
 import { buildProfileDiscordNicknamePlan, getProfileByDiscordUserId } from "@/lib/profiles";
 import { resilientRead } from "@/lib/runtimeResilience";
@@ -218,11 +218,11 @@ export async function getNicknameWarningAutomationState(options: { fresh?: boole
   const cached = globalThis.__mistblossomNicknameWarningStateCache;
   if (!options.fresh && cached && Date.now() - cached.cachedAt < STATE_CACHE_TTL_MS) return cached.value;
   const fallback = cached?.value || defaultState();
-  if (!hasFirebaseProfileConfig()) return setStateCache(fallback);
+  if (!hasDocumentDbConfig()) return setStateCache(fallback);
   const value = await resilientRead(
     "discord-nickname-warning-state",
     async () => {
-      const snapshot = await getFirebaseAdminDb().collection(STATE_COLLECTION).doc(STATE_DOC_ID).get();
+      const snapshot = await getDocumentDb().collection(STATE_COLLECTION).doc(STATE_DOC_ID).get();
       return snapshot.exists ? normalizeState(snapshot.data() || null) : fallback;
     },
     {
@@ -321,8 +321,8 @@ function buildMemberCheckRecord(
 }
 
 async function writeMemberCheckRecords(records: NicknameMemberCheckRecord[], options: { cleanupMissing?: boolean } = {}) {
-  if (!hasFirebaseProfileConfig()) return;
-  const db = getFirebaseAdminDb();
+  if (!hasDocumentDbConfig()) return;
+  const db = getDocumentDb();
   const currentIds = new Set(records.map((record) => record.userId));
   const staleRefs: any[] = [];
 
@@ -333,7 +333,7 @@ async function writeMemberCheckRecords(records: NicknameMemberCheckRecord[], opt
     }
   }
 
-  await firebaseWrite(
+  await storageWrite(
     "settings",
     `discord-nickname-check-state:${options.cleanupMissing ? "full" : "partial"}`,
     async () => {
@@ -375,11 +375,11 @@ async function writeMemberCheckRecords(records: NicknameMemberCheckRecord[], opt
 }
 
 async function deleteMemberCheckRecords(userIds: string[]) {
-  if (!hasFirebaseProfileConfig() || !userIds.length) return;
-  const db = getFirebaseAdminDb();
+  if (!hasDocumentDbConfig() || !userIds.length) return;
+  const db = getDocumentDb();
   const unique = Array.from(new Set(userIds.filter((userId) => /^\d{16,25}$/.test(userId))));
   if (!unique.length) return;
-  await firebaseWrite(
+  await storageWrite(
     "settings",
     "discord-nickname-check-state:delete-missing",
     async () => {
@@ -397,12 +397,12 @@ async function deferFailedNicknameChecks(
   failures: Array<{ userId: string; error: string; failureCount?: number }>,
   delayMs = 60 * 60_000,
 ) {
-  if (!hasFirebaseProfileConfig() || !failures.length) return;
-  const db = getFirebaseAdminDb();
+  if (!hasDocumentDbConfig() || !failures.length) return;
+  const db = getDocumentDb();
   const baseDelayMs = Math.max(15 * 60_000, delayMs);
   const failedAtMs = Date.now();
   const failedAt = new Date(failedAtMs).toISOString();
-  await firebaseWrite(
+  await storageWrite(
     "settings",
     "discord-nickname-check-state:retry",
     async () => {
@@ -433,11 +433,11 @@ async function deferFailedNicknameChecks(
 async function patchAutomationState(patch: Partial<NicknameWarningAutomationState>) {
   const previous = await getNicknameWarningAutomationState({ fresh: true });
   const nextState = normalizeState({ ...previous, ...patch });
-  if (hasFirebaseProfileConfig()) {
-    await firebaseWrite(
+  if (hasDocumentDbConfig()) {
+    await storageWrite(
       "settings",
       "discord-nickname-warning-state:patch",
-      () => getFirebaseAdminDb().collection(STATE_COLLECTION).doc(STATE_DOC_ID).set(nextState, { merge: true }),
+      () => getDocumentDb().collection(STATE_COLLECTION).doc(STATE_DOC_ID).set(nextState, { merge: true }),
       { timeoutMs: 4_000, logEvent: "discord.nickname_warning.state_write_failed" },
     );
   }
@@ -503,8 +503,8 @@ function normalizeNewcomerGateRecord(doc: any, roleId: string): NewcomerGateReco
 }
 
 async function loadNewcomerGateRecords(roleId: string) {
-  if (!hasFirebaseProfileConfig()) return new Map<string, NewcomerGateRecord>();
-  const snapshot = await getFirebaseAdminDb().collection(NEWCOMER_GATE_COLLECTION).limit(5000).get().catch(() => null);
+  if (!hasDocumentDbConfig()) return new Map<string, NewcomerGateRecord>();
+  const snapshot = await getDocumentDb().collection(NEWCOMER_GATE_COLLECTION).limit(5000).get().catch(() => null);
   const rows = new Map<string, NewcomerGateRecord>();
   for (const doc of snapshot?.docs || []) {
     const record = normalizeNewcomerGateRecord(doc, roleId);
@@ -514,8 +514,8 @@ async function loadNewcomerGateRecords(roleId: string) {
 }
 
 async function writeNewcomerGateRecords(records: NewcomerGateRecord[], options: { cleanupMissing?: boolean } = {}) {
-  if (!hasFirebaseProfileConfig()) return;
-  const db = getFirebaseAdminDb();
+  if (!hasDocumentDbConfig()) return;
+  const db = getDocumentDb();
   const currentIds = new Set(records.map((record) => record.userId));
   const staleRefs: any[] = [];
   if (options.cleanupMissing) {
@@ -525,7 +525,7 @@ async function writeNewcomerGateRecords(records: NewcomerGateRecord[], options: 
     }
   }
 
-  await firebaseWrite(
+  await storageWrite(
     "settings",
     `discord-nickname-newcomer-gate:${options.cleanupMissing ? "full" : "partial"}`,
     async () => {
@@ -573,7 +573,7 @@ export async function syncNicknameNewcomerRoleGate(input: {
   let completeSnapshot = input.completeSnapshot ?? !input.members;
   const roleId = policy.nicknameNewcomerRoleId || "";
 
-  if (!policy.nicknameNewcomerGateEnabled || !roleId || !hasFirebaseProfileConfig()) {
+  if (!policy.nicknameNewcomerGateEnabled || !roleId || !hasDocumentDbConfig()) {
     return {
       skipped: true,
       initialized: false,
@@ -898,8 +898,8 @@ async function persistFullNicknameCheckSnapshot(
 type DueInvalidTarget = { userId: string; displayName: string; nextCheckAtMs: number; signature: string; lastNotifiedAt: string | null; failureCount: number };
 
 async function loadDueInvalidNicknameTargets(limit: number, now = Date.now()) {
-  if (!hasFirebaseProfileConfig()) return { targets: [] as DueInvalidTarget[], dueTotal: 0, nextDueAt: null as string | null, trackedInvalid: 0 };
-  const snapshot = await getFirebaseAdminDb()
+  if (!hasDocumentDbConfig()) return { targets: [] as DueInvalidTarget[], dueTotal: 0, nextDueAt: null as string | null, trackedInvalid: 0 };
+  const snapshot = await getDocumentDb()
     .collection(MEMBER_STATE_COLLECTION)
     .where("checkStatus", "==", "invalid")
     .limit(5000)
@@ -956,8 +956,8 @@ function storedWarningOnCooldown(state: StoredWarningState | undefined, signatur
 }
 
 async function loadStoredWarningStates(userIds: Set<string>) {
-  if (!hasFirebaseProfileConfig() || !userIds.size) return new Map<string, StoredWarningState>();
-  const db = getFirebaseAdminDb();
+  if (!hasDocumentDbConfig() || !userIds.size) return new Map<string, StoredWarningState>();
+  const db = getDocumentDb();
   const ids = [...userIds];
   const chunks = Array.from({ length: Math.ceil(ids.length / 100) }, (_, index) => ids.slice(index * 100, (index + 1) * 100));
   const loaded = await mapConcurrentSettled(chunks, chunk => db.getAll(...chunk.map(id => db.collection(MEMBER_STATE_COLLECTION).doc(id))), { profile: "io", max: 2 });
@@ -975,8 +975,8 @@ async function loadStoredWarningStates(userIds: Set<string>) {
 }
 
 async function recentMemberWarning(userId: string, signature: string, cooldownHours: number) {
-  if (!hasFirebaseProfileConfig()) return false;
-  const snapshot = await getFirebaseAdminDb().collection(MEMBER_STATE_COLLECTION).doc(userId).get().catch(() => null);
+  if (!hasDocumentDbConfig()) return false;
+  const snapshot = await getDocumentDb().collection(MEMBER_STATE_COLLECTION).doc(userId).get().catch(() => null);
   if (!snapshot?.exists) return false;
   const data = snapshot.data() || {};
   const last = timestampToIso(data.lastNotifiedAt);
@@ -995,12 +995,12 @@ async function recordMemberWarning(input: {
   template: string;
   suggested?: string | null;
 }) {
-  if (!hasFirebaseProfileConfig()) return;
+  if (!hasDocumentDbConfig()) return;
   const now = new Date().toISOString();
-  await firebaseWrite(
+  await storageWrite(
     "settings",
     `discord-nickname-warning-member:${input.userId}`,
-    () => getFirebaseAdminDb().collection(MEMBER_STATE_COLLECTION).doc(input.userId).set({
+    () => getDocumentDb().collection(MEMBER_STATE_COLLECTION).doc(input.userId).set({
       ...input,
       lastNotifiedAt: now,
       updatedAt: now,
@@ -1383,11 +1383,11 @@ export async function processFullNicknameSweep(input: {
     recentRuns: [run, ...previous.recentRuns].slice(0, MAX_RECENT_RUNS),
   };
 
-  if (hasFirebaseProfileConfig()) {
-    await firebaseWrite(
+  if (hasDocumentDbConfig()) {
+    await storageWrite(
       "settings",
       `discord-nickname-warning-state:${source}:full-sweep`,
-      () => getFirebaseAdminDb().collection(STATE_COLLECTION).doc(STATE_DOC_ID).set(nextState, { merge: true }),
+      () => getDocumentDb().collection(STATE_COLLECTION).doc(STATE_DOC_ID).set(nextState, { merge: true }),
       { timeoutMs: 4_000, logEvent: "discord.nickname_warning.state_write_failed" },
     );
   }
@@ -1542,11 +1542,11 @@ export async function sendNicknameWarnings(input: {
     recentRuns: [run, ...previous.recentRuns].slice(0, MAX_RECENT_RUNS),
   };
 
-  if (hasFirebaseProfileConfig()) {
-    await firebaseWrite(
+  if (hasDocumentDbConfig()) {
+    await storageWrite(
       "settings",
       `discord-nickname-warning-state:${input.source}`,
-      () => getFirebaseAdminDb().collection(STATE_COLLECTION).doc(STATE_DOC_ID).set(nextState, { merge: true }),
+      () => getDocumentDb().collection(STATE_COLLECTION).doc(STATE_DOC_ID).set(nextState, { merge: true }),
       { timeoutMs: 4_000, logEvent: "discord.nickname_warning.state_write_failed" },
     );
   }
@@ -1699,11 +1699,11 @@ export async function processPriorityNicknameWarnings(input: {
     recentRuns: [run, ...previous.recentRuns].slice(0, MAX_RECENT_RUNS),
   };
 
-  if (hasFirebaseProfileConfig()) {
-    await firebaseWrite(
+  if (hasDocumentDbConfig()) {
+    await storageWrite(
       "settings",
       `discord-nickname-warning-state:${source}:priority`,
-      () => getFirebaseAdminDb().collection(STATE_COLLECTION).doc(STATE_DOC_ID).set(nextState, { merge: true }),
+      () => getDocumentDb().collection(STATE_COLLECTION).doc(STATE_DOC_ID).set(nextState, { merge: true }),
       { timeoutMs: 4_000, logEvent: "discord.nickname_warning.state_write_failed" },
     );
   }
