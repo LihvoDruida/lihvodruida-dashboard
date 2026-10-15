@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { dispatchDashboardToast } from "@/lib/clientToasts";
+import { requestRaidPollMutation, raidPollMutationFailure } from "@/lib/raidPollMutation";
+import { useDashboardRequests } from "@/lib/useDashboardRequests";
+import { useActionFocus } from "@/lib/useActionFocus";
 import RaidPollActions from "@/components/RaidPollActions";
 
 import ListViewMemory from "@/components/ListViewMemory";
@@ -119,6 +122,7 @@ function RaidPollCard({
           pollTitle={card.title}
           state={card.state}
           canManage={canManage}
+          disabled={selectionDisabled}
           editHref={`${href}/edit`}
           messageUrl={card.messageUrl}
           showView
@@ -174,6 +178,12 @@ export default function RaidPollBrowser({
   }
   const [selected, setSelected] = useState<string[]>([]);
   const [bulkPending, setBulkPending] = useState(false);
+  type ItemResult = { id: string; title: string; outcome: "confirmed" | "partial" | "rejected" | "unconfirmed"; message: string };
+  const [results, setResults] = useState<ItemResult[]>([]);
+  const [resultKind, setResultKind] = useState<"close" | "delete" | null>(null);
+  const [summary, setSummary] = useState("");
+  const requests = useDashboardRequests();
+  const { scopeRef, beginActionFocus } = useActionFocus<HTMLElement>(bulkPending);
   const router = useRouter();
 
   const visible = useMemo(() => {
@@ -198,53 +208,51 @@ export default function RaidPollBrowser({
    * вперлися б у rate limit Discord і частина пулів лишилась би
    * неоновленою без жодного сигналу користувачу.
    */
-  async function runBulk(kind: "close" | "delete") {
-    if (!canManage || bulkPending || !visibleSelection.length) return;
+  async function runBulk(kind: "close" | "delete", trigger: HTMLElement) {
+    if (!canManage || requests.pending("bulk") || bulkPending || !visibleSelection.length) return;
     const scheduledSelected = visible.filter(card => card.state === "scheduled" && visibleSelection.includes(card.id)).length;
     const question = kind === "close"
       ? `Закрити вибрані рейд-пули (${visibleSelection.length})?${scheduledSelected ? `\n\nЗапланованих: ${scheduledSelected}. Їхню публікацію буде скасовано, а автоповтор вимкнено.` : ""}`
       : `Видалити вибрані рейд-пули (${visibleSelection.length})? Дію не можна скасувати.`;
     if (!window.confirm(question)) return;
 
-    setBulkPending(true);
-    let done = 0;
-    let failed = 0;
-
-    for (const id of visibleSelection) {
-      try {
-        const response = await fetch(
-          kind === "delete" ? `/api/polls/${encodeURIComponent(id)}` : `/api/polls/${encodeURIComponent(id)}/close`,
-          {
-            method: kind === "delete" ? "DELETE" : "POST",
-            headers: { Accept: "application/json", "Content-Type": "application/json", "X-Dashboard-Action": `bulk-${kind}-raid-poll` },
-            credentials: "same-origin",
-            cache: "no-store",
-            signal: AbortSignal.timeout(45_000),
-            body: kind === "close" ? JSON.stringify({ action: "close" }) : undefined,
-          },
-        );
-        const data = await response.json().catch(() => null);
-        if (!response.ok || data?.ok === false) failed += 1;
-        else done += 1;
-      } catch {
-        failed += 1;
+    const request = requests.begin("bulk", Math.max(45_000, visibleSelection.length * 45_000));
+    beginActionFocus(trigger, { preferResult: true });
+    setBulkPending(true); setResultKind(kind); setResults([]); setSummary(`Обробляємо: 0 з ${visibleSelection.length}.`);
+    const items: ItemResult[] = [];
+    try {
+      for (const id of visibleSelection) {
+        if (!request.current()) return;
+        const title = cards.find(card => card.id === id)?.title || id;
+        try {
+          const data = await requestRaidPollMutation(kind === "delete" ? `/api/polls/${encodeURIComponent(id)}` : `/api/polls/${encodeURIComponent(id)}/close`, {
+            method: kind === "delete" ? "DELETE" : "POST", action: `bulk-${kind}-raid-poll`, signal: request.signal, json: kind === "close" ? { action: "close" } : undefined,
+          });
+          if (!request.current()) return;
+          const partial = Boolean(data.warning || data.discordDeleteFailed);
+          items.push({ id, title, outcome: partial ? "partial" : "confirmed", message: data.warning || (partial ? "Запис змінено, оновлення Discord потребує перевірки." : "Сервер підтвердив виконання.") });
+        } catch (error) {
+          if (!request.current()) return;
+          items.push({ id, title, ...raidPollMutationFailure(error) });
+        }
+        setResults([...items]); setSummary(`Оброблено: ${items.length} з ${visibleSelection.length}.`);
       }
+      const count = (outcome: ItemResult["outcome"]) => items.filter(item => item.outcome === outcome).length;
+      const confirmed = count("confirmed"), partial = count("partial"), rejected = count("rejected"), unconfirmed = count("unconfirmed");
+      const message = `Підтверджено: ${confirmed}. Частково: ${partial}. Відхилено: ${rejected}. Не підтверджено: ${unconfirmed}.`;
+      setSummary(message);
+      // Unknown outcomes must not remain selected for an accidental bulk replay.
+      setSelected(items.filter(item => item.outcome === "rejected").map(item => item.id));
+      dispatchDashboardToast({ tone: partial || rejected || unconfirmed ? "warning" : "success", title: partial || rejected || unconfirmed ? "Обробку завершено з зауваженнями" : kind === "close" ? "Рейд-пули закрито" : "Рейд-пули видалено", message, ttl: 7200 });
+      if (confirmed || partial) router.refresh();
+    } finally {
+      if (request.current()) setBulkPending(false);
+      request.finish();
     }
-
-    dispatchDashboardToast({
-      tone: failed ? "warning" : "success",
-      title: failed ? "Виконано частково" : kind === "close" ? "Рейд-пули закрито" : "Рейд-пули видалено",
-      message: failed ? `Успішно: ${done}, з помилкою: ${failed}.` : `Оброблено ${done}.`,
-      ttl: 7200,
-    });
-
-    setSelected([]);
-    setBulkPending(false);
-    router.refresh();
   }
 
   return (
-    <section className="panel poll-browser dashboard-list-panel" aria-label="Список рейд-пулів">
+    <section ref={scopeRef} className="panel poll-browser dashboard-list-panel" aria-label="Список рейд-пулів" aria-busy={bulkPending}>
       <header className="poll-browser__head dashboard-list-head">
         <div className="poll-browser__headline">
           <h2>Рейд-пули</h2>
@@ -288,6 +296,8 @@ export default function RaidPollBrowser({
         </label>
       </div>
 
+      <p className="raid-poll-action-result" role="status" aria-live="polite" aria-atomic="true" tabIndex={-1} data-action-result="" data-bulk-result="">{summary}</p>
+      {results.length ? <ul className="poll-bulk-results" aria-label="Результати масової дії">{results.map(item => <li key={item.id} data-poll-outcome={item.outcome}><strong>{item.title}</strong><span>{item.message}</span><a href={resultKind === "delete" && (item.outcome === "confirmed" || item.outcome === "partial") ? "/polls" : `/polls/${encodeURIComponent(item.id)}`}>{resultKind === "delete" && (item.outcome === "confirmed" || item.outcome === "partial") ? "До списку рейд-пулів" : "Перевірити стан"}</a></li>)}</ul> : null}
       {canManage && visibleSelection.length ? (
         <div className="poll-bulk" role="region" aria-label="Масові дії">
           <strong>Вибрано: {visibleSelection.length}</strong>
@@ -295,10 +305,10 @@ export default function RaidPollBrowser({
           <button type="button" className="btn subtle" onClick={() => setSelected(visible.map((card) => card.id))} disabled={bulkPending}>
             Вибрати всі у вкладці
           </button>
-          <button type="button" className="btn danger" onClick={() => runBulk("close")} disabled={bulkPending}>
+          <button type="button" className="btn danger" onClick={event => void runBulk("close", event.currentTarget)} disabled={bulkPending}>
             {bulkPending ? "Обробляємо…" : tab === "scheduled" ? "Скасувати заплановані" : "Закрити вибрані"}
           </button>
-          <button type="button" className="btn danger" onClick={() => runBulk("delete")} disabled={bulkPending}>
+          <button type="button" className="btn danger" onClick={event => void runBulk("delete", event.currentTarget)} disabled={bulkPending}>
             {bulkPending ? "Обробляємо…" : "Видалити вибрані"}
           </button>
         </div>

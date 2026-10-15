@@ -108,7 +108,7 @@ warn(/"build"\s*:\s*"node scripts\/next-build\.cjs"/.test(packageJsonText), 'bui
 warn(exists('scripts/next-build.cjs'), 'scripts/next-build.cjs should exist because package.json build points to it.');
 warn(!/"build:vercel"\s*:/.test(packageJsonText), 'build:vercel should be removed; Vercel should use the default npm run build script.');
 warn(
-  /"build:ci"\s*:\s*"[^"]*npm run cleanup:legacy[^"]*npm run security:runtime[^"]*npm run typecheck[^"]*npm run check:api-security[^"]*npm run check:security-performance[^"]*npm run inspect:ci[^"]*npm run build"/.test(packageJsonText),
+  /"build:ci"\s*:\s*"[^"]*npm run cleanup:legacy[^"]*npm run security:runtime[^"]*npm run typecheck[^"]*npm run check:api-security[^"]*npm run check:security-performance[^"]*npm run inspect:ci[^"]*npm run build(?: && npm run check:standalone)?"/.test(packageJsonText),
   'build:ci should clean stale overlay files, verify installed runtime security floors, run API/security audits, inspect-ci and the production build.',
 );
 warn(/"typecheck"\s*:\s*"node scripts\/typecheck\.cjs"/.test(read('package.json')), 'Typecheck should use scripts/typecheck.cjs for progress and timeout diagnostics.');
@@ -177,7 +177,8 @@ for (const [file, requiredClasses] of Object.entries(listUnifiedFiles)) {
 if (exists('src/components/GuildRosterExplorer.tsx')) {
   const rosterText = read('src/components/GuildRosterExplorer.tsx');
   assert(rosterText.includes('GuildRoster.module.css'), 'Guild roster must keep its page-specific layout in GuildRoster.module.css.');
-  assert(/useState\(25\)/.test(rosterText), 'Guild roster must default to 25 characters per page.');
+  const rosterView = read('src/lib/guildRosterViewState.ts');
+  assert(rosterText.includes('pageSize = Number(view.size)') && rosterView.includes('["25", "50", "100"] as const, "25"'), 'Guild roster must default to 25 characters per page and accept only approved sizes.');
   assert(rosterText.includes('pagedMembers'), 'Guild roster must paginate filtered members before rendering rows.');
   assert(rosterText.includes('raidProgression'), 'Guild roster must expose raid progression/clear data.');
   assert(rosterText.includes('raidClearFilter'), 'Guild roster must keep the raid-clear filter.');

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { observeAutomationRun } from "@/lib/automationTaskRuns";
 import { syncRaidLifecycleBatch } from "@/lib/raids";
 import {
   logDashboardEvent,
@@ -77,16 +78,16 @@ export async function GET(request: NextRequest) {
   const minInterval = lifecycleMinIntervalMs();
   const now = Date.now();
 
-  if (!force && guard.inFlight) {
+  if (guard.inFlight) {
     return NextResponse.json(
-      { ok: true, skipped: true, reason: "in_flight", ...(guard.lastResult || {}) },
+      { ...(guard.lastResult || {}), ok: true, skipped: true, reason: "in_flight" },
       { headers: noStoreHeaders({ "X-Mistblossom-Lifecycle": "in-flight" }) },
     );
   }
 
   if (!force && guard.lastStartedAt && now - guard.lastStartedAt < minInterval) {
     return NextResponse.json(
-      { ok: true, skipped: true, reason: "cooldown", cooldownMs: minInterval, ...(guard.lastResult || {}) },
+      { ...(guard.lastResult || {}), ok: true, skipped: true, reason: "cooldown", cooldownMs: minInterval },
       { headers: noStoreHeaders({ "X-Mistblossom-Lifecycle": "cooldown" }) },
     );
   }
@@ -96,7 +97,7 @@ export async function GET(request: NextRequest) {
     const limit = integerParam(url.searchParams.get("limit"), lifecycleDefaultLimit(), 1, 100);
     guard.lastStartedAt = now;
     const fullSweep = wantsFullSweep(request);
-    const promise = syncRaidLifecycleBatch(limit, { fullSweep });
+    const promise = observeAutomationRun("raid-lifecycle", () => syncRaidLifecycleBatch(limit, { fullSweep }));
     guard.inFlight = promise;
     const result = await promise;
     guard.lastResult = result as Record<string, unknown>;

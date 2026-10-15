@@ -3,6 +3,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
   type KeyboardEvent,
@@ -17,34 +18,22 @@ import type {
 import { useDashboardApiResource } from "@/lib/dashboardBackgroundApi";
 import { currentSeasonRaidProgress, currentSeasonRaidSlugs, primaryCurrentRaidProgress } from "@/lib/characterRaidProgress";
 import { formatStableNumber, stableTextCompare } from "@/lib/stableUiText";
+import { useSearchParams } from "next/navigation";
+import ListViewMemory from "@/components/ListViewMemory";
+import { listEntryId, listViewUrl } from "@/lib/listViewState";
+import { replaceClientListLocation } from "@/lib/clientListLocation";
+import { readGuildRosterView, compareGuildRosterMembers, type GuildRosterSort, type GuildRaidClearFilter, type GuildLinkFilter } from "@/lib/guildRosterViewState";
 import styles from "./GuildRoster.module.css";
-
-type SortKey =
-  | "rio-desc"
-  | "rio-asc"
-  | "ilvl-desc"
-  | "raid-desc"
-  | "name-asc"
-  | "rank-asc";
-
-type RaidClearFilter =
-  | "all"
-  | "progress"
-  | "normal-clear"
-  | "heroic-clear"
-  | "mythic-clear"
-  | "no-raid";
-
-type LinkFilter = "all" | "profile" | "raiderio";
 
 type Props = {
   members: GuildRosterMember[];
   stats: GuildRosterStats;
   source: string;
   error?: string | null;
+  navigationScope: string;
 };
 
-type GuildRosterLivePayload = Props & {
+type GuildRosterLivePayload = Omit<Props, "navigationScope"> & {
   ok?: boolean;
   memberCount?: number;
   updatedAt?: string | null;
@@ -223,7 +212,7 @@ function FilterSelect({
     <label className={styles.filterField} htmlFor={id}>
       <span>{label}</span>
       <select id={id} value={value} onChange={(event) => onChange(event.target.value)}>
-        {options.map((option) => (
+        {(options.some((option) => option.value === value) ? options : [...options, { value, label: `${value} (немає в поточному складі)` }]).map((option) => (
           <option value={option.value} key={option.value}>
             {option.label}
           </option>
@@ -283,7 +272,7 @@ function CompactRange({
   );
 }
 
-export default function GuildRosterExplorer({ members, stats, source, error }: Props) {
+export default function GuildRosterExplorer({ members, stats, source, error, navigationScope }: Props) {
   const initialRoster = useMemo<GuildRosterLivePayload>(
     () => ({ members, stats, source, error: error || null }),
     [members, stats, source, error],
@@ -350,36 +339,47 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
     ? `Фонова синхронізація · ${liveSync.phase === "raiderio" ? "Raider.IO" : liveSync.phase === "battlenet" ? "Battle.net профілі" : "склад Battle.net"}${syncTotal ? ` · ${Math.min(syncProcessed, syncTotal)}/${syncTotal}` : ""}`
     : null;
 
-  const maxRio = Math.max(0, Math.ceil(liveStats.maxRioAll || 0));
-  const maxItemLevel = Math.max(0, Math.ceil(liveStats.maxItemLevel || 0));
-
-  const [query, setQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all");
-  const [segment, setSegment] = useState<GuildScoreSegment>("all");
-  const [classFilter, setClassFilter] = useState("all");
-  const [specFilter, setSpecFilter] = useState("all");
-  const [factionFilter, setFactionFilter] = useState("all");
-  const [raidFilter, setRaidFilter] = useState("all");
-  const [raidClearFilter, setRaidClearFilter] = useState<RaidClearFilter>("all");
-  const [linkFilter, setLinkFilter] = useState<LinkFilter>("all");
-  const [rioMin, setRioMin] = useState(0);
-  const [rioMax, setRioMax] = useState(maxRio);
-  const [itemLevelMin, setItemLevelMin] = useState(0);
-  const [itemLevelMax, setItemLevelMax] = useState(maxItemLevel);
-  const [sort, setSort] = useState<SortKey>("rio-desc");
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
-
+  const searchParams = useSearchParams();
+  const currentUrl = listViewUrl("guild", `/guild?${searchParams}`) || "/guild";
+  const view = readGuildRosterView(new URL(currentUrl, "https://list.invalid").searchParams);
+  const maxRio = Math.max(0, Math.ceil(liveStats.maxRioAll || 0), view.rio.min, view.rio.max ?? 0);
+  const maxItemLevel = Math.max(0, Math.ceil(liveStats.maxItemLevel || 0), view.ilvl.min, view.ilvl.max ?? 0);
+  const [query, setQuery] = useState(view.q);
+  const ownQuery = useRef<string | null>(null);
   useEffect(() => {
-    setRioMax((value) => (value <= 0 || value < maxRio ? maxRio : Math.min(value, maxRio)));
-  }, [maxRio]);
+    if (ownQuery.current !== view.q) setQuery(view.q);
+    ownQuery.current = null;
+  }, [view.q]);
+  const roleFilter = view.role, segment = view.segment, classFilter = view.className, specFilter = view.spec;
+  const factionFilter = view.faction, raidFilter = view.raid, raidClearFilter = view.clear, linkFilter = view.link;
+  const rioMin = view.rio.min, rioMax = view.rio.max ?? maxRio;
+  const itemLevelMin = view.ilvl.min, itemLevelMax = view.ilvl.max ?? maxItemLevel;
+  const sort = view.sort, filtersOpen = view.filtersOpen, page = view.page, pageSize = Number(view.size);
+  const rioUpperBound = view.rio.max ?? Infinity, itemLevelUpperBound = view.ilvl.max ?? Infinity;
 
-  useEffect(() => {
-    setItemLevelMax((value) =>
-      value <= 0 || value < maxItemLevel ? maxItemLevel : Math.min(value, maxItemLevel),
-    );
-  }, [maxItemLevel]);
+  function changeFilters(patch: Record<string, string | null>) {
+    return replaceClientListLocation("guild", { ...patch, page: null });
+  }
+  function changeQuery(value: string) {
+    setQuery(value);
+    const href = changeFilters({ q: value });
+    ownQuery.current = new URL(href, "https://list.invalid").searchParams.get("q") || "";
+  }
+  const setRoleFilter = (value: string) => changeFilters({ role: value });
+  const setSegment = (value: string) => changeFilters({ segment: value });
+  const setClassFilter = (value: string) => changeFilters({ class: value, spec: null });
+  const setSpecFilter = (value: string) => changeFilters({ spec: value });
+  const setFactionFilter = (value: string) => changeFilters({ faction: value });
+  const setRaidFilter = (value: string) => changeFilters({ raid: value });
+  const setRaidClearFilter = (value: string) => changeFilters({ clear: value });
+  const setLinkFilter = (value: string) => changeFilters({ link: value });
+  const setRioMin = (value: number) => changeFilters({ rioMin: String(value) });
+  const setRioMax = (value: number) => changeFilters({ rioMax: String(value) });
+  const setItemLevelMin = (value: number) => changeFilters({ ilvlMin: String(value) });
+  const setItemLevelMax = (value: number) => changeFilters({ ilvlMax: String(value) });
+  const setSort = (value: string) => changeFilters({ sort: value });
+  const setPageSize = (value: number) => changeFilters({ size: String(value) });
+  const setPage = (value: number) => replaceClientListLocation("guild", { page: String(value) });
 
   const options = useMemo(() => {
     const raidMap = new Map<string, string>();
@@ -404,10 +404,6 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
     };
   }, [liveMembers, liveStats.raidSeasonSnapshot, classFilter]);
 
-  useEffect(() => {
-    if (specFilter !== "all" && !options.specs.includes(specFilter)) setSpecFilter("all");
-  }, [options.specs, specFilter]);
-
   const raidStats = useMemo(() => {
     let profiles = 0;
     let heroicClears = 0;
@@ -424,10 +420,8 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
 
   const filteredMembers = useMemo(() => {
     const search = query.trim().toLowerCase();
-    const lowRio = Math.min(rioMin, rioMax);
-    const highRio = Math.max(rioMin, rioMax);
-    const lowIlvl = Math.min(itemLevelMin, itemLevelMax);
-    const highIlvl = Math.max(itemLevelMin, itemLevelMax);
+    const lowRio = rioMin, highRio = rioUpperBound;
+    const lowIlvl = itemLevelMin, highIlvl = itemLevelUpperBound;
 
     return liveMembers
       .filter((member) => {
@@ -465,14 +459,8 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
           raidText,
         ].join(" ").toLowerCase().includes(search);
       })
-      .sort((a, b) => {
-        if (sort === "rio-asc") return (a.scores[segment] || 0) - (b.scores[segment] || 0) || stableTextCompare(a.name, b.name);
-        if (sort === "ilvl-desc") return b.itemLevel - a.itemLevel || (b.scores[segment] || 0) - (a.scores[segment] || 0);
-        if (sort === "raid-desc") return raidWeight(bestRaid(b, liveStats.raidSeasonSnapshot, raidFilter)) - raidWeight(bestRaid(a, liveStats.raidSeasonSnapshot, raidFilter)) || (b.scores[segment] || 0) - (a.scores[segment] || 0);
-        if (sort === "name-asc") return stableTextCompare(a.name, b.name);
-        if (sort === "rank-asc") return (a.rank ?? 999) - (b.rank ?? 999) || stableTextCompare(a.name, b.name);
-        return (b.scores[segment] || 0) - (a.scores[segment] || 0) || b.itemLevel - a.itemLevel || stableTextCompare(a.name, b.name);
-      });
+      .sort((a, b) => compareGuildRosterMembers(a, b, sort, segment,
+        (member) => raidWeight(bestRaid(member, liveStats.raidSeasonSnapshot, raidFilter))));
   }, [
     liveMembers,
     query,
@@ -485,9 +473,9 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
     raidClearFilter,
     linkFilter,
     rioMin,
-    rioMax,
+    rioUpperBound,
     itemLevelMin,
-    itemLevelMax,
+    itemLevelUpperBound,
     sort,
     liveStats.raidSeasonSnapshot,
   ]);
@@ -502,12 +490,12 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
     raidFilter !== "all" ? 1 : 0,
     raidClearFilter !== "all" ? 1 : 0,
     linkFilter !== "all" ? 1 : 0,
-    rioMin > 0 || rioMax < maxRio ? 1 : 0,
-    itemLevelMin > 0 || itemLevelMax < maxItemLevel ? 1 : 0,
+    rioMin > 0 || Number.isFinite(rioUpperBound) ? 1 : 0,
+    itemLevelMin > 0 || Number.isFinite(itemLevelUpperBound) ? 1 : 0,
   ].reduce((sum, value) => sum + value, 0), [
     query, roleFilter, segment, classFilter, specFilter, factionFilter,
-    raidFilter, raidClearFilter, linkFilter, rioMin, rioMax, itemLevelMin,
-    itemLevelMax, maxRio, maxItemLevel,
+    raidFilter, raidClearFilter, linkFilter, rioMin, rioUpperBound, itemLevelMin,
+    itemLevelUpperBound,
   ]);
 
   const pageCount = Math.max(1, Math.ceil(filteredMembers.length / pageSize));
@@ -516,33 +504,19 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
   const pagedMembers = filteredMembers.slice(pageStart, pageStart + pageSize);
 
   useEffect(() => {
-    setPage(1);
-  }, [query, roleFilter, segment, classFilter, specFilter, factionFilter, raidFilter, raidClearFilter, linkFilter, rioMin, rioMax, itemLevelMin, itemLevelMax, sort, pageSize]);
-
-  useEffect(() => {
-    if (page > pageCount) setPage(pageCount);
-  }, [page, pageCount]);
+    if (liveMembers.length && page > pageCount) replaceClientListLocation("guild", { page: String(pageCount) });
+  }, [page, pageCount, liveMembers.length]);
 
   function resetFilters() {
+    changeFilters(Object.fromEntries(["q", "role", "segment", "class", "spec", "faction", "raid", "clear", "link", "rioMin", "rioMax", "ilvlMin", "ilvlMax", "sort"].map((key) => [key, null])));
     setQuery("");
-    setRoleFilter("all");
-    setSegment("all");
-    setClassFilter("all");
-    setSpecFilter("all");
-    setFactionFilter("all");
-    setRaidFilter("all");
-    setRaidClearFilter("all");
-    setLinkFilter("all");
-    setRioMin(0);
-    setRioMax(maxRio);
-    setItemLevelMin(0);
-    setItemLevelMax(maxItemLevel);
-    setSort("rio-desc");
+    ownQuery.current = "";
   }
+  const listMemory = <div className={styles.viewMemory}><ListViewMemory key={navigationScope} kind="guild" scope={navigationScope} currentUrl={currentUrl} clientLocation /></div>;
 
   if (!liveMembers.length) {
     return (
-      <section className={`${styles.emptyState} panel`} aria-live="polite">
+      <>{listMemory}<section className={`${styles.emptyState} panel`} aria-live="polite">
         <span className="eyebrow">Склад гільдії</span>
         <h2>Дані складу ще готуються</h2>
         <p>
@@ -553,12 +527,13 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
         <button className="btn subtle" type="button" onClick={() => void rosterResource.refresh("guild-empty-retry", { force: true })}>
           Перевірити базу
         </button>
-      </section>
+      </section></>
     );
   }
 
   return (
     <section className={`${styles.rosterPanel} panel`} aria-label="Склад гільдії">
+      {listMemory}
       <div className={styles.toolbar}>
         <div className={styles.toolbarTitle}>
           <div>
@@ -576,12 +551,12 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
               type="search"
               maxLength={160}
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => changeQuery(event.target.value)}
               placeholder="Ім’я, клас, спек, рейд…"
               autoComplete="off"
             />
             {query ? (
-              <button className="btn" type="button" onClick={() => setQuery("")} aria-label="Очистити пошук">×</button>
+              <button className="btn" type="button" onClick={() => changeQuery("")} aria-label="Очистити пошук">×</button>
             ) : null}
           </label>
 
@@ -602,7 +577,7 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
           <button
             type="button"
             className={`btn ${styles.filtersButton}`}
-            onClick={() => setFiltersOpen((value) => !value)}
+            onClick={() => replaceClientListLocation("guild", { filters: filtersOpen ? null : "1" })}
             aria-expanded={filtersOpen}
           >
             Фільтри{activeFilterCount ? ` · ${activeFilterCount}` : ""}
@@ -669,7 +644,7 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
               { value: "mythic-clear", label: "Mythic закрито" },
               { value: "no-raid", label: "Без даних рейду" },
             ]}
-            onChange={(value) => setRaidClearFilter(value as RaidClearFilter)}
+            onChange={(value) => setRaidClearFilter(value as GuildRaidClearFilter)}
           />
           <FilterSelect
             id="guild-links"
@@ -680,7 +655,7 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
               { value: "profile", label: "Є профіль сайту" },
               { value: "raiderio", label: "Є Raider.IO" },
             ]}
-            onChange={(value) => setLinkFilter(value as LinkFilter)}
+            onChange={(value) => setLinkFilter(value as GuildLinkFilter)}
           />
           <FilterSelect
             id="guild-sort"
@@ -694,7 +669,7 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
               { value: "name-asc", label: "Ім’я: А–Я" },
               { value: "rank-asc", label: "Гільдійний ранг" },
             ]}
-            onChange={(value) => setSort(value as SortKey)}
+            onChange={(value) => setSort(value as GuildRosterSort)}
           />
           <CompactRange id="guild-rio" label="RIO" minValue={rioMin} maxValue={rioMax} absoluteMax={maxRio} onMinChange={setRioMin} onMaxChange={setRioMax} />
           <CompactRange id="guild-ilvl" label="Item level" minValue={itemLevelMin} maxValue={itemLevelMax} absoluteMax={maxItemLevel} onMinChange={setItemLevelMin} onMaxChange={setItemLevelMax} />
@@ -731,7 +706,7 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
           {pagedMembers.length ? pagedMembers.map((member) => {
             const score = member.scores[segment] || 0;
             const ownerProfileHref = member.ownerProfileId
-              ? `/profile/${encodeURIComponent(member.ownerProfileId)}`
+              ? `/profile/${encodeURIComponent(member.ownerProfileId)}?from=guild`
               : null;
             const raid = bestRaid(member, liveStats.raidSeasonSnapshot, raidFilter);
             const raidView = raidSummary(raid);
@@ -739,6 +714,9 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
               <article
                 className={styles.tableRow}
                 key={member.key}
+                id={listEntryId("guild", member.key)}
+                data-list-entry="guild"
+                data-list-href={ownerProfileHref || undefined}
                 role="row"
                 tabIndex={ownerProfileHref ? 0 : undefined}
                 onClick={(event) => openProfileCard(event, ownerProfileHref)}
@@ -822,8 +800,8 @@ export default function GuildRosterExplorer({ members, stats, source, error }: P
         </div>
         <small>Сторінка {safePage} / {pageCount} · {filteredMembers.length} результатів</small>
         <div className={styles.pagination}>
-          <button type="button" className="btn subtle" disabled={safePage <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>Назад</button>
-          <button type="button" className="btn subtle" disabled={safePage >= pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))}>Далі</button>
+          <button type="button" className="btn subtle" disabled={safePage <= 1} onClick={() => setPage(Math.max(1, safePage - 1))}>Назад</button>
+          <button type="button" className="btn subtle" disabled={safePage >= pageCount} onClick={() => setPage(Math.min(pageCount, safePage + 1))}>Далі</button>
         </div>
       </footer>
     </section>

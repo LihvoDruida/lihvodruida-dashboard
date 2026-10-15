@@ -48,7 +48,8 @@ export default function ListViewMemory({ kind, scope, currentUrl, restorePositio
       if (!actual.search && !actual.hash && memory.current.last !== `/${kind}` && !blocked.current) {
         setMessage("Відновлено попередній перегляд.");
         historyArrival.current = memory.current.last;
-        router.replace(memory.current.last, { scroll: false });
+        if (clientLocation) window.history.replaceState(null, "", memory.current.last);
+        else router.replace(memory.current.last, { scroll: false });
         return;
       }
     }
@@ -86,12 +87,21 @@ export default function ListViewMemory({ kind, scope, currentUrl, restorePositio
       if (row) {
         capture(row, true);
         const anchor = target?.closest<HTMLAnchorElement>("a[href]");
-        leaving = Boolean(anchor && anchor.target !== "_blank" && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey);
+        const rowNavigation = row.dataset.listHref && !target?.closest("a,button,input,select,textarea,label");
+        leaving = Boolean((anchor && anchor.target !== "_blank" || rowNavigation) && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey);
       }
       const link = target?.closest<HTMLAnchorElement>("a[data-list-reset-position]");
       if (link) {
         const destination = listViewUrl(kind, link.getAttribute("href") || "");
         if (destination) persist(rememberListPosition(memory.current, { url: destination, row: "", next: "", previous: "", offset: 0, scroll: 0, at: Date.now(), opened: false }));
+        leaving = true;
+      }
+    };
+    const onKeyOpen = (event: KeyboardEvent) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      const row = event.target instanceof HTMLElement ? event.target : null;
+      if (row?.dataset.listEntry === kind && row.dataset.listHref) {
+        capture(row, true);
         leaving = true;
       }
     };
@@ -115,6 +125,7 @@ export default function ListViewMemory({ kind, scope, currentUrl, restorePositio
     window.addEventListener("wheel", cancel, { once: true, passive: true });
     window.addEventListener("keydown", cancel, { once: true });
     document.addEventListener("click", onClick, true);
+    document.addEventListener("keydown", onKeyOpen, true);
     document.addEventListener("submit", onSubmit, true);
     document.addEventListener("visibilitychange", onHide);
     return () => {
@@ -123,10 +134,20 @@ export default function ListViewMemory({ kind, scope, currentUrl, restorePositio
       window.removeEventListener("scroll", onScroll); window.removeEventListener("pagehide", onPageHide); window.removeEventListener("popstate", onHistory);
       window.removeEventListener("pointerdown", cancel); window.removeEventListener("wheel", cancel); window.removeEventListener("keydown", cancel);
       document.removeEventListener("click", onClick, true); document.removeEventListener("submit", onSubmit, true); document.removeEventListener("visibilitychange", onHide);
+      document.removeEventListener("keydown", onKeyOpen, true);
     };
     // The URL changes after filters/navigation; capture always uses its current canonical value.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kind, key, effectiveUrl, navigationQuery, restorePosition, router]);
+  }, [kind, key, effectiveUrl, navigationQuery, restorePosition, router, clientLocation]);
+
+  function openClientView(event: React.MouseEvent<HTMLAnchorElement>) {
+    if (!clientLocation || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const href = event.currentTarget.getAttribute("href") || "";
+    if (!listViewUrl(kind, href)) return;
+    event.preventDefault();
+    historyArrival.current = listViewUrl(kind, href) || "";
+    window.history.pushState(null, "", href);
+  }
 
   function saveView(event: React.FormEvent) {
     event.preventDefault();
@@ -146,12 +167,12 @@ export default function ListViewMemory({ kind, scope, currentUrl, restorePositio
     <div className={styles.views}>
       <span className={styles.label}>Мої подання</span>
       {views.map(view => <span key={view.name} className={styles.view}>
-        <a data-list-reset-position href={view.url === `/${kind}` ? allHref : view.url}>{view.name}</a>
+        <a data-list-reset-position href={view.url === `/${kind}` ? allHref : view.url} onClick={openClientView}>{view.name}</a>
         <button className="btn subtle btn-sm" type="button" aria-label={`Видалити подання ${view.name}`} onClick={() => persist({ ...memory.current, at: Date.now(), views: memory.current.views.filter(item => item.name !== view.name) })}>×</button>
       </span>)}
     </div>
     <button type="button" className="btn subtle btn-sm" onClick={() => setEditing(!editing)} aria-expanded={editing}>Зберегти подання</button>
-    <a className="btn subtle btn-sm" data-list-reset-position href={allHref}>Показати всі</a>
+    <a className="btn subtle btn-sm" data-list-reset-position href={allHref} onClick={openClientView}>Показати всі</a>
     {blocked.current ? <button className="btn subtle btn-sm" type="button" onClick={clearMemory}>Очистити пам’ять переглядів</button> : null}
     {editing ? <form className={styles.editor} onSubmit={saveView}>
       <label><span className={styles.label}>Назва подання</span><input className="input" aria-label="Назва подання" maxLength={40} value={name} onChange={event => setName(event.target.value)} /></label>

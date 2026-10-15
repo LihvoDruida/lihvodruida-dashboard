@@ -258,6 +258,19 @@ export function getClientIp(request: Request | NextRequest) {
   return "unknown";
 }
 
+const requestLogIds = new WeakMap<Request, string>();
+function safeRequestLogId(value: unknown) {
+  return typeof value === "string" && /^[A-Za-z0-9_-]{8,100}$/.test(value) ? value : null;
+}
+function requestLogId(request?: Request | NextRequest) {
+  const existing = request && requestLogIds.get(request);
+  if (existing) return existing;
+  const id = safeRequestLogId(request?.headers.get("x-mistblossom-request-id")) ||
+    (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  if (request) requestLogIds.set(request, id);
+  return id;
+}
+
 export function requestContext(request: Request | NextRequest) {
   let path = "unknown";
   try {
@@ -267,7 +280,7 @@ export function requestContext(request: Request | NextRequest) {
   }
 
   return {
-    requestId: request.headers.get("x-mistblossom-request-id") || null,
+    requestId: requestLogId(request),
     method: String(request.method || "GET").toUpperCase(),
     path,
     host: getRequestHost(request),
@@ -300,18 +313,13 @@ export function logDashboardEvent(
   }
 
   const ctx = request ? requestContext(request) : null;
-  const generatedRequestId = typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : undefined;
-  const requestId = typeof ctx?.requestId === "string" && ctx.requestId
-    ? ctx.requestId
-    : generatedRequestId;
+  const requestId = ctx?.requestId || safeRequestLogId(details.requestId) || requestLogId();
   const payload = redactLogValue({
+    ...details,
+    ...(ctx || {}),
     event,
     time: new Date().toISOString(),
-    ...(ctx || {}),
     requestId,
-    ...details,
   }) as Record<string, unknown>;
 
   const line = `[dashboard:${level}] ${JSON.stringify(payload)}`;

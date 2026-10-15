@@ -8,7 +8,7 @@
 # `shared/` з контрактом Discord custom_id. Тому в docker-compose стоїть
 # `context: .` і `dockerfile: dashboard/Dockerfile`.
 #
-# Три стадії, щоб у фінальний образ не потрапили ні devDependencies, ні
+# Спільна база шрифтів і три стадії, щоб у фінальний образ не потрапили ні devDependencies, ні
 # вихідний код: збирається `output: "standalone"`, і копіюється лише він.
 # Готовий образ важить приблизно 250 МБ проти ~1.6 ГБ, якби ми несли
 # все дерево node_modules.
@@ -25,8 +25,15 @@ ARG NEXT_SECURITY_VERSION=16.3.5
 ARG REACT_SECURITY_VERSION=19.2.8
 ARG SHARP_SECURITY_VERSION=0.35.4
 
+# Native renderer tests and production use the same fallback font package.
+# Install it once in a shared base so build:ci also works in bookworm-slim.
+FROM ${NODE_IMAGE_REPOSITORY}:${NODE_VERSION} AS font-runtime
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends fontconfig fonts-dejavu-core \
+  && rm -rf /var/lib/apt/lists/*
+
 # --- 1. Залежності -----------------------------------------------------------
-FROM ${NODE_IMAGE_REPOSITORY}:${NODE_VERSION} AS deps
+FROM font-runtime AS deps
 ARG NEXT_SECURITY_VERSION
 ARG REACT_SECURITY_VERSION
 ARG SHARP_SECURITY_VERSION
@@ -51,7 +58,7 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked \
     && node -e "const fs=require('node:fs'); const path=require('node:path'); const checks=[['next',process.argv[1]],['react',process.argv[2]],['react-dom',process.argv[2]],['sharp',process.argv[3]]]; for (const [pkg,expected] of checks) { const manifest=path.join(process.cwd(),'node_modules',pkg,'package.json'); const actual=JSON.parse(fs.readFileSync(manifest,'utf8')).version; if(actual!==expected) throw new Error(pkg+' security overlay failed: '+actual+' != '+expected); }" "${NEXT_SECURITY_VERSION}" "${REACT_SECURITY_VERSION}" "${SHARP_SECURITY_VERSION}"
 
 # --- 2. Збірка ---------------------------------------------------------------
-FROM ${NODE_IMAGE_REPOSITORY}:${NODE_VERSION} AS builder
+FROM font-runtime AS builder
 ARG NEXT_SECURITY_VERSION
 ARG REACT_SECURITY_VERSION
 ARG SHARP_SECURITY_VERSION
@@ -127,7 +134,7 @@ RUN --mount=type=cache,target=/repo/dashboard/.next/cache,sharing=locked \
     npm run build:ci
 
 # --- 3. Runtime --------------------------------------------------------------
-FROM ${NODE_IMAGE_REPOSITORY}:${NODE_VERSION} AS runner
+FROM font-runtime AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -136,11 +143,8 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
 # Welcome-картки рендеряться через sharp (librsvg + Pango). Основні шрифти
-# картки лежать у dashboard/assets/fonts/welcome; DejaVu лишається fallback
-# для символів, яких там немає, і для аварійного режиму без bundled-шрифтів.
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends fonts-dejavu-core \
-  && rm -rf /var/lib/apt/lists/*
+# лежать у dashboard/assets/fonts/welcome; спільна база font-runtime має
+# DejaVu для інших символів і аварійного режиму без bundled-шрифтів.
 
 # Непривілейований користувач: контейнер не має причин працювати від root.
 RUN groupadd --system --gid 1001 nodejs \

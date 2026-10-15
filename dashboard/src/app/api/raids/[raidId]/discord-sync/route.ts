@@ -8,6 +8,8 @@ import { DiscordPublicationPendingError } from "@/lib/discordPublication";
 import { resyncRaidDiscord } from "@/lib/raids";
 import { assertRequestBodySize, verifyTrustedOrigin, noStoreHeaders, logDashboardEvent, safeErrorMessage } from "@/lib/security";
 
+import { diagnosticErrorSummary } from "@/lib/logPrivacy";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -24,6 +26,10 @@ export async function GET(_request: NextRequest, context: Context) {
 }
 
 export async function POST(request: NextRequest, context: Context) {
+  const startedAt = Date.now();
+  const report = (level: "info" | "warn" | "error", event: string, details: Record<string, unknown>) => {
+    try { logDashboardEvent(level, event, request, { resourceType: "raid", durationMs: Math.max(0, Date.now() - startedAt), ...details }, { category: "discord" }); } catch { /* Published state is authoritative. */ }
+  };
   const user = await getSession();
   if (!user || !canManageRaids(user)) return reply({ ok: false, error: "Доступ заборонено." }, 403);
   if (!verifyTrustedOrigin(request)) return reply({ ok: false, error: "Недовірене джерело запиту." }, 403);
@@ -37,12 +43,12 @@ export async function POST(request: NextRequest, context: Context) {
   try {
     const result = await resyncRaidDiscord(raidId, messageUrl);
     const warning = result.cleanupWarning || result.scheduledEvent.error || null;
-    logDashboardEvent(warning ? "warn" : "info", "raids.discord_resync", request, { raidId, actorId: user.id, warning });
+    report(warning ? "warn" : "info", "raids.discord_resync", { resourceId: raidId, raidId, actorId: user.id, phase: "sync", outcome: warning ? "partial" : "completed", statusCode: 200, ...(warning ? { nextAction: "check_publication" } : {}) });
     await recordAdminAudit("raids.discord_resync", user, { status: warning ? "error" : "success", summary: warning || "Синхронізацію збереженої публікації виконано.", raidId }).catch(() => false);
     return reply({ ok: true, messageUrl: result.messageUrl, warning, publication: await readPublicationStatus("raid", raidId) });
   } catch (error) {
     const pending = error instanceof DiscordPublicationPendingError;
-    logDashboardEvent("warn", "raids.discord_resync_failed", request, { raidId, actorId: user.id, message: safeErrorMessage(error) });
+    report(pending ? "warn" : "error", "raids.discord_resync_failed", { resourceId: raidId, raidId, actorId: user.id, phase: "sync", outcome: pending ? "pending" : "unconfirmed", statusCode: pending ? 409 : 400, nextAction: "read_saved_status", ...diagnosticErrorSummary(error) });
     return reply({ ok: false, error: safeErrorMessage(error), publication: await readPublicationStatus("raid", raidId) }, pending ? 409 : 400);
   }
 }

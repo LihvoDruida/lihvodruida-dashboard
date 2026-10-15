@@ -1410,4 +1410,29 @@ input[type="radio"] {
 .publication-workbench__link input { width: 100%; min-width: 0; }
 .publication-workbench__actions { display: flex; flex-wrap: wrap; gap: .65rem; }
 .publication-workbench__actions .btn { white-space: normal; overflow-wrap: anywhere; max-width: 100%; }
-.publication-workbench [role="status"]:empty { display: none; }
+/* Async actions may replace their button with a focusable result. */
+[data-action-result]:focus,
+[data-workflow-title]:focus {
+  outline: 2px solid var(--orange-main);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+/* Keep empty live regions registered for assistive technology. */
+[data-action-result]:empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Durable feedback for individual and bulk raid-poll actions. */
+.raid-poll-action { display: contents; }
+.raid-poll-action-result { flex-basis: 100%; max-width: 100%; margin: 0; color: var(--text-soft); overflow-wrap: anywhere; }
+.poll-bulk-results { display: grid; gap: var(--space-sm); padding: 0; list-style: none; }
+.poll-bulk-results li { display: flex; flex-wrap: wrap; gap: var(--space-sm); min-width: 0; overflow-wrap: anywhere; }
+.poll-bulk-results span { flex-basis: 100%; }

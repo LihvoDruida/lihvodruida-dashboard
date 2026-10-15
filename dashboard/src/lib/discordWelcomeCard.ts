@@ -180,13 +180,6 @@ function pickDeterministic<T>(items: readonly T[], seed: string, fallback: T): T
   return items[index] ?? fallback;
 }
 
-function backgroundCandidates() {
-  return [
-    path.join(process.cwd(), "public", "assets", BACKGROUND_FILE_NAME),
-    path.join(process.cwd(), "dashboard", "public", "assets", BACKGROUND_FILE_NAME),
-  ];
-}
-
 // Static readability layer, baked into the background once per process:
 // soft top/bottom vignette, a dark elliptical scrim behind the text block and
 // a teal halo behind the portrait.
@@ -266,18 +259,18 @@ const ROUNDED_MASK_SVG = Buffer.from(`
 `);
 
 async function prepareBackground(): Promise<PreparedBackground> {
-  let source: Buffer | null = null;
-  let lastError: unknown = null;
-  for (const candidate of backgroundCandidates()) {
+  let source: Buffer;
+  // Keep each filesystem operation scoped to a literal asset directory.
+  // Iterating paths returned by another function made Turbopack trace the
+  // whole dashboard, including CI scripts and otherwise private source files.
+  try {
+    source = await fs.readFile(path.join(process.cwd(), "public", "assets", BACKGROUND_FILE_NAME));
+  } catch {
     try {
-      source = await fs.readFile(candidate);
-      break;
+      source = await fs.readFile(path.join(process.cwd(), "dashboard", "public", "assets", BACKGROUND_FILE_NAME));
     } catch (error) {
-      lastError = error;
+      throw new Error(`Welcome-card background is missing: ${error instanceof Error ? error.message : "asset not found"}`);
     }
-  }
-  if (!source) {
-    throw new Error(`Welcome-card background is missing: ${lastError instanceof Error ? lastError.message : "asset not found"}`);
   }
 
   // Static resize + glow is paid once per Node process. Per-card work only adds
@@ -467,13 +460,6 @@ async function fetchAvatarCircle(url: string | null) {
   return promise;
 }
 
-function welcomeFontDirCandidates() {
-  return [
-    path.join(process.cwd(), "assets", "fonts", "welcome"),
-    path.join(process.cwd(), "dashboard", "assets", "fonts", "welcome"),
-  ];
-}
-
 type ResolvedWelcomeFont = { family: string; fontfile: string | null };
 type ResolvedWelcomeFonts = Record<WelcomeTextRole, ResolvedWelcomeFont>;
 
@@ -483,14 +469,17 @@ async function resolveWelcomeFonts(): Promise<ResolvedWelcomeFonts> {
   for (const role of Object.keys(WELCOME_FONTS) as WelcomeTextRole[]) {
     const font = WELCOME_FONTS[role];
     let fontfile: string | null = null;
-    for (const dir of welcomeFontDirCandidates()) {
-      const candidate = path.join(dir, font.file);
+    const localFile = path.join(process.cwd(), "assets", "fonts", "welcome", font.file);
+    const standaloneFile = path.join(process.cwd(), "dashboard", "assets", "fonts", "welcome", font.file);
+    try {
+      await fs.access(localFile);
+      fontfile = localFile;
+    } catch {
       try {
-        await fs.access(candidate);
-        fontfile = candidate;
-        break;
+        await fs.access(standaloneFile);
+        fontfile = standaloneFile;
       } catch {
-        // try next layout
+        // The runtime DejaVu fallback is intentional when both layouts miss.
       }
     }
     if (!fontfile) missing.push(font.file);

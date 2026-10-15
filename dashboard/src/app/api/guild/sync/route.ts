@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { observeAutomationRun } from "@/lib/automationTaskRuns";
 import {
   loadStoredGuildRosterData,
   refreshGuildRosterApiBatch,
@@ -151,14 +152,14 @@ export async function POST(request: NextRequest) {
   const state = guard();
   if (state.inFlight) {
     return NextResponse.json(
-      { ok: true, skipped: true, reason: "in_flight", ...(state.lastResult || {}) },
+      { ...(state.lastResult || {}), ok: true, skipped: true, reason: "in_flight" },
       { headers: noStoreHeaders() },
     );
   }
 
   try {
     state.lastStartedAt = Date.now();
-    const promise = runAutomaticSync();
+    const promise = observeAutomationRun("guild-sync", () => runAutomaticSync());
     state.inFlight = promise;
     const result = await promise;
     state.lastResult = result;

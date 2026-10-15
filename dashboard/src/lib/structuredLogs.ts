@@ -191,13 +191,13 @@ export async function recordStructuredLog(input: StructuredLogInput): Promise<bo
       // mirror inside this background logging task so Node does not abandon
       // the Discord request between the PostgreSQL insert and promise cleanup.
       await mirrorSecurityLogToDiscord(log).catch((error) => {
-        console.warn("[structured-logs] security mirror error", error instanceof Error ? error.message : String(error));
+        console.warn("[structured-logs] security mirror error", redact(error instanceof Error ? error.message : String(error)));
         return false;
       });
     }
     return true;
   } catch (error) {
-    console.error("[structured-logs] write failed", error instanceof Error ? error.message : String(error));
+    console.error("[structured-logs] write failed", redact(error instanceof Error ? error.message : String(error)));
     return false;
   }
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { observeAutomationRun } from "@/lib/automationTaskRuns";
 import { closeDueRaidPolls } from "@/lib/raidPolls";
 import { logDashboardEvent, noStoreHeaders, safeErrorMessage, verifyInternalBearerToken } from "@/lib/security";
 import { envFlag } from "@/lib/apiRoute";
@@ -59,23 +60,23 @@ async function run(request: NextRequest) {
   const minInterval = pollCloseDueMinIntervalMs();
   const now = Date.now();
 
-  if (!force && guard.inFlight) {
+  if (guard.inFlight) {
     return NextResponse.json(
-      { ok: true, skipped: true, reason: "in_flight", ...(guard.lastResult || {}) },
+      { ...(guard.lastResult || {}), ok: true, skipped: true, reason: "in_flight" },
       { headers: noStoreHeaders({ "X-Mistblossom-Poll-Close-Due": "in-flight" }) },
     );
   }
 
   if (!force && guard.lastStartedAt && now - guard.lastStartedAt < minInterval) {
     return NextResponse.json(
-      { ok: true, skipped: true, reason: "cooldown", cooldownMs: minInterval, ...(guard.lastResult || {}) },
+      { ...(guard.lastResult || {}), ok: true, skipped: true, reason: "cooldown", cooldownMs: minInterval },
       { headers: noStoreHeaders({ "X-Mistblossom-Poll-Close-Due": "cooldown" }) },
     );
   }
 
   try {
     guard.lastStartedAt = now;
-    const promise = closeDueRaidPolls();
+    const promise = observeAutomationRun("polls", () => closeDueRaidPolls());
     guard.inFlight = promise;
     const result = await promise;
     guard.lastResult = result as Record<string, unknown>;

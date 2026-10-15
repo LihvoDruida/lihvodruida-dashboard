@@ -32,3 +32,19 @@ export function safeClientLogLocation(value: unknown): string {
   // Strip before truncating: an incomplete token can still expose its claims.
   return redactLogText(text.split(/[?#]/, 1)[0]).slice(0, 500);
 }
+
+/** Bounded diagnostic codes only; error messages and causes never become payloads. */
+export function diagnosticErrorSummary(error: unknown) {
+  const data = error && typeof error === "object" ? error as Record<string, unknown> : {};
+  const cause = data.cause && typeof data.cause === "object" ? data.cause as Record<string, unknown> : {};
+  const allowed = new Set(["40001", "40P01", "08000", "08003", "08006", "53300", "53400", "57P01", "55P03", "57014", "ECONNRESET", "ECONNREFUSED", "ETIMEDOUT", "ENOTFOUND", "EAI_AGAIN", "UND_ERR_CONNECT_TIMEOUT", "UND_ERR_HEADERS_TIMEOUT", "UND_ERR_BODY_TIMEOUT"]);
+  const code = [data.code, cause.code].find(value => typeof value === "string" && allowed.has(value)) as string | undefined;
+  const errorCode = code || null;
+  const errorKind = code === "40001" || code === "40P01" ? "transaction_conflict"
+    : code === "55P03" ? "database_busy"
+    : code === "57014" || code === "ETIMEDOUT" || code?.includes("TIMEOUT") || /timeout|timed out/i.test(String(data.message || "").slice(0, 1200)) ? "timeout"
+    : code?.startsWith("08") || ["53300", "53400", "57P01"].includes(code || "") ? "database_unavailable"
+    : code ? "network"
+    : data.name === "AbortError" ? "aborted" : "unexpected";
+  return { errorKind, errorCode };
+}

@@ -1,64 +1,21 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { dashboardErrorMessage, dispatchDashboardToast, errorFromPayload } from "@/lib/clientToasts";
+import { useRaidPollMutation } from "@/lib/useRaidPollMutation";
+import RaidPollActionResult from "@/components/RaidPollActionResult";
 
 export default function RaidPollDeleteButton({ pollId, pollTitle }: { pollId: string; pollTitle: string }) {
   const router = useRouter();
-  const [pending, setPending] = useState(false);
-
-  async function deletePoll() {
-    if (pending) return;
-    const confirmed = window.confirm(`Видалити рейд-пул “${pollTitle}”?\n\nЦе видалить запис із бази даних і спробує прибрати Discord-повідомлення. Дію не можна скасувати.`);
-    if (!confirmed) return;
-
-    setPending(true);
-    dispatchDashboardToast({
-      tone: "warning",
-      title: "Видаляємо рейд-пул",
-      message: "Видаляю запис із бази даних і синхронізую Discord-повідомлення.",
-      ttl: 3600,
+  const operation = useRaidPollMutation();
+  function deletePoll(trigger: HTMLElement) {
+    if (operation.pending || !window.confirm(`Видалити рейд-пул “${pollTitle}”?\n\nЦе видалить запис із бази даних і спробує прибрати Discord-повідомлення. Дію не можна скасувати.`)) return;
+    void operation.run(`/api/polls/${encodeURIComponent(pollId)}`, { method: "DELETE", action: "delete-raid-poll" }, trigger, data => {
+      router.push(data.redirectTo || "/polls"); router.refresh();
+      return { tone: data.discordDeleteFailed ? "warning" : "success", title: data.discordDeleteFailed ? "Рейд-пул видалено частково" : "Рейд-пул видалено", message: data.warning || "Запис видалено, список рейд-пулів оновлено.", ttl: 6200 };
     });
-
-    try {
-      const response = await fetch(`/api/polls/${encodeURIComponent(pollId)}`, {
-        method: "DELETE",
-        headers: {
-          Accept: "application/json",
-          "X-Dashboard-Action": "delete-raid-poll",
-        },
-        credentials: "same-origin",
-        cache: "no-store",
-      });
-      const data = await response.json().catch(() => ({ error: "Сервер повернув неочікувану відповідь." }));
-      if (!response.ok || data?.ok === false) {
-        throw new Error(errorFromPayload(data, "Не вдалося видалити рейд-пул."));
-      }
-
-      dispatchDashboardToast({
-        tone: data?.discordDeleteFailed ? "warning" : "success",
-        title: data?.discordDeleteFailed ? "Рейд-пул видалено частково" : "Рейд-пул видалено",
-        message: data?.warning || "Запис видалено, список рейд-пулів оновлено.",
-        ttl: 6200,
-      });
-      router.push(typeof data?.redirectTo === "string" ? data.redirectTo : "/polls");
-      router.refresh();
-    } catch (error) {
-      dispatchDashboardToast({
-        tone: "error",
-        title: "Видалення не виконано",
-        message: dashboardErrorMessage(error, "Не вдалося видалити рейд-пул."),
-        ttl: 8200,
-      });
-    } finally {
-      setPending(false);
-    }
   }
-
-  return (
-    <button className="btn danger" type="button" onClick={deletePoll} disabled={pending} aria-busy={pending ? "true" : "false"}>
-      {pending ? "Видаляємо..." : "Видалити пул"}
-    </button>
-  );
+  return <div ref={operation.scopeRef} className="raid-poll-action" aria-busy={operation.pending}>
+    <RaidPollActionResult message={operation.message} unconfirmed={operation.unconfirmed} href={`/polls/${encodeURIComponent(pollId)}`} />
+    <button className="btn danger" type="button" onClick={event => deletePoll(event.currentTarget)} disabled={operation.pending} aria-busy={operation.pending}>{operation.pending ? "Видаляємо..." : "Видалити пул"}</button>
+  </div>;
 }

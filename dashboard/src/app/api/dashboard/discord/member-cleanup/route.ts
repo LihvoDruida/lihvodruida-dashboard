@@ -15,6 +15,10 @@ export async function GET(request: NextRequest) {
   try {
     const tab = request.nextUrl.searchParams.get("tab") || "candidates";
     if (!["candidates", "kicked", "uncertain"].includes(tab)) throw new Error("Невідома вкладка.");
+    if (request.nextUrl.searchParams.get("summary") === "1") {
+      const overview = await getDiscordCleanupOverview();
+      return NextResponse.json({ ok: true, ...overview }, { headers: noStoreHeaders() });
+    }
     const [overview, page] = await Promise.all([getDiscordCleanupOverview(), listDiscordCleanupMembers(tab as "candidates" | "kicked" | "uncertain", request.nextUrl.searchParams.get("cursor"), request.nextUrl.searchParams.get("scanId"))]);
     return NextResponse.json({ ok: true, ...overview, page }, { headers: noStoreHeaders() });
   } catch (error) {

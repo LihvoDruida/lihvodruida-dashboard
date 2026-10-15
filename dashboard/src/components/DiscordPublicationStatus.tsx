@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ApiHttpError } from "@/lib/apiHttp";
 import { dashboardApiJson } from "@/lib/dashboardApiClient";
 import { unknownPublicationStatus, type PublicationStatus } from "@/lib/publicationStatus";
+import { useActionFocus } from "@/lib/useActionFocus";
 
 type Reply = { ok: boolean; publication?: PublicationStatus | null; warning?: string | null };
 export default function DiscordPublicationStatus({ endpoint, initialStatus, discordEnabled }: { endpoint: string; initialStatus: PublicationStatus; discordEnabled: boolean }) {
@@ -14,6 +15,7 @@ export default function DiscordPublicationStatus({ endpoint, initialStatus, disc
   const [messageUrl, setMessageUrl] = useState("");
   const [notice, setNotice] = useState("");
   const lock = useRef(false);
+  const { scopeRef, beginActionFocus } = useActionFocus<HTMLElement>(pending !== null);
   // A server refresh can arrive while the local POST is in flight. Its result
   // must not overwrite a newer status read at the end of this action.
   useEffect(() => { if (!lock.current) setStatus(initialStatus); }, [initialStatus]);
@@ -23,11 +25,12 @@ export default function DiscordPublicationStatus({ endpoint, initialStatus, disc
     setStatus(data.publication);
     return data.publication;
   }
-  async function run(write: boolean) {
+  async function run(write: boolean, trigger: HTMLButtonElement) {
     if (lock.current) return;
     if (write && (!status.canAct || !discordEnabled)) return;
     if (write && status.channelMove && !window.confirm("Перенести оголошення до збереженого каналу? Буде створено нове повідомлення, після чого сайт спробує прибрати старе.")) return;
     lock.current = true;
+    beginActionFocus(trigger);
     setPending(write ? "write" : "read"); setNotice("");
     let actionWarning = "";
     try {
@@ -49,7 +52,7 @@ export default function DiscordPublicationStatus({ endpoint, initialStatus, disc
       else setStatus(unknownPublicationStatus());
     } finally { lock.current = false; setPending(null); }
   }
-  return <section id="discord-publication" className="panel publication-workbench" aria-label="Стан публікації Discord" aria-busy={pending !== null}>
+  return <section ref={scopeRef} id="discord-publication" className="panel publication-workbench" aria-label="Стан публікації Discord" aria-busy={pending !== null}>
     <div><span className="eyebrow">Discord · збережений стан</span><h2>Публікація та відновлення</h2>
       <p className="muted">Дії використовують останні збережені дані. Зміни у формі спочатку збережи.</p></div>
     <dl className="publication-workbench__states">
@@ -63,9 +66,9 @@ export default function DiscordPublicationStatus({ endpoint, initialStatus, disc
     </label> : null}
     {!discordEnabled ? <p>Discord-публікація зараз недоступна. Збережений стан можна перечитати.</p> : null}
     <div className="publication-workbench__actions">
-      <button type="button" className="btn subtle" disabled={pending !== null} onClick={() => run(false)}>{pending === "read" ? "Читаємо стан…" : "Оновити стан"}</button>
-      {status.canAct && discordEnabled ? <button type="button" className="btn primary" disabled={pending !== null} onClick={() => run(true)}>{pending === "write" ? "Виконуємо…" : status.actionLabel}</button> : null}
+      <button type="button" className="btn subtle" disabled={pending !== null} onClick={(event) => run(false, event.currentTarget)}>{pending === "read" ? "Читаємо стан…" : "Оновити стан"}</button>
+      {status.canAct && discordEnabled ? <button type="button" className="btn primary" disabled={pending !== null} onClick={(event) => run(true, event.currentTarget)}>{pending === "write" ? "Виконуємо…" : status.actionLabel}</button> : null}
     </div>
-    <p role="status" aria-live="polite">{notice}</p>
+    <p data-action-result tabIndex={-1} role="status" aria-live="polite" aria-atomic="true">{pending ? pending === "read" ? "Читаємо збережений стан…" : "Звіряємо та зберігаємо результат Discord…" : notice}</p>
   </section>;
 }

@@ -27,6 +27,7 @@ import { claimGroupDraftBucket } from "@/lib/accessGroupDraftStorage";
 import { dashboardApiJson } from "@/lib/dashboardApiClient";
 import { ApiHttpError } from "@/lib/apiHttp";
 import { useDashboardRequests } from "@/lib/useDashboardRequests";
+import { useActionFocus } from "@/lib/useActionFocus";
 
 const ROLE_OPTIONS: Array<{ value: DashboardRole; label: string }> = [
   { value: "member", label: "Учасник" },
@@ -130,6 +131,7 @@ export default function AccessGroupsManager({
   );
   const storageKey = useRef<string | null>(null);
   const requests = useDashboardRequests();
+  const { scopeRef, beginActionFocus } = useActionFocus<HTMLDivElement>(busy || refreshing);
   const categories = useMemo(
     () => [
       ...new Set(
@@ -164,11 +166,12 @@ export default function AccessGroupsManager({
       DEFAULT_MEMBER_GROUP_ID,
     ].includes(group.id),
   );
-  const filteredGroups = groups.filter((item) =>
-    `${item.name} ${item.id} ${roleLabel(item.role)} ${item.discordRoleIds.join(" ")}`
-      .toLocaleLowerCase("uk-UA")
-      .includes(query.trim().toLocaleLowerCase("uk-UA")),
-  );
+  const searchIndex = useMemo(() => groups.map(item => ({
+    item,
+    text: `${item.name} ${item.id} ${roleLabel(item.role)} ${item.discordRoleIds.join(" ")}`.toLocaleLowerCase("uk-UA"),
+  })), [groups]);
+  const normalizedQuery = query.trim().toLocaleLowerCase("uk-UA");
+  const filteredGroups = useMemo(() => searchIndex.filter(entry => entry.text.includes(normalizedQuery)).map(entry => entry.item), [searchIndex, normalizedQuery]);
   function persist(next = draftsRef.current) {
     if (!storageKey.current) return;
     try {
@@ -349,7 +352,8 @@ export default function AccessGroupsManager({
   useEffect(() => {
     if (ready) applyCatalog(initialGroups);
   }, [initialGroups]);
-  async function refresh() {
+  async function refresh(trigger?: HTMLElement) {
+    if (trigger) beginActionFocus(trigger);
     const request = requests.begin("catalog", 13_000);
     setRefreshing(true);
     try {
@@ -402,6 +406,8 @@ export default function AccessGroupsManager({
         ))
     )
       return;
+    // React may reuse this same Delete button for the next selected group.
+    if (button) beginActionFocus(button, { preferResult: deleting });
     requests.cancel("catalog");
     setRefreshing(false);
     const key = expanded,
@@ -523,7 +529,7 @@ export default function AccessGroupsManager({
   const otherDraft = externalDrafts.get(expanded),
     otherDiffers = otherDraft && !sameGroupValues(otherDraft.values, values);
   return (
-    <div className="access-groups-layout">
+    <div ref={scopeRef} className="access-groups-layout" aria-busy={busy || refreshing}>
       <aside
         className="access-groups-list panel"
         aria-label="Список груп доступу"
@@ -613,17 +619,15 @@ export default function AccessGroupsManager({
           className="btn subtle"
           type="button"
           disabled={busy || refreshing}
-          onClick={refresh}
+          onClick={(event) => void refresh(event.currentTarget)}
         >
           {refreshing ? "Оновлюємо…" : "Оновити список"}
         </button>
       </aside>
       <div className="access-groups-editor">
-        {notice ? (
-          <p className="access-draft-notice" role="status" aria-live="polite">
-            {notice}
-          </p>
-        ) : null}
+        <p className="access-draft-notice" role="status" aria-live="polite" aria-atomic="true" data-action-result="" tabIndex={-1}>
+          {notice}
+        </p>
         {storageWarning ? (
           <p className="access-warning" role="alert">
             {storageWarning}

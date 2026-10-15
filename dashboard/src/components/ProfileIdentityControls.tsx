@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { dashboardApiJson } from "@/lib/dashboardApiClient";
 import { ApiHttpError } from "@/lib/apiHttp";
 import { useDashboardRequests } from "@/lib/useDashboardRequests";
+import { useActionFocus } from "@/lib/useActionFocus";
 import type { ProfileIdentityState } from "@/lib/profileNicknameSync";
 type Props = {
   profileId: string;
@@ -81,6 +82,7 @@ export default function ProfileIdentityControls({
     [conflict, setConflict] = useState(false),
     [unknown, setUnknown] = useState(false),
     [copied, setCopied] = useState(false);
+  const { scopeRef, beginActionFocus } = useActionFocus<HTMLDivElement>(busy);
   const key = `mistblossom:profile-identity:${profileId}`;
   const writeDraft = (value: string) => {
     draftRef.current = value;
@@ -158,8 +160,9 @@ export default function ProfileIdentityControls({
         { signal: lane.signal, timeoutMs: 12_000, retries: 0 },
       );
       if (lane.current()) {
+        const recovering = Boolean(pending.current);
         accept(result.identity, initial);
-        if (!pending.current) setMessage("");
+        if (!recovering && !pending.current) setMessage("");
       }
     } catch {
       if (lane.current())
@@ -243,6 +246,8 @@ export default function ProfileIdentityControls({
       )
     )
       return;
+    const trigger = (event?.nativeEvent as SubmitEvent | undefined)?.submitter;
+    if (trigger instanceof HTMLElement) beginActionFocus(trigger);
     const submitted = draftRef.current.trim(),
       operationId = crypto.randomUUID();
     pending.current = { id: operationId, submitted };
@@ -336,7 +341,7 @@ export default function ProfileIdentityControls({
   const owner = discordOwnerLocked || identity?.sync?.state === "owner";
   const nickname = identity?.nicknamePreview || identity?.sync?.nickname;
   return (
-    <div className="profile-identity-workflow" aria-busy={busy}>
+    <div ref={scopeRef} className="profile-identity-workflow" aria-busy={busy}>
       <form
         action="/api/profile/identity"
         method="post"
@@ -494,7 +499,7 @@ export default function ProfileIdentityControls({
           type="button"
           className="btn subtle btn-sm"
           disabled={busy}
-          onClick={() => void refresh()}
+          onClick={(event) => { beginActionFocus(event.currentTarget); void refresh(); }}
         >
           Перевірити стан
         </button>
@@ -503,17 +508,15 @@ export default function ProfileIdentityControls({
             type="button"
             className="btn subtle btn-sm"
             disabled={busy}
-            onClick={() => void reconcile()}
+            onClick={(event) => { beginActionFocus(event.currentTarget); void reconcile(); }}
           >
             Звірити Discord
           </button>
         ) : null}
       </div>
-      {message ? (
-        <p role="alert" className="profile-field-hint">
-          {message}
-        </p>
-      ) : null}
+      <p role="status" aria-live="polite" aria-atomic="true" data-action-result="" tabIndex={-1} className="profile-field-hint">
+        {message}
+      </p>
       {storageError ? (
         <p role="alert" className="profile-field-hint is-warning">
           {storageError}

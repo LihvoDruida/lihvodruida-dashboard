@@ -3,9 +3,10 @@ import type { NicknameWarningAutomationState } from "@/lib/discordNicknameWarnin
 import type { GuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
 import { timestampToIso } from "@/lib/values";
 import { isCleanupPeriod } from "@/lib/discordCleanupPolicy";
+import { AUTOMATION_TASKS, AUTOMATION_TASK_IDS, type AutomationTaskId } from "@/lib/automationTaskCatalog";
 
 export type AutomationStatus = {
-  id: "members" | "nicknames" | "accounts";
+  id: "members" | "nicknames" | "accounts" | AutomationTaskId;
   title: string;
   state: "running" | "waiting" | "paused" | "attention" | "unavailable";
   label: string;
@@ -31,10 +32,11 @@ function due(last: unknown, hours: number, now: number) {
 function activeLease(lease: Data | undefined, now: number) {
   return Boolean(lease && text(lease.owner) && statusDate(lease.startedAt) && Number(lease.expiresAtMs) > now);
 }
-const links = {
+const links: Record<AutomationStatus["id"], { href: string; label: string }> = {
   members: { href: "/dashboard/discord/cleanup", label: "Переглянути очищення" },
   nicknames: { href: "/dashboard/discord#nickname-automation", label: "Перевірити попередження" },
   accounts: { href: "/dashboard/discord#account-automation", label: "Переглянути профілі" },
+  ...Object.fromEntries(AUTOMATION_TASK_IDS.map(id => [id, { href: AUTOMATION_TASKS[id].href, label: AUTOMATION_TASKS[id].action }])) as Record<AutomationTaskId, { href: string; label: string }>,
 };
 function base(id: AutomationStatus["id"], title: string): AutomationStatus {
   return { id, title, state: "waiting", label: "Очікує", reason: "", lastAt: null,
@@ -51,9 +53,58 @@ function running(card: AutomationStatus, lease: Data | undefined, now: number) {
   return true;
 }
 export function unavailableAutomationStatuses(reason = "Не вдалося прочитати стан зі сховища. Онови сторінку після відновлення доступу.") {
-  return ([base("members", "Очищення Discord"), base("nicknames", "Попередження про ніки"), base("accounts", "Неактуальні профілі")]).map(card => ({ ...card,
+  return ([base("members", "Очищення Discord"), base("nicknames", "Попередження про ніки"), base("accounts", "Неактуальні профілі"), ...AUTOMATION_TASK_IDS.map(id => base(id, AUTOMATION_TASKS[id].title))]).map(card => ({ ...card,
     state: "unavailable" as const, label: "Дані недоступні", reason,
     lastResult: "Результат не вдалося прочитати.", nextNote: "Розклад не вдалося прочитати." }));
+}
+
+/** A task observation confirms an authenticated call, never every business item. */
+export function observedAutomationStatus(id: AutomationTaskId, run: Data = {}, now = Date.now(), enabled = true, intervalSeconds: number = AUTOMATION_TASKS[id].intervalSeconds): AutomationStatus {
+  const definition = AUTOMATION_TASKS[id], card = base(id, definition.title);
+  const cadence = Number.isFinite(intervalSeconds) ? Math.max(definition.intervalSeconds, Math.min(3600, Math.ceil(intervalSeconds))) : definition.intervalSeconds;
+  const started = statusDate(run.startedAt), finished = statusDate(run.finishedAt);
+  card.lastAt = finished;
+  const labels: Record<string, string> = { processed: "Оброблено", found: "Готових у черзі", checked: "Перевірено", scanned: "Переглянуто", failed: "Невдалих", sent: "Надіслано", newcomers: "Новачків", deferred: "Відкладено", defaultRoleFailed: "Помилок ролей", channelFailed: "Помилок привітань", persistenceFailed: "Помилок збереження", scheduledPublished: "Опубліковано за розкладом", closed: "Закрито", deleted: "Видалено", autoClosed: "Автозакрито", remindersSent: "Нагадувань", retentionFailed: "Помилок очищення" };
+  const counters = run.counters && typeof run.counters === "object" ? run.counters as Data : {};
+  const summary = Object.entries(labels).filter(([key]) => typeof counters[key] === "number" && Number.isFinite(counters[key]) && Number(counters[key]) >= 0)
+    .map(([key, label]) => `${label}: ${count(counters[key])}`).join("; ");
+  const valid = run.version === 1 && started && Date.parse(started) <= now + 60_000 &&
+    ["running", "ok", "warning", "error", "skipped"].includes(String(run.status)) &&
+    (run.status === "running" || Boolean(finished && Date.parse(finished) >= Date.parse(started) && Date.parse(finished) <= now + 60_000));
+  if (Object.keys(run).length && !valid) {
+    card.state = "attention"; card.label = "Стан не підтверджено";
+    card.reason = "Збережений запис виклику має некоректні дати або формат. Потрібна діагностика виконавця.";
+    card.lastAt = null;
+    return card;
+  }
+  if (valid && run.status === "running") {
+    const current = Number(run.deadlineAtMs) > now && Number(run.deadlineAtMs) <= Date.parse(started!) + 90_000;
+    card.state = current ? "running" : "attention"; card.label = current ? "Очікується результат" : "Незавершений виклик";
+    card.reason = current ? "Збережено початок виклику. Результат ще не записано; це не підтверджує завершення роботи." : "Виклик не зберіг результат за відведений час. Перевір перезапуск, дедлайн і стан задачі.";
+    card.nextNote = "Наступний запуск не підтверджено до завершення або діагностики поточного.";
+    return card;
+  }
+  if (valid) card.lastResult = `${run.status === "error" ? "Виклик завершився помилкою" : run.status === "warning" ? "Завершено з попередженням" : run.status === "skipped" ? "Роботу пропущено" : "Виклик завершено"}${summary ? `. ${summary}.` : "."}`;
+  if (!enabled || run.reason === "disabled") {
+    card.state = "paused"; card.label = "Вимкнено";
+    card.reason = "Автоматичний виклик вимкнено налаштуванням середовища.";
+    card.nextNote = "Запуск не заплановано.";
+  } else if (valid && ["error", "warning"].includes(String(run.status))) {
+    card.state = "attention"; card.label = "Перевірити результат";
+    card.reason = `Останній виклик має помилки або попередження. ${definition.note}`;
+  } else {
+    card.label = valid ? "Очікує виклику" : "Очікує першого запису";
+    card.reason = valid ? definition.note : "Немає збереженого автоматичного виклику. Наявність маршруту або налаштувань не підтверджує роботу планувальника.";
+  }
+  if (enabled && run.reason !== "disabled" && valid) {
+    card.nextAt = new Date(Date.parse(started!) + cadence * 1000).toISOString();
+    card.nextNote = "Орієнтир за розкладом; затримки, повтори після помилок і перезапуск можуть змінити фактичний час.";
+    if (card.state === "waiting" && now - Date.parse(card.nextAt) > Math.max(180_000, cadence * 2000)) {
+      card.state = "attention"; card.label = "Перевірити планувальник";
+      card.reason = "Понад очікуваний інтервал немає збереженого виклику. Перевір планувальник і помилки задачі.";
+    }
+  }
+  return card;
 }
 export function memberCleanupStatus(settings: Data = {}, state: Data = {}, execution: Data = {}, lease: Data = {}, now = Date.now()): AutomationStatus {
   const card = base("members", "Очищення Discord");

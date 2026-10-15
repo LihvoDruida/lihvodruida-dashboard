@@ -15,6 +15,7 @@ import {
   noStoreHeaders,
   verifyTrustedOrigin,
 } from "@/lib/security";
+import { diagnosticErrorSummary } from "@/lib/logPrivacy";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -56,7 +57,12 @@ async function readBody(request: NextRequest) {
     throw new ProfileIdentityError("Некоректний JSON.");
   }
 }
-function failure(error: unknown) {
+function failure(error: unknown, request: NextRequest | undefined, startedAt: number, phase: "read" | "write") {
+  const statusCode = error instanceof ProfileIdentityError ? error.status : 503;
+  try { logDashboardEvent(statusCode >= 500 ? "error" : "warn", "profile.identity.failed", request, {
+    phase, outcome: statusCode === 409 ? "conflict" : statusCode < 500 ? "rejected" : "unconfirmed",
+    statusCode, durationMs: Math.max(0, Date.now() - startedAt), resourceType: "profile", ...diagnosticErrorSummary(error),
+  }, { category: "action" }); } catch { /* Diagnostics do not change the response. */ }
   return error instanceof ProfileIdentityError
     ? reply({ ok: false, error: error.message }, error.status)
     : reply(
@@ -68,7 +74,8 @@ function failure(error: unknown) {
         503,
       );
 }
-export async function GET() {
+export async function GET(request?: NextRequest) {
+  const startedAt = Date.now();
   const session = await getSession();
   if (!session?.profileId || session.impersonatedBy)
     return reply(
@@ -81,10 +88,11 @@ export async function GET() {
       identity: await getProfileIdentityState(session.profileId),
     });
   } catch (error) {
-    return failure(error);
+    return failure(error, request, startedAt, "read");
   }
 }
 export async function POST(request: NextRequest) {
+  const startedAt = Date.now();
   if (!verifyTrustedOrigin(request))
     return reply({ ok: false, error: "Недовірене джерело запиту." }, 403);
   const size = assertRequestBodySize(request, MAX_BODY);
@@ -125,23 +133,27 @@ export async function POST(request: NextRequest) {
         after(async () => {
           try {
             await runProfileNicknameSync(profileId);
-          } catch {
-            logDashboardEvent(
+          } catch (error) {
+            try { logDashboardEvent(
               "warn",
               "profile.identity.worker_deferred",
-              undefined,
-              { profileId },
-            );
+              request,
+              { profileId, operationId: identity.sync?.operationId, phase: "worker", outcome: "deferred", nextAction: "check_profile_sync", ...diagnosticErrorSummary(error) },
+              { category: "action" },
+            ); } catch { /* Queued intent remains available to cron. */ }
           }
         });
       } catch {
-        /* Cron resumes the already committed intent if after() is unavailable. */
+        try { logDashboardEvent("warn", "profile.identity.worker_deferred", request, {
+          profileId, operationId: identity.sync?.operationId, phase: "schedule", outcome: "deferred", reason: "after_unavailable", nextAction: "check_profile_sync",
+        }, { category: "action" }); } catch { /* Cron resumes the committed intent. */ }
       }
     }
     // Logging failure cannot turn an already committed name into a reported failed save.
     try {
       logDashboardEvent("info", "profile.identity.accepted", request, {
         profileId: session.profileId,
+        phase: "commit", outcome: "committed", statusCode: 202, durationMs: Math.max(0, Date.now() - startedAt), resourceType: "profile", resourceId: session.profileId,
         operationId: identity.sync?.operationId,
         action: data.action,
         state: identity.sync?.state,
@@ -151,6 +163,6 @@ export async function POST(request: NextRequest) {
     }
     return reply({ ok: true, identity }, 202);
   } catch (error) {
-    return failure(error);
+    return failure(error, request, startedAt, "write");
   }
 }

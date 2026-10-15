@@ -1,5 +1,6 @@
 import dashboardPackage from "../../../../../../../package.json";
 import { NextRequest, NextResponse } from "next/server";
+import { observeAutomationRun } from "@/lib/automationTaskRuns";
 import { processProfileNicknameSyncQueue } from "@/lib/profileNicknameSync";
 import {
   noStoreHeaders,
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return unauthorizedResponse("Forbidden");
   try {
     return NextResponse.json(
-      { ok: true, result: await processProfileNicknameSyncQueue() },
+      { ok: true, result: await observeAutomationRun("profile-nicknames", () => processProfileNicknameSyncQueue()) },
       { headers: noStoreHeaders() },
     );
   } catch {

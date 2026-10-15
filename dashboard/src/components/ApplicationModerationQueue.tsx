@@ -5,6 +5,7 @@ import type { ApplicationStatus } from "@/lib/github";
 import { dashboardApiJson } from "@/lib/dashboardApiClient";
 import { notifyDashboardDataChanged } from "@/lib/dashboardLiveRefresh";
 import { dispatchDashboardToast } from "@/lib/clientToasts";
+import { useActionFocus } from "@/lib/useActionFocus";
 import {
   readApplicationDecision, submitApplicationDecisions, summarizeApplicationDecisions, uncertainApplicationResult,
   type ApplicationDecision, type ApplicationDecisionResult,
@@ -36,6 +37,7 @@ export function ApplicationModerationProvider({ items, canModerate, children }: 
   const [selected, setSelected] = useState<number[]>([]);
   const [results, setResults] = useState<ApplicationDecisionResult[]>([]);
   const [bulkBusy, setBulkBusy] = useState(false);
+  const { scopeRef, beginActionFocus } = useActionFocus<HTMLElement>(bulkBusy);
   const mounted = useRef(true);
   const controller = useRef<AbortController | null>(null);
   const locks = useRef(new Set<number>());
@@ -117,24 +119,26 @@ export function ApplicationModerationProvider({ items, canModerate, children }: 
   const eligible = items.map((item) => item.issueNumber).filter((number) => available(rows[number]));
   const selectedEligible = selected.filter((number) => available(rows[number]));
   const summary = summarizeApplicationDecisions(results);
-  function confirmBulk(decision: ApplicationDecision) {
+  function confirmBulk(decision: ApplicationDecision, trigger: HTMLButtonElement) {
     if (!selectedEligible.length || bulkBusy) return;
     const action = decision === "accepted" ? "Прийняти" : "Відхилити";
-    if (window.confirm(`${action} ${selectedEligible.length} вибраних заявок? Остаточне рішення закриє кожну з них.`)) void moderate(selectedEligible, decision, true);
+    if (window.confirm(`${action} ${selectedEligible.length} вибраних заявок? Остаточне рішення закриє кожну з них.`)) {
+      beginActionFocus(trigger);
+      void moderate(selectedEligible, decision, true);
+    }
   }
   return <Context.Provider value={{ rows, order: items.map((item) => item.issueNumber), selected, canModerate, select, toggle, moderate, reconcile, lock, release }}>
-    {canModerate && items.length ? <section className="application-bulk panel" aria-label="Масова обробка видимих заявок" aria-busy={bulkBusy}>
+    {canModerate && items.length ? <section ref={scopeRef} className="application-bulk panel" aria-label="Масова обробка видимих заявок" aria-busy={bulkBusy}>
       <div className="application-bulk__heading"><div><strong>Дії з вибраними заявками</strong><p>Тільки заявки на розгляді з поточного списку. До 50 за одну дію.</p></div><span>Вибрано: {selectedEligible.length}</span></div>
       <div className="application-bulk__actions">
         <button className="btn subtle" type="button" onClick={() => select(eligible.slice(0, 50))} disabled={bulkBusy || !eligible.length}>Вибрати {Math.min(eligible.length, 50)}</button>
         <button className="btn subtle" type="button" onClick={() => select([])} disabled={bulkBusy || !selected.length}>Скинути вибір</button>
-        <button className="btn primary" type="button" onClick={() => confirmBulk("accepted")} disabled={bulkBusy || !selectedEligible.length}>Прийняти вибрані</button>
-        <button className="btn danger" type="button" onClick={() => confirmBulk("declined")} disabled={bulkBusy || !selectedEligible.length}>Відхилити вибрані</button>
+        <button className="btn primary" type="button" onClick={(event) => confirmBulk("accepted", event.currentTarget)} disabled={bulkBusy || !selectedEligible.length}>Прийняти вибрані</button>
+        <button className="btn danger" type="button" onClick={(event) => confirmBulk("declined", event.currentTarget)} disabled={bulkBusy || !selectedEligible.length}>Відхилити вибрані</button>
       </div>
-      {bulkBusy ? <p role="status">Обробляємо заявки. Після втрати відповіді перевіримо збережений стан за твоєю дією.</p> : null}
-      {results.length ? <div className="application-bulk__results" role="status">
-        <p>Змінено: {summary.changed} · Вже розглянуто: {summary.already} · Discord не підтверджено: {summary.discordPending} · Непевний результат: {summary.uncertain}</p>
-        <ul>{results.map((item) => <li key={item.issueNumber} data-outcome={item.outcome}><a href={`#application-decision-${item.issueNumber}`}>#{item.issueNumber}</a> — {item.message}</li>)}</ul>
+      <p data-action-result tabIndex={-1} role="status" aria-live="polite" aria-atomic="true">{bulkBusy ? "Обробляємо заявки. Після втрати відповіді перевіримо збережений стан за твоєю дією." : results.length ? `Змінено: ${summary.changed} · Вже розглянуто: ${summary.already} · Discord не підтверджено: ${summary.discordPending} · Непевний результат: ${summary.uncertain}` : ""}</p>
+      {results.length ? <div className="application-bulk__results">
+        <ul>{results.map((item) => <li key={item.issueNumber} data-outcome={item.outcome}><a href={`#application-result-${item.issueNumber}`}>#{item.issueNumber}</a> — {item.message}</li>)}</ul>
       </div> : null}
     </section> : null}
     {children}
@@ -154,7 +158,7 @@ export function ApplicationNextReview({ issueNumber }: { issueNumber: number }) 
   if (!next) return null;
   return <button className="btn subtle" type="button" onClick={() => {
     const target = document.getElementById(`application-decision-${next}`);
-    target?.scrollIntoView({ block: "center", behavior: "smooth" });
+    target?.scrollIntoView({ block: "center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
     target?.querySelector<HTMLButtonElement>("[data-decision-primary]")?.focus({ preventScroll: true });
   }}>Наступна заявка на розгляді</button>;
 }

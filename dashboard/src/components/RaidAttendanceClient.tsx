@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { dispatchDashboardToast } from "@/lib/clientToasts";
 import { notifyDashboardDataChanged } from "@/lib/dashboardLiveRefresh";
+import { dashboardApiJson } from "@/lib/dashboardApiClient";
+import { ApiHttpError } from "@/lib/apiHttp";
+import { useDashboardRequests } from "@/lib/useDashboardRequests";
+import { useActionFocus } from "@/lib/useActionFocus";
 
 type RaidSignupStatus = "going" | "tentative" | "late" | "skipped";
 type RaidRole = "tank" | "healer" | "dps";
@@ -50,6 +54,10 @@ export default function RaidAttendanceClient({
   selectedManualClassKey = "", selectedManualSpecKey = "", manualClasses = [], title,
 }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const dialogId = useId();
+  const requests = useDashboardRequests();
+  const submitLock = useRef(false);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<"character" | "manual">(selectedManualClassKey ? "manual" : characterOptions.length ? "character" : "manual");
@@ -60,6 +68,9 @@ export default function RaidAttendanceClient({
   const [role, setRole] = useState<RaidRole>(selectedRole);
   const [reminderEnabled, setReminderEnabled] = useState(true);
   const [preferenceState, setPreferenceState] = useState<"loading" | "ready" | "failed">("loading");
+  const [preferenceAttempt, setPreferenceAttempt] = useState(0);
+  const [notice, setNotice] = useState("");
+  const { scopeRef, beginActionFocus } = useActionFocus<HTMLDivElement>(preferenceState === "loading");
   const manualClass = manualClasses.find((entry) => entry.key === manualClassKey) || null;
   const manualSpec = manualClass?.specs.find((entry) => entry.key === manualSpecKey) || null;
   const selectedCharacter = characterOptions.find((entry) => entry.key === characterKey) || null;
@@ -72,26 +83,36 @@ export default function RaidAttendanceClient({
     if (!open) return;
     const dialog = dialogRef.current;
     if (!dialog?.open) dialog?.showModal();
+    titleRef.current?.focus({ preventScroll: true });
     return () => { if (dialog?.open) dialog.close(); };
   }, [open]);
   useEffect(() => {
-    if (selectedCharacterKey && characterOptions.some((item) => item.key === selectedCharacterKey)) setCharacterKey(selectedCharacterKey);
-  }, [selectedCharacterKey, characterOptions]);
-  useEffect(() => {
     if (!open || showRequirement) return;
-    const controller = new AbortController();
+    const lane = requests.begin("raid-reminder-read", 12_000);
     setPreferenceState("loading");
-    fetch("/api/raids/reminder-preference", { credentials: "same-origin", cache: "no-store", signal: controller.signal })
-      .then(async (response) => {
-        if (!response.ok) throw new Error("preference_failed");
-        const data = await response.json();
+    dashboardApiJson<{ enabled: boolean }>("/api/raids/reminder-preference", { signal: lane.signal, timeoutMs: 12_000, retries: 0 })
+      .then((data) => {
+        if (!lane.current()) return;
         if (typeof data?.enabled !== "boolean") throw new Error("invalid_preference");
         setReminderEnabled(data.enabled);
         setPreferenceState("ready");
       })
-      .catch(() => { if (!controller.signal.aborted) setPreferenceState("failed"); });
-    return () => controller.abort();
-  }, [open, showRequirement]);
+      .catch(() => { if (lane.current()) setPreferenceState("failed"); })
+      .finally(() => lane.finish());
+    return () => lane.abort();
+  }, [open, showRequirement, preferenceAttempt]);
+
+  function openModal() {
+    setMode(selectedManualClassKey ? "manual" : characterOptions.length ? "character" : "manual");
+    setCharacterKey(selectedCharacterKey);
+    setManualClassKey(selectedManualClassKey);
+    setManualSpecKey(selectedManualSpecKey);
+    setStatus(selectedStatus);
+    setRole(selectedRole);
+    setPreferenceState("loading");
+    setNotice("");
+    setOpen(true);
+  }
 
   function closeModal() {
     if (busy) return;
@@ -100,8 +121,11 @@ export default function RaidAttendanceClient({
   }
 
   async function submitAttendance() {
-    if (cannotSubmit || busy) return;
+    if (cannotSubmit || submitLock.current) return;
+    submitLock.current = true;
+    const lane = requests.begin("raid-attendance-write", 25_000);
     setBusy(true);
+    setNotice("");
     const formData = new FormData();
     formData.set("action", status);
     if (status !== "skipped") {
@@ -115,29 +139,40 @@ export default function RaidAttendanceClient({
     }
     formData.set("reminderEnabled", String(reminderEnabled));
     try {
-      const response = await fetch(`/api/raids/${encodeURIComponent(raidId)}/attendance`, {
+      const data = await dashboardApiJson<{ ok: boolean; revision?: string; toast?: ToastPayload }>(`/api/raids/${encodeURIComponent(raidId)}/attendance`, {
         method: "POST", body: formData, credentials: "same-origin", cache: "no-store",
         headers: { Accept: "application/json", "X-Dashboard-Action": "live" },
+        signal: lane.signal, timeoutMs: 25_000, retries: 0,
       });
-      const data = await response.json().catch(() => null);
-      const toast = toastFromResponse(data, response.ok);
-      dispatchDashboardToast({ tone: toast.tone || (response.ok ? "success" : "error"),
-        title: toast.title || "Запис у рейд", message: toast.message,
-        ttl: toast.ttl || (response.ok ? 4600 : 8200) });
-      const loginUrl = data && typeof data === "object" && "loginUrl" in data
-        ? String((data as { loginUrl?: unknown }).loginUrl || "") : "";
-      if (!response.ok && loginUrl) { window.location.assign(loginUrl); return; }
-      if (response.ok) {
-        closeModalAfterSave();
-        const revision = data && typeof data === "object" && "revision" in data
-          ? String((data as { revision?: unknown }).revision || "") : "";
-        notifyDashboardDataChanged({ scope: "raids", kind: "raid", resourceId: raidId,
-          raidId, revision, source: "raid-attendance", action: status });
+      if (!lane.current()) return;
+      // A redirect to an HTML login page can also end with HTTP 200.
+      if (data?.ok !== true) throw new Error("unconfirmed_attendance");
+      const toast = toastFromResponse(data, true);
+      dispatchDashboardToast({ tone: toast.tone || "success", title: toast.title || "Запис у рейд",
+        message: toast.message, ttl: toast.ttl || 4600 });
+      closeModalAfterSave();
+      notifyDashboardDataChanged({ scope: "raids", kind: "raid", resourceId: raidId,
+        raidId, revision: typeof data.revision === "string" ? data.revision : "", source: "raid-attendance", action: status });
+    } catch (error) {
+      if (!lane.current()) return;
+      const toast = error instanceof ApiHttpError ? toastFromResponse(error.body, false) : {
+        tone: "warning" as const, title: "Запис ще не підтверджено",
+        message: "Відповідь не отримано або не розпізнано. Вибір залишився у формі. Закрий її та перевір свій запис у складі рейду перед повторною дією.",
+      };
+      setNotice(toast.message || toast.title || "Запис не підтверджено.");
+      dispatchDashboardToast({ ...toast, title: toast.title || "Запис не оновлено", ttl: toast.ttl || 8200 });
+      const body = error instanceof ApiHttpError ? error.body as { loginUrl?: unknown } | null : null;
+      if (body && typeof body.loginUrl === "string") {
+        try {
+          const login = new URL(body.loginUrl, window.location.origin);
+          if (login.origin === window.location.origin && login.pathname === "/login") window.location.assign(login.href);
+        } catch { /* Keep the draft if an intermediary returned an invalid destination. */ }
       }
-    } catch {
-      dispatchDashboardToast({ tone: "error", title: "Немає відповіді від сервера",
-        message: "Перевір підключення та повтори запис.", ttl: 8200 });
-    } finally { setBusy(false); }
+    } finally {
+      if (lane.current()) setBusy(false);
+      submitLock.current = false;
+      lane.finish();
+    }
   }
   function closeModalAfterSave() {
     dialogRef.current?.close();
@@ -145,23 +180,23 @@ export default function RaidAttendanceClient({
   }
 
   return (
-    <div className="raid-attendance-stack">
+    <div ref={scopeRef} className="raid-attendance-stack">
       <div className="raid-signup-launcher">
         <button className="raid-action raid-action--go raid-signup-launcher__button" type="button"
-          disabled={closed || registrationLocked} title={title} onClick={() => setOpen(true)}>
+          disabled={closed || registrationLocked} title={title} onClick={openModal}>
           {viewerAlreadyActive ? "✎ Змінити запис" : full ? "✓ Записатися до запасу" : "✓ Записатися в рейд"}
         </button>
         {registrationLocked && registrationLockMessage ? <small role="note">{registrationLockMessage}</small> : null}
       </div>
       {open ? (
-        <dialog ref={dialogRef} className="raid-signup-modal" aria-labelledby="raid-signup-modal-title"
+        <dialog ref={dialogRef} className="raid-signup-modal" aria-labelledby={`${dialogId}-title`} aria-describedby={`${dialogId}-description`}
           onClose={() => setOpen(false)} onCancel={(event) => { if (busy) event.preventDefault(); }}
           onClick={(event) => { if (event.target === event.currentTarget) closeModal(); }}>
           <div className="raid-signup-modal__panel">
             <header className="raid-signup-modal__header">
               <div><span className="raid-signup-modal__eyebrow">Mistblossom Vanguard · Рейди</span>
-                <h2 id="raid-signup-modal-title">{viewerAlreadyActive ? "Змінити запис на рейд" : "Записатися в рейд"}</h2>
-                <p>Обери, ким і як береш участь. Усі зміни збережуться на сайті й у Discord.</p></div>
+                <h2 ref={titleRef} id={`${dialogId}-title`} data-workflow-title tabIndex={-1}>{viewerAlreadyActive ? "Змінити запис на рейд" : "Записатися в рейд"}</h2>
+                <p id={`${dialogId}-description`}>Обери, ким і як береш участь. Усі зміни збережуться на сайті й у Discord.</p></div>
               <button type="button" className="btn btn-icon raid-signup-modal__close" onClick={closeModal} disabled={busy} aria-label="Закрити форму">×</button>
             </header>
             {showRequirement ? (
@@ -169,7 +204,8 @@ export default function RaidAttendanceClient({
                 <span className="raid-action-requirement-links"><a href={loginHref}>Увійти через Discord</a>
                   <a href={profileHref}>Профіль</a><a href={rulesHref} target="_blank" rel="noreferrer">Правила рейду</a></span></div>
             ) : (
-              <form className="raid-signup-modal__form" onSubmit={(event) => { event.preventDefault(); void submitAttendance(); }}>
+              <form className="raid-signup-modal__form" data-dirty="true" data-submitting={busy ? "true" : undefined} aria-busy={busy}
+                onSubmit={(event) => { event.preventDefault(); void submitAttendance(); }}>
                 <div className="raid-signup-modal__section">
                   <strong>1. Спосіб запису</strong>
                   <div className="raid-signup-modal__tabs" role="group" aria-label="Спосіб запису">
@@ -226,9 +262,12 @@ export default function RaidAttendanceClient({
                   <label><input type="checkbox" checked={reminderEnabled} onChange={(event) => setReminderEnabled(event.target.checked)}
                     disabled={busy || preferenceState !== "ready"} /><span>Нагадати в особисті Discord за 15 хвилин до рейду
                       <small>Налаштування збережеться для наступних рейдів і твого профілю.</small></span></label>
-                  {preferenceState === "loading" ? <small>Завантажуємо твоє налаштування…</small> : null}
-                  {preferenceState === "failed" ? <div className="raid-signup-modal__error" role="alert">Не вдалося отримати налаштування нагадувань. Закрий і відкрий форму знову, щоб уникнути його випадкової зміни.</div> : null}
+                  <small data-action-result tabIndex={-1} role="status" aria-live="polite" aria-atomic="true">{preferenceState === "loading" ? "Завантажуємо твоє налаштування…" : preferenceState === "ready" ? "Налаштування нагадувань завантажено." : ""}</small>
+                  {preferenceState === "failed" ? <div className="raid-signup-modal__error" role="alert">Не вдалося отримати налаштування нагадувань. Твій вибір залишився у формі.
+                    <button className="btn ghost" type="button" onClick={(event) => { beginActionFocus(event.currentTarget); setPreferenceState("loading"); setPreferenceAttempt((attempt) => attempt + 1); }}>Повторити завантаження</button>
+                  </div> : null}
                 </div>
+                {notice ? <div className="raid-signup-modal__error" role="alert">{notice}</div> : null}
                 <footer className="raid-signup-modal__footer">
                   <button className="btn ghost" type="button" onClick={closeModal} disabled={busy}>Скасувати</button>
                   <button className="raid-action raid-action--go" type="submit" disabled={cannotSubmit}>

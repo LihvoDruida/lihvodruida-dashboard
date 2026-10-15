@@ -28,6 +28,7 @@ import { getSession, type DashboardSession } from "@/lib/auth";
 import {
   canViewProfileAccessDetails,
   canViewProfiles,
+  canViewGuildRoster,
   dashboardRoleLabel,
   guildStatusLabel,
 } from "@/lib/permissions";
@@ -453,7 +454,9 @@ export default async function ProfilePage({
         aria-label="Профіль Mistblossom Vanguard"
       >
         <DashboardIdentity user={viewer} activeSection="profile" />
-        {!isRulesReturn && canViewProfiles(viewer) ? <ListReturnLink kind="profiles" scope={listNavigationScope(viewer)} /> : null}
+        {!isRulesReturn && query.from === "guild" && canViewGuildRoster(viewer)
+          ? <ListReturnLink kind="guild" scope={listNavigationScope(viewer)} />
+          : !isRulesReturn && canViewProfiles(viewer) ? <ListReturnLink kind="profiles" scope={listNavigationScope(viewer)} /> : null}
         {/* Класична двоколонкова схема: липка бічна колонка з
             навігацією та коротким станом + основний потік праворуч.
             Проти першої версії тут додано швидкі показники в бічній

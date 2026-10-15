@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { observeAutomationRun } from "@/lib/automationTaskRuns";
 
 import { runDiscordNewcomerOnboarding } from "@/lib/discordNewcomerOnboarding";
 import { logDashboardEvent, noStoreHeaders, safeErrorMessage, unauthorizedResponse, verifyInternalBearerToken } from "@/lib/security";
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
 
   globalThis.__mistblossomDiscordNewcomerOnboardingInFlight = true;
   try {
-    const result = await runDiscordNewcomerOnboarding({ source: "cron" });
+    const result = await observeAutomationRun("onboarding", () => runDiscordNewcomerOnboarding({ source: "cron" }));
     if (result.initialized || result.newcomers || result.failed || result.defaultRoleFailed || result.channelFailed || result.persistenceFailed) {
       logDashboardEvent(result.failed ? "warn" : "info", "discord.newcomer_onboarding.automation_completed", request, result, { category: "action" });
     }

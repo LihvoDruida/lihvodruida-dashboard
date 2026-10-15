@@ -10,5 +10,5 @@ export default function ListReturnLink({ kind, scope, className }: { kind: ListK
     try { setHref(listReturnUrl(kind, parseListMemory(kind, sessionStorage.getItem(listMemoryKey(kind, scope))))); }
     catch { setHref(`/${kind}`); }
   }, [kind, scope]);
-  return <a className={className || styles.returnLink} href={href}>← Повернутися до списку {{ profiles: "профілів", applications: "заявок", raids: "рейдів", polls: "рейд-пулів" }[kind]}</a>;
+  return <a className={className || styles.returnLink} href={href}>← Повернутися до списку {{ profiles: "профілів", applications: "заявок", raids: "рейдів", polls: "рейд-пулів", guild: "персонажів гільдії" }[kind]}</a>;
 }

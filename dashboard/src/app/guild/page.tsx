@@ -11,6 +11,7 @@ import { buildPageMetadata } from "@/lib/seo";
 import { getDashboardApiSettings } from "@/lib/dashboardApiSettings";
 import { recordDashboardSystemLog } from "@/lib/dashboardSystemLogs";
 import { MISTBLOSSOM_DISCORD_CHANNELS, discordGuildChannelUrl } from "@/lib/discordGuildLinks";
+import { listNavigationScope } from "@/lib/listNavigationScope";
 import rosterStyles from "@/components/GuildRoster.module.css";
 
 export const dynamic = "force-dynamic";
@@ -199,6 +200,7 @@ export default async function GuildRosterPage() {
         </section>
 
         <GuildRosterExplorer
+          navigationScope={listNavigationScope(user)}
           members={members}
           stats={roster.stats}
           source={roster.source}

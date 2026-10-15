@@ -46,7 +46,7 @@ for (const [signal, code] of [["SIGINT", 130], ["SIGTERM", 143]]) {
   }
   if (!ready) throw new Error("Isolated PostgreSQL did not start within 60 seconds");
   console.log("[test:db:docker] " + image + "; temporary database; loopback only");
-  for (const script of ["test-document-store-pg.cjs", "test-discord-publication-pg.cjs", "test-profile-directory-pg.cjs", "test-discord-cleanup-pg.cjs", "test-access-groups-pg.cjs", "test-profile-identity-pg.cjs", "test-profile-character-setup-pg.cjs"]) {
+  for (const script of ["test-document-store-pg.cjs", "test-discord-publication-pg.cjs", "test-profile-directory-pg.cjs", "test-discord-cleanup-pg.cjs", "test-access-groups-pg.cjs", "test-profile-identity-pg.cjs", "test-profile-character-setup-pg.cjs", "test-group-assignment-migration-pg.cjs", "test-automation-status-pg.cjs"]) {
     const result = spawnSync(process.execPath, [path.join(__dirname, script)], {
       stdio: "inherit",
       env: { ...process.env, TEST_DATABASE_URL: url, TEST_DOCUMENT_STORE_SOURCE: "" },

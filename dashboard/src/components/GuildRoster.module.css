@@ -168,6 +168,11 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
 
+.viewMemory {
+  padding-inline: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
 .toolbarTitle,
 .searchRow,
 .footer,
@@ -775,6 +780,10 @@
   .toolbar {
     gap: var(--space-sm);
     padding: 14px;
+  }
+
+  .viewMemory {
+    padding-inline: 14px;
   }
 
   .toolbarTitle {

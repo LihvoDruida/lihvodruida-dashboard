@@ -1,0 +1,68 @@
+const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), os = require('node:os'), http = require('node:http');
+const { once } = require('node:events');
+const root = path.resolve(__dirname, '..');
+const modules = [process.env.MISTBLOSSOM_QA_MODULES || root, process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES || root];
+const { chromium } = require(require.resolve('playwright', { paths: modules }));
+const esbuild = require(require.resolve('esbuild', { paths: modules }));
+const output = process.env.MISTBLOSSOM_QA_OUTPUT || fs.mkdtempSync(path.join(os.tmpdir(), 'poll-actions-'));
+const baseline = process.env.MISTBLOSSOM_TEST_POLL_ACTIONS_SOURCE;
+fs.mkdirSync(output, { recursive: true });
+const names = ['RaidPollActions', 'RaidPollPauseButton', 'RaidPollRecalculateButton', 'RaidPollDeleteButton', 'RaidPollBrowser'];
+const aliases = Object.fromEntries(names.map(name => ['@/components/' + name, path.join(baseline || path.join(root, 'src/components'), name + '.tsx')]));
+const card = id => ({ id, shortId: id, title: 'Poll ' + id, description: 'Fixture', difficulty: 'normal', difficultyLabel: 'Normal', state: 'open', statusLabel: 'Active', dayLabels: ['Monday'], votes: 3, tanks: 1, healers: 1, dps: 1, deadlineCaption: 'Deadline', deadlineLabel: 'Tomorrow', remainingLabel: 'One day', recommendation: 'Monday', repeatLabel: '', autoRepeat: false, pausedNote: null, messageUrl: null });
+fs.writeFileSync(path.join(output, 'navigation.ts'), 'export const useRouter=()=>({refresh(){window.refreshes++},push(url){window.pushes.push(url)}});export const usePathname=()=>"/polls";export const useSearchParams=()=>new URLSearchParams(location.search);');
+fs.writeFileSync(path.join(output, 'entry.tsx'), `import React from 'react';import {createRoot} from 'react-dom/client';import Actions from '@/components/RaidPollActions';import Pause from '@/components/RaidPollPauseButton';import Recalculate from '@/components/RaidPollRecalculateButton';import Delete from '@/components/RaidPollDeleteButton';import Browser from '@/components/RaidPollBrowser';const f=window.fixture;window.toasts=[];window.refreshes=0;window.pushes=[];window.addEventListener('dashboard:toast',e=>window.toasts.push(e.detail));const root=createRoot(document.getElementById('app'));window.unmount=()=>root.unmount();window.render=()=>root.render(<main className="container polls-page"><button id="before">Before</button><div className={f.view==='bulk'?'':'poll-card__actions'}>{f.view==='pause'?<Pause pollId="fixture00" paused={false}/>:f.view==='recalculate'?<Recalculate/>:f.view==='delete'?<Delete pollId="fixture00" pollTitle="Fixture"/>:f.view==='bulk'?<Browser cards={f.cards} canManage={true} navigationScope="fixture"/>:<Actions pollId="fixture00" pollTitle="Fixture" state="open" canManage={true}/>}</div><button id="after">After</button></main>);window.render();`);
+let passed = 0, page, release; const scenarios = [], observations = {}, errors = [];
+async function check(name, run) { await run(); passed++; scenarios.push(name); console.log(baseline ? 'PROBE' : 'PASS', name); }
+(async () => {
+  await esbuild.build({ entryPoints: [path.join(output, 'entry.tsx')], outfile: path.join(output, 'app.js'), bundle: true, jsx: 'automatic', tsconfig: path.join(root, 'tsconfig.json'), alias: { ...aliases, 'next/navigation': path.join(output, 'navigation.ts') }, nodePaths: [path.join(root, 'node_modules')], define: { 'process.env.NODE_ENV': '"production"' } });
+  const css = [...fs.readFileSync(path.join(root, 'src/app/layout.tsx'), 'utf8').matchAll(/import "\.\/styles\/([^\"]+\.css)";/g)].map(m => fs.readFileSync(path.join(root, 'src/app/styles', m[1]), 'utf8')).join('\n');
+  const server = http.createServer((req, res) => { if (req.url === '/app.js') { res.setHeader('content-type', 'text/javascript'); return res.end(fs.readFileSync(path.join(output, 'app.js'))); } if (req.url === '/style.css') { res.setHeader('content-type', 'text/css'); return res.end(css); } const view = new URL(req.url, 'http://qa.test').searchParams.get('view'); res.setHeader('content-type', 'text/html'); res.end('<!doctype html><html lang="uk"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/style.css"><body><div id="app"></div><script>window.fixture=' + JSON.stringify({ view, cards: [card('fixture00'), card('fixture01')] }) + '</script><script src="/app.js"></script></body></html>'); });
+  server.unref(); server.listen(0, '127.0.0.1'); await once(server, 'listening');
+  const browser = await chromium.launch({ executablePath: process.env.MISTBLOSSOM_QA_CHROMIUM || undefined, args: ['--no-sandbox', '--disable-gpu', '--no-zygote', '--disable-dev-shm-usage'], headless: true });
+  let writes = 0;
+  async function setup(view, mode = 'html') {
+    if (page) await page.close(); page = await browser.newPage({ viewport: { width: 1280, height: 900 } }); page.on('pageerror', e => errors.push(e.message)); page.on('dialog', d => d.accept()); writes = 0; release = null;
+    await page.addInitScript(fast => { window.inFlight = 0; const fetch = window.fetch.bind(window); window.fetch = (...args) => { window.inFlight++; return fetch(...args).finally(() => window.inFlight--); }; if (!fast) return; const timer = window.setTimeout; window.setTimeout = (fn, delay, ...args) => timer(fn, delay === 45000 ? 80 : delay, ...args); }, mode === "timeout");
+    await page.route('**/api/polls/**', async route => {
+      const req = route.request(); if (req.method() !== 'GET') writes++;
+      if (mode === 'delay' || mode === 'timeout') await new Promise(resolve => release = resolve);
+      const invalid = mode === 'html' || mode === 'mixed' && req.url().includes('fixture01');
+      if (invalid) return route.fulfill({ status: 200, contentType: 'text/html', body: '<html>sign-in wall</html>' });
+      if (mode === 'denied') return route.fulfill({ status: 403, json: { ok: false, error: 'Access denied' } });
+      return route.fulfill({ json: { ok: true, updated: 1, failed: 0, pollId: 'fixture00' } });
+    });
+    await page.goto('http://127.0.0.1:' + server.address().port + '/?view=' + view + '&tab=all'); await page.locator('#after').waitFor();
+  }
+  const lastToast = () => page.evaluate(() => window.toasts.at(-1));
+  try {
+    for (const [view, label] of [['pause', 'Пауза'], ['recalculate', 'Перерахувати дні Discord'], ['delete', 'Видалити пул'], ['actions', 'Закрити']]) {
+      await setup(view);
+      await check(view + ' does not confirm a 200 HTML response', async () => { await page.getByRole('button', { name: label, exact: true }).focus(); await page.keyboard.press('Enter'); await page.waitForFunction(() => window.toasts.some(t => ['success','error'].includes(t.tone) || t.title.includes('не підтверджено'))); const toast = await lastToast(); observations[view] = { toast, refreshes: await page.evaluate(() => window.refreshes), pushes: await page.evaluate(() => window.pushes) }; if (!baseline) { assert.notEqual(toast.tone, 'success'); assert.equal(observations[view].refreshes, 0); assert.deepEqual(observations[view].pushes, []); assert.equal(await page.evaluate(() => document.activeElement.hasAttribute('data-action-result')), true); } assert.equal(writes, 1); });
+    }
+    await setup('bulk', 'mixed');
+    await check('bulk reports each confirmed and uncertain item without replay', async () => { await page.getByRole('checkbox').first().check(); await page.getByRole('button', { name: 'Вибрати всі у вкладці', exact: true }).click(); await page.getByRole('button', { name: 'Закрити вибрані', exact: true }).focus(); await page.keyboard.press('Enter'); await page.waitForFunction(() => window.toasts.length > 0); observations.bulk = await lastToast(); if (!baseline) { assert.equal(observations.bulk.tone, 'warning'); assert.equal(await page.locator('[data-poll-outcome="confirmed"]').count(), 1); assert.equal(await page.locator('[data-poll-outcome="unconfirmed"]').count(), 1); assert.equal(await page.locator('[data-bulk-result]').evaluate(el => el === document.activeElement), true); } assert.equal(writes, 2); });
+    if (!baseline) {
+      await setup('pause', 'ok');
+      await check('confirmed pause emits one success and refreshes once', async () => { await page.getByRole('button', { name: 'Пауза', exact: true }).click(); await page.waitForFunction(() => window.refreshes === 1); assert.equal((await lastToast()).tone, 'success'); assert.equal(writes, 1); });
+      await setup('pause', 'timeout');
+      await check('pause has a real abort deadline and does not retry its uncertain POST', async () => { await page.getByRole('button', { name: 'Пауза', exact: true }).click(); await page.getByRole('status').filter({ hasText: /не підтверджено/i }).waitFor(); assert.equal(await page.getByRole('button', { name: 'Пауза', exact: true }).isEnabled(), true); assert.equal(writes, 1); release?.(); release = null; });
+      await setup('actions', 'delay');
+      await check('related controls cannot start pause during a close request', async () => { await page.getByRole('button', { name: 'Закрити', exact: true }).click(); await page.getByRole('button', { name: 'Закриваємо…', exact: true }).waitFor(); assert.equal(await page.getByRole('button', { name: 'Пауза', exact: true }).isDisabled(), true); release(); release = null; await page.waitForFunction(() => window.refreshes === 1); assert.equal(writes, 1); });
+      await setup('actions', 'delay');
+      await check('close and delete stay disabled while the embedded pause is pending', async () => { await page.getByRole('button', { name: 'Пауза', exact: true }).click(); await page.getByRole('button', { name: 'Ставимо на паузу…', exact: true }).waitFor(); assert.equal(await page.getByRole('button', { name: 'Закрити', exact: true }).isDisabled(), true); assert.equal(await page.getByRole('button', { name: 'Видалити', exact: true }).isDisabled(), true); release(); release = null; await page.waitForFunction(() => window.refreshes === 1); assert.equal(writes, 1); });
+      await setup('pause', 'delay');
+      await check('unmount aborts the in-flight action without stale toasts or navigation', async () => { await page.getByRole('button', { name: 'Пауза', exact: true }).click(); await page.getByRole('button', { name: 'Ставимо на паузу…', exact: true }).waitFor(); await page.evaluate(() => window.unmount()); await page.waitForFunction(() => window.inFlight === 0); release?.(); release = null; assert.equal(await page.evaluate(() => window.toasts.length), 0); assert.equal(await page.evaluate(() => window.refreshes), 0); assert.equal(writes, 1); });
+      await setup('actions', 'delay');
+      await check('finishing a request respects a manual focus move', async () => { await page.getByRole('button', { name: 'Закрити', exact: true }).click(); await page.getByRole('button', { name: 'Закриваємо…', exact: true }).waitFor(); await page.locator('#after').focus(); release(); release = null; await page.waitForFunction(() => window.refreshes === 1); assert.equal(await page.locator('#after').evaluate(el => el === document.activeElement), true); });
+      await setup('delete', 'ok');
+      await check('cancelled destructive confirmation sends no request', async () => { page.removeAllListeners('dialog'); page.on('dialog', d => d.dismiss()); await page.getByRole('button', { name: 'Видалити пул' }).focus(); await page.keyboard.press('Enter'); assert.equal(writes, 0); assert.equal(await page.getByRole('button', { name: 'Видалити пул' }).evaluate(el => el === document.activeElement), true); });
+      await setup('bulk', 'ok');
+      await check('confirmed bulk deletion links to the list instead of deleted resources', async () => { await page.getByRole('checkbox').first().check(); await page.getByRole('button', { name: 'Вибрати всі у вкладці', exact: true }).click(); await page.getByRole('button', { name: 'Видалити вибрані', exact: true }).click(); await page.waitForFunction(() => window.toasts.length > 0 && document.querySelector('.poll-browser').getAttribute('aria-busy') === 'false'); assert.equal(await page.locator('[data-poll-outcome="confirmed"] a[href="/polls"]').count(), 2); assert.equal(writes, 2); });
+      await setup('bulk', 'denied');
+      await check('bulk retains rejected items and provides exact read links', async () => { await page.getByRole('checkbox').first().check(); await page.getByRole('button', { name: 'Вибрати всі у вкладці', exact: true }).click(); await page.getByRole('button', { name: 'Закрити вибрані', exact: true }).click(); await page.waitForFunction(() => window.toasts.length > 0 && document.querySelector('.poll-browser').getAttribute('aria-busy') === 'false'); assert.equal(await page.locator('[data-poll-outcome="rejected"]').count(), 2); assert.equal(await page.locator('[data-poll-outcome] a[href="/polls/fixture01"]').count(), 1); assert.equal(writes, 2); });
+      await check('results remain responsive at nine widths without runtime errors', async () => { for (const width of [320,360,390,520,760,1024,1280,1600,1920]) { await page.setViewportSize({ width, height: 900 }); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'overflow at ' + width); } assert.deepEqual(errors, []); });
+    }
+    fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify({ baseline: Boolean(baseline), passed, failed: 0, scenarios, observations, errors, browser: await browser.version() }, null, 2));
+  } finally { release?.(); await browser.close(); await new Promise(resolve => server.close(resolve)); }
+})().catch(error => { console.error(error); process.exitCode = 1; });

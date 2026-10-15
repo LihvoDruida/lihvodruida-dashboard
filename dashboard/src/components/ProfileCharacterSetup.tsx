@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { dashboardApiJson } from "@/lib/dashboardApiClient";
 import { ApiHttpError } from "@/lib/apiHttp";
 import { useDashboardRequests } from "@/lib/useDashboardRequests";
+import { useActionFocus } from "@/lib/useActionFocus";
 import { wowRoleLabel } from "@/lib/wowRoles";
 import type {
   CharacterSetupRequest,
@@ -62,6 +63,7 @@ export default function ProfileCharacterSetup({
   const [message, setMessage] = useState(""),
     [storageWarning, setStorageWarning] = useState(""),
     [visible, setVisible] = useState(8);
+  const { scopeRef, beginActionFocus } = useActionFocus<HTMLElement>(busy);
   const storageKey = `mistblossom:character-setup:${profileId}`;
   const storageBroken = useRef(false);
   function persist() {
@@ -127,7 +129,8 @@ export default function ProfileCharacterSetup({
       persist();
     }
   }
-  async function refresh() {
+  async function refresh(trigger?: HTMLElement) {
+    if (trigger) beginActionFocus(trigger);
     const lane = requests.begin("character-setup-read", 12_000);
     setBusy(true);
     try {
@@ -183,7 +186,9 @@ export default function ProfileCharacterSetup({
     // This is a mount-only restore; request lanes cancel reads on unmount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileId]);
-  async function send(operation: CharacterSetupRequest) {
+  async function send(operation: CharacterSetupRequest, trigger?: HTMLElement | null) {
+    // An uncertain result may reuse the Save element as a recovery button.
+    if (trigger) beginActionFocus(trigger, { preferResult: true });
     const lane = requests.begin("character-setup-save", 30_000);
     setBusy(true);
     setMessage("");
@@ -235,26 +240,26 @@ export default function ProfileCharacterSetup({
       ...draftRef.current,
       operationId: crypto.randomUUID(),
       expectedRevision: base.current,
-    });
+    }, (event.nativeEvent as SubmitEvent).submitter);
   }
-  const candidates = [...(state?.candidates || [])].sort(
+  const candidates = useMemo(() => [...(state?.candidates || [])].sort(
     (a, b) => Number(b.guild) - Number(a.guild),
-  );
-  const eligible = [
+  ), [state?.candidates]);
+  const selectedKeys = useMemo(() => new Set(draft.characterKeys), [draft.characterKeys]);
+  const eligible = useMemo(() => [
     ...(state?.characters || []),
-    ...candidates.filter((c) => draft.characterKeys.includes(c.key)),
-  ];
+    ...candidates.filter((c) => selectedKeys.has(c.key)),
+  ], [state?.characters, candidates, selectedKeys]);
+  const eligibleKeys = useMemo(() => new Set(eligible.map(c => c.key)), [eligible]);
   const main = eligible.find((c) => c.key === draft.mainCharacterKey);
-  const unavailable = draft.characterKeys.filter(
-    (key) => !eligible.some((c) => c.key === key),
-  );
+  const unavailable = draft.characterKeys.filter(key => !eligibleKeys.has(key));
   const locked = busy || unknown;
   const selectionLimit = 200;
   const selectable = candidates.slice(0, selectionLimit);
   const allSelected =
     selectable.length > 0 &&
     selectable.every((character) =>
-      draft.characterKeys.includes(character.key),
+      selectedKeys.has(character.key),
     );
   const dirty = Boolean(
     state &&
@@ -264,6 +269,7 @@ export default function ProfileCharacterSetup({
   );
   return (
     <section
+      ref={scopeRef}
       id="profile-candidates"
       className="profile-character-setup"
       aria-labelledby={`${id}-title`}
@@ -330,9 +336,9 @@ export default function ProfileCharacterSetup({
                           type="checkbox"
                           disabled={
                             draft.characterKeys.length >= selectionLimit &&
-                            !draft.characterKeys.includes(character.key)
+                            !selectedKeys.has(character.key)
                           }
-                          checked={draft.characterKeys.includes(character.key)}
+                          checked={selectedKeys.has(character.key)}
                           onChange={(event) =>
                             edit({
                               ...draft,
@@ -506,7 +512,7 @@ export default function ProfileCharacterSetup({
                 className="btn primary"
                 type="button"
                 disabled={busy}
-                onClick={() => void refresh()}
+                onClick={(event) => void refresh(event.currentTarget)}
               >
                 Перевірити результат
               </button>
@@ -516,7 +522,7 @@ export default function ProfileCharacterSetup({
                   className="btn subtle"
                   type="button"
                   disabled={busy}
-                  onClick={() => pending.current && void send(pending.current)}
+                  onClick={(event) => pending.current && void send(pending.current, event.currentTarget)}
                 >
                   Повторити ту саму операцію
                 </button>
@@ -560,7 +566,7 @@ export default function ProfileCharacterSetup({
                 className="btn ghost btn-sm"
                 type="button"
                 disabled={busy}
-                onClick={() => void refresh()}
+                onClick={(event) => void refresh(event.currentTarget)}
               >
                 Оновити стан
               </button>
@@ -572,6 +578,9 @@ export default function ProfileCharacterSetup({
         className="profile-character-setup__status"
         role="status"
         aria-live="polite"
+        aria-atomic="true"
+        data-action-result=""
+        tabIndex={-1}
       >
         {message}
       </p>
@@ -584,7 +593,7 @@ export default function ProfileCharacterSetup({
         <button
           className="btn subtle"
           type="button"
-          onClick={() => void refresh()}
+          onClick={(event) => void refresh(event.currentTarget)}
         >
           Оновити стан
         </button>

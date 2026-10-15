@@ -37,6 +37,7 @@ const { proxy } = load("src/proxy.ts", { "next/server": { NextResponse },
 const endpoint = "/api/dashboard/discord/profile-nicknames/automation";
 let calls = 0, queueFails = false;
 const { POST, GET } = load(`src/app${endpoint}/route.ts`, { "next/server": { NextResponse }, "@/lib/security": security,
+  "@/lib/automationTaskRuns": { observeAutomationRun: async (_id, operation) => operation() },
   "../../../../../../../package.json": { version: "3.8.85" }, "@/lib/profileNicknameSync": { processProfileNicknameSyncQueue: async () => {
     calls++; if (queueFails) throw Error("storage unavailable"); return { processed: 0 };
   } } }, env, "POST,GET");

@@ -1,4 +1,6 @@
-export type ListKind = "profiles" | "applications" | "raids" | "polls";
+import { guildRosterViewParams } from "@/lib/guildRosterViewState";
+
+export type ListKind = "profiles" | "applications" | "raids" | "polls" | "guild";
 export const LIST_MEMORY_TTL = 24 * 60 * 60 * 1000;
 export type ListPosition = { url: string; row: string; next: string; previous: string; offset: number; scroll: number; at: number; opened: boolean };
 export type SavedListView = { name: string; url: string };
@@ -14,6 +16,10 @@ export function listViewUrl(kind: ListKind, input: string, includeCursor = true)
   if (typeof input !== "string" || input.length > 4096 || !input.startsWith(`/${kind}`)) return null;
   const url = new URL(input, "https://list.invalid");
   if (url.origin !== "https://list.invalid" || url.pathname !== `/${kind}`) return null;
+  if (kind === "guild") {
+    const query = guildRosterViewParams(url.searchParams, includeCursor).toString();
+    return `/guild${query ? `?${query}` : ""}`;
+  }
   const params = new URLSearchParams();
   const q = clean(url.searchParams.get("q"), kind === "profiles" ? 120 : 160);
   if (q) params.set("q", q);
