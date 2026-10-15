@@ -29,6 +29,8 @@ const applicationDeleteRoute = read('dashboard/src/app/api/applications/[number]
 const guildSyncRoute = read('dashboard/src/app/api/guild/sync/route.ts');
 const guildPage = read('dashboard/src/app/guild/page.tsx');
 
+check(proxy.includes('pathname === \"/api/site/content\"') && proxy.includes('site\\/media'), 'public CMS and media routes must be admitted by proxy without Dashboard session');
+check(proxy.includes('isInternalSiteRead') && proxy.includes('PUBLIC_SITE_BRIDGE_TOKEN'), 'site Docker SSR transport must authenticate read-only GET requests');
 check(proxy.includes('function isPublicSiteBridgePath'), 'proxy must explicitly identify public Main Site bridge routes');
 check(proxy.includes('pathname === "/api/site/applications"') && proxy.includes('pathname === "/api/site/guild"'), 'both Main Site bridge routes must be public at proxy level');
 check(proxy.includes('isPublicSiteBridgePath(pathname) ||'), 'public bridge routes must bypass Dashboard session protection');
@@ -51,10 +53,10 @@ check(bridge.includes('loadStoredGuildRosterData'), 'guild bridge must read the 
 check(bridge.includes('listRaids(40)'), 'guild bridge must include server raid schedule');
 check(bridge.includes('scheduled_raids'), 'guild bridge must expose scheduled raids');
 check(bridge.includes('roster.members.map(publicRosterMember)'), 'guild bridge must sanitize roster members');
-check(roster.includes('raid_progression:current-expansion:previous-expansion'), 'server roster sync must collect guild raid progression');
-check(roster.includes('raid_rankings:current-expansion:previous-expansion'), 'server roster sync must collect guild raid rankings');
-check(roster.includes('raidProgression: normalizeRaidProgression'), 'guild raid progression must be persisted in roster stats');
-check(roster.includes('raidRankings: normalizeRaidRankings'), 'guild raid rankings must be persisted in roster stats');
+check(roster.includes('\"raid_progression,raid_rankings\"'), 'server roster sync must request both documented Raider.IO guild fields');
+check(roster.includes('input.previousStats?.raidProgression') && roster.includes('input.previousStats?.raidRankings'), 'failed Raider.IO requests must preserve last verified guild raid progress and rankings');
+check(roster.includes('normalizeRaidProgression(input.raiderGuild.raid_progression)'), 'guild raid progression must be normalized and persisted');
+check(roster.includes('normalizeRaidRankings(input.raiderGuild.raid_rankings)'), 'guild raid rankings must be normalized and persisted');
 check(roster.includes('resolveRaidSeasonSnapshot') && roster.includes('raidSeasonSnapshot'), 'roster sync must persist the automatic raid season snapshot');
 check(bridge.includes('raid_seasons: publicRaidSeasonSnapshot'), 'public guild bridge must expose normalized raid season metadata');
 check(raidSeasonResolver.includes('/data/wow/journal-expansion/index'), 'season resolver must discover the current expansion from Battle.net journal data');

@@ -56,7 +56,7 @@ function scoreBlock(member: GuildRosterMember, key: "all" | "tank" | "healer" | 
 
 function publicRosterMember(member: GuildRosterMember) {
   return {
-    rank: member.rank,
+    rank: Number.isFinite(Number(member.rank)) && member.rank !== null ? Number(member.rank) : 99,
     character: {
       name: member.name,
       region: member.region,
@@ -178,8 +178,9 @@ export async function buildPublicGuildSnapshot() {
     schema: "mistblossom.public-guild.v1",
     generated_at: new Date().toISOString(),
     metadata: {
-      updated_at: roster.stats.updatedAt,
-      roster_updated_at: roster.stats.rosterUpdatedAt || roster.stats.updatedAt,
+      updated_at: roster.stats.updatedAt || roster.stats.rosterUpdatedAt || new Date().toISOString(),
+      roster_updated_at: roster.stats.rosterUpdatedAt || roster.stats.updatedAt || null,
+      raid_progress_source: (roster.stats.raidProgression || []).length ? 'raiderio-or-persisted' : 'not-yet-available',
       source: roster.source,
       region: roster.members[0]?.region || "eu",
     },

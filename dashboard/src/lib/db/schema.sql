@@ -134,3 +134,12 @@ CREATE TABLE IF NOT EXISTS system_log_settings (
   updated_at                   timestamptz NOT NULL DEFAULT now(),
   updated_by                   text
 );
+
+-- CMS media: immutable content-addressed files, served by public GET endpoint.
+-- Article metadata/Markdown live in documents(collection='siteArticles').
+CREATE TABLE IF NOT EXISTS site_content_media (
+  id char(64) PRIMARY KEY,
+  mime_type text NOT NULL CHECK(mime_type IN ('image/jpeg','image/png','image/webp','image/gif')),
+  payload bytea NOT NULL CHECK(octet_length(payload) BETWEEN 1 AND 8388608),
+  created_at timestamptz NOT NULL DEFAULT now()
+);

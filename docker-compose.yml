@@ -108,6 +108,8 @@ services:
       SECURITY_REQUIRE_CLOUDFLARE: ${SECURITY_REQUIRE_CLOUDFLARE:-strict}
       SECURITY_STRICT_ORIGIN_CHECKS: ${SECURITY_STRICT_ORIGIN_CHECKS:-true}
       PUBLIC_SITE_ORIGINS: ${PUBLIC_SITE_ORIGINS:-https://lihvodruida.pp.ua,https://www.lihvodruida.pp.ua}
+      # Optional, read-only internal bridge for public site SSR (no bypass for writes).
+      PUBLIC_SITE_BRIDGE_TOKEN: ${PUBLIC_SITE_BRIDGE_TOKEN:-}
     depends_on:
       postgres:
         condition: service_healthy

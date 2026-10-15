@@ -56,7 +56,9 @@ function isProtectedPagePath(pathname: string) {
 function isPublicSiteBridgePath(pathname: string) {
   return (
     pathname === "/api/site/applications" ||
-    pathname === "/api/site/guild"
+    pathname === "/api/site/guild" ||
+    pathname === "/api/site/content" ||
+    /^\/api\/site\/media\/[a-f0-9]{64}$/.test(pathname)
   );
 }
 
@@ -251,8 +253,17 @@ export function proxy(request: NextRequest) {
   const hasInternalBearerAuth =
     isInternalBearerApiPath(pathname) &&
     hasPotentialInternalBearerToken(request);
+  // Authenticated, READ-ONLY bridge from the public site's Next.js server inside
+  // the Docker edge network. This never authorizes writes or privileged routes.
+  const siteBridgeToken = String(process.env.PUBLIC_SITE_BRIDGE_TOKEN || "").trim();
+  const isInternalSiteRead =
+    siteBridgeToken.length >= 32 &&
+    (request.method === "GET" || request.method === "HEAD") &&
+    isPublicSiteBridgePath(pathname) &&
+    isInternalServiceHost(host) &&
+    request.headers.get("authorization") === `Bearer ${siteBridgeToken}`;
   const isInternalServiceRequest =
-    hasInternalBearerAuth && isInternalServiceHost(host);
+    (hasInternalBearerAuth && isInternalServiceHost(host)) || isInternalSiteRead;
 
   if (
     HOST_CHECK_EXEMPT_PATHS.has(pathname)

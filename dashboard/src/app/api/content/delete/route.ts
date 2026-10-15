@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth";
 import { recordAdminAudit } from "@/lib/accessGroups";
 import { canManageSiteContent } from "@/lib/permissions";
-import { deleteRepoFile, isManagedContentPath } from "@/lib/content";
+import { deleteSiteContent, isManagedContentPath } from "@/lib/content";
 import { redirectTo } from "@/lib/apiRoute";
 import {
   assertRequestBodySize,
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       throw new Error("Можна видаляти тільки матеріали новин або гайдів.");
     }
 
-    await deleteRepoFile(path, `content: delete ${path} by ${session.name}`);
+    await deleteSiteContent(path);
     logDashboardEvent("info", "content.delete.success", request, { path, userId: session.id });
     await recordAdminAudit("content.delete", session, {
       status: "success",

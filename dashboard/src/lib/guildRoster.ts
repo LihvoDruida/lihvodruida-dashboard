@@ -626,7 +626,7 @@ async function fetchRaiderGuild(
   url.searchParams.set("name", guildName);
   url.searchParams.set(
     "fields",
-    "raid_progression:current-expansion:previous-expansion,raid_rankings:current-expansion:previous-expansion",
+    "raid_progression,raid_rankings",
   );
   const key = raiderIoAccessKey();
   if (key) url.searchParams.set("access_key", key);
@@ -1251,6 +1251,7 @@ function buildMemberFromSources(input: {
 function buildStats(input: {
   guildSummary: any;
   raiderGuild: any;
+  previousStats?: GuildRosterStats | null;
   raidSeasonSnapshot?: RaidSeasonSnapshot | null;
   members: GuildRosterMember[];
   updatedAt: string;
@@ -1283,9 +1284,14 @@ function buildStats(input: {
     maxItemLevel: Math.max(0, ...members.map((member) => member.itemLevel)),
     averageRioAll: average(members.map((member) => member.scores.all)),
     averageItemLevel: average(members.map((member) => member.itemLevel)),
-    raidProgression: normalizeRaidProgression(input.raiderGuild?.raid_progression),
-    raidRankings: normalizeRaidRankings(input.raiderGuild?.raid_rankings),
-    raidSeasonSnapshot: input.raidSeasonSnapshot || null,
+    // A failed/partial Raider.IO response must never replace valid progress with [].
+    raidProgression: input.raiderGuild?.raid_progression && Object.keys(input.raiderGuild.raid_progression).length
+      ? normalizeRaidProgression(input.raiderGuild.raid_progression)
+      : input.previousStats?.raidProgression || [],
+    raidRankings: input.raiderGuild?.raid_rankings && Object.keys(input.raiderGuild.raid_rankings).length
+      ? normalizeRaidRankings(input.raiderGuild.raid_rankings)
+      : input.previousStats?.raidRankings || [],
+    raidSeasonSnapshot: input.raidSeasonSnapshot || input.previousStats?.raidSeasonSnapshot || null,
   };
 }
 
@@ -1469,6 +1475,7 @@ async function fetchLiveGuildRoster(
   const stats = buildStats({
     guildSummary: guildSummary || guildBlock,
     raiderGuild,
+    previousStats: options.previous?.stats || null,
     raidSeasonSnapshot,
     members,
     updatedAt,
