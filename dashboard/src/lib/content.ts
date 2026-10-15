@@ -24,16 +24,23 @@ export function slugify(value:string) {
 function docKey(kind:ContentKind,slug:string) { return `${kind}:${slug}`; }
 function publicPath(kind:ContentKind,slug:string) { return `_${kind}/${slug}.md`; }
 function parsePath(path:string) { if(!isManagedContentPath(path)) throw new Error('Невірна адреса матеріалу.'); const [,kind,slug] = /^_(news|guides)\/([a-z0-9-]+)\.md$/.exec(path)!; return {kind:kind as ContentKind,slug}; }
+const DANGEROUS_RAW_HTML_TAGS = /<\s*\/?\s*(?:script|iframe|object|embed|svg|math|meta|link|style|form|input|button|textarea|select|option|base)\b/i;
+const INLINE_EVENT_HANDLER = /\son[a-z0-9_-]+\s*=/i;
+const DANGEROUS_URI_SCHEME = /(?:javascript|vbscript)\s*:/i;
+const DANGEROUS_DATA_URI = /data\s*:\s*(?:text\/html|application\/xhtml\+xml|image\/svg\+xml)/i;
 function checkMarkdown(text:string) {
- if(/<\s*\/?\s*(?:script|iframe|object|embed|svg|math|meta|link|style|form|input|button|textarea|select|option|base)\b/i.test(text) || /\son[a-z0-9_-]+\s*=/i.test(text) || /(?:javascript|vbscript)\s*:/i.test(text) || /data\s*:\s*(?:text\/html|application\/xhtml\+xml|image\/svg\+xml)/i.test(text)) throw new Error('Markdown містить небезпечний HTML або URL.');
+ if (DANGEROUS_RAW_HTML_TAGS.test(text) || INLINE_EVENT_HANDLER.test(text) || DANGEROUS_URI_SCHEME.test(text) || DANGEROUS_DATA_URI.test(text)) throw new Error('Markdown містить небезпечний HTML або URL.');
 }
 function normalized(input:CreateContentInput) {
  if(!canManageSiteContent(input.user)) throw new Error('Недостатньо прав.');
  if(!isContentKind(input.kind)) throw new Error('Невідомий тип матеріалу.');
  const title=String(input.title||'').trim(),description=String(input.description||'').trim(),body=String(input.body||'').replace(/\r\n/g,'\n').trim(),slug=slugify(input.slug||title),author=String(input.author||input.user.name||'Mistblossom Admin').trim();
- if(title.length<3||title.length>160||description.length<12||description.length>600||body.length<20||body.length>200000||!slug) throw new Error('Невірна довжина заголовка, опису або тексту.');
- for(const [key,max] of [['categories',400],['tags',400]] as const) if(String(input[key]||'').length>max) throw new Error('Завеликий список категорій або тегів.');
- if(author.length>120) throw new Error('Завелике ім’я автора.');
+ if (title.length < 3 || description.length < 12 || body.length < 20 || !slug) throw new Error('Невірна довжина заголовка, опису або тексту.');
+ if (title.length > CONTENT_TEXT_LIMITS.title) throw new Error('Завеликий заголовок.');
+ if (description.length > CONTENT_TEXT_LIMITS.description) throw new Error('Завеликий опис.');
+ if (body.length > CONTENT_TEXT_LIMITS.body) throw new Error('Завеликий текст матеріалу.');
+ for (const key of ['categories', 'tags'] as const) if (String(input[key] || '').length > CONTENT_TEXT_LIMITS[key]) throw new Error('Завеликий список категорій або тегів.');
+ if (author.length > CONTENT_TEXT_LIMITS.author) throw new Error('Завелике ім’я автора.');
  checkMarkdown(body);
  return {kind:input.kind,title,description,body,slug,author,categories:String(input.categories||'').trim(),tags:String(input.tags||'').trim()};
 }
@@ -44,14 +51,14 @@ function safeImage(url:string) {
  if(/^\/assets\/img-content\/[A-Za-z0-9_./-]+$/.test(value)&&!value.includes('..'))return value;
  return '/assets/img/news-placeholder.webp';
 }
-function imageMatches(bytes:Buffer,mime:string) {
- return (mime==='image/jpeg'&&bytes.subarray(0,3).equals(Buffer.from([0xff,0xd8,0xff]))) || (mime==='image/png'&&bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]))) || (mime==='image/gif'&&['GIF87a','GIF89a'].includes(bytes.toString('ascii',0,6))) || (mime==='image/webp'&&bytes.toString('ascii',0,4)==='RIFF'&&bytes.toString('ascii',8,12)==='WEBP');
+function imageSignatureMatches(bytes:Buffer,mime:string) {
+ return (mime==='image/jpeg'&&bytes.subarray(0,3).equals(Buffer.from([0xff,0xd8,0xff]))) || (mime==='image/png'&&bytes.subarray(0,8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) || (mime==='image/gif'&&['GIF87a','GIF89a'].includes(bytes.toString('ascii',0,6))) || (mime==='image/webp'&&bytes.toString('ascii',0,4)==='RIFF'&&bytes.toString('ascii',8,12)==='WEBP');
 }
 async function saveImage(file?:File|null) {
  if(!file||!file.size)return null;
  if(!MIME.has(file.type)||file.size>MAX_IMAGE_SIZE)throw new Error('Обкладинка: JPG/PNG/WEBP/GIF до 8 MB.');
  if(documentStoreMode()!=='postgres')throw new Error('Завантаження обкладинок у базу потребує PostgreSQL.');
- const bytes=Buffer.from(await file.arrayBuffer()); if(!imageMatches(bytes,file.type))throw new Error('Зображення не відповідає заявленому формату.');
+ const bytes=Buffer.from(await file.arrayBuffer()); if(!imageSignatureMatches(bytes,file.type))throw new Error('Зображення не відповідає заявленому формату.');
  const id=createHash('sha256').update(bytes).digest('hex');
  await pgQuery('INSERT INTO site_content_media(id, mime_type, payload) VALUES($1,$2,$3) ON CONFLICT(id) DO NOTHING',[id,file.type,bytes]);
  const base=String(process.env.PUBLIC_DASHBOARD_BASE_URL||'https://guild.lihvodruida.pp.ua').replace(/\/+$/,'');

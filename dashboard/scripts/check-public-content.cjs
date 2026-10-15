@@ -22,7 +22,7 @@ const checks=[
  [catalog.includes('publicSiteContent')&&!catalog.includes('getSession('),'Public catalog is read-only'],
  [media.includes('SELECT payload,mime_type FROM site_content_media')&&media.includes('immutable'),'Media served by content hash'],
  [schema.includes('CREATE TABLE IF NOT EXISTS site_content_media'),'Database supports CMS media'],
- [content.includes('MAX_IMAGE_SIZE')&&content.includes('imageMatches(bytes,file.type)'),'Media MIME and size verified'],
+ [content.includes('MAX_IMAGE_SIZE')&&content.includes('imageSignatureMatches(bytes,file.type)'),'Media MIME and size verified'],
  [proxy.includes('pathname === "/api/site/content"')&&proxy.includes('/site\\/media\\/'),'Public routes explicitly allowlisted'],
  [proxy.includes('isInternalSiteRead')&&proxy.includes('request.method === "GET"')&&proxy.includes('PUBLIC_SITE_BRIDGE_TOKEN'),'Internal transport read only'],
  [compose.includes('PUBLIC_SITE_BRIDGE_TOKEN: ${PUBLIC_SITE_BRIDGE_TOKEN:-}'),'Internal bridge secret explicitly wired'],
