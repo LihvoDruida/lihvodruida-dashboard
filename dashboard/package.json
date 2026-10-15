@@ -1,6 +1,6 @@
 {
   "name": "lihvodruida-dashboard",
-  "version": "3.8.99",
+  "version": "3.8.100",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
@@ -121,7 +121,8 @@
     "check:cleanup-view": "node scripts/check-cleanup-view.cjs",
     "check:cleanup-panel-browser": "node scripts/check-cleanup-panel-browser.cjs",
     "check:static-role-settings": "node scripts/check-static-role-settings.cjs",
-    "check:static-role-settings-browser": "node scripts/check-static-role-settings-browser.cjs"
+    "check:static-role-settings-browser": "node scripts/check-static-role-settings-browser.cjs",
+    "check:login-browser": "node scripts/check-login-browser.cjs"
   },
   "dependencies": {
     "@mistblossom/discord-contract": "file:../shared",

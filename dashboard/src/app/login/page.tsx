@@ -139,13 +139,7 @@ export default async function LoginPage({
         <span className="login-shell__corner login-shell__corner--bl" aria-hidden="true" />
         <span className="login-shell__corner login-shell__corner--br" aria-hidden="true" />
 
-        <div className="login-hero">
-          <div className="login-pill">
-            <span aria-hidden="true" />
-            Панель гільдії
-            <span aria-hidden="true" />
-          </div>
-
+        <div className="login-content">
           <div className="login-brandmark">
             <span className="login-brandmark__halo" aria-hidden="true" />
             <img
@@ -160,7 +154,7 @@ export default async function LoginPage({
           </div>
 
           <div className="login-title-block">
-            <p className="login-eyebrow">{guild.name}</p>
+            <p className="login-guild-name">{guild.name}</p>
             <h1 id="login-title">Вхід до панелі гільдії</h1>
             <div className="login-title-divider" aria-hidden="true">
               <span />
@@ -170,8 +164,8 @@ export default async function LoginPage({
           </div>
 
           <p className="login-lead">
-            Увійди через Discord — доступ до панелі визначається ролями сервера
-            Mistblossom Vanguard.
+            Увійди через Discord. Доступ визначається твоїми ролями
+            на сервері гільдії.
           </p>
 
           {loggedOut ? (
@@ -217,12 +211,6 @@ export default async function LoginPage({
             )}
           </div>
 
-          <div className="login-trust-row" aria-label="Захист входу">
-            <span><b>Discord SSO</b><small>авторизація</small></span>
-            <span><b>Role Sync</b><small>права доступу</small></span>
-            <span><b>Secure</b><small>серверна сесія</small></span>
-          </div>
-
           {hasTokenFallback ? (
             <details className="login-token">
               <summary>Аварійний вхід власника</summary>
@@ -243,11 +231,6 @@ export default async function LoginPage({
             </details>
           ) : null}
 
-          <nav className="login-legal" aria-label="Юридична інформація">
-            <a href="/terms">Умови</a>
-            <span aria-hidden="true" />
-            <a href="/privacy">Приватність</a>
-          </nav>
         </div>
       </section>
     </main>
