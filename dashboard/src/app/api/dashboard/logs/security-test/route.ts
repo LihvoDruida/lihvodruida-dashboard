@@ -1,10 +1,12 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { getStructuredLogSettings } from "@/lib/logSettings";
+import { hasPostgresConfig } from "@/lib/db/pgPool";
 import { canManageGroups } from "@/lib/permissions";
 import { mirrorSecurityLogToDiscordDetailed } from "@/lib/securityLogDiscord";
 import { recordStructuredLog } from "@/lib/structuredLogs";
-import { getClientIp, noStoreHeaders, verifyTrustedOrigin } from "@/lib/security";
+import { checkRateLimit, getClientIp, noStoreHeaders, verifyTrustedOrigin } from "@/lib/security";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,12 +20,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "forbidden", message: "Немає доступу." }, { status: session ? 403 : 401, headers: noStoreHeaders() });
   }
 
+  const limit = checkRateLimit(`security-mirror-test:${session.id}:${getClientIp(request)}`, 3, 60_000);
+  if (!limit.ok) return NextResponse.json({ ok: false, message: "Забагато тестів. Зачекай хвилину перед наступною спробою." }, { status: 429, headers: noStoreHeaders() });
+  const settings = hasPostgresConfig() ? await getStructuredLogSettings({ fresh: true, strict: true }).catch(() => null) : null;
+  if (!settings) return NextResponse.json({ ok: false, reason: "settings_unavailable", message: "Не вдалося підтвердити збережені налаштування журналу." }, { status: 503, headers: noStoreHeaders() });
+
   const id = randomUUID();
   const now = new Date().toISOString();
   const result = await mirrorSecurityLogToDiscordDetailed({
     id,
     createdAt: now,
-    level: "warning",
+    level: settings.securityDiscordMinLevel,
     event: "security.discord_mirror.test",
     message: "Тест Security mirror із панелі Mistblossom. Якщо ти бачиш це повідомлення — канал і права бота налаштовані правильно.",
     actorName: session.name || session.login || session.id,
@@ -31,7 +38,7 @@ export async function POST(request: NextRequest) {
     path: "/api/dashboard/logs/security-test",
     ip: getClientIp(request),
     details: { source: "dashboard-settings", test: true },
-  }, { bypassDedupe: true });
+  }, { bypassDedupe: true, settings });
 
   void recordStructuredLog({
     level: result.ok ? "success" : "warning",
@@ -45,7 +52,7 @@ export async function POST(request: NextRequest) {
     path: "/api/dashboard/logs/security-test",
     statusCode: result.ok ? 200 : result.status || 400,
     ip: getClientIp(request),
-    details: { ok: result.ok, status: result.status || null, reason: result.reason || null, channelId: result.channelId || null },
+    details: { ok: result.ok, status: result.status || null, reason: result.reason || null, channelId: result.channelId || null, messageId: result.messageId || null },
   });
 
   if (!result.ok) {
@@ -53,6 +60,7 @@ export async function POST(request: NextRequest) {
       security_mirror_disabled: "Спочатку увімкни дублювання Security у Discord і збережи налаштування.",
       security_channel_missing: "Вкажи Discord channel ID для Security-журналу.",
       discord_bot_token_missing: "У dashboard-контейнері немає DISCORD_BOT_TOKEN.",
+      delivery_unconfirmed: "Доставку тесту не підтверджено. Перевір канал Discord перед повторним натисканням.",
       below_min_level: "Тестова подія нижча за вибраний мінімальний рівень.",
     };
     return NextResponse.json({
@@ -63,5 +71,5 @@ export async function POST(request: NextRequest) {
     }, { status: 400, headers: noStoreHeaders() });
   }
 
-  return NextResponse.json({ ok: true, message: "Тестове Security-повідомлення надіслано в Discord.", channelId: result.channelId }, { headers: noStoreHeaders() });
+  return NextResponse.json({ ok: true, message: "Тестове Security-повідомлення надіслано в Discord.", channelId: result.channelId, messageId: result.messageId }, { headers: noStoreHeaders() });
 }

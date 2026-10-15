@@ -5,6 +5,7 @@ import {
   getRuntimeCachedValue,
   setRuntimeCachedValue,
 } from "@/lib/runtimeResilience";
+import { redactLogText } from "@/lib/logPrivacy";
 import type { DashboardSession } from "@/lib/auth";
 
 const CACHE_KEY = "structured-logging-settings-v3";
@@ -61,7 +62,7 @@ function minLevel(value: unknown): SecurityDiscordMinLevel {
   return "warning";
 }
 
-function envSettings(): StructuredLogSettings {
+export function defaultStructuredLogSettings(): StructuredLogSettings {
   return {
     retentionDays: 3,
     maxStorageMb: cleanInteger(process.env.LOG_STORAGE_MAX_MB, 192, 32, 1024),
@@ -105,18 +106,19 @@ async function readDatabaseSettings(): Promise<StructuredLogSettings | null> {
 }
 
 
-export async function getStructuredLogSettings(options: { fresh?: boolean } = {}): Promise<StructuredLogSettings> {
-  if (!hasPostgresConfig()) return envSettings();
+export async function getStructuredLogSettings(options: { fresh?: boolean; strict?: boolean } = {}): Promise<StructuredLogSettings> {
+  if (!hasPostgresConfig()) return defaultStructuredLogSettings();
   if (!options.fresh) {
     const cached = getRuntimeCachedValue<StructuredLogSettings>(CACHE_KEY, CACHE_TTL_MS);
     if (cached) return cached;
   }
   try {
-    const stored = (await readDatabaseSettings()) || envSettings();
+    const stored = (await readDatabaseSettings()) || defaultStructuredLogSettings();
     return setRuntimeCachedValue(CACHE_KEY, stored);
   } catch (error) {
-    console.warn("[structured-logs] settings read failed", error instanceof Error ? error.message : String(error));
-    return envSettings();
+    console.warn("[structured-logs] settings read failed", redactLogText(error instanceof Error ? error.message : String(error)));
+    if (options.strict) throw new Error("Не вдалося прочитати налаштування журналу зі сховища.");
+    return defaultStructuredLogSettings();
   }
 }
 
@@ -129,7 +131,7 @@ export async function updateStructuredLogSettings(input: {
   queryLimit?: unknown;
 }, actor: DashboardSession) {
   if (!hasPostgresConfig()) throw new Error("PostgreSQL для журналу не налаштований.");
-  const current = await getStructuredLogSettings({ fresh: true });
+  const current = await getStructuredLogSettings({ fresh: true, strict: true });
   const owner = Boolean(actor.isServerOwner);
   const next = {
     securityDiscordEnabled: bool(input.securityDiscordEnabled, false),
@@ -152,9 +154,9 @@ export async function updateStructuredLogSettings(input: {
        security_discord_enabled = EXCLUDED.security_discord_enabled,
        security_discord_channel_id = EXCLUDED.security_discord_channel_id,
        security_discord_min_level = EXCLUDED.security_discord_min_level,
-       max_storage_mb = EXCLUDED.max_storage_mb,
+       ${owner ? `max_storage_mb = EXCLUDED.max_storage_mb,
        max_rows = EXCLUDED.max_rows,
-       query_limit = EXCLUDED.query_limit,
+       query_limit = EXCLUDED.query_limit,` : ""}
        updated_at = EXCLUDED.updated_at,
        updated_by = EXCLUDED.updated_by
      RETURNING security_discord_enabled, security_discord_channel_id, security_discord_min_level,

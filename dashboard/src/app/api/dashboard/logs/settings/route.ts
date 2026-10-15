@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
 import { recordAdminAudit } from "@/lib/accessGroups";
-import { updateStructuredLogSettings } from "@/lib/logSettings";
-import { canManageGroups } from "@/lib/permissions";
+import { hasPostgresConfig } from "@/lib/db/pgPool";
+import { getStructuredLogSettings, updateStructuredLogSettings } from "@/lib/logSettings";
+import { canManageGroups, canViewAdminLogs } from "@/lib/permissions";
 import {
   assertRequestBodySize,
   checkRateLimit,
@@ -14,7 +15,7 @@ import {
   verifyTrustedOrigin,
 } from "@/lib/security";
 import { dashboardToastCookie } from "@/lib/serverToasts";
-import { wantsJsonResponse } from "@/lib/apiRoute";
+import { appBaseUrl, wantsJsonResponse } from "@/lib/apiRoute";
 
 export const revalidate = 0;
 export const runtime = "nodejs";
@@ -30,13 +31,13 @@ type ResponseInput = {
 };
 
 function safeAdminRedirectUrl(request: NextRequest) {
-  const fallback = new URL("/dashboard/logs", request.url);
+  const fallback = new URL("/dashboard/logs", appBaseUrl(request));
   const ref = request.headers.get("referer");
   if (!ref) return fallback;
   try {
     const url = new URL(ref);
-    const current = new URL(request.url);
-    if (url.origin !== current.origin || !url.pathname.startsWith("/dashboard/logs")) return fallback;
+    const current = new URL(appBaseUrl(request));
+    if (url.origin !== current.origin || url.pathname !== "/dashboard/logs") return fallback;
     return url;
   } catch {
     return fallback;
@@ -46,6 +47,7 @@ function safeAdminRedirectUrl(request: NextRequest) {
 function responseFor(request: NextRequest, input: ResponseInput) {
   const payload = {
     ok: input.ok,
+    message: input.message || input.title,
     ...(input.data || {}),
     toast: {
       tone: input.tone || (input.ok ? "success" : "error"),
@@ -61,6 +63,17 @@ function responseFor(request: NextRequest, input: ResponseInput) {
   response.headers.set("Cache-Control", "no-store");
   response.headers.append("Set-Cookie", dashboardToastCookie(payload.toast));
   return response;
+}
+
+export async function GET(request: NextRequest) {
+  const session = await getSession();
+  if (!session || !canViewAdminLogs(session)) return responseFor(request, { ok: false, title: "Немає доступу", status: session ? 403 : 401 });
+  try {
+    const settings = await getStructuredLogSettings({ fresh: true, strict: true });
+    return NextResponse.json({ ok: true, settings, configured: hasPostgresConfig(), canEdit: canManageGroups(session), canTuneStorage: Boolean(session.isServerOwner) }, { headers: noStoreHeaders() });
+  } catch {
+    return NextResponse.json({ ok: false, message: "Не вдалося прочитати налаштування журналу зі сховища." }, { status: 503, headers: noStoreHeaders() });
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -82,9 +95,18 @@ export async function POST(request: NextRequest) {
 
   try {
     const form = await request.formData();
+    const invalid = (message: string) => responseFor(request, { ok: false, title: "Перевір налаштування", message, status: 422 });
+    if (!["0", "1"].includes(String(form.get("securityDiscordEnabled")))) return invalid("Потрібен явний стан Discord mirror.");
+    if (!["info", "warning", "error"].includes(String(form.get("securityDiscordMinLevel")))) return invalid("Невідомий мінімальний рівень Security mirror.");
+    if (session.isServerOwner) {
+      for (const [key, min, max] of [["maxStorageMb",32,1024],["maxRows",5000,250000],["queryLimit",50,500]] as const) {
+        const raw = String(form.get(key) ?? ""); const value = Number(raw);
+        if (!/^\d+$/.test(raw) || !Number.isInteger(value) || value < min || value > max) return invalid(`${{ maxStorageMb: "Ліміт таблиці", maxRows: "Максимум записів", queryLimit: "Рядків у браузері" }[key]} має бути цілим числом від ${min} до ${max}.`);
+      }
+    }
     const mirrorEnabled = String(form.get("securityDiscordEnabled") || "").trim() === "1";
     const mirrorChannelId = String(form.get("securityDiscordChannelId") || "").trim();
-    if (mirrorEnabled && !/^\d{16,25}$/.test(mirrorChannelId)) {
+    if (mirrorChannelId && !/^\d{16,25}$/.test(mirrorChannelId) || mirrorEnabled && !mirrorChannelId) {
       return responseFor(request, {
         ok: false,
         title: "Не вказано Security-канал",

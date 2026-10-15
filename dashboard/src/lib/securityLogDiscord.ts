@@ -1,6 +1,7 @@
 import "server-only";
 
-import { getStructuredLogSettings } from "@/lib/logSettings";
+import { redactLogText } from "@/lib/logPrivacy";
+import { getStructuredLogSettings, type StructuredLogSettings } from "@/lib/logSettings";
 
 export type SecurityMirrorLog = {
   id: string;
@@ -22,6 +23,7 @@ export type SecurityMirrorResult = {
   status?: number;
   reason?: string;
   channelId?: string;
+  messageId?: string;
 };
 
 const SECURITY_MIRROR_DEDUPE_MS = 20_000;
@@ -61,7 +63,7 @@ function discordColor(level: string) {
 }
 
 function cleanText(value: unknown, max = 900) {
-  return String(value ?? "").replace(/\s+/g, " ").trim().slice(0, max);
+  return redactLogText(value).replace(/\s+/g, " ").trim().slice(0, max);
 }
 
 function compactDetails(details: Record<string, unknown> | undefined) {
@@ -76,7 +78,7 @@ function compactDetails(details: Record<string, unknown> | undefined) {
 
 export async function mirrorSecurityLogToDiscordDetailed(
   log: SecurityMirrorLog,
-  options: { bypassDedupe?: boolean } = {},
+  options: { bypassDedupe?: boolean; settings?: StructuredLogSettings } = {},
 ): Promise<SecurityMirrorResult> {
   // Discord deliberately sends correctly-formed interaction requests with an
   // invalid Ed25519 signature as a routine endpoint security check.  The bot
@@ -90,8 +92,9 @@ export async function mirrorSecurityLogToDiscordDetailed(
     return { ok: false, skipped: true, reason: "routine_discord_signature_probe" };
   }
 
-  const settings = await getStructuredLogSettings().catch(() => null);
-  if (!settings?.securityDiscordEnabled) {
+  const settings = options.settings || await getStructuredLogSettings({ strict: true }).catch(() => null);
+  if (!settings) return { ok: false, skipped: true, reason: "settings_unavailable" };
+  if (!settings.securityDiscordEnabled) {
     return { ok: false, skipped: true, reason: "security_mirror_disabled" };
   }
   if (!settings.securityDiscordChannelId) {
@@ -121,6 +124,7 @@ export async function mirrorSecurityLogToDiscordDetailed(
   try {
     const response = await fetch(`https://discord.com/api/v10/channels/${settings.securityDiscordChannelId}/messages`, {
       method: "POST",
+      signal: AbortSignal.timeout(8_000),
       headers: {
         authorization: `Bot ${token}`,
         "content-type": "application/json",
@@ -144,10 +148,15 @@ export async function mirrorSecurityLogToDiscordDetailed(
       console.warn("[structured-logs] security Discord mirror failed", response.status, reason);
       return { ok: false, status: response.status, reason, channelId: settings.securityDiscordChannelId };
     }
-    return { ok: true, status: response.status, channelId: settings.securityDiscordChannelId };
+    const message = await response.json().catch(() => null) as { id?: unknown; channel_id?: unknown } | null;
+    if (typeof message?.id !== "string" || !/^\d{16,25}$/.test(message.id) || message.channel_id !== settings.securityDiscordChannelId) {
+      return { ok: false, reason: "delivery_unconfirmed", channelId: settings.securityDiscordChannelId };
+    }
+    return { ok: true, status: response.status, channelId: settings.securityDiscordChannelId, messageId: message.id };
   } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error);
-    console.warn("[structured-logs] security Discord mirror failed", reason);
+    const reason = "delivery_unconfirmed";
+    const diagnostic = cleanText(error instanceof Error ? error.message : String(error), 240);
+    console.warn("[structured-logs] security Discord mirror failed", diagnostic);
     return { ok: false, reason, channelId: settings.securityDiscordChannelId };
   }
 }

@@ -8,7 +8,8 @@ import { buildPageMetadata } from "@/lib/seo";
 import { getSession } from "@/lib/auth";
 import { canManageGroups, canViewAdminLogs } from "@/lib/permissions";
 import { getStructuredLogOverview, listStructuredLogs } from "@/lib/structuredLogs";
-import { getStructuredLogSettings } from "@/lib/logSettings";
+import { hasPostgresConfig } from "@/lib/db/pgPool";
+import { defaultStructuredLogSettings, getStructuredLogSettings } from "@/lib/logSettings";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -32,11 +33,12 @@ export default async function AdminLogsPage() {
     throw new Error("Access denied");
   }
 
-  const [items, overview, settings] = await Promise.all([
+  const [items, overview, loadedSettings] = await Promise.all([
     listStructuredLogs({ limit: 100, sinceHours: 24 }),
     getStructuredLogOverview(24),
-    getStructuredLogSettings(),
+    getStructuredLogSettings({ fresh: true, strict: true }).catch(() => null),
   ]);
+  const settings = loadedSettings || defaultStructuredLogSettings();
   const initialNow = new Date().toISOString();
   const canEdit = canManageGroups(user);
   const canTuneStorage = Boolean(user.isServerOwner);
@@ -66,6 +68,8 @@ export default async function AdminLogsPage() {
           initialSettings={settings}
           canEdit={canEdit}
           canTuneStorage={canTuneStorage}
+          configured={hasPostgresConfig()}
+          initialError={loadedSettings ? "" : "Не вдалося прочитати налаштування журналу. Онови їх перед зміною."}
         />
       </section>
     </main>
