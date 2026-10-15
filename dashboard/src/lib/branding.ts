@@ -6,7 +6,7 @@ export type GuildBranding = {
 };
 
 const FALLBACK_GUILD_NAME = "Mistblossom Vanguard";
-const FALLBACK_GUILD_ICON = "/favicon.ico";
+const FALLBACK_GUILD_ICON = "/android-chrome-192x192.png";
 
 let cachedBranding: {
   value: GuildBranding;

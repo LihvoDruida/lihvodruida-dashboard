@@ -9,7 +9,14 @@ const layout = read("src/app/styles/layout.css");
 const redirects = read("src/lib/dashboardRedirects.ts");
 const discordStart = read("src/app/api/auth/discord/start/route.ts");
 
+const video = read("src/components/LoginBackground.tsx");
+const playback = read("src/lib/loginVideoBackground.ts");
 const checks = [
+  ["login mounts the rotating template background", page.includes("<LoginBackground />") && video.includes("mountLoginVideoBackground")],
+  ["all three original MP4 sources remain explicit", ["Hyjal02.mp4", "Zephras_01.mp4", "WowF_TheBarrens_01.mp4"].every(name => playback.includes(name))],
+  ["background videos are silent inline decorative media", video.includes("muted playsInline") && video.includes('preload="auto"') && video.includes('aria-hidden="true"') && !video.includes("<iframe")],
+  ["template fade timings and cover geometry are retained", css.includes("transition: opacity 1.6s") && css.includes("transition: opacity 1s") && css.includes("scale(1.06)") && css.includes("scale(1.12)")],
+  ["loading failures, visibility and motion policy have explicit handling", playback.includes("visibilitychange") && playback.includes("saveData") && playback.includes("prefers-reduced-motion") && playback.includes("PLAYBACK_DEADLINE_MS = 15_000")],
   ["login remains a centered single-shell layout", page.includes('className="login-screen"') && page.includes('className="login-shell"') && css.includes("place-items: center")],
   ["WoW-inspired frame stays compact and single-surface", page.includes("login-shell__corner--tl") && page.includes("login-title-divider") && css.includes(".login-shell__corner") && css.includes("width: min(460px, 100%)") && !css.includes(".login-shell::before")],
   ["login no longer renders a second decorative backdrop layer", !page.includes("login-screen__backdrop") && !page.includes("login-glow") && !page.includes("login-grid") && !page.includes("login-ornament")],

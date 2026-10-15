@@ -1,3 +1,4 @@
+import LoginBackground from "@/components/LoginBackground";
 import { getSession } from "@/lib/auth";
 import { getGuildBranding } from "@/lib/branding";
 import { redirect } from "next/navigation";
@@ -133,6 +134,7 @@ export default async function LoginPage({
 
   return (
     <main className="login-screen">
+      <LoginBackground />
       <section className="login-shell" aria-labelledby="login-title">
         <span className="login-shell__corner login-shell__corner--tl" aria-hidden="true" />
         <span className="login-shell__corner login-shell__corner--tr" aria-hidden="true" />

@@ -963,14 +963,20 @@ body:has(.login-screen) .app-footer--site-wide {
   min-height: 100svh;
   width: 100%;
   padding: max(36px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(36px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
-  background:
-    linear-gradient(180deg, rgba(6, 12, 30, .48), rgba(6, 12, 30, .35) 45%, rgba(6, 12, 30, .8)),
-    url("/assets/img/auth/forever-landscape.avif") center / cover no-repeat,
-    #0c1734;
+  overflow: hidden;
+  background: #0c1734;
 }
+.login-background { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.login-background-poster { position: absolute; inset: 0; background: url("/assets/img/auth/forever-landscape.avif") center / cover no-repeat; transform: scale(1.06); }
+.login-background-video { position: absolute; inset: 0; opacity: 0; transition: opacity 1.6s; }
+.login-background.is-on .login-background-video { opacity: 1; }
+.login-background-video video { position: absolute; top: 50%; left: 50%; width: 100%; height: 100%; max-width: none; object-fit: cover; transform: translate(-50%, -50%) scale(1.12); opacity: 0; transition: opacity 1s; }
+.login-background-video video.is-shown { opacity: 1; }
+.login-background::after { content: ""; position: absolute; inset: 0; background: radial-gradient(60% 45% at 50% 68%, rgba(6, 12, 30, .55) 0%, transparent 100%), radial-gradient(120% 80% at 50% 40%, transparent 35%, rgba(6, 12, 30, .75) 100%), linear-gradient(to bottom, rgba(6, 12, 30, .55) 0%, transparent 22%, transparent 45%, rgba(12, 23, 52, .92) 88%, #0c1734 100%); }
 
 .login-shell {
   position: relative;
+  z-index: 1;
   width: min(460px, 100%);
   padding: clamp(28px, 4vw, 42px) clamp(22px, 4vw, 36px);
   border: 1px solid rgba(216, 178, 94, .65);
@@ -1111,7 +1117,7 @@ body:has(.login-screen) .app-footer--site-wide {
 @media (max-width: 640px) {
   .login-screen {
     padding: max(24px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
-    background-position: center, 47% center;
+
   }
   .login-shell { padding: 28px 22px; }
   .login-content { gap: 18px; }
@@ -1138,6 +1144,8 @@ body:has(.login-screen) .app-footer--site-wide {
 
 @media (prefers-reduced-motion: reduce) {
   .login-discord-button { transition: none; }
+  .login-background-video { display: none; transition: none; }
+  .login-background-video video { transition: none; }
 }
 
 .app-state-page {
