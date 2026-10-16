@@ -7,7 +7,6 @@ const profiles = read('dashboard/src/lib/profiles.ts');
 const roster = read('dashboard/src/lib/guildRoster.ts');
 const raids = read('dashboard/src/lib/characterRaidProgress.ts');
 const explorer = read('dashboard/src/components/GuildRosterExplorer.tsx');
-const resolver = read('dashboard/src/lib/raidSeasonResolver.ts');
 const checks = [
   ['guild and external character databases are separate', store.includes('guildCharacterData') && store.includes('externalCharacterData')],
   ['guild canonical records delete parallel external copies', store.includes('batch.delete(canonicalDoc("external", member.key))')],
@@ -23,9 +22,24 @@ const checks = [
   ['guild roster UI no longer uses first raid/tier heuristic directly', !explorer.includes('raids.find((raid) => /^tier-/i.test(raid.slug)) || raids[0]')],
   ['guild roster UI uses server season snapshot', explorer.includes('liveStats.raidSeasonSnapshot') && explorer.includes('primaryCurrentRaidProgress')],
   ['raid filters are limited to current season', explorer.includes('currentSeasonRaidProgress(normalizedRaidProgress(member), liveStats.raidSeasonSnapshot)')],
-  ['season resolver has upstream fallback mapping', resolver.includes('battleNetNames') && resolver.includes('currentSeason.raids = Array.from(new Set(fallback.map')],
   ['raid season metadata is shared through the canonical data layer', store.includes('characterDataMeta') && store.includes('writeCharacterRaidSeasonSnapshot') && profiles.includes('readCharacterRaidSeasonSnapshot')],
 ];
+// Exercise the actual resolver: a source-text check tied to the removed v1
+// fallback names rejected the correct v2 implementation during Docker build.
+(async () => {
+const fixture = require('./lib/raid-season-fixture.cjs')();
+const snapshot = await fixture.resolver.resolveRaidSeasonSnapshot();
+checks.push(['launch-week raids remain in their corresponding historical seasons',
+  snapshot?.seasons.find(season => season.id === 'mn-1')?.raids.includes('tier-mn-1') &&
+  snapshot?.seasons.find(season => season.id === 'tww-1')?.raids.includes('nerubar-palace')]);
+fixture.clock(8 * 86400000);
+fixture.mode('outage');
+const cached = await fixture.resolver.resolveRaidSeasonSnapshot({previous:snapshot});
+checks.push(['upstream outage retains the last season mapping and its observation age',
+  !!snapshot && cached?.source === 'cached' && cached.partial === true &&
+  cached.detectedAt === snapshot.detectedAt && cached.currentSeasonId === snapshot.currentSeasonId &&
+  JSON.stringify(cached.catalog) === JSON.stringify(snapshot.catalog) &&
+  JSON.stringify(cached.seasons) === JSON.stringify(snapshot.seasons)]);
 let failed = 0;
 for (const [name, ok] of checks) {
   console.log(`${ok ? '✓' : '✗'} ${name}`);
@@ -33,3 +47,5 @@ for (const [name, ok] of checks) {
 }
 if (failed) process.exit(1);
 console.log(`[check-character-data] OK — ${checks.length}/${checks.length}`);
+
+})().catch(error => { console.error('[check-character-data]', error); process.exitCode = 1; });

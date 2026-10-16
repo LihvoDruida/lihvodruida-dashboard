@@ -98,6 +98,14 @@ function hasOnlyVercelCrons() {
 }
 
 const packageJsonText = read('package.json');
+const packageScripts = JSON.parse(packageJsonText).scripts || {};
+const namedChecks = command => [...String(command || '').matchAll(/npm run (check:[a-z0-9-]+)/g)].map(match => match[1]);
+const verifyChecks = new Set(namedChecks(packageScripts.verify));
+// Standalone validation requires a completed build and belongs after build:ci.
+for (const name of namedChecks(packageScripts['build:ci']).filter(name => name !== 'check:standalone')) {
+  assert(verifyChecks.has(name), `verify must include the Docker build:ci check ${name}`);
+}
+
 warn(!exists('vercel.json') || hasOnlyVercelCrons(), 'vercel.json should contain only crons; keep framework/build/output auto-detected by Vercel.');
 warn(!exists('.nvmrc') && !exists('.node-version'), 'Node version should be selected in Vercel Project Settings, not pinned by .nvmrc or .node-version.');
 warn(!/"engines"\s*:/.test(packageJsonText), 'package.json should not pin engines when the project intentionally follows Vercel Project Settings Node.js version.');

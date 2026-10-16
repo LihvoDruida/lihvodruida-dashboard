@@ -1,4 +1,6 @@
-# Mistblossom Dashboard 3.13.0
+# Mistblossom Dashboard 3.13.1
+
+Виправлення збірки 3.13.1: [CHARACTER_DATA_CI_HOTFIX_2026-10-16_UA.md](docs/CHARACTER_DATA_CI_HOTFIX_2026-10-16_UA.md). Поведінкова перевірка сезонів і однаковий набір check-перевірок у verify та Docker build:ci.
 
 Поточний парний реліз: історія сезонів — [RAID_HISTORY_SYNC_2026-10-16_UA.md](docs/RAID_HISTORY_SYNC_2026-10-16_UA.md). Встановити Dashboard 3.13.0 перед Site 4.3.0.
 
