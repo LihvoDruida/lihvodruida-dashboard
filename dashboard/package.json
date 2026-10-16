@@ -1,6 +1,6 @@
 {
   "name": "lihvodruida-dashboard",
-  "version": "3.13.1",
+  "version": "3.13.3",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
@@ -75,7 +75,7 @@
     "check:security-stage3-independent": "node scripts/check-security-stage3-independent.cjs",
     "check:security-stage4-independent": "node scripts/check-security-stage4-independent.cjs && node scripts/check-security-stage4-routes.cjs",
     "check:guild-banner": "node scripts/check-guild-banner.cjs",
-    "check:discord-member-cleanup": "node scripts/check-discord-member-cleanup.cjs",
+    "check:discord-member-cleanup": "node scripts/check-discord-member-cleanup.cjs && node scripts/check-cleanup-role-safety.cjs",
     "check:discord-rest": "node scripts/check-discord-rest.cjs",
     "check:pg-transactions": "node scripts/check-pg-transactions.cjs",
     "test:db": "node scripts/test-document-store-pg.cjs",

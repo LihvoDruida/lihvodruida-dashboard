@@ -127,7 +127,7 @@ export default function DiscordMemberCleanupPanel({ initial, initialTab = "candi
           <span className={`status-pill ${settings.enabled ? "warning" : "good"}`}>{settings.enabled ? "Автоматично" : "На паузі"}</span>
           {(settings.enabled || (mutation === "settings" && enabled)) && canConfigure ? <button type="button" className="btn subtle" disabled={mutation === "pause"} onClick={(event) => void action("pause", event.currentTarget)}>{mutation === "pause" ? "Призупиняю…" : "Призупинити"}</button> : null}
         </div>
-        <p className="discord-cleanup-intro">У списку — люди без ролей або з <strong>лише однією вибраною роллю</strong>. Будь-яка додаткова роль захищає від цього правила. Боти ігноруються.</p>
+        <p className="discord-cleanup-intro">У списку — люди без ролей або з <strong>лише однією вибраною роллю</strong>. Будь-яка додаткова роль захищає від цього правила. Боти ігноруються. Неповні дані або зміна ролей зупиняють виключення.</p>
         <form data-toast-managed="true" data-dirty={dirty ? "true" : "false"} onSubmit={(event) => { event.preventDefault(); void action("settings", (event.nativeEvent as SubmitEvent).submitter); }}>
           <fieldset disabled={!canConfigure || Boolean(mutation)}>
             <div className="discord-cleanup-fields">

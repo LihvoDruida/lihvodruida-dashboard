@@ -16,8 +16,8 @@ function load(text, modules = {}, globals = {}) {
   });
   return exports;
 }
-function fixture(fetch) {
-  const rest = load(source('discordRest'), {}, { fetch });
+function fixture(fetch, globals = {}) {
+  const rest = load(source('discordRest'), {}, { fetch, ...globals });
   const admin = load(source('discordAdmin'), {
     '@/lib/discordRest': rest, '@/lib/concurrency': {}, '@/lib/rulesOnboarding': {}, '@/lib/security': { logDashboardEvent() {} },
     '@/lib/values': { cleanSnowflake: value => /^\d{16,25}$/.test(String(value)) ? String(value) : '' }, '@/lib/discordAvatar': {}, '@/lib/discordRulesStats': {},
@@ -109,6 +109,20 @@ const A = '111111111111111111'; const B = '222222222222222222';
     const { rest } = fixture(() => { calls++; return json({}); }); const controller = new AbortController();
     await assert.rejects(rest.discordRestRequest(`/guilds/${A}/members/${B}`, { method: 'DELETE', signal: controller.signal }, { token: 'test-only-token', timeoutMs: 1000, retryNever: true, beforeSend: async () => { controller.abort(); }, onDispatch: () => { dispatched = true; } }));
     assert.equal(calls, 0); assert.equal(dispatched, false);
+  });
+  await test('cleanup revalidation can GET with concurrency=1 and a shared GET/DELETE bucket', async () => {
+    const calls = [], headers = { 'x-ratelimit-bucket': 'same-members-bucket' };
+    const { admin } = fixture((url, init) => {
+      const method = init.method || 'GET'; calls.push(method);
+      return method === 'GET' ? json({ user: { id: B }, roles: [], joined_at: '2020-01-01T00:00:00Z' }, 200, headers) : new Response(null, { status: 204, headers });
+    }, { process: { env: { DISCORD_REST_CONCURRENCY: '1' } } });
+    await admin.fetchDiscordCleanupMemberSnapshot(B, A);
+    await admin.kickDiscordCleanupMember(A, B, 'controlled bucket warmup');
+    let verified = false;
+    await admin.kickDiscordCleanupMember(A, B, 'controlled revalidation', async () => { assert.equal(verified, true); }, undefined, async () => {
+      const member = await admin.fetchDiscordCleanupMemberSnapshot(B, A); assert.equal(member.roleIds.length, 0); verified = true;
+    });
+    assert.deepEqual(calls, ['GET', 'DELETE', 'GET', 'DELETE']);
   });
   await test('welcome nonce survives retries and changes for a rejoin or delivery purpose', async () => {
     const { discordMembershipMessageNonce: nonce } = load(source('discordMessageNonce'));

@@ -33,7 +33,9 @@ export function cleanupDeadline(joinedAt: string | null | undefined, period: Dis
   return date.toISOString();
 }
 export function hasOnlyCleanupRole(member: CleanupMember, selectedRoleId: string, guildId: string) {
-  if (!selectedRoleId || selectedRoleId === guildId || member.bot) return false;
+  if (!/^\d{16,25}$/.test(selectedRoleId) || !/^\d{16,25}$/.test(guildId) || selectedRoleId === guildId || member.bot) return false;
+  // Missing or malformed role data must never mean "no roles".
+  if (!Array.isArray(member.roleIds) || Array.from(member.roleIds).some((id) => typeof id !== "string" || !/^\d{16,25}$/.test(id)) || new Set(member.roleIds).size !== member.roleIds.length) return false;
   const roles = member.roleIds.filter((id) => id !== guildId);
   return roles.length === 0 || (roles.length === 1 && roles[0] === selectedRoleId);
 }
@@ -54,7 +56,7 @@ export function evaluateCleanupMember(member: CleanupMember, roleId: string, per
   else if (!control.canKick) blockedReason = "Боту потрібен дозвіл «Виключати учасників» (Kick Members).";
   else if (!control.botTopRole || control.botTopRole.position <= 0) blockedReason = "Боту потрібна окрема роль вище ролей учасників.";
   else {
-    for (const id of member.roleIds.filter((id) => id !== control.guildId)) {
+    for (const id of (Array.isArray(member.roleIds) ? member.roleIds : []).filter((id) => id !== control.guildId)) {
       const role = control.roles.find((item) => item.id === id);
       if (!role) { blockedReason = "Не вдалося перевірити роль учасника."; break; }
       const reason = cleanupRoleBlockedReason(role, control);

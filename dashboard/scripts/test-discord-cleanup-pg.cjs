@@ -34,7 +34,7 @@ const discord = {
   getDiscordGuildId: () => guild,
   fetchDiscordCleanupControl: async () => { await beforeControl?.(); return verifiedControl; },
   fetchDiscordCleanupMemberPage: async (after, size) => { const page = members.filter(m => BigInt(m.userId) > BigInt(after)).slice(0, size); return { members: page, after: page.at(-1)?.userId || after, complete: page.length < size }; },
-  fetchDiscordGuildMemberSnapshot: async id => { await beforeMember?.(); return members.find(m => m.userId === id); },
+  fetchDiscordCleanupMemberSnapshot: async id => { await beforeMember?.(); return members.find(m => m.userId === id); },
   kickDiscordCleanupMember: async (...args) => { await beforeDispatch?.(); return actualAdmin.kickDiscordCleanupMember(...args); },
 };
 const service = load(process.env.TEST_CLEANUP_SOURCE || 'src/lib/discordMemberCleanup.ts', { '@/lib/automationLease': leases, '@/lib/storageAccess': access, '@/lib/documentDb': adminDb, '@/lib/discordAdmin': discord, '@/lib/discordCleanupPolicy': policy, '@/lib/security': { logDashboardEvent() {} } }, globals).exports;
@@ -111,9 +111,9 @@ async function check(name, fn) { await fn(); passed++; console.log('✓ ' + name
     await executionRef.set({ inFlight: { attemptId: completed.attemptId, operationId: completed.id, userId: completed.userId, displayName: completed.displayName, startedAt: completed.attemptedAt } }, { merge: true });
     await service.runDiscordMemberCleanup(); const overview = await service.getDiscordCleanupOverview(); assert.equal(requests.length, 1); assert.equal(overview.state.kickedTotal, 1); assert.equal(overview.execution.inFlight, null);
   });
-  await check('long queue wait invalidates the membership check before any DELETE', async () => {
+  await check('long initial queue wait gets a new membership check before DELETE', async () => {
     await reset(1); beforeDispatch = async () => { clockOffset += 6000; }; const result = await service.runDiscordMemberCleanup();
-    assert.equal(requests.length, 0); assert.equal(result.failed, 0); assert.equal((await service.listDiscordCleanupMembers('uncertain')).rows.length, 0);
+    assert.equal(requests.length, 1); assert.equal(result.failed, 0); assert.equal((await service.listDiscordCleanupMembers('uncertain')).rows.length, 0);
   });
   console.log(`[test-discord-cleanup-pg] OK — ${passed} real PostgreSQL/worker/REST scenarios; no live Discord requests`);
 })().catch(e => { console.error(e); process.exitCode = 1; }).finally(async () => { if (!child) await pool.query('DROP SCHEMA IF EXISTS ' + schema + ' CASCADE').catch(() => {}); await pool.end(); });

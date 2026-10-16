@@ -14,7 +14,7 @@ class TestDate extends Date { constructor(...args) { super(...(args.length ? arg
 function load(relative, modules, globals = {}, transform = (source) => source) {
   const source = ts.transpileModule(transform(fs.readFileSync(path.join(root, relative), 'utf8')), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
   const exports = {};
-  vm.runInNewContext(source, { exports, require: (name) => { if (name === 'server-only') return {}; if (name === 'node:crypto') return crypto; if (!(name in modules)) throw new Error(`Unexpected import: ${name}`); return modules[name]; }, Date: TestDate, setInterval, clearInterval, console, Map, Set, Promise, ...globals }, { filename: relative });
+  vm.runInNewContext(source, { exports, require: (name) => { if (name === 'server-only') return {}; if (name === 'node:crypto') return crypto; if (name === 'node:perf_hooks') return require(name); if (!(name in modules)) throw new Error(`Unexpected import: ${name}`); return modules[name]; }, Date: TestDate, setInterval, clearInterval, console, Map, Set, Promise, ...globals }, { filename: relative });
   return exports;
 }
 function memoryStore() {
@@ -43,7 +43,7 @@ const control = { guildId, ownerId: '999999999999999999', botId: '88888888888888
 const member = (i, roles = [], joinedAt = '2026-01-01T12:00:00Z') => ({ userId: String(500000000000000000n + BigInt(i)), displayName: `Учасник ${i}`, roleIds: roles, joinedAt, bot: false });
 const evaluate = (m, c = control, period = 'week') => policy.evaluateCleanupMember(m, roleId, period, c, clock);
 async function fixture(members) {
-  const db = memoryStore(); let writable = true; let liveControl = control; let kickError = null; let readMutation = null; let pageFailure = null; const kicks = [];
+  const db = memoryStore(); let writable = true; let liveControl = control; let kickError = null; let readMutation = null; let pageFailure = null; let queuedMutation = null; const kicks = [];
   const apiCalls = { control: 0, pages: 0, members: 0 };
   const access = { assertStorageWriteAvailable: () => { if (!writable) throw new Error('read-only'); } };
   const leases = load('src/lib/automationLease.ts', { '@/lib/documentDb': { getDocumentDb: () => db }, '@/lib/storageAccess': access });
@@ -51,18 +51,19 @@ async function fixture(members) {
     getDiscordGuildId: () => guildId,
     fetchDiscordCleanupControl: async () => { apiCalls.control++; return liveControl; },
     fetchDiscordCleanupMemberPage: async (after, size) => { apiCalls.pages++; if (pageFailure) throw new Error(pageFailure); const page = members.filter((m) => BigInt(m.userId) > BigInt(after)).slice(0, size); return { members: page, after: page.at(-1)?.userId || after, complete: page.length < size }; },
-    fetchDiscordGuildMemberSnapshot: async (id) => { apiCalls.members++; const m = members.find((value) => value.userId === id); if (!m) throw new Error('Discord API 404: Unknown Member'); return readMutation ? readMutation(m) : m; },
-    kickDiscordCleanupMember: async (guild, id, reason, beforeSend, onDispatch) => { await beforeSend?.(); onDispatch?.(); check(guild === guildId && reason.includes('Guild cleanup'), 'kick guild and audit reason'); kicks.push(id); if (kickError) throw new Error(kickError); members = members.filter((m) => m.userId !== id); },
+    fetchDiscordCleanupMemberSnapshot: async (id) => { apiCalls.members++; const m = members.find((value) => value.userId === id); if (!m) throw new Error('Discord API 404: Unknown Member'); return readMutation ? readMutation(m) : m; },
+    kickDiscordCleanupMember: async (guild, id, reason, beforeSend, onDispatch, prepareSend) => { if (queuedMutation) members = members.map(queuedMutation); await prepareSend?.(); await beforeSend?.(); onDispatch?.(); check(guild === guildId && reason.includes('Guild cleanup'), 'kick guild and audit reason'); kicks.push(id); if (kickError) throw new Error(kickError); members = members.filter((m) => m.userId !== id); },
   };
   const service = load('src/lib/discordMemberCleanup.ts', { '@/lib/automationLease': leases, '@/lib/storageAccess': access, '@/lib/documentDb': { getDocumentDb: () => db }, '@/lib/discordAdmin': discord, '@/lib/discordCleanupPolicy': policy, '@/lib/security': { logDashboardEvent: () => {} } });
   await service.saveDiscordCleanupSettings({ enabled: false, roleId, period: 'week' }, 'owner');
-  return { db, service, leases, kicks, apiCalls, writable: (v) => { writable = v; }, control: (v) => { liveControl = v; }, kickError: (v) => { kickError = v; }, readMutation: (v) => { readMutation = v; }, pageFailure: (v) => { pageFailure = v; }, enable: () => service.saveDiscordCleanupSettings({ enabled: true, roleId, period: 'week' }, 'owner') };
+  return { db, service, leases, kicks, apiCalls, writable: (v) => { writable = v; }, control: (v) => { liveControl = v; }, kickError: (v) => { kickError = v; }, readMutation: (v) => { readMutation = v; }, pageFailure: (v) => { pageFailure = v; }, queuedMutation: (v) => { queuedMutation = v; }, enable: () => service.saveDiscordCleanupSettings({ enabled: true, roleId, period: 'week' }, 'owner') };
 }
 async function main() {
   check(evaluate(member(1)).eligible, 'no roles qualifies');
   check(evaluate(member(1, [roleId])).eligible, 'exactly selected role qualifies');
   check(evaluate(member(1, [guildId, roleId])).eligible, '@everyone does not count');
-  for (const roles of [[roleId, extraId], [extraId], [roleId, roleId]]) check(!evaluate(member(1, roles)).matches, 'strict role cardinality');
+  for (const roles of [[roleId, extraId], [extraId, roleId], [roleId, extraId, guildId], [extraId], [roleId, roleId], [null], [roleId, "invalid"], [guildId, guildId], Array(1)]) check(!evaluate(member(1, roles)).matches, 'strict role cardinality');
+  check(!policy.hasOnlyCleanupRole(member(1), 'invalid', guildId), 'invalid selected role never authorizes roleless members');
   check(!evaluate({ ...member(1), bot: true }).matches, 'bots excluded');
   check(!evaluate({ ...member(1), userId: control.ownerId }).eligible, 'owner protected');
   check(!evaluate(member(1), { ...control, canKick: false }).eligible, 'permission loss fails closed');
@@ -88,6 +89,13 @@ async function main() {
   await f.service.runDiscordMemberCleanup(); check(f.kicks.length === 2, 'successful actions never replayed');
   check((await f.service.getDiscordCleanupOverview()).state.kickedTotal === 2, 'exact persistent count');
   f = await fixture([member(1)]); await f.enable(); f.readMutation((m) => ({ ...m, roleIds: [roleId, extraId] })); await f.service.runDiscordMemberCleanup(); check(!f.kicks.length, 'role changed before kick protected');
+  for (const changed of [{ roleIds: [roleId, extraId] }, { roleIds: [extraId, roleId] }, { joinedAt: '2026-10-10T00:00:00Z' }, { bot: true }, { roleIds: undefined }]) {
+    f = await fixture([member(1, [roleId])]); await f.enable(); f.queuedMutation((m) => ({ ...m, ...changed }));
+    const stopped = await f.service.runDiscordMemberCleanup();
+    check(!f.kicks.length && !stopped.failed, 'membership changed during queue wait: no destructive request');
+    check((await f.service.listDiscordCleanupMembers('uncertain')).rows.length === 0, 'cancelled queue work has no uncertain receipt');
+  }
+  check(!evaluate({ ...member(1), roleIds: undefined }).eligible, 'missing role data never means no roles');
   f = await fixture([member(1)]); await f.enable(); f.readMutation((m) => ({ ...m, joinedAt: '2026-10-10T00:00:00Z' })); await f.service.runDiscordMemberCleanup(); check(!f.kicks.length, 'rejoin resets eligibility');
   f = await fixture([member(1, [roleId])]); await f.enable(); f.readMutation((m) => ({ ...m, roleIds: [] })); await f.service.runDiscordMemberCleanup();
   check((await f.service.listDiscordCleanupMembers('kicked')).rows[0].roleName === 'Без ролей', 'history records fresh role at kick time');

@@ -298,6 +298,7 @@ type DiscordRequestInit = Omit<RequestInit, "headers"> & {
   expectedStatuses?: number[];
   retry?: "never";
   beforeSend?: () => Promise<void>;
+  prepareSend?: () => Promise<void>;
   onDispatch?: () => void;
 };
 
@@ -358,7 +359,7 @@ const discordMetadataReads = new Map<string, Promise<unknown>>();
 export async function discordApi<T = any>(path: string, init: DiscordRequestInit = {}): Promise<T> {
   const token = getBotToken();
   if (!token) throw new DiscordRestError("Discord bot token не налаштований. Дії з ролями, ніками та учасниками не можуть виконуватись напряму через Discord API.", 401);
-  const { auditReason, expectedStatuses = [], headers: inputHeaders, retry, beforeSend, onDispatch, ...requestInit } = init;
+  const { auditReason, expectedStatuses = [], headers: inputHeaders, retry, beforeSend, prepareSend, onDispatch, ...requestInit } = init;
   const method = String(requestInit.method || "GET").toUpperCase();
   const headers = new Headers(inputHeaders || {});
   headers.set("Authorization", `Bot ${token}`);
@@ -381,7 +382,7 @@ export async function discordApi<T = any>(path: string, init: DiscordRequestInit
   }
   const request = async () => {
     const result = await discordRestRequest<T>(path, { ...requestInit, headers }, {
-      token, retryNever: retry === "never", deduplicatedMessage, beforeSend, onDispatch, timeoutMs: discordApiTimeoutMs(method),
+      token, retryNever: retry === "never", deduplicatedMessage, beforeSend, prepareSend, onDispatch, timeoutMs: discordApiTimeoutMs(method),
       onFailure: (status, detail, attempt) => {
         const telemetry = { method, path: sanitizeDiscordApiPath(path), status, detail, attempt };
         if (expectedStatuses.includes(status)) logDashboardEvent("debug", "discord.api.expected_response", undefined, telemetry);
@@ -1903,6 +1904,22 @@ export async function fetchDiscordCleanupMemberPage(after = "0", limit = 200) {
   return { members, after: next, complete: raw.length < size };
 }
 
+/** Strict, uncached membership read for destructive cleanup; never filter or truncate roles. */
+export async function fetchDiscordCleanupMemberSnapshot(userIdInput: string, guildIdInput = getDiscordGuildId()): Promise<import("@/lib/discordCleanupPolicy").CleanupMember> {
+  const userId = cleanSnowflake(userIdInput), guildId = cleanSnowflake(guildIdInput);
+  if (!userId || !guildId) throw new Error("Некоректний ID для перевірки очищення.");
+  const member = await discordApi<any>(`/guilds/${guildId}/members/${userId}`, { expectedStatuses: [404] });
+  if (member?.user?.id !== userId || !Array.isArray(member?.roles) ||
+      member.roles.some((id: unknown) => typeof id !== "string" || !/^\d{16,25}$/.test(id)) ||
+      (member.user.bot !== undefined && typeof member.user.bot !== "boolean")) {
+    throw new Error("Discord повернув неповні дані учасника або ролей. Виключення заблоковано.");
+  }
+  return {
+    userId, displayName: cleanText(member.nick || member.user.global_name || member.user.username, 100) || "Discord",
+    bot: member.user.bot === true, roleIds: [...member.roles], joinedAt: cleanText(member.joined_at, 80) || null,
+  };
+}
+
 /** Unlike role management, kicking needs KICK_MEMBERS, not MANAGE_ROLES. */
 export async function fetchDiscordCleanupControl(): Promise<import("@/lib/discordCleanupPolicy").CleanupControl> {
   const guildId = getDiscordGuildId();
@@ -1919,9 +1936,9 @@ export async function fetchDiscordCleanupControl(): Promise<import("@/lib/discor
 }
 
 /** Never retry a destructive request blindly: the member might have rejoined in between attempts. */
-export async function kickDiscordCleanupMember(guildId: string, userId: string, reason: string, beforeSend?: () => Promise<void>, onDispatch?: () => void) {
+export async function kickDiscordCleanupMember(guildId: string, userId: string, reason: string, beforeSend?: () => Promise<void>, onDispatch?: () => void, prepareSend?: () => Promise<void>) {
   if (!cleanSnowflake(guildId) || !cleanSnowflake(userId)) throw new Error("Некоректний ID для виключення.");
-  await discordApi<void>(`/guilds/${guildId}/members/${userId}`, { method: "DELETE", auditReason: reason, retry: "never", expectedStatuses: [404], beforeSend, onDispatch });
+  await discordApi<void>(`/guilds/${guildId}/members/${userId}`, { method: "DELETE", auditReason: reason, retry: "never", expectedStatuses: [404], beforeSend, onDispatch, prepareSend });
 }
 
 export async function removeGuildMemberRoles(params: {

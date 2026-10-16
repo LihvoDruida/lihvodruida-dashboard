@@ -86,6 +86,9 @@ export async function discordRestRequest<T>(path: string, init: RequestInit, opt
   token: string; retryNever?: boolean; deduplicatedMessage?: boolean; timeoutMs: number;
   /** Runs after all queue/rate-limit waits, immediately before dispatch. Must fail closed. */
   beforeSend?: () => Promise<void>;
+  /** Revalidate after queue waits without holding REST permits (may make GET requests).
+   * beforeSend must still reject stale preparation after the final queue acquisition. */
+  prepareSend?: () => Promise<void>;
   onDispatch?: () => void;
   onFailure?: (status: number, detail: string, attempt: number) => void;
 }): Promise<T> {
@@ -98,6 +101,7 @@ export async function discordRestRequest<T>(path: string, init: RequestInit, opt
   const deadline = AbortSignal.timeout(45_000);
   const signal = init.signal ? AbortSignal.any([deadline, init.signal]) : deadline;
   prune(state);
+  let dispatchPrepared = false;
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     let key = state.routes.get(route) || route;
     let releaseRoute: (() => void) | undefined;
@@ -121,6 +125,16 @@ export async function discordRestRequest<T>(path: string, init: RequestInit, opt
       state.nextStartAt = startAt + 25;
       if (startAt > Date.now()) await wait(startAt - Date.now(), signal);
       await waitForCooldown(state, key, signal);
+      if (options.prepareSend && !dispatchPrepared) {
+        // Nested reads may share this bucket, or run with concurrency=1.
+        // Release both permits, then reacquire and run the final authorization guard.
+        releaseGlobal(); releaseGlobal = undefined;
+        releaseRoute(); releaseRoute = undefined;
+        await options.prepareSend();
+        dispatchPrepared = true;
+        attempt -= 1;
+        continue;
+      }
       const requestSignal = AbortSignal.any([signal, AbortSignal.timeout(options.timeoutMs)]);
       requestSignal.throwIfAborted();
       await options.beforeSend?.();

@@ -1,16 +1,18 @@
 import "server-only";
 
 import { createHash, randomUUID } from "node:crypto";
+import { performance } from "node:perf_hooks";
 import { acquireAutomationLease } from "@/lib/automationLease";
 import { assertStorageWriteAvailable } from "@/lib/storageAccess";
 import { getDocumentDb } from "@/lib/documentDb";
-import { fetchDiscordCleanupControl, fetchDiscordCleanupMemberPage, fetchDiscordGuildMemberSnapshot, getDiscordGuildId, kickDiscordCleanupMember } from "@/lib/discordAdmin";
+import { fetchDiscordCleanupControl, fetchDiscordCleanupMemberPage, fetchDiscordCleanupMemberSnapshot, getDiscordGuildId, kickDiscordCleanupMember } from "@/lib/discordAdmin";
 import { cleanupRoleBlockedReason, evaluateCleanupMember, isCleanupPeriod, type CleanupControl, type CleanupMember, type DiscordCleanupPeriod } from "@/lib/discordCleanupPolicy";
 import { logDashboardEvent } from "@/lib/security";
 
 const SCAN_INTERVAL_MS = 60 * 60_000;
 const PAGE_SIZE = 200;
 const KICK_BATCH_SIZE = 5;
+const MAX_ROLE_PROOF_AGE_MS = 1_000;
 const ACTIVE_INTERVAL_SECONDS = 10;
 const IDLE_INTERVAL_SECONDS = 60;
 const NEVER = "9999-12-31T23:59:59.999Z";
@@ -38,7 +40,7 @@ export type DiscordCleanupRow = {
   kickedAt: string | null; outcome: "candidate" | "kicked" | "uncertain";
 };
 type Candidate = DiscordCleanupRow & { nextAttemptAt: string; listKey: string; revision: string };
-type Operation = DiscordCleanupRow & { status: "prepared" | "kicked" | "uncertain" | "retry"; sortKey: string; attemptId: string; attemptedAt: string; reason: string };
+type Operation = DiscordCleanupRow & { status: "prepared" | "kicked" | "uncertain" | "retry"; sortKey: string; attemptId: string; attemptedAt: string; reason: string; verifiedRoleIds?: string[]; rolesVerifiedAt?: string; policyVersion?: string; verificationCount?: number };
 function guildId() {
   const id = getDiscordGuildId();
   if (!/^\d{16,25}$/.test(id)) throw new Error("Discord-сервер не підключено.");
@@ -117,6 +119,8 @@ async function clearInFlight(attemptId: string) {
 }
 function message(error: unknown) { return (error instanceof Error ? error.message : String(error)).slice(0, 1000); }
 function operationId(member: CleanupMember) { return createHash("sha256").update(`${member.userId}:${new Date(member.joinedAt!).toISOString()}`).digest("hex"); }
+function cleanupRoleSignature(member: CleanupMember, id: string) { return member.roleIds.filter((role) => role !== id).slice().sort().join(","); }
+function roleProofFresh(verifiedAt: number) { const age = performance.now() - verifiedAt; return age >= 0 && age <= MAX_ROLE_PROOF_AGE_MS; }
 function candidateRow(member: CleanupMember, settings: DiscordCleanupSettings, control: CleanupControl): Candidate {
   const assessment = evaluateCleanupMember(member, settings.roleId, settings.period, control);
   const joinedAt = member.joinedAt && Number.isFinite(Date.parse(member.joinedAt)) ? new Date(member.joinedAt).toISOString() : null;
@@ -242,12 +246,13 @@ export async function runDiscordMemberCleanup(options: { source: "automatic" | "
         let operation: Operation | null = null;
         let prepared = false;
         let dispatched = false;
+        let membershipConfirmed = false;
         try {
           await lease.assertOwned();
           const latestControl = await fetchDiscordCleanupControl();
           // joined_at changes on rejoin. Fetch membership after guild permissions, nearest dispatch.
-          const fresh = await fetchDiscordGuildMemberSnapshot(candidate.userId, id);
-          const verifiedAt = Date.now();
+          const fresh = await fetchDiscordCleanupMemberSnapshot(candidate.userId, id);
+          let verifiedAt = performance.now();
           const assessment = evaluateCleanupMember(fresh, settings.roleId, settings.period, latestControl);
           if (!assessment.matches || !assessment.eligible || new Date(fresh.joinedAt || 0).toISOString() !== candidate.joinedAt) {
             if (!assessment.matches) await document.ref.set({ listKey: `x_${candidate.id}`, nextAttemptAt: NEVER }, { merge: true });
@@ -264,7 +269,7 @@ export async function runDiscordMemberCleanup(options: { source: "automatic" | "
             continue;
           }
           const attemptId = randomUUID();
-          operation = { ...candidate, id: eventRef.id, status: "prepared", attemptId, attemptedAt: new Date().toISOString(), sortKey: `p_${attemptId}`, reason: `Guild cleanup ${attemptId}: ${settings.period}; joined ${candidate.joinedAt}; role ${candidate.roleId || "none"}` };
+          operation = { ...candidate, id: eventRef.id, status: "prepared", attemptId, attemptedAt: new Date().toISOString(), sortKey: `p_${attemptId}`, reason: `Guild cleanup ${attemptId}: ${settings.period}; joined ${candidate.joinedAt}; only role ${settings.roleId} or none` };
           // One attempt only. A 429/403 is safe to defer; a timeout/5xx is ambiguous and must never be replayed.
           const attempt = operation;
           await kickDiscordCleanupMember(id, candidate.userId, operation.reason, async () => {
@@ -277,7 +282,7 @@ export async function runDiscordMemberCleanup(options: { source: "automatic" | "
                 if (control.paused && !control.pauseObservedAt) tx.set(store.execution, { pauseObservedAt: new Date().toISOString() }, { merge: true });
                 return false;
               }
-              if (held.data()?.owner !== lease.owner || Number(held.data()?.expiresAtMs || 0) <= Date.now() || Date.now() - started >= 30_000 || Date.now() - verifiedAt > 5_000) return false;
+              if (!membershipConfirmed || held.data()?.owner !== lease.owner || Number(held.data()?.expiresAtMs || 0) <= Date.now() || Date.now() - started >= 30_000 || !roleProofFresh(verifiedAt)) return false;
               if (["prepared", "uncertain", "kicked"].includes(String(event.data()?.status))) return false;
               tx.set(eventRef, attempt);
               tx.set(store.execution, { inFlight: { attemptId: attempt.attemptId, operationId: attempt.id, userId: candidate.userId, displayName: candidate.displayName, startedAt: new Date().toISOString() } }, { merge: true });
@@ -285,12 +290,35 @@ export async function runDiscordMemberCleanup(options: { source: "automatic" | "
             });
             if (!accepted) throw new CleanupDispatchStopped("Виключення зупинено до відправлення.");
             prepared = true;
-          }, () => { dispatched = true; });
+          }, () => {
+            // A slow transaction commit or event-loop stall can age the proof too.
+            // This synchronous guard runs immediately before the actual fetch.
+            if (!prepared || !membershipConfirmed || !roleProofFresh(verifiedAt) || Date.now() - started >= 30_000) throw new CleanupDispatchStopped("Підтвердження ролей застаріло. Запит не відправлено.");
+            dispatched = true;
+          }, async () => {
+            // Run after initial REST queue waits, outside REST locks. Any additional role
+            // protects the member, regardless of its name, position or permissions.
+            if (await observePause(executionToken, settings.revision)) throw new CleanupDispatchStopped("Очищення призупинене.");
+            const current = await fetchDiscordCleanupMemberSnapshot(candidate.userId, id);
+            verifiedAt = performance.now();
+            const eligibility = evaluateCleanupMember(current, settings.roleId, settings.period, latestControl);
+            if (!eligibility.eligible || current.userId !== fresh.userId || new Date(current.joinedAt || 0).toISOString() !== candidate.joinedAt || cleanupRoleSignature(current, id) !== cleanupRoleSignature(fresh, id)) {
+              if (!eligibility.matches) await document.ref.set({ listKey: `x_${candidate.id}`, nextAttemptAt: NEVER }, { merge: true });
+              else await document.ref.set(candidateRow(current, settings, latestControl));
+              throw new CleanupDispatchStopped("Ролі або дата вступу змінилися. Виключення скасовано.");
+            }
+            candidate = candidateRow(current, settings, latestControl);
+            Object.assign(attempt, candidate, { id: eventRef.id, verifiedRoleIds: [...current.roleIds], rolesVerifiedAt: new Date().toISOString(), policyVersion: "exact-role-set-v3", verificationCount: 2 });
+            membershipConfirmed = true;
+          });
           await confirmedKick(operation, candidate, scanId);
           kicked++;
           logDashboardEvent("info", "discord.member_cleanup.kicked", undefined, { userId: candidate.userId, joinedAt: candidate.joinedAt, roleId: candidate.roleId, attemptId }, { category: "action" });
         } catch (error) {
-          if (error instanceof CleanupDispatchStopped) break;
+          if (error instanceof CleanupDispatchStopped) {
+            if (operation && prepared && !dispatched) await store.events.doc(operation.id).set({ status: "retry", sortKey: `r_${operation.attemptId}`, lastError: message(error) }, { merge: true });
+            break;
+          }
           const text = message(error);
           failed++;
           if (operation && prepared && dispatched && !/Discord API (?:400|401|403|404|429):/.test(text)) {
