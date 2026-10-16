@@ -1,0 +1,133 @@
+{
+  "name": "Mistblossom Vanguard",
+  "displayName": null,
+  "faction": "alliance",
+  "region": "eu",
+  "realm": "Terokkar",
+  "last_crawled_at": "2026-10-15T03:05:31.000Z",
+  "profile_url": "https://raider.io/guilds/eu/terokkar/Mistblossom%20Vanguard",
+  "raid_rankings": {
+    "tier-mn-1": {
+      "normal": {
+        "world": 13863,
+        "region": 6164,
+        "realm": 56
+      },
+      "heroic": {
+        "world": 14880,
+        "region": 6437,
+        "realm": 56
+      },
+      "mythic": {
+        "world": 7586,
+        "region": 3212,
+        "realm": 23
+      }
+    },
+    "sporefall": {
+      "normal": {
+        "world": 0,
+        "region": 0,
+        "realm": 0
+      },
+      "heroic": {
+        "world": 0,
+        "region": 0,
+        "realm": 0
+      },
+      "mythic": {
+        "world": 7981,
+        "region": 3286,
+        "realm": 23
+      }
+    },
+    "the-tidebound-grotto": {
+      "normal": {
+        "world": 5071,
+        "region": 1735,
+        "realm": 15
+      },
+      "heroic": {
+        "world": 12855,
+        "region": 4994,
+        "realm": 48
+      },
+      "mythic": {
+        "world": 0,
+        "region": 0,
+        "realm": 0
+      }
+    },
+    "the-unbinding-of-kithix": {
+      "normal": {
+        "world": 0,
+        "region": 0,
+        "realm": 0
+      },
+      "heroic": {
+        "world": 1945,
+        "region": 846,
+        "realm": 9
+      },
+      "mythic": {
+        "world": 0,
+        "region": 0,
+        "realm": 0
+      }
+    },
+    "the-venomous-abyss": {
+      "normal": {
+        "world": 14039,
+        "region": 5602,
+        "realm": 52
+      },
+      "heroic": {
+        "world": 10144,
+        "region": 3973,
+        "realm": 34
+      },
+      "mythic": {
+        "world": 0,
+        "region": 0,
+        "realm": 0
+      }
+    }
+  },
+  "raid_progression": {
+    "tier-mn-1": {
+      "summary": "2/9 M",
+      "total_bosses": 9,
+      "normal_bosses_killed": 9,
+      "heroic_bosses_killed": 7,
+      "mythic_bosses_killed": 2
+    },
+    "sporefall": {
+      "summary": "0/1 N",
+      "total_bosses": 1,
+      "normal_bosses_killed": 0,
+      "heroic_bosses_killed": 0,
+      "mythic_bosses_killed": 0
+    },
+    "the-tidebound-grotto": {
+      "summary": "1/1 N",
+      "total_bosses": 1,
+      "normal_bosses_killed": 1,
+      "heroic_bosses_killed": 0,
+      "mythic_bosses_killed": 0
+    },
+    "the-unbinding-of-kithix": {
+      "summary": "1/1 H",
+      "total_bosses": 1,
+      "normal_bosses_killed": 0,
+      "heroic_bosses_killed": 1,
+      "mythic_bosses_killed": 0
+    },
+    "the-venomous-abyss": {
+      "summary": "7/8 H",
+      "total_bosses": 8,
+      "normal_bosses_killed": 7,
+      "heroic_bosses_killed": 7,
+      "mythic_bosses_killed": 0
+    }
+  }
+}

@@ -32,7 +32,7 @@ async function check(name, fn) { await fn(); passed++; console.log('✓ ' + name
   });
   await check('Nine diagnostic references execute exactly one parameterized SELECT', async () => {
     queries = []; await read(); assert.equal(queries.length, 1);
-    assert.equal(queries[0][1][0].length, 15); assert.equal(queries[0][1][1].length, 15);
+    assert.equal(queries[0][1][0].length, 16); assert.equal(queries[0][1][1].length, 16);
     assert.ok(queries[0][0].includes('UNNEST($1::text[])'));
   });
   await lease('discord-member-cleanup_' + guild).set({ owner: 'private-lease-owner', source: 'automatic', startedAt: iso(-5000), expiresAtMs: Date.now() + 60000 });

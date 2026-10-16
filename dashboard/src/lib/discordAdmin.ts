@@ -1508,11 +1508,11 @@ export async function fetchDiscordEditableMessage(ref: DiscordMessageRef) {
  * A manually supplied link must still identify this bot's announcement. */
 export async function findDiscordPublicationMessage(params: {
   channelId: string; nonce: string; startedAt: string; resourceUrl: string;
-  manualRef?: DiscordMessageRef | null;
+  manualRef?: DiscordMessageRef | null; signal?: AbortSignal;
 }) {
   const channelId = cleanSnowflake(params.channelId);
   if (!channelId) return null;
-  const bot = await discordApi<{ id: string }>("/users/@me");
+  const bot = await discordApi<{ id: string }>("/users/@me", { signal: params.signal });
   const startedAt = Date.parse(params.startedAt) - 10_000;
   const valid = (message: Record<string, unknown>, manual = false) => {
     const author = message.author as { id?: string } | undefined;
@@ -1527,13 +1527,13 @@ export async function findDiscordPublicationMessage(params: {
   };
   if (params.manualRef) {
     if (params.manualRef.channelId !== channelId) throw new Error("Посилання має вести в канал незавершеної публікації.");
-    const message = await discordApi<Record<string, unknown>>(`/channels/${channelId}/messages/${params.manualRef.messageId}`);
+    const message = await discordApi<Record<string, unknown>>(`/channels/${channelId}/messages/${params.manualRef.messageId}`, { signal: params.signal });
     if (!valid(message, true)) throw new Error("Це повідомлення не належить незавершеній публікації цього рейду.");
     return { id: String(message.id), channel_id: channelId };
   }
   let before = "";
   for (let page = 0; page < 3; page++) {
-    const messages = await discordApi<Array<Record<string, unknown>>>(`/channels/${channelId}/messages?limit=100${before ? `&before=${before}` : ""}`);
+    const messages = await discordApi<Array<Record<string, unknown>>>(`/channels/${channelId}/messages?limit=100${before ? `&before=${before}` : ""}`, { signal: params.signal });
     const matches = messages.filter(message => valid(message));
     if (matches.length > 1) throw new Error("Знайдено кілька оголошень. Вкажи посилання на потрібне повідомлення для звірки.");
     if (matches.length === 1) return { id: String(matches[0].id), channel_id: channelId };

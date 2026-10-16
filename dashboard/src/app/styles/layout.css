@@ -249,10 +249,6 @@ main .dashboard-shell {
    Один патерн auto-fit: не треба описувати кожну сітку окремо.
    ========================================================= */
 [class$="-grid"],
-/* =========================================================
-   СІТКИ
-   Один патерн auto-fit: не треба описувати кожну сітку окремо.
-   ========================================================= */
 [class*="-grid "],
 [class$="__grid"],
 [class*="__grid "],
@@ -273,15 +269,10 @@ main .dashboard-shell {
 }
 
 /* Форма у дві колонки */
-.form-row,
 .access-form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   gap: var(--space-md);
-}
-
-.two {
-  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
 }
 
 /* Поле на всю ширину сітки */
@@ -532,7 +523,7 @@ main .dashboard-shell {
 
 @media (max-width: 560px) {
   .app-state-shell,
-  .access-denied-shell {
+.access-denied-shell {
     padding-inline: 14px;
   }
 }

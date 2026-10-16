@@ -127,6 +127,8 @@ function fixture() {
     "@/lib/accessGroups": { recordAdminAudit: async (...args) => { audits.push(args); } },
     "@/lib/permissions": { canViewApplications: () => view, canManageApplications: () => manage, hierarchyTitle: () => "staff" },
     "@/lib/authorIdentity": { resolveAuthorIdentity: async () => ({ primaryName: "staff" }) },
+    "@/lib/applicationDelivery": { withApplicationDeliveryLease: () => assert.fail("GET cannot acquire a delivery lease"), assertApplicationDeliveryDeletable: () => assert.fail("GET cannot change delivery") },
+    "@/lib/discordPublication": { DiscordPublicationPendingError: class extends Error {} },
     "@/lib/applicationsStore": f.github, "@/lib/moderation": f.moderation, "@/lib/discord": { deleteDiscordApplicationMessage: () => assert.fail("Unexpected Discord delete") } };
   const { exports: route } = load("src/app/api/applications/[number]/route.ts", dependencies, { Response });
   const { exports: single } = load("src/app/api/applications/[number]/status/route.ts", dependencies, { Response });

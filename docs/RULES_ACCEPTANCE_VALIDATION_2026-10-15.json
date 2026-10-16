@@ -1,0 +1,292 @@
+{
+  "date": "2026-10-15T16:59:33.203177+00:00",
+  "dashboardVersion": "3.8.102",
+  "botVersion": "3.6.9",
+  "contractVersion": "1.1.1",
+  "buildCI": {
+    "exitCode": 0,
+    "npmScripts": 89,
+    "rulesChecks": 30,
+    "styleAuditClean": true,
+    "uiAuditClean": true,
+    "importsChecked": 1610,
+    "sourceFiles": 399
+  },
+  "lint": {
+    "exitCode": 0,
+    "wholeProject": true,
+    "followupChangedScripts": true
+  },
+  "typecheck": {
+    "exitCode": 0
+  },
+  "browser": {
+    "passed": 38,
+    "failed": 0,
+    "scenarios": [
+      "production login loads the bundled template landscape and local fonts",
+      "only authorization is visible without navigation, footer or page spacing",
+      "guild name stays centered without inheriting generic navigation badges",
+      "desktop and mobile layout fits nine viewport widths",
+      "desktop and mobile screenshots are rendered for internal visual review",
+      "short landscape viewport can scroll to the complete sign-in control",
+      "long access errors stay visible and keep the action reachable on 320px",
+      "logged-out confirmation remains a status and allows sign-in",
+      "unknown error input never becomes raw HTML or script content",
+      "return destination and account switching stay in the OAuth URL",
+      "external and protocol-relative return destinations are discarded",
+      "keyboard activation targets the existing OAuth start without contacting Discord",
+      "reduced motion removes animated sign-in transitions",
+      "login does not initialize the decorative starfield canvas",
+      "emergency owner entry stays policy-gated and usable on mobile",
+      "missing OAuth configuration displays an explicit unavailable state",
+      "production login only requests local assets",
+      "optimized Hyjal MP4 decodes, autoplays silently and leaves auth interactive",
+      "all three real clips rotate and wrap with a one-second crossfade",
+      "mobile video stays inline, covers the screen and adds no controls",
+      "a fresh mobile visit loads only one smaller video rendition",
+      "a hidden page pauses every decoder and resumes on return",
+      "reduced motion releases media sources and restores video when removed",
+      "data saver stops and releases media without affecting the login button",
+      "next clip never replaces the current image before it is playing",
+      "a failed first clip is skipped and the next real clip plays",
+      "a single healthy clip loops after both following clips fail",
+      "all media failures preserve the local poster and usable authorization",
+      "autoplay rejection stops after three attempts without a retry loop",
+      "playback deadline returns to the poster without leaving auth busy",
+      "public rules render real editor text with no login, registration or profile editor",
+      "rules keep the global footer, share viewport background and fit mobile / desktop",
+      "optional authorization is left of accept and exactly 25 percent smaller",
+      "native unchecked agreement prevents posting and checking enables acceptance",
+      "rules changed during reading require a fresh explicit agreement",
+      "explicit acceptance posts agreement, grants configured role and renders terminal success",
+      "reopening and accepting again does not duplicate the role grant",
+      "invalid rules link shows recovery without an authorization wall or enabled accept"
+    ],
+    "observations": {
+      "widths": [
+        320,
+        360,
+        390,
+        480,
+        640,
+        768,
+        1024,
+        1440,
+        1920
+      ],
+      "nativeMedia": {
+        "width": 1280,
+        "height": 720,
+        "muted": true,
+        "inline": true
+      },
+      "nativeRulesForm": {
+        "trustedOrigin": true,
+        "referrerOnlyOrigin": true
+      },
+      "mediaBytes": 268560
+    },
+    "errors": [],
+    "browser": "153.0.8010.0",
+    "videoFixtureDirectory": true,
+    "scope": "Production standalone with Docker-equivalent public/static copies; controlled local reverse proxy and fixture auth configuration. No live OAuth or emergency POST."
+  },
+  "standalone": {
+    "passed": 7,
+    "failed": 0,
+    "scenarios": [
+      "welcome route trace includes its background and three bundled fonts",
+      "standalone contains no dashboard source, CI scripts or builder-only configuration",
+      "packaged server chunks match the current build byte for byte",
+      "Sharp resolves from standalone rather than the source node_modules",
+      "packaged Sharp and assets pass the real renderer suite",
+      "packaged Next server starts and returns healthy no-store liveness without integrations",
+      "standalone server serves the exact traced welcome background"
+    ],
+    "traceFiles": 1180,
+    "traceBytes": 41468952,
+    "standaloneFiles": 4057,
+    "standaloneBytes": 84332163,
+    "scriptsInStandalone": 0,
+    "sourceFilesInStandalone": 0
+  },
+  "media": {
+    "originalCycleBytes": 25157419,
+    "desktopCycleBytes": 5889564,
+    "mobileCycleBytes": 1713625,
+    "desktopReductionPercent": 76.59,
+    "mobileReductionPercent": 93.19,
+    "files": [
+      {
+        "name": "Hyjal02-1280.mp4",
+        "bytes": 2720701,
+        "sha256": "94b41e0064ae0a3c7e883757d53c0304e725707faab208a30baca3fb744a8f20",
+        "programs": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 1280,
+            "height": 720,
+            "r_frame_rate": "24/1"
+          }
+        ],
+        "format": {
+          "duration": "16.125000"
+        }
+      },
+      {
+        "name": "Hyjal02-640.mp4",
+        "bytes": 880300,
+        "sha256": "b8812f43e459e7e36078150ee156b699ad707804a5a69e8e80769a339e15cf5f",
+        "programs": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 640,
+            "height": 360,
+            "r_frame_rate": "24/1"
+          }
+        ],
+        "format": {
+          "duration": "16.125000"
+        }
+      },
+      {
+        "name": "WowF_TheBarrens_01-1280.mp4",
+        "bytes": 1621058,
+        "sha256": "31756e2c64fb87006b5e6712d530fcfbcc266b72921bafadae3eba343225fe9c",
+        "programs": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 1280,
+            "height": 720,
+            "r_frame_rate": "24/1"
+          }
+        ],
+        "format": {
+          "duration": "13.250000"
+        }
+      },
+      {
+        "name": "WowF_TheBarrens_01-640.mp4",
+        "bytes": 371499,
+        "sha256": "deb2c92eb716ed51c6f45af152721e3f4772179edab063db7a325349cdad70e6",
+        "programs": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 640,
+            "height": 360,
+            "r_frame_rate": "24/1"
+          }
+        ],
+        "format": {
+          "duration": "13.250000"
+        }
+      },
+      {
+        "name": "Zephras_01-1280.mp4",
+        "bytes": 1547805,
+        "sha256": "b1b519a10117a42ee0c9f7c33aaaec0f1f43c28ed40e3166890b62babf09dcc2",
+        "programs": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 1280,
+            "height": 720,
+            "r_frame_rate": "24/1"
+          }
+        ],
+        "format": {
+          "duration": "15.541667"
+        }
+      },
+      {
+        "name": "Zephras_01-640.mp4",
+        "bytes": 461826,
+        "sha256": "87ea95e85a2d06f57fb234e7eb980022430dd1674b49d1fb53227656b3353491",
+        "programs": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 640,
+            "height": 360,
+            "r_frame_rate": "24/1"
+          }
+        ],
+        "format": {
+          "duration": "15.541667"
+        }
+      }
+    ]
+  },
+  "releaseFiles": {
+    "changed": [
+      "dashboard/src/app/rules/accept/page.tsx",
+      "dashboard/src/app/styles/components.css",
+      "dashboard/src/app/styles/pages.css",
+      "dashboard/src/app/styles/onboarding.css",
+      "dashboard/src/app/privacy/page.tsx",
+      "dashboard/src/app/api/rules/accept/complete/route.ts",
+      "dashboard/src/app/api/discord/embeds/publish/route.ts",
+      "dashboard/src/app/api/discord/interactions/route.ts",
+      "dashboard/src/app/discord/rules/page.tsx",
+      "dashboard/src/lib/discordRulesRolePolicy.ts",
+      "dashboard/src/lib/rulesAcceptanceSettings.ts",
+      "dashboard/src/lib/rulesOnboarding.ts",
+      "dashboard/src/components/DiscordEmbedEditor.tsx",
+      "dashboard/src/components/DashboardLivePageSync.tsx",
+      "dashboard/next.config.mjs",
+      "dashboard/package-lock.json",
+      "dashboard/package.json",
+      "dashboard/public/js/dashboard-starfield.js",
+      "dashboard/scripts/check-rules-accept.cjs",
+      "dashboard/scripts/check-api-security.cjs",
+      "dashboard/scripts/audit-ui.cjs",
+      "dashboard/scripts/next-build.cjs",
+      "dashboard/scripts/check-login.cjs",
+      "dashboard/scripts/check-newcomer-onboarding.cjs",
+      "README.md",
+      "dashboard/scripts/check-standalone.cjs",
+      "dashboard/scripts/check-login-browser.cjs",
+      "dashboard/src/components/LoginBackground.tsx",
+      "dashboard/src/lib/loginVideoBackground.ts"
+    ],
+    "added": [
+      "dashboard/src/components/GuildRulesAcceptForm.tsx",
+      "dashboard/src/lib/guildRulesDocument.ts",
+      "docs/RULES_ACCEPTANCE_BACKGROUND_2026-10-15_UA.md",
+      "docs/RULES_ACCEPTANCE_VALIDATION_2026-10-15.json",
+      "dashboard/public/assets/video/auth/Hyjal02-1280.mp4",
+      "dashboard/public/assets/video/auth/Hyjal02-640.mp4",
+      "dashboard/public/assets/video/auth/WowF_TheBarrens_01-1280.mp4",
+      "dashboard/public/assets/video/auth/WowF_TheBarrens_01-640.mp4",
+      "dashboard/public/assets/video/auth/Zephras_01-1280.mp4",
+      "dashboard/public/assets/video/auth/Zephras_01-640.mp4"
+    ],
+    "removed": [
+      "dashboard/src/components/RulesChoiceEnhancer.tsx"
+    ]
+  },
+  "archive": "lihvodruida-dashboard-v3.8.102-rules-acceptance-full.zip",
+  "baseArchiveSHA256": "ae38866c327204c0cddb66476f2674452513213a25239cdedb39c26f920387b0",
+  "notPerformed": [
+    "Live PostgreSQL acceptance",
+    "Real Discord role grants or real OAuth",
+    "Physical iOS/Android devices",
+    "VPS deployment"
+  ],
+  "roadmap": {
+    "R6LiveAcceptance": "open",
+    "R7_7": "pending",
+    "scope": "Priority user-requested background and independent guild-rules flow"
+  }
+}

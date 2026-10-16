@@ -880,10 +880,6 @@
   align-items: center;
 }
 
-.content-add-btn {
-  flex: 0 0 auto;
-}
-
 /* =========================================================
    АДМІН
    ========================================================= */
@@ -1265,8 +1261,7 @@ body:has(.login-screen) .app-footer--site-wide {
 
 /* Таблиці Discord-розділу успадковують шаблон довідника */
 .discord-raid-signups-table,
-.discord-rules-table,
-.content-table {
+.discord-rules-table {
   display: grid;
   gap: var(--space-xs);
   min-width: 0;
@@ -1301,8 +1296,7 @@ body:has(.login-screen) .app-footer--site-wide {
 }
 
 /* Дві колонки «бібліотека + редактор» */
-.discord-rules-library-split,
-.content-library-split {
+.discord-rules-library-split {
   display: grid;
   grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
   gap: var(--gap-grid);
@@ -1343,28 +1337,12 @@ body:has(.login-screen) .app-footer--site-wide {
 }
 
 /* Завантаження зображення: підпис поверх поля */
-.image-upload-control {
-  display: grid;
-  gap: var(--space-xs);
-  min-width: 0;
-}
-
-.image-upload-text {
-  color: var(--text-muted);
-  font-size: var(--font-size-ui);
-}
-
-.content-back-btn,
-.content-remove-cover {
-  flex: 0 0 auto;
-}
 
 /* Таблиці з модифікатором домену — ті самі правила довідника */
 
 
 @media (max-width: 1000px) {
-  .discord-rules-library-split,
-.content-library-split {
+  .discord-rules-library-split {
     grid-template-columns: minmax(0, 1fr);
   }
 }
@@ -1640,7 +1618,7 @@ body:has(.login-screen) .app-footer--site-wide {
   }
 
   .discord-channel-field,
-  .discord-content-field--full {
+.discord-content-field--full {
     grid-column: 1 / -1;
   }
 
@@ -1658,11 +1636,11 @@ body:has(.login-screen) .app-footer--site-wide {
 
 @media (max-width: 860px) {
   .discord-builder-head,
-  .discord-edit-grid,
-  .discord-builder-grid,
-  .discord-author-footer-grid,
-  .discord-footer-grid,
-  .discord-autorole-grid {
+.discord-edit-grid,
+.discord-builder-grid,
+.discord-author-footer-grid,
+.discord-footer-grid,
+.discord-autorole-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -1675,11 +1653,11 @@ body:has(.login-screen) .app-footer--site-wide {
   }
 
   .discord-channel-field,
-  .discord-color-code-field,
-  .discord-content-field--full,
-  .discord-message-link-field,
-  .discord-author-name-field,
-  .discord-timestamp-check {
+.discord-color-code-field,
+.discord-content-field--full,
+.discord-message-link-field,
+.discord-author-name-field,
+.discord-timestamp-check {
     grid-column: 1 / -1;
   }
 
@@ -1695,13 +1673,13 @@ body:has(.login-screen) .app-footer--site-wide {
   }
 
   .discord-send-controls,
-  .discord-message-link-row {
+.discord-message-link-row {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .discord-load-message-btn,
-  .discord-builder-actions .btn,
-  .discord-autorole-toolbar .btn {
+.discord-builder-actions .btn,
+.discord-autorole-toolbar .btn {
     width: 100%;
   }
 
@@ -1715,7 +1693,7 @@ body:has(.login-screen) .app-footer--site-wide {
   }
 
   .discord-builder-titlebar,
-  .discord-preview-titlebar {
+.discord-preview-titlebar {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -1773,9 +1751,9 @@ body:has(.login-screen) .app-footer--site-wide {
 
 @media (max-width: 640px) {
   .discord-builder-form .input:not(textarea),
-  .discord-builder-form .select,
-  .discord-builder-form .modern-select,
-  .discord-builder-form .btn {
+.discord-builder-form .select,
+.discord-builder-form .modern-select,
+.discord-builder-form .btn {
     min-height: 44px;
   }
 }
@@ -1876,7 +1854,7 @@ body:has(.login-screen) .app-footer--site-wide {
   }
 
   .discord-autorole-toolbar,
-  .discord-autorole-card__head {
+.discord-autorole-card__head {
     align-items: stretch;
     flex-direction: column;
   }
@@ -2050,7 +2028,7 @@ body:has(.login-screen) .app-footer--site-wide {
   }
 
   .discord-hub-card,
-  .discord-hub-card--featured {
+.discord-hub-card--featured {
     min-height: 0;
   }
 }
@@ -2098,7 +2076,7 @@ body:has(.login-screen) .app-footer--site-wide {
   }
 
   .discord-dashboard-hero__side .guild-hero-summary,
-  .discord-dashboard-hero__side .guild-hero-stats {
+.discord-dashboard-hero__side .guild-hero-stats {
     gap: 7px;
   }
 
@@ -2117,7 +2095,7 @@ body:has(.login-screen) .app-footer--site-wide {
   }
 
   .discord-hub-section-group--primary,
-  .discord-hub-section-group--tools {
+.discord-hub-section-group--tools {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -2197,13 +2175,17 @@ body:has(.guild-agreement-screen) #site-starfield { display: none; }
 .guild-agreement-heading { text-align: center; padding-bottom: 28px; border-bottom: 1px solid #d8b25e33; }
 .guild-agreement-kicker { color: #d8b25e; font-size: 12px; letter-spacing: .15em; text-transform: uppercase; }
 .guild-agreement-heading h1 { margin: 12px 0; color: #f4dfae; font-size: clamp(28px, 4vw, 42px); line-height: 1.2; overflow-wrap: anywhere; }
-.guild-agreement-heading p, .guild-agreement-note { color: #bfc4d1; }
+.guild-agreement-heading p,
+.guild-agreement-note { color: #bfc4d1; }
 .guild-agreement-account { display: inline-block; margin-top: 12px; padding: 8px 14px; border-radius: 20px; background: #ffffff08; color: #d5d9e3; font-size: 13px; overflow-wrap: anywhere; }
 .guild-agreement-text { padding-block: 28px; font-size: 16px; line-height: 1.8; overflow-wrap: anywhere; }
 .guild-agreement-text > :first-child { margin-top: 0; }
-.guild-agreement-text h2, .guild-agreement-text h3, .guild-agreement-text h4 { color: #e9c77f; margin-block: 26px 12px; line-height: 1.4; }
+.guild-agreement-text h2,
+.guild-agreement-text h3,
+.guild-agreement-text h4 { color: #e9c77f; margin-block: 26px 12px; line-height: 1.4; }
 .guild-agreement-text p { margin-block: 12px; }
-.guild-agreement-text ul, .guild-agreement-text ol { padding-left: 24px; }
+.guild-agreement-text ul,
+.guild-agreement-text ol { padding-left: 24px; }
 .guild-agreement-text ul { list-style: disc; }
 .guild-agreement-text ol { list-style: decimal; }
 .guild-agreement-text li { margin-block: 8px; }
@@ -2211,23 +2193,28 @@ body:has(.guild-agreement-screen) #site-starfield { display: none; }
 .guild-agreement-text blockquote { border-left: 3px solid #d8b25e; margin-inline: 0; padding: 4px 18px; background: #ffffff05; }
 .guild-agreement-text pre { overflow-x: auto; padding: 16px; background: #0004; }
 .guild-agreement-text table { display: block; overflow-x: auto; max-width: 100%; border-collapse: collapse; }
-.guild-agreement-text th, .guild-agreement-text td { padding: 8px; border: 1px solid #d8b25e33; }
+.guild-agreement-text th,
+.guild-agreement-text td { padding: 8px; border: 1px solid #d8b25e33; }
 .guild-agreement-form { border-top: 1px solid #d8b25e33; padding-top: 24px; }
 .guild-agreement-check { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; font-size: 15px; line-height: 1.6; min-height: 44px; }
 .guild-agreement-check input { flex: 0 0 22px; width: 22px; height: 22px; margin: 2px 0; accent-color: #d8b25e; }
 .guild-agreement-actions { display: grid; grid-template-columns: .75fr 1fr; gap: 12px; align-items: center; max-width: 432px; margin: 24px auto 0; }
-.guild-agreement-login, .guild-agreement-submit { display: inline-flex; align-items: center; justify-content: center; text-align: center; border-radius: 8px; padding: 8px 12px; font-family: inherit; text-decoration: none; line-height: 1.3; }
+.guild-agreement-login,
+.guild-agreement-submit { display: inline-flex; align-items: center; justify-content: center; text-align: center; border-radius: 8px; padding: 8px 12px; font-family: inherit; text-decoration: none; line-height: 1.3; }
 .guild-agreement-login { min-height: 45px; font-size: 12px; color: #b7bcc9; border: 1px solid #9dabc52e; background: #ffffff04; }
 .guild-agreement-submit { min-height: 60px; font-size: 16px; font-weight: 700; color: #fff1d2; background: linear-gradient(#a53023, #761810); border: 1px solid #d8b25e99; cursor: pointer; transition: background-color .2s, box-shadow .2s; }
 .guild-agreement-submit:disabled { opacity: .5; cursor: default; }
 .guild-agreement-submit:not(:disabled):hover { box-shadow: 0 0 18px #d8b25e33; }
 .guild-agreement-login:hover { color: #f4ead6; background: #ffffff0c; }
-.guild-agreement-login:focus-visible, .guild-agreement-submit:focus-visible, .guild-agreement-check input:focus-visible { outline: 2px solid #f4dfae; outline-offset: 4px; }
+.guild-agreement-login:focus-visible,
+.guild-agreement-submit:focus-visible,
+.guild-agreement-check input:focus-visible { outline: 2px solid #f4dfae; outline-offset: 4px; }
 .guild-agreement-note { text-align: center; font-size: 12px; line-height: 1.6; margin: 18px 0 0; }
 .guild-agreement-notice { padding: 16px; margin-block: 24px; border: 1px solid #d8b25e66; border-radius: 10px; background: #d8b25e0d; line-height: 1.7; }
 .guild-agreement-success { border-top: 1px solid #d8b25e33; padding-top: 28px; text-align: center; }
 .guild-agreement-success > span { color: #a7dcaf; font-size: 36px; }
-.guild-agreement-success .guild-agreement-login, .guild-agreement-unavailable .guild-agreement-login { width: 180px; margin-top: 12px; }
+.guild-agreement-success .guild-agreement-login,
+.guild-agreement-unavailable .guild-agreement-login { width: 180px; margin-top: 12px; }
 .guild-agreement-unavailable { text-align: center; color: #bfc4d1; }
 body:has(.guild-agreement-screen) .app-footer--site-wide { position: relative; z-index: 1; margin-top: 0; background: #0c1734e8; }
 @media (max-width: 640px) {

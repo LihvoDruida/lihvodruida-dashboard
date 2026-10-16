@@ -146,12 +146,11 @@ mustContain("src/components/RaidPollCreateClientForm.tsx", [
 
 // Content editor must have explicit upper bounds on both UI and server validation.
 mustContain("src/lib/content.ts", [
-  "export const CONTENT_TEXT_LIMITS = {",
   "if (title.length > CONTENT_TEXT_LIMITS.title)",
   "if (description.length > CONTENT_TEXT_LIMITS.description)",
   "if (body.length > CONTENT_TEXT_LIMITS.body)",
 ]);
-mustContain("src/app/content/page.tsx", [
+mustContain("src/components/content/ContentEditor.tsx", [
   "maxLength={CONTENT_TEXT_LIMITS.title}",
   "maxLength={CONTENT_TEXT_LIMITS.description}",
   "maxLength={CONTENT_TEXT_LIMITS.body}",

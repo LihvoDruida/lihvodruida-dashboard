@@ -1,3 +1,5 @@
+import { assertApplicationDeliveryDeletable, withApplicationDeliveryLease } from "@/lib/applicationDelivery";
+import { DiscordPublicationPendingError } from "@/lib/discordPublication";
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
@@ -61,7 +63,9 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
   }
 
   try {
+    return await withApplicationDeliveryLease(issueNumber, async () => {
     const issue = await getIssue(issueNumber);
+    await assertApplicationDeliveryDeletable(issueNumber, String(issue.id || `application-${issueNumber}`));
     const discord = await deleteDiscordApplicationMessage(issue);
     if (!discord.ok && !discord.skipped) {
       logDashboardEvent("warn", "applications.delete.discord_failed", request, { issueNumber, reason: discord.reason || null });
@@ -78,7 +82,9 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     }).catch(() => false);
 
     return NextResponse.json({ ok: true, issueNumber, discord }, { headers: noStoreHeaders() });
+    });
   } catch (error) {
+    if (error instanceof DiscordPublicationPendingError) return NextResponse.json({ error: "Доставка в Discord ще виконується або потребує звірки. Перевір доставку перед видаленням." }, { status: 409, headers: noStoreHeaders() });
     const message = safeErrorMessage(error, "Не вдалося видалити заявку.");
     logDashboardEvent("error", "applications.delete.failed", request, { issueNumber, userId: session.id, message });
     await recordAdminAudit("applications.delete_failed", session, {

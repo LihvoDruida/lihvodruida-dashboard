@@ -1,0 +1,126 @@
+{
+  "stage": "R6.6",
+  "dashboardVersion": "3.8.82",
+  "botVersion": "3.6.7",
+  "date": "2026-10-14",
+  "previousFeatureStage": "R6.5 / 3.8.78",
+  "baseArchive": "3.8.81 performance-response-full",
+  "behavioralChecks": {
+    "command": "npm run check:application-workbench",
+    "passed": 20,
+    "storage": "Actual application code with deterministic transactional storage double; no live PostgreSQL"
+  },
+  "verify": {
+    "command": "npm run verify",
+    "exitCode": 0,
+    "includes": [
+      "TypeScript",
+      "ESLint",
+      "functional/security/regression checks",
+      "imports",
+      "style/UI audits"
+    ]
+  },
+  "securityRuntime": {
+    "command": "npm run security:runtime",
+    "exitCode": 0,
+    "node": "24.19.0",
+    "next": "16.3.5",
+    "react": "19.2.8",
+    "reactDom": "19.2.8",
+    "sharp": "0.35.4"
+  },
+  "productionBuild": {
+    "command": "npm run build",
+    "exitCode": 0,
+    "mode": "Next.js standalone",
+    "durationSeconds": 11,
+    "existingWarnings": 2,
+    "warningModule": "discordWelcomeCard.ts dynamic filesystem tracing; unchanged"
+  },
+  "additionalBuildCiChecks": {
+    "characterData": 16,
+    "guildBanner": 24,
+    "note": "All build:ci steps executed via verify plus security:runtime, character-data, guild-banner and production build; build:ci not rerun as one redundant command"
+  },
+  "botTests": {
+    "passed": 52,
+    "failed": 0
+  },
+  "browser": {
+    "checks": [
+      "decision stays review until a successful server response",
+      "next review action transfers keyboard focus to the next candidate",
+      "lost response is reconciled with GET without another moderation POST",
+      "stalled POST reaches its deadline and restores a read-only recovery action",
+      "bulk partial/unchanged/uncertain outcomes are shown per application",
+      "still-open stored review allows only a new explicit decision",
+      "actual component styles fit nine viewport widths from 320 to 1920",
+      "read-only viewer has no bulk controls, selection or moderation buttons",
+      "selection never exceeds fifty visible pending applications",
+      "actual React components produce no uncaught page errors"
+    ],
+    "passed": 10,
+    "viewports": [
+      320,
+      360,
+      390,
+      620,
+      768,
+      1024,
+      1280,
+      1440,
+      1920
+    ],
+    "pageErrors": [],
+    "fixture": "Actual React components and CSS; local HTTP mocks for external/backend services"
+  },
+  "productionSmoke": {
+    "passed": 7,
+    "checks": [
+      {
+        "path": "/api/applications/1",
+        "method": "GET",
+        "status": 401
+      },
+      {
+        "path": "/api/applications/1/status",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/api/applications/bulk-status",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/api/applications/1",
+        "method": "DELETE",
+        "status": 401
+      },
+      {
+        "path": "/api/applications/1/status",
+        "method": "POST",
+        "status": 403
+      },
+      {
+        "path": "/api/applications/bulk-status",
+        "method": "POST",
+        "status": 421
+      },
+      {
+        "path": "/applications",
+        "method": "GET",
+        "status": 303
+      }
+    ],
+    "liveCredentialsUsed": false
+  },
+  "limitations": [
+    "No live PostgreSQL concurrency integration in this run",
+    "No authenticated end-to-end test with real Discord",
+    "Discord notification after decision is not a new durable operation in R6.6",
+    "VPS and production database unchanged"
+  ],
+  "nextPlannedStage": "R6.7 — publication actions and status; not implemented"
+}

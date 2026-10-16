@@ -1,3 +1,4 @@
+import ApplicationDelivery from "@/components/ApplicationDelivery";
 import ApplicationStatusActions from "@/components/ApplicationStatusActions";
 import { ApplicationModerationProvider, ApplicationSelection } from "@/components/ApplicationModerationQueue";
 import ApplicationFilters from "@/components/ApplicationFilters";
@@ -284,6 +285,7 @@ export default async function DashboardPage({
 
                 <aside className="application-card__decision">
                   <div className="application-card__decision-title"><span>Рішення</span><small>#{item.number}</small></div>
+                  {mayManageApplications && <ApplicationDelivery number={item.number} />}
                   <ApplicationSelection issueNumber={item.number} />
                   <ApplicationStatusActions issueNumber={item.number} initialStatus={item.status_key} issueState={item.state} canModerate={mayManageApplications} canDelete={Boolean(user.isServerOwner)} />
                 </aside>

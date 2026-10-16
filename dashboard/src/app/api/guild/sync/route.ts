@@ -1,3 +1,4 @@
+import { refreshGuildRaidHistory } from "@/lib/guildRaidHistory";
 import { NextRequest, NextResponse } from "next/server";
 import { observeAutomationRun } from "@/lib/automationTaskRuns";
 import {
@@ -65,6 +66,7 @@ function hasRateLimit(progress: GuildRosterSyncProgress | null | undefined, reas
 
 function guildSyncHasActivity(result: Record<string, unknown>) {
   if (result.forcedRoster) return true;
+  if (Number((result.raidHistory as {checked?:number}|undefined)?.checked || 0)>0) return true;
   const sync = result.sync && typeof result.sync === "object" ? result.sync as Record<string, unknown> : null;
   if (sync?.status === "running" || sync?.status === "failed") return true;
   const providerActivity = [result.battleNet, result.raiderIo].some((value) => {
@@ -76,6 +78,16 @@ function guildSyncHasActivity(result: Record<string, unknown>) {
 }
 
 async function runAutomaticSync() {
+  // Finish the independent checkpoint even if roster refresh fails first.
+  const [roster,historyResult]=await Promise.allSettled([
+    runRosterSync(),
+    boolEnv("GUILD_ROSTER_AUTO_SYNC_ENABLED",true) ? refreshGuildRaidHistory() : Promise.resolve(null),
+  ]);
+  if(roster.status === "rejected") throw roster.reason;
+  const history=historyResult.status === "fulfilled" ? historyResult.value : {checked:0,failed:1,pending:0,skipped:false};
+  return {...roster.value,raidHistory:history,degraded:Number(history?.failed || 0)>0};
+}
+async function runRosterSync() {
   if (!boolEnv("GUILD_ROSTER_AUTO_SYNC_ENABLED", true)) {
     return { ok: true, skipped: true, reason: "disabled" };
   }

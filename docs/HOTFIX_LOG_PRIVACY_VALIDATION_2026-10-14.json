@@ -1,0 +1,74 @@
+{
+  "release": {
+    "dashboard": "3.8.85",
+    "bot": "3.6.7",
+    "featureStage": "R6.8",
+    "date": "2026-10-14",
+    "deployedToVps": false
+  },
+  "targetedChecks": {
+    "logPrivacy": {
+      "passed": 14,
+      "failed": 0
+    },
+    "battleNetResilience": {
+      "passed": 17,
+      "failed": 0
+    },
+    "internalCronProxy": {
+      "passed": 22,
+      "failed": 0
+    }
+  },
+  "productionHttpSmoke": {
+    "passed": 10,
+    "failed": 0,
+    "dashboardVersion": "3.8.85",
+    "liveDatabase": false,
+    "externalRequests": false
+  },
+  "uploadedHistoricalLogAudit": {
+    "rows": 2064,
+    "distinctSignedReceiptsDetected": 1,
+    "historicalList": "passed",
+    "historicalExport": "passed",
+    "originalFileModified": false
+  },
+  "validation": {
+    "verify": "passed",
+    "strictTypecheck": "passed",
+    "productionNextBuild": "passed",
+    "securityRuntime": "passed",
+    "characterData": "16/16 passed",
+    "guildBanner": "24/24 passed",
+    "deploymentShellSyntax": "passed",
+    "lintIncludingFinalExportChanges": "passed"
+  },
+  "runtime": {
+    "node": "24.19.0",
+    "next": "16.3.5",
+    "react": "19.2.8",
+    "reactDom": "19.2.8",
+    "sharp": "0.35.4",
+    "dependencyOverlay": "same approved Docker overlay as baseline; lock dependency pins unchanged"
+  },
+  "buildWarnings": {
+    "count": 2,
+    "description": "Existing dynamic filesystem tracing warnings in discordWelcomeCard.ts; production build completed"
+  },
+  "limits": [
+    "No VPS deployment",
+    "No live PostgreSQL or Firebase integration",
+    "No live Blizzard OAuth or Discord mutations",
+    "Historical DB rows and original diagnostic file were not rewritten",
+    "Existing downloaded exports retain their original contents",
+    "nativeIframe source is suspected external injection, not proven or removed",
+    "HTTP 421 after the latest production restart cannot be established from the short export window",
+    "R6.9, R7 and R8 remain unfinished"
+  ],
+  "productionBuildDurationSeconds": 399,
+  "strictTypecheckDurationSeconds": 143,
+  "validationNotes": [
+    "A typecheck during the concurrent production build exceeded its 180-second deadline; the final separate run passed within the unchanged deadline."
+  ]
+}

@@ -186,16 +186,7 @@ export async function notifyDiscordStatusChange(params: {
   }
 }
 
-export type DiscordApplicationDeliveryResult = {
-  ok: boolean;
-  skipped?: boolean;
-  reason?: string;
-  error?: string;
-  channel_id?: string;
-  message_id?: string;
-};
-
-export async function notifyDiscordNewApplication(params: {
+export type DiscordNewApplicationInput = {
   issueNumber: number;
   trackingNumber?: string | null;
   characterName: string;
@@ -207,13 +198,11 @@ export async function notifyDiscordNewApplication(params: {
   battleTag?: string | null;
   source?: string | null;
   availability?: string | null;
-}): Promise<DiscordApplicationDeliveryResult> {
-  const { botToken } = getDiscordBotConfig();
-  const channelId = await resolveApplicationsDiscordChannelId();
-  if (!botToken || !channelId) {
-    return { ok: false, skipped: true, reason: "DISCORD_BOT_TOKEN або канал заявок не налаштований" };
-  }
+  status?: ApplicationStatus;
+  resourceUrl?: string;
+};
 
+export function buildDiscordApplicationPayload(params: DiscordNewApplicationInput) {
   const fields = [
     { name: "Персонаж", value: `**${cleanText(params.characterName, 48)}** · ${cleanText(params.region || "eu", 8).toUpperCase()}-${cleanText(params.realm, 48)}`, inline: false },
     { name: "Клас / фракція", value: `${cleanText(params.className || "Не вказано", 40)} · ${cleanText(params.faction || "Не вказано", 24)}`, inline: true },
@@ -224,33 +213,20 @@ export async function notifyDiscordNewApplication(params: {
     { name: "Коли грає", value: cleanText(params.availability || "Не вказано", 700), inline: false },
   ];
 
-  try {
-    const message = await discordApi<any>(`/channels/${channelId}/messages`, {
-      method: "POST",
-      body: JSON.stringify({
+  return {
         allowed_mentions: { parse: [] },
         embeds: [{
+          url: params.resourceUrl,
           title: `📋 Нова заявка #${params.issueNumber} · ${cleanText(params.characterName, 48)}`,
-          description: `**Статус:** ${statusEmoji("review")} **${statusText("review")}**\nНадіслано через lihvodruida.pp.ua`,
-          color: statusColor("review"),
+          description: `**Статус:** ${statusEmoji(params.status || "review")} **${statusText(params.status || "review")}**\nНадіслано через lihvodruida.pp.ua`,
+          color: statusColor(params.status || "review"),
           fields,
           footer: { text: "Mistblossom Vanguard • Applications" },
           timestamp: new Date().toISOString(),
         }],
-        components: buildApplicationModerationComponents(params.issueNumber),
-      }),
-    });
-
-    return {
-      ok: true,
-      channel_id: String(message?.channel_id || channelId),
-      message_id: String(message?.id || ""),
-    };
-  } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : "Discord API error" };
-  }
+        components: (params.status || "review") === "review" ? buildApplicationModerationComponents(params.issueNumber) : [],
+      };
 }
-
 
 export async function notifyDiscordApplicationChannelTest(params: { moderator: string; channelId?: string | null }) {
   const { botToken } = getDiscordBotConfig();

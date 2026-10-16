@@ -84,7 +84,6 @@
    ПК — рядок-сітка з шапкою, мобайл — картка з підписами.
    ========================================================= */
 
-.content-list,
 .discord-raid-signups-panel {
   display: flex;
   flex-direction: column;
@@ -92,7 +91,6 @@
   min-width: 0;
 }
 
-.content-table,
 .discord-raid-signups-table {
   display: grid;
   gap: var(--space-xs);
@@ -107,98 +105,6 @@
 }
 
 /* ---------- Рядок контенту ---------- */
-.content-row {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 76px;
-
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--c-ink-500);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  min-width: 0;
-  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
-}
-
-.content-row:hover {
-  border-color: var(--border-strong);
-  background: var(--surface-hover);
-}
-
-.content-row.is-active {
-  border-left-color: var(--c-accent-400);
-}
-
-.content-row-main {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-md);
-  min-width: 0;
-  color: inherit;
-}
-
-.content-row-thumb {
-  display: grid;
-  place-items: center;
-  width: 52px;
-  height: 52px;
-  flex: 0 0 auto;
-  overflow: hidden;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  background: var(--surface-raised);
-  color: var(--c-accent-300);
-  font-size: 1.1rem;
-  font-weight: var(--font-weight-bold);
-}
-
-.content-row-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.content-row-title {
-  display: grid;
-  gap: var(--space-3xs);
-  min-width: 0;
-}
-
-.content-row-title strong {
-  font-size: 0.92rem;
-  color: var(--text-strong);
-  overflow-wrap: anywhere;
-}
-
-.content-row-title small {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
-  color: var(--text-faint);
-  overflow-wrap: anywhere;
-}
-
-.content-row-meta {
-  display: grid;
-  gap: var(--space-3xs);
-  justify-items: end;
-  text-align: right;
-  min-width: 0;
-  color: var(--text-muted);
-  font-size: var(--font-size-meta);
-  white-space: nowrap;
-}
-
-.content-row-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2xs);
-  flex: 0 0 auto;
-}
 
 /* ---------- Рядок підписантів правил ---------- */
 .discord-raid-signups-row {
@@ -251,39 +157,9 @@
    5. МОБІЛЬНИЙ ВИГЛЯД: РЯДОК → КАРТКА
    ========================================================= */
 @media (max-width: 860px) {
-  .content-row {
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-sm);
-  }
-
-  .content-row-main {
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: start;
-  }
 
   /* Метадані з правого краю переїжджають під картку: праворуч
      вони втрачали звʼязок із рядком, до якого належать. */
-  .content-row-meta {
-    grid-column: 1 / -1;
-    justify-items: start;
-    text-align: left;
-    white-space: normal;
-  }
-
-  .content-row-actions {
-    width: 100%;
-    padding-top: var(--space-xs);
-    border-top: 1px solid var(--border-subtle);
-  }
-
-  .content-row-actions > * {
-    flex: 1 1 auto;
-  }
-
-  .content-row-thumb {
-    width: 44px;
-    height: 44px;
-  }
 
   .discord-raid-signups-row--head {
     display: none;
@@ -311,16 +187,5 @@
 
   .discord-raid-signups-row > [role="cell"]:first-child strong {
     font-size: var(--font-size-base);
-  }
-}
-
-@media (max-width: 520px) {
-  .content-row-main {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .content-row-thumb {
-    width: 100%;
-    height: 110px;
   }
 }

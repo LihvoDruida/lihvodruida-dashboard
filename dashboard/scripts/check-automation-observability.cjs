@@ -20,6 +20,7 @@ function routeFixture(kind, fileOverride) {
     '@/lib/raids': { syncRaidLifecycleBatch: async () => { calls++; return work; } },
     '@/lib/raidPolls': { closeDueRaidPolls: async () => { calls++; return work; } },
     '@/lib/dashboardSystemLogs': { recordDashboardSystemLog: async () => {} },
+    '@/lib/guildRaidHistory': {refreshGuildRaidHistory: async()=>({checked:0,failed:0})},
     '@/lib/guildRoster': { loadStoredGuildRosterData: async () => null, refreshGuildRosterApiBatch: async () => {
       calls++; await work;
       return { members: [], stats: {}, source: 'fixture', refresh: { sync: { status: 'completed' }, battleNet: {}, raiderIo: {} } };
@@ -115,7 +116,7 @@ async function check(name, fn) { await fn(); passed++; console.log('PASS', name)
   });
   await check('overview ignores observations from a different guild/configuration context', async () => {
     const db = { collection: c => ({ doc: id => ({ collection: c, id }) }), getAll: async (...refs) => refs.map(ref => ({ data: () => ref.collection === 'automationTaskRuns' ? run({ contextHash: 'other-context' }) : {} })) };
-    const overview = await loadOverview(db, '111111111111111111')(); assert.equal(overview.cards.length, 9);
+    const overview = await loadOverview(db, '111111111111111111')(); assert.equal(overview.cards.length, 10);
     assert.ok(overview.cards.slice(3).every(card => card.lastAt === null)); assert.ok(!JSON.stringify(overview).includes('other-context'));
   });
   await check('configured raid cooldown does not cause a false overdue scheduler warning', () => {

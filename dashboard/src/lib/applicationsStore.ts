@@ -545,7 +545,7 @@ export const sanitizeApplicationForReadOnlyViewer = sanitizeApplicationForMentor
 export const sanitizeApplicationsForReadOnlyViewer = sanitizeApplicationsForMentorViewer;
 
 
-function applicationsCollectionName() {
+export function applicationsCollectionName() {
   return process.env.STORAGE_APPLICATIONS_COLLECTION || "guildApplications";
 }
 
@@ -899,6 +899,12 @@ export async function listStoredApplications(params?: URLSearchParams) {
   return filterStoredApplications(await listStorageApplicationsBase(), params);
 }
 
+export const APPLICATION_DELIVERY_QUEUE = "guildApplicationDeliveries";
+export const applicationDeliveryKind = (collection: string) => `application-message:${collection}`;
+export function applicationDeliveryId(collection: string, id: string) {
+  return createHash("sha256").update(JSON.stringify([collection, id])).digest("hex");
+}
+
 export async function createGuildApplication(input: CreateGuildApplicationInput): Promise<CreateGuildApplicationResult> {
   const characterName = normalizeApplicationField(input.characterName, 32);
   const realm = normalizeApplicationField(input.realm, 48);
@@ -958,6 +964,10 @@ export async function createGuildApplication(input: CreateGuildApplicationInput)
     }
     const ref=collection.doc(id);
     tx.set(ref,payload);
+    tx.set(db.collection(APPLICATION_DELIVERY_QUEUE).doc(applicationDeliveryId(applicationsCollectionName(), id)), {
+      collection: applicationsCollectionName(), resourceId: id, number,
+      state: "pending", dueAtMs: now.getTime(), attempts: 0, createdAtMs: now.getTime(),
+    });
     // Both records commit together. PostgreSQL retries concurrent conflicting submissions.
     tx.set(submission,{applicationId:id,createdAtMs:now.getTime()});
     return {item:mapStorageApplicationDoc({id,data:()=>payload}),duplicate:false};
@@ -982,7 +992,13 @@ export async function deleteGuildApplication(issueNumber: number) {
   const doc = await findStorageApplicationDoc(normalized);
   if (!doc) throw new Error("Заявку не знайдено у сховищі.");
   const item = mapStorageApplicationDoc(doc);
-  await doc.ref.delete();
+  await getDocumentDb().runTransaction(async tx => {
+    tx.delete(doc.ref);
+    const publicationId = createHash("sha256").update(JSON.stringify([applicationDeliveryKind(applicationsCollectionName()), doc.id])).digest("hex");
+    tx.delete(getDocumentDb().collection("discordPublications").doc(publicationId));
+    tx.set(getDocumentDb().collection(APPLICATION_DELIVERY_QUEUE).doc(applicationDeliveryId(applicationsCollectionName(), doc.id)),
+      { state: "cancelled", dueAtMs: null, updatedAtMs: Date.now() }, { merge: true });
+  });
   return { ok: true, item };
 }
 

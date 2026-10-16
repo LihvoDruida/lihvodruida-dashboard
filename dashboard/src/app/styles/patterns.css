@@ -19,8 +19,8 @@
 
 /* ---------- Рядки: зміст ліворуч,
 дії праворуч ---------- */
-[class$="-row"]:not(:where([role="row"])):not(:where(.form-row)),
-[class*="-row "]:not(:where([role="row"])):not(:where(.form-row)),
+[class$="-row"]:not(:where([role="row"])),
+[class*="-row "]:not(:where([role="row"])),
 [class$="__row"],
 [class*="__row "],
 [class$="-bar"]:not(:where(.action-bar)),
@@ -46,7 +46,6 @@
 
 /* ---------- Вертикальні стеки ---------- */
 [class$="-stack"],
-/* ---------- Вертикальні стеки ---------- */
 [class*="-stack "],
 [class$="__stack"],
 [class*="__stack "],
@@ -95,7 +94,6 @@
 
 /* ---------- Сторінкові контейнери ---------- */
 [class$="-page"],
-/* ---------- Сторінкові контейнери ---------- */
 [class*="-page "],
 [class$="-container"]:not(:where(.container)),
 [class*="-container "]:not(:where(.container)),
@@ -106,7 +104,6 @@
 
 /* ---------- Форми ---------- */
 [class$="-form"]:not(:where(.roster-inline-form)),
-/* ---------- Форми ---------- */
 [class*="-form "]:not(:where(.roster-inline-form)),
 [class$="__form"],
 [class*="__form "] {
@@ -117,7 +114,6 @@
 
 /* Форма-обгортка навколо однієї кнопки не має розтягуватись */
 [class$="-action-form"],
-/* Форма-обгортка навколо однієї кнопки не має розтягуватись */
 [class*="-action-form "],
 [class$="-button-form"],
 [class*="-button-form "],
@@ -129,7 +125,6 @@
 
 /* ---------- Дрібний службовий текст ---------- */
 [class$="-meta"],
-/* ---------- Дрібний службовий текст ---------- */
 [class*="-meta "],
 [class$="__meta"],
 [class*="__meta "],
@@ -193,7 +188,6 @@
 
 /* ---------- Виділені врізки ---------- */
 [class$="-callout"],
-/* ---------- Виділені врізки ---------- */
 [class*="-callout "],
 [class$="-banner"],
 [class*="-banner "],
@@ -211,7 +205,6 @@
 
 /* ---------- Варіанти вибору: радіо-картки ---------- */
 [class$="-option"]:not(:where(option)),
-/* ---------- Варіанти вибору: радіо-картки ---------- */
 [class*="-option "]:not(:where(option)),
 [class$="__option"],
 [class*="__option "] {
@@ -250,7 +243,6 @@
 
 /* ---------- Дії та кнопки без класу .btn ---------- */
 [class$="-action"]:not(:where(.raid-action)):not(:where([class*="raid-action--"])),
-/* ---------- Дії та кнопки без класу .btn ---------- */
 [class*="-action "]:not(:where(.raid-action)):not(:where([class*="raid-action--"])),
 [class$="__action"],
 [class*="__action "],
@@ -263,7 +255,6 @@
 
 /* ---------- Роздільники ---------- */
 [class$="-divider"],
-/* ---------- Роздільники ---------- */
 [class*="-divider "],
 [class$="__divider"],
 [class*="__divider "],
@@ -277,7 +268,6 @@
 
 /* ---------- Крапка-індикатор ---------- */
 [class$="-dot"]:not(:where(.discord-role-dot)),
-/* ---------- Крапка-індикатор ---------- */
 [class*="-dot "]:not(:where(.discord-role-dot)) {
   display: inline-block;
   width: 8px;
@@ -289,14 +279,12 @@
 
 /* ---------- Посилання всередині блоків ---------- */
 [class$="-link"]:not(:where(.discord-preview-link)),
-/* ---------- Посилання всередині блоків ---------- */
 [class*="-link "]:not(:where(.discord-preview-link)) {
   color: var(--c-accent-300);
 }
 
 /* ---------- Підвал блоку ---------- */
 [class$="-footer"]:not(:where(.app-footer)),
-/* ---------- Підвал блоку ---------- */
 [class*="-footer "]:not(:where(.app-footer)),
 [class$="__footer"],
 [class*="__footer "] {
@@ -312,7 +300,6 @@
 
 /* ---------- Пошук ---------- */
 [class$="-search"],
-/* ---------- Пошук ---------- */
 [class*="-search "],
 [class$="__search"],
 [class*="__search "] {
@@ -322,7 +309,6 @@
 
 /* ---------- Секції всередині сторінки ---------- */
 [class$="-section"]:not(:where([class*="form-section"])),
-/* ---------- Секції всередині сторінки ---------- */
 [class*="-section "]:not(:where([class*="form-section"])),
 [class$="__section"],
 [class*="__section "] {
@@ -333,7 +319,6 @@
 
 /* ---------- Елементи списків ---------- */
 [class$="-item"]:not(:where(.dashboard-list-row)):not(:where(.raid-list-item)),
-/* ---------- Елементи списків ---------- */
 [class*="-item "]:not(:where(.dashboard-list-row)):not(:where(.raid-list-item)),
 [class$="__item"]:not(:where(.dashboard-nav-measure__item)),
 [class*="__item "]:not(:where(.dashboard-nav-measure__item)) {

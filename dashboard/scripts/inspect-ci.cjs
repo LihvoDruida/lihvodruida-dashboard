@@ -163,7 +163,7 @@ const listUnifiedFiles = {
   'src/components/RaidViews.tsx': ['dashboard-list-row', 'dashboard-list-actions'],
   'src/components/RaidPollBrowser.tsx': ['dashboard-list-panel', 'dashboard-list-head', 'dashboard-list', 'dashboard-list-row', 'dashboard-list-actions'],
   'src/app/raids/page.tsx': ['dashboard-list-panel', 'dashboard-list-head', 'dashboard-list'],
-  'src/app/content/page.tsx': ['dashboard-list-panel', 'dashboard-list-row', 'dashboard-list-actions'],
+  'src/components/content/ContentLibrary.tsx': ['dashboard-list-panel', 'dashboard-list-row', 'dashboard-list-actions'],
   'src/app/discord/rules/page.tsx': ['dashboard-list-panel', 'dashboard-list-row', 'dashboard-list-actions'],
 };
 for (const [file, requiredClasses] of Object.entries(listUnifiedFiles)) {

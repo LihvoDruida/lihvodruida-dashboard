@@ -571,3 +571,9 @@
   .applications-page .application-bulk { padding: 14px; }
   .applications-page .application-bulk__actions .btn { flex: 1 1 100%; }
 }
+
+.application-delivery { display: grid; gap: .6rem; min-width: 0; padding: 1rem 0; border-bottom: 1px solid var(--border, #293a32); margin-bottom: 1rem; }
+.application-delivery p { margin: 0; overflow-wrap: anywhere; }
+.application-delivery label { display: grid; gap: .4rem; }
+.application-delivery input { width: 100%; min-width: 0; }
+.application-delivery a { overflow-wrap: anywhere; }

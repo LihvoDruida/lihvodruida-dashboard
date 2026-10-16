@@ -60,6 +60,7 @@ function isPublicSiteBridgePath(pathname: string) {
     pathname === "/api/site/guild" ||
     pathname === "/api/site/content" ||
     pathname === "/api/site/status" ||
+    pathname === "/api/site/sync" ||
     /^\/api\/site\/media\/[a-f0-9]{64}$/.test(pathname)
   );
 }
@@ -109,6 +110,7 @@ function isInternalBearerApiPath(pathname: string) {
     pathname === "/api/dashboard/discord/nicknames/automation" ||
     // Profile-edit queue uses the same authenticated cron transport.
     pathname === "/api/dashboard/discord/profile-nicknames/automation" ||
+    pathname === "/api/dashboard/discord/applications/automation" ||
     pathname === "/api/guild/sync" ||
     pathname === "/api/raids/lifecycle" ||
     pathname === "/api/polls/close-due" ||
@@ -257,6 +259,9 @@ export function proxy(request: NextRequest) {
     hasPotentialInternalBearerToken(request);
   // Authenticated, narrowly scoped bridge from the public site's Next.js server inside
   // the Docker edge network. Only application submission may write; privileged routes are excluded.
+  if(isInternalServiceHost(host)&&isPublicSiteBridgePath(pathname)&&!hasSiteBridgeToken(request)){
+    return NextResponse.json({ok:false,code:'bridge_auth_failed',error:'Site bridge authentication failed'},{status:401,headers:noStoreHeaders()});
+  }
   const isInternalSiteRead =
     hasSiteBridgeToken(request) &&
     (request.method === "GET" || request.method === "HEAD" || (request.method === "POST" && pathname === "/api/site/applications")) &&

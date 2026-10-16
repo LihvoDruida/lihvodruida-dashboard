@@ -1,0 +1,160 @@
+{
+  "stage": "R6.8",
+  "dashboardVersion": "3.8.84",
+  "botVersion": "3.6.7",
+  "date": "2026-10-14",
+  "baseArchive": "3.8.83 R6.7 publication-workbench-full",
+  "scope": [
+    "Raid list and archive",
+    "Raid poll browser",
+    "Shared list memory and contextual return links"
+  ],
+  "functionalChecks": {
+    "existingListNavigation": 14,
+    "newRaidListNavigation": 10,
+    "commands": [
+      "npm run check:list-navigation",
+      "npm run check:raid-list-navigation"
+    ],
+    "storage": "Actual modules and actual raid page with deterministic session, storage and component doubles; no live PostgreSQL."
+  },
+  "verify": {
+    "command": "npm run verify",
+    "exitCode": 0,
+    "includes": [
+      "TypeScript",
+      "ESLint",
+      "functional/security/regression checks",
+      "imports",
+      "style/UI audits"
+    ]
+  },
+  "finalTargetedChecks": {
+    "exitCode": 0,
+    "checks": [
+      "ESLint of final RaidPollBrowser and raid page",
+      "TypeScript after final URL/default-tab adjustment",
+      "14 list navigation regressions",
+      "10 raid list navigation checks",
+      "32 poll scheduling invariants",
+      "style and UI audits after mobile changes"
+    ]
+  },
+  "securityRuntime": {
+    "command": "npm run security:runtime",
+    "exitCode": 0,
+    "node": "24.19.0",
+    "next": "16.3.5",
+    "react": "19.2.8",
+    "reactDom": "19.2.8",
+    "sharp": "0.35.4",
+    "note": "Existing Docker security overlays retained locally; source dependency pins unchanged."
+  },
+  "additionalBuildCiChecks": {
+    "characterData": 16,
+    "guildBanner": 24
+  },
+  "productionBuild": {
+    "command": "NEXT_PUBLIC_DASHBOARD_URL=https://guild.lihvodruida.pp.ua NEXT_BUILD_CPUS=2 NODE_BUILD_MEMORY_MB=2560 npm run build",
+    "exitCode": 0,
+    "reportedSeconds": 6,
+    "warnings": "Two existing filesystem tracing warnings in unchanged discordWelcomeCard.ts."
+  },
+  "browser": {
+    "passed": 16,
+    "checks": [
+      "explicit poll URL initializes tab and search",
+      "poll typing and tab changes update URL without network requests",
+      "poll return preserves search, tab and focuses the opened card",
+      "named poll view restores filters while show-all resets them",
+      "bare poll menu entry restores the last view",
+      "filter changes clear bulk selection and no action is submitted",
+      "mixed list bulk confirmation explains scheduled cancellation before any write",
+      "navigation and view saving never trigger mutations",
+      "raid archive expands immediately with no network and remembers extent in URL",
+      "raid return restores expanded archive and exact row offset",
+      "browser Back also restores archive extent and focus",
+      "missing opened raid falls back to its next neighbor",
+      "another account/access scope does not inherit saved views",
+      "corrupt memory remains intact until explicit clear",
+      "poll controls and cards fit nine viewport widths",
+      "no browser JavaScript errors"
+    ],
+    "viewports": [
+      320,
+      360,
+      390,
+      620,
+      768,
+      1024,
+      1280,
+      1440,
+      1920
+    ],
+    "pageErrors": [],
+    "liveServicesUsed": false
+  },
+  "productionSmoke": {
+    "passed": 9,
+    "checks": [
+      {
+        "path": "/raids?q=raid&state=closed&archive=18",
+        "method": "GET",
+        "status": 303
+      },
+      {
+        "path": "/polls?tab=closed&q=raid",
+        "method": "GET",
+        "status": 303
+      },
+      {
+        "path": "/profiles",
+        "method": "GET",
+        "status": 303
+      },
+      {
+        "path": "/applications",
+        "method": "GET",
+        "status": 303
+      },
+      {
+        "path": "/raids/fixture00/edit",
+        "method": "GET",
+        "status": 303
+      },
+      {
+        "path": "/polls/fixture00/edit",
+        "method": "GET",
+        "status": 303
+      },
+      {
+        "path": "/raids?state=draft",
+        "method": "GET",
+        "status": 308
+      },
+      {
+        "path": "/api/polls/fixture00/discord-sync",
+        "method": "POST",
+        "status": 403
+      },
+      {
+        "path": "/api/polls/fixture00/discord-sync",
+        "method": "POST",
+        "status": 421
+      }
+    ],
+    "liveCredentialsUsed": false
+  },
+  "measuredLocalRequests": {
+    "pollTabAndSearchChanges": 0,
+    "raidArchiveExpansion": 0,
+    "note": "Observed with the actual components and a local HTTP fixture; not a production load benchmark."
+  },
+  "limits": [
+    "Existing list loaders remain capped at 100 raids and 120 polls",
+    "No live PostgreSQL, Discord or VPS changes",
+    "Browser uses a Next navigation adapter fixture; no authenticated production QA",
+    "Guild roster navigation remains R6.9",
+    "R7 and R8 not completed"
+  ]
+}

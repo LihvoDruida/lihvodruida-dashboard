@@ -1,0 +1,162 @@
+{
+  "date": "2026-10-15",
+  "dashboardVersion": "3.8.101",
+  "botVersion": "3.6.9",
+  "reference": "Provided 3IRD UA MHTML: three MP4 DOM sources and original layer/fade CSS",
+  "browser": {
+    "passed": 29,
+    "failed": 0,
+    "scenarios": [
+      "production login loads the bundled template landscape and local fonts",
+      "only authorization is visible without navigation, footer or page spacing",
+      "guild name stays centered without inheriting generic navigation badges",
+      "desktop and mobile layout fits nine viewport widths",
+      "desktop and mobile screenshots are rendered for internal visual review",
+      "short landscape viewport can scroll to the complete sign-in control",
+      "long access errors stay visible and keep the action reachable on 320px",
+      "logged-out confirmation remains a status and allows sign-in",
+      "unknown error input never becomes raw HTML or script content",
+      "return destination and account switching stay in the OAuth URL",
+      "external and protocol-relative return destinations are discarded",
+      "keyboard activation targets the existing OAuth start without contacting Discord",
+      "reduced motion removes animated sign-in transitions",
+      "login does not initialize the decorative starfield canvas",
+      "emergency owner entry stays policy-gated and usable on mobile",
+      "missing OAuth configuration displays an explicit unavailable state",
+      "production login only requests its own assets and original template MP4s",
+      "original Hyjal MP4 decodes, autoplays silently and leaves auth interactive",
+      "all three real clips rotate and wrap with a one-second crossfade",
+      "mobile video stays inline, covers the screen and adds no controls",
+      "a hidden page pauses every decoder and resumes on return",
+      "reduced motion releases media sources and restores video when removed",
+      "data saver stops and releases media without affecting the login button",
+      "next clip never replaces the current image before it is playing",
+      "a failed first clip is skipped and the next real clip plays",
+      "a single healthy clip loops after both following clips fail",
+      "all media failures preserve the local poster and usable authorization",
+      "autoplay rejection stops after three attempts without a retry loop",
+      "playback deadline returns to the poster without leaving auth busy"
+    ],
+    "observations": {
+      "widths": [
+        320,
+        360,
+        390,
+        480,
+        640,
+        768,
+        1024,
+        1440,
+        1920
+      ],
+      "nativeMedia": {
+        "width": 1920,
+        "height": 1080,
+        "muted": true,
+        "inline": true
+      },
+      "mediaBytes": 268560
+    },
+    "errors": [],
+    "browser": "153.0.8010.0",
+    "videoFixtureDirectory": true,
+    "scope": "Production standalone with Docker-equivalent public/static copies; controlled local reverse proxy and fixture auth configuration. No live OAuth or emergency POST."
+  },
+  "sourceChecks": [
+    {
+      "filename": "Hyjal02.mp4",
+      "bytes": 10446580,
+      "sha256": "f6b481d696b8737fa7e324df0fcfc3f34df786d18af6bc6ba851ff5f05515bcf",
+      "metadata": {
+        "programs": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1920,
+            "height": 1080
+          }
+        ],
+        "format": {
+          "duration": "16.127000"
+        }
+      },
+      "headStatus": 200
+    },
+    {
+      "filename": "WowF_TheBarrens_01.mp4",
+      "bytes": 8084533,
+      "sha256": "4f6aa65a72f03106f766b3047612b060228070bf54d871a985513d71c32b125f",
+      "metadata": {
+        "programs": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1920,
+            "height": 1080
+          }
+        ],
+        "format": {
+          "duration": "13.268000"
+        }
+      },
+      "headStatus": 200
+    },
+    {
+      "filename": "Zephras_01.mp4",
+      "bytes": 6626306,
+      "sha256": "b010d9d22d11878275d5f10fa5fa0b0e4508c13c2485c664de0ce8490a41e388",
+      "metadata": {
+        "programs": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1920,
+            "height": 1080
+          }
+        ],
+        "format": {
+          "duration": "15.551000"
+        }
+      },
+      "headStatus": 200
+    }
+  ],
+  "gates": {
+    "loginContractChecks": 26,
+    "fullBuildCi": {
+      "exitCode": 0,
+      "standaloneFooter": true
+    },
+    "wholeProjectEslintExitCode": 0,
+    "finalChangedFilesEslintExitCode": 0,
+    "finalTypecheckExitCode": 0,
+    "finalBuildExitCode": 0,
+    "finalStandalone": {
+      "passed": 6,
+      "failed": 0,
+      "scenarios": [
+        "welcome route trace includes its background and three bundled fonts",
+        "standalone contains no dashboard source, CI scripts or builder-only configuration",
+        "Sharp resolves from standalone rather than the source node_modules",
+        "packaged Sharp and assets pass the real renderer suite",
+        "packaged Next server starts and returns healthy no-store liveness without integrations",
+        "standalone server serves the exact traced welcome background"
+      ],
+      "traceFiles": 1180,
+      "traceBytes": 41469481,
+      "standaloneFiles": 4058,
+      "standaloneBytes": 84373030,
+      "scriptsInStandalone": 0,
+      "sourceFilesInStandalone": 0
+    }
+  },
+  "crestFix": "Tested Chromium could not decode the existing ICO as an img, while the existing 192px PNG decoded. Local fallback branding now uses that PNG; configured Discord branding is unchanged. Every final browser visit asserts crest decoding.",
+  "testMethod": "Original downloaded MP4 bytes are fulfilled at their original CDN URLs with HTTP byte-range support; real Chromium H.264 decoder, play/pause/timeupdate/ended events and CSS fades. HEAD/download separately verified against live CDN. Playback rejection/deadline, failed requests and saveData/visibility flags are controlled negative scenarios.",
+  "limits": [
+    "Original JavaScript is not embedded in the MHTML, so the controller is an independent implementation of its observed three-video system and supplied CSS transitions.",
+    "Final source release streams the three original URLs from Blizzard CDN, as the reference does; videos are not bundled into the archive.",
+    "Physical iOS/Android and uninterrupted live-CDN playback were not tested; mobile viewport and exact downloaded media bytes were tested.",
+    "Live Discord OAuth, emergency-token POST, PostgreSQL and deployment were not performed.",
+    "Full CI passed before the final failed-source release and PNG fallback changes; final ESLint, TypeScript, production build, browser 29/29 and standalone6/6 passed afterwards."
+  ]
+}

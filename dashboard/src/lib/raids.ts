@@ -1775,7 +1775,7 @@ function raidWriteErrorMessage(error: unknown) {
  * перетворилось на другий кеш тих самих даних у тій самій памʼяті: користі
  * нуль, а ризик показати застарілий склад рейду — цілком реальний.
  */
-export async function listRaids(limit = 60): Promise<RaidItem[]> {
+export async function listRaids(limit = 60, options: { bypassCache?: boolean; readOnly?: boolean } = {}): Promise<RaidItem[]> {
   const safeLimit = Math.max(1, Math.min(100, limit));
   if (!hasRaidStorage()) return [];
   const raids = await storageRead<RaidItem[]>(
@@ -1808,12 +1808,13 @@ export async function listRaids(limit = 60): Promise<RaidItem[]> {
           Date.parse(b.updatedAt || b.createdAt || "") -
             Date.parse(a.updatedAt || a.createdAt || ""),
       );
-      sorted.forEach((raid) =>
+      if(!options.readOnly)sorted.forEach((raid) =>
         scheduleRaidAutoCloseSync(raid, "storage-list-read"),
       );
       return sorted;
     },
     {
+      bypassCache:options.bypassCache,
       ttlMs: Math.max(
         30_000,
         Math.min(

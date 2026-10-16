@@ -616,8 +616,8 @@ export async function getExternalCharacterDataSettings() {
   };
 }
 
-export async function getGuildRosterSyncSettings() {
-  const settings = await getDashboardApiSettings();
+export async function getGuildRosterSyncSettings(options: { bypassCache?: boolean } = {}) {
+  const settings = await getDashboardApiSettings(options);
   return {
     region: settings.guildRosterRegion,
     realm: settings.guildRosterRealm,

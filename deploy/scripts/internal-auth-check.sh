@@ -82,3 +82,12 @@ then
 else
   fail "profile-nicknames probe не пройшов: перевір версію dashboard, DASHBOARD_INTERNAL_HOSTS та токен cron; HTTP 308/421 означає відхилений Host, 401 — токен, 405 — старий dashboard"
 fi
+
+# Authenticated GET probes availability without sending queued applications.
+if docker compose exec -T cron sh -lc \
+  'curl --silent --show-error --fail --max-time 5 --header "Authorization: Bearer $INTERNAL_CRON_TOKEN" http://dashboard:3000/api/dashboard/discord/applications/automation'
+then
+  ok "cron → application-deliveries: захищений маршрут доступний, чергу не запущено"
+else
+  fail "application-deliveries probe не пройшов: перевір версію dashboard, Host та service token"
+fi

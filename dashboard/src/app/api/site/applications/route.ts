@@ -1,16 +1,15 @@
 import {normalizeApplication,validateApplication as validatePublicApplication} from '@/lib/applicationContract';
 import {hasSiteBridgeToken,siteBridgeClientIp} from '@/lib/siteBridgeAuth';
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import {
   createGuildApplication,
   filterStoredApplications,
   listStoredApplications,
   sanitizeApplicationForPublicSite,
   sanitizeApplicationsForPublicSite,
-  setApplicationDiscordMessageRef,
   type CreateGuildApplicationInput,
 } from "@/lib/applicationsStore";
-import { notifyDiscordNewApplication } from "@/lib/discord";
+import { processApplicationDelivery } from "@/lib/applicationDelivery";
 import {
   assertRequestBodySize,
   checkRateLimit,
@@ -23,6 +22,10 @@ import { isAllowedPublicSiteOrigin, publicSiteCorsHeaders } from "@/lib/publicSi
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+function recordApplicationEvent(...args: Parameters<typeof logDashboardEvent>) {
+  try { logDashboardEvent(...args); } catch { /* Logging cannot change a persisted application receipt. */ }
+}
 
 function json(request: NextRequest, payload: unknown, status = 200) {
   return NextResponse.json(payload, { status, headers: publicSiteCorsHeaders(request) });
@@ -59,14 +62,14 @@ export async function GET(request: NextRequest) {
     };
     return json(request, { schema: "mistblossom.public-applications.v1", items, counts, updated_at: new Date().toISOString() });
   } catch (error) {
-    logDashboardEvent("error", "public_site.applications.list_failed", request, { message: safeErrorMessage(error) });
+    recordApplicationEvent("error", "public_site.applications.list_failed", request, { message: safeErrorMessage(error) });
     return json(request, { error: "Не вдалося отримати список заявок." }, 500);
   }
 }
 
 export async function POST(request: NextRequest) {
   if (!hasSiteBridgeToken(request) || !isAllowedPublicSiteOrigin(request)) {
-    logDashboardEvent("warn", "public_site.applications.origin_rejected", request);
+    recordApplicationEvent("warn", "public_site.applications.origin_rejected", request);
     return json(request, { error: "Недозволене джерело заявки." }, 403);
   }
 
@@ -77,7 +80,7 @@ export async function POST(request: NextRequest) {
   const burst = checkRateLimit(`public-site:applications:post:${ip}`, 4, 10 * 60 * 1000);
   const hourly = checkRateLimit(`public-site:applications:post-hour:${ip}`, 10, 60 * 60 * 1000);
   if (!burst.ok || !hourly.ok) {
-    logDashboardEvent("warn", "public_site.applications.rate_limited", request, { ip });
+    recordApplicationEvent("warn", "public_site.applications.rate_limited", request, { ip });
     return json(request, { error: "Забагато заявок з цієї адреси. Спробуй пізніше." }, 429);
   }
 
@@ -93,32 +96,20 @@ export async function POST(request: NextRequest) {
     const item = result.item;
 
     if (!result.duplicate) {
-      const discord = await notifyDiscordNewApplication({
-        issueNumber: item.number,
-        trackingNumber: item.tracking_number,
-        characterName: item.character_name || validated.value.characterName,
-        realm: item.realm || validated.value.realm,
-        region: item.region || validated.value.region,
-        faction: item.faction || validated.value.faction,
-        className: item.class_name || validated.value.className,
-        discord: validated.value.discord,
-        battleTag: validated.value.battleTag,
-        source: item.source || validated.value.source,
-        availability: item.availability || validated.value.availability,
+      // The database commit is the receipt boundary. Discord must not delay or
+      // turn a successful submission into an HTTP error after it was persisted.
+      after(async () => {
+        try {
+          await processApplicationDelivery(item.number);
+        } catch (error) {
+          recordApplicationEvent("warn", "public_site.applications.discord_notify_failed", request, {
+            number: item.number, message: safeErrorMessage(error),
+          });
+        }
       });
-      if (discord.ok && discord.channel_id && discord.message_id) {
-        await setApplicationDiscordMessageRef(item.number, { channel_id: discord.channel_id, message_id: discord.message_id }).catch(() => false);
-        logDashboardEvent("info", "public_site.applications.discord_notified", request, { number: item.number, channelId: discord.channel_id, messageId: discord.message_id });
-      } else {
-        logDashboardEvent("warn", "public_site.applications.discord_notify_failed", request, {
-          number: item.number,
-          skipped: Boolean(discord.skipped),
-          reason: discord.reason || discord.error || "unknown",
-        });
-      }
     }
 
-    logDashboardEvent("info", "public_site.applications.created", request, {
+    recordApplicationEvent("info", "public_site.applications.created", request, {
       number: item.number,
       duplicate: result.duplicate,
       character: item.character_name,
@@ -134,7 +125,7 @@ export async function POST(request: NextRequest) {
       status_text: publicItem.status_text,
     }, result.duplicate ? 200 : 201);
   } catch (error) {
-    logDashboardEvent("error", "public_site.applications.create_failed", request, { message: safeErrorMessage(error) });
+    recordApplicationEvent("error", "public_site.applications.create_failed", request, { message: safeErrorMessage(error) });
     return json(request, { error: "Не вдалося створити заявку. Спробуй ще раз трохи пізніше." }, 500);
   }
 }

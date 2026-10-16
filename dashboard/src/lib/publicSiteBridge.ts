@@ -86,6 +86,8 @@ function publicRaidSeasonSnapshot(snapshot: any) {
   const seasons = Array.isArray(snapshot.seasons) ? snapshot.seasons : [];
   const catalog = snapshot.catalog && typeof snapshot.catalog === "object" ? snapshot.catalog : {};
   return {
+    schema_version: snapshot.schemaVersion || 1,
+    partial: !!snapshot.partial,
     detected_at: snapshot.detectedAt || null,
     source: snapshot.source || null,
     region: snapshot.region || "eu",
@@ -149,8 +151,8 @@ function publicRaid(raid: RaidItem) {
 
 export async function buildPublicGuildSnapshot() {
   const [roster, raids] = await Promise.all([
-    loadStoredGuildRosterData(),
-    listRaids(40),
+    loadStoredGuildRosterData({bypassCache:true}),
+    listRaids(40,{bypassCache:true,readOnly:true}),
   ]);
   if(!Number.isFinite(Date.parse(roster.stats.updatedAt||'')))throw new Error('Guild snapshot unavailable or not initialized');
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Kyiv", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
@@ -164,6 +166,8 @@ export async function buildPublicGuildSnapshot() {
   const progression = Object.fromEntries((roster.stats.raidProgression || []).map((raid) => [raid.slug, {
     name: raid.name,
     summary: raid.summary,
+    updated_at: raid.observedAt || roster.stats.rosterUpdatedAt || null,
+    stale: !!raid.stale,
     total_bosses: raid.totalBosses,
     normal_bosses_killed: raid.normalKills,
     heroic_bosses_killed: raid.heroicKills,
@@ -182,6 +186,7 @@ export async function buildPublicGuildSnapshot() {
       stale: Boolean(roster.error),
       updated_at: roster.stats.updatedAt || roster.stats.rosterUpdatedAt || new Date().toISOString(),
       roster_updated_at: roster.stats.rosterUpdatedAt || roster.stats.updatedAt || null,
+      raid_history: roster.stats.raidHistory || null,
       raid_progress_source: (roster.stats.raidProgression || []).length ? 'raiderio-or-persisted' : 'not-yet-available',
       source: roster.source,
       region: roster.members[0]?.region || "eu",

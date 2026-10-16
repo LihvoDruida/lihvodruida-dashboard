@@ -1,0 +1,196 @@
+{
+  "date": "2026-10-15T18:29:46.078161+00:00",
+  "dashboardVersion": "3.8.103",
+  "botVersion": "3.6.9",
+  "contractVersion": "1.1.1",
+  "stage": "R7.7 log settings and Security mirror",
+  "baseline": {
+    "baseline": true,
+    "passed": 6,
+    "failed": 0,
+    "scenarios": [
+      "saved mirror badge does not claim an unsaved toggle",
+      "truthy acknowledgement never confirms a save",
+      "test locks edits and saving until its result",
+      "truthy test response cannot claim Discord delivery",
+      "explicit save focuses a persistent result without page refresh",
+      "dirty mirror cannot test a different saved channel"
+    ],
+    "observations": {},
+    "errors": [],
+    "browser": "153.0.8010.0"
+  },
+  "browser": {
+    "baseline": false,
+    "passed": 26,
+    "failed": 0,
+    "scenarios": [
+      "saved mirror badge does not claim an unsaved toggle",
+      "truthy acknowledgement never confirms a save",
+      "test locks edits and saving until its result",
+      "truthy test response cannot claim Discord delivery",
+      "explicit save focuses a persistent result without page refresh",
+      "dirty mirror cannot test a different saved channel",
+      "fresh server props update pristine settings without another request",
+      "server refresh and explicit GET preserve an unsaved draft",
+      "malformed and mismatched save responses reconcile without a POST replay",
+      "lost success and HTTP 400 after commit reconcile through fresh GET",
+      "failed recovery keeps the draft and unlocks GET-only verification",
+      "explicit access denial never retries or performs a recovery read",
+      "save deadline aborts then reads state without replay",
+      "unmount cancels a pending save without recovery",
+      "uncertain test delivery never triggers another send",
+      "a different channel in the receipt cannot confirm delivery",
+      "test result does not steal manually moved focus",
+      "empty numeric input stays editable and cannot be saved",
+      "failed manual refresh preserves draft and a retry uses GET only",
+      "non-owner cannot alter storage controls",
+      "read-only viewer cannot save or test",
+      "unconfigured storage exposes no writable or testable mirror",
+      "revoked editing permission during a request remains revoked after its receipt",
+      "100 draft edits send no request and never refresh the whole page",
+      "mirror switch keeps a round thumb instead of the global checkbox tick",
+      "nine viewport widths retain controls without horizontal overflow"
+    ],
+    "observations": {},
+    "errors": [],
+    "browser": "153.0.8010.0"
+  },
+  "independentServerChecks": {
+    "passed": 34,
+    "failed": 0,
+    "scenarios": [
+      "strict settings snapshot rejects false, truthy or incomplete acknowledgements",
+      "storage ranges, levels, timestamps and channel shapes are checked",
+      "only a matching database acknowledgement confirms saved editable fields",
+      "non-owner confirmation ignores protected storage values",
+      "empty and fractional numeric drafts cannot be saved",
+      "test delivery requires a true receipt for the saved channel",
+      "GET returns fresh strict settings and explicit permissions with no-store",
+      "GET database outage cannot be reported as valid environment defaults",
+      "anonymous save cannot write",
+      "unauthorized save cannot write",
+      "CSRF save cannot write",
+      "oversized save cannot write",
+      "rate limited save cannot write",
+      "invalid owner storage and mirror flags fail before persistence",
+      "valid save returns an explicit acknowledgement; audit failure is not false success",
+      "HTML redirect uses the public origin rather than the internal Docker host",
+      "strict storage read failure prevents any settings write and masks its console error",
+      "non-owner SQL never assigns protected storage columns on conflict",
+      "owner SQL can persist storage limits and cache the returned row",
+      "live log reads retain the normal cache while fresh strict reads query storage",
+      "test uses the configured info threshold with a single settings snapshot",
+      "test uses the configured warning threshold with a single settings snapshot",
+      "test uses the configured error threshold with a single settings snapshot",
+      "test anonymous cannot send",
+      "test forbidden cannot send",
+      "test CSRF cannot send",
+      "test rate limit cannot send",
+      "test offline settings cannot send",
+      "test unconfigured database cannot send",
+      "ambiguous Discord delivery is reported as unconfirmed and never retried",
+      "real mirror transport is bounded, redacts secrets and suppresses mentions",
+      "mirror transport failure remains bounded and unconfirmed without retry",
+      "HTTP 200 HTML or an unrelated Discord message cannot prove delivery",
+      "a settings outage cannot silently redirect Security events to ENV defaults"
+    ]
+  },
+  "buildCI": {
+    "exitCode": 0,
+    "initialIndependentGate": 33,
+    "inspectFiles": 524,
+    "blockingIssues": 0,
+    "stylesAudit": "clean",
+    "uiAudit": "clean",
+    "note": "After the full CI pass, the additional strict-cache failure case and switch CSS correction were covered by 34 independent checks, final TypeScript/ESLint, repeated browser suite (26), CSS audit, final production build and standalone checks (7)."
+  },
+  "finalProductionBuild": {
+    "exitCode": 0,
+    "cache": "warm",
+    "standalone": {
+      "passed": 7,
+      "failed": 0,
+      "scenarios": [
+        "welcome route trace includes its background and three bundled fonts",
+        "standalone contains no dashboard source, CI scripts or builder-only configuration",
+        "packaged server chunks match the current build byte for byte",
+        "Sharp resolves from standalone rather than the source node_modules",
+        "packaged Sharp and assets pass the real renderer suite",
+        "packaged Next server starts and returns healthy no-store liveness without integrations",
+        "standalone server serves the exact traced welcome background"
+      ],
+      "traceFiles": 1180,
+      "traceBytes": 41469526,
+      "standaloneFiles": 4057,
+      "standaloneBytes": 84346468,
+      "scriptsInStandalone": 0,
+      "sourceFilesInStandalone": 0
+    }
+  },
+  "typecheckExitCode": 0,
+  "eslintExitCode": 0,
+  "measuredOperations": {
+    "draftEdits": 100,
+    "requestsDuringDraftEdits": 0,
+    "wholePageRefreshesDuringDraftEdits": 0,
+    "oldSaveRouterRefreshCalls": 1,
+    "newSaveRouterRefreshCalls": 0,
+    "ambiguousSavePostCount": 1,
+    "ambiguousSaveReadCount": 1,
+    "viewportWidths": [
+      320,
+      360,
+      390,
+      480,
+      640,
+      768,
+      1024,
+      1440,
+      1920
+    ]
+  },
+  "testIsolation": {
+    "liveDiscordMessagesSent": 0,
+    "livePostgresUsed": false,
+    "transport": "Controlled HTTP/Discord and SQL boundary fixtures; no test-only switches in production code",
+    "timeoutTests": "Only browser test timers at 12000/20000ms shortened to 150ms"
+  },
+  "releaseFiles": {
+    "changed": [
+      "docs/roadmap/DIAGNOSTYKA_ROADMAP_MISTBLOSSOM_2026-10-11.md",
+      "dashboard/src/app/dashboard/logs/logs.module.css",
+      "dashboard/src/app/dashboard/logs/page.tsx",
+      "dashboard/src/app/api/dashboard/logs/settings/route.ts",
+      "dashboard/src/app/api/dashboard/logs/security-test/route.ts",
+      "dashboard/src/lib/securityLogDiscord.ts",
+      "dashboard/src/lib/logSettings.ts",
+      "dashboard/src/components/StructuredLogSettingsPanel.tsx",
+      "dashboard/package-lock.json",
+      "dashboard/package.json",
+      "README.md"
+    ],
+    "added": [
+      "dashboard/src/lib/logSettingsView.ts",
+      "dashboard/scripts/check-log-settings.cjs",
+      "dashboard/scripts/check-log-settings-browser.cjs",
+      "docs/roadmap/R7_7_LOG_SETTINGS_2026-10-15.md",
+      "docs/roadmap/R7_7_VALIDATION_2026-10-15.json"
+    ],
+    "removed": []
+  },
+  "baseArchiveSHA256": "af92e10990fb68353a46568bf723d97929f7ae9034cc0db0e820333be4a1f063",
+  "archive": "lihvodruida-dashboard-v3.8.103-R7.7-log-settings-full.zip",
+  "unchangedAreas": [
+    "Log explorer design / filters / export",
+    "Three-day retention",
+    "Authentication and public rules acceptance from 3.8.102",
+    "Bot, cron, DB schema and shared contract"
+  ],
+  "openItems": [
+    "R6 live PostgreSQL/Discord acceptance",
+    "Remaining R7 administration forms",
+    "VPS deployment",
+    "Real NVDA/TalkBack acceptance"
+  ]
+}

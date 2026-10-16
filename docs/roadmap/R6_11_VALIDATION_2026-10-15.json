@@ -1,0 +1,125 @@
+{
+  "dashboardVersion": "3.8.92",
+  "botVersion": "3.6.9",
+  "contractVersion": "1.1.1",
+  "featureStage": "R6.11",
+  "baseVersion": "3.8.91",
+  "date": "2026-10-15",
+  "baselineUiObservations": {
+    "characterAfterProps": "a",
+    "refreshesWhileOpen": 1,
+    "htmlClosed": true,
+    "htmlMutationCount": 1,
+    "preferenceError": false,
+    "submitStillBusy": true
+  },
+  "baselineRouteRegression": {
+    "malformedJsonCalledMutation": true,
+    "regressionSuiteExitCode": 1,
+    "sourceVersion": "3.8.91"
+  },
+  "routeScenarios": {
+    "passed": 12,
+    "failed": 0,
+    "subject": "Actual attendance and reminder route modules; controlled sessions/domain/storage/security dependencies"
+  },
+  "browser": {
+    "baseline": false,
+    "passed": 15,
+    "failed": 0,
+    "scenarios": [
+      "saved reminder opt-out is loaded before a submission",
+      "prop refresh preserves the local character draft",
+      "open signup pauses global live page refresh after focus leaves selects",
+      "HTTP 200 HTML never confirms or closes the signup",
+      "preference request has a deadline and a retry within the open form",
+      "lost submit response releases controls and preserves the draft without retrying POST",
+      "live refresh resumes after the form closes",
+      "server rejection remains visible and retains selections",
+      "reopening initializes the latest saved attendance and character",
+      "confirmed write closes once and publishes one live mutation",
+      "manual class and spec commit together without a character key",
+      "two same-tick submits send only one write",
+      "cancel does not save reminder changes",
+      "modal fits nine mobile and desktop widths",
+      "no browser runtime errors"
+    ],
+    "observations": {
+      "characterAfterProps": "b",
+      "refreshesWhileOpen": 0,
+      "htmlClosed": false,
+      "htmlMutationCount": 0,
+      "preferenceError": true,
+      "submitStillBusy": false
+    },
+    "browser": "153.0.8010.0",
+    "errors": [],
+    "widths": [
+      320,
+      360,
+      390,
+      520,
+      760,
+      1024,
+      1280,
+      1600,
+      1920
+    ],
+    "subject": "Actual RaidAttendanceClient and DashboardLivePageSync, API client, request lanes and CSS; controlled API replies and Next navigation adapter"
+  },
+  "regressionCoverage": {
+    "identityApi": 11,
+    "characterSetupApi": 10,
+    "applicationWorkbench": 20,
+    "publicationWorkbench": 19,
+    "groupDrafts": 7,
+    "groupApi": 10,
+    "groupAssignmentMigration": 8,
+    "listNavigation": 14,
+    "raidListNavigation": 10,
+    "guildListNavigation": 12,
+    "automationObservability": 22,
+    "internalCronProxy": 30,
+    "discordSignupMenu": 29
+  },
+  "buildCi": {
+    "exitCode": 0,
+    "stages": [
+      "runtime-security",
+      "typecheck",
+      "all build:ci behavioral and contract checks",
+      "audit:styles",
+      "audit:ui",
+      "inspect:ci",
+      "next production build"
+    ],
+    "next": "16.3.5",
+    "react": "19.2.8",
+    "sharp": "0.35.4",
+    "existingTurbopackWarnings": 2
+  },
+  "lint": {
+    "wholeProjectExitCode": 0,
+    "changedModulesExitCode": 0
+  },
+  "bot": {
+    "passed": 55,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "runner": "node --test --test-concurrency=1 --test-reporter=tap test/*.test.mjs"
+  },
+  "rollout": {
+    "liveVps": false,
+    "livePostgresql": false,
+    "liveDiscord": false,
+    "dockerCompose": false,
+    "schemaMigrationRequired": false
+  },
+  "limits": [
+    "Timeout does not cancel or prove absence of a server commit; no automatic POST replay.",
+    "Browser test is an isolated component harness, not a deployed Next/Discord environment.",
+    "Two existing welcome-card filesystem tracing warnings remain for R7.",
+    "Complete R6/R7/R8 acceptance is not claimed."
+  ]
+}

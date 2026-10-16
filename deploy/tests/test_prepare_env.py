@@ -21,6 +21,12 @@ class EnvironmentTests(unittest.TestCase):
   for p in files:self.assertEqual(p.stat().st_mode&0o777,0o600)
   self.assertFalse((self.root/'MUST_NOT_EXIST').exists())
   before=[p.read_text() for p in files];self.assertEqual(self.run_script().returncode,0);self.assertEqual([p.read_text() for p in files],before)
+ def test_preserves_curseforge_dollar_signs_with_literal_quoting(self):
+  key='$2a$10$literalOriginalKeyValue'
+  (self.site/'.env').write_text('SITE_URL=https://lihvodruida.pp.ua\nCURSEFORGE_API_KEY='+key+'\n')
+  r=self.run_script();self.assertEqual(r.returncode,0,r.stderr)
+  self.assertIn("CURSEFORGE_API_KEY='"+key+"'",(self.site/'.env').read_text())
+  self.assertNotIn(key,r.stdout+r.stderr)
  def test_conflicting_tokens_do_not_rewrite_existing_files(self):
   (self.root/'.env').write_text('PUBLIC_SITE_BRIDGE_TOKEN='+'a'*64+'\n');(self.site/'.env').write_text('PUBLIC_SITE_BRIDGE_TOKEN='+'b'*64+'\n')
   before=(self.root/'.env').read_bytes();r=self.run_script();self.assertNotEqual(r.returncode,0);self.assertEqual((self.root/'.env').read_bytes(),before)

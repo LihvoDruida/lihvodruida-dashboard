@@ -1,0 +1,94 @@
+{
+  "release": {
+    "dashboard": "3.8.86",
+    "bot": "3.6.8",
+    "sharedContract": "1.1.0",
+    "featureStage": "R6.8 plus Discord raid signup menu",
+    "date": "2026-10-14",
+    "deployedToVps": false
+  },
+  "validation": {
+    "verify": "passed",
+    "strictTypecheck": "passed",
+    "productionNextBuild": "passed",
+    "productionBuildDurationSeconds": 40,
+    "strictTypecheckDurationSeconds": 19,
+    "securityRuntime": "passed",
+    "characterData": "16/16 passed",
+    "guildBanner": "24/24 passed"
+  },
+  "checks": {
+    "raidSignupMenu": {
+      "passed": 25,
+      "failed": 0
+    },
+    "bot": {
+      "passed": 54,
+      "failed": 0
+    },
+    "securityStage4Independent": {
+      "passed": 18,
+      "failed": 0
+    },
+    "discordOutboxIndependent": {
+      "passed": 20,
+      "failed": 0
+    },
+    "productionHttpSmoke": {
+      "passed": 13,
+      "failed": 0,
+      "dashboardVersion": "3.8.86",
+      "liveDatabase": false,
+      "externalRequests": false
+    }
+  },
+  "coveredScenarios": [
+    "One public signup button; both character and manual modes always available",
+    "Native modal select fields and Checkbox false preserved",
+    "No signup before confirmation; role editable in either mode",
+    "Durable opt-out before website registration; inherited upon registration and subsequent login",
+    "Concurrent registration and anonymous preference update in both orders",
+    "Atomic signup, preference and draft commit; replay/owner/expiry/revision protection",
+    "Stale menu cannot overwrite a newer signup or global preference",
+    "Manual signup allowed without RL approval even with mandatory minimum ilvl",
+    "All nine legacy signup ID families open new menu without writing signup",
+    "DM opt-out checked after Discord queue wait; database failure prevents sending",
+    "Authenticated own-account API with origin, body and impersonation protection",
+    "Signed bot HTTP form opens directly; modal submit persists before deferred acknowledgement"
+  ],
+  "runtime": {
+    "node": "24.19.0",
+    "next": "16.3.5",
+    "react": "19.2.8",
+    "sharp": "0.35.4",
+    "dependencyOverlay": "Same security overlay as 3.8.85; dependency pins unchanged"
+  },
+  "buildWarnings": {
+    "count": 2,
+    "description": "Existing dynamic filesystem tracing warnings in discordWelcomeCard.ts"
+  },
+  "validationNotes": [
+    "A restored local Turbopack persistence cache contained incomplete temporary SST files. Preserved it separately and completed the build with a fresh cache; no production configuration change.",
+    "Static CI guards updated to track the new menu handler while retaining public message recovery and stale-circuit write protections."
+  ],
+  "limits": [
+    "No VPS deployment",
+    "No live PostgreSQL or Firestore integration; transaction tests use controlled storage with rollback and read-before-write enforcement",
+    "No live Discord messages or Blizzard mutations",
+    "No visual verification in a live Discord client",
+    "R6.9, R7 and R8 remain unfinished"
+  ],
+  "deployment": {
+    "updateTogether": [
+      "dashboard",
+      "bot",
+      "shared"
+    ],
+    "newSqlMigration": false,
+    "newCronTask": false,
+    "newSecrets": false,
+    "legacyMessagePatchAttemptsPerLifecycleSweep": 3,
+    "legacyMessagePatchFailureBackoffMinutes": 15,
+    "signupDraftTtlMinutes": 20
+  }
+}

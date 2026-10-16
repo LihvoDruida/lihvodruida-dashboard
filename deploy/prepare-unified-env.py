@@ -25,7 +25,7 @@ mapping=json.loads((root/'deploy/storage-env-map.json').read_text())
 removed={'FIREBASE_PROJECT_ID','FIREBASE_CLIENT_EMAIL','FIREBASE_PRIVATE_KEY','GITHUB_OWNER','GITHUB_REPO','GITHUB_TOKEN','GUILD_APPLICATIONS_LABEL','RAID_IMAGES_BRANCH','RAID_IMAGES_DIRECTORY','RAID_IMAGES_PUBLIC_BASE_URL','DISCORD_INTERACTION_REQUIRE_POSTGRES','GUILD_ROSTER_READ_LEGACY_MEMBER_DOCS','GUILD_ROSTER_WRITE_LEGACY_MEMBER_DOCS','GITHUB_CONTENT_BRANCH','GITHUB_STATUS_CLEANUP_CONCURRENCY','FIREBASE_APPLICATIONS_LIST_LIMIT','STORAGE_APPLICATIONS_LIST_LIMIT'}
 mapping={k:v for k,v in mapping.items() if k not in removed}
 mapping['GUILD_APPLICATIONS_FIREBASE_COLLECTION']='STORAGE_APPLICATIONS_COLLECTION'
-updates=[{'PUBLIC_SITE_BRIDGE_TOKEN':token},{'PUBLIC_SITE_BRIDGE_TOKEN':token},{'PUBLIC_SITE_BRIDGE_TOKEN':token,'DASHBOARD_INTERNAL_URL':'http://dashboard:3000'}]
+updates=[{'PUBLIC_SITE_BRIDGE_TOKEN':token},{'PUBLIC_SITE_BRIDGE_TOKEN':token},{'PUBLIC_SITE_BRIDGE_TOKEN':token,'DASHBOARD_INTERNAL_URL':'http://dashboard:3000',**({'CURSEFORGE_API_KEY':values[2]['CURSEFORGE_API_KEY']} if values[2].get('CURSEFORGE_API_KEY') else {})}]
 # Produce every transformed file before writing any existing one.
 prepared=[]
 for p,old,extra in zip(paths,values,updates):
@@ -51,11 +51,15 @@ for p,old,extra in zip(paths,values,updates):
         lines.append(line)
     for key,val in {**migrated,**extra}.items():
         if key in old and key not in extra:continue
-        lines.append(f'{key}={val}')
+        
+        if key=='CURSEFORGE_API_KEY':
+            if any(c in val for c in ["'",'\n','\r']):raise SystemExit('Invalid CurseForge key format; no files were written.')
+            lines.append(f"{key}='{val}'")
+        else:lines.append(f'{key}={val}')
     prepared.append('\n'.join(lines).rstrip()+'\n')
 stamp=datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
 for p,text in zip(paths,prepared):
-    backup=p.with_name(p.name+'.before-3.9.0-'+stamp)
+    backup=p.with_name(p.name+'.before-3.9.1-'+stamp)
     shutil.copyfile(p,backup);backup.chmod(0o600)
     temp=p.with_name(p.name+'.unified-tmp');temp.write_text(text);temp.chmod(0o600);temp.replace(p)
 print('Paired configuration prepared. Secret values were not printed. Protected backups were created beside each environment file.')

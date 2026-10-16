@@ -1,0 +1,105 @@
+{
+  "dashboardVersion": "3.8.93",
+  "botVersion": "3.6.9",
+  "contractVersion": "1.1.1",
+  "stage": "R7.1",
+  "baseVersion": "3.8.92",
+  "date": "2026-10-15",
+  "timezone": "Europe/Kyiv",
+  "baseline": {
+    "traceFiles": 1762,
+    "traceBytes": 54079739,
+    "standaloneFiles": 4644,
+    "standaloneBytes": 97350446,
+    "scriptsInStandalone": 106,
+    "dashboardSourceFilesInPreviewTrace": 417,
+    "dynamicFilesystemWarnings": 2
+  },
+  "standalone": {
+    "passed": 6,
+    "failed": 0,
+    "scenarios": [
+      "welcome route trace includes its background and three bundled fonts",
+      "standalone contains no dashboard source, CI scripts or builder-only configuration",
+      "Sharp resolves from standalone rather than the source node_modules",
+      "packaged Sharp and assets pass the real renderer suite",
+      "packaged Next server starts and returns healthy no-store liveness without integrations",
+      "standalone server serves the exact traced welcome background"
+    ],
+    "traceFiles": 1180,
+    "traceBytes": 41468479,
+    "standaloneFiles": 4056,
+    "standaloneBytes": 84314492,
+    "scriptsInStandalone": 0,
+    "sourceFilesInStandalone": 0
+  },
+  "dynamicFilesystemWarningsAfter": 0,
+  "measurement": {
+    "unit": "sum of regular file sizes; directory symlinks excluded; not Docker image size",
+    "bytesSaved": 13035954,
+    "percentSaved": 13.39,
+    "sameSecurityOverlay": true
+  },
+  "renderer": {
+    "passed": 6,
+    "failed": 0,
+    "realSharp": true,
+    "sharpVersion": "0.35.4",
+    "localAndParentLayoutPngBytesIdentical": true,
+    "packagedDependenciesRerunPassed": true,
+    "visualInspection": "Ukrainian text, number sign, layout and background inspected"
+  },
+  "negativePackagingFixture": {
+    "added": "dashboard/scripts/should-not-ship.cjs",
+    "expectedExitCode": 1,
+    "actualExitCode": 1,
+    "rejection": "Unexpected build input in runtime: scripts",
+    "realPackageMutated": false
+  },
+  "buildCi": {
+    "exitCode": 0,
+    "next": "16.3.5",
+    "react": "19.2.8",
+    "sharp": "0.35.4",
+    "postBuildGateIncluded": true
+  },
+  "lint": {
+    "wholeProjectExitCode": 0,
+    "finalChangedModulesExitCode": 0
+  },
+  "dockerManifest": {
+    "sharedFontBase": true,
+    "fontPackages": [
+      "fontconfig",
+      "fonts-dejavu-core"
+    ],
+    "postChangeChecks": {
+      "welcomeCard": 42,
+      "platformHardening": 15,
+      "securityPerformance": 101
+    },
+    "imageBuilt": false
+  },
+  "postgresRunner": {
+    "suiteCount": 9,
+    "newlyIncluded": [
+      "test-group-assignment-migration-pg.cjs",
+      "test-automation-status-pg.cjs"
+    ],
+    "executed": false,
+    "reason": "Docker and PostgreSQL executables unavailable"
+  },
+  "liveValidation": {
+    "vpsDeployed": false,
+    "dockerCompose": false,
+    "postgresql": false,
+    "discordApi": false,
+    "cloudflare": false
+  },
+  "limits": [
+    "Source renderer tests run with real Sharp; logging is isolated and avatars use deterministic local fallback.",
+    "Standalone health and public PNG tested over loopback with fixture public Host/trusted-proxy marker.",
+    "Dockerfile is validated by code review and contract audits; the image was not built here.",
+    "R6 acceptance and remaining R7/R8 are open."
+  ]
+}

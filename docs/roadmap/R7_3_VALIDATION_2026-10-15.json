@@ -1,0 +1,255 @@
+{
+  "date": "2026-10-15",
+  "dashboardVersion": "3.8.96",
+  "botVersion": "3.6.9",
+  "contractVersion": "1.1.1",
+  "baselineBrowser": {
+    "baseline": true,
+    "passed": 5,
+    "failed": 0,
+    "scenarios": [
+      "accepted identity save keeps a focus destination when its button disables",
+      "confirmed character receipt keeps focus after the save button disables",
+      "saved group keeps focus when its submit button becomes unavailable",
+      "2000 groups do not normalize the whole catalog during twenty field edits",
+      "5000 candidates stay paged and role edits do not sort the catalog again"
+    ],
+    "observations": {
+      "identityFocus": {
+        "tag": "BODY",
+        "result": false,
+        "text": "Перед формоюІмʼя в профіліЗберегти імʼяDiscordFixtureОстанній підтверджений нікChangedІмʼя збережено"
+      },
+      "charactersFocus": {
+        "tag": "BODY",
+        "result": false,
+        "text": "Перед формоюПерсонажі та рейдиПерсонажі, мейн і рольПознач персонажів, вибери мейна й роль. Увесь ви"
+      },
+      "groupFocus": {
+        "tag": "BODY",
+        "result": false,
+        "text": "Перед формоюГрупи2 груп · 0 чернетокЗнайти групу🍃StressGroup1ID g1 · Учасник · 1 прав🍃Changed grou"
+      },
+      "groups": {
+        "normalized": 40000,
+        "candidateSorts": 0,
+        "editMs": 348,
+        "size": 2000
+      },
+      "characters": {
+        "normalized": 0,
+        "candidateSorts": 4,
+        "size": 5000
+      }
+    },
+    "errors": [],
+    "browser": "153.0.8010.0"
+  },
+  "finalBrowser": {
+    "baseline": false,
+    "passed": 12,
+    "failed": 0,
+    "scenarios": [
+      "accepted identity save keeps a focus destination when its button disables",
+      "confirmed character receipt keeps focus after the save button disables",
+      "saved group keeps focus when its submit button becomes unavailable",
+      "2000 groups do not normalize the whole catalog during twenty field edits",
+      "5000 candidates stay paged and role edits do not sort the catalog again",
+      "uncertain identity save preserves the draft and never replays POST",
+      "GET recovery preserves the matching identity receipt and its confirmation message",
+      "finishing a group save does not steal focus after a manual move",
+      "group deletion moves focus to its result without changing another group",
+      "group live status remains mounted and responsive on nine viewport widths",
+      "unconfirmed character save preserves selected keys and offers read recovery",
+      "no browser runtime errors"
+    ],
+    "observations": {
+      "identityFocus": {
+        "tag": "P",
+        "result": true,
+        "text": "Збереження підтверджено. Повторне надсилання не потрібне."
+      },
+      "charactersFocus": {
+        "tag": "P",
+        "result": true,
+        "text": "Збережено. Додано персонажів: 1. Мейн і рейдова роль збережені."
+      },
+      "groupFocus": {
+        "tag": "P",
+        "result": true,
+        "text": "Групу збережено. Нові права застосуються після оновлення сесії."
+      },
+      "groups": {
+        "normalized": 0,
+        "candidateSorts": 0,
+        "editMs": 132,
+        "size": 2000
+      },
+      "characters": {
+        "normalized": 0,
+        "candidateSorts": 0,
+        "size": 5000
+      }
+    },
+    "errors": [],
+    "browser": "153.0.8010.0"
+  },
+  "workflowAccessibilityRegression": {
+    "baseline": false,
+    "passed": 18,
+    "failed": 0,
+    "scenarios": [
+      "final application decision preserves a keyboard focus destination",
+      "next-review button moves focus to the next available decision",
+      "next-review scrolling respects reduced motion",
+      "publication failure retains a focus destination when its write action disappears",
+      "raid dialog opens at its title and has an accessible description",
+      "successful preference retry keeps focus inside the dialog",
+      "Escape closes a non-submitting dialog and restores its launcher",
+      "unconfirmed deletion focuses its own recovery message",
+      "finishing a request never steals focus after the user moves elsewhere",
+      "uncertain moderation offers a focused result and explicit read recovery",
+      "bulk result focuses its concise summary and result links focus the exact row",
+      "bulk live region exists before work and announces a concise atomic summary",
+      "cancelled bulk confirmation retains focus and sends no POST",
+      "confirmed publication without another action focuses the result exactly once",
+      "Tab and Shift+Tab cannot reach background controls while the modal is open",
+      "radio attendance supports native arrow keys",
+      "workflow focus destinations have visible outlines and responsive content",
+      "no browser runtime errors"
+    ],
+    "observations": {
+      "applicationFocus": {
+        "tag": "P",
+        "id": "application-result-101",
+        "text": "Прийнято: рішення збережено, Discord підтвердив оновлення."
+      },
+      "reducedMotionBehavior": "instant",
+      "publicationEmptyStatusDisplay": "block",
+      "publicationFocus": {
+        "tag": "P",
+        "id": "",
+        "text": "Виконання не підтверджено повністю. Звір збережений стан перед наступною дією. Повторного автоматичного надсилання немає."
+      },
+      "raidInitialFocus": {
+        "tag": "H2",
+        "id": "_r_0_-title",
+        "text": "Змінити запис на рейд"
+      },
+      "raidDescription": "_r_0_-description",
+      "retryFocus": {
+        "tag": "SMALL",
+        "id": "",
+        "text": "Налаштування нагадувань завантажено."
+      },
+      "deletionFocus": {
+        "tag": "SMALL",
+        "id": "application-delete-result-101",
+        "text": "Видалення не підтверджено. Онови список і перевір результат перед повторною дією."
+      }
+    },
+    "browser": "153.0.8010.0",
+    "errors": []
+  },
+  "typecheckBaseline": [
+    {
+      "run": 0,
+      "seconds": 19.524,
+      "exitCode": 0
+    },
+    {
+      "run": 1,
+      "seconds": 18.327,
+      "exitCode": 0
+    }
+  ],
+  "typecheckAfter": [
+    {
+      "run": 0,
+      "seconds": 18.132,
+      "exitCode": 0
+    },
+    {
+      "run": 1,
+      "seconds": 2.621,
+      "exitCode": 0
+    }
+  ],
+  "fullProjectCacheNegativeControl": {
+    "passed": 4,
+    "failed": 0,
+    "scenarios": [
+      {
+        "name": "cold full-project compile creates a reusable cache",
+        "seconds": 15.42,
+        "exitCode": 0,
+        "expectedFailure": false
+      },
+      {
+        "name": "unchanged project passes with the warm cache",
+        "seconds": 2.83,
+        "exitCode": 0,
+        "expectedFailure": false
+      },
+      {
+        "name": "changed source invalidates cached success and reports a real type error",
+        "seconds": 3.31,
+        "exitCode": 2,
+        "expectedFailure": true
+      },
+      {
+        "name": "repaired source invalidates cached errors and succeeds",
+        "seconds": 2.66,
+        "exitCode": 0,
+        "expectedFailure": false
+      }
+    ]
+  },
+  "standalone": {
+    "passed": 6,
+    "failed": 0,
+    "scenarios": [
+      "welcome route trace includes its background and three bundled fonts",
+      "standalone contains no dashboard source, CI scripts or builder-only configuration",
+      "Sharp resolves from standalone rather than the source node_modules",
+      "packaged Sharp and assets pass the real renderer suite",
+      "packaged Next server starts and returns healthy no-store liveness without integrations",
+      "standalone server serves the exact traced welcome background"
+    ],
+    "traceFiles": 1180,
+    "traceBytes": 41469481,
+    "standaloneFiles": 4058,
+    "standaloneBytes": 84338517,
+    "scriptsInStandalone": 0,
+    "sourceFilesInStandalone": 0
+  },
+  "buildCi": {
+    "passed": true,
+    "exitCode": 0,
+    "allExistingChecksRetained": true,
+    "inspectCiWarnings": 0
+  },
+  "eslint": {
+    "fullProjectExitCode": 0,
+    "finalChangedFilesExitCode": 0
+  },
+  "measurementLimits": [
+    "Local QA host, not VPS",
+    "Browser controlled HTTP APIs and Next navigation adapter",
+    "Browser edit timing includes synthetic keyboard events; work counts are the primary criterion",
+    "Warm TypeScript improvement requires reusable cache; cold checks still compile the full project"
+  ],
+  "notRun": [
+    "Live PostgreSQL/Discord acceptance",
+    "Docker image build",
+    "NVDA/TalkBack",
+    "Live Next RSC refresh",
+    "Live SQL/API throughput benchmark"
+  ],
+  "noChangesTo": [
+    "SQL schema",
+    "Bot protocol",
+    "Cron intervals",
+    "Logging-page design"
+  ]
+}

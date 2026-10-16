@@ -1,0 +1,90 @@
+{
+  "date": "2026-10-15",
+  "dashboardVersion": "3.8.95",
+  "botVersion": "3.6.9",
+  "contractVersion": "1.1.1",
+  "scope": "Request correlation and bounded diagnostics for existing R6 operations; no live acceptance claim",
+  "baseline": {
+    "sameRequestIdsMatch": false,
+    "persistenceErrorLeaksCredential": true
+  },
+  "checks": {
+    "operationLogging": {
+      "passed": 25,
+      "failed": 0,
+      "usesActualProductionModules": true,
+      "externalDependenciesControlled": true
+    },
+    "buildCi": {
+      "passed": true,
+      "exitCode": 0,
+      "operationLoggingCasesInFullRun": 24,
+      "note": "Final follow-up corrected HTML redirect status metadata and added one case. Final 25-case suite, changed-file ESLint, typecheck, production build and standalone checks passed after that follow-up."
+    },
+    "eslintFullProject": {
+      "passed": true,
+      "exitCode": 0
+    },
+    "eslintFinalChangedFiles": {
+      "passed": true,
+      "exitCode": 0
+    },
+    "typecheckFinal": {
+      "passed": true
+    },
+    "productionBuildFinal": {
+      "passed": true
+    },
+    "standaloneFinal": {
+      "passed": 6,
+      "failed": 0,
+      "scenarios": [
+        "welcome route trace includes its background and three bundled fonts",
+        "standalone contains no dashboard source, CI scripts or builder-only configuration",
+        "Sharp resolves from standalone rather than the source node_modules",
+        "packaged Sharp and assets pass the real renderer suite",
+        "packaged Next server starts and returns healthy no-store liveness without integrations",
+        "standalone server serves the exact traced welcome background"
+      ],
+      "traceFiles": 1180,
+      "traceBytes": 41469481,
+      "standaloneFiles": 4056,
+      "standaloneBytes": 84330549,
+      "scriptsInStandalone": 0,
+      "sourceFilesInStandalone": 0
+    },
+    "regressionsInBuildCi": {
+      "attendanceHttp": 12,
+      "publicationWorkbench": 19,
+      "profileIdentityApi": 11,
+      "profileCharacterSetupApi": 10,
+      "logPrivacy": 14,
+      "internalCronProxy": 30
+    }
+  },
+  "limitations": {
+    "livePostgresDiscord": "Not run; user will perform live acceptance later",
+    "deployment": "Not deployed to VPS",
+    "newBotTests": "Not rerun in this package; bot code unchanged",
+    "logPersistence": "Existing asynchronous best-effort persistence; no delivery guarantee on process crash",
+    "legacyConsoleCalls": "Not all legacy console calls were converted"
+  },
+  "nonBlockingExistingOutput": [
+    "npm warns about inherited http-proxy config",
+    "inspect-ci warns about its build:ci string pattern while reporting zero blocking issues"
+  ],
+  "sourceChanges": [
+    "stable requestId per Request and guarded metadata",
+    "redacted structured-log store/mirror fallbacks",
+    "allowlisted errorKind/errorCode without raw error payload",
+    "attendance commit vs background Discord result",
+    "after scheduling failure preserves committed attendance",
+    "profile read/write conflict and deferred-worker diagnostics",
+    "publication completed/partial/pending/unconfirmed diagnostics",
+    "accurate HTML redirect status metadata"
+  ],
+  "newSchema": false,
+  "newBusinessRetries": false,
+  "changedCronFrequency": false,
+  "changedLogsPageDesign": false
+}

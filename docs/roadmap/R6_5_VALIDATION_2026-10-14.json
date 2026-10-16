@@ -1,0 +1,149 @@
+{
+  "stage": "R6.5",
+  "dashboard_version": "3.8.78",
+  "bot_version": "3.6.6",
+  "date": "2026-10-14",
+  "timezone": "Europe/Kyiv",
+  "validated_at_utc": "2026-10-13T21:10:20.871861+00:00",
+  "automation_status_checks": 34,
+  "postgresql_integration_cases": 8,
+  "postgresql": "16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+  "database_encoding": "UTF8",
+  "diagnostic_selects": 1,
+  "diagnostic_documents": 9,
+  "storage_read_deadline_ms": 2000,
+  "mutated_documents_in_read_test": 0,
+  "browser": {
+    "passed": 11,
+    "cases": [
+      "Cards show distinct uncertainty, first-run and candidate states with Kyiv timestamps",
+      "Nickname action reveals the hidden synchronization panel",
+      "Account action switches to its own hidden profiles panel",
+      "Opening a nested target URL directly reveals the correct panel",
+      "Existing section hash and unknown hash keep their established behavior",
+      "Context navigation keeps unsaved input mounted",
+      "Keyboard task navigation still supports Home and End",
+      "Uncertain-result action opens the real cleanup component in the uncertainty tab",
+      "An automatic refresh retains the initially selected uncertainty tab",
+      "System amber color is used by status indicators",
+      "Cards and long error text fit nine viewport widths"
+    ],
+    "widths": [
+      {
+        "width": 320,
+        "overflow": false
+      },
+      {
+        "width": 360,
+        "overflow": false
+      },
+      {
+        "width": 390,
+        "overflow": false
+      },
+      {
+        "width": 430,
+        "overflow": false
+      },
+      {
+        "width": 640,
+        "overflow": false
+      },
+      {
+        "width": 768,
+        "overflow": false
+      },
+      {
+        "width": 1024,
+        "overflow": false
+      },
+      {
+        "width": 1280,
+        "overflow": false
+      },
+      {
+        "width": 1920,
+        "overflow": false
+      }
+    ],
+    "browserErrors": 0,
+    "mutations": 0
+  },
+  "browser_visual_review_widths": [
+    390,
+    1280
+  ],
+  "browser_scope": "actual AutomationOverview, ManagementSections, DiscordMemberCleanupPanel and system CSS; local HTTP fixtures",
+  "standalone_http_checks": 13,
+  "standalone_scope": "unauthenticated redirects/auth/Origin/no-store, no production session",
+  "build_ci": "passed",
+  "production_build": "passed",
+  "typescript": "passed",
+  "eslint": "passed",
+  "inspect": {
+    "files": 464,
+    "blocking_issues": 0,
+    "new_warnings": 0
+  },
+  "builder_inputs": {
+    "copy_inputs": 23,
+    "checked_files": 592,
+    "differences": []
+  },
+  "preservation": {
+    "previous_archive_files": 691,
+    "missing": [],
+    "changed_previous_files": [
+      "README.md",
+      "dashboard/package-lock.json",
+      "dashboard/package.json",
+      "dashboard/scripts/check-ui-standardization-performance.cjs",
+      "dashboard/src/app/dashboard/discord/cleanup/page.tsx",
+      "dashboard/src/app/dashboard/discord/page.tsx",
+      "dashboard/src/app/dashboard/page.tsx",
+      "dashboard/src/components/DiscordMemberCleanupPanel.tsx",
+      "dashboard/src/components/ManagementSections.tsx",
+      "dashboard/src/lib/accountCleanupAutomation.ts",
+      "dashboard/src/lib/discordNicknameWarnings.ts",
+      "dashboard/src/lib/guildNicknamePolicy.ts",
+      "docs/roadmap/IMPLEMENTATION_STATUS.md"
+    ],
+    "byte_identical_previous_files": 678,
+    "existing_style_files_background_rules_logging_bot_cron_and_db_adapter_unchanged": true,
+    "worker_changes_export_only": true,
+    "dependency_versions_unchanged": true,
+    "R1_R6_4_history_retained": true
+  },
+  "runtime": {
+    "node": "24.19.0",
+    "next": "16.3.5",
+    "react": "19.2.8",
+    "react_dom": "19.2.8",
+    "sharp": "0.35.4"
+  },
+  "limits": {
+    "read_only_snapshot_not_live_heartbeat": true,
+    "next_run_time_is_estimate": true,
+    "new_Discord_REST_calls": 0,
+    "new_background_pollers": 0,
+    "lease_owner_and_control_token_fields_sent_to_browser": false,
+    "underlying_DB_query_cancelled_on_deadline": false,
+    "authenticated_live_Next_flow_tested": false,
+    "live_Discord_or_BattleNet_tested": false,
+    "docker_engine_run": false,
+    "vps_changed": false,
+    "production_database_changed": false,
+    "all_R6_completed": false
+  },
+  "warnings": [
+    "Two existing dynamic filesystem Turbopack tracing warnings in discordWelcomeCard.ts"
+  ],
+  "log_sha256": {
+    "r6-5-build.log": "df56b652489eb56eac507a0436427c06c20f61323d58f150ed389414c3bc8f7e",
+    "r6-5-lint.log": "65ae91e2edb65f3ab52887f2d85f072beaa75ed8cd6c6fecb321d141e4c27831",
+    "r6-5-ui.log": "9d464072985c70a1a98792511830544de487d1f8ed8f783de46ee70d4d25cdde",
+    "r6-5-pg.log": "7ebaae6490ed6d201577481596553e821ed2ce2df69e8b5987239bff3138e587",
+    "r6-5-http.log": "7799d1adc96b390b125effdc121628d408ad5e17387e9ba5a4d587695a662696"
+  },
+  "browser_harness_sha256": "e7b1a0c046bf06aae04c5b90abac44bd4ee3db6b2e6e07ea2574048040d1a5af"
+}

@@ -1,0 +1,95 @@
+{
+  "date": "2026-10-15",
+  "dashboardVersion": "3.8.100",
+  "botVersion": "3.6.9",
+  "contractVersion": "1.1.1",
+  "reference": "3IRD UA — українська гільдія WoW_ Forever.mhtml",
+  "browser": {
+    "passed": 17,
+    "failed": 0,
+    "scenarios": [
+      "production login loads the bundled template landscape and local fonts",
+      "only authorization is visible without navigation, footer or page spacing",
+      "guild name stays centered without inheriting generic navigation badges",
+      "desktop and mobile layout fits nine viewport widths",
+      "desktop and mobile screenshots are rendered for internal visual review",
+      "short landscape viewport can scroll to the complete sign-in control",
+      "long access errors stay visible and keep the action reachable on 320px",
+      "logged-out confirmation remains a status and allows sign-in",
+      "unknown error input never becomes raw HTML or script content",
+      "return destination and account switching stay in the OAuth URL",
+      "external and protocol-relative return destinations are discarded",
+      "keyboard activation targets the existing OAuth start without contacting Discord",
+      "reduced motion removes animated sign-in transitions",
+      "login does not initialize the decorative starfield canvas",
+      "emergency owner entry stays policy-gated and usable on mobile",
+      "missing OAuth configuration displays an explicit unavailable state",
+      "production login has no browser runtime errors or external media requests"
+    ],
+    "observations": {
+      "widths": [
+        320,
+        360,
+        390,
+        480,
+        640,
+        768,
+        1024,
+        1440,
+        1920
+      ],
+      "mediaBytes": 268560
+    },
+    "errors": [],
+    "browser": "153.0.8010.0",
+    "scope": "Production standalone with Docker-equivalent public/static copies; controlled local reverse proxy and fixture auth configuration. No live OAuth or emergency POST."
+  },
+  "checks": {
+    "loginContracts": 21,
+    "authLifecycleRegression": 13,
+    "fullBuildCi": {
+      "exitCode": 0,
+      "standaloneFooter": true
+    },
+    "fullEslintExitCode": 0,
+    "finalChangedFilesEslintExitCode": 0,
+    "finalTypecheckExitCode": 0,
+    "finalProductionBuildExitCode": 0,
+    "finalStylesAudit": "passed; no conservatively confirmed unused selectors, properties or keyframes",
+    "finalStandalone": {
+      "passed": 6,
+      "failed": 0,
+      "scenarios": [
+        "welcome route trace includes its background and three bundled fonts",
+        "standalone contains no dashboard source, CI scripts or builder-only configuration",
+        "Sharp resolves from standalone rather than the source node_modules",
+        "packaged Sharp and assets pass the real renderer suite",
+        "packaged Next server starts and returns healthy no-store liveness without integrations",
+        "standalone server serves the exact traced welcome background"
+      ],
+      "traceFiles": 1180,
+      "traceBytes": 41469481,
+      "standaloneFiles": 4057,
+      "standaloneBytes": 84367524,
+      "scriptsInStandalone": 0,
+      "sourceFilesInStandalone": 0
+    }
+  },
+  "sourceIntegrity": {
+    "loginServerLogicBeforeJsx": "byte-identical to 3.8.99",
+    "authApiAndPolicyFiles": "unchanged",
+    "sqlBotContract": "unchanged"
+  },
+  "media": {
+    "path": "dashboard/public/assets/img/auth/forever-landscape.avif",
+    "bytes": 268560,
+    "sha256": "6297d510ccfeece229c60b4d187a93a1fcfa6249824d247704042d1770b886dd",
+    "provenance": "Exact AVIF image embedded in provided MHTML; CSS reference is Cinematic_Trailer.jpg on Blizzard content CDN. Served locally, no video or iframe."
+  },
+  "limits": [
+    "Chromium with mobile viewports, not a physical Android/iOS device.",
+    "OAuth activation was intercepted at its existing local start route; no real Discord login or emergency-token POST was performed.",
+    "Full CI passed before the final presentation-only class rename; final TypeScript, build, stylesheet audit, changed-file ESLint, 17 browser scenarios and 6 standalone checks passed afterwards.",
+    "The R7.7 log-settings task remains pending; this is the requested authorization restyle."
+  ]
+}

@@ -1,0 +1,203 @@
+{
+  "dashboardVersion": "3.8.94",
+  "botVersion": "3.6.9",
+  "contractVersion": "1.1.1",
+  "stage": "R7.2",
+  "baseVersion": "3.8.93",
+  "date": "2026-10-15",
+  "timezone": "Europe/Kyiv",
+  "baseline": {
+    "version": "3.8.93",
+    "probes": 8,
+    "observations": {
+      "applicationFocus": {
+        "tag": "BODY",
+        "id": "",
+        "text": "Перед роботоюДії з вибраними заявкамиТільки заявки на розгляді з поточного списку. До 50 за одну дію.Вибрано: 0Вибрати 1Скинути вибірПрийняти вибраніВідхилити вибраніЗаявка #101Виб"
+      },
+      "reducedMotionBehavior": "smooth",
+      "publicationEmptyStatusDisplay": "none",
+      "publicationFocus": {
+        "tag": "BODY",
+        "id": "",
+        "text": "Перед роботоюDiscord · збережений станПублікація та відновленняДії використовують останні збережені дані. Зміни у формі спочатку збережи.Оголошення · Стан не вдалося прочитатиОнови"
+      },
+      "raidInitialFocus": {
+        "tag": "BUTTON",
+        "id": "",
+        "text": "×"
+      },
+      "raidDescription": null,
+      "retryFocus": {
+        "tag": "BODY",
+        "id": "",
+        "text": "Перед роботою✎ Змінити записMistblossom Vanguard · РейдиЗмінити запис на рейдОбери, ким і як береш участь. Усі зміни збережуться на сайті й у Discord.×1. Спосіб записуМої персонажі"
+      },
+      "deletionFocus": {
+        "tag": "BODY",
+        "id": "",
+        "text": "Перед роботоюДії з вибраними заявкамиТільки заявки на розгляді з поточного списку. До 50 за одну дію.Вибрано: 0Вибрати 2Скинути вибірПрийняти вибраніВідхилити вибраніЗаявка #101Виб"
+      }
+    },
+    "originalComponentsCssUsed": true
+  },
+  "workflowBrowser": {
+    "baseline": false,
+    "passed": 18,
+    "failed": 0,
+    "scenarios": [
+      "final application decision preserves a keyboard focus destination",
+      "next-review button moves focus to the next available decision",
+      "next-review scrolling respects reduced motion",
+      "publication failure retains a focus destination when its write action disappears",
+      "raid dialog opens at its title and has an accessible description",
+      "successful preference retry keeps focus inside the dialog",
+      "Escape closes a non-submitting dialog and restores its launcher",
+      "unconfirmed deletion focuses its own recovery message",
+      "finishing a request never steals focus after the user moves elsewhere",
+      "uncertain moderation offers a focused result and explicit read recovery",
+      "bulk result focuses its concise summary and result links focus the exact row",
+      "bulk live region exists before work and announces a concise atomic summary",
+      "cancelled bulk confirmation retains focus and sends no POST",
+      "confirmed publication without another action focuses the result exactly once",
+      "Tab and Shift+Tab cannot reach background controls while the modal is open",
+      "radio attendance supports native arrow keys",
+      "workflow focus destinations have visible outlines and responsive content",
+      "no browser runtime errors"
+    ],
+    "observations": {
+      "applicationFocus": {
+        "tag": "P",
+        "id": "application-result-101",
+        "text": "Прийнято: рішення збережено, Discord підтвердив оновлення."
+      },
+      "reducedMotionBehavior": "instant",
+      "publicationEmptyStatusDisplay": "block",
+      "publicationFocus": {
+        "tag": "P",
+        "id": "",
+        "text": "Виконання не підтверджено повністю. Звір збережений стан перед наступною дією. Повторного автоматичного надсилання немає."
+      },
+      "raidInitialFocus": {
+        "tag": "H2",
+        "id": "_r_0_-title",
+        "text": "Змінити запис на рейд"
+      },
+      "raidDescription": "_r_0_-description",
+      "retryFocus": {
+        "tag": "SMALL",
+        "id": "",
+        "text": "Налаштування нагадувань завантажено."
+      },
+      "deletionFocus": {
+        "tag": "SMALL",
+        "id": "application-delete-result-101",
+        "text": "Видалення не підтверджено. Онови список і перевір результат перед повторною дією."
+      }
+    },
+    "browser": "153.0.8010.0",
+    "errors": [],
+    "widths": [
+      320,
+      360,
+      390,
+      520,
+      760,
+      1024,
+      1280,
+      1600,
+      1920
+    ]
+  },
+  "raidBrowserRegression": {
+    "baseline": false,
+    "passed": 15,
+    "failed": 0,
+    "scenarios": [
+      "saved reminder opt-out is loaded before a submission",
+      "prop refresh preserves the local character draft",
+      "open signup pauses global live page refresh after focus leaves selects",
+      "HTTP 200 HTML never confirms or closes the signup",
+      "preference request has a deadline and a retry within the open form",
+      "lost submit response releases controls and preserves the draft without retrying POST",
+      "live refresh resumes after the form closes",
+      "server rejection remains visible and retains selections",
+      "reopening initializes the latest saved attendance and character",
+      "confirmed write closes once and publishes one live mutation",
+      "manual class and spec commit together without a character key",
+      "two same-tick submits send only one write",
+      "cancel does not save reminder changes",
+      "modal fits nine mobile and desktop widths",
+      "no browser runtime errors"
+    ],
+    "observations": {
+      "characterAfterProps": "b",
+      "refreshesWhileOpen": 0,
+      "htmlClosed": false,
+      "htmlMutationCount": 0,
+      "preferenceError": true,
+      "submitStillBusy": false
+    },
+    "browser": "153.0.8010.0",
+    "errors": []
+  },
+  "standalone": {
+    "passed": 6,
+    "failed": 0,
+    "scenarios": [
+      "welcome route trace includes its background and three bundled fonts",
+      "standalone contains no dashboard source, CI scripts or builder-only configuration",
+      "Sharp resolves from standalone rather than the source node_modules",
+      "packaged Sharp and assets pass the real renderer suite",
+      "packaged Next server starts and returns healthy no-store liveness without integrations",
+      "standalone server serves the exact traced welcome background"
+    ],
+    "traceFiles": 1180,
+    "traceBytes": 41468479,
+    "standaloneFiles": 4056,
+    "standaloneBytes": 84323657,
+    "scriptsInStandalone": 0,
+    "sourceFilesInStandalone": 0
+  },
+  "buildCi": {
+    "exitCode": 0,
+    "newDynamicFilesystemWarnings": 0,
+    "next": "16.3.5",
+    "react": "19.2.8",
+    "sharp": "0.35.4"
+  },
+  "finalGuardChangeValidation": {
+    "typecheckExitCode": 0,
+    "productionBuildExitCode": 0,
+    "standaloneExitCode": 0
+  },
+  "lint": {
+    "wholeProjectExitCode": 0,
+    "finalModulesExitCode": 0,
+    "browserHarnessExitCode": 0
+  },
+  "visualInspection": {
+    "fixture": "application result focus",
+    "width": 390,
+    "completed": true
+  },
+  "testBoundary": {
+    "realComponents": true,
+    "realApiClient": true,
+    "controlledApiResponses": true,
+    "nextNavigationAdapter": true,
+    "assistiveTechnologyAudio": false,
+    "realOsTabSwitch": false,
+    "liveNextRscNavigation": false,
+    "liveDiscord": false,
+    "livePostgresql": false,
+    "dockerImageBuilt": false,
+    "vpsDeployed": false
+  },
+  "limits": [
+    "DOM roles/live-region semantics and keyboard focus were checked; NVDA/TalkBack audio was not tested.",
+    "Native dialog may focus browser chrome; background DOM controls remained unreachable.",
+    "Successful deletion followed by real RSC card removal was not tested.",
+    "Full R6 acceptance and the rest of R7/R8 remain open."
+  ]
+}

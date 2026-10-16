@@ -1,3 +1,4 @@
+import { applyGuildRaidHistory, mergeRaidRows, readGuildRaidHistory } from "@/lib/guildRaidHistoryStore";
 import { createHash } from "node:crypto";
 import { FieldValue } from "@/lib/db/documentValues";
 import { ApiHttpError, apiFetchJson } from "@/lib/apiHttp";
@@ -50,6 +51,8 @@ export type GuildRosterRole = "tank" | "healer" | "dps" | "unknown";
 export type GuildRosterExternalSource = "battleNet" | "raiderIo";
 
 export type GuildRaidProgress = {
+  observedAt?: string;
+  stale?: boolean;
   slug: string;
   name: string;
   summary: string | null;
@@ -104,6 +107,7 @@ export type GuildRaidRankingDifficulty = {
 };
 
 export type GuildRaidRanking = {
+  observedAt?: string;
   slug: string;
   normal: GuildRaidRankingDifficulty;
   heroic: GuildRaidRankingDifficulty;
@@ -125,6 +129,7 @@ export type GuildRosterStats = {
   raidProgression: GuildRaidProgress[];
   raidRankings: GuildRaidRanking[];
   raidSeasonSnapshot: RaidSeasonSnapshot | null;
+  raidHistory?: {state: string; known: number; pending: number; failed: number; updatedAt: string | null};
 };
 
 export type GuildRosterLoadResult = {
@@ -612,11 +617,12 @@ async function fetchJsonWithTimeout(
   }
 }
 
-async function fetchRaiderGuild(
+export async function fetchRaiderGuild(
   region: BattleNetRegion,
   realmSlug: string,
   guildName: string,
   settings?: GuildRosterRuntimeSettings | null,
+  raidSlug?: string,
 ) {
   const url = new URL("https://raider.io/api/v1/guilds/profile");
   url.searchParams.set("region", region);
@@ -624,14 +630,15 @@ async function fetchRaiderGuild(
   url.searchParams.set("name", guildName);
   url.searchParams.set(
     "fields",
-    "raid_progression,raid_rankings",
+    raidSlug ? `raid_progression:${raidSlug},raid_rankings:${raidSlug}` : "raid_progression,raid_rankings",
   );
   const key = raiderIoAccessKey();
   if (key) url.searchParams.set("access_key", key);
 
   try {
-    return await fetchJsonWithTimeout(url, "Raider.IO guild", settings);
+    return await fetchJsonWithTimeout(url, "Raider.IO guild", raidSlug ? {raiderIoRequestTimeoutMs:5000,raiderIoRequestRetries:0,raiderIoRateLimitCooldownSeconds:settings?.raiderIoRateLimitCooldownSeconds ?? 900,raiderIoRequestMinDelayMs:settings?.raiderIoRequestMinDelayMs ?? 350,warningAuditLogs:settings?.warningAuditLogs ?? true} : settings);
   } catch (error) {
+    if (raidSlug) throw error;
     if (!isRaiderIoRateLimitError(error)) return null;
     return null;
   }
@@ -906,13 +913,15 @@ function raidDisplayName(slug: string, value: Record<string, any>) {
     .join(" ") || "Рейд";
 }
 
-function normalizeRaidProgression(value: unknown): GuildRaidProgress[] {
+export function normalizeRaidProgression(value: unknown): GuildRaidProgress[] {
   if (!value || typeof value !== "object" || Array.isArray(value)) return [];
   return Object.entries(value as Record<string, unknown>)
     .map(([slug, raw]) => {
       const raid = raw && typeof raw === "object" && !Array.isArray(raw)
         ? raw as Record<string, any>
         : {};
+      const counts=[raid.total_bosses ?? raid.totalBosses,raid.normal_bosses_killed ?? raid.normalKills,raid.heroic_bosses_killed ?? raid.heroicKills,raid.mythic_bosses_killed ?? raid.mythicKills];
+      if(!counts.every(value=>value!==null&&value!==undefined&&typeof value === "number"&&Number.isInteger(value)&&value>=0)||Number(counts[0])<=0||counts.slice(1).some(value=>Number(value)>Number(counts[0])))return null;
       return {
         slug: cleanText(slug),
         name: raidDisplayName(slug, raid),
@@ -923,7 +932,7 @@ function normalizeRaidProgression(value: unknown): GuildRaidProgress[] {
         mythicKills: Math.max(0, Math.floor(Number(raid.mythic_bosses_killed ?? raid.mythicKills ?? 0) || 0)),
       } satisfies GuildRaidProgress;
     })
-    .filter((raid) => Boolean(raid.slug && (raid.totalBosses > 0 || raid.summary || raid.normalKills || raid.heroicKills || raid.mythicKills)));
+    .filter((raid): raid is GuildRaidProgress => !!raid && !!raid.slug);
 }
 
 function normalizeRaidRankingDifficulty(value: unknown): GuildRaidRankingDifficulty {
@@ -937,7 +946,7 @@ function normalizeRaidRankingDifficulty(value: unknown): GuildRaidRankingDifficu
   return { world: pick("world"), region: pick("region"), realm: pick("realm") };
 }
 
-function normalizeRaidRankings(value: unknown): GuildRaidRanking[] {
+export function normalizeRaidRankings(value: unknown): GuildRaidRanking[] {
   if (!value || typeof value !== "object" || Array.isArray(value)) return [];
   return Object.entries(value as Record<string, unknown>)
     .map(([slug, raw]) => {
@@ -1277,18 +1286,14 @@ function buildStats(input: {
     ),
     guildFaction: normalizeFaction(faction.type || faction.name),
     profileUrl:
-      cleanText(input.raiderGuild?.profile_url || guild.profile_url) || null,
+      cleanText(input.raiderGuild?.profile_url || guild.profile_url || input.previousStats?.profileUrl) || null,
     maxRioAll: Math.max(0, ...members.map((member) => member.scores.all)),
     maxItemLevel: Math.max(0, ...members.map((member) => member.itemLevel)),
     averageRioAll: average(members.map((member) => member.scores.all)),
     averageItemLevel: average(members.map((member) => member.itemLevel)),
     // A failed/partial Raider.IO response must never replace valid progress with [].
-    raidProgression: input.raiderGuild?.raid_progression && Object.keys(input.raiderGuild.raid_progression).length
-      ? normalizeRaidProgression(input.raiderGuild.raid_progression)
-      : input.previousStats?.raidProgression || [],
-    raidRankings: input.raiderGuild?.raid_rankings && Object.keys(input.raiderGuild.raid_rankings).length
-      ? normalizeRaidRankings(input.raiderGuild.raid_rankings)
-      : input.previousStats?.raidRankings || [],
+    raidProgression: mergeRaidRows(input.previousStats?.raidProgression?.map(raid => ({...raid, observedAt: raid.observedAt || input.previousStats?.rosterUpdatedAt || input.previousStats?.updatedAt || undefined})), normalizeRaidProgression(input.raiderGuild?.raid_progression).map(raid=>({...raid,observedAt:input.updatedAt}))),
+    raidRankings: mergeRaidRows(input.previousStats?.raidRankings?.map(raid => ({...raid, observedAt: raid.observedAt || input.previousStats?.rosterUpdatedAt || input.previousStats?.updatedAt || undefined})), normalizeRaidRankings(input.raiderGuild?.raid_rankings).map(raid=>({...raid,observedAt:input.updatedAt}))),
     raidSeasonSnapshot: input.raidSeasonSnapshot || input.previousStats?.raidSeasonSnapshot || null,
   };
 }
@@ -3045,9 +3050,9 @@ export async function refreshGuildRosterApiBatch(
 export async function loadStoredGuildRosterData(
   options: { bypassCache?: boolean } = {},
 ): Promise<GuildRosterLoadResult> {
-  const settings = await getGuildRosterSyncSettings().catch(() => null);
+  const settings = await getGuildRosterSyncSettings({bypassCache:options.bypassCache}).catch(() => null);
   const cached = await readCachedRoster(settings, { bypassCache: options.bypassCache }).catch(() => null);
-  if (cached) return publicFromCache(cached);
+  if (cached) return withGuildRaidHistory(publicFromCache(cached),settings);
 
   return emptyGuildRosterFallback("У сховищі даних ще немає нормалізованих записів складу гільдії.");
 }
@@ -3059,11 +3064,20 @@ export async function loadGuildRosterData(
   const settings = await getGuildRosterSyncSettings().catch(() => null);
   const cached = await readCachedRoster(settings, { bypassCache: options.bypassCache }).catch(() => null);
 
-  if (cached) return publicFromCache(cached);
+  if (cached) return withGuildRaidHistory(publicFromCache(cached),settings);
 
   return emptyGuildRosterFallback(
     guildRosterStorageLimited()
       ? "Тимчасова технічна помилка: сховище даних недоступне або спрацював захисний ліміт. Сайт не запускає додаткові важкі читання, щоб не перевантажувати сховище."
       : "У сховищі даних ще немає нормалізованих записів складу або вони тимчасово недоступні. Сторінка не запускає live-збір під час render; синхронізація створює записи покроково.",
   );
+}
+
+export async function getGuildRaidHistoryContext() {
+  const settings=await getGuildRosterSyncSettings();
+  return {...getGuildConfig(settings),key:guildRecordsDocId(settings),settings};
+}
+async function withGuildRaidHistory(base: GuildRosterLoadResult, settings: GuildRosterRuntimeSettings | null) {
+  const history=await readGuildRaidHistory(guildRecordsDocId(settings)).catch(()=>undefined);
+  return applyGuildRaidHistory(base,history);
 }

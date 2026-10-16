@@ -1,0 +1,159 @@
+{
+  "date": "2026-10-15",
+  "dashboardVersion": "3.8.98",
+  "botVersion": "3.6.9",
+  "contractVersion": "1.1.1",
+  "baselineBrowser": {
+    "baseline": true,
+    "passed": 7,
+    "failed": 0,
+    "scenarios": [
+      "pause retains a result focus after its button disappears",
+      "a failed tab read is not shown as a valid empty history",
+      "successful background recovery clears the list error without another mutation",
+      "an expanded 100-row list uses one summary request per background tick",
+      "dirty cleanup settings pause background reads and keep the draft",
+      "uncertain settings save preserves the selected enabled flag",
+      "the last load-more action retains an accessible focus destination"
+    ],
+    "observations": {
+      "pauseFocus": {
+        "tag": "BODY",
+        "result": false
+      },
+      "falseEmpty": 1,
+      "staleError": 1,
+      "expanded": {
+        "reads": 4,
+        "rowReads": 4,
+        "formatters": 800,
+        "rows": 100
+      },
+      "dirtyReads": 1,
+      "recoveryDraftEnabled": false,
+      "moreFocus": {
+        "tag": "BODY",
+        "result": false
+      }
+    },
+    "errors": [],
+    "browser": "153.0.8010.0"
+  },
+  "finalBrowser": {
+    "baseline": false,
+    "passed": 15,
+    "failed": 0,
+    "scenarios": [
+      "pause retains a result focus after its button disappears",
+      "a failed tab read is not shown as a valid empty history",
+      "successful background recovery clears the list error without another mutation",
+      "an expanded 100-row list uses one summary request per background tick",
+      "dirty cleanup settings pause background reads and keep the draft",
+      "uncertain settings save preserves the selected enabled flag",
+      "the last load-more action retains an accessible focus destination",
+      "explicit refresh reads the expanded snapshot once without triggering a scan",
+      "list retry is GET-only and restores data",
+      "finishing pause does not steal a manually moved focus",
+      "invalid mutation confirmations never claim a saved setting or replay POST",
+      "pause stays available during settings save and ignores its late response",
+      "successful list refresh does not erase a separate rejected action",
+      "tab keyboard navigation keeps focus on the selected tab",
+      "cleanup remains responsive at nine widths without runtime errors"
+    ],
+    "observations": {
+      "pauseFocus": {
+        "tag": "P",
+        "result": true
+      },
+      "falseEmpty": 0,
+      "staleError": 0,
+      "expanded": {
+        "reads": 1,
+        "rowReads": 0,
+        "formatters": 1,
+        "rows": 100
+      },
+      "dirtyReads": 0,
+      "recoveryDraftEnabled": true,
+      "moreFocus": {
+        "tag": "P",
+        "result": true
+      }
+    },
+    "errors": [],
+    "browser": "153.0.8010.0"
+  },
+  "behavioral": {
+    "passed": 17,
+    "failed": 0,
+    "command": "npm run check:cleanup-view",
+    "scenarios": [
+      "1000 expanded rows use one metadata request and retain their snapshot",
+      "a small background view still updates its actual member rows",
+      "load-more de-duplicates old and repeated new rows without mutating either page",
+      "stale cursor restarts once and does not mix scans",
+      "manual refresh reconstructs 100 rows over four pages with one upstream signal",
+      "repeated cursor cannot cause an unbounded refresh loop",
+      "duplicate-only page is rejected even if the cursor changes",
+      "a scan change mid-refresh discards partial rows and restarts at the new head",
+      "a second stale head stops rather than retrying indefinitely",
+      "an unchanged load-more cursor is reported as a read error",
+      "malformed or unconfirmed read payloads never become a valid empty list",
+      "merging 10000 prior rows and 100 new rows has bounded ID reads",
+      "cleanup settings require a boolean flag and a known calendar period",
+      "metadata-only endpoint enforces authentication and permissions before reads",
+      "authorized summary reads no row page and remains no-store",
+      "ordinary paged endpoint retains tab, cursor and scan parameters",
+      "invalid tab never invokes row reads even in summary mode"
+    ]
+  },
+  "regression": {
+    "discordMemberCleanupBehavioralChecks": 101,
+    "ciPrebuildChecksThroughInspect": "passed; inspect-ci checked 514 files, 0 blocking issues",
+    "buildCiProcessExit": 0,
+    "buildCiLogLimit": "Redirected build:ci log ends during static page generation; final build and standalone were run separately with complete successful output."
+  },
+  "finalGates": {
+    "typecheck": {
+      "exitCode": 0,
+      "seconds": 4
+    },
+    "eslint": {
+      "exitCode": 0
+    },
+    "productionBuild": {
+      "exitCode": 0,
+      "nextVersion": "16.3.5",
+      "seconds": 9
+    },
+    "standalone": {
+      "passed": 6,
+      "failed": 0,
+      "scenarios": [
+        "welcome route trace includes its background and three bundled fonts",
+        "standalone contains no dashboard source, CI scripts or builder-only configuration",
+        "Sharp resolves from standalone rather than the source node_modules",
+        "packaged Sharp and assets pass the real renderer suite",
+        "packaged Next server starts and returns healthy no-store liveness without integrations",
+        "standalone server serves the exact traced welcome background"
+      ],
+      "traceFiles": 1180,
+      "traceBytes": 41469481,
+      "standaloneFiles": 4057,
+      "standaloneBytes": 84362242,
+      "scriptsInStandalone": 0,
+      "sourceFilesInStandalone": 0
+    }
+  },
+  "measurementScope": "Controlled production React Chromium mount plus one manually triggered real cleanup interval callback; mocked HTTP, no production latency claims.",
+  "largeMergeRows": 10000,
+  "limits": [
+    "No live PostgreSQL/Discord or Docker/VPS acceptance in this run.",
+    "No NVDA/TalkBack verification.",
+    "Expanded lists retain an explicitly labelled snapshot until a manual GET refresh; summary updates independently.",
+    "Draft preservation is in mounted component memory; no cross-reload draft storage added.",
+    "Manual expanded refresh remains paginated under the existing 15-second total read deadline.",
+    "No change to cleanup domain policy, cron frequency, SQL schema, bot or shared contract.",
+    "R7 remains open; next scoped inspection is static Discord roles and remaining settings forms."
+  ]
+}

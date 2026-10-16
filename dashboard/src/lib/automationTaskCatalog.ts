@@ -3,6 +3,7 @@ export const AUTOMATION_TASKS = {
   "raid-lifecycle": { title: "Рейди та нагадування", intervalSeconds: 60, href: "/raids", action: "Переглянути рейди", note: "Підсумок стосується готових задач рейдів; окремі публікації можуть потребувати звірки." },
   polls: { title: "Автоматизація рейд-пулів", intervalSeconds: 300, href: "/polls", action: "Переглянути рейд-пули", note: "Виклик перевіряє розклад, закриття та повтор; він не означає нову публікацію." },
   onboarding: { title: "Нові учасники Discord", intervalSeconds: 60, href: "/dashboard/discord#discord-settings", action: "Перевірити onboarding", note: "Вимоги явного прийняття правил зберігаються." },
+  "application-deliveries": { title: "Доставка заявок у Discord", intervalSeconds: 60, href: "/applications", action: "Перевірити заявки", note: "Збережені заявки доставляються з черги; неоднозначний результат потребує звірки без нового повідомлення." },
   "profile-nicknames": { title: "Черга змін ніків", intervalSeconds: 60, href: "/profiles", action: "Переглянути профілі", note: "Обробка черги не підтверджує кожну зміну ніку; окремий результат зберігається у профілі." },
   "log-maintenance": { title: "Журнал і службові записи", intervalSeconds: 1800, href: "/dashboard/logs", action: "Переглянути журнал", note: "Очищення службових і захисних записів має окремий підсумок помилок." },
 } as const;

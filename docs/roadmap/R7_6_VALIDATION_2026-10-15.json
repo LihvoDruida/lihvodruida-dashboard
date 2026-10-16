@@ -1,0 +1,157 @@
+{
+  "date": "2026-10-15",
+  "dashboardVersion": "3.8.99",
+  "botVersion": "3.6.9",
+  "contractVersion": "1.1.1",
+  "baselineBrowser": {
+    "baseline": true,
+    "passed": 7,
+    "failed": 0,
+    "scenarios": [
+      "false mutation acknowledgement never confirms a save or replays POST",
+      "unconfirmed initial read cannot expose a valid configuration",
+      "successful save focuses its persistent result after disabling the button",
+      "dirty settings participate in shared live-refresh guards",
+      "Discord warning has a GET-only refresh without reloading the page",
+      "failed save recovery stops claiming it is still reading",
+      "a deleted saved role stays explicitly visible as unavailable"
+    ],
+    "observations": {
+      "falseSuccess": 1,
+      "badReadForm": 2,
+      "resultFocus": false,
+      "dirty": 0,
+      "refresh": 0,
+      "stuckRecovery": 1,
+      "missingRole": 0
+    },
+    "errors": [],
+    "browser": "153.0.8010.0"
+  },
+  "finalBrowser": {
+    "baseline": false,
+    "passed": 21,
+    "failed": 0,
+    "scenarios": [
+      "false mutation acknowledgement never confirms a save or replays POST",
+      "unconfirmed initial read cannot expose a valid configuration",
+      "successful save focuses its persistent result after disabling the button",
+      "dirty settings participate in shared live-refresh guards",
+      "Discord warning has a GET-only refresh without reloading the page",
+      "failed save recovery stops claiming it is still reading",
+      "a deleted saved role stays explicitly visible as unavailable",
+      "manual role refresh preserves the draft and sends no POST",
+      "a failed refresh retains choices and successful retry clears only its error",
+      "invalid or mismatched save confirmations reconcile by GET once",
+      "lost response reconciles an applied setting without repeating POST",
+      "save locks refresh and editing and preserves manually moved focus",
+      "a timed-out POST aborts once and recovers through GET without replay",
+      "unmount cancels an outstanding POST and never starts recovery",
+      "a rejected role migration retains the server reason after reconciliation",
+      "HTTP 400 after an applied setting is reconciled without a second write",
+      "duplicate role choices cannot be submitted and hierarchy stays enforced",
+      "a GET refresh never erases a rejected save result",
+      "Enter in local role search never submits dirty permissions",
+      "250-role local search supports Ukrainian and IDs and retains selected roles",
+      "responsive form fits nine widths without runtime errors"
+    ],
+    "observations": {
+      "falseSuccess": 0,
+      "badReadForm": 0,
+      "resultFocus": true,
+      "dirty": 1,
+      "refresh": 1,
+      "stuckRecovery": 0,
+      "missingRole": 1,
+      "unfilteredOptions": 502,
+      "filteredOptions": 8
+    },
+    "errors": [],
+    "browser": "153.0.8010.0"
+  },
+  "contractChecks": {
+    "passed": 14,
+    "failed": 0,
+    "command": "npm run check:static-role-settings",
+    "scenarios": [
+      "valid overview accepts a non-assignable RL role without changing its permissions",
+      "unconfigured empty saved roles remain readable",
+      "HTTP 200 non-objects and non-boolean acknowledgements never confirm an overview",
+      "malformed settings and Discord availability fields are rejected before rendering",
+      "malformed roles and repeated IDs cannot become a selectable catalog",
+      "a Discord warning remains a valid explicit unavailable state",
+      "only matching explicit acknowledgement confirms a save",
+      "empty or identical roles never confirm a saved permission pair",
+      "choice comparison requires both IDs rather than matching only the member",
+      "Ukrainian search is case-insensitive and preserves both selected options",
+      "normalization supports compatible Unicode and exact ID fragments",
+      "an empty result retains selected existing roles without fabricating deleted roles",
+      "250-role index avoids reading role names again over 100 local searches",
+      "filtered 250-role options preserve order and narrow only local results"
+    ]
+  },
+  "finalGates": {
+    "buildCi": {
+      "exitCode": 0,
+      "standaloneFooter": true,
+      "logBytes": 90528
+    },
+    "typecheck": {
+      "exitCode": 0,
+      "seconds": 4
+    },
+    "eslint": {
+      "wholeProjectExitCode": 0,
+      "changedFilesExitCode": 0
+    },
+    "productionBuild": {
+      "exitCode": 0,
+      "seconds": 8,
+      "nextVersion": "16.3.5",
+      "timingScope": "Local warm-cache completion; not a latency comparison"
+    },
+    "standalone": {
+      "passed": 6,
+      "failed": 0,
+      "scenarios": [
+        "welcome route trace includes its background and three bundled fonts",
+        "standalone contains no dashboard source, CI scripts or builder-only configuration",
+        "Sharp resolves from standalone rather than the source node_modules",
+        "packaged Sharp and assets pass the real renderer suite",
+        "packaged Next server starts and returns healthy no-store liveness without integrations",
+        "standalone server serves the exact traced welcome background"
+      ],
+      "traceFiles": 1180,
+      "traceBytes": 41469481,
+      "standaloneFiles": 4057,
+      "standaloneBytes": 84368216,
+      "scriptsInStandalone": 0,
+      "sourceFilesInStandalone": 0
+    },
+    "inspectCi": {
+      "files": 517,
+      "blockingIssues": 0
+    },
+    "existingStaticRouteScenarios": 20,
+    "cleanupViewRegressionScenarios": 17
+  },
+  "loadChecks": {
+    "catalogRoles": 250,
+    "selectorsOptionsBefore": 502,
+    "selectorsOptionsFiltered": 8,
+    "searchHttpRequests": 0,
+    "indexNameReads": 250,
+    "furtherSearches": 100,
+    "furtherNameReads": 0
+  },
+  "timeoutCheck": "Only browser test timer for 20000ms was accelerated to 150ms; real abort, GET recovery and no POST replay were asserted. Production deadline unchanged.",
+  "limits": [
+    "No live PostgreSQL/Discord, Docker/VPS acceptance, NVDA or TalkBack in this run.",
+    "No server API, permissions, acceptance rules, SQL schema, bot or contract changes.",
+    "No new server revision or atomic configuration/audit transaction.",
+    "Draft stays in mounted component memory; no cross-reload or cross-tab draft recovery added.",
+    "Search scans the cached normalized index; no production latency or constant-time claim.",
+    "Next Link is an anchor-only test adapter; Next navigation itself was not tested.",
+    "R7.6 scope is Static Discord roles. Log settings and Security mirror remain for R7.7; R7 as a whole remains open."
+  ]
+}

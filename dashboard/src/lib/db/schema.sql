@@ -143,3 +143,8 @@ CREATE TABLE IF NOT EXISTS site_content_media (
   payload bytea NOT NULL CHECK(octet_length(payload) BETWEEN 1 AND 8388608),
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- Revision probes read published CMS headers without scanning article bodies.
+CREATE INDEX IF NOT EXISTS documents_site_published_headers_idx
+ ON documents(doc_id,updated_at)
+ WHERE collection='siteArticles' AND COALESCE(data->>'status','published')='published';

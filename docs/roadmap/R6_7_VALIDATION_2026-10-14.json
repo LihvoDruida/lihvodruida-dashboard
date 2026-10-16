@@ -1,0 +1,131 @@
+{
+  "stage": "R6.7",
+  "dashboardVersion": "3.8.83",
+  "botVersion": "3.6.7",
+  "date": "2026-10-14",
+  "baseArchive": "3.8.82 R6.6 application-workbench-full",
+  "behavioralChecks": {
+    "command": "npm run check:publication-workbench",
+    "passed": 19,
+    "scope": "Actual status, publication, message, poll resync and route modules with deterministic storage/transport doubles. No live PostgreSQL."
+  },
+  "discordPublicationTransportRegression": {
+    "command": "npm run check:discord-publication",
+    "passed": 8
+  },
+  "verify": {
+    "command": "npm run verify",
+    "exitCode": 0,
+    "includes": [
+      "TypeScript",
+      "ESLint",
+      "functional/security/regression checks",
+      "imports",
+      "style/UI audits"
+    ]
+  },
+  "securityRuntime": {
+    "command": "npm run security:runtime",
+    "exitCode": 0,
+    "node": "24.19.0",
+    "next": "16.3.5",
+    "react": "19.2.8",
+    "reactDom": "19.2.8",
+    "sharp": "0.35.4",
+    "note": "Existing Docker security overlays applied locally; source dependency pins unchanged."
+  },
+  "additionalBuildCiChecks": {
+    "characterData": 16,
+    "guildBanner": 24
+  },
+  "productionBuild": {
+    "command": "NEXT_PUBLIC_DASHBOARD_URL=https://guild.lihvodruida.pp.ua NEXT_BUILD_CPUS=2 NODE_BUILD_MEMORY_MB=2560 npm run build",
+    "exitCode": 0,
+    "reportedSeconds": 11,
+    "warnings": "Two existing Turbopack filesystem tracing warnings in unchanged discordWelcomeCard.ts."
+  },
+  "browser": {
+    "passed": 13,
+    "checks": [
+      "mount and status refresh never POST to Discord action",
+      "saved-state action preserves unsaved form values",
+      "manual recovery forwards exact URL and removes field only after result",
+      "in-flight action locks read and write controls",
+      "lost response reads receipt and never automatically repeats POST",
+      "unknown state blocks action until a successful read",
+      "future schedule has read action only",
+      "missing Discord configuration keeps state read available",
+      "partial event warning remains visible after successful message action",
+      "channel move requires explicit confirmation",
+      "45-second timeout unlocks controls and reconciles without POST retry",
+      "responsive layout fits nine widths from 320 to 1920",
+      "no browser runtime errors"
+    ],
+    "viewports": [
+      320,
+      360,
+      390,
+      620,
+      768,
+      1024,
+      1280,
+      1440,
+      1920
+    ],
+    "pageErrors": [],
+    "liveDiscordUsed": false
+  },
+  "productionSmoke": {
+    "passed": 8,
+    "checks": [
+      {
+        "path": "/api/raids/fixture00/discord-sync",
+        "method": "GET",
+        "status": 401
+      },
+      {
+        "path": "/api/raids/fixture00/discord-sync",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/api/polls/fixture00/discord-sync",
+        "method": "GET",
+        "status": 401
+      },
+      {
+        "path": "/api/polls/fixture00/discord-sync",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/api/raids/fixture00/discord-sync",
+        "method": "POST",
+        "status": 403
+      },
+      {
+        "path": "/api/polls/fixture00/discord-sync",
+        "method": "POST",
+        "status": 421
+      },
+      {
+        "path": "/raids/fixture00/edit",
+        "method": "GET",
+        "status": 303
+      },
+      {
+        "path": "/polls/fixture00/edit",
+        "method": "GET",
+        "status": 303
+      }
+    ],
+    "liveCredentialsUsed": false
+  },
+  "limits": [
+    "No live Discord, PostgreSQL or VPS deployment",
+    "Status is persisted evidence, not live Discord availability/content verification",
+    "No receipt badges on general list cards",
+    "No forced replay of uncertain CREATE",
+    "R6.8 navigation and remaining R6/R7/R8 are not completed"
+  ]
+}

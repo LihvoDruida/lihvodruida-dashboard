@@ -1,0 +1,207 @@
+{
+  "date": "2026-10-15",
+  "dashboardVersion": "3.8.97",
+  "botVersion": "3.6.9",
+  "contractVersion": "1.1.1",
+  "baselineBrowser": {
+    "baseline": true,
+    "passed": 5,
+    "failed": 0,
+    "scenarios": [
+      "pause does not confirm a 200 HTML response",
+      "recalculate does not confirm a 200 HTML response",
+      "delete does not confirm a 200 HTML response",
+      "actions does not confirm a 200 HTML response",
+      "bulk reports each confirmed and uncertain item without replay"
+    ],
+    "observations": {
+      "pause": {
+        "toast": {
+          "tone": "success",
+          "title": "Рейд-пул на паузі",
+          "message": "Час до закриття заморожено, Discord-кнопки вимкнено.",
+          "ttl": 6200
+        },
+        "refreshes": 1,
+        "pushes": []
+      },
+      "recalculate": {
+        "toast": {
+          "tone": "success",
+          "title": "Дні перераховано",
+          "message": "Оновлено 0 Discord-повідомлень без перетину рекомендованих днів.",
+          "ttl": 7200
+        },
+        "refreshes": 1,
+        "pushes": []
+      },
+      "delete": {
+        "toast": {
+          "tone": "success",
+          "title": "Рейд-пул видалено",
+          "message": "Запис видалено, список рейд-пулів оновлено.",
+          "ttl": 6200
+        },
+        "refreshes": 1,
+        "pushes": [
+          "/polls"
+        ]
+      },
+      "actions": {
+        "toast": {
+          "tone": "success",
+          "title": "Рейд-пул закрито",
+          "message": "Кнопки голосування в Discord вимкнено, фінальний результат оновлено.",
+          "ttl": 6200
+        },
+        "refreshes": 1,
+        "pushes": []
+      },
+      "bulk": {
+        "tone": "success",
+        "title": "Рейд-пули закрито",
+        "message": "Оброблено 2.",
+        "ttl": 7200
+      }
+    },
+    "errors": [],
+    "browser": "153.0.8010.0"
+  },
+  "finalBrowser": {
+    "baseline": false,
+    "passed": 15,
+    "failed": 0,
+    "scenarios": [
+      "pause does not confirm a 200 HTML response",
+      "recalculate does not confirm a 200 HTML response",
+      "delete does not confirm a 200 HTML response",
+      "actions does not confirm a 200 HTML response",
+      "bulk reports each confirmed and uncertain item without replay",
+      "confirmed pause emits one success and refreshes once",
+      "pause has a real abort deadline and does not retry its uncertain POST",
+      "related controls cannot start pause during a close request",
+      "close and delete stay disabled while the embedded pause is pending",
+      "unmount aborts the in-flight action without stale toasts or navigation",
+      "finishing a request respects a manual focus move",
+      "cancelled destructive confirmation sends no request",
+      "confirmed bulk deletion links to the list instead of deleted resources",
+      "bulk retains rejected items and provides exact read links",
+      "results remain responsive at nine widths without runtime errors"
+    ],
+    "observations": {
+      "pause": {
+        "toast": {
+          "tone": "warning",
+          "title": "Результат не підтверджено",
+          "message": "Результат не підтверджено. Дія могла завершитися. Перевір стан рейд-пулу перед повтором; автоматичного повтору немає.",
+          "ttl": 8200
+        },
+        "refreshes": 0,
+        "pushes": []
+      },
+      "recalculate": {
+        "toast": {
+          "tone": "warning",
+          "title": "Результат не підтверджено",
+          "message": "Результат не підтверджено. Дія могла завершитися. Перевір стан рейд-пулу перед повтором; автоматичного повтору немає.",
+          "ttl": 8200
+        },
+        "refreshes": 0,
+        "pushes": []
+      },
+      "delete": {
+        "toast": {
+          "tone": "warning",
+          "title": "Результат не підтверджено",
+          "message": "Результат не підтверджено. Дія могла завершитися. Перевір стан рейд-пулу перед повтором; автоматичного повтору немає.",
+          "ttl": 8200
+        },
+        "refreshes": 0,
+        "pushes": []
+      },
+      "actions": {
+        "toast": {
+          "tone": "warning",
+          "title": "Результат не підтверджено",
+          "message": "Результат не підтверджено. Дія могла завершитися. Перевір стан рейд-пулу перед повтором; автоматичного повтору немає.",
+          "ttl": 8200
+        },
+        "refreshes": 0,
+        "pushes": []
+      },
+      "bulk": {
+        "tone": "warning",
+        "title": "Обробку завершено з зауваженнями",
+        "message": "Підтверджено: 1. Частково: 0. Відхилено: 0. Не підтверджено: 1.",
+        "ttl": 7200
+      }
+    },
+    "errors": [],
+    "browser": "153.0.8010.0"
+  },
+  "httpClient": {
+    "passed": 18,
+    "failed": 0,
+    "productionModules": [
+      "raidPollMutation",
+      "dashboardApiClient",
+      "apiHttp"
+    ],
+    "fetchControlled": true,
+    "singleDispatchAssertions": true,
+    "noAutomaticReplay": true
+  },
+  "buildCi": {
+    "passed": true,
+    "exitCode": 0,
+    "pollMutationCasesInFullRun": 17,
+    "note": "Final follow-up conservatively classified HTTP 400/409, added the 18th HTTP case, and corrected confirmed-delete result links. Final HTTP suite, targeted lint, TypeScript, production build and standalone gates passed after the follow-up."
+  },
+  "eslint": {
+    "fullProjectExitCode": 0,
+    "finalChangedFilesExitCode": 0
+  },
+  "finalTypecheck": {
+    "passed": true
+  },
+  "finalProductionBuild": {
+    "passed": true
+  },
+  "finalStandalone": {
+    "passed": 6,
+    "failed": 0,
+    "scenarios": [
+      "welcome route trace includes its background and three bundled fonts",
+      "standalone contains no dashboard source, CI scripts or builder-only configuration",
+      "Sharp resolves from standalone rather than the source node_modules",
+      "packaged Sharp and assets pass the real renderer suite",
+      "packaged Next server starts and returns healthy no-store liveness without integrations",
+      "standalone server serves the exact traced welcome background"
+    ],
+    "traceFiles": 1180,
+    "traceBytes": 41469481,
+    "standaloneFiles": 4058,
+    "standaloneBytes": 84357658,
+    "scriptsInStandalone": 0,
+    "sourceFilesInStandalone": 0
+  },
+  "limits": {
+    "browserApis": "controlled fixtures",
+    "router": "adapter, no live RSC refresh",
+    "timeoutTest": "45-second timer accelerated to 80 ms only in the timeout scenario",
+    "bulkResults": "component memory, not durable server audit",
+    "crossTabLocks": "not added"
+  },
+  "notRun": [
+    "Live PostgreSQL/Discord acceptance",
+    "VPS deployment",
+    "Docker image build",
+    "NVDA/TalkBack"
+  ],
+  "unchanged": [
+    "SQL schema",
+    "Bot code/protocol",
+    "Cron frequency",
+    "Logging-page design"
+  ]
+}
