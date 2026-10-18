@@ -116,7 +116,7 @@ async function check(name, fn) { await fn(); passed++; console.log('PASS', name)
   });
   await check('overview ignores observations from a different guild/configuration context', async () => {
     const db = { collection: c => ({ doc: id => ({ collection: c, id }) }), getAll: async (...refs) => refs.map(ref => ({ data: () => ref.collection === 'automationTaskRuns' ? run({ contextHash: 'other-context' }) : {} })) };
-    const overview = await loadOverview(db, '111111111111111111')(); assert.equal(overview.cards.length, 10);
+    const overview = await loadOverview(db, '111111111111111111')(); assert.equal(overview.cards.length, 11);
     assert.ok(overview.cards.slice(3).every(card => card.lastAt === null)); assert.ok(!JSON.stringify(overview).includes('other-context'));
   });
   await check('configured raid cooldown does not cause a false overdue scheduler warning', () => {

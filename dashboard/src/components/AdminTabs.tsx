@@ -1,3 +1,4 @@
+import {canManageStreamers} from '@/lib/streamers/contract';
 import type { DashboardSession } from "@/lib/auth";
 import {
   canManageDiscordMembers,
@@ -6,7 +7,7 @@ import {
 } from "@/lib/permissions";
 
 export type AdminTabKey =
-  "overview" | "groups" | "cleanup" | "discord" | "logs" | "server" | "welcome" | "settings";
+  "streamers" | "overview" | "groups" | "cleanup" | "discord" | "logs" | "server" | "welcome" | "settings";
 
 export default function AdminTabs({
   active,
@@ -19,6 +20,7 @@ export default function AdminTabs({
   const canOpenDiscord = canManageDiscordMembers(user);
   const canOpenLogs = canViewAdminLogs(user);
   const tabs = [
+    {key:"streamers" as const,href:"/dashboard/streamers",label:"Стрімери",description:"ефіри · відео",visible:canManageStreamers(user)},
     {
       key: "overview" as const,
       href: "/dashboard",
@@ -76,7 +78,7 @@ export default function AdminTabs({
   if (active !== "logs") {
     const sections = [
       { label: "Доступ і склад", keys: ["overview", "groups", "settings"] },
-      { label: "Discord та автоматизація", keys: ["discord", "cleanup", "welcome"] },
+      { label: "Discord та автоматизація", keys: ["discord", "cleanup", "welcome", "streamers"] },
       { label: "Система", keys: ["server", "logs"] },
     ];
     const managementTabs = [...tabs, { key: "cleanup" as const, href: "/dashboard/discord/cleanup", label: "Очищення", description: "роль та строк", visible: canOpenDiscord }].filter(tab => tab.visible);

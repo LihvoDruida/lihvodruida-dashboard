@@ -1,4 +1,6 @@
-# Mistblossom Dashboard 3.13.1
+# Mistblossom Dashboard 3.14.0
+
+Стрімери гільдії, LIVE на сайті та Discord-сповіщення — [GUILD_STREAMERS_2026-10-18_UA.md](docs/GUILD_STREAMERS_2026-10-18_UA.md). Керування лише для власника й адміністратора. Парний Site 4.6.0; спочатку встановити Dashboard.
 
 Виправлення збірки 3.13.1: [CHARACTER_DATA_CI_HOTFIX_2026-10-16_UA.md](docs/CHARACTER_DATA_CI_HOTFIX_2026-10-16_UA.md). Поведінкова перевірка сезонів і однаковий набір check-перевірок у verify та Docker build:ci.
 

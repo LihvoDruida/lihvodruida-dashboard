@@ -111,6 +111,7 @@ function isInternalBearerApiPath(pathname: string) {
     // Profile-edit queue uses the same authenticated cron transport.
     pathname === "/api/dashboard/discord/profile-nicknames/automation" ||
     pathname === "/api/dashboard/discord/applications/automation" ||
+    pathname === "/api/dashboard/streamers/automation" ||
     pathname === "/api/guild/sync" ||
     pathname === "/api/raids/lifecycle" ||
     pathname === "/api/polls/close-due" ||

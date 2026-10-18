@@ -70,9 +70,9 @@ async function check(name, fn) { await fn(); passed++; console.log('✓ ' + name
   await check('Live account lease is running even during a manual operation with automation off', () => assert.equal(account({ autoCheckEnabled: false }, lease).state, 'running'));
   let calls = 0, refs = [];
   const db = { collection: c => ({ doc: id => ({ collection: c, id }) }), getAll: async (...r) => { calls++; refs = r; return r.map(ref => ({ data: () => ref.collection === 'automationLeases' ? lease : {} })); } };
-  await check('Overview batches sixteen documents for ten cards and never starts a worker or writer', async () => {
+  await check('Overview batches seventeen documents for eleven cards and never starts a worker or writer', async () => {
     const overview = await loadOverview(db, guild)();
-    assert.equal(calls, 1); assert.equal(refs.length, 16); assert.equal(overview.cards.length, 10);
+    assert.equal(calls, 1); assert.equal(refs.length, 17); assert.equal(overview.cards.length, 11);
     assert.ok(!JSON.stringify(overview).includes(lease.owner)); assert.ok(!JSON.stringify(overview).includes('expiresAtMs'));
   });
   await check('A failed read reports all states unavailable, never disabled defaults', async () => {
@@ -85,7 +85,7 @@ async function check(name, fn) { await fn(); passed++; console.log('✓ ' + name
   });
   await check('No guild makes member cleanup unavailable while other stored diagnostics remain readable', async () => {
     const overview = await loadOverview(db, '')();
-    assert.equal(refs.length, 12); assert.equal(overview.cards[0].state, 'unavailable'); assert.notEqual(overview.cards[2].state, 'unavailable');
+    assert.equal(refs.length, 13); assert.equal(overview.cards[0].state, 'unavailable'); assert.notEqual(overview.cards[2].state, 'unavailable');
   });
   await check('A stalled database read has a bounded diagnostic deadline', async () => {
     const start = Date.now(), overview = await loadOverview({ ...db, getAll: () => new Promise(() => {}) }, guild)();
