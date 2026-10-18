@@ -1,4 +1,6 @@
-# Mistblossom Dashboard 3.14.0
+# Mistblossom Dashboard 3.14.1
+
+Виправлено `dashboard_unavailable` маршруту стрімерів під час деплою: [інструкція оновлення](docs/STREAMER_BRIDGE_HOTFIX_2026-10-18_UA.md).
 
 Стрімери гільдії, LIVE на сайті та Discord-сповіщення — [GUILD_STREAMERS_2026-10-18_UA.md](docs/GUILD_STREAMERS_2026-10-18_UA.md). Керування лише для власника й адміністратора. Парний Site 4.6.0; спочатку встановити Dashboard.
 

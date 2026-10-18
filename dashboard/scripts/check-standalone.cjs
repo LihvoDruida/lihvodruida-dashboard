@@ -55,7 +55,7 @@ function filesUnder(directory) {
   const port = reservation.address().port; await new Promise(resolve => reservation.close(resolve));
   const base = 'http://127.0.0.1:' + port;
   let logs = '';
-  child = spawn(process.execPath, [entry], { cwd: output, env: { NODE_ENV: 'production', NEXT_TELEMETRY_DISABLED: '1', HOSTNAME: '127.0.0.1', PORT: String(port), DASHBOARD_URL: 'https://guild.test' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  child = spawn(process.execPath, [entry], { cwd: output, env: { NODE_ENV: 'production', NEXT_TELEMETRY_DISABLED: '1', HOSTNAME: '127.0.0.1', PORT: String(port), DASHBOARD_URL: 'https://guild.test', PUBLIC_SITE_BRIDGE_TOKEN: 'standalone-bridge-'.repeat(4) }, stdio: ['ignore', 'pipe', 'pipe'] });
   child.stdout.on('data', chunk => { logs = (logs + chunk).slice(-6000); }); child.stderr.on('data', chunk => { logs = (logs + chunk).slice(-6000); });
   await check('packaged Next server starts and returns healthy no-store liveness without integrations', async () => {
     let response;
@@ -67,6 +67,19 @@ function filesUnder(directory) {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
     assert.ok(response?.ok, logs); const data = await response.json(); assert.equal(data.ok, true); assert.equal(data.service, 'mistblossom-dashboard'); assert.ok(response.headers.get('cache-control').includes('no-store'));
+  });
+  await check('packaged streamer route passes private Host proxy only with site token and reaches its database handler', async () => {
+    const get = token => new Promise((resolve, reject) => {
+      const request = http.get(base + '/api/site/streamers', { headers: { Host: 'dashboard:3000', ...(token ? { Authorization: 'Bearer ' + token } : {}) } }, result => {
+        const chunks = []; result.on('data', chunk => chunks.push(chunk)); result.on('error', reject);
+        result.on('end', () => resolve({ status: result.statusCode, headers: result.headers, data: JSON.parse(Buffer.concat(chunks).toString('utf8')) }));
+      });
+      request.on('error', reject); request.setTimeout(5000, () => request.destroy(new Error('Streamer route timed out')));
+    });
+    for (const token of [null, 'invalid']) { const r = await get(token); assert.equal(r.status, 401); assert.equal(r.headers.location, undefined); }
+    const r = await get('standalone-bridge-'.repeat(4));
+    assert.equal(r.status, 503, 'Without database the actual handler must return 503, never a proxy redirect');
+    assert.equal(r.data.code, 'database_unavailable'); assert.equal(r.headers.location, undefined); assert.match(r.headers['cache-control'], /no-store/);
   });
   await check('standalone server serves the exact traced welcome background', async () => {
     const response = await new Promise((resolve, reject) => {

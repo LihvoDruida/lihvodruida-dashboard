@@ -68,6 +68,18 @@ let rest;let passed=0;async function check(name,run){await run();passed++;consol
  await check('admin routes enforce role and origin before any settings write; secrets are not serialized',async()=>{for(const r of ['member','mentor','moderator']){role={id:r,role:r,permissions:['groups.manage']};assert.equal((await route.GET()).status,403);assert.equal((await route.POST(new NextRequest('https://guild.example/api/dashboard/streamers',{method:'POST',body:'{"action":"settings"}'}))).status,403);}role={id:'admin',role:'admin'};origin=false;assert.equal((await route.POST(new NextRequest('https://guild.example/api/dashboard/streamers',{method:'POST',body:'{}'}))).status,403);origin=true;const r=await route.GET();assert.equal(r.status,200);assert.equal((await r.text()).includes('fixture-secret'),false);});
  const bridgeAuth=load('src/lib/siteBridgeAuth.ts',{},globals).exports;const publicRoute=load('src/app/api/site/streamers/route.ts',{'next/server':{NextResponse},'@/lib/siteBridgeAuth':bridgeAuth,'@/lib/streamers/store':store},globals).exports;
  await check('public snapshot requires scoped site bridge token and never carries admin state',async()=>{assert.equal((await publicRoute.GET(new Request('http://dashboard:3000/api/site/streamers'))).status,403);const r=await publicRoute.GET(new Request('http://dashboard:3000/api/site/streamers',{headers:{Authorization:'Bearer '+'a'.repeat(64)}}));assert.equal(r.status,200);assert.equal(r.headers.get('cache-control'),'no-store');});
+ Object.assign(env,{NODE_ENV:'production',DASHBOARD_URL:'https://guild.example',DASHBOARD_ALLOWED_HOSTS:'guild.example',SECURITY_REQUIRE_CLOUDFLARE:'strict'});
+ const security=load('src/lib/security.ts',{'next/server':{NextRequest,NextResponse},'@/lib/oauth':{getDashboardUrl:()=>env.DASHBOARD_URL},'@/lib/values':{envFlag:name=>env[name]==='true'}},{...globals,crypto:require('node:crypto').webcrypto}).exports;
+ const proxy=load('src/proxy.ts',{'next/server':{NextRequest,NextResponse},'@/lib/siteBridgeAuth':bridgeAuth,'@/lib/security':{...security,logDashboardEvent:()=>{}}},{...globals,crypto:require('node:crypto').webcrypto,btoa,Headers}).exports.proxy;
+ await check('actual production proxy and public route serve streamers via private Host without session or Cloudflare',async()=>{
+  const url='http://dashboard:3000/api/site/streamers';
+  for(const token of [null,'invalid']){const r=proxy(new NextRequest(url,{headers:{Host:'dashboard:3000',...(token?{Authorization:'Bearer '+token}:{})}}));assert.equal(r.status,401);assert.equal(r.headers.get('location'),null);}
+  const request=new NextRequest(url,{headers:{Host:'dashboard:3000',Authorization:'Bearer '+env.PUBLIC_SITE_BRIDGE_TOKEN}}),gate=proxy(request);
+  assert.equal(gate.headers.get('x-middleware-next'),'1','valid internal bridge must reach the route rather than redirect');
+  const r=await publicRoute.GET(request);assert.equal(r.status,200);assert.equal(contract.isPublicStreamers(await r.json()),true);
+  const adjacent=proxy(new NextRequest('http://dashboard:3000/api/dashboard/streamers',{headers:{Host:'dashboard:3000',Authorization:'Bearer '+env.PUBLIC_SITE_BRIDGE_TOKEN}}));assert.equal(adjacent.headers.get('x-middleware-next'),null,'site token must not bypass management protection');
+  const write=proxy(new NextRequest(url,{method:'POST',headers:{Host:'dashboard:3000',Authorization:'Bearer '+env.PUBLIC_SITE_BRIDGE_TOKEN}}));assert.equal(write.status,421);
+ });
  console.log(`[check-streamers] OK ${passed}/${passed}; real PostgreSQL/PGlite transactions and publication ledger, fake providers/Discord only`);
  }finally{await engine.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
