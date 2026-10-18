@@ -4,10 +4,11 @@ import {pgQuery,pgTransaction} from '@/lib/db/pgPool';
 import {getDocumentDb} from '@/lib/documentDb';
 import {discordApi,getDiscordGuildId} from '@/lib/discordAdmin';
 import {assertStorageWriteAvailable} from '@/lib/storageAccess';
-import {STREAMER_LIMIT,STREAMER_SCHEMA,channelIdentity,type StreamMedia,type StreamPlatform,type PublicStreamers} from './contract';
+import {STREAMER_LIMIT,STREAMER_SCHEMA,type StreamMedia,type StreamPlatform,type PublicStreamers} from './contract';
 import {StreamerInputError,classifyStreamerError} from './problems';
 import {recordStreamerDiagnostic} from './diagnostics';
-import {prepareTikTokToken,providerReadiness,resolveProvider,type Observation} from './providers';
+import {streamerChannelInput} from './channel-input';
+import {prepareTikTokToken,providerReadiness,type Observation} from './providers';
 export const ACCOUNTS='guildStreamers',EVENTS='guildStreamerEvents';
 export type StreamerSettings={enabled:boolean;siteEnabled:boolean;discordEnabled:boolean;channelId:string;revision:string};
 export type StreamerState={initializedAt:number;videoIds:string[];live:StreamMedia|null;checkedAt:number;expiresAt:number;status:string;nextCheckAt:number;membershipAt:number;memberActive:boolean;lastSearchAt:number;attemptedAt?:number;failures?:number};
@@ -30,8 +31,8 @@ export async function saveStreamerSettings(input:Record<string,unknown>){
 }
 async function prepareAccount(input:Record<string,unknown>,memberId:string,memberName:string,current?:StreamerAccount){
  if(!['twitch','youtube','tiktok'].includes(String(input.platform)))throw new StreamerInputError('invalid_input');
- const platform=input.platform as StreamPlatform;let identity:ReturnType<typeof channelIdentity>;
- try{identity=channelIdentity(platform,String(input.channel||''));}catch{throw new StreamerInputError('channel_invalid',platform);}
+ const platform=input.platform as StreamPlatform;let identity:ReturnType<typeof streamerChannelInput>;
+ try{identity=streamerChannelInput(platform,String(input.channel||''));}catch(error){throw error instanceof StreamerInputError?error:new StreamerInputError('channel_invalid',platform);}
  const id=String(input.id||randomUUID());if(!/^[a-f0-9-]{36}$/.test(id))throw new StreamerInputError('invalid_input',platform);
  for(const key of ['enabled','siteEnabled','notifyLive','notifyVideos'])if(typeof input[key]!=='boolean')throw new StreamerInputError('invalid_input',platform);
  if(platform==='tiktok'&&input.notifyLive)throw new StreamerInputError('invalid_input',platform);
@@ -39,7 +40,6 @@ async function prepareAccount(input:Record<string,unknown>,memberId:string,membe
  const identityChanged=!current||current.platform!==platform||current.handle!==identity.handle||current.memberId!==memberId;
  let providerId=!identityChanged?current?.providerId||'':'';let token:string|undefined;
  try{
-  if(!providerId&&providerReadiness()[platform])providerId=await resolveProvider(platform,identity.handle);
   if(platform==='tiktok'&&input.accessToken){const prepared=await prepareTikTokToken(identity.handle,String(input.accessToken),String(input.refreshToken||''));providerId=prepared.providerId;token=prepared.token;}
  }catch(error){throw new StreamerInputError(classifyStreamerError(error,'provider_unavailable').code,platform);}
  return {input,id,platform,identity,providerId,token,memberId,memberName};
@@ -61,7 +61,7 @@ async function lockAccounts(client:Parameters<typeof pgQuery>[2]){
 function assertAccounts(accounts:StreamerAccount[]){
  if(accounts.length>STREAMER_LIMIT||accounts.filter(a=>a.platform==='youtube').length>5)throw new StreamerInputError('account_limit');
  const seen=new Set<string>(),providers=new Set<string>();
- for(const a of accounts){const handle=a.platform==='youtube'&&!a.handle.startsWith('@')?a.handle:a.handle.toLowerCase();const key=a.platform+':'+handle,provider=a.providerId?a.platform+':'+a.providerId:'';if(seen.has(key)||provider&&providers.has(provider))throw new StreamerInputError('duplicate_channel',a.platform);seen.add(key);if(provider)providers.add(provider);}
+ for(const a of accounts){const handle=/^UC[a-zA-Z0-9_-]{22}$/.test(a.handle)?a.handle:a.handle.toLowerCase();const key=a.platform+':'+handle,provider=a.providerId?a.platform+':'+a.providerId:'';if(seen.has(key)||provider&&providers.has(provider))throw new StreamerInputError('duplicate_channel',a.platform);seen.add(key);if(provider)providers.add(provider);}
 }
 async function writeAccount(account:StreamerAccount,client:Parameters<typeof pgQuery>[2]){await pgQuery('INSERT INTO documents(collection,doc_id,data) VALUES($1,$2,$3::jsonb) ON CONFLICT(collection,doc_id) DO UPDATE SET data=EXCLUDED.data',[ACCOUNTS,account.id,JSON.stringify(account)],client);}
 export async function saveStreamer(input:Record<string,unknown>){
@@ -123,11 +123,15 @@ export async function commitObservation(a:StreamerAccount,o:Observation,settings
  const now=Date.now(),ref=getDocumentDb().collection(ACCOUNTS).doc(a.id),events=observedEvents(a,o,settings,now);
  const committed=await getDocumentDb().runTransaction(async tx=>{
   const d=(await tx.get(ref)).data();if(d?.revision!==a.revision||d.enabled!==true)return;
+  const claimRef=getDocumentDb().collection('guildStreamerIdentities').doc(createHash('sha256').update(a.platform+':'+o.providerId).digest('hex'));
+  const claim=(await tx.get(claimRef)).data();
+  if(claim?.accountId&&claim.accountId!==a.id){const owner=(await tx.get(getDocumentDb().collection(ACCOUNTS).doc(String(claim.accountId)))).data();if(owner?.platform===a.platform&&owner.providerId===o.providerId)throw new StreamerInputError('duplicate_channel',a.platform);}
   const latestSettings=(await tx.get(settingsRef())).data();
   const ready=latestSettings?.revision===settings.revision&&latestSettings?.enabled===true;
-  const eventRefs=events.map(e=>{const id=createHash('sha256').update([a.id,a.platform,a.handle,e.kind,e.media.id].join(':')).digest('hex');return {e,id,ref:getDocumentDb().collection(EVENTS).doc(id)};});
+  const eventRefs=events.map(e=>{const id=createHash('sha256').update([a.platform,o.providerId,e.kind,e.media.id].join(':')).digest('hex');return {e,id,ref:getDocumentDb().collection(EVENTS).doc(id)};});
   const previous=await Promise.all(eventRefs.map(e=>tx.get(e.ref)));
   const state:StreamerState={initializedAt:a.state?.initializedAt||now,videoIds:[...new Set([...o.videos.map(v=>v.id),...(a.state?.videoIds||[])])].slice(0,100),live:o.live,checkedAt:now,expiresAt:now+300000,status:o.warning||'ok',attemptedAt:now,failures:0,nextCheckAt:now+(a.platform==='twitch'||o.live?60000:300000),membershipAt:now,memberActive:true,lastSearchAt:searched?now:a.state?.lastSearchAt||0};
+  tx.set(claimRef,{accountId:a.id,platform:a.platform,providerId:o.providerId});
   tx.update(ref,{providerId:o.providerId,state,...(o.token?{token:o.token}:{})});
   if(ready)eventRefs.forEach((e,index)=>{if(!previous[index].exists)tx.set(e.ref,{id:e.id,accountId:a.id,accountRevision:a.revision,settingsRevision:settings.revision,channelId:settings.channelId,kind:e.e.kind,media:e.e.media,memberName:a.memberName,platform:a.platform,state:'pending',dueAtMs:now,attempts:0,createdAt:now} satisfies StreamerEvent);});
   return true;
@@ -136,7 +140,7 @@ export async function commitObservation(a:StreamerAccount,o:Observation,settings
 }
 export async function recordStreamerError(a:StreamerAccount,status:string){
  const ref=getDocumentDb().collection(ACCOUNTS).doc(a.id);
- const changed=await getDocumentDb().runTransaction(async tx=>{const d=(await tx.get(ref)).data();if(d?.revision!==a.revision)return false;const old=(d.state||{}) as Partial<StreamerState>;tx.update(ref,{state:{...old,status,attemptedAt:Date.now(),failures:(old.failures||0)+1,nextCheckAt:Date.now()+300000,...(status==='member_missing'?{memberActive:false,live:null,expiresAt:0}:{})}});return old.status!==status;});
+ const changed=await getDocumentDb().runTransaction(async tx=>{const d=(await tx.get(ref)).data();if(d?.revision!==a.revision)return false;const old=(d.state||{}) as Partial<StreamerState>;tx.update(ref,{state:{...old,status,attemptedAt:Date.now(),failures:(old.failures||0)+1,nextCheckAt:Date.now()+300000,...(['member_missing','duplicate_channel'].includes(status)?{memberActive:false,live:null,expiresAt:0}:{})}});return old.status!==status;});
  if(changed)await recordStreamerDiagnostic({code:status,level:'warning',stage:'check',accountId:a.id,platform:a.platform,memberName:a.memberName});
 }
-export async function publicStreamers():Promise<PublicStreamers>{const settings=await streamerSettings();const now=Date.now();const items=settings.enabled&&settings.siteEnabled?(await streamerAccounts()).filter(a=>a.enabled&&a.siteEnabled&&a.state?.memberActive&&a.state.live&&a.state.expiresAt>now).map(a=>({id:a.id,memberName:a.memberName,platform:a.platform,channelUrl:a.channelUrl,live:a.state!.live!,expiresAt:new Date(a.state!.expiresAt).toISOString()})):[];return {schema:STREAMER_SCHEMA,checked_at:new Date(now).toISOString(),items};}
+export async function publicStreamers():Promise<PublicStreamers>{const settings=await streamerSettings();const now=Date.now();const items=settings.enabled&&settings.siteEnabled?(await streamerAccounts()).filter(a=>a.enabled&&a.siteEnabled&&a.state?.memberActive&&a.state.live&&a.state.expiresAt>now).map(a=>({id:a.id,memberName:a.memberName,platform:a.platform,channelUrl:a.platform==='youtube'&&/^UC[a-zA-Z0-9_-]{22}$/.test(a.providerId)?'https://www.youtube.com/channel/'+a.providerId:a.platform==='twitch'?a.state!.live!.url:a.channelUrl,live:a.state!.live!,expiresAt:new Date(a.state!.expiresAt).toISOString()})):[];return {schema:STREAMER_SCHEMA,checked_at:new Date(now).toISOString(),items};}

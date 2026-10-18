@@ -9,7 +9,7 @@ import {observeProvider} from './providers';
 import {classifyStreamerError} from './problems';
 import {recordStreamerDiagnostic} from './diagnostics';
 export function eventStillWanted(event:StreamerEvent,account:StreamerAccount|null,settings:Awaited<ReturnType<typeof streamerSettings>>,now=Date.now()){
- return !!(account?.enabled&&settings.enabled&&settings.discordEnabled&&settings.channelId===event.channelId&&settings.revision===event.settingsRevision&&account.revision===event.accountRevision&&now-event.createdAt<86400000&&(event.kind==='live'?account.notifyLive&&account.state?.live?.id===event.media.id&&account.state.expiresAt>now:account.notifyVideos));
+ return !!(account?.enabled&&account.state?.status!=='duplicate_channel'&&settings.enabled&&settings.discordEnabled&&settings.channelId===event.channelId&&settings.revision===event.settingsRevision&&account.revision===event.accountRevision&&now-event.createdAt<86400000&&(event.kind==='live'?account.notifyLive&&account.state?.live?.id===event.media.id&&account.state.expiresAt>now:account.notifyVideos));
 }
 async function deliver(event:StreamerEvent,assertLease:()=>Promise<void>){
  const ref=getDocumentDb().collection(EVENTS).doc(event.id);
@@ -26,13 +26,13 @@ async function deliver(event:StreamerEvent,assertLease:()=>Promise<void>){
   });return 'sent';
  }catch(error){if(error instanceof Error&&error.message==='streamer_event_cancelled'){await ref.update({state:'cancelled',dueAtMs:0});return 'cancelled';}const uncertain=error instanceof DiscordPublicationPendingError&&error.reason==='uncertain';const retry=error instanceof DiscordRestError&&error.status===429?Math.max(60000,error.retryAfterMs):Math.min(3600000,60000*2**Math.min(event.attempts,5));const code=uncertain?'delivery_uncertain':error instanceof DiscordRestError&&[401,403,404,429].includes(error.status)?`discord_${error.status}`:'delivery_unavailable';await ref.update({state:uncertain?'uncertain':'pending',attempts:event.attempts+1,dueAtMs:Date.now()+retry,lastError:code});if(event.lastError!==code)await recordStreamerDiagnostic({code,level:'warning',stage:'delivery',accountId:event.accountId,platform:event.platform,memberName:event.memberName});return 'failed';}
 }
-export async function runStreamerMonitor(options:{force?:boolean}={}){
+export async function runStreamerMonitor(options:{force?:boolean;memberId?:string}={}){
  const lease=await acquireAutomationLease('guild-streamers','streamer-monitor',180000);if(!lease)return {skipped:true,reason:'distributed_lease',checked:0,sent:0,failed:0};
  const result={checked:0,sent:0,failed:0,deferred:0};const deadline=Date.now()+38000;
  try{
   const settings=await streamerSettings();if(!settings.enabled)return {skipped:true,reason:'disabled',...result};
   const accounts=await streamerAccounts(),youtubeCount=accounts.filter(a=>a.enabled&&a.platform==='youtube').length;
-  const due=accounts.filter(a=>a.enabled&&(!a.state||a.state.nextCheckAt<=Date.now()||(options.force&&Date.now()-(a.state.attemptedAt||a.state.checkedAt||0)>=60000))).sort((a,b)=>(a.state?.nextCheckAt||0)-(b.state?.nextCheckAt||0));
+  const due=accounts.filter(a=>a.enabled&&(!options.memberId||a.memberId===options.memberId)&&(!a.state||a.state.nextCheckAt<=Date.now()||(options.force&&Date.now()-(a.state.attemptedAt||a.state.checkedAt||0)>=60000))).sort((a,b)=>(a.state?.nextCheckAt||0)-(b.state?.nextCheckAt||0));
   for(const account of due.slice(0,8)){
    if(Date.now()>deadline){result.deferred++;break;}await lease.assertOwned();
    try{

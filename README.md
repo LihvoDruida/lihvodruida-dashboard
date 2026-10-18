@@ -1,4 +1,6 @@
-# Mistblossom Dashboard 3.15.0
+# Mistblossom Dashboard 3.15.1
+
+Виправлено додавання YouTube, формати посилань і залежність збереження від API: [діагностика та оновлення 3.15.1](docs/STREAMER_YOUTUBE_DIAGNOSTICS_2026-10-18_UA.md).
 
 Кілька платформ одного учасника, спільна форма, зрозумілі помилки та журнал: [STREAMER_MEMBER_PLATFORMS_2026-10-18_UA.md](docs/STREAMER_MEMBER_PLATFORMS_2026-10-18_UA.md).
 

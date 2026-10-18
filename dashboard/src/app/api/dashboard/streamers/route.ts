@@ -44,7 +44,8 @@ export async function POST(request:NextRequest){
   else if(input.action==='delete'){await deleteStreamer(String(input.id),String(input.revision));data={deleted:true};}
   else if(input.action==='check'){
    if(!(await streamerSettings()).enabled)throw new StreamerInputError('monitor_disabled');
-   after(async()=>{try{await runStreamerMonitor({force:true});}catch{await recordStreamerDiagnostic({code:'storage_unavailable',level:'error',stage:'check',requestId});}});data={queued:true};
+   const memberId=input.memberId?String(input.memberId):undefined;if(memberId&&(!/^\d{16,25}$/.test(memberId)||!(await streamerAccounts()).some(a=>a.memberId===memberId)))throw new StreamerInputError('invalid_input','memberId');
+   after(async()=>{try{await runStreamerMonitor({force:true,memberId});}catch{await recordStreamerDiagnostic({code:'storage_unavailable',level:'error',stage:'check',requestId});}});data={queued:true};
   }else throw new StreamerInputError('invalid_input');
   const entityId=/^[a-f0-9-]{36}$/.test(String(input.id))?String(input.id):/^\d{16,25}$/.test(String(input.memberId))?String(input.memberId):'settings';
   const audit=await recordAdminAudit('streamers.'+String(input.action),user,{resourceType:'guild-streamer',resourceId:entityId,requestId,status:'success',channelCount:Array.isArray(input.channels)?input.channels.length:undefined}).catch(()=>false);

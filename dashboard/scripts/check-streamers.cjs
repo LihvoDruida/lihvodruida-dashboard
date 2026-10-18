@@ -1,21 +1,22 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {PGlite}=require('@electric-sql/pglite'),load=require('./lib/load-server-ts.cjs'),{NextRequest,NextResponse}=require('next/server');
-let now=Date.now(),memberMissing=false,providerFail=false,live=false,video=1,ytLive=false,discordMode='ok',sent=0,tokenRefreshes=0,role={id:'admin',role:'admin'},origin=true,auditFail=false,httpFailure=null,discordForbidden=false,authFail=false;
+let now=Date.now(),memberMissing=false,providerFail=false,live=false,video=1,ytLive=false,discordMode='ok',sent=0,tokenRefreshes=0,role={id:'admin',role:'admin'},origin=true,auditFail=false,httpFailure=null,discordForbidden=false,authFail=false,customMode='redirect',providerCalls=0,lastChannelParams=null,twitchLogin='';
 class Clock extends Date{constructor(v){super(v===undefined?now:v)}static now(){return now;}}
 const env={STREAMER_TWITCH_CLIENT_ID:'fixture-id',STREAMER_TWITCH_CLIENT_SECRET:'fixture-secret',STREAMER_YOUTUBE_API_KEY:'fixture-youtube',STREAMER_TIKTOK_CLIENT_KEY:'fixture-tiktok',STREAMER_TIKTOK_CLIENT_SECRET:'fixture-secret',STREAMER_TOKEN_KEY:'b'.repeat(64),PUBLIC_SITE_BRIDGE_TOKEN:'a'.repeat(64)};
 const globals={Date:Clock,process:{env},URL,URLSearchParams,AbortSignal,setInterval,clearInterval,fetch:providerFetch};
 const channelId='123456789012345678',memberId='234567890123456789',providerId='UC'+'a'.repeat(22),ytVideo='abcdefghijk';
 async function providerFetch(input,init={}){
- const u=new URL(String(input));if(httpFailure&&u.hostname==='www.googleapis.com')return Response.json({error:{errors:[{reason:httpFailure.reason}],message:'SECRET-UPSTREAM-BODY'}},{status:httpFailure.status});if(providerFail)return Response.json({},{status:503});
+ providerCalls++;const u=new URL(String(input));if(httpFailure&&u.hostname==='www.googleapis.com')return Response.json({error:{errors:[{reason:httpFailure.reason}],message:'SECRET-UPSTREAM-BODY'}},{status:httpFailure.status});if(providerFail)return Response.json({},{status:503});
  if(u.hostname==='id.twitch.tv')return Response.json({access_token:'fixture-twitch-token',expires_in:3600});
  if(u.hostname==='api.twitch.tv'){
   if(u.pathname.endsWith('/users'))return Response.json({data:[{id:'123',login:u.searchParams.get('login')}]});
-  if(u.pathname.endsWith('/streams'))return Response.json({data:live?[{id:'777',user_id:'123',title:'Наш рейд',started_at:new Clock(now-60000).toISOString()}]:[]});
+  if(u.pathname.endsWith('/streams'))return Response.json({data:live?[{id:'777',user_id:'123',user_login:twitchLogin,title:'Наш рейд',started_at:new Clock(now-60000).toISOString()}]:[]});
   if(u.pathname.endsWith('/videos'))return Response.json({data:[{id:String(video),type:'upload',title:'Нове відео',published_at:new Clock(video===1?now-86400000:now-1000).toISOString()}]});
  }
+ if(u.hostname==='www.youtube.com'&&u.pathname.startsWith('/c/')){assert.equal(init.redirect,'manual');if(customMode==='evil')return new Response(null,{status:302,headers:{Location:'https://evil.example/private'}});if(customMode==='loop')return new Response(null,{status:302,headers:{Location:u.href}});if(customMode==='html')return new Response('<html><link href="https://www.youtube.com/@sebas?si=shared&amp;feature=test" rel="canonical"></html>');return new Response(null,{status:308,headers:{Location:'https://www.youtube.com/@sebas?si=shared'}});}
  if(u.hostname==='www.youtube.com')return new Response(`<feed xmlns="http://www.w3.org/2005/Atom"><yt:channelId>${providerId}</yt:channelId><entry><yt:videoId>${ytVideo}</yt:videoId></entry></feed>`);
  if(u.hostname==='www.googleapis.com'){
-  if(u.pathname.endsWith('/channels')){const handle=u.searchParams.get('forHandle');return Response.json({items:[{id:!handle||handle==='@sebas'?providerId:'UC'+require('node:crypto').createHash('sha256').update(handle).digest('hex').slice(0,22)}]});}
+  if(u.pathname.endsWith('/channels')){lastChannelParams=u.searchParams;const handle=u.searchParams.get('forHandle');return Response.json({items:[{id:!handle||handle==='@sebas'?providerId:'UC'+require('node:crypto').createHash('sha256').update(handle).digest('hex').slice(0,22)}]});}
   if(u.pathname.endsWith('/search'))return Response.json({items:ytLive?[{id:{videoId:ytVideo}}]:[]});
   if(u.pathname.endsWith('/videos'))return Response.json({items:[{id:ytVideo,snippet:{channelId:providerId,title:'YouTube рейд',publishedAt:new Clock(now-86400000).toISOString(),liveBroadcastContent:ytLive?'live':'none'},status:{privacyStatus:'public'},...(ytLive?{liveStreamingDetails:{actualStartTime:new Clock(now-1000).toISOString()}}:{})}]});
  }
@@ -44,12 +45,13 @@ let rest;let passed=0;async function check(name,run){await run();passed++;consol
  const database={'@/lib/documentDb':{getDocumentDb:()=>db}};const storage={'@/lib/storageAccess':{assertStorageWriteAvailable:()=>{}}};
  const problems=load('src/lib/streamers/problems.ts',{},globals).exports;
  const structured=load('src/lib/structuredLogs.ts',{'crypto':require('node:crypto'),'@/lib/db/pgPool':pool,'@/lib/logSettings':{getStructuredLogSettings:async()=>({queryLimit:100})},'@/lib/securityLogDiscord':{mirrorSecurityLogToDiscord:async()=>{throw Error('must not send Discord diagnostics')}}},globals).exports;
+ const channelInput=load('src/lib/streamers/channel-input.ts',{'./contract':load('src/lib/streamers/contract.ts',{},globals).exports,'./problems':problems},globals).exports;
  const diagnostics=load('src/lib/streamers/diagnostics.ts',{'@/lib/db/pgPool':pool,'@/lib/structuredLogs':structured,'./problems':problems},globals).exports;
  const contract=load('src/lib/streamers/contract.ts',{},globals).exports;
  rest=load('src/lib/discordRest.ts',{},globals).exports;
- const providers=load('src/lib/streamers/providers.ts',{'./contract':contract},globals).exports;
+ const providers=load('src/lib/streamers/providers.ts',{'./contract':contract,'./channel-input':channelInput},globals).exports;
  const discord={'@/lib/discordAdmin':{discordApi,getDiscordGuildId:()=> '999999999999999999',fetchDiscordTextChannels:async()=>({channels:[{id:channelId,name:'streams'}]}),findDiscordPublicationMessage:async p=>messages.get(p.nonce)||null}};
- const store=load('src/lib/streamers/store.ts',{...database,...storage,...discord,'@/lib/db/pgPool':pool,'./contract':contract,'./providers':providers,'./problems':problems,'./diagnostics':diagnostics},globals).exports;
+ const store=load('src/lib/streamers/store.ts',{...database,...storage,...discord,'@/lib/db/pgPool':pool,'./contract':contract,'./providers':providers,'./problems':problems,'./diagnostics':diagnostics,'./channel-input':channelInput},globals).exports;
  const leases=load('src/lib/automationLease.ts',{...database,...storage},globals).exports;
  const publications=load('src/lib/discordPublication.ts',{...database,'@/lib/automationLease':leases,'@/lib/discordRest':rest},globals).exports;
  const worker=load('src/lib/streamers/worker.ts',{...database,...discord,'@/lib/automationLease':leases,'@/lib/discordRest':rest,'@/lib/discordPublication':publications,'./store':store,'./providers':providers,'./problems':problems,'./diagnostics':diagnostics},globals).exports;
@@ -141,6 +143,39 @@ let rest;let passed=0;async function check(name,run){await run();passed++;consol
  await check('session storage failure returns safe retryable JSON to both read and mutation clients',async()=>{
   authFail=true;const a=await route.GET(),b=await route.POST(new NextRequest('https://guild.example/api/dashboard/streamers',{method:'POST',body:'{"action":"check"}'}));authFail=false;assert.equal(a.status,503);assert.equal(b.status,503);assert.equal((await a.json()).code,'storage_unavailable');assert.equal((await b.text()).includes('SECRET'),false);
  });
+ await check('admin input normalizes shared/mobile/encoded/tabbed YouTube links and bare handles',async()=>{
+  const parse=channelInput.streamerChannelInput;
+  for(const value of ['https://www.youtube.com/@lihvo_druida?si=shared','https://m.youtube.com/@lihvo_druida/videos?feature=shared','youtube.com/@lihvo_druida/streams','lihvo_druida','@lihvo_druida']){const p=parse('youtube',value);assert.equal(p.handle,'@lihvo_druida');assert.equal(p.channelUrl,'https://www.youtube.com/@lihvo_druida');}
+  assert.equal(parse('youtube','https://www.youtube.com/@%D0%9B%D1%96%D0%B3%D0%B2%D0%BE/videos?si=1').handle,'@Лігво');assert.equal(parse('youtube','@猫').handle,'@猫');
+  assert.equal(parse('youtube','https://www.youtube.com/user/LegacyUser/videos?si=1').handle,'user:LegacyUser');assert.equal(parse('youtube','https://www.youtube.com/c/LegacyName').handle,'custom:LegacyName');
+  assert.equal(parse('twitch','https://m.twitch.tv/sebas/videos?filter=all').handle,'sebas');assert.equal(parse('tiktok','https://www.tiktok.com/@sebas/live?lang=uk').handle,'sebas');
+ });
+ await check('admin input still rejects foreign hosts, credentials, encoded separators and video/playlist URLs',async()=>{
+  for(const url of ['https://youtube.com.evil.example/@sebas','https://user:pass@youtube.com/@sebas','https://127.0.0.1/@sebas','http://youtube.com/@sebas','https://youtube.com/@sebas%2Fwatch','https://youtube.com:8443/@sebas'])assert.throws(()=>channelInput.streamerChannelInput('youtube',url),e=>e.code==='channel_invalid');
+  for(const url of ['https://youtu.be/abcdefghijk','https://www.youtube.com/watch?v=abcdefghijk','https://www.youtube.com/shorts/abcdefghijk','https://www.youtube.com/playlist?list=secret'])assert.throws(()=>channelInput.streamerChannelInput('youtube',url),e=>e.code==='channel_video_url');
+ });
+ await check('YouTube-only configuration saves during API authorization outage, with no provider request during save',async()=>{
+  const start=providerCalls;httpFailure={status:403,reason:'forbidden'};
+  const r=await route.POST(new NextRequest('https://guild.example/api/dashboard/streamers',{method:'POST',body:JSON.stringify({action:'save-member',memberId,expected:[],channels:[{...base,platform:'youtube',channel:'https://m.youtube.com/@sebas/videos?si=shared'}]})}));assert.equal(r.status,200);const data=await r.json();assert.equal(data.data.accounts.length,1);assert.equal(data.data.accounts[0].platform,'youtube');assert.equal(data.data.accounts[0].status,'not_checked');assert.equal(data.data.accounts[0].channelUrl,'https://www.youtube.com/@sebas');assert.equal(providerCalls,start);
+  const settings=await store.streamerSettings();await store.saveStreamerSettings({...settings,enabled:true,discordEnabled:true});const result=await worker.runStreamerMonitor();assert.equal(result.failed,1);const a=(await store.streamerAccounts())[0];assert.equal(a.state.status,'provider_authorization');assert.equal((await store.streamerAccounts()).length,1);assert.equal(a.providerId,'');httpFailure=null;
+ });
+ await check('pending YouTube channel recovers in background and public LIVE remains compatible with existing site',async()=>{
+  now+=301000;await worker.runStreamerMonitor();let a=(await store.streamerAccounts())[0];assert.equal(a.providerId,providerId);assert.equal(a.state.status,'ok');assert.ok(a.state.initializedAt);ytLive=true;now+=301000;await worker.runStreamerMonitor();const snapshot=await store.publicStreamers();assert.equal(snapshot.items.length,1);assert.equal(snapshot.items[0].channelUrl,'https://www.youtube.com/channel/'+providerId);assert.equal(contract.isPublicStreamers(snapshot),true);a=(await store.streamerAccounts())[0];assert.equal(a.state.live.id,ytVideo);
+ });
+ await check('legacy YouTube username and custom URLs resolve safely with exact API filters',async()=>{
+  assert.equal(await providers.resolveProvider('youtube','user:LegacyUser'),providerId);assert.equal(lastChannelParams.get('forUsername'),'LegacyUser');assert.equal(lastChannelParams.has('forHandle'),false);assert.equal(lastChannelParams.has('id'),false);
+  for(const mode of ['redirect','html']){customMode=mode;assert.equal(await providers.resolveProvider('youtube','custom:LegacyName'),providerId);assert.equal(lastChannelParams.get('forHandle'),'@sebas');}
+  for(const mode of ['evil','loop']){customMode=mode;await assert.rejects(providers.resolveProvider('youtube','custom:LegacyName'),e=>e.message==='channel_resolution_required');}customMode='redirect';
+ });
+ await check('resolved aliases cannot publish duplicate LIVE or notifications; deleted owner releases identity safely',async()=>{
+  const input=await memberInput(),original=input.channels[0],before=sent;await store.saveStreamerMember({...input,channels:[...input.channels,{...base,platform:'youtube',channel:'https://www.youtube.com/channel/'+providerId}]});now+=61000;await worker.runStreamerMonitor();let accounts=await store.streamerAccounts();const clone=accounts.find(a=>a.id!==original.id);assert.equal(clone.state.status,'duplicate_channel');assert.equal((await store.publicStreamers()).items.length,1);assert.equal(sent,before);
+  const current=await memberInput();await store.saveStreamerMember({...current,channels:current.channels.filter(a=>a.id===clone.id)});now+=301000;await worker.runStreamerMonitor();accounts=await store.streamerAccounts();assert.equal(accounts[0].state.status,'ok');assert.equal((await store.publicStreamers()).items.length,1);assert.equal(sent,before,'same platform/stream identity must not announce again after channel replacement');ytLive=false;
+ });
+ await check('configuration can be edited with missing API key and targeted checks validate membership',async()=>{
+  const key=env.STREAMER_YOUTUBE_API_KEY;delete env.STREAMER_YOUTUBE_API_KEY;const input=await memberInput(),start=providerCalls;const result=await store.saveStreamerMember({...input,channels:input.channels.map(a=>({...a,notifyVideos:false}))});assert.equal(result.accounts[0].status,'provider_not_configured');assert.equal(providerCalls,start);env.STREAMER_YOUTUBE_API_KEY=key;
+  const r=await route.POST(new NextRequest('https://guild.example/api/dashboard/streamers',{method:'POST',body:JSON.stringify({action:'check',memberId:'111111111111111111'})}));assert.equal(r.status,400);const noWork=await worker.runStreamerMonitor({force:true,memberId:'111111111111111111'});assert.equal(noWork.checked,0);const final=await memberInput();await store.deleteStreamerMember(final);
+ });
+ await check('Twitch live links use the confirmed provider login after a channel rename',async()=>{live=true;twitchLogin='new_sebas';const o=await providers.observeProvider({platform:'twitch',handle:'old_sebas',providerId:'123'});assert.equal(o.live.url,'https://www.twitch.tv/new_sebas');assert.equal(o.live.id,'777');live=false;twitchLogin='';});
  console.log(`[check-streamers] OK ${passed}/${passed}; real PostgreSQL/PGlite transactions and publication ledger, fake providers/Discord only`);
  }finally{await engine.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

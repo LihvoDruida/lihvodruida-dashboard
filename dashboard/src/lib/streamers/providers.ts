@@ -1,5 +1,6 @@
 import 'server-only';
 import {createCipheriv,createDecipheriv,randomBytes} from 'node:crypto';
+import {streamerChannelInput} from './channel-input';
 import {type StreamPlatform,type StreamMedia,channelIdentity,validMedia} from './contract';
 type Json=Record<string,unknown>;
 const obj=(x:unknown):Json=>x&&typeof x==='object'&&!Array.isArray(x)?x as Json:{};
@@ -12,11 +13,14 @@ export function providerReadiness(){return {twitch:!!(process.env.STREAMER_TWITC
 function key(){const raw=process.env.STREAMER_TOKEN_KEY||'';if(!/^[a-f0-9]{64}$/i.test(raw))throw Error('Для TikTok налаштуй STREAMER_TOKEN_KEY (32 байти hex).');return Buffer.from(raw,'hex');}
 export function encryptToken(value:TikTokToken){const iv=randomBytes(12),cipher=createCipheriv('aes-256-gcm',key(),iv);const encrypted=Buffer.concat([cipher.update(JSON.stringify(value),'utf8'),cipher.final()]);return Buffer.concat([iv,cipher.getAuthTag(),encrypted]).toString('base64');}
 export function decryptToken(value:string):TikTokToken{const raw=Buffer.from(value,'base64');const decipher=createDecipheriv('aes-256-gcm',key(),raw.subarray(0,12));decipher.setAuthTag(raw.subarray(12,28));return JSON.parse(Buffer.concat([decipher.update(raw.subarray(28)),decipher.final()]).toString('utf8'));}
+async function providerBody(r:Response,limit=1024*1024){
+ const reader=r.body?.getReader();if(!reader)throw Error('provider_empty');let size=0;const parts:Uint8Array[]=[];
+ try{for(;;){const p=await reader.read();if(p.done)break;size+=p.value.byteLength;if(size>limit)throw Error('provider_body_limit');parts.push(p.value);}}finally{await reader.cancel().catch(()=>{});}
+ return Buffer.concat(parts).toString('utf8');
+}
 async function response(url:string,init:RequestInit={}){
  const r=await fetch(url,{...init,redirect:'error',cache:'no-store',signal:AbortSignal.timeout(7000)});
- const reader=r.body?.getReader();if(!reader)throw Error('provider_empty');let size=0;const parts:Uint8Array[]=[];
- try{for(;;){const p=await reader.read();if(p.done)break;size+=p.value.byteLength;if(size>1024*1024)throw Error('provider_body_limit');parts.push(p.value);}}finally{await reader.cancel().catch(()=>{});}
- const raw=Buffer.concat(parts).toString('utf8');
+ const raw=await providerBody(r);
  if(!r.ok){let reasons='';try{const e=obj(JSON.parse(raw)).error;reasons=JSON.stringify(e||'');}catch{}const quota=/quotaExceeded|dailyLimitExceeded|rateLimitExceeded|userRateLimitExceeded/.test(reasons);const auth=r.status===401||r.status===403||r.status===400&&(/API_KEY_INVALID|keyInvalid/.test(reasons)||url.startsWith('https://id.twitch.tv/')||url.startsWith('https://open.tiktokapis.com/v2/oauth/'));throw Error(r.status===429||quota?'provider_rate_limit':auth?'provider_authorization':'provider_unavailable');}
  return raw;
 }
@@ -28,9 +32,26 @@ async function twitch(path:string,retry=true):Promise<Json>{
  try{return await json('https://api.twitch.tv/helix/'+path,{headers:{Authorization:`Bearer ${twitchToken.token}`,'Client-Id':id}});}catch(e){if(retry&&e instanceof Error&&e.message==='provider_authorization'){twitchToken=null;return twitch(path,false);}throw e;}
 }
 async function youtube(resource:string,params:Record<string,string>){const key=process.env.STREAMER_YOUTUBE_API_KEY?.trim();if(!key)throw Error('provider_not_configured');return json('https://www.googleapis.com/youtube/v3/'+resource+'?'+new URLSearchParams({...params,key}));}
+async function resolveCustomYouTube(handle:string):Promise<string>{
+ let url=streamerChannelInput('youtube',handle).channelUrl;const visited=new Set<string>(),deadline=AbortSignal.timeout(9000);
+ for(let hop=0;hop<4;hop++){
+  if(visited.has(url))break;visited.add(url);
+  const r=await fetch(url,{redirect:'manual',cache:'no-store',signal:AbortSignal.any([deadline,AbortSignal.timeout(7000)]),headers:{Accept:'text/html'}});
+  let next='';
+  if([301,302,303,307,308].includes(r.status)){const location=r.headers.get('location');await r.body?.cancel();if(!location)break;try{next=new URL(location,url).href;}catch{break;}}
+  else if(r.ok){let html='';try{html=await providerBody(r,2*1024*1024);}catch{throw Error('channel_resolution_required');}
+   for(const match of html.matchAll(/<link\b[^>]*>/gi)){const tag=match[0];if(!/\brel\s*=\s*(["'])canonical\1/i.test(tag))continue;const href=/\bhref\s*=\s*(["'])(.*?)\1/i.exec(tag)?.[2];if(href){try{next=new URL(href.replace(/&amp;/g,'&'),url).href;}catch{}break;}}
+  }else{await r.body?.cancel();break;}
+  if(!next)break;
+  let identity:ReturnType<typeof streamerChannelInput>;try{identity=streamerChannelInput('youtube',next);}catch{break;}
+  if(!identity.handle.startsWith('custom:'))return resolveProvider('youtube',identity.handle);
+  url=identity.channelUrl;
+ }
+ throw Error('channel_resolution_required');
+}
 export async function resolveProvider(platform:StreamPlatform,handle:string){
- if(platform==='twitch'){const user=rows((await twitch('users?'+new URLSearchParams({login:handle}))).data)[0];if(!user||!/^\d+$/.test(text(user.id)))throw Error('Канал Twitch не знайдено.');return text(user.id);}
- if(platform==='youtube'){const channel=rows((await youtube('channels',{part:'id',...(handle.startsWith('@')?{forHandle:handle}:{id:handle})})).items)[0];if(!channel||!/^UC[a-zA-Z0-9_-]{22}$/.test(text(channel.id)))throw Error('Канал YouTube не знайдено.');return text(channel.id);}
+ if(platform==='twitch'){const user=rows((await twitch('users?'+new URLSearchParams({login:handle}))).data)[0];if(!user||!/^\d+$/.test(text(user.id)))throw Error('channel_not_found');return text(user.id);}
+ if(platform==='youtube'){if(!process.env.STREAMER_YOUTUBE_API_KEY?.trim())throw Error('provider_not_configured');if(handle.startsWith('custom:'))return resolveCustomYouTube(handle);const channel=rows((await youtube('channels',{part:'id',...(handle.startsWith('@')?{forHandle:handle}:handle.startsWith('user:')?{forUsername:handle.slice(5)}:{id:handle})})).items)[0];if(!channel||!/^UC[a-zA-Z0-9_-]{22}$/.test(text(channel.id)))throw Error('channel_not_found');return text(channel.id);}
  return '';
 }
 async function verifyTikTok(token:TikTokToken,handle:string){const d=await json('https://open.tiktokapis.com/v2/user/info/?fields=open_id,username',{headers:{Authorization:`Bearer ${token.accessToken}`}});if(obj(d.error).code!=='ok')throw Error('provider_authorization');const user=obj(obj(d.data).user);if(text(user.username).toLowerCase()!==handle.toLowerCase()||!text(user.open_id))throw Error('TikTok: потрібен дозвіл саме цього автора (user.info.basic, user.info.profile, video.list).');return text(user.open_id);}
@@ -41,7 +62,7 @@ export async function observeProvider(a:ProviderAccount,searchLive=false,onToken
  if(a.platform==='twitch'){
   const [s,v]=await Promise.all([twitch('streams?'+new URLSearchParams({user_id:providerId})),twitch('videos?'+new URLSearchParams({user_id:providerId,type:'all',first:'20'})).catch(()=>null)]);const live=rows(s.data)[0];const videos=(v?rows(v.data):[]).filter(v=>v.type==='upload'||v.type==='highlight').map(v=>media('twitch',text(v.id),v.title,v.published_at,`https://www.twitch.tv/videos/${v.id}`));
   if(live&&text(live.user_id)!==providerId)throw Error('provider_identity');
-  return {providerId,live:live?media('twitch',text(live.id),live.title,live.started_at,channelIdentity('twitch',a.handle).channelUrl):null,videos,liveSupported:true,...(!v?{warning:'videos_unavailable'}:{})};
+  return {providerId,live:live?media('twitch',text(live.id),live.title,live.started_at,channelIdentity('twitch',text(live.user_login)||a.handle).channelUrl):null,videos,liveSupported:true,...(!v?{warning:'videos_unavailable'}:{})};
  }
  if(a.platform==='youtube'){
   let xml='',warning='';try{xml=await response('https://www.youtube.com/feeds/videos.xml?'+new URLSearchParams({channel_id:providerId}));if(!/<feed[\s>]/.test(xml)||!xml.includes(`<yt:channelId>${providerId}</yt:channelId>`))throw Error('provider_schema');}catch{warning='discovery_unavailable';if(!a.state?.live&&!searchLive)throw Error('provider_unavailable');}
