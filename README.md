@@ -1,4 +1,6 @@
-# Mistblossom Dashboard 3.14.1
+# Mistblossom Dashboard 3.15.0
+
+Кілька платформ одного учасника, спільна форма, зрозумілі помилки та журнал: [STREAMER_MEMBER_PLATFORMS_2026-10-18_UA.md](docs/STREAMER_MEMBER_PLATFORMS_2026-10-18_UA.md).
 
 Виправлено `dashboard_unavailable` маршруту стрімерів під час деплою: [інструкція оновлення](docs/STREAMER_BRIDGE_HOTFIX_2026-10-18_UA.md).
 

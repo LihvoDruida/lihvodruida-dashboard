@@ -8,25 +8,26 @@ const text=(x:unknown)=>typeof x==='string'?x:'';
 export type TikTokToken={accessToken:string;refreshToken:string;expiresAt:number};
 export type ProviderAccount={platform:StreamPlatform;handle:string;providerId?:string;token?:string;state?:{videoIds?:string[];live?:StreamMedia|null}|null};
 export type Observation={live:StreamMedia|null;videos:StreamMedia[];providerId:string;token?:string;liveSupported:boolean;warning?:string};
-export function providerReadiness(){return {twitch:!!(process.env.STREAMER_TWITCH_CLIENT_ID&&process.env.STREAMER_TWITCH_CLIENT_SECRET),youtube:!!process.env.STREAMER_YOUTUBE_API_KEY,tiktok:!!(process.env.STREAMER_TIKTOK_CLIENT_KEY&&process.env.STREAMER_TIKTOK_CLIENT_SECRET&&/^[a-f0-9]{64}$/i.test(process.env.STREAMER_TOKEN_KEY||''))};}
+export function providerReadiness(){return {twitch:!!(process.env.STREAMER_TWITCH_CLIENT_ID?.trim()&&process.env.STREAMER_TWITCH_CLIENT_SECRET?.trim()),youtube:!!process.env.STREAMER_YOUTUBE_API_KEY?.trim(),tiktok:!!(process.env.STREAMER_TIKTOK_CLIENT_KEY&&process.env.STREAMER_TIKTOK_CLIENT_SECRET&&/^[a-f0-9]{64}$/i.test(process.env.STREAMER_TOKEN_KEY||''))};}
 function key(){const raw=process.env.STREAMER_TOKEN_KEY||'';if(!/^[a-f0-9]{64}$/i.test(raw))throw Error('Для TikTok налаштуй STREAMER_TOKEN_KEY (32 байти hex).');return Buffer.from(raw,'hex');}
 export function encryptToken(value:TikTokToken){const iv=randomBytes(12),cipher=createCipheriv('aes-256-gcm',key(),iv);const encrypted=Buffer.concat([cipher.update(JSON.stringify(value),'utf8'),cipher.final()]);return Buffer.concat([iv,cipher.getAuthTag(),encrypted]).toString('base64');}
 export function decryptToken(value:string):TikTokToken{const raw=Buffer.from(value,'base64');const decipher=createDecipheriv('aes-256-gcm',key(),raw.subarray(0,12));decipher.setAuthTag(raw.subarray(12,28));return JSON.parse(Buffer.concat([decipher.update(raw.subarray(28)),decipher.final()]).toString('utf8'));}
 async function response(url:string,init:RequestInit={}){
  const r=await fetch(url,{...init,redirect:'error',cache:'no-store',signal:AbortSignal.timeout(7000)});
- if(!r.ok){await r.body?.cancel();throw Error(r.status===429?'provider_rate_limit':r.status===401||r.status===403?'provider_authorization':'provider_unavailable');}
  const reader=r.body?.getReader();if(!reader)throw Error('provider_empty');let size=0;const parts:Uint8Array[]=[];
  try{for(;;){const p=await reader.read();if(p.done)break;size+=p.value.byteLength;if(size>1024*1024)throw Error('provider_body_limit');parts.push(p.value);}}finally{await reader.cancel().catch(()=>{});}
- return Buffer.concat(parts).toString('utf8');
+ const raw=Buffer.concat(parts).toString('utf8');
+ if(!r.ok){let reasons='';try{const e=obj(JSON.parse(raw)).error;reasons=JSON.stringify(e||'');}catch{}const quota=/quotaExceeded|dailyLimitExceeded|rateLimitExceeded|userRateLimitExceeded/.test(reasons);const auth=r.status===401||r.status===403||r.status===400&&(/API_KEY_INVALID|keyInvalid/.test(reasons)||url.startsWith('https://id.twitch.tv/')||url.startsWith('https://open.tiktokapis.com/v2/oauth/'));throw Error(r.status===429||quota?'provider_rate_limit':auth?'provider_authorization':'provider_unavailable');}
+ return raw;
 }
-async function json(url:string,init:RequestInit={}){return obj(JSON.parse(await response(url,init)));}
+async function json(url:string,init:RequestInit={}){const raw=await response(url,init);try{return obj(JSON.parse(raw));}catch{throw Error('provider_schema');}}
 let twitchToken:{key:string;token:string;until:number}|null=null;
 async function twitch(path:string,retry=true):Promise<Json>{
- const id=process.env.STREAMER_TWITCH_CLIENT_ID||'',secret=process.env.STREAMER_TWITCH_CLIENT_SECRET||'';if(!id||!secret)throw Error('provider_not_configured');
+ const id=process.env.STREAMER_TWITCH_CLIENT_ID?.trim()||'',secret=process.env.STREAMER_TWITCH_CLIENT_SECRET?.trim()||'';if(!id||!secret)throw Error('provider_not_configured');
  if(!twitchToken||twitchToken.key!==id+secret||twitchToken.until<Date.now()+60000){const d=await json('https://id.twitch.tv/oauth2/token',{method:'POST',body:new URLSearchParams({client_id:id,client_secret:secret,grant_type:'client_credentials'})});if(!text(d.access_token)||!Number.isFinite(Number(d.expires_in)))throw Error('provider_schema');twitchToken={key:id+secret,token:text(d.access_token),until:Date.now()+Number(d.expires_in)*1000};}
  try{return await json('https://api.twitch.tv/helix/'+path,{headers:{Authorization:`Bearer ${twitchToken.token}`,'Client-Id':id}});}catch(e){if(retry&&e instanceof Error&&e.message==='provider_authorization'){twitchToken=null;return twitch(path,false);}throw e;}
 }
-async function youtube(resource:string,params:Record<string,string>){const key=process.env.STREAMER_YOUTUBE_API_KEY;if(!key)throw Error('provider_not_configured');return json('https://www.googleapis.com/youtube/v3/'+resource+'?'+new URLSearchParams({...params,key}));}
+async function youtube(resource:string,params:Record<string,string>){const key=process.env.STREAMER_YOUTUBE_API_KEY?.trim();if(!key)throw Error('provider_not_configured');return json('https://www.googleapis.com/youtube/v3/'+resource+'?'+new URLSearchParams({...params,key}));}
 export async function resolveProvider(platform:StreamPlatform,handle:string){
  if(platform==='twitch'){const user=rows((await twitch('users?'+new URLSearchParams({login:handle}))).data)[0];if(!user||!/^\d+$/.test(text(user.id)))throw Error('Канал Twitch не знайдено.');return text(user.id);}
  if(platform==='youtube'){const channel=rows((await youtube('channels',{part:'id',...(handle.startsWith('@')?{forHandle:handle}:{id:handle})})).items)[0];if(!channel||!/^UC[a-zA-Z0-9_-]{22}$/.test(text(channel.id)))throw Error('Канал YouTube не знайдено.');return text(channel.id);}
@@ -55,7 +56,7 @@ export async function observeProvider(a:ProviderAccount,searchLive=false,onToken
   }
   return {providerId,live,videos,liveSupported:true,...(warning?{warning}:{})};
  }
- if(!a.token)throw Error('tiktok_authorization_required');let token=decryptToken(a.token),updated:string|undefined;
+ if(!a.token)throw Error('tiktok_authorization_required');let token:TikTokToken,updated:string|undefined;try{token=decryptToken(a.token);}catch{throw Error('tiktok_token_invalid');}
  if(token.expiresAt<Date.now()+60000){if(!token.refreshToken||!providerReadiness().tiktok)throw Error('provider_authorization');const d=await json('https://open.tiktokapis.com/v2/oauth/token/',{method:'POST',body:new URLSearchParams({client_key:process.env.STREAMER_TIKTOK_CLIENT_KEY!,client_secret:process.env.STREAMER_TIKTOK_CLIENT_SECRET!,grant_type:'refresh_token',refresh_token:token.refreshToken})});if(!text(d.access_token)||!text(d.refresh_token)||!Number.isFinite(Number(d.expires_in)))throw Error('provider_authorization');token={accessToken:text(d.access_token),refreshToken:text(d.refresh_token),expiresAt:Date.now()+Number(d.expires_in)*1000};updated=encryptToken(token);if(onToken)await onToken(updated);}
  const verified=await verifyTikTok(token,a.handle);if(a.providerId&&verified!==a.providerId)throw Error('provider_identity');
  const d=await json('https://open.tiktokapis.com/v2/video/list/?fields=id,title,create_time',{method:'POST',headers:{Authorization:`Bearer ${token.accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({max_count:20})});if(obj(d.error).code!=='ok')throw Error('provider_authorization');const videos=rows(obj(d.data).videos).map(v=>media('tiktok',text(v.id),v.title,new Date(Number(v.create_time)*1000).toISOString(),`https://www.tiktok.com/@${a.handle}/video/${v.id}`));
