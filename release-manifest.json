@@ -1,0 +1,19 @@
+{
+  "dashboard": "3.15.2",
+  "site": "4.6.2",
+  "bot": "3.6.9",
+  "siteScripts": [
+    "dev",
+    "prebuild",
+    "build",
+    "start",
+    "typecheck",
+    "test",
+    "check:content",
+    "build:ci",
+    "check:deploy",
+    "check:standalone",
+    "pretypecheck",
+    "check:browser"
+  ]
+}

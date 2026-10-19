@@ -510,7 +510,14 @@ function raiderIoRequestMinDelayMs(
   return Math.max(0, Math.min(10_000, Math.floor(value)));
 }
 
-function getRaiderIoRateLimitBlock() {
+async function getRaiderIoRateLimitBlock() {
+  if (hasDocumentDbConfig()) {
+    const stored = (await getDocumentDb().collection("externalApiCooldowns").doc("raiderio").get()).data();
+    if (Number(stored?.retryAt) > Date.now()) {
+      const previous = globalThis.__mistblossomRaiderIoRateLimitState;
+      globalThis.__mistblossomRaiderIoRateLimitState = { blockedUntil: Math.max(Number(stored?.retryAt), previous?.blockedUntil || 0), reason: "Raider.IO rate limit", loggedAt: previous?.loggedAt };
+    }
+  }
   const state = globalThis.__mistblossomRaiderIoRateLimitState;
   if (!state) return null;
   if (state.blockedUntil <= Date.now()) {
@@ -560,7 +567,14 @@ async function recordRaiderIoRateLimit(
     ? error.retryAfterMs
     : raiderIoCooldownMs(settings);
   const message = raiderIoRateLimitMessage(error) || "Raider.IO rate limit";
-  const blockedUntil = Date.now() + Math.max(60_000, retryAfterMs);
+  const blockedUntil = Math.max(Date.now() + Math.max(60_000, retryAfterMs), error instanceof ApiHttpError ? error.retryAt || 0 : 0);
+  if (hasDocumentDbConfig()) {
+    const ref = getDocumentDb().collection("externalApiCooldowns").doc("raiderio");
+    await getDocumentDb().runTransaction(async tx => {
+      const previous = (await tx.get(ref)).data();
+      tx.set(ref, { retryAt: Math.max(blockedUntil, Number(previous?.retryAt) || 0), updatedAt: Date.now() });
+    });
+  }
   const previous = globalThis.__mistblossomRaiderIoRateLimitState;
   globalThis.__mistblossomRaiderIoRateLimitState = {
     blockedUntil: Math.max(blockedUntil, previous?.blockedUntil || 0),
@@ -592,7 +606,7 @@ async function fetchJsonWithTimeout(
   label: string,
   settings?: Pick<GuildRosterRuntimeSettings, "raiderIoRequestTimeoutMs" | "raiderIoRequestRetries" | "raiderIoRateLimitCooldownSeconds" | "raiderIoRequestMinDelayMs" | "warningAuditLogs"> | null,
 ) {
-  const activeLimit = getRaiderIoRateLimitBlock();
+  const activeLimit = await getRaiderIoRateLimitBlock();
   if (activeLimit) {
     throw new RaiderIoRateLimitError(
       activeLimit.reason || "Raider.IO rate limit",
@@ -2428,7 +2442,7 @@ async function enrichGuildMembersWithRaiderIoStep(
     (member) => member.raiderIoUpdatedAt,
   );
   const totalCandidates = candidates.length;
-  const activeLimit = getRaiderIoRateLimitBlock();
+  const activeLimit = await getRaiderIoRateLimitBlock();
   if (activeLimit && totalCandidates) {
     return {
       members,

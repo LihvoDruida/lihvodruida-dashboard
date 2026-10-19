@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-19",
+  "dashboard": "3.15.2",
+  "site": "4.6.2",
+  "bot": "3.6.9",
+  "dashboardBuildCi": {
+    "status": "pass",
+    "exitCode": 0,
+    "standalone": 8
+  },
+  "eslint": "pass",
+  "oauthApiRegressions": {
+    "passed": 22,
+    "failed": 0
+  },
+  "streamerRegressions": {
+    "passed": 48,
+    "failed": 0
+  },
+  "raidHistory": {
+    "passed": 13,
+    "failed": 0
+  },
+  "siteBuildCi": {
+    "status": "pass",
+    "exitCode": 0,
+    "nodePassed": 50,
+    "nodeSkipped": 3,
+    "deployPassed": 19
+  },
+  "pairedSiteTests": {
+    "passed": 5,
+    "skipped": 0
+  },
+  "applicationPair": "pass",
+  "botTests": {
+    "passed": 55,
+    "failed": 0
+  },
+  "productionVerified": false,
+  "liveExternalMessagesSent": false,
+  "browserUiRun": false,
+  "npmAuditCompleted": false
+}

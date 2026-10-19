@@ -1,12 +1,13 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {PGlite}=require('@electric-sql/pglite'),load=require('./lib/load-server-ts.cjs'),{NextRequest,NextResponse}=require('next/server');
-let now=Date.now(),memberMissing=false,providerFail=false,live=false,video=1,ytLive=false,discordMode='ok',sent=0,tokenRefreshes=0,role={id:'admin',role:'admin'},origin=true,auditFail=false,httpFailure=null,discordForbidden=false,authFail=false,customMode='redirect',providerCalls=0,lastChannelParams=null,twitchLogin='';
+let hangingPhase='',now=Date.now(),memberMissing=false,providerFail=false,live=false,video=1,ytLive=false,discordMode='ok',sent=0,tokenRefreshes=0,role={id:'admin',role:'admin'},origin=true,auditFail=false,httpFailure=null,discordForbidden=false,authFail=false,customMode='redirect',providerCalls=0,lastChannelParams=null,twitchLogin='';
 class Clock extends Date{constructor(v){super(v===undefined?now:v)}static now(){return now;}}
 const env={STREAMER_TWITCH_CLIENT_ID:'fixture-id',STREAMER_TWITCH_CLIENT_SECRET:'fixture-secret',STREAMER_YOUTUBE_API_KEY:'fixture-youtube',STREAMER_TIKTOK_CLIENT_KEY:'fixture-tiktok',STREAMER_TIKTOK_CLIENT_SECRET:'fixture-secret',STREAMER_TOKEN_KEY:'b'.repeat(64),PUBLIC_SITE_BRIDGE_TOKEN:'a'.repeat(64)};
 const globals={Date:Clock,process:{env},URL,URLSearchParams,AbortSignal,setInterval,clearInterval,fetch:providerFetch};
 const channelId='123456789012345678',memberId='234567890123456789',providerId='UC'+'a'.repeat(22),ytVideo='abcdefghijk';
+function hangOn(signal){assert.ok(signal,'shared budget signal required');return new Promise((resolve,reject)=>{if(signal.aborted)return reject(signal.reason);signal.addEventListener('abort',()=>reject(signal.reason),{once:true});});}
 async function providerFetch(input,init={}){
- providerCalls++;const u=new URL(String(input));if(httpFailure&&u.hostname==='www.googleapis.com')return Response.json({error:{errors:[{reason:httpFailure.reason}],message:'SECRET-UPSTREAM-BODY'}},{status:httpFailure.status});if(providerFail)return Response.json({},{status:503});
+ providerCalls++;const u=new URL(String(input));if(hangingPhase&&((hangingPhase==='resolve'&&u.pathname.endsWith('/channels'))||(hangingPhase==='feed'&&u.pathname.endsWith('/videos.xml'))||(hangingPhase==='search'&&u.pathname.endsWith('/search'))||(hangingPhase==='videos'&&u.hostname==='www.googleapis.com'&&u.pathname.endsWith('/videos'))))return hangOn(init.signal);if(httpFailure&&u.hostname==='www.googleapis.com')return Response.json({error:{errors:[{reason:httpFailure.reason}],message:'SECRET-UPSTREAM-BODY'}},{status:httpFailure.status});if(providerFail)return Response.json({},{status:503});
  if(u.hostname==='id.twitch.tv')return Response.json({access_token:'fixture-twitch-token',expires_in:3600});
  if(u.hostname==='api.twitch.tv'){
   if(u.pathname.endsWith('/users'))return Response.json({data:[{id:'123',login:u.searchParams.get('login')}]});
@@ -29,10 +30,10 @@ async function providerFetch(input,init={}){
 }
 const messages=new Map();
 async function discordApi(url,init={}){
- if(url.includes('/members/')){if(memberMissing)throw new rest.DiscordRestError('missing',404);return {user:{id:memberId,username:'Sebas',bot:false},nick:'Sebas'};}
+ if(url.includes('/members/')){if(hangingPhase==='membership')return hangOn(init.signal);if(memberMissing)throw new rest.DiscordRestError('missing',404);return {user:{id:memberId,username:'Sebas',bot:false},nick:'Sebas'};}
  if(/^\/channels\/\d+$/.test(url)&&discordForbidden)throw new rest.DiscordRestError('SECRET-DISCORD-BODY',403);
  if(/^\/channels\/\d+$/.test(url))return {guild_id:'999999999999999999',type:0};
- if(url.endsWith('/messages')){if(init.beforeSend)await init.beforeSend();const p=JSON.parse(init.body);assert.deepEqual(p.allowed_mentions,{parse:[],users:[],roles:[],replied_user:false});assert.equal(p.enforce_nonce,true);sent++;const result={id:String(100000000000000000n+BigInt(sent)),channel_id:channelId};messages.set(p.nonce,result);if(discordMode==='uncertain')throw Error('simulated response lost after Discord commit');if(discordMode==='forbidden')throw new rest.DiscordRestError('forbidden',403);return result;}
+ if(url.endsWith('/messages')){if(init.beforeSend)await init.beforeSend();if(hangingPhase==='pre-dispatch')return hangOn(init.signal);if(init.onDispatch)init.onDispatch();const p=JSON.parse(init.body);assert.deepEqual(p.allowed_mentions,{parse:[],users:[],roles:[],replied_user:false});assert.equal(p.enforce_nonce,true);sent++;const result={id:String(100000000000000000n+BigInt(sent)),channel_id:channelId};messages.set(p.nonce,result);if(hangingPhase==='discord-post')return hangOn(init.signal);if(discordMode==='uncertain')throw Error('simulated response lost after Discord commit');if(discordMode==='forbidden')throw new rest.DiscordRestError('forbidden',403);return result;}
  throw Error('Unexpected Discord request '+url);
 }
 let rest;let passed=0;async function check(name,run){await run();passed++;console.log('PASS '+name);}
@@ -176,6 +177,53 @@ let rest;let passed=0;async function check(name,run){await run();passed++;consol
   const r=await route.POST(new NextRequest('https://guild.example/api/dashboard/streamers',{method:'POST',body:JSON.stringify({action:'check',memberId:'111111111111111111'})}));assert.equal(r.status,400);const noWork=await worker.runStreamerMonitor({force:true,memberId:'111111111111111111'});assert.equal(noWork.checked,0);const final=await memberInput();await store.deleteStreamerMember(final);
  });
  await check('Twitch live links use the confirmed provider login after a channel rename',async()=>{live=true;twitchLogin='new_sebas';const o=await providers.observeProvider({platform:'twitch',handle:'old_sebas',providerId:'123'});assert.equal(o.live.url,'https://www.twitch.tv/new_sebas');assert.equal(o.live.id,'777');live=false;twitchLogin='';});
+ await store.saveStreamer({...base,platform:'youtube',channel:'@sebas'});
+ await check('legacy sent/pending/uncertain keys suppress the same media after channel recreation',async()=>{
+  const account=(await store.streamerAccounts())[0],settings=await store.streamerSettings();
+  for(const [i,state] of ['sent','pending','uncertain'].entries()){
+   const media={id:'legacytest'+i,title:'Legacy LIVE',url:'https://www.youtube.com/watch?v=legacytest'+i,publishedAt:new Clock(now-1000).toISOString()};
+   await db.collection(store.EVENTS).doc('legacy-'+state).set({platform:'youtube',kind:'live',media,state,createdAt:now-10000,accountId:'deleted-account'});
+   await store.commitObservation({...account,state:null},{providerId,live:media,videos:[],liveSupported:true},settings,false);
+   const key=require('node:crypto').createHash('sha256').update(['youtube',providerId,'live',media.id].join(':')).digest('hex');assert.equal((await db.collection(store.EVENTS).doc(key).get()).exists,false);
+  }
+ });
+ await check('retention strips stale YouTube metadata and receipts, preserving hashed idempotency evidence',async()=>{
+  for(const state of ['pending','uncertain','sent']){
+   const id='retention-'+state,media={id:'retention00',title:'PRIVATE-STALE-TITLE',url:'https://www.youtube.com/watch?v=retention00',publishedAt:new Clock(now-31*86400000).toISOString()};
+   await db.collection(store.EVENTS).doc(id).set({id,platform:'youtube',kind:'live',media,memberName:'old-name',state,createdAt:now-30*86400000,dueAtMs:now-1});
+   const receipt=publications.publicationRevision(['guild-streamer',id]);await db.collection('discordPublications').doc(receipt).set({kind:'guild-streamer',resourceId:id,nonce:'saved-nonce',state:state==='sent'?'complete':'uncertain',result:{id:channelId,embeds:[{title:media.title}]},context:{title:media.title},error:media.title});
+  }
+  await store.maintainStreamerMetadata();
+  for(const state of ['pending','uncertain','sent']){const id='retention-'+state,event=(await db.collection(store.EVENTS).doc(id).get()).data(),receipt=(await db.collection('discordPublications').doc(publications.publicationRevision(['guild-streamer',id])).get()).data();assert.equal(event.media,undefined);assert.equal(event.memberName,undefined);assert.equal(event.mediaKey,store.streamerMediaKey('youtube','live','retention00'));assert.equal(event.dueAtMs,0);assert.equal(receipt.nonce,'saved-nonce');assert.equal(JSON.stringify(receipt).includes('PRIVATE-STALE'),false);assert.equal(receipt.result.id,channelId);assert.equal(event.state,state==='uncertain'?'expired_uncertain':state==='sent'?'sent':'cancelled');}
+  const account=(await store.streamerAccounts())[0],settings=await store.streamerSettings(),media={id:'retention00',title:'refreshed',url:'https://www.youtube.com/watch?v=retention00',publishedAt:new Clock(now-1000).toISOString()};await store.commitObservation({...account,state:null},{providerId,live:media,videos:[],liveSupported:true},settings,false);const key=require('node:crypto').createHash('sha256').update(['youtube',providerId,'live',media.id].join(':')).digest('hex');assert.equal((await db.collection(store.EVENTS).doc(key).get()).exists,false);
+ });
+ await check('retention runs while monitoring is disabled and clears aged channel metadata',async()=>{
+  const account=(await store.streamerAccounts())[0],settings=await store.streamerSettings();
+  await db.collection(store.ACCOUNTS).doc(account.id).update({createdAt:now-32*86400000,providerId,state:{...account.state,checkedAt:now-31*86400000,videoIds:['old-video'],live:{id:'old-live',title:'stale-title'}}});
+  await store.saveStreamerSettings({...settings,enabled:false});await worker.runStreamerMonitor();const fresh=await store.currentAccount(account.id);assert.equal(fresh.providerId,'');assert.equal(fresh.state.live,null);assert.equal(fresh.state.videoIds.length,0);await store.saveStreamerSettings({...await store.streamerSettings(),enabled:true});
+ });
+ for(const phase of ['membership','resolve','feed','search','videos'])await check('shared monitor budget aborts hanging '+phase+' and releases the lease',async()=>{
+  let account=(await store.streamerAccounts())[0];await db.collection(store.ACCOUNTS).doc(account.id).update({providerId:phase==='resolve'?'':providerId,state:{...account.state,live:null,nextCheckAt:0,lastSearchAt:0,checkedAt:now,attemptedAt:now-61000}});
+  hangingPhase=phase;const start=performance.now();const keeper=setTimeout(()=>{},2000);try{const r=await worker.runStreamerMonitor({budgetMs:500});assert.ok(performance.now()-start<1500);assert.ok(r.deferred>=1,'deadline must be reported as deferred');}finally{clearTimeout(keeper);hangingPhase='';}
+  const lease=(await db.collection('automationLeases').doc('guild-streamers').get()).data();assert.equal(lease.expiresAtMs,0);account=await store.currentAccount(account.id);assert.notEqual(account.state.status,'provider_unavailable','budget exhaustion must not fabricate a provider error');
+ });
+ await check('deadline before Discord dispatch keeps a retryable prepared receipt and sends once on resume',async()=>{
+  let account=(await store.streamerAccounts())[0];const settings=await store.streamerSettings(),media={id:'unsenttest0',title:'Not yet sent',url:'https://www.youtube.com/watch?v=unsenttest0',publishedAt:new Clock(now-1000).toISOString()};
+  await store.commitObservation({...account,state:null},{providerId,live:media,videos:[],liveSupported:true},settings,false);account=await store.currentAccount(account.id);await db.collection(store.ACCOUNTS).doc(account.id).update({state:{...account.state,nextCheckAt:now+60000}});
+  for(const state of ['pending','uncertain'])await db.collection(store.EVENTS).doc('legacy-'+state).update({dueAtMs:now+86400000});
+  const before=sent;hangingPhase='pre-dispatch';const keeper=setTimeout(()=>{},2000);try{await worker.runStreamerMonitor({budgetMs:500});}finally{clearTimeout(keeper);hangingPhase='';}assert.equal(sent,before);
+  const key=require('node:crypto').createHash('sha256').update(['youtube',providerId,'live',media.id].join(':')).digest('hex');assert.equal((await publications.getDiscordPublicationOperation('guild-streamer',key)).state,'prepared');assert.equal((await db.collection(store.EVENTS).doc(key).get()).data().state,'pending');
+  await db.collection(store.EVENTS).doc(key).update({dueAtMs:now});await worker.runStreamerMonitor();assert.equal(sent,before+1);assert.equal((await db.collection(store.EVENTS).doc(key).get()).data().state,'sent');
+ });
+ await check('deadline after Discord POST preserves uncertain receipt and later reconciles without a second POST',async()=>{
+  let account=(await store.streamerAccounts())[0];const settings=await store.streamerSettings();const media={id:'budgettest0',title:'Budget LIVE',url:'https://www.youtube.com/watch?v=budgettest0',publishedAt:new Clock(now-1000).toISOString()};
+  await store.commitObservation({...account,state:null},{providerId,live:media,videos:[],liveSupported:true},settings,false);account=await store.currentAccount(account.id);await db.collection(store.ACCOUNTS).doc(account.id).update({state:{...account.state,nextCheckAt:now+60000}});
+  // Unrelated intentionally incomplete legacy fixtures are not delivery jobs.
+  for(const state of ['pending','uncertain'])await db.collection(store.EVENTS).doc('legacy-'+state).update({dueAtMs:now+86400000});
+  const before=sent;hangingPhase='discord-post';const keeper=setTimeout(()=>{},2000);try{await worker.runStreamerMonitor({budgetMs:500});}finally{clearTimeout(keeper);hangingPhase='';}assert.equal(sent,before+1);
+  const key=require('node:crypto').createHash('sha256').update(['youtube',providerId,'live',media.id].join(':')).digest('hex');let event=(await db.collection(store.EVENTS).doc(key).get()).data();assert.equal(event.state,'uncertain');assert.equal((await publications.getDiscordPublicationOperation('guild-streamer',key)).state,'uncertain');
+  await db.collection(store.EVENTS).doc(key).update({dueAtMs:now});await worker.runStreamerMonitor();assert.equal(sent,before+1);event=(await db.collection(store.EVENTS).doc(key).get()).data();assert.equal(event.state,'sent');
+ });
  console.log(`[check-streamers] OK ${passed}/${passed}; real PostgreSQL/PGlite transactions and publication ledger, fake providers/Discord only`);
  }finally{await engine.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -13,7 +13,7 @@ export const ACCOUNTS='guildStreamers',EVENTS='guildStreamerEvents';
 export type StreamerSettings={enabled:boolean;siteEnabled:boolean;discordEnabled:boolean;channelId:string;revision:string};
 export type StreamerState={initializedAt:number;videoIds:string[];live:StreamMedia|null;checkedAt:number;expiresAt:number;status:string;nextCheckAt:number;membershipAt:number;memberActive:boolean;lastSearchAt:number;attemptedAt?:number;failures?:number};
 export type StreamerAccount={id:string;memberId:string;memberName:string;platform:StreamPlatform;handle:string;channelUrl:string;providerId:string;token?:string;enabled:boolean;siteEnabled:boolean;notifyLive:boolean;notifyVideos:boolean;revision:string;createdAt:number;updatedAt:number;state:StreamerState|null};
-export type StreamerEvent={id:string;accountId:string;accountRevision:string;settingsRevision:string;channelId:string;kind:'live'|'video';media:StreamMedia;memberName:string;platform:StreamPlatform;state:string;dueAtMs:number;attempts:number;createdAt:number;messageId?:string;lastError?:string};
+export type StreamerEvent={id:string;accountId:string;accountRevision:string;settingsRevision:string;channelId:string;kind:'live'|'video';media:StreamMedia;memberName:string;platform:StreamPlatform;state:string;dueAtMs:number;attempts:number;createdAt:number;messageId?:string;lastError?:string;mediaKey?:string;metadataPurgedAt?:number};
 const settingsRef=()=>getDocumentDb().collection('dashboardSettings').doc('guildStreamers');
 export async function streamerSettings():Promise<StreamerSettings>{const s=(await settingsRef().get()).data()||{};return {enabled:s.enabled===true,siteEnabled:s.siteEnabled===true,discordEnabled:s.discordEnabled===true,channelId:String(s.channelId||''),revision:String(s.revision||'initial')};}
 export async function streamerAccounts():Promise<StreamerAccount[]>{const s=await getDocumentDb().collection(ACCOUNTS).limit(STREAMER_LIMIT+1).get();if(s.docs.length>STREAMER_LIMIT)throw Error('streamer_limit');return s.docs.map(d=>({...d.data(),id:d.id}) as StreamerAccount);}
@@ -22,8 +22,8 @@ export function adminAccount(a:StreamerAccount){
  const status=!ready?'provider_not_configured':a.platform==='tiktok'&&!a.token?'tiktok_authorization_required':state?.status||'not_checked';
  return {id:a.id,memberId:a.memberId,memberName:a.memberName,platform:a.platform,handle:a.handle,channelUrl:a.channelUrl,enabled:a.enabled,siteEnabled:a.siteEnabled,notifyLive:a.notifyLive,notifyVideos:a.notifyVideos,revision:a.revision,authorized:!!a.token,status,checkedAt:state?.checkedAt||0,attemptedAt:state?.attemptedAt||state?.checkedAt||0,nextCheckAt:state?.nextCheckAt||0,failures:state?.failures||0,live:state?.live&&state.expiresAt>Date.now()&&state.memberActive?state.live:null};
 }
-export async function verifyMember(id:string){if(!/^\d{16,25}$/.test(id)||!/^\d{16,25}$/.test(getDiscordGuildId()))throw Error('Вкажи Discord ID учасника та підключи Discord-сервер.');const m=await discordApi<{user?:{id?:string;bot?:boolean;global_name?:string;username?:string};nick?:string}>(`/guilds/${getDiscordGuildId()}/members/${id}`);if(m.user?.id!==id||m.user.bot)throw Error('Потрібен чинний учасник гільдії, який не є ботом.');return String(m.nick||m.user.global_name||m.user.username||'Учасник').slice(0,80);}
-export async function verifyChannel(id:string){if(!/^\d{16,25}$/.test(id))throw Error('Обери текстовий Discord-канал.');const c=await discordApi<{guild_id?:string;type?:number}>(`/channels/${id}`);if(c.guild_id!==getDiscordGuildId()||![0,5].includes(Number(c.type)))throw Error('Канал має бути текстовим каналом цього Discord-сервера.');}
+export async function verifyMember(id:string,signal?:AbortSignal){if(!/^\d{16,25}$/.test(id)||!/^\d{16,25}$/.test(getDiscordGuildId()))throw Error('Вкажи Discord ID учасника та підключи Discord-сервер.');const m=await discordApi<{user?:{id?:string;bot?:boolean;global_name?:string;username?:string};nick?:string}>(`/guilds/${getDiscordGuildId()}/members/${id}`,{signal});if(m.user?.id!==id||m.user.bot)throw Error('Потрібен чинний учасник гільдії, який не є ботом.');return String(m.nick||m.user.global_name||m.user.username||'Учасник').slice(0,80);}
+export async function verifyChannel(id:string,signal?:AbortSignal){if(!/^\d{16,25}$/.test(id))throw Error('Обери текстовий Discord-канал.');const c=await discordApi<{guild_id?:string;type?:number}>(`/channels/${id}`,{signal});if(c.guild_id!==getDiscordGuildId()||![0,5].includes(Number(c.type)))throw Error('Канал має бути текстовим каналом цього Discord-сервера.');}
 export async function saveStreamerSettings(input:Record<string,unknown>){
  assertStorageWriteAvailable('settings');if(typeof input.enabled!=='boolean'||typeof input.siteEnabled!=='boolean'||typeof input.discordEnabled!=='boolean')throw Error('Некоректні налаштування.');
  const channelId=String(input.channelId||'');if(input.discordEnabled)await verifyChannel(channelId);else if(channelId&&!/^\d{16,25}$/.test(channelId))throw Error('Некоректний канал.');
@@ -119,8 +119,19 @@ export function observedEvents(a:StreamerAccount,observation:Observation,setting
  if(a.notifyVideos&&old?.initializedAt)for(const v of observation.videos)if(!old.videoIds.includes(v.id)&&Date.parse(v.publishedAt)>old.initializedAt&&now-Date.parse(v.publishedAt)<86400000&&Date.parse(v.publishedAt)<=now+60000)events.push({kind:'video',media:v});
  return events.filter(()=>settings.enabled&&settings.discordEnabled&&!!settings.channelId).slice(0,20);
 }
+export function streamerMediaKey(platform:StreamPlatform,kind:string,id:string){return createHash('sha256').update([platform,kind,id].join(':')).digest('hex');}
 export async function commitObservation(a:StreamerAccount,o:Observation,settings:StreamerSettings,searched:boolean){
  const now=Date.now(),ref=getDocumentDb().collection(ACCOUNTS).doc(a.id),events=observedEvents(a,o,settings,now);
+ // Read legacy keys as well as compact tombstones. Never rename an active
+ // event: its original publication receipt owns any uncertain Discord POST.
+ const legacy=await Promise.all(events.map(async e=>{
+  const collection=getDocumentDb().collection(EVENTS);
+  const [compact,old]=await Promise.all([
+   collection.where('mediaKey','==',streamerMediaKey(a.platform,e.kind,e.media.id)).limit(1).get(),
+   collection.where('platform','==',a.platform).where('kind','==',e.kind).where('media.id','==',e.media.id).limit(1).get(),
+  ]);
+  return [...compact.docs,...old.docs];
+ }));
  const committed=await getDocumentDb().runTransaction(async tx=>{
   const d=(await tx.get(ref)).data();if(d?.revision!==a.revision||d.enabled!==true)return;
   const claimRef=getDocumentDb().collection('guildStreamerIdentities').doc(createHash('sha256').update(a.platform+':'+o.providerId).digest('hex'));
@@ -130,10 +141,11 @@ export async function commitObservation(a:StreamerAccount,o:Observation,settings
   const ready=latestSettings?.revision===settings.revision&&latestSettings?.enabled===true;
   const eventRefs=events.map(e=>{const id=createHash('sha256').update([a.platform,o.providerId,e.kind,e.media.id].join(':')).digest('hex');return {e,id,ref:getDocumentDb().collection(EVENTS).doc(id)};});
   const previous=await Promise.all(eventRefs.map(e=>tx.get(e.ref)));
-  const state:StreamerState={initializedAt:a.state?.initializedAt||now,videoIds:[...new Set([...o.videos.map(v=>v.id),...(a.state?.videoIds||[])])].slice(0,100),live:o.live,checkedAt:now,expiresAt:now+300000,status:o.warning||'ok',attemptedAt:now,failures:0,nextCheckAt:now+(a.platform==='twitch'||o.live?60000:300000),membershipAt:now,memberActive:true,lastSearchAt:searched?now:a.state?.lastSearchAt||0};
+  const legacyExists=await Promise.all(legacy.map(async docs=>(await Promise.all(docs.map(d=>tx.get(getDocumentDb().collection(EVENTS).doc(d.id))))).some(d=>d.exists)));
+  const state:StreamerState={initializedAt:a.state?.initializedAt||now,videoIds:[...new Set(o.videos.map(v=>v.id))].slice(0,100),live:o.live,checkedAt:now,expiresAt:now+300000,status:o.warning||'ok',attemptedAt:now,failures:0,nextCheckAt:now+(a.platform==='twitch'||o.live?60000:300000),membershipAt:now,memberActive:true,lastSearchAt:searched?now:a.state?.lastSearchAt||0};
   tx.set(claimRef,{accountId:a.id,platform:a.platform,providerId:o.providerId});
   tx.update(ref,{providerId:o.providerId,state,...(o.token?{token:o.token}:{})});
-  if(ready)eventRefs.forEach((e,index)=>{if(!previous[index].exists)tx.set(e.ref,{id:e.id,accountId:a.id,accountRevision:a.revision,settingsRevision:settings.revision,channelId:settings.channelId,kind:e.e.kind,media:e.e.media,memberName:a.memberName,platform:a.platform,state:'pending',dueAtMs:now,attempts:0,createdAt:now} satisfies StreamerEvent);});
+  if(ready)eventRefs.forEach((e,index)=>{if(!previous[index].exists&&!legacyExists[index])tx.set(e.ref,{id:e.id,accountId:a.id,accountRevision:a.revision,settingsRevision:settings.revision,channelId:settings.channelId,kind:e.e.kind,media:e.e.media,mediaKey:streamerMediaKey(a.platform,e.e.kind,e.e.media.id),memberName:a.memberName,platform:a.platform,state:'pending',dueAtMs:now,attempts:0,createdAt:now} satisfies StreamerEvent);});
   return true;
  });
  if(committed&&a.state?.status!==(o.warning||'ok'))await recordStreamerDiagnostic({code:o.warning||'ok',level:o.warning?'warning':'success',stage:'check',accountId:a.id,platform:a.platform,memberName:a.memberName});
@@ -144,3 +156,25 @@ export async function recordStreamerError(a:StreamerAccount,status:string){
  if(changed)await recordStreamerDiagnostic({code:status,level:'warning',stage:'check',accountId:a.id,platform:a.platform,memberName:a.memberName});
 }
 export async function publicStreamers():Promise<PublicStreamers>{const settings=await streamerSettings();const now=Date.now();const items=settings.enabled&&settings.siteEnabled?(await streamerAccounts()).filter(a=>a.enabled&&a.siteEnabled&&a.state?.memberActive&&a.state.live&&a.state.expiresAt>now).map(a=>({id:a.id,memberName:a.memberName,platform:a.platform,channelUrl:a.platform==='youtube'&&/^UC[a-zA-Z0-9_-]{22}$/.test(a.providerId)?'https://www.youtube.com/channel/'+a.providerId:a.platform==='twitch'?a.state!.live!.url:a.channelUrl,live:a.state!.live!,expiresAt:new Date(a.state!.expiresAt).toISOString()})):[];return {schema:STREAMER_SCHEMA,checked_at:new Date(now).toISOString(),items};}
+
+/** Strip API metadata after 29 days; retain only local idempotency evidence.
+ * Runs even with monitoring disabled. A stopped cron is reported operationally.
+ * Batch locks avoid unbounded work and exclude concurrent retention workers. */
+export async function maintainStreamerMetadata(now=Date.now()) {
+ const cutoff=now-29*86400000;
+ return pgTransaction(async client=>{
+  const rows=(await pgQuery<{doc_id:string;data:StreamerEvent}>(
+   "SELECT doc_id,data FROM documents WHERE collection=$1 AND data->>'platform'='youtube' AND data ? 'media' AND (data->>'createdAt')::numeric <= $2 ORDER BY data->>'createdAt' LIMIT 100 FOR UPDATE SKIP LOCKED",[EVENTS,cutoff],client)).rows;
+  for(const row of rows){
+   const event=row.data;
+   const compact={id:row.doc_id,mediaKey:event.mediaKey||streamerMediaKey('youtube',event.kind,event.media.id),state:['uncertain','sending'].includes(event.state)?'expired_uncertain':event.state==='sent'?'sent':'cancelled',dueAtMs:0,createdAt:event.createdAt,metadataPurgedAt:now,...(event.messageId?{messageId:event.messageId}:{})};
+   await pgQuery('UPDATE documents SET data=$3::jsonb,updated_at=now() WHERE collection=$1 AND doc_id=$2',[EVENTS,row.doc_id,JSON.stringify(compact)],client);
+   const receipt=createHash('sha256').update(JSON.stringify(['guild-streamer',row.doc_id])).digest('hex');
+   // Keep nonce/state/external message ID, remove copied embeds and raw errors.
+   await pgQuery(`UPDATE documents SET data=(data - 'result' - 'context' - 'error') || jsonb_build_object('context','{}'::jsonb,'error',null,'result',CASE WHEN data->'result'->>'id' IS NOT NULL THEN jsonb_build_object('id',data->'result'->>'id') ELSE 'null'::jsonb END),updated_at=now() WHERE collection='discordPublications' AND doc_id=$1`,[receipt],client);
+  }
+  await pgQuery(`UPDATE documents SET data=jsonb_set(data || '{"providerId":""}'::jsonb,'{state}',(COALESCE(NULLIF(data->'state','null'::jsonb),'{}'::jsonb)-'videoIds'-'live') || '{"videoIds":[],"live":null,"expiresAt":0,"nextCheckAt":0}'::jsonb),updated_at=now() WHERE collection=$1 AND data->>'platform'='youtube' AND GREATEST((COALESCE(NULLIF(data->'state'->>'checkedAt',''),'0'))::numeric,(COALESCE(data->>'createdAt','0'))::numeric) < $2`,[ACCOUNTS,cutoff],client);
+  await pgQuery(`UPDATE documents i SET data=i.data-'providerId',updated_at=now() WHERE i.collection='guildStreamerIdentities' AND i.data->>'platform'='youtube' AND i.data ? 'providerId' AND NOT EXISTS (SELECT 1 FROM documents a WHERE a.collection=$1 AND a.doc_id=i.data->>'accountId' AND a.data->>'providerId'=i.data->>'providerId' AND (COALESCE(NULLIF(a.data->'state'->>'checkedAt',''),'0'))::numeric >= $2)`,[ACCOUNTS,cutoff],client);
+  return {purged:rows.length,more:rows.length===100};
+ },{isolation:'read committed'});
+}

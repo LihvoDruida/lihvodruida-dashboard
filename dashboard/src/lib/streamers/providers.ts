@@ -1,4 +1,7 @@
 import 'server-only';
+import {AsyncLocalStorage} from 'node:async_hooks';
+const providerSignal=new AsyncLocalStorage<AbortSignal>();
+function checkBudget(){providerSignal.getStore()?.throwIfAborted();}
 import {createCipheriv,createDecipheriv,randomBytes} from 'node:crypto';
 import {streamerChannelInput} from './channel-input';
 import {type StreamPlatform,type StreamMedia,channelIdentity,validMedia} from './contract';
@@ -19,7 +22,8 @@ async function providerBody(r:Response,limit=1024*1024){
  return Buffer.concat(parts).toString('utf8');
 }
 async function response(url:string,init:RequestInit={}){
- const r=await fetch(url,{...init,redirect:'error',cache:'no-store',signal:AbortSignal.timeout(7000)});
+ checkBudget();
+ const r=await fetch(url,{...init,redirect:'error',cache:'no-store',signal:AbortSignal.any([AbortSignal.timeout(7000),...(providerSignal.getStore()?[providerSignal.getStore()!]:[]),...(init.signal?[init.signal]:[])])});
  const raw=await providerBody(r);
  if(!r.ok){let reasons='';try{const e=obj(JSON.parse(raw)).error;reasons=JSON.stringify(e||'');}catch{}const quota=/quotaExceeded|dailyLimitExceeded|rateLimitExceeded|userRateLimitExceeded/.test(reasons);const auth=r.status===401||r.status===403||r.status===400&&(/API_KEY_INVALID|keyInvalid/.test(reasons)||url.startsWith('https://id.twitch.tv/')||url.startsWith('https://open.tiktokapis.com/v2/oauth/'));throw Error(r.status===429||quota?'provider_rate_limit':auth?'provider_authorization':'provider_unavailable');}
  return raw;
@@ -33,7 +37,7 @@ async function twitch(path:string,retry=true):Promise<Json>{
 }
 async function youtube(resource:string,params:Record<string,string>){const key=process.env.STREAMER_YOUTUBE_API_KEY?.trim();if(!key)throw Error('provider_not_configured');return json('https://www.googleapis.com/youtube/v3/'+resource+'?'+new URLSearchParams({...params,key}));}
 async function resolveCustomYouTube(handle:string):Promise<string>{
- let url=streamerChannelInput('youtube',handle).channelUrl;const visited=new Set<string>(),deadline=AbortSignal.timeout(9000);
+ let url=streamerChannelInput('youtube',handle).channelUrl;const visited=new Set<string>(),deadline=AbortSignal.any([AbortSignal.timeout(9000),...(providerSignal.getStore()?[providerSignal.getStore()!]:[])]);
  for(let hop=0;hop<4;hop++){
   if(visited.has(url))break;visited.add(url);
   const r=await fetch(url,{redirect:'manual',cache:'no-store',signal:AbortSignal.any([deadline,AbortSignal.timeout(7000)]),headers:{Accept:'text/html'}});
@@ -57,17 +61,21 @@ export async function resolveProvider(platform:StreamPlatform,handle:string){
 async function verifyTikTok(token:TikTokToken,handle:string){const d=await json('https://open.tiktokapis.com/v2/user/info/?fields=open_id,username',{headers:{Authorization:`Bearer ${token.accessToken}`}});if(obj(d.error).code!=='ok')throw Error('provider_authorization');const user=obj(obj(d.data).user);if(text(user.username).toLowerCase()!==handle.toLowerCase()||!text(user.open_id))throw Error('TikTok: потрібен дозвіл саме цього автора (user.info.basic, user.info.profile, video.list).');return text(user.open_id);}
 export async function prepareTikTokToken(handle:string,access:string,refresh:string){if(!access||access.length>4096||refresh.length>4096)throw Error('Перевір TikTok access token.');const token={accessToken:access,refreshToken:refresh,expiresAt:refresh?0:Date.now()+900000};const providerId=await verifyTikTok(token,handle);return {token:encryptToken(token),providerId};}
 function media(platform:StreamPlatform,id:string,title:unknown,published:unknown,url:string):StreamMedia{const m={id,title:(text(title).trim()||'Трансляція учасника').slice(0,300),publishedAt:text(published),url};if(!validMedia(platform,m))throw Error('provider_schema');return m;}
-export async function observeProvider(a:ProviderAccount,searchLive=false,onToken?:(token:string)=>Promise<void>):Promise<Observation>{
+export async function observeProvider(a:ProviderAccount,searchLive=false,onToken?:(token:string)=>Promise<void>,signal?:AbortSignal):Promise<Observation>{
+ return signal?providerSignal.run(signal,()=>observe(a,searchLive,onToken)):observe(a,searchLive,onToken);
+}
+async function observe(a:ProviderAccount,searchLive:boolean,onToken?: (token:string)=>Promise<void>):Promise<Observation>{
+ checkBudget();
  const providerId=a.providerId||await resolveProvider(a.platform,a.handle);
  if(a.platform==='twitch'){
-  const [s,v]=await Promise.all([twitch('streams?'+new URLSearchParams({user_id:providerId})),twitch('videos?'+new URLSearchParams({user_id:providerId,type:'all',first:'20'})).catch(()=>null)]);const live=rows(s.data)[0];const videos=(v?rows(v.data):[]).filter(v=>v.type==='upload'||v.type==='highlight').map(v=>media('twitch',text(v.id),v.title,v.published_at,`https://www.twitch.tv/videos/${v.id}`));
+  const [s,v]=await Promise.all([twitch('streams?'+new URLSearchParams({user_id:providerId})),twitch('videos?'+new URLSearchParams({user_id:providerId,type:'all',first:'20'})).catch(()=>{checkBudget();return null;})]);const live=rows(s.data)[0];const videos=(v?rows(v.data):[]).filter(v=>v.type==='upload'||v.type==='highlight').map(v=>media('twitch',text(v.id),v.title,v.published_at,`https://www.twitch.tv/videos/${v.id}`));
   if(live&&text(live.user_id)!==providerId)throw Error('provider_identity');
   return {providerId,live:live?media('twitch',text(live.id),live.title,live.started_at,channelIdentity('twitch',text(live.user_login)||a.handle).channelUrl):null,videos,liveSupported:true,...(!v?{warning:'videos_unavailable'}:{})};
  }
  if(a.platform==='youtube'){
-  let xml='',warning='';try{xml=await response('https://www.youtube.com/feeds/videos.xml?'+new URLSearchParams({channel_id:providerId}));if(!/<feed[\s>]/.test(xml)||!xml.includes(`<yt:channelId>${providerId}</yt:channelId>`))throw Error('provider_schema');}catch{warning='discovery_unavailable';if(!a.state?.live&&!searchLive)throw Error('provider_unavailable');}
+  let xml='',warning='';try{xml=await response('https://www.youtube.com/feeds/videos.xml?'+new URLSearchParams({channel_id:providerId}));if(!/<feed[\s>]/.test(xml)||!xml.includes(`<yt:channelId>${providerId}</yt:channelId>`))throw Error('provider_schema');}catch{checkBudget();warning='discovery_unavailable';if(!a.state?.live&&!searchLive)throw Error('provider_unavailable');}
   const ids=new Set([...xml.matchAll(/<yt:videoId>([a-zA-Z0-9_-]{11})<\/yt:videoId>/g)].map(m=>m[1]).slice(0,20));if(a.state?.live)ids.add(a.state.live.id);
-  if(searchLive){try{const s=await youtube('search',{part:'snippet',type:'video',eventType:'live',channelId:providerId,maxResults:'5'});for(const v of rows(s.items)){const id=text(obj(v.id).videoId);if(/^[a-zA-Z0-9_-]{11}$/.test(id))ids.add(id);}}catch{warning='discovery_unavailable';if(!ids.size)throw Error('provider_unavailable');}}
+  if(searchLive){try{const s=await youtube('search',{part:'snippet',type:'video',eventType:'live',channelId:providerId,maxResults:'5'});for(const v of rows(s.items)){const id=text(obj(v.id).videoId);if(/^[a-zA-Z0-9_-]{11}$/.test(id))ids.add(id);}}catch{checkBudget();warning='discovery_unavailable';if(!ids.size)throw Error('provider_unavailable');}}
   if(!ids.size)return {providerId,live:null,videos:[],liveSupported:true};
   const data=await youtube('videos',{part:'snippet,liveStreamingDetails,status',id:[...ids].slice(0,30).join(',')});let live:StreamMedia|null=null;const videos:StreamMedia[]=[];
   for(const v of rows(data.items)){const s=obj(v.snippet),l=obj(v.liveStreamingDetails);if(text(s.channelId)!==providerId)throw Error('provider_identity');if(obj(v.status).privacyStatus!=='public')continue;

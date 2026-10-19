@@ -12,6 +12,8 @@ export type ApiFetchJsonOptions = Omit<RequestInit, "cache" | "signal"> & {
   cache?: RequestCache;
   signal?: AbortSignal;
   userAgent?: string;
+  totalTimeoutMs?: number;
+  maxRetryWaitMs?: number;
 };
 
 export class ApiHttpError extends Error {
@@ -19,14 +21,16 @@ export class ApiHttpError extends Error {
   readonly url: string;
   readonly body: unknown;
   readonly retryAfterMs: number | null;
+  readonly retryAt: number | null;
 
-  constructor(message: string, options: { status: number; url: string; body?: unknown; retryAfterMs?: number | null }) {
+  constructor(message: string, options: { status: number; url: string; body?: unknown; retryAfterMs?: number | null; retryAt?: number | null }) {
     super(message);
     this.name = "ApiHttpError";
     this.status = options.status;
     this.url = options.url;
     this.body = options.body ?? null;
     this.retryAfterMs = options.retryAfterMs ?? null;
+    this.retryAt = options.retryAt ?? (this.retryAfterMs === null ? null : Date.now() + this.retryAfterMs);
   }
 }
 
@@ -44,12 +48,12 @@ function safeUrl(value: RequestInfo | URL) {
   return "unknown-url";
 }
 
-function parseRetryAfter(value: string | null) {
+export function parseRetryAfter(value: string | null) {
   if (!value) return null;
   const seconds = Number(value);
-  if (Number.isFinite(seconds) && seconds > 0) return Math.min(60_000, Math.max(250, seconds * 1000));
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.max(0, Math.ceil(seconds * 1000));
   const date = Date.parse(value);
-  if (Number.isFinite(date)) return Math.min(60_000, Math.max(250, date - Date.now()));
+  if (Number.isFinite(date)) return Math.max(0, date - Date.now());
   return null;
 }
 
@@ -60,8 +64,13 @@ function retryDelayMs(attempt: number, retryAfterMs: number | null) {
   return Math.min(10_000, base + jitter);
 }
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)));
+function sleep(ms: number, signal?: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) { reject(signal.reason); return; }
+    const abort = () => { clearTimeout(timer); signal?.removeEventListener("abort", abort); reject(signal?.reason); };
+    const timer = setTimeout(() => { signal?.removeEventListener("abort", abort); resolve(); }, Math.max(0, ms));
+    signal?.addEventListener("abort", abort, { once: true });
+  });
 }
 
 function normalizeMethod(method?: string) {
@@ -138,6 +147,9 @@ export async function apiFetchJson<T = unknown>(input: RequestInfo | URL, option
   const method = normalizeMethod(options.method);
   const retries = Math.max(0, Math.min(5, Math.floor(Number(options.retries ?? 0))));
   const timeoutMs = Math.max(500, Math.min(120_000, Math.floor(Number(options.timeoutMs ?? 15_000))));
+  const totalTimeoutMs = Math.max(500, Math.min(120_000, Number(options.totalTimeoutMs ?? timeoutMs * (retries + 1))));
+  const deadlineAt = Date.now() + totalTimeoutMs;
+  const maxWait = Math.max(0, Math.min(20_000, Number(options.maxRetryWaitMs ?? 5_000)));
   const headers = new Headers(options.headers || {});
 
   if (!headers.has("Accept")) headers.set("Accept", "application/json");
@@ -148,7 +160,10 @@ export async function apiFetchJson<T = unknown>(input: RequestInfo | URL, option
   let lastError: unknown = null;
 
   for (let attempt = 0; attempt <= retries; attempt += 1) {
-    const abort = composeAbortSignal(timeoutMs, options.signal);
+    options.signal?.throwIfAborted();
+    const remaining = deadlineAt - Date.now();
+    if (remaining <= 0) throw lastError instanceof Error ? lastError : new Error(`${label} timeout after ${totalTimeoutMs}ms`);
+    const abort = composeAbortSignal(Math.min(timeoutMs, remaining), options.signal);
     try {
       const response = await fetch(input, {
         ...options,
@@ -157,27 +172,36 @@ export async function apiFetchJson<T = unknown>(input: RequestInfo | URL, option
         cache: options.cache ?? "no-store",
         signal: abort.signal,
       });
+      const retryAfterMs = parseRetryAfter(response.headers.get("retry-after"));
+      const retryAt = retryAfterMs === null ? null : Date.now() + retryAfterMs;
       const body = await parseResponseBody(response);
       if (response.ok) return body as T;
 
-      const retryAfterMs = parseRetryAfter(response.headers.get("retry-after"));
       const error = new ApiHttpError(errorMessage(label, response.status, body), {
         status: response.status,
         url: safeUrl(input),
         body,
         retryAfterMs,
+        retryAt,
       });
       lastError = error;
 
       if (attempt < retries && shouldRetryResponse(response.status, method, options)) {
-        await sleep(retryDelayMs(attempt, retryAfterMs));
+        const delay = retryAt === null ? retryDelayMs(attempt, null) : Math.max(0, retryAt - Date.now());
+        if (delay > maxWait || delay >= deadlineAt - Date.now()) throw error;
+        abort.cleanup();
+        await sleep(delay, options.signal);
         continue;
       }
       throw error;
     } catch (error) {
       lastError = error;
+      if (options.signal?.aborted) throw options.signal.reason;
       if (attempt < retries && shouldRetryNetworkError(error, method, options)) {
-        await sleep(retryDelayMs(attempt, null));
+        const delay = retryDelayMs(attempt, null);
+        if (delay > maxWait || delay >= deadlineAt - Date.now()) throw error;
+        abort.cleanup();
+        await sleep(delay, options.signal);
         continue;
       }
       if ((error as Error)?.name === "AbortError") {

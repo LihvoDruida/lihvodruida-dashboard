@@ -1,4 +1,6 @@
-# dashboard
+# Dashboard 3.15.2
+
+[Чинна інструкція парного релізу](../docs/RELEASE_INSTALL_2026-10-19_UA.md).
 
 Next.js-панель Mistblossom Vanguard: бізнес-логіка, база, сторінки, API.
 
@@ -8,7 +10,7 @@ Next.js-панель Mistblossom Vanguard: бізнес-логіка, база, 
 ## Локальний запуск
 
 ```bash
-npm install
+npm ci --no-audit --no-fund
 cp .env.example .env.local
 npm run dev          # http://localhost:3000 або http://0.0.0.0:3000
 ```
@@ -41,7 +43,6 @@ Smoke перевіряє `/api/health` і всі статичні `page`-мар�
 | `npm run check:imports` | перевіряє всі локальні `@/` та relative imports |
 | `npm run smoke:http` | безпечний GET-smoke запущеного сайту (за замовчуванням `http://0.0.0.0:3000`) |
 | `npm run db:init` | застосувати схему бази |
-| `npm run db:migrate-dry-run` | пробне перенесення з Firestore |
 
 ## Стрімери гільдії
 

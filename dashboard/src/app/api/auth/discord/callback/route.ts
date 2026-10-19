@@ -7,6 +7,7 @@ import {
 } from "@/lib/accessGroups";
 import {
   fetchDiscordGuildBanSnapshot,
+  confirmDiscordMemberDeparture,
   fetchDiscordGuildSnapshot,
 } from "@/lib/discordAdmin";
 import {
@@ -20,6 +21,7 @@ import {
 } from "@/lib/auth";
 import { setSession } from "@/lib/session";
 import {
+  DiscordOAuthError,
   exchangeDiscordCode,
   fetchDiscordGuildMember,
   fetchDiscordUser,
@@ -125,11 +127,7 @@ function expireSessionCookies(response: NextResponse) {
 }
 
 function isDiscordOAuthMemberMissing(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error || "");
-  return (
-    /Discord guild member (?:403|404):/i.test(message) ||
-    /Unknown Guild Member|Missing Access|access_denied/i.test(message)
-  );
+  return error instanceof DiscordOAuthError && error.reason === "http" && error.status === 404 && error.apiCode === 10007;
 }
 
 function conflictAuditSummary(
@@ -219,13 +217,14 @@ export async function GET(request: NextRequest) {
     return response;
   }
 
+  const oauthSignal = AbortSignal.timeout(25_000);
   try {
-    const token = await exchangeDiscordCode(code);
-    const user = await fetchDiscordUser(token.access_token);
+    const token = await exchangeDiscordCode(code, { signal: oauthSignal });
+    const user = await fetchDiscordUser(token.access_token, { signal: oauthSignal });
     const userId = String(user.id || "");
     const profileId = await createStableProfileId("discord", userId);
 
-    const ban = await fetchDiscordGuildBanSnapshot(userId).catch((error) => {
+    const ban = await fetchDiscordGuildBanSnapshot(userId, undefined, oauthSignal).catch((error) => {
       logDashboardEvent(
         "error",
         "auth.discord.callback.ban_check_failed",
@@ -278,9 +277,9 @@ export async function GET(request: NextRequest) {
 
     let member: Awaited<ReturnType<typeof fetchDiscordGuildMember>>;
     try {
-      member = await fetchDiscordGuildMember(token.access_token);
+      member = await fetchDiscordGuildMember(token.access_token, { signal: oauthSignal });
     } catch (error) {
-      if (isDiscordOAuthMemberMissing(error)) {
+      if (isDiscordOAuthMemberMissing(error) && await confirmDiscordMemberDeparture(userId, oauthSignal)) {
         const deleted = await deleteDashboardProfilesByDiscordUserId(
           userId,
         ).catch((deleteError) => ({
@@ -300,12 +299,16 @@ export async function GET(request: NextRequest) {
             profileId,
             deletedProfiles: deleted.deleted,
             deletedProfileIds: deleted.profileIds,
+            evidenceSource: "discord_bot_unknown_member_10007",
+            evidenceAt: new Date().toISOString(),
             message: error instanceof Error ? error.message : String(error),
           },
         );
         await recordSystemAudit("auth.discord.profile_deleted_not_member", {
           status: "warning",
           summary: "Профіль видалено: Discord-акаунта вже немає на сервері.",
+          evidenceSource: "discord_bot_unknown_member_10007",
+          evidenceAt: new Date().toISOString(),
           userId,
           profileId,
           deletedProfiles: deleted.deleted,
@@ -568,7 +571,7 @@ export async function GET(request: NextRequest) {
       securityCheckFailed,
     });
     const response = loginRedirect(
-      securityCheckFailed ? "security_check_failed" : "discord_oauth",
+      error instanceof DiscordOAuthError && error.reason === "timeout" ? "discord_timeout" : error instanceof DiscordOAuthError && error.reason === "scope" ? "discord_scope" : securityCheckFailed ? "security_check_failed" : "discord_oauth",
     );
     rememberRemainingOAuthNonces(response, remainingNonces);
     return response;

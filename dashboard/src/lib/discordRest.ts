@@ -8,7 +8,7 @@ declare global {
   var __mistblossomDiscordRestClients: Map<string, ClientState> | undefined;
 }
 export class DiscordRestError extends Error {
-  constructor(message: string, public readonly status: number, public readonly retryAfterMs = 0) { super(message); this.name = "DiscordRestError"; }
+  constructor(message: string, public readonly status: number, public readonly retryAfterMs = 0, public readonly apiCode: number | null = null) { super(message); this.name = "DiscordRestError"; }
 }
 export function discordCredentialKey(token: string) { return createHash("sha256").update(token).digest("hex").slice(0, 20); }
 function stateFor(token: string) {
@@ -155,7 +155,7 @@ export async function discordRestRequest<T>(path: string, init: RequestInit, opt
         cooldown(state, key, retryDelay);
         if (json?.global === true || response.headers.get("x-ratelimit-global") === "true" || response.headers.get("x-ratelimit-scope") === "global") state.globalUntil = Math.max(state.globalUntil, Date.now() + retryDelay);
       } else if (safeReplay && [408, 500, 502, 503, 504].includes(response.status)) retryDelay = 500 * (2 ** attempt);
-      if (!retryDelay || options.retryNever || attempt === attempts - 1 || retryDelay > MAX_WAIT_MS) throw new DiscordRestError(`Discord API ${response.status}: ${detail}`, response.status, retryDelay);
+      if (!retryDelay || options.retryNever || attempt === attempts - 1 || retryDelay > MAX_WAIT_MS) throw new DiscordRestError(`Discord API ${response.status}: ${detail}`, response.status, retryDelay, typeof json?.code === "number" ? json.code : null);
     } catch (error) {
       if (error instanceof DiscordRestError || signal.aborted || options.retryNever || !safeReplay || attempt === attempts - 1) throw error;
       if (!/AbortError|TimeoutError|ECONNRESET|ETIMEDOUT|fetch failed|network/i.test(`${(error as Error)?.name} ${(error as Error)?.message}`)) throw error;

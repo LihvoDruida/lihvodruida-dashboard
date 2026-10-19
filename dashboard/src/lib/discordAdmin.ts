@@ -1643,14 +1643,31 @@ export async function fetchDiscordGuildMemberSnapshot(userIdInput: string, guild
   };
 }
 
-export async function fetchDiscordGuildBanSnapshot(userIdInput: string, guildIdInput = getDiscordGuildId()): Promise<DiscordGuildBanSnapshot | null> {
+/** Only a fresh bot read with explicit Unknown Member proves departure.
+ * HTTP 403, a generic 404, and OAuth error text are never evidence. */
+export async function confirmDiscordMemberDeparture(userId: string, signal?: AbortSignal) {
+  const guildId = cleanSnowflake(getDiscordGuildId());
+  if (!guildId || !cleanSnowflake(userId)) throw new Error("Discord membership configuration unavailable");
+  const guild = await discordApi<{ id?: string }>(`/guilds/${guildId}`, { signal });
+  if (guild?.id !== guildId) throw new Error("Discord membership evidence unavailable");
+  try {
+    const member = await discordApi<{ user?: { id?: string } }>(`/guilds/${guildId}/members/${userId}`, { signal, expectedStatuses: [404] });
+    if (member?.user?.id !== userId) throw new Error("Discord membership evidence unavailable");
+    return false;
+  } catch (error) {
+    if (error instanceof DiscordRestError && error.status === 404 && error.apiCode === 10007) return true;
+    throw error;
+  }
+}
+
+export async function fetchDiscordGuildBanSnapshot(userIdInput: string, guildIdInput = getDiscordGuildId(), signal?: AbortSignal): Promise<DiscordGuildBanSnapshot | null> {
   const guildId = cleanSnowflake(guildIdInput);
   const userId = cleanSnowflake(userIdInput);
   if (!guildId || !userId) throw new Error("Не вистачає guild/user ID для перевірки Discord-бану.");
 
   let ban: any;
   try {
-    ban = await discordApi<any>(`/guilds/${guildId}/bans/${userId}`, { expectedStatuses: [404] });
+    ban = await discordApi<any>(`/guilds/${guildId}/bans/${userId}`, { expectedStatuses: [404], signal });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error || "");
     if (/404|unknown ban|10026/i.test(message)) return null;

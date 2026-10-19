@@ -22,6 +22,11 @@ export type PublicationOperation = {
   cleanupDone?: boolean;
 };
 
+/** Caller has authoritative dispatch tracking: the external POST never began. */
+export class DiscordPublicationNotSentError extends Error {
+  constructor(public readonly original: unknown) { super("Discord publication was not dispatched"); this.name = "DiscordPublicationNotSentError"; }
+}
+
 export class DiscordPublicationPendingError extends Error {
   constructor(public readonly reason: "busy" | "uncertain") {
     super(reason === "busy"
@@ -147,6 +152,10 @@ export async function runDiscordPublicationCreation(options: CreationOptions) {
     result = await options.create(operation);
     if (!String(result?.id || "").match(/^\d{16,25}$/)) throw new Error("Discord не повернув ID створеного обʼєкта.");
   } catch (error) {
+    if (error instanceof DiscordPublicationNotSentError) {
+      await change({ state: "prepared", error: "not_dispatched" });
+      throw error.original;
+    }
     // Only an explicit rejection is proof of no external creation. Network
     // timeout, 5xx, malformed response and unknown exceptions remain uncertain.
     const rejected = error instanceof DiscordRestError && [400, 401, 403, 404, 405, 413, 429].includes(error.status);
