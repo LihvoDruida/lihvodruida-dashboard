@@ -27,11 +27,11 @@ module.exports=function fixture(){
   }finally{active--;}
  }};
  const battlenet={normalizeBattleNetRegion:value=>value||'eu',fetchBattleNetApplicationData:async()=>{throw Error('No Battle.net credentials in fixture')}};
- const resolver=load('src/lib/raidSeasonResolver.ts',{'@/lib/apiHttp':api,'@/lib/battlenet':battlenet},globals);
+ const resolver=load('src/lib/raidSeasonResolver.ts',{'@/lib/providerHttp':{...api,providerFetchJson:api.apiFetchJson},'@/lib/apiHttp':api,'@/lib/battlenet':battlenet},globals);
  function roster(store){
   const source=ts.createSourceFile('guildRoster.ts',fs.readFileSync(path.join(__dirname,'../../src/lib/guildRoster.ts'),'utf8'),ts.ScriptTarget.Latest,true);
   const modules=Object.fromEntries(source.statements.filter(ts.isImportDeclaration).map(node=>[node.moduleSpecifier.text,{}]));
-  Object.assign(modules,{'node:crypto':require('node:crypto'),'@/lib/concurrency':load('src/lib/concurrency.ts').exports,'@/lib/battlenet':battlenet,'@/lib/apiHttp':api,'@/lib/guildRaidHistoryStore':store,'@/lib/documentDb':{hasDocumentDbConfig:()=>false}});
+  Object.assign(modules,{'node:crypto':require('node:crypto'),'@/lib/concurrency':load('src/lib/concurrency.ts').exports,'@/lib/battlenet':battlenet,'@/lib/providerHttp':{...api,providerFetchJson:api.apiFetchJson},'@/lib/apiHttp':api,'@/lib/guildRaidHistoryStore':store,'@/lib/documentDb':{hasDocumentDbConfig:()=>false}});
   return load('src/lib/guildRoster.ts',modules,globals);
  }
  return {read,globals,resolver:resolver.exports,resolverContext:resolver.context,roster,calls,api,clock:value=>{now+=value},fail:ids=>{fail=new Set(ids)},mode:value=>{mode=value},maxActive:()=>maxActive,now:()=>now};

@@ -14,7 +14,7 @@ class TestDate extends Date { constructor(...args) { super(...(args.length ? arg
 function load(relative, modules, globals = {}, transform = (source) => source) {
   const source = ts.transpileModule(transform(fs.readFileSync(path.join(root, relative), 'utf8')), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
   const exports = {};
-  vm.runInNewContext(source, { exports, require: (name) => { if (name === 'server-only') return {}; if (name === 'node:crypto') return crypto; if (name === 'node:perf_hooks') return require(name); if (!(name in modules)) throw new Error(`Unexpected import: ${name}`); return modules[name]; }, Date: TestDate, setInterval, clearInterval, console, Map, Set, Promise, ...globals }, { filename: relative });
+  vm.runInNewContext(source, { exports, require: (name) => { if (name === 'server-only') return {}; if (name === 'node:crypto') return crypto; if (name === 'node:perf_hooks') return require(name); if(name==='@/lib/httpBody')return require('./lib/load-server-ts.cjs')('src/lib/httpBody.ts',{},globals).exports; if (!(name in modules)) throw new Error(`Unexpected import: ${name}`); return modules[name]; }, Date: TestDate, setInterval, clearInterval, console, Map, Set, Promise, ...globals }, { filename: relative });
   return exports;
 }
 function memoryStore() {

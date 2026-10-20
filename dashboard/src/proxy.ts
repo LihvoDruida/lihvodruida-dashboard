@@ -78,6 +78,7 @@ function isPublicApiPath(pathname: string) {
     pathname.startsWith("/api/auth/") ||
     pathname === "/api/client-errors" ||
     pathname === "/api/background/settings" ||
+    pathname === "/api/integrations/twitch/eventsub" ||
     pathname === "/api/calendar/raids.ics" ||
     pathname === "/api/discord/interactions" ||
     pathname === "/api/rules/accept/complete" ||
@@ -346,6 +347,7 @@ export function proxy(request: NextRequest) {
   // мають вузьку CORS/origin політику та не віддають приватних даних.
   if (
     !isDiscordInteractionEndpoint &&
+    pathname !== "/api/integrations/twitch/eventsub" &&
     !isPublicSiteBridgeRequest &&
     !hasInternalBearerAuth &&
     !verifyTrustedOrigin(request)

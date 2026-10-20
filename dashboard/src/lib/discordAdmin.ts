@@ -1,3 +1,4 @@
+import {ApiResponseError} from "@/lib/httpBody";
 import { randomBytes } from "node:crypto";
 import { DiscordRestError, discordCredentialKey, discordRestRequest } from "@/lib/discordRest";
 import { mapConcurrent } from "@/lib/concurrency";
@@ -1615,6 +1616,7 @@ export async function fetchDiscordGuildMemberSnapshot(userIdInput: string, guild
 
   const member = await discordApi<any>(`/guilds/${guildId}/members/${userId}`, { expectedStatuses: [404] });
   const user = member?.user && typeof member.user === "object" ? member.user : {};
+  if(user.id!==userId||!Array.isArray(member?.roles)||member.roles.some((id:unknown)=>!cleanSnowflake(id)))throw new ApiResponseError("schema",200);
   const nick = cleanText(member?.nick, 32) || null;
   const globalName = cleanText(user.global_name, 32) || null;
   const username = cleanText(user.username, 32) || null;
@@ -1681,6 +1683,7 @@ export async function fetchDiscordGuildBanSnapshot(userIdInput: string, guildIdI
 
   if (!ban || typeof ban !== "object") throw new Error("Discord API: ban lookup returned invalid payload.");
   const user = ban.user && typeof ban.user === "object" ? ban.user : {};
+  if(user.id!==userId)throw new ApiResponseError("schema",200);
   return {
     userId,
     reason: cleanText(ban.reason, 240) || null,

@@ -36,7 +36,7 @@ log() {
 call() {
   path="$1"
   case "$path" in
-    /api/dashboard/streamers/automation) interval=60; key=guild-streamers ;;
+    /api/dashboard/streamers/automation) interval=30; key=guild-streamers ;;
     /api/raids/lifecycle*) interval=60; key=raid-lifecycle ;;
     /api/dashboard/discord/onboarding/automation) interval=60; key=onboarding ;;
     /api/dashboard/discord/member-cleanup/automation) interval=10; key=member-cleanup ;;
@@ -70,6 +70,14 @@ call "/api/raids/lifecycle?sweep=1&limit=100"
   done
 ) &
 
+# Stream monitoring has its own 30s tick, independent of calendar jobs.
+(
+  while true; do
+    call "/api/dashboard/streamers/automation"
+    sleep 30
+  done
+) &
+
 # Запамʼятовуємо саме календарну хвилину, а не просто робимо sleep 60.
 # Якщо повільна другорядна задача перетнула межу хвилини, цикл одразу
 # виконає новий tick замість того, щоб проспати його до наступної межі.
@@ -90,8 +98,6 @@ while true; do
   call "/api/dashboard/discord/onboarding/automation"
   call "/api/dashboard/discord/profile-nicknames/automation"
   call "/api/dashboard/discord/applications/automation"
-  call "/api/dashboard/streamers/automation"
-
   # Найчутливіша до часу рейдова задача. Звичайний tick читає тільки dueAtMs
   # із task queue; hourly sweep лише ремонтує/звіряє task plan для legacy або
   # пропущених записів і потім обробляє due tasks.

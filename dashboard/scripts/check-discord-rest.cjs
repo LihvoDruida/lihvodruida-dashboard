@@ -9,7 +9,7 @@ let passed = 0;
 function load(text, modules = {}, globals = {}) {
   const exports = {};
   vm.runInNewContext(ts.transpileModule(text, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, {
-    exports, require: name => { if (name.startsWith('node:')) return require(name); if (name in modules) return modules[name]; throw Error('Unexpected import: ' + name); },
+    exports, require: name => { if (name.startsWith('node:')) return require(name); if (name in modules) return modules[name]; if(name==='@/lib/httpBody')return require('./lib/load-server-ts.cjs')('src/lib/httpBody.ts',{},globals).exports; throw Error('Unexpected import: ' + name); },
     process: { env: { DISCORD_BOT_TOKEN: 'test-only-token', DISCORD_REST_CONCURRENCY: '2' } },
     Response, Request, Headers, FormData, Blob, Buffer, AbortSignal, AbortController, DOMException,
     Date, Promise, Map, Set, setTimeout, clearTimeout, console, ...globals,
@@ -25,7 +25,7 @@ function fixture(fetch, globals = {}) {
   return { rest, admin, call: (route, method = 'GET', extra = {}) => rest.discordRestRequest(route, { method, ...extra }, { token: 'test-only-token', timeoutMs: 1000 }) };
 }
 async function test(label, run) { await run(); passed++; console.log('✓ ' + label); }
-const json = (body, status = 200, headers = {}) => new Response(JSON.stringify(body), { status, headers });
+const json = (body, status = 200, headers = {}) => new Response(JSON.stringify(body), { status, headers:{'content-type':'application/json',...headers} });
 const A = '111111111111111111'; const B = '222222222222222222';
 (async () => {
   await test('major resources stay separate while minor ids and pagination share a route', async () => {

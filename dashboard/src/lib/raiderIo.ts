@@ -1,6 +1,6 @@
 import { readIntegerEnv } from "@/lib/concurrency";
 import { getExternalCharacterDataSettings } from "@/lib/dashboardApiSettings";
-import { apiFetchJson } from "@/lib/apiHttp";
+import { providerFetchJson as apiFetchJson } from "@/lib/providerHttp";
 import type { BattleNetRegion } from "@/lib/battlenet";
 import { normalizeBattleNetNameSlug, normalizeBattleNetRealmSlug } from "@/lib/wowCharacters";
 

@@ -1,3 +1,5 @@
+import {ApiResponseError,readResponseJson} from "@/lib/httpBody";
+export {ApiResponseError} from "@/lib/httpBody";
 export type ApiRetryDecision = {
   retry: boolean;
   delayMs: number;
@@ -14,6 +16,11 @@ export type ApiFetchJsonOptions = Omit<RequestInit, "cache" | "signal"> & {
   userAgent?: string;
   totalTimeoutMs?: number;
   maxRetryWaitMs?: number;
+  maxResponseBytes?: number;
+  validate?: (value:unknown)=>boolean;
+  beforeAttempt?: ()=>Promise<void>;
+  onResponse?: (response:Response)=>Promise<void>;
+  onBody?: (body:unknown,status:number)=>Promise<void>;
 };
 
 export class ApiHttpError extends Error {
@@ -37,15 +44,8 @@ export class ApiHttpError extends Error {
 const DEFAULT_RETRY_STATUSES = [408, 425, 429, 500, 502, 503, 504];
 const DEFAULT_RETRY_METHODS = ["GET", "HEAD", "OPTIONS"];
 
-function safeUrl(value: RequestInfo | URL) {
-  try {
-    if (typeof value === "string") return value;
-    if (value instanceof URL) return value.toString();
-    if (value instanceof Request) return value.url;
-  } catch {
-    // Ignore malformed Request-like objects.
-  }
-  return "unknown-url";
+function safeUrl(value:RequestInfo|URL){
+ try{const raw=typeof value==='string'?value:value instanceof URL?value.href:value.url;const url=new URL(raw);url.username='';url.password='';for(const key of [...url.searchParams.keys()])if(/key|token|secret|password|credential/i.test(key))url.searchParams.set(key,'redacted');return url.href;}catch{return 'unknown-url';}
 }
 
 export function parseRetryAfter(value: string | null) {
@@ -86,7 +86,7 @@ function shouldRetryResponse(status: number, method: string, options: ApiFetchJs
 function shouldRetryNetworkError(error: unknown, method: string, options: ApiFetchJsonOptions) {
   // HTTP failures have already been considered by shouldRetryResponse.
   // Treating a rejected 403/404 as a network failure repeats it needlessly.
-  if (error instanceof ApiHttpError) return false;
+  if (error instanceof ApiHttpError || error instanceof ApiResponseError) return false;
   const methods = options.retryMethods || DEFAULT_RETRY_METHODS;
   if (!methods.map((item) => item.toUpperCase()).includes(method)) return false;
   const name = (error as Error | null)?.name || "";
@@ -114,34 +114,6 @@ function composeAbortSignal(timeoutMs: number, upstream?: AbortSignal) {
   };
 }
 
-async function parseResponseBody(response: Response) {
-  const raw = await response.text();
-  if (!raw) return null;
-  const contentType = response.headers.get("content-type") || "";
-  if (contentType.toLowerCase().includes("application/json")) {
-    try {
-      return JSON.parse(raw);
-    } catch {
-      return raw;
-    }
-  }
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return raw;
-  }
-}
-
-function errorMessage(label: string, status: number, body: unknown) {
-  if (body && typeof body === "object") {
-    const record = body as Record<string, unknown>;
-    const message = record.message || record.error_description || record.error || record.detail;
-    if (typeof message === "string" && message.trim()) return message.trim();
-  }
-  if (typeof body === "string" && body.trim()) return body.trim().slice(0, 500);
-  return `${label} returned ${status}`;
-}
-
 export async function apiFetchJson<T = unknown>(input: RequestInfo | URL, options: ApiFetchJsonOptions = {}): Promise<T> {
   const label = options.label || "API request";
   const method = normalizeMethod(options.method);
@@ -165,6 +137,8 @@ export async function apiFetchJson<T = unknown>(input: RequestInfo | URL, option
     if (remaining <= 0) throw lastError instanceof Error ? lastError : new Error(`${label} timeout after ${totalTimeoutMs}ms`);
     const abort = composeAbortSignal(Math.min(timeoutMs, remaining), options.signal);
     try {
+      if(options.beforeAttempt) await options.beforeAttempt();
+      abort.signal.throwIfAborted();
       const response = await fetch(input, {
         ...options,
         method,
@@ -174,10 +148,14 @@ export async function apiFetchJson<T = unknown>(input: RequestInfo | URL, option
       });
       const retryAfterMs = parseRetryAfter(response.headers.get("retry-after"));
       const retryAt = retryAfterMs === null ? null : Date.now() + retryAfterMs;
-      const body = await parseResponseBody(response);
+      if(options.onResponse){try{await options.onResponse(response);}catch(error){void response.body?.cancel().catch(()=>{});throw error;}}
+      let body:unknown;
+      try{body=await readResponseJson(response,{maxBytes:options.maxResponseBytes,signal:abort.signal,validate:options.validate});}
+      catch(error){if(response.ok||!(error instanceof ApiResponseError))throw error;body={responseProblem:error.code};}
+      if(options.onBody) await options.onBody(body,response.status);
       if (response.ok) return body as T;
 
-      const error = new ApiHttpError(errorMessage(label, response.status, body), {
+      const error = new ApiHttpError(`${label} returned ${response.status}`, {
         status: response.status,
         url: safeUrl(input),
         body,

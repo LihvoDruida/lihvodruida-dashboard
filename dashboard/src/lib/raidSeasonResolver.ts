@@ -1,4 +1,4 @@
-import { ApiHttpError, apiFetchJson } from "@/lib/apiHttp";
+import { ApiHttpError, providerFetchJson as apiFetchJson } from "@/lib/providerHttp";
 import { fetchBattleNetApplicationData, normalizeBattleNetRegion, type BattleNetRegion, } from "@/lib/battlenet";
 export type RaidSeasonCatalogEntry = {
     slug: string;

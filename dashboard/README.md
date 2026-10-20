@@ -1,4 +1,4 @@
-# Dashboard 3.15.2
+# Dashboard 3.16.0
 
 [Чинна інструкція парного релізу](../docs/RELEASE_INSTALL_2026-10-19_UA.md).
 

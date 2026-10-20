@@ -1,6 +1,6 @@
 export const STREAMER_SCHEMA='mistblossom.public-streamers.v1';
 export type StreamPlatform='twitch'|'youtube'|'tiktok';
-export type StreamMedia={id:string;title:string;url:string;publishedAt:string};
+export type StreamMedia={id:string;title:string;url:string;publishedAt:string;thumbnailUrl?:string;game?:string;viewers?:number};
 export type PublicStream={id:string;memberName:string;platform:StreamPlatform;channelUrl:string;live:StreamMedia;expiresAt:string};
 export type PublicStreamers={schema:typeof STREAMER_SCHEMA;checked_at:string;items:PublicStream[]};
 export const STREAMER_LIMIT=30;
@@ -33,4 +33,12 @@ export function isPublicStreamers(x:unknown):x is PublicStreamers{
  return d.schema===STREAMER_SCHEMA&&Number.isFinite(Date.parse(d.checked_at))&&Array.isArray(d.items)&&d.items.length<=STREAMER_LIMIT&&d.items.every(i=>{
   try{return typeof i.id==='string'&&i.id.length<100&&typeof i.memberName==='string'&&i.memberName.length<=80&&['twitch','youtube'].includes(i.platform)&&channelIdentity(i.platform,i.channelUrl).channelUrl===i.channelUrl&&validMedia(i.platform,i.live)&&Number.isFinite(Date.parse(i.expiresAt));}catch{return false;}
  });
+}
+
+/** Only provider CDN images; never fetch an arbitrary supplied URL on our server. */
+export function safeMediaImage(platform:StreamPlatform,value:unknown):string|undefined{
+ if(typeof value!=='string'||value.length>2048)return;try{const u=new URL(value);if(u.protocol!=='https:'||u.username||u.password||u.port)return;
+ const h=u.hostname.toLowerCase();const suffix=(s:string)=>h===s||h.endsWith('.'+s);
+ if(platform==='twitch'?suffix('jtvnw.net'):platform==='youtube'?suffix('ytimg.com'):['tiktokcdn.com','tiktokcdn-us.com','tiktokcdn-eu.com','byteoversea.com','ibytedtos.com','tiktokv.com'].some(suffix))return u.href;
+ }catch{}return;
 }

@@ -1,7 +1,7 @@
 import { applyGuildRaidHistory, mergeRaidRows, readGuildRaidHistory } from "@/lib/guildRaidHistoryStore";
 import { createHash } from "node:crypto";
 import { FieldValue } from "@/lib/db/documentValues";
-import { ApiHttpError, apiFetchJson } from "@/lib/apiHttp";
+import { ApiHttpError, providerFetchJson as apiFetchJson } from "@/lib/providerHttp";
 import {
   fetchBattleNetApplicationData,
   fetchBattleNetCharacterSnapshot,

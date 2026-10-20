@@ -22,7 +22,7 @@ export async function GET(){
    streamerSettings(),streamerAccounts(),fetchDiscordTextChannels().catch(()=>{warnings.push('channels_unavailable');return {channels:[]};}),
    getDocumentDb().collection(EVENTS).orderBy('createdAt','desc').limit(15).get(),
    streamerDiagnostics().catch(()=>{warnings.push('logs_unavailable');return [];})]);
-  return reply({settings,accounts:accounts.map(adminAccount),readiness:providerReadiness(),channels:channels.channels.map(c=>({id:c.id,name:c.name})),events:jobs.docs.map(d=>{const e=d.data()||{};return {id:d.id,memberName:e.memberName,platform:e.platform,kind:e.kind,state:e.state,lastError:e.lastError||'',createdAt:e.createdAt,dueAtMs:e.dueAtMs||0,attempts:e.attempts||0};}),logs,warnings,now:new Date().toISOString()});
+  return reply({settings,accounts:accounts.map(adminAccount),readiness:providerReadiness(),channels:channels.channels.map(c=>({id:c.id,name:c.name})),events:jobs.docs.map(d=>{const e=d.data()||{};const published=(e.media as {publishedAt?:unknown}|undefined)?.publishedAt;const started=typeof published==='string'?published:'';return {id:d.id,memberName:e.memberName,platform:e.platform,kind:e.kind,state:e.state,lastError:e.lastError||'',createdAt:e.createdAt,dueAtMs:e.dueAtMs||0,attempts:e.attempts||0,startedAt:e.kind==='live'?started||null:null,detectionDelayMs:e.kind==='live'&&Number.isFinite(Date.parse(started))?Math.max(0,Number(e.createdAt)-Date.parse(started)):null,deliveryDelayMs:e.sentAt?Math.max(0,Number(e.sentAt)-Number(e.createdAt)):null};}),logs,warnings,now:new Date().toISOString()});
  }catch{return failure('storage_unavailable');}
 }
 async function body(request:Request){

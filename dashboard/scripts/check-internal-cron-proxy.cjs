@@ -13,7 +13,7 @@ function load(file, modules, env, names) {
       (_, bindings, name) => `const {${bindings}} = require(${JSON.stringify(name)});`)
     .replace(/export\s+(?=(?:async\s+)?function|const|let|class)/g, "");
   return new Function("require", "process", "console", `${js}\nreturn {${names}};`)(
-    (name) => { assert.ok(Object.hasOwn(modules, name), `Unexpected dependency: ${name}`); return modules[name]; },
+    (name) => { if(name==='@/lib/httpBody')return {ApiResponseError:Error}; assert.ok(Object.hasOwn(modules, name), `Unexpected dependency: ${name}`); return modules[name]; },
     { env }, { log() {}, warn() {}, error() {} },
   );
 }
@@ -27,6 +27,7 @@ const env = { NODE_ENV: "production", DASHBOARD_URL: "https://guild.lihvodruida.
   SECURITY_STRICT_ORIGIN_CHECKS: "true", INTERNAL_API_TOKEN: "isolated-cron-test-" + "a".repeat(40) };
 const privacy = load("src/lib/logPrivacy.ts", {}, {}, "redactLogText,isSensitiveLogKey");
 const security = load("src/lib/security.ts", {
+  "@/lib/httpBody":{ApiResponseError:Error},
   "@/lib/logPrivacy": privacy,
   "next/server": { NextResponse }, "@/lib/oauth": { getDashboardUrl: () => env.DASHBOARD_URL },
   "@/lib/values": { envFlag: (name) => env[name] === "true" },

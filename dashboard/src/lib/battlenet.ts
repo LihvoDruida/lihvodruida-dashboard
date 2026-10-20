@@ -1,5 +1,5 @@
 import { createHash } from "crypto";
-import { ApiHttpError, apiFetchJson } from "@/lib/apiHttp";
+import { ApiHttpError, providerFetchJson as apiFetchJson } from "@/lib/providerHttp";
 import { getDashboardUrl } from "@/lib/oauth";
 import { getAdaptiveConcurrency, mapConcurrent, readIntegerEnv } from "@/lib/concurrency";
 import { buildBattleNetCharacterKey, normalizeBattleNetNameSlug, normalizeBattleNetRealmSlug } from "@/lib/wowCharacters";
@@ -194,7 +194,7 @@ function hashBattleNetAccountId(value: string) {
 export async function fetchBattleNetUserInfo(accessToken: string, regionInput?: string | null): Promise<BattleNetAccountInfo | null> {
   const region = normalizeBattleNetRegion(regionInput || getDefaultBattleNetRegion());
   const data = await apiFetchJson<any>(`${battleNetOAuthBase(region)}/userinfo`, {
-    label: "Battle.net user info", timeoutMs: getBattleNetRequestTimeoutMs(), retries: 0,
+    maxResponseBytes:128*1024, label: "Battle.net user info", timeoutMs: getBattleNetRequestTimeoutMs(), retries: 0,
     headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" }, cache: "no-store",
   }).catch(() => null);
   if (!data) return null;
@@ -218,7 +218,7 @@ export async function exchangeBattleNetCode(code: string, regionInput?: string |
   });
 
   const data = await apiFetchJson<any>(`${battleNetOAuthBase(region)}/token`, {
-    method: "POST", label: "Battle.net OAuth exchange",
+    maxResponseBytes:128*1024, method: "POST", label: "Battle.net OAuth exchange",
     timeoutMs: getBattleNetRequestTimeoutMs(), retries: 0, retryMethods: [],
     headers: { Authorization: `Basic ${basicAuth(clientId, clientSecret)}`, "Content-Type": "application/x-www-form-urlencoded" },
     body, cache: "no-store",
@@ -252,7 +252,7 @@ async function fetchBattleNetApplicationToken(regionInput?: string | null) {
   const { clientId, clientSecret } = getBattleNetClient();
   const body = new URLSearchParams({ grant_type: "client_credentials" });
   const data = await apiFetchJson<any>(`${battleNetOAuthBase(region)}/token`, {
-    method: "POST", label: "Battle.net application token",
+    maxResponseBytes:128*1024, method: "POST", label: "Battle.net application token",
     timeoutMs: getBattleNetRequestTimeoutMs(), retries: 0, retryMethods: [],
     headers: { Authorization: `Basic ${basicAuth(clientId, clientSecret)}`, "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
     body, cache: "no-store",

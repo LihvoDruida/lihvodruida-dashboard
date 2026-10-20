@@ -1,6 +1,7 @@
 export type StreamerProblem = {code:string;error:string;hint:string;status:number;field?:string;requestId?:string};
 const problems:Record<string,[string,string,number]> = {
   provider_not_configured:['Платформа ще не підключена','Адміністратор сервера має додати ключі платформи в dashboard/.env.production і перевідтворити контейнер dashboard.',503],
+  provider_configuration:['Некоректні налаштування API','Перевір ключ та дозволені API у кабінеті платформи.',502],
   provider_authorization:['Платформа відхилила доступ','Перевір ключі застосунку, дозволи API та строк дії токена автора.',502],
   provider_rate_limit:['Досягнуто ліміту платформи','Перевірки відновляться автоматично. Перевір квоту API перед повторним запуском.',429],
   provider_unavailable:['Платформа тимчасово недоступна','Наявні налаштування збережено. Перевірку буде повторено автоматично.',502],

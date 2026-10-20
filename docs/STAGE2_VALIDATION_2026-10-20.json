@@ -1,0 +1,54 @@
+{
+  "date": "2026-10-20",
+  "dashboard": "3.16.0",
+  "site": "4.6.3",
+  "bot": {
+    "version": "3.6.9",
+    "passed": 55,
+    "failed": 0
+  },
+  "node": "24.19.0",
+  "dashboardBuildCi": {
+    "status": "pass",
+    "exitCode": 0,
+    "cleanBuildCache": true,
+    "standalonePassed": 8
+  },
+  "lint": "pass",
+  "typecheck": "pass",
+  "providerEventSubPreview": {
+    "passed": 18,
+    "failed": 0
+  },
+  "streamers": {
+    "passed": 50,
+    "failed": 0
+  },
+  "oauthApiHardening": {
+    "passed": 22,
+    "failed": 0
+  },
+  "discordRestPassed": 17,
+  "battleNetPassed": 17,
+  "cleanupPolicyPassed": 119,
+  "cleanupRolesPassed": 11,
+  "siteBuildCi": {
+    "status": "pass",
+    "exitCode": 0,
+    "nodePassed": 50,
+    "nodeSkipped": 3,
+    "deployPassed": 19,
+    "standalone": "pass"
+  },
+  "pairedSite": {
+    "passed": 5,
+    "skipped": 0
+  },
+  "applicationPair": "pass",
+  "sourceManifestSha256": "fe2f008aa0ae9bb4a6f66333213a75acf19f529695f7d219b442cdd270a2c6c7",
+  "liveProductionVerified": false,
+  "liveMessagesSent": false,
+  "browserUiRun": false,
+  "npmAuditCompleted": false,
+  "eventSubNeedsRuntimeConfiguration": true
+}

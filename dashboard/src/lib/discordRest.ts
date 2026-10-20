@@ -1,3 +1,4 @@
+import {ApiResponseError,readResponseJson} from "@/lib/httpBody";
 import { createHash } from "node:crypto";
 const API_BASE = "https://discord.com/api/v10";
 const MAX_WAIT_MS = 20_000;
@@ -143,10 +144,11 @@ export async function discordRestRequest<T>(path: string, init: RequestInit, opt
       const response = await fetch(`${API_BASE}${path}`, { ...init, cache: "no-store", signal: requestSignal });
       if (response.status === 401) state.invalidToken = true;
       key = observeDiscordRateLimit(state, response, route, major);
-      const raw = response.status === 204 ? "" : await response.text();
-      let json: any = null; try { json = raw ? JSON.parse(raw) : null; } catch { /* preserve non-JSON error text */ }
-      if (response.ok) return (response.status === 204 ? undefined : json ?? raw) as T;
-      const detail = String(json?.message || raw || "невідома помилка").slice(0, 220);
+      let json:any=null;
+      try{json=await readResponseJson(response,{maxBytes:8*1024*1024,signal:requestSignal,validate:v=>!!v&&typeof v==='object'});}
+      catch(error){if(response.ok)throw error;if(!(error instanceof ApiResponseError))throw error;}
+      if(response.ok)return json as T;
+      const detail='запит відхилено';
       options.onFailure?.(response.status, detail, attempt + 1);
       if (response.status === 401) state.invalidToken = true;
       if (response.status === 429) {
@@ -157,7 +159,7 @@ export async function discordRestRequest<T>(path: string, init: RequestInit, opt
       } else if (safeReplay && [408, 500, 502, 503, 504].includes(response.status)) retryDelay = 500 * (2 ** attempt);
       if (!retryDelay || options.retryNever || attempt === attempts - 1 || retryDelay > MAX_WAIT_MS) throw new DiscordRestError(`Discord API ${response.status}: ${detail}`, response.status, retryDelay, typeof json?.code === "number" ? json.code : null);
     } catch (error) {
-      if (error instanceof DiscordRestError || signal.aborted || options.retryNever || !safeReplay || attempt === attempts - 1) throw error;
+      if (error instanceof ApiResponseError || error instanceof DiscordRestError || signal.aborted || options.retryNever || !safeReplay || attempt === attempts - 1) throw error;
       if (!/AbortError|TimeoutError|ECONNRESET|ETIMEDOUT|fetch failed|network/i.test(`${(error as Error)?.name} ${(error as Error)?.message}`)) throw error;
       retryDelay = 500 * (2 ** attempt);
     } finally { releaseGlobal?.(); releaseRoute?.(); }

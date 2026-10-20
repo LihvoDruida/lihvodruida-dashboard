@@ -1,6 +1,6 @@
-# Mistblossom Dashboard 3.15.2
+# Mistblossom Dashboard 3.16.0
 
-Парний Site — 4.6.2; Bot — 3.6.9. Сумісність із Site 4.6.1 збережена.
+Парний Site — 4.6.3; Bot — 3.6.9. Сумісність із Site 4.6.1 збережена.
 
 **Чинна інструкція:** [встановлення, env, cron, перевірки й відкат](docs/RELEASE_INSTALL_2026-10-19_UA.md).
 Спочатку Dashboard, потім cron, потім Site. PostgreSQL — єдине робоче сховище.

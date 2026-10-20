@@ -55,6 +55,11 @@ for (const file of walk(apiRoot).filter((name) => name.endsWith(`${path.sep}rout
   if (rel === 'site/applications/route.ts') {
     if (source.includes('isAllowedPublicSiteOrigin(') && source.includes('assertRequestBodySize(') && source.includes('checkRateLimit(') && source.includes('validateApplication(')) continue;
   }
+  if (rel === 'integrations/twitch/eventsub/route.ts') {
+    const verifier = fs.readFileSync(path.resolve(apiRoot, '../../lib/streamers/eventsub.ts'), 'utf8');
+    const signedAndBounded = ['createHmac(', 'timingSafeEqual(', 'verifyTwitchEvent(', 'maxBytes:64*1024', 'now-at>600000', 'old?.messageId===event.id', 'a.providerId===event.providerId'];
+    if (methods.length === 1 && methods[0] === 'POST' && source.includes('await acceptTwitchEvent(request)') && signedAndBounded.every(signal => verifier.includes(signal))) continue;
+  }
 
   failed += 1;
   console.error(`[check-api-security] FAIL — unauthenticated mutation surface: ${methods.join('/')} /api/${rel.replace('/route.ts', '')}`);

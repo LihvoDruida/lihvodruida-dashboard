@@ -1,3 +1,4 @@
+import {ApiResponseError,readResponseJson} from "@/lib/httpBody";
 export function getDashboardUrl() {
   return (process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL || process.env.NEXTAUTH_URL || "http://localhost:3000").replace(/\/+$/, "");
 }
@@ -33,25 +34,10 @@ async function discordOAuthJson(url: string, init: RequestInit, options: OAuthOp
   try {
     signal.throwIfAborted();
     const response = await fetch(url, { ...init, cache: "no-store", redirect: "error", signal });
-    const reader = response.body?.getReader();
-    if (!reader) throw new DiscordOAuthError("schema", response.status);
-    let size = 0;
-    const chunks: Uint8Array[] = [];
-    try {
-      for (;;) {
-        signal.throwIfAborted();
-        const chunk = await reader.read();
-        if (chunk.done) break;
-        size += chunk.value.byteLength;
-        if (size > 128 * 1024) throw new DiscordOAuthError("body_limit", response.status);
-        chunks.push(chunk.value);
-      }
-    } finally { await reader.cancel().catch(() => undefined); }
-    let data: Record<string, unknown>;
-    try { data = record(JSON.parse(new TextDecoder().decode(Buffer.concat(chunks)))); }
-    catch { throw new DiscordOAuthError("schema", response.status); }
+    let data:Record<string,unknown>;
+    try{data=await readResponseJson(response,{maxBytes:128*1024,signal,validate:v=>!!v&&typeof v==='object'&&!Array.isArray(v)});}
+    catch(error){if(error instanceof ApiResponseError)throw new DiscordOAuthError(error.code==='body_limit'?'body_limit':'schema',response.status);throw error;}
     if (!response.ok) throw new DiscordOAuthError("http", response.status, typeof data.code === "number" ? data.code : null);
-    if (!/application\/(?:[\w.-]+\+)?json\b/i.test(response.headers.get("content-type") || "")) throw new DiscordOAuthError("schema", response.status);
     return data;
   } catch (error) {
     if (signal.aborted) throw new DiscordOAuthError("timeout");
