@@ -90,6 +90,17 @@ COPY dashboard/ ./
 # stage deliberately does not copy /repo/docs.
 COPY docs/content/static-rules.md /repo/docs/content/static-rules.md
 
+# Release checks read the canonical versions, deployment instructions and env
+# templates from the repository root. Keep these explicit builder-only inputs
+# in sync with check-release-docs.cjs and the .dockerignore allowlist.
+COPY release-manifest.json /repo/release-manifest.json
+COPY README.md /repo/README.md
+COPY docs/DEPLOYMENT.md /repo/docs/DEPLOYMENT.md
+COPY docs/CONFIGURATION.md /repo/docs/CONFIGURATION.md
+COPY docs/DATABASE.md /repo/docs/DATABASE.md
+COPY docs/OPERATIONS.md /repo/docs/OPERATIONS.md
+COPY docs/RELEASE_INSTALL_2026-10-19_UA.md /repo/docs/RELEASE_INSTALL_2026-10-19_UA.md
+
 # The CMS integrity check requires the legacy PostgreSQL import in the
 # builder filesystem. Docker does not copy the full build context by default.
 # Keep this source confined to builder; never COPY it into the runner image.
@@ -126,6 +137,7 @@ COPY .dockerignore /repo/.dockerignore
 # non-secret source files are therefore explicit build-time inputs of the dashboard.
 # They are used only by TypeScript/CI/Next build and are not copied to runner.
 COPY bot/package.json /repo/bot/package.json
+COPY bot/.env.example /repo/bot/.env.example
 COPY bot/Dockerfile /repo/bot/Dockerfile
 COPY bot/src /repo/bot/src
 

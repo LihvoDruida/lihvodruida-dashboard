@@ -22,10 +22,14 @@
 
 # Артефакти розгортання й документація в образі не потрібні
 backups/
-# Keep documentation excluded from the Docker context except the one public
-# Markdown source that the independent Static rules CI test compares against
-# the compiled default. Negations must also re-include its parent directory.
+# Keep only the public Markdown source and canonical release-check documents
+# in the build context. They are copied to builder only, never to runner.
 docs/**
+!docs/DEPLOYMENT.md
+!docs/CONFIGURATION.md
+!docs/DATABASE.md
+!docs/OPERATIONS.md
+!docs/RELEASE_INSTALL_2026-10-19_UA.md
 !docs/content/
 !docs/content/static-rules.md
 runtime/server-stats/*.jsonl
