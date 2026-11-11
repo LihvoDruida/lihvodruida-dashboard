@@ -47,7 +47,7 @@ HTTP 400 не завжди означає відсутність запису: �
 - У timeout-сценарії лише тестовий таймер 20 000 мс прискорено до 150 мс; перевірено реальний abort і наступний GET. У production тривалість дедлайну не змінена.
 - Повний `npm run build:ci` — exit 0, включно з TypeScript, 20 наявними route-сценаріями Статика, регресією очищення 17/17, аудитами та inspect:ci (517 файлів, 0 блокерів).
 - `npm run lint` і фінальний ESLint змінених файлів — exit 0. Production build Next 16.3.5 завершився за 8 секунд на локальному теплому кеші.
-- Standalone — **6/6**, 4 057 файлів, 84 368 216 байтів; packaged Sharp render, ресурси, відсутність source/CI у пакеті та запуск готового Next server перевірено локально. [Машинний звіт](R7_6_VALIDATION_2026-10-15.json).
+- Standalone — **6/6**, 4 057 файлів, 84 368 216 байтів; packaged Sharp render, ресурси, відсутність source/CI у пакеті та запуск готового Next server перевірено локально. Машинний звіт (історичний JSON-звіт прибрано в 3.20.0).
 
 Швидка перевірка додана до `verify` та `build:ci`. Browser-suite окрема, потребує зовнішніх Playwright, esbuild і Chromium; production-залежностей не додано. Для локального стенда використовуються `MISTBLOSSOM_QA_MODULES`, `MISTBLOSSOM_QA_CHROMIUM`, `MISTBLOSSOM_QA_OUTPUT`. Baseline приймає `MISTBLOSSOM_TEST_STATIC_ROLE_SOURCE` із попереднім компонентом та його CSS-модулем. Next Link замінено на звичайне посилання тільки в тестовому bundle; навігацію Next цей стенд не перевіряє.
 

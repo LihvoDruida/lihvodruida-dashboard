@@ -142,9 +142,3 @@ export async function pgTransaction<T>(
     ? lastError
     : new Error("Transaction failed after retries.");
 }
-
-export async function closePgPool() {
-  const pool = globalThis.__mistblossomPgPool;
-  globalThis.__mistblossomPgPool = undefined;
-  if (pool) await pool.end().catch(() => null);
-}

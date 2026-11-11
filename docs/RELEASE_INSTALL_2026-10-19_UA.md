@@ -1,7 +1,7 @@
-# Встановлення та оновлення Dashboard 3.16.0 / Site 4.6.3
+# Встановлення та оновлення Dashboard 3.21.0 / Site 4.6.3
 
-Це чинна інструкція парного релізу від 19.10.2026. Bot — 3.6.9 без змін.
-Site 4.6.1 сумісний із Dashboard 3.16.0; Site 4.6.3 містить узгоджену документацію.
+Основна інструкція встановлення; оновлено 10.11.2026. Bot — 3.6.9 без змін.
+Окремий Site 4.6.3 не входить у цей архів. Його блоки стрімерів потрібно прибрати в коді Site.
 Порядок: резервна копія → Dashboard → cron → Site → перевірка.
 Історичні нотатки інших релізів не задають поточні версії, команди або env.
 
@@ -10,15 +10,15 @@ Site 4.6.1 сумісний із Dashboard 3.16.0; Site 4.6.3 містить у�
 | Файл | Вміст |
 |---|---|
 | `/srv/mistblossom/.env` | Compose: публічний URL Dashboard, пароль PostgreSQL, `DISCORD_PUBLIC_KEY`, `INTERNAL_API_TOKEN`, `PUBLIC_SITE_BRIDGE_TOKEN` |
-| `/srv/mistblossom/dashboard/.env.production` | Discord bot/OAuth, guild ID, Battle.net, streamer credentials, `SESSION_SECRET`, параметри Dashboard |
-| `/srv/mistblossom/bot/.env.production` | Параметри interaction-worker, без копіювання OAuth або streamer secrets |
+| `/srv/mistblossom/dashboard/.env.production` | Discord bot/OAuth, guild ID, Battle.net, `SESSION_SECRET`, параметри Dashboard |
+| `/srv/mistblossom/bot/.env.production` | Параметри interaction-worker, без копіювання OAuth-секретів |
 | `/srv/lihvodruida-site/.env` | URL Site/Dashboard, `DASHBOARD_INTERNAL_URL=http://dashboard:3000`, `PUBLIC_SITE_BRIDGE_TOKEN`, CurseForge |
 
 `PUBLIC_SITE_BRIDGE_TOKEN` однаковий у root Dashboard `.env` та Site `.env`.
 `INTERNAL_API_TOKEN` — окремий секрет bot/cron/Dashboard; у cron Compose передає його як `INTERNAL_CRON_TOKEN`.
 Для Compose канонічне джерело internal token — root `.env`; значення з пакетних env не повинні його перевизначати.
 Для локальної розробки можна задати internal token у `dashboard/.env.local`.
-Не переносити робочі `.env`, PostgreSQL volume або ключ шифрування токенів із чужого комплекту.
+Не переносити робочі `.env`, PostgreSQL volume із чужого комплекту.
 PostgreSQL є єдиним runtime-сховищем; без `DATABASE_URL` немає резервного зовнішнього сховища.
 
 ## Нове встановлення
@@ -66,7 +66,7 @@ cd /srv/mistblossom
 make backup
 ```
 
-Зберегти резервні копії чотирьох env, `STREAMER_TOKEN_KEY`, старого вихідного коду й образів.
+Зберегти резервні копії чотирьох env, старого вихідного коду й образів.
 Завантажити новий код зі збереженням робочих env і даних. Не використовувати `docker compose down -v`.
 Для першої інсталяції цей етап резервної копії порожньої БД пропускається.
 
@@ -95,13 +95,7 @@ Site readiness має пройти до заміни здорового конт
 - Помилки OAuth 401/403/429/timeout не видаляють профіль. Вихід підтверджується свіжими bot-read guild/member та кодом 10007.
 - OAuth upstream має спільний бюджет 25 с і до 10 с на окреме читання. Одноразовий code автоматично не повторюється.
 - Повний `Retry-After` доступний як `retryAt`; довга пауза повертається worker замість тримання запиту. Raider.IO guild worker зберігає паузу в PostgreSQL.
-- Монітор стрімерів має бюджет 38 с: зовнішній I/O припиняється за 5 с до нього. SQL і звільнення lease виконують фіналізацію; несправність БД потребує окремої діагностики.
-- YouTube-метадані очищаються через 29 днів пакетами по 100. Cron виконує це й за вимкненого моніторингу. Поки є backlog очищення, нове опитування відкладається.
-- Залишаються хеші дедуплікації та мінімальні квитанції. Старі `pending/uncertain/sent` розпізнаються за медіа без перейменування початкової квитанції. Прострочена невизначена доставка не надсилається знову.
-
-Очищення стосується збережених метаданих і копій у квитанціях, не виконує видалення вже
-опублікованих Discord-повідомлень. Бекапи мають власний строк зберігання та обмеження доступу.
-Вимкнений або несправний cron не виконує retention: контроль останнього успішного tick обов'язковий.
+- Стріми та відеосповіщення видалені. Відеофон входу та прийняття правил збережено. Старі дані очищаються за [окремою інструкцією](MEDIA_REMOVAL_2026-11-10_UA.md).
 
 ## Локальні перевірки
 
@@ -110,7 +104,7 @@ cd /srv/mistblossom/dashboard
 npm ci --no-audit --no-fund
 npm run check:release-docs
 npm run check:audit-hardening
-npm run check:streamers
+npm run check:media-removal
 npm run build:ci
 cd /srv/lihvodruida-site
 npm ci --no-audit --no-fund
@@ -122,33 +116,7 @@ npm run build:ci
 
 ## Відкат
 
-Повернути попередній перевірений код/образи, зберігаючи ті самі env та volumes; перевстановити
-cron відповідної версії. Не видаляти `discordPublications`, cooldown чи компактні записи дедуплікації.
-Очищені API-метадані з попередніх записів не відновлюються відкатом образу.
-Старі версії до цього випуску можуть не читати компактні записи: після retention автоматичні
-сповіщення лишити вимкненими до перевірки сумісності; відновлення всієї БД — тільки зі
-стендовою перевіркою й планом звірки, бо старі квитанції можуть повторити зовнішні дії.
-
-Джерело політики метаданих: https://developers.google.com/youtube/terms/developer-policies
-(III.E.4: освіження або видалення обмежених неавторизованих API-даних протягом 30 днів).
-
-## Доповнення 20.10.2026 — прев’ю та швидша реакція стрімерів
-
-Dashboard 3.16.0 містить спільні персистентні паузи API, Twitch token validation та обмежені readers відповідей. Site 4.6.3 змінює лише версію й документацію; попередні Site 4.6.1/4.6.2 сумісні. Bot 3.6.9 не змінено.
-
-Після оновлення Dashboard обов’язково пересоздати cron: `docker compose up -d --no-deps --force-recreate cron`. У ньому стрімери мають окремий tick 30 с. Звичайна перевірка Twitch планується кожні 30 с, YouTube feed/videos — 90 с. Пошук YouTube обмежений чинною добовою квотою, TikTok Display API не надає автоматичний LIVE.
-
-Для подій Twitch EventSub у `dashboard/.env.production` додати:
-
-```dotenv
-STREAMER_TWITCH_EVENTSUB_CALLBACK=https://guild.lihvodruida.pp.ua/api/integrations/twitch/eventsub
-STREAMER_TWITCH_EVENTSUB_SECRET=<окремий секрет із openssl rand -hex 32>
-```
-
-У callback вказати **власний чинний публічний домен Dashboard** із правильним TLS, а не домен Site. Після зміни env пересоздати Dashboard за основною інструкцією. Дозволити POST на цей точний шлях у WAF/Cloudflare без browser challenge. Підпис HMAC, час та ідентифікатор події перевіряє сам endpoint; решта API зберігає чинний захист.
-
-Реєстрація `stream.online` / `stream.offline` виконується автоматично під час cron для активних каналів із уже визначеним Twitch ID, до разу на 15 хвилин. Після помилки — повтор через 5 хвилин. Стан останньої реєстрації міститься у `documents`, collection `streamerProviderQuota`, doc `twitch-eventsub`. Без цих env працює резервне опитування. Не налаштовувати callback на localhost/private DNS.
-
-Події будять перевірку каналу, стан підтверджує Helix. Якщо цикл уже працює або Twitch ще не віддає актуальні дані, спрацює збережена черга та резервний tick. Фіксована затримка доставки не гарантується: вона залежить від Twitch, cron, БД, Discord, мережі й cooldown. У списку сповіщень показується затримка виявлення від фактичного початку та окремо доставка після виявлення.
-
-Нові повідомлення Twitch/YouTube LIVE та відео всіх трьох платформ отримують `embed.image` із валідної обкладинки провайдера. Twitch має гру/категорію та кількість глядачів, якщо API повернув ці поля. Старі вже надіслані повідомлення не дублюються й автоматично не переписуються. Якщо провайдер не надав доступне зображення, зберігається текстова картка з кнопкою перегляду.
+До очищення БД можна повернути попередній перевірений код/образи та відповідний cron.
+Після очищення дані видаленого модуля відновлюються лише з резервної копії.
+Не запускати старий моніторинг із порожніми квитанціями: він може повторити повідомлення.
+Не видаляти квитанції `discordPublications` решти модулів або cooldown Battle.net/Raider.IO.

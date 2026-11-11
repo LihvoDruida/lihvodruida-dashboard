@@ -199,87 +199,6 @@ export function getIssueStatusFromLabels(labels: Array<{ name?: string } | strin
   return "review";
 }
 
-function extract(body: string, pattern: RegExp) {
-  return (String(body || "").match(pattern)?.[1] || "").trim();
-}
-
-function isRedactedBattleTagValue(value: string) {
-  return /приховано|hidden|redacted/i.test(value);
-}
-
-function cleanBattleTagCandidate(value: unknown) {
-  const clean = stripDiscordMarker(String(value || ""))
-    .replace(/^`+|`+$/g, "")
-    .replace(/^\*+|\*+$/g, "")
-    .replace(/^>+\s*/g, "")
-    .trim()
-    .split(/\r?\n/)[0]
-    .trim();
-
-  if (!clean || isRedactedBattleTagValue(clean)) return null;
-
-  const direct = clean.match(/[\p{L}\p{N}_-]{2,32}#\d{3,6}/u)?.[0] || "";
-  return direct && !isRedactedBattleTagValue(direct) ? direct.trim() : null;
-}
-
-function extractBattleTag(body: string) {
-  const text = String(body || "");
-
-  const metadataPatterns = [
-    /["']?battle[_-]?tag["']?\s*[:=]\s*["']([^"'\n,}]+)["']/im,
-    /["']?battletag["']?\s*[:=]\s*["']([^"'\n,}]+)["']/im,
-    /<!--\s*mistblossom:(?:application|guild-application|battletag|battle-tag)\s+({[\s\S]*?})\s*-->/im,
-  ];
-
-  for (const pattern of metadataPatterns) {
-    const match = text.match(pattern);
-    const rawValue = match?.[1] || "";
-
-    if (rawValue.trim().startsWith("{")) {
-      try {
-        const parsed = JSON.parse(rawValue);
-        const candidate = cleanBattleTagCandidate(parsed.battle_tag || parsed.battleTag || parsed.battletag || parsed.bnet_tag || parsed.bnetTag);
-        if (candidate) return candidate;
-      } catch {
-        // Continue with visible body patterns.
-      }
-    } else {
-      const candidate = cleanBattleTagCandidate(rawValue);
-      if (candidate) return candidate;
-    }
-  }
-
-  const labelPatterns = [
-    /^\s*(?:[-*•]\s*)?(?:\*\*)?Battle\s*Tag(?:\*\*)?\s*[:：-]\s*(.+)$/gim,
-    /^\s*(?:[-*•]\s*)?(?:\*\*)?Battle\.net(?:\s*(?:tag|тег))?(?:\*\*)?\s*[:：-]\s*(.+)$/gim,
-    /^\s*(?:[-*•]\s*)?(?:\*\*)?BNet(?:\s*(?:tag|тег))?(?:\*\*)?\s*[:：-]\s*(.+)$/gim,
-    /^\s*(?:[-*•]\s*)?(?:\*\*)?Батл(?:\.net|нет)?\s*(?:тег|tag)?(?:\*\*)?\s*[:：-]\s*(.+)$/gim,
-    /^\s*(?:[-*•]\s*)?(?:\*\*)?Бател\s*тег(?:\*\*)?\s*[:：-]\s*(.+)$/gim,
-    /^\s*#{1,6}\s*(?:Battle\s*Tag|Battle\.net|BNet|Батл(?:\.net|нет)?\s*(?:тег|tag)?|Бател\s*тег)\s*\r?\n([^#\r\n]+)/gim,
-    /^\s*\|\s*(?:Battle\s*Tag|Battle\.net|BNet|Батл(?:\.net|нет)?\s*(?:тег|tag)?|Бател\s*тег)\s*\|\s*([^|\r\n]+)\s*\|/gim,
-  ];
-
-  for (const pattern of labelPatterns) {
-    pattern.lastIndex = 0;
-    const match = pattern.exec(text);
-    const candidate = cleanBattleTagCandidate(match?.[1]);
-    if (candidate) return candidate;
-  }
-
-  return cleanBattleTagCandidate(text);
-}
-
-function stripDiscordMarker(value: string) {
-  return String(value || "")
-    .replace(/<!--\s*mistblossom:discord[\s\S]*?-->/gi, "")
-    .trim();
-}
-
-function extractAvailability(body: string) {
-  const section = String(body || "").split("### Коли зазвичай грає")[1] || "";
-  return stripDiscordMarker(section);
-}
-
 function slugifyRaiderIoValue(value?: string) {
   return String(value || "")
     .normalize("NFKD")
@@ -451,54 +370,6 @@ export async function fetchRaiderIoForApplication(item: ApplicationItem): Promis
   }
 }
 
-function parseDiscordMessageRef(body: string): { channel_id?: string | null; message_id?: string | null } | null {
-  const match = String(body || "").match(/<!--\s*mistblossom:discord\s+({[\s\S]*?})\s*-->/);
-
-  if (!match) return null;
-
-  try {
-    const parsed = JSON.parse(match[1]);
-    return {
-      channel_id: parsed.channel_id || null,
-      message_id: parsed.message_id || null,
-    };
-  } catch {
-    return null;
-  }
-}
-
-export function mapApplicationIssue(issue: any): ApplicationItem {
-  const body = String(issue.body || "");
-  const status = getIssueStatusFromLabels(issue.labels || []);
-
-  return {
-    number: issue.number,
-    title: issue.title,
-    state: issue.state,
-    html_url: issue.html_url,
-    created_at: issue.created_at,
-    updated_at: issue.updated_at,
-    closed_at: issue.closed_at,
-    status_key: status,
-    status_text: statusText(status),
-    character_name: extract(body, /- Ім’я персонажа: (.+)/),
-    realm: extract(body, /- Реалм: (.+)/),
-    region: extract(body, /- Регіон: (.+)/),
-    faction: extract(body, /- Фракція: (.+)/),
-    class_name: extract(body, /- Клас: (.+)/),
-    source: extract(body, /- Звідки дізнався: (.+)/),
-    availability: extractAvailability(body),
-    battle_tag: extractBattleTag(body),
-    avatar_url: null,
-    profile_url: null,
-    raider_io: null,
-    raider_io_error: null,
-    discord_ref: extractDiscordMessageRef(body),
-    discord_message_ref: parseDiscordMessageRef(body),
-    labels: Array.isArray(issue.labels) ? issue.labels.map((label: any) => label.name) : [],
-  };
-}
-
 const SENSITIVE_APPLICATION_FIELD_RE = /battle[_-]?tag|battletag|bnet[_-]?tag|^discord$|discord[_-]?id|discord[_-]?tag|discord[_-]?ref|discord[_-]?message[_-]?ref/i;
 const BATTLE_TAG_TEXT_RE = /(^|[^\p{L}\p{N}_-])([\p{L}\p{N}_-]{2,32}#\d{3,6})(?=$|[^\p{L}\p{N}_-])/gu;
 
@@ -536,13 +407,6 @@ export function sanitizeApplicationForMentorViewer(item: ApplicationItem): Appli
 export function sanitizeApplicationsForMentorViewer(items: ApplicationItem[]): ApplicationItem[] {
   return items.map((item) => sanitizeApplicationForMentorViewer(item));
 }
-
-/**
- * Backward-compatible alias. Prefer sanitizeApplicationsForMentorViewer for new code,
- * so it is clear that this DTO is only for mentor/member read-only views.
- */
-export const sanitizeApplicationForReadOnlyViewer = sanitizeApplicationForMentorViewer;
-export const sanitizeApplicationsForReadOnlyViewer = sanitizeApplicationsForMentorViewer;
 
 
 export function applicationsCollectionName() {
@@ -974,18 +838,6 @@ export async function createGuildApplication(input: CreateGuildApplicationInput)
   });
 }
 
-export async function setApplicationDiscordMessageRef(issueNumber: number, ref: DiscordMessageRef) {
-  const doc = await findStorageApplicationDoc(issueNumber);
-  if (!doc) return false;
-  await doc.ref.update({
-    discord_message_ref: { channel_id: ref.channel_id, message_id: ref.message_id },
-    discord_ref: { channel_id: ref.channel_id, message_id: ref.message_id },
-    updated_at: new Date().toISOString(),
-    updatedAtMs: Date.now(),
-  });
-  return true;
-}
-
 export async function deleteGuildApplication(issueNumber: number) {
   const normalized = Number(issueNumber);
   if (!Number.isInteger(normalized) || normalized <= 0) throw new Error("Invalid application number");
@@ -1090,21 +942,6 @@ export async function setIssueStatus(params: {
       moderation_events: FieldValue.arrayUnion({ status, moderator: params.moderator, source: params.source, at: now }),
     });
     return { ok: true, status, state: status === "review" ? "open" : "closed", changed: true, alreadyModerated: false, label: statusLabel(status) };
-  });
-}
-
-export async function updateApplicationStatus(
-  issueNumber: number,
-  status: ApplicationStatus,
-  moderator = "Dashboard"
-) {
-  const { moderateApplication } = await import("./moderation");
-
-  return moderateApplication({
-    issueNumber,
-    status,
-    moderator,
-    source: "dashboard",
   });
 }
 

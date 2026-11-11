@@ -81,50 +81,6 @@ export type CharacterProfileSlugSource = {
   name?: unknown;
 };
 
-function normalizeUrlSlugSegment(value: unknown, maxLength = 120) {
-  return normalizeWowLookupText(value, maxLength)
-    .replace(/[:_]+/g, "-")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
-function splitBattleNetCharacterKey(value: unknown) {
-  const key = normalizeCharacterKey(value);
-  if (!key) return null;
-  const [region, realmSlug, normalizedName] = key.split(":");
-  if (!region || !realmSlug || !normalizedName) return null;
-  return { region, realmSlug, normalizedName };
-}
-
-export function buildCharacterProfileSlug(character: CharacterProfileSlugSource) {
-  const keyParts = splitBattleNetCharacterKey(character.key);
-  const region = cleanWowText(character.region || keyParts?.region || "eu", 12).toLocaleLowerCase();
-  const safeRegion = /^[a-z]{2}$/.test(region) ? region : "eu";
-  const realmSlug = normalizeUrlSlugSegment(character.realmSlug || character.realmName || keyParts?.realmSlug, 120);
-  const nameSlug = normalizeUrlSlugSegment(character.normalizedName || character.name || keyParts?.normalizedName, 80);
-
-  if (!nameSlug || !realmSlug) return "";
-  return `${nameSlug}-${realmSlug}-${safeRegion}`;
-}
-
-export function normalizeCharacterProfileSlug(value: unknown) {
-  return normalizeUrlSlugSegment(value, 260);
-}
-
-export function isCharacterProfileRouteMatch(character: CharacterProfileSlugSource, routeSegment: unknown) {
-  const decoded = cleanWowText(routeSegment, 320);
-  if (!decoded) return false;
-
-  const routeSlug = normalizeCharacterProfileSlug(decoded);
-  const canonicalSlug = normalizeCharacterProfileSlug(buildCharacterProfileSlug(character));
-  if (routeSlug && canonicalSlug && routeSlug === canonicalSlug) return true;
-
-  const routeKey = normalizeCharacterKey(decoded);
-  const characterKey = normalizeCharacterKey(character.key);
-  return Boolean(routeKey && characterKey && routeKey === characterKey);
-}
-
 export function normalizeWowAvatarImageUrl(value: unknown) {
   const text = cleanWowText(value, 700);
   if (!text) return null;

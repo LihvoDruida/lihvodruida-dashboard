@@ -162,13 +162,6 @@ export async function mapConcurrentSettled<T, R>(
   };
 }
 
-export async function runConcurrent<T>(
-  tasks: Array<() => Promise<T>>,
-  options: ConcurrentMapOptions = {},
-): Promise<{ results: T[]; meta: ConcurrentMapMeta }> {
-  return mapConcurrent(tasks, (task) => task(), { profile: "batch", ...options });
-}
-
 export async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label = "operation"): Promise<T> {
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) return promise;
 

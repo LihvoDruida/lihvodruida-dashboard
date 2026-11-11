@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { dashboardApiJson } from "@/lib/dashboardApiClient";
 import { settleWithConcurrency } from "@/lib/settleWithConcurrency";
 import type { DashboardDataScope } from "@/lib/dashboardLiveRefresh";
@@ -53,18 +53,17 @@ type ResourceRecord<T = unknown> = {
   refs: number;
   getOptions: () => DashboardApiResourceOptions<T>;
   state: DashboardApiResourceState<T>;
-  fingerprint: string;
+  fingerprint: string | null;
   lastStartedAt: number;
+  needsRefresh: boolean;
   inFlight: Promise<DashboardApiResourceState<T>> | null;
   disposeTimer: number | null;
   listeners: Set<() => void>;
 };
 
 const records = new Map<string, ResourceRecord>();
-let version = 0;
 
 function emitRecord(record: ResourceRecord) {
-  version += 1;
   for (const listener of record.listeners) listener();
 }
 
@@ -72,14 +71,18 @@ function cleanKey(key: string) {
   return String(key || "").trim().slice(0, 220) || "unknown";
 }
 
-function dataFingerprint(value: unknown) {
+function dataFingerprint(value: unknown): string | null {
   try {
-    return JSON.stringify(value) || "null";
+    return JSON.stringify(value, (_key, item) => {
+      // Selectors may return non-JSON containers. Their serialized form (e.g.
+      // Map -> {}) cannot prove equality, so retain no fingerprint for them.
+      if (item && typeof item === "object" && !Array.isArray(item) && Object.prototype.toString.call(item) !== "[object Object]") {
+        throw new TypeError("Non-JSON resource data");
+      }
+      return item;
+    }) ?? null;
   } catch {
-    // API payloads are JSON, but a custom selector may theoretically return a
-    // non-serializable value. Falling back to a stable type tag avoids turning
-    // the live refresh loop into a crash source.
-    return Object.prototype.toString.call(value);
+    return null;
   }
 }
 
@@ -105,7 +108,7 @@ function readStoredCheckedAt(key: string) {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as { checkedAt?: unknown } | null;
     const value = Number(parsed?.checkedAt);
-    return Number.isFinite(value) && value > 0 ? value : null;
+    return Number.isFinite(value) && value > 0 && value <= Date.now() ? value : null;
   } catch {
     return null;
   }
@@ -186,6 +189,7 @@ function ensureRecord<T>(keyInput: string, initialData: T, getOptions: () => Das
     },
     fingerprint: dataFingerprint(initialData),
     lastStartedAt: checkedAt || 0,
+    needsRefresh: false,
     inFlight: null,
     disposeTimer: null,
     listeners: new Set(),
@@ -198,16 +202,20 @@ function stateFor<T>(keyInput: string, initialData: T, getOptions: () => Dashboa
   return ensureRecord(keyInput, initialData, getOptions).state;
 }
 
-function releaseRecord(record: ResourceRecord) {
-  record.refs = Math.max(0, record.refs - 1);
-  if (record.refs > 0 || typeof window === "undefined") return;
-  if (record.disposeTimer !== null) window.clearTimeout(record.disposeTimer);
+function scheduleRecordDisposal(record: ResourceRecord) {
+  if (record.refs > 0 || typeof window === "undefined" || record.disposeTimer !== null) return;
   record.disposeTimer = window.setTimeout(() => {
+    record.disposeTimer = null;
     if (record.refs === 0 && !record.inFlight && records.get(record.key) === record) {
       records.delete(record.key);
     }
-    record.disposeTimer = null;
+    // A pending request schedules disposal again when it settles.
   }, DASHBOARD_BACKGROUND_RESOURCE_RETAIN_MS);
+}
+
+function releaseRecord(record: ResourceRecord) {
+  record.refs = Math.max(0, record.refs - 1);
+  scheduleRecordDisposal(record);
 }
 
 function broadcastResourceUpdated<T>(record: ResourceRecord<T>, reason: string, changed: boolean) {
@@ -228,6 +236,12 @@ export async function refreshDashboardApiResource<T = unknown>(keyInput: string,
   const key = cleanKey(keyInput);
   const record = records.get(key) as ResourceRecord<T> | undefined;
   if (!record) return null;
+  // Join before cooldown/status changes; force must never start a second request.
+  if (record.inFlight) return record.inFlight;
+  if (record.refs === 0) {
+    if (options.force) record.needsRefresh = true;
+    return record.state;
+  }
 
   const resourceOptions = record.getOptions();
   if (resourceOptions.enabled === false) {
@@ -248,34 +262,38 @@ export async function refreshDashboardApiResource<T = unknown>(keyInput: string,
     return record.state;
   }
 
-  if (record.inFlight) return record.inFlight;
-
-  const request = resourceOptions.request();
-  if (!request) {
-    updateRecord(record, { status: "skipped", checkedAt: now });
-    return record.state;
-  }
-
-  record.lastStartedAt = now;
-  updateRecord(record, { status: "checking", error: "", checkedAt: now });
-
-  const promise = dashboardApiJson<unknown>(request.url, {
-    method: request.method || "GET",
-    headers: request.headers,
-    json: request.json,
-    body: request.body,
-    label: `Dashboard background API ${record.key}`,
-    retries: 1,
-    retryMethods: ["GET", "HEAD"],
-  }).then((payload) => {
+  // Dispatch on the next microtask so subscribers can re-enter safely: the
+  // shared promise is installed before the checking notification is emitted.
+  const promise = Promise.resolve().then(async () => {
+    if (record.refs === 0) {
+      if (options.force) record.needsRefresh = true;
+      updateRecord(record, { status: "skipped" });
+      return record.state;
+    }
+    const request = resourceOptions.request();
+    if (!request) {
+      updateRecord(record, { status: "skipped", checkedAt: now });
+      return record.state;
+    }
+    record.lastStartedAt = now;
+    record.needsRefresh = false;
+    const payload = await dashboardApiJson<unknown>(request.url, {
+      method: request.method || "GET",
+      headers: request.headers,
+      json: request.json,
+      body: request.body,
+      label: `Dashboard background API ${record.key}`,
+      retries: 1,
+      retryMethods: ["GET", "HEAD"],
+    });
     const data = request.select ? request.select(payload) : payload as T;
     const checkedAt = Date.now();
     const fingerprint = dataFingerprint(data);
-    const changed = fingerprint !== record.fingerprint;
+    const changed = fingerprint === null || fingerprint !== record.fingerprint;
     record.fingerprint = fingerprint;
     writeStoredCheckedAt(record.key, checkedAt);
     updateRecord(record, {
-      data,
+      data: changed ? data : record.state.data,
       status: "updated",
       error: "",
       checkedAt,
@@ -294,16 +312,22 @@ export async function refreshDashboardApiResource<T = unknown>(keyInput: string,
     return record.state;
   }).finally(() => {
     record.inFlight = null;
+    scheduleRecordDisposal(record);
   });
 
   record.inFlight = promise;
+  updateRecord(record, { status: "checking", error: "", checkedAt: now });
   return promise;
 }
 
 export async function refreshDashboardApiResources(options: RefreshOptions = {}) {
-  const selected = Array.from(records.values()).filter(
+  const matching = Array.from(records.values()).filter(
     (record) => scopeMatches(record, options.scope) && resourceMatchesId(record, options.resourceId),
   );
+  // Retained data is invalidated without polling an unmounted widget. Its next
+  // mount performs one fresh read even when normal SSR-backed mount refresh is off.
+  if (options.force) for (const record of matching) if (record.refs === 0) record.needsRefresh = true;
+  const selected = matching.filter(record => record.refs > 0);
   const results = await settleWithConcurrency(selected, (record) =>
     refreshDashboardApiResource(record.key, options),
     DASHBOARD_BACKGROUND_RESOURCE_CONCURRENCY,
@@ -311,44 +335,49 @@ export async function refreshDashboardApiResources(options: RefreshOptions = {})
   return results;
 }
 
-export function dashboardBackgroundApiVersion() {
-  return version;
-}
-
 export function useDashboardApiResource<T>(options: DashboardApiResourceOptions<T>) {
   const key = cleanKey(options.key);
   const optionsRef = useRef(options);
-  const initialStateRef = useRef(initialState(options.initialData));
+  const serverState = useMemo(() => initialState(options.initialData), [options.initialData]);
 
   useEffect(() => {
     optionsRef.current = options;
   }, [options]);
   const getOptions = useCallback(() => optionsRef.current, []);
   const getSnapshot = useCallback(() => {
-    return stateFor(key, optionsRef.current.initialData, getOptions);
-  }, [getOptions, key]);
-  const getServerSnapshot = useCallback(() => initialStateRef.current, []);
+    return stateFor(key, options.initialData, getOptions);
+  }, [getOptions, key, options.initialData]);
+  const getServerSnapshot = useCallback(() => serverState, [serverState]);
   const subscribeToResource = useCallback((listener: () => void) => {
-    const record = ensureRecord(key, optionsRef.current.initialData, getOptions);
+    const record = ensureRecord(key, options.initialData, getOptions);
     record.listeners.add(listener);
     return () => record.listeners.delete(listener);
-  }, [getOptions, key]);
+  }, [getOptions, key, options.initialData]);
 
   const state = useSyncExternalStore(subscribeToResource, getSnapshot, getServerSnapshot);
 
   useEffect(() => {
     const record = ensureRecord(key, optionsRef.current.initialData, getOptions);
     record.refs += 1;
-    if (optionsRef.current.refreshOnMount !== false) {
+    if (optionsRef.current.refreshOnMount !== false || record.needsRefresh) {
+      const refreshOnMount = () => {
+        const invalidated = record.needsRefresh;
+        if (invalidated || optionsRef.current.refreshOnMount !== false) {
+          void refreshDashboardApiResource(key, { reason: invalidated ? "mount:invalidated" : "mount", force: invalidated });
+        }
+      };
+      const onOnline = () => { if (record.needsRefresh) refreshOnMount(); };
+      window.addEventListener("online", onOnline);
       const windowWithIdle = window as typeof window & {
         requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
         cancelIdleCallback?: (handle: number) => void;
       };
       const idleHandle = windowWithIdle.requestIdleCallback
-        ? windowWithIdle.requestIdleCallback(() => void refreshDashboardApiResource(key, { reason: "mount" }), { timeout: 2500 })
-        : window.setTimeout(() => void refreshDashboardApiResource(key, { reason: "mount" }), 900);
+        ? windowWithIdle.requestIdleCallback(refreshOnMount, { timeout: 2500 })
+        : window.setTimeout(refreshOnMount, 900);
 
       return () => {
+        window.removeEventListener("online", onOnline);
         if (windowWithIdle.cancelIdleCallback && typeof idleHandle === "number") windowWithIdle.cancelIdleCallback(idleHandle);
         else window.clearTimeout(idleHandle);
         releaseRecord(record);

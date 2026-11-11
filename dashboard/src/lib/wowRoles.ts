@@ -180,12 +180,3 @@ export function wowRoleLabel(role: WowCharacterRole | null | undefined) {
   if (role === "healer") return "Хіл";
   return "ДД";
 }
-
-export function wowSpecRoleLabel(input: {
-  activeSpecRole?: unknown;
-  activeSpecId?: unknown;
-  activeSpecName?: unknown;
-  className?: unknown;
-}) {
-  return wowRoleLabel(resolveWowCharacterRole(input));
-}

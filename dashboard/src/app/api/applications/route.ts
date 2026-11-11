@@ -21,11 +21,7 @@ export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const canSeeSensitiveFields = canViewApplicationBattleTag(session);
-    // Раніше для менторів (без доступу до чутливих полів) заявки бралися
-    // з Cloudflare Worker, який ходив у GitHub і кешував відповідь. Тепер
-    // панель читає GitHub напряму: зайвий стрибок і кеш прибрані, а
-    // приховування чутливих полів робить sanitizeApplicationsForMentorViewer
-    // нижче — тобто відповідь для ментора та сама, тільки без посередника.
+    // Заявки читаються з PostgreSQL; чутливі поля фільтруються за правами нижче.
     const [rawItems, filterOptions] = await Promise.all([
       listApplications(url.searchParams),
       listApplicationFilterOptions(),

@@ -27,7 +27,6 @@ export class DiscordOAuthError extends Error {
 }
 type OAuthOptions = { signal?: AbortSignal };
 const snowflake = (value: unknown): value is string => typeof value === "string" && /^\d{16,25}$/.test(value);
-const record = (value: unknown): Record<string, unknown> => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 async function discordOAuthJson(url: string, init: RequestInit, options: OAuthOptions) {
   const deadline = AbortSignal.timeout(10_000);
   const signal = options.signal ? AbortSignal.any([deadline, options.signal]) : deadline;

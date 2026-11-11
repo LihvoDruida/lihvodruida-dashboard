@@ -50,7 +50,7 @@ npm run build:ci
 npm run check:standalone
 ```
 
-check:standalone потребує попередньої production-збірки. Він перевіряє чистий output Next **до** додаткових COPY у Docker runner: maintenance-скрипти та schema.sql Docker додає окремими явними командами. MISTBLOSSOM_PACKAGE_REPORT може зберегти JSON вимірювання. Повний машинний звіт: [R7_1_VALIDATION_2026-10-15.json](R7_1_VALIDATION_2026-10-15.json).
+check:standalone потребує попередньої production-збірки. Він перевіряє чистий output Next **до** додаткових COPY у Docker runner: maintenance-скрипти та schema.sql Docker додає окремими явними командами. MISTBLOSSOM_PACKAGE_REPORT може зберегти JSON вимірювання. Повний машинний звіт: R7_1_VALIDATION_2026-10-15.json (історичний JSON-звіт прибрано в 3.20.0).
 
 ## Межі та наступні кроки
 

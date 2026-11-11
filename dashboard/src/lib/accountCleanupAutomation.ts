@@ -47,10 +47,6 @@ export async function acquireAccountCleanupExecutionLock(source: string) {
     },
   };
 }
-
-export function getAccountCleanupExecutionLock() {
-  return globalThis.__mistblossomAccountCleanupExecutionLock || null;
-}
 export type AccountCleanupRunSource = "automatic" | "manual";
 export type AccountCleanupRunStatus = "success" | "warning" | "error";
 

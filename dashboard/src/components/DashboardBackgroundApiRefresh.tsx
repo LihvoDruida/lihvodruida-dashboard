@@ -18,6 +18,25 @@ const BACKGROUND_VISIBLE_REFRESH_MIN_MS = 10 * 60_000;
 const BACKGROUND_MUTATION_REFRESH_MIN_MS = 2_500;
 let lastBackgroundRefreshAt = 0;
 let activeBackgroundRefresh: Promise<void> | null = null;
+type RefreshOptions = { force?: boolean; scope?: DashboardDataMutationDetail["scope"]; resourceId?: string };
+type PendingMutation = { reason: string; options: RefreshOptions };
+// One coalesced invalidation survives an active request or manager remount.
+let pendingMutation: PendingMutation | null = null;
+function queueMutation(reason: string, options: RefreshOptions) {
+  if (!pendingMutation) {
+    pendingMutation = { reason, options: { ...options, force: true } };
+    return;
+  }
+  const sameScope = pendingMutation.options.scope === options.scope;
+  pendingMutation = {
+    reason: "mutation:coalesced",
+    options: {
+      force: true,
+      scope: sameScope ? options.scope : undefined,
+      resourceId: sameScope && pendingMutation.options.resourceId === options.resourceId ? options.resourceId : undefined,
+    },
+  };
+}
 type DataMutationEvent = CustomEvent<DashboardDataMutationDetail>;
 
 function isTextEditingElement(element: Element | null) {
@@ -83,11 +102,16 @@ export default function DashboardBackgroundApiRefresh({ refreshMinMs: refreshMin
     function schedule(delay = refreshMinMs, reason = "interval") {
       clearTimer();
       if (cancelled) return;
-      timer = window.setTimeout(() => void refresh(reason), Math.max(reason.startsWith("mutation") || reason.includes("raid") ? 750 : 5_000, delay));
+      timer = window.setTimeout(() => void refresh(pendingMutation?.reason || reason), Math.max(reason.startsWith("mutation") || reason.includes("raid") ? 750 : 5_000, delay));
     }
 
-    async function refresh(reason: string, options: { force?: boolean; scope?: DashboardDataMutationDetail["scope"]; resourceId?: string } = {}) {
+    async function refresh(reason: string, options: RefreshOptions = {}) {
       if (cancelled) return;
+      if (options.force) queueMutation(reason, options);
+      if (pendingMutation) {
+        reason = pendingMutation.reason;
+        options = pendingMutation.options;
+      }
 
       if (typeof navigator !== "undefined" && navigator.onLine === false) {
         setState("offline");
@@ -121,15 +145,17 @@ export default function DashboardBackgroundApiRefresh({ refreshMinMs: refreshMin
 
       setState("checking");
       inFlightRef.current = true;
-      activeBackgroundRefresh = refreshDashboardApiResources({ reason, force: options.force, scope: options.scope, resourceId: options.resourceId })
+      pendingMutation = null;
+      const flight = refreshDashboardApiResources({ reason, force: options.force, scope: options.scope, resourceId: options.resourceId })
         .catch(() => undefined)
         .then(() => undefined);
-      await activeBackgroundRefresh;
-      activeBackgroundRefresh = null;
+      activeBackgroundRefresh = flight;
+      await flight;
+      if (activeBackgroundRefresh === flight) activeBackgroundRefresh = null;
       lastBackgroundRefreshAt = Date.now();
       inFlightRef.current = false;
       if (!cancelled) setState("idle");
-      schedule(refreshMinMs, "interval");
+      schedule(pendingMutation ? BACKGROUND_MUTATION_REFRESH_MIN_MS : refreshMinMs, pendingMutation ? "mutation:pending" : "interval");
     }
 
     function onVisibilityChange() {
@@ -173,7 +199,7 @@ export default function DashboardBackgroundApiRefresh({ refreshMinMs: refreshMin
     window.addEventListener("online", onOnline);
     window.addEventListener(DASHBOARD_DATA_MUTATED_EVENT, onDataMutated);
     window.addEventListener("storage", onStorage);
-    schedule(refreshMinMs, "interval");
+    schedule(pendingMutation ? BACKGROUND_MUTATION_REFRESH_MIN_MS : refreshMinMs, pendingMutation ? "mutation:recovery" : "interval");
 
     return () => {
       cancelled = true;

@@ -36,7 +36,7 @@ Discord-меню з окремими списками класу й спеціа
 
 Відтворення UI можна повторити через `npm run check:raid-attendance-browser` у dashboard за наявності Playwright, esbuild та Chromium. Окреме розташування інструментів задає MISTBLOSSOM_QA_MODULES, шлях браузера — MISTBLOSSOM_QA_CHROMIUM, каталог тимчасових результатів — MISTBLOSSOM_QA_OUTPUT. Цей додатковий браузерний сценарій не вимагає Chromium під час Docker build. Швидкий HTTP-suite включено у verify/build:ci як check:raid-attendance.
 
-Машинний підсумок: [R6_11_VALIDATION_2026-10-15.json](R6_11_VALIDATION_2026-10-15.json).
+Машинний підсумок: R6_11_VALIDATION_2026-10-15.json (історичний JSON-звіт прибрано в 3.20.0).
 
 ## Межі й подальший порядок
 

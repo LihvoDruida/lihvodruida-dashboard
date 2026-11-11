@@ -14,7 +14,6 @@ import {
   removeGuildMemberRoles,
   replaceGuildMemberRoles,
   updateGuildMemberNickname,
-  type DiscordGuildMemberModerationItem,
   type DiscordGuildMemberSnapshot,
 } from "@/lib/discordAdmin";
 import { getGuildNicknamePolicy, nicknameMatchesTemplate } from "@/lib/guildNicknamePolicy";
@@ -99,14 +98,6 @@ async function resolveHighestManageableDiscordRole(roleIdsInput: unknown) {
     requestedRoleNames: requestedRoles.map((role) => role.name),
     ignoredLowerRoleIds: requestedRoleIds.filter((roleId) => roleId !== highestRole.id),
   };
-}
-
-function displayName(member: DiscordGuildMemberModerationItem) {
-  return member.nick || member.globalName || member.username || member.userId;
-}
-
-function serverNickname(member: DiscordGuildMemberModerationItem) {
-  return cleanNickname(member.nick || "");
 }
 
 function serverNicknameValidation(member: { nick?: string | null }, template: string) {

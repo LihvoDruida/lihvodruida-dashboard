@@ -41,7 +41,6 @@ import {
   renderNicknameFromTemplate,
 } from "@/lib/guildNicknamePolicy";
 import {
-  canManageApplications,
   canViewAllProfiles,
   canViewProfiles,
   canViewProfilesInOwnGroupOrBelow,
@@ -1033,17 +1032,6 @@ export function canViewProfile(
   return viewerRank >= targetRank;
 }
 
-export function canManageProfiles(viewer: DashboardSession | null | undefined) {
-  return canManageApplications(viewer);
-}
-
-export function canManageOwnCharacters(
-  viewer: DashboardSession | null | undefined,
-  profileId: string,
-) {
-  return Boolean(viewer?.profileId && viewer.profileId === profileId);
-}
-
 export async function upsertProfileFromSession(session: DashboardSession) {
   const profileId =
     session.profileId ||
@@ -1287,39 +1275,6 @@ export async function getProfileByDiscordUserId(discordUserId: string) {
       logEvent: "profiles.discord_lookup_read_failed",
     },
   );
-}
-
-export async function listDashboardProfilesForDiscordSync(
-  limit = 1000,
-): Promise<DashboardProfile[]> {
-  if (!hasDocumentDbConfig()) return [];
-  const safeLimit = Math.max(
-    10,
-    Math.min(1000, Math.floor(Number(limit) || 1000)),
-  );
-  const snapshotProfiles = await resilientRead(
-    `profiles:discord-sync:${safeLimit}`,
-    async () => {
-      const snapshot = await getDocumentDb()
-        .collection("dashboardProfiles")
-        .limit(safeLimit)
-        .get();
-      return snapshot.docs.map((doc: any) => normalizeProfile(doc.id, doc.data() || {}));
-    },
-    {
-      ttlMs: 60_000,
-      timeoutMs: 4_000,
-      circuitKey: "storage-profile-read",
-      circuitTtlMs: 90_000,
-      fallback: () => getRuntimeCachedValue<DashboardProfile[]>(`profiles:discord-sync:${safeLimit}`, 10 * 60_000) || [],
-      logEvent: "profiles.discord_sync_read_failed",
-    },
-  );
-  const groups = await listAccessGroups().catch(() => [] as AccessGroup[]);
-  return snapshotProfiles
-    .map((profile: DashboardProfile) =>
-      groups.length ? applyCurrentProfileGroup(profile, groups) : profile,
-    );
 }
 
 export async function listAllDashboardProfilesForDiscordSync(
@@ -1676,41 +1631,6 @@ async function scanCharacterProfileLinksFromProfiles() {
     if (!contender.duplicate) links.set(key, contender.link);
   }
   return links;
-}
-
-export async function listCharacterProfileLinks() {
-  const emptyLinks = new Map<string, CharacterProfileLink>();
-  if (!hasDocumentDbConfig()) return emptyLinks;
-
-  const cached = globalThis.__mistblossomCharacterProfileLinksCache;
-  const ttlMs = await characterProfileLinksCacheTtlMs();
-  if (cached && Date.now() - cached.checkedAt < ttlMs) {
-    return new Map(cached.links);
-  }
-
-  return resilientRead(
-    "profile-character-links",
-    async () => {
-      let links = await readCharacterProfileLinksFromIndex();
-      if (!links.size && profileCharacterLinksScanFallbackEnabled()) {
-        links = await scanCharacterProfileLinksFromProfiles();
-        await repairCharacterProfileLinksIndex(links).catch(() => null);
-      }
-      globalThis.__mistblossomCharacterProfileLinksCache = {
-        checkedAt: Date.now(),
-        links: new Map(links),
-      };
-      return links;
-    },
-    {
-      ttlMs,
-      timeoutMs: 3_500,
-      circuitKey: "storage-profile-links-read",
-      circuitTtlMs: 90_000,
-      fallback: () => cached ? new Map(cached.links) : emptyLinks,
-      logEvent: "profiles.character_links_read_failed",
-    },
-  );
 }
 
 export async function listCharacterProfileLinksForKeys(keysInput: Iterable<string>) {
@@ -2204,11 +2124,6 @@ function profileRefreshConcurrency(
   });
 }
 
-async function profileViewRefreshMinSpacingSeconds() {
-  const settings = await getDashboardApiSettings();
-  return settings.profileViewRefreshMinSeconds;
-}
-
 function profileCronRefreshLimit() {
   return readIntegerEnv("PROFILE_EXTERNAL_REFRESH_BATCH_LIMIT", 50, 1, 500);
 }
@@ -2623,16 +2538,6 @@ export async function refreshProfileExternalData(
   return promise;
 }
 
-export async function refreshProfileExternalDataOnView(
-  profile: DashboardProfile | null | undefined,
-) {
-  return refreshProfileExternalData(profile, {
-    reason: "profile_view",
-    minSpacingSeconds: await profileViewRefreshMinSpacingSeconds(),
-    maxCharacters: profile?.characters.length || 0,
-  });
-}
-
 export async function refreshProfileCharactersForRaidSignup(
   profile: DashboardProfile | null | undefined,
 ) {
@@ -3010,15 +2915,6 @@ export function getProfileSiteName(
     cleanProfileName(profile?.preferredName || "", 32) ||
     cleanProfileName(profile?.displayName || profile?.login || "", 32) ||
     "Учасник"
-  );
-}
-
-export function getProfileDiscordName(
-  profile: DashboardProfile | null | undefined,
-) {
-  return (
-    cleanProfileName(profile?.displayName || profile?.login || "", 32) ||
-    "Discord"
   );
 }
 

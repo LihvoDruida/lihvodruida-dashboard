@@ -115,9 +115,3 @@ export function buildPageMetadata({
     },
   };
 }
-
-export function compactText(value: string, max = 155) {
-  const text = value.replace(/\s+/g, " ").trim();
-  if (text.length <= max) return text;
-  return `${text.slice(0, Math.max(0, max - 1)).trimEnd()}…`;
-}

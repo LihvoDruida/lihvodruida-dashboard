@@ -42,8 +42,7 @@ main .dashboard-shell {
     gap: var(--page-gap);
   }
 
-  .page-section,
-.profile-card,
+  .profile-card,
 .content-form-section,
 .raid-form-section,
 .discord-management-section {
@@ -146,8 +145,7 @@ main .dashboard-shell {
   }
 
   /* ---------- Заголовки секцій та action bars ---------- */
-  .section-header,
-.dashboard-list-head,
+  .dashboard-list-head,
 .profile-card-head,
 .content-section-head,
 .content-form-section-head {
@@ -155,15 +153,13 @@ main .dashboard-shell {
     gap: var(--space-md);
   }
 
-  .section-header h2,
-.dashboard-list-head h2,
+  .dashboard-list-head h2,
 .profile-card-head h2 {
     font-size: 1.08rem;
     line-height: 1.25;
   }
 
-  .action-bar,
-.profile-account-header__actions,
+  .profile-account-header__actions,
 .raid-greylist-mini-actions {
     gap: var(--space-xs);
   }

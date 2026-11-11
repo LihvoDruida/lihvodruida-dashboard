@@ -121,10 +121,6 @@ function setCache(settings: DiscordWelcomeCardSettings) {
   return settings;
 }
 
-export function defaultDiscordWelcomeGreetings() {
-  return [...DEFAULT_GREETINGS];
-}
-
 export function renderDiscordWelcomeMessageTemplate(templateInput: unknown, params: {
   mention: string;
   username: string;

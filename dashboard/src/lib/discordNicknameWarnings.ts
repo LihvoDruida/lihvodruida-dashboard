@@ -12,7 +12,15 @@ import {
 } from "@/lib/discordAdmin";
 import { storageWrite } from "@/lib/storageAccess";
 import { getDocumentDb, hasDocumentDbConfig } from "@/lib/documentDb";
-import { explainNicknameValidation, getGuildNicknamePolicy, nicknameMatchesTemplate, nicknameTemplateExample, suggestNicknameFromObservedText, DEFAULT_NICKNAME_TEMPLATE, VALID_NICKNAME_STRUCTURES, type GuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
+import {
+  explainNicknameValidation,
+  getGuildNicknamePolicy,
+  nicknameMatchesTemplate,
+  nicknameTemplateExample,
+  suggestNicknameFromObservedText,
+  DEFAULT_NICKNAME_TEMPLATE,
+  type GuildNicknamePolicy,
+} from "@/lib/guildNicknamePolicy";
 import { buildProfileDiscordNicknamePlan, getProfileByDiscordUserId } from "@/lib/profiles";
 import { resilientRead } from "@/lib/runtimeResilience";
 import { dashboardPublicOrigin, timestampToIso } from "@/lib/values";

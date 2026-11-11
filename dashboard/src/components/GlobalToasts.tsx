@@ -423,11 +423,6 @@ const LOGIN_ERROR_MESSAGES: Record<string, Omit<Toast, "id">> = {
     title: "Потрібен вхід",
     message: "Увійди в акаунт, щоб продовжити дію.",
   },
-  discord_only: {
-    tone: "warning",
-    title: "Доступ через Discord",
-    message: "Для входу в панель використовується Discord.",
-  },
   oauth_state: {
     tone: "warning",
     title: "Вхід Discord не завершився",

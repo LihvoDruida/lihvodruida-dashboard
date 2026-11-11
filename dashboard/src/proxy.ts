@@ -49,7 +49,7 @@ function isProtectedPagePath(pathname: string) {
   // /polls і /roster раніше були відсутні: сторінки покладалися лише на
   // серверний getSession(), тож неавторизований користувач бачив спалах layout
   // замість чистого редиректу на /login.
-  return /^\/(?:dashboard|admin|applications|guild|profile|profiles|raids|polls|roster|discord|content)(?:\/|$)/.test(
+  return /^\/(?:dashboard|applications|guild|profile|profiles|raids|polls|roster|discord|content)(?:\/|$)/.test(
     pathname,
   );
 }
@@ -61,7 +61,6 @@ function isPublicSiteBridgePath(pathname: string) {
     pathname === "/api/site/content" ||
     pathname === "/api/site/status" ||
     pathname === "/api/site/sync" ||
-    pathname === "/api/site/streamers" ||
     /^\/api\/site\/media\/[a-f0-9]{64}$/.test(pathname)
   );
 }
@@ -78,7 +77,6 @@ function isPublicApiPath(pathname: string) {
     pathname.startsWith("/api/auth/") ||
     pathname === "/api/client-errors" ||
     pathname === "/api/background/settings" ||
-    pathname === "/api/integrations/twitch/eventsub" ||
     pathname === "/api/calendar/raids.ics" ||
     pathname === "/api/discord/interactions" ||
     pathname === "/api/rules/accept/complete" ||
@@ -113,7 +111,6 @@ function isInternalBearerApiPath(pathname: string) {
     // Profile-edit queue uses the same authenticated cron transport.
     pathname === "/api/dashboard/discord/profile-nicknames/automation" ||
     pathname === "/api/dashboard/discord/applications/automation" ||
-    pathname === "/api/dashboard/streamers/automation" ||
     pathname === "/api/guild/sync" ||
     pathname === "/api/raids/lifecycle" ||
     pathname === "/api/polls/close-due" ||
@@ -195,7 +192,7 @@ function contentSecurityPolicy(nonce: string) {
     `style-src ${styleSrc}`,
     "img-src 'self' data: blob: https://cdn.discordapp.com https://media.discordapp.net https://render.worldofwarcraft.com https://cdnassets.raider.io https://raider.io",
     "font-src 'self' data:",
-    "connect-src 'self' https://discord.com https://discordapp.com https://cdn.discordapp.com https://media.discordapp.net https://api.github.com https://raider.io https://*.raider.io https://render.worldofwarcraft.com",
+    "connect-src 'self' https://discord.com https://discordapp.com https://cdn.discordapp.com https://media.discordapp.net https://raider.io https://*.raider.io https://render.worldofwarcraft.com",
     "worker-src 'self' blob:",
     "frame-src 'none'",
     "child-src 'none'",
@@ -347,7 +344,6 @@ export function proxy(request: NextRequest) {
   // мають вузьку CORS/origin політику та не віддають приватних даних.
   if (
     !isDiscordInteractionEndpoint &&
-    pathname !== "/api/integrations/twitch/eventsub" &&
     !isPublicSiteBridgeRequest &&
     !hasInternalBearerAuth &&
     !verifyTrustedOrigin(request)

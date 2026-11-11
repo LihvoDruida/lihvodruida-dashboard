@@ -27,8 +27,8 @@ const checks=[
  [proxy.includes('pathname === "/api/site/content"')&&proxy.includes('/site\\/media\\/'),'Public routes explicitly allowlisted'],
  [proxy.includes('isInternalSiteRead')&&proxy.includes('request.method === "GET"')&&proxy.includes('hasSiteBridgeToken'),'Internal transport read only'],
  [compose.includes('PUBLIC_SITE_BRIDGE_TOKEN: ${PUBLIC_SITE_BRIDGE_TOKEN:?set the same bridge token in both projects}'),'Internal bridge secret explicitly wired'],
- [fs.existsSync(path.join(repo,'import/legacy-site/migrate_site_articles.sql')),'SQL content import available'],
- [dockerfile.includes('COPY import/legacy-site/migrate_site_articles.sql /repo/import/legacy-site/migrate_site_articles.sql'),'SQL import is explicitly copied into the Docker build stage'],
+ [!fs.existsSync(path.join(repo,'import/legacy-site'))&&!fs.existsSync(path.join(dash,'scripts/import-public-content.mjs')),'Retired one-time import removed'],
+ [!dockerfile.includes('import/legacy-site'),'Builder no longer requires retired import sources'],
 ];
 for(const [condition,message] of checks)assert.ok(condition,message);
-console.log(`[check-public-content] OK — ${checks.length} CMS, transport and import invariants checked.`);
+console.log(`[check-public-content] OK — ${checks.length} CMS, transport and cleanup invariants checked.`);

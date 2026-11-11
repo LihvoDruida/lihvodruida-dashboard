@@ -38,7 +38,7 @@ FOR SHARE/FOR UPDATE на рядку guard не дозволяє транзак�
 
 ## Перевірки й межі
 
-Точні результати: [R6_4_VALIDATION_2026-10-12.json](R6_4_VALIDATION_2026-10-12.json). npm run test:group-migration використовує окремий TEST_DATABASE_URL, створює приватну схему та видаляє її. npm run check:group-migration включено у verify і build:ci.
+Точні результати: R6_4_VALIDATION_2026-10-12.json (історичний JSON-звіт прибрано в 3.20.0). npm run test:group-migration використовує окремий TEST_DATABASE_URL, створює приватну схему та видаляє її. npm run check:group-migration включено у verify і build:ci.
 
 Права, системні ID, revision-конфлікти та чернетки R5 збережені. Відмова аудиту не перетворює виконану зміну на повідомлення про невдале збереження. Права активних сесій оновлюються за чинним механізмом авторизації; перенесення не заявляє миттєве відкликання всіх cookie або зміну ролей Discord.
 

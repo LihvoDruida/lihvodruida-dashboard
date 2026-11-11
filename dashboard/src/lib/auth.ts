@@ -414,7 +414,7 @@ export type OAuthStatePayload = {
 function safeOAuthNextPath(value?: string | null) {
   // The start endpoint and callback must agree on the same allowlist.
   // Otherwise a successful login silently loses the requested destination
-  // (e.g. /discord/static or /admin) when state is signed and parsed.
+  // (e.g. /discord/static or /dashboard) when state is signed and parsed.
   return safeDashboardReturnPath(value, { scope: "discord-auth", fallback: "" });
 }
 
@@ -735,34 +735,6 @@ export async function clearSession() {
   // on logout to prevent a pending callback being resumed in a new session.
   store.set(BNET_OAUTH_STATE_COOKIE, "", secureCookieOptions);
   store.set(LEGACY_BNET_OAUTH_STATE_COOKIE, "", legacyCookieOptions);
-}
-
-/**
- * Legacy sync resolver kept only for older imports. Real access is resolved
- * asynchronously from DocumentStore groups in accessGroups.ts.
- */
-export function resolveDashboardRole(_roleIds: string[]): DashboardRole | null {
-  return null;
-}
-
-export function assertCanModerate(
-  session: DashboardSession | null,
-): asserts session is DashboardSession {
-  if (!session || !hasPermission(session, "applications.manage")) {
-    throw new Error("Access denied");
-  }
-}
-
-export function assertAdmin(
-  session: DashboardSession | null,
-): asserts session is DashboardSession {
-  if (
-    !session ||
-    !hasPermission(session, "groups.manage") ||
-    session.role !== "admin"
-  ) {
-    throw new Error("Admin access required");
-  }
 }
 
 /**

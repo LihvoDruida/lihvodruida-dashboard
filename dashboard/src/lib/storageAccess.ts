@@ -2,13 +2,10 @@ import "server-only";
 
 import { hasDocumentDbConfig } from "@/lib/documentDb";
 import {
-  clearRuntimeCircuit,
   getRuntimeCircuit,
   logThrottled,
   resilientRead,
   resilientWrite,
-  runtimeCircuitOpen,
-  safeErrorText,
 } from "@/lib/runtimeResilience";
 import { envFlag } from "@/lib/values";
 
@@ -110,18 +107,6 @@ export function storageCapability(area: StorageArea | string, operation: Storage
   };
 }
 
-export function canAttemptStorageRead(area: StorageArea | string = "generic") {
-  return storageCapability(area, "read").available;
-}
-
-export function canAttemptStorageWrite(area: StorageArea | string = "generic") {
-  return storageCapability(area, "write").available;
-}
-
-export function storageReadOnlyMode(area: StorageArea | string = "generic") {
-  return canAttemptStorageRead(area) && !canAttemptStorageWrite(area);
-}
-
 export function storageUnavailableMessage(area: StorageArea | string, operation: StorageOperation) {
   const capability = storageCapability(area, operation);
   const label = capability.label;
@@ -139,10 +124,6 @@ export function assertStorageWriteAvailable(area: StorageArea | string = "generi
   if (!capability.available) {
     throw new Error(storageUnavailableMessage(area, "write"));
   }
-}
-
-export function clearStorageOperationCircuit(area: StorageArea | string, operation: StorageOperation) {
-  clearRuntimeCircuit(storageCircuitKey(area, operation));
 }
 
 export async function storageRead<T>(
@@ -208,14 +189,4 @@ export async function storageWrite<T>(
       throw new Error(storageUnavailableMessage(area, "write"));
     },
   });
-}
-
-export function storageWriteFailureDetails(area: StorageArea | string, error: unknown) {
-  const clean = cleanArea(area);
-  return {
-    area: clean,
-    writeCircuitOpen: runtimeCircuitOpen(storageCircuitKey(clean, "write")),
-    readStillAvailable: canAttemptStorageRead(clean),
-    message: safeErrorText(error),
-  };
 }

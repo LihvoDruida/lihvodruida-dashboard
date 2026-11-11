@@ -110,10 +110,3 @@ export function primaryCurrentRaidProgress<T extends CharacterRaidProgressLike>(
 ): T | null {
   return currentSeasonRaidProgress(raids, snapshot)[0] || null;
 }
-
-export function raidProgressBelongsToCurrentSeason(
-  slug: string,
-  snapshot: RaidSeasonSnapshot | null | undefined,
-) {
-  return currentSeasonRaidSlugs(snapshot).includes(clean(slug));
-}

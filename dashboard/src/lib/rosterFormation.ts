@@ -365,16 +365,6 @@ export function rosterCoveredClassCount(roster: RosterFormation) {
   return rosterClassCoverage(roster).filter((row) => row.count > 0).length;
 }
 
-export function rosterRoleCounts(roster: RosterFormation) {
-  return roster.picks.reduce(
-    (acc, pick) => {
-      acc[pick.role] += 1;
-      return acc;
-    },
-    { tank: 0, healer: 0, dps: 0 } as Record<WowCharacterRole, number>,
-  );
-}
-
 /* ----------------------------------------------------------------------------
    Деталізована роль: танк / хіл / ДД (мелі) / РДД (рендж).
    Мелі-vs-рендж визначається автоматично тим самим класифікатором, що вже

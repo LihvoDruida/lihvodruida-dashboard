@@ -48,7 +48,7 @@ npm run lint
 
 check:poll-mutations включено до verify та build:ci. Browser suite використовує зовнішні Playwright/esbuild/Chromium через MISTBLOSSOM_QA_MODULES та MISTBLOSSOM_QA_CHROMIUM; MISTBLOSSOM_QA_OUTPUT задає каталог звіту. Залежності production image не розширено.
 
-Машинні результати, відтворення попередньої версії та остаточні build/standalone gates: [R7_4_VALIDATION_2026-10-15.json](R7_4_VALIDATION_2026-10-15.json).
+Машинні результати, відтворення попередньої версії та остаточні build/standalone gates: R7_4_VALIDATION_2026-10-15.json (історичний JSON-звіт прибрано в 3.20.0).
 
 ## Межі та наступний крок
 

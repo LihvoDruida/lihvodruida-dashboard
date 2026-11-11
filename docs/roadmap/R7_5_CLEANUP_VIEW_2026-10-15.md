@@ -44,7 +44,7 @@ Dashboard **3.8.98**, bot **3.6.9**, contract **1.1.1**. 15.10.2026.
 
 Новий швидкий `check:cleanup-view` включено у `verify` та `build:ci`. Browser-suite лишається окремою перевіркою й потребує зовнішніх Playwright, esbuild та Chromium; нових production-залежностей немає. Шляхи до модулів/Chromium можна задати через `MISTBLOSSOM_QA_MODULES` та `MISTBLOSSOM_QA_CHROMIUM`, каталог JSON-звіту — `MISTBLOSSOM_QA_OUTPUT`. Baseline використовує `MISTBLOSSOM_TEST_CLEANUP_SOURCE` із попереднім компонентом.
 
-Повний машинний звіт: [R7_5_VALIDATION_2026-10-15.json](R7_5_VALIDATION_2026-10-15.json).
+Повний машинний звіт: R7_5_VALIDATION_2026-10-15.json (історичний JSON-звіт прибрано в 3.20.0).
 
 ## Межі та наступний крок
 

@@ -40,7 +40,7 @@ function pathAllowed(path: string, options: SafeDashboardReturnPathOptions) {
     if (options.scope === "discord-auth") {
       return (
         pathname === "/" ||
-        /^\/(?:dashboard|raids|profile|profiles|rules\/accept|guild|roster|applications|polls|content|discord|admin)(?:\/|$)/.test(pathname)
+        /^\/(?:dashboard|raids|profile|profiles|rules\/accept|guild|roster|applications|polls|content|discord)(?:\/|$)/.test(pathname)
       );
     }
 

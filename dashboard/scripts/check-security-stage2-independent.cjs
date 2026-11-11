@@ -49,15 +49,23 @@ function fakeDb() {
     async delete() { if (failed) throw new Error("db_unavailable"); col(collection).delete(id); },
   });
   const db = {
-    collection(name) { return {
-      doc(id) { return document(name, id); },
-      where(key, operator, value) { assert.equal(operator, "<="); return {
-        limit(size) { return {
-          async get() { const docs = [...col(name)].filter(([, data]) => data[key] <= value).slice(0, size)
-            .map(([id]) => ({ id, ref: document(name, id) })); return { docs }; },
-        }; },
-      }; },
-    }; },
+    collection(name) {
+      const query = (filters = [], size = Infinity) => ({
+        doc(id) { return document(name, id); },
+        where(key, operator, value) {
+          assert.ok(["<=", "=="].includes(operator));
+          return query([...filters, { key, operator, value }], size);
+        },
+        limit(value) { return query(filters, value); },
+        async get() {
+          if (failed) throw new Error("db_unavailable");
+          return { docs: [...col(name)].filter(([, data]) => filters.every(({key,operator,value}) =>
+            operator === "==" ? data[key] === value : data[key] <= value
+          )).slice(0, size).map(([id, data]) => ({ id, data: () => data, ref: document(name, id) })) };
+        },
+      });
+      return query();
+    },
     async runTransaction(fn) {
       // Serialized fake transactions model the one-writer conflict rule.
       let release;
@@ -84,26 +92,45 @@ function fakeDb() {
 (async () => {
   const storage = fakeDb();
   const deps = { "@/lib/documentDb": { getDocumentDb: () => storage.db } };
-  const dedupe = load("src/lib/discordInteractionDedupe.ts", deps);
+  process.env.SESSION_SECRET = "independent-stage2-outbox-fixture-" + "x".repeat(48);
+  const outbox = load("src/lib/discordInteractionOutbox.ts", deps);
+  const claim = async id => (await outbox.beginInteractionOutbox(id, "fixture-interaction-token")).claimed;
   const revocation = load("src/lib/sessionRevocation.ts", deps);
   const id = "1449767282195562569";
   await test("signed interaction gets one shared claim", async () => {
-    assert.equal(await dedupe.claimVerifiedDiscordInteraction(id), true);
-    assert.equal(await dedupe.claimVerifiedDiscordInteraction(id), false);
+    assert.equal(await claim(id), true);
+    assert.equal(await claim(id), false);
   });
   await test("process-restart model shares persistent replay claims", async () => {
-    const second = load("src/lib/discordInteractionDedupe.ts", deps);
-    assert.equal(await second.claimVerifiedDiscordInteraction(id), false);
+    const second = load("src/lib/discordInteractionOutbox.ts", deps);
+    assert.equal((await second.beginInteractionOutbox(id, "fixture-interaction-token")).claimed, false);
   });
   await test("concurrent requests cannot both claim same interaction", async () => {
-    const results = await Promise.all(Array.from({ length: 12 }, () => dedupe.claimVerifiedDiscordInteraction("1556667778889990001")));
+    const results = await Promise.all(Array.from({ length: 12 }, () => claim("1556667778889990001")));
     assert.equal(results.filter(Boolean).length, 1);
   });
   await test("invalid snowflakes and DB outage fail closed", async () => {
-    assert.equal(await dedupe.claimVerifiedDiscordInteraction("unsafe"), false);
+    await assert.rejects(claim("unsafe"), /invalid interaction id/);
     storage.setFailed(true);
-    await assert.rejects(dedupe.claimVerifiedDiscordInteraction("1556667778889990002"), /db_unavailable/);
+    await assert.rejects(claim("1556667778889990002"), /db_unavailable/);
     storage.setFailed(false);
+  });
+  await test("active outbox encrypts the token and replays the saved result without another claim", async () => {
+    const resultId = "1556667778889990003", token = "fixture-webhook-token";
+    assert.equal((await outbox.beginInteractionOutbox(resultId, token)).claimed, true);
+    assert.ok(!JSON.stringify(storage.col("discordInteractionClaims").get(resultId)).includes(token));
+    const callback = { type: 4, data: { content: "completed once" } };
+    await outbox.finishInteractionOutbox(resultId, callback);
+    const duplicate = await outbox.beginInteractionOutbox(resultId, token);
+    assert.equal(duplicate.claimed, false); assert.deepEqual(duplicate.result, callback);
+  });
+  await test("delivery expiry scrubs credentials but preserves the replay claim", async () => {
+    const resultId = "1556667778889990004";
+    await outbox.beginInteractionOutbox(resultId, "expired-delivery-token", Date.now() - 15 * 60_000);
+    await outbox.pruneInteractionOutbox();
+    const record = storage.col("discordInteractionClaims").get(resultId);
+    assert.equal(record.tokenCipher, ""); assert.equal(record.deliveryState, "failed");
+    assert.equal((await outbox.beginInteractionOutbox(resultId, "duplicate-token")).claimed, false);
   });
   await test("dashboard HTTP handler rejects a forwarded duplicate before mutation", async () => {
     class Reply {
@@ -119,10 +146,10 @@ function fakeDb() {
         safeErrorMessage: (error) => String(error),
       },
       "@/lib/discordAdmin": { verifyDiscordInteractionSignature: async () => true },
-      "@/lib/discordInteractionOutbox": { beginInteractionOutbox: async () => ({ claimed: false, result: null }) },
+      "@/lib/discordInteractionOutbox": outbox,
     });
     const interactionId = "1888999000111222333";
-    assert.equal(await dedupe.claimVerifiedDiscordInteraction(interactionId), true);
+    assert.equal(await claim(interactionId), true);
     const request = { headers: new Headers({
       "authorization": "Bearer test", "x-mistblossom-source": "bot", "x-interaction-id": interactionId,
     }), text: async () => JSON.stringify({ id: interactionId, type: 3, data: { custom_id: "mbv:raid" } }) };
@@ -165,7 +192,7 @@ function fakeDb() {
   await test("security TTL retention removes only expired entries", async () => {
     storage.col("discordInteractionClaims").set("legacy", { expiresAt: "2000-01-01T00:00:00.000Z" });
     storage.col("authRevokedSessions").set("expired", { expiresAt: "2000-01-01T00:00:00.000Z" });
-    assert.equal(await dedupe.pruneDiscordInteractionClaims(), 1);
+    assert.equal(await outbox.pruneInteractionOutbox(), 1);
     assert.equal(await revocation.pruneRevokedSessions(), 1);
     assert.equal(storage.col("authRevokedSessions").size, 1);
   });

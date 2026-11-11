@@ -31,7 +31,7 @@ const checks = [
   ["logged out state is explicit", page.includes("loggedOut?: string") && page.includes("Сесію завершено.")],
   ["session-required error has purpose-specific copy", page.includes("session_required:") && page.includes("Після перевірки ролей повернемо тебе")],
   ["login uses the shared safe return-path validator", page.includes('safeDashboardReturnPath(params.next') && page.includes('scope: "discord-auth"')],
-  ["Discord auth can return to management pages", redirects.includes("dashboard|raids|profile|profiles") && redirects.includes("applications|polls|content|discord|admin")],
+  ["Discord auth can return to management pages", redirects.includes("dashboard|raids|profile|profiles") && redirects.includes("applications|polls|content|discord")],
   ["rate-limit redirect cannot leak an internal Docker origin in production", discordStart.includes('new URL("/login?error=rate_limit", appBaseUrl(request))')],
   ["legacy layout login hero no longer injects a second min-height", !layout.includes("/* ---------- Лендинг-герой (сторінка входу) ---------- */")],
   ["mobile login layout has a compact dedicated breakpoint", css.includes("@media (max-width: 640px)") && css.includes("env(safe-area-inset-left)") && css.includes("display: none")],

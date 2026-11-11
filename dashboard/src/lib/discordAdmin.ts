@@ -7,8 +7,6 @@ import { logDashboardEvent } from "@/lib/security";
 import { cleanSnowflake } from "@/lib/values";
 import { resolveDiscordAvatarUrl, discordDefaultAvatarUrl } from "@/lib/discordAvatar";
 import { readGuildRulesStats, readRaidRulesRecords } from "@/lib/discordRulesStats";
-
-const DISCORD_API_BASE = "https://discord.com/api/v10";
 const DASHBOARD_CUSTOM_ID_PREFIX = "mbv1";
 
 
@@ -1016,14 +1014,6 @@ function encodedRoleIds(roleIds: string[]) {
 
 export function buildRulesAcceptCustomId(roleIds: string[]) {
   const customId = `${DASHBOARD_CUSTOM_ID_PREFIX}:a:${encodedRoleIds(roleIds)}`;
-  if (customId.length > 100) {
-    throw new Error("Вибрано забагато ролей для однієї Discord-кнопки. Зменш кількість ролей або створи одну збірну роль.");
-  }
-  return customId;
-}
-
-export function buildRulesConfirmAcceptCustomId(roleIds: string[]) {
-  const customId = `${DASHBOARD_CUSTOM_ID_PREFIX}:c:a:${encodedRoleIds(roleIds)}`;
   if (customId.length > 100) {
     throw new Error("Вибрано забагато ролей для однієї Discord-кнопки. Зменш кількість ролей або створи одну збірну роль.");
   }

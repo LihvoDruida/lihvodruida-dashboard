@@ -121,24 +121,6 @@ export async function revokeStaticInvite(id: string, actorId: string) {
   await staticAudit("invite.revoked", actorId, { inviteId: id });
 }
 
-export async function listStaticState() {
-  const [invites, members, events, settings] = await Promise.all([
-    db().collection(INVITES).limit(150).get(),
-    db().collection(MEMBERS).limit(1000).get(),
-    db().collection(HISTORY).limit(200).get(),
-    getStaticSettings(),
-  ]);
-  return {
-    settings,
-    invites: invites.docs.map((doc) => doc.data() as StaticInvite).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-    members: members.docs.map((doc) => doc.data() as StaticMember).sort((a, b) => (b.acceptedAt || "").localeCompare(a.acceptedAt || "")),
-    audit: events.docs.map((doc) => {
-      const data = doc.data() ?? {};
-      return { id: doc.id, ...data, createdAt: String(data.createdAt || "") };
-    }).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 60),
-  };
-}
-
 export async function listStaticOverview() {
   const [invites, memberDocs, settings] = await Promise.all([
     db().collection(INVITES).limit(150).get(),

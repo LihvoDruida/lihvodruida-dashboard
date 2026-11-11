@@ -241,10 +241,6 @@ export async function readExternalCharacterData(key: string) {
   );
 }
 
-export async function readCanonicalCharacterData(key: string) {
-  return (await readGuildCharacterData(key)) || (await readExternalCharacterData(key));
-}
-
 
 export async function readCanonicalCharacterDataMany(keys: string[]) {
   if (!hasDocumentDbConfig()) return new Map<string, CanonicalCharacterData>();

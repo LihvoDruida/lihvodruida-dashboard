@@ -45,6 +45,13 @@ const nextConfig = {
       { protocol: "https", hostname: "raider.io" },
     ],
   },
+  async redirects() {
+    return ["normal", "heroic", "mythic"].map(difficulty => ({
+      source: `/assets/raid-thumbnails/raid-${difficulty}.png`,
+      destination: `/assets/raid-thumbnails/${difficulty}.png`,
+      permanent: true,
+    }));
+  },
   async headers() {
     return [
       { source: "/assets/video/auth/:file*", headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }] },

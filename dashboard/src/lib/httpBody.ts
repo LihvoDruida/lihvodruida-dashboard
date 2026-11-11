@@ -5,7 +5,6 @@ export function awaitAbortable<T>(promise:Promise<T>,signal?:AbortSignal):Promis
  if(!signal)return promise;if(signal.aborted)return Promise.reject(signal.reason);
  return new Promise((resolve,reject)=>{const abort=()=>{reject(signal.reason);};signal.addEventListener('abort',abort,{once:true});promise.then(resolve,reject).finally(()=>signal.removeEventListener('abort',abort));});
 }
-export function isJsonContainer(value:unknown){return value!==null&&typeof value==='object';}
 export async function readResponseText(response:Response,options:{maxBytes?:number;signal?:AbortSignal}={}){
  const limit=Math.max(1,Math.min(16*1024*1024,options.maxBytes??4*1024*1024));
  const reader=response.body?.getReader();if(!reader)return '';

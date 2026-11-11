@@ -3,7 +3,8 @@
   "compilerOptions": {
     "noEmit": true,
     "incremental": true,
-    "tsBuildInfoFile": "./.next/cache/typecheck/tsconfig.tsbuildinfo"
+    "tsBuildInfoFile": "./.next/cache/typecheck/tsconfig.tsbuildinfo",
+    "noUnusedLocals": true
   },
   "include": [
     "next-env.d.ts",

@@ -36,7 +36,6 @@ log() {
 call() {
   path="$1"
   case "$path" in
-    /api/dashboard/streamers/automation) interval=30; key=guild-streamers ;;
     /api/raids/lifecycle*) interval=60; key=raid-lifecycle ;;
     /api/dashboard/discord/onboarding/automation) interval=60; key=onboarding ;;
     /api/dashboard/discord/member-cleanup/automation) interval=10; key=member-cleanup ;;
@@ -67,14 +66,6 @@ call "/api/raids/lifecycle?sweep=1&limit=100"
   while true; do
     call "/api/dashboard/discord/member-cleanup/automation"
     sleep 10
-  done
-) &
-
-# Stream monitoring has its own 30s tick, independent of calendar jobs.
-(
-  while true; do
-    call "/api/dashboard/streamers/automation"
-    sleep 30
   done
 ) &
 

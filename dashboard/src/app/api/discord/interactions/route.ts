@@ -9,7 +9,18 @@ import {
 } from "@/lib/discordAdmin";
 import { getMainCharacter, getProfileByDiscordUserIdForInteraction } from "@/lib/profiles";
 import { rulesAcceptUrlForDiscordUser } from "@/lib/rulesOnboarding";
-import { handleRaidSignupMenuInteraction, dashboardProfileUrl, dashboardRaidRulesUrl, decodeRaidAttendanceCustomId, decodeRaidCharacterSelectCustomId, decodeRaidManualClassCustomId, decodeRaidManualSpecCustomId, decodeRaidRoleSelectCustomId, decodeRaidSignupSubmitCustomId, raidActionHelpComponents, type RaidCharacterRole } from "@/lib/raids";
+import {
+  handleRaidSignupMenuInteraction,
+  dashboardProfileUrl,
+  dashboardRaidRulesUrl,
+  decodeRaidAttendanceCustomId,
+  decodeRaidCharacterSelectCustomId,
+  decodeRaidManualClassCustomId,
+  decodeRaidManualSpecCustomId,
+  decodeRaidRoleSelectCustomId,
+  decodeRaidSignupSubmitCustomId,
+  raidActionHelpComponents,
+} from "@/lib/raids";
 import { handleRaidPollDiscordVote } from "@/lib/raidPolls";
 // Розбір custom_id — зі спільного пакета: бот користується тим самим кодом,
 // тому нова дія не може «загубитись» на одній зі сторін.
@@ -170,14 +181,6 @@ function getInteractionMessageRef(interaction: any) {
   const channelId = String(interaction?.channel_id || interaction?.message?.channel_id || "").trim();
   const messageId = String(interaction?.message?.id || "").trim();
   return channelId && messageId ? { channelId, messageId } : null;
-}
-
-function cleanRaidSignupRole(value: unknown): RaidCharacterRole | null {
-  const role = String(value || "").trim().toLowerCase();
-  if (role === "tank") return "tank";
-  if (role === "healer") return "healer";
-  if (role === "dps") return "dps";
-  return null;
 }
 
 function mainCharacterLabel(character: any) {

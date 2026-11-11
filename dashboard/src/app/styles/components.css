@@ -53,8 +53,7 @@
 /* Панель — вертикальний стек: кожна панель дихає однаково.
    Hero-блоки виключені: вони теж носять .panel, але мають власну
    двоколонкову сітку в layout.css, і стек її перекривав. */
-.panel:not(:where([class*="hero"])),
-.page-section {
+.panel:not(:where([class*="hero"])) {
   display: flex;
   flex-direction: column;
   gap: var(--gap-stack);
@@ -870,7 +869,6 @@ a.dashboard-list-row:hover {
 
 
 
-.empty-state,
 .raid-empty,
 .poll-empty,
 .content-empty,
@@ -886,7 +884,6 @@ a.dashboard-list-row:hover {
   color: var(--text-muted);
 }
 
-.empty-state strong,
 [class$="-empty"]:not(:where([class*="--empty"])) strong,
 [class*="-empty "]:not(:where([class*="--empty"])) strong {
   color: var(--text-soft);
@@ -1038,11 +1035,6 @@ details[open] > summary::before {
 
 details > *:not(:where(summary)) {
   padding: 0 var(--space-md) var(--space-md);
-}
-
-.debug-details pre {
-  margin-top: var(--space-xs);
-  max-height: 320px;
 }
 
 /* Смуга вкладок */

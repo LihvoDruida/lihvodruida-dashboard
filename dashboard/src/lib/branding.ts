@@ -56,12 +56,3 @@ export async function getGuildBranding(): Promise<GuildBranding> {
     };
   }
 }
-
-// Backward-compatible helpers for old imports.
-export async function getGuildIconUrl() {
-  return (await getGuildBranding()).iconUrl;
-}
-
-export async function getGuildName() {
-  return (await getGuildBranding()).name;
-}

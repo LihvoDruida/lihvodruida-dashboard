@@ -177,26 +177,6 @@ export async function getGuildNicknamePolicy(options: { bypassCache?: boolean } 
   return setNicknamePolicyCache(policy);
 }
 
-export async function setGuildNicknamePolicy(templateInput: unknown, actor?: DashboardSession | null) {
-  const template = cleanNicknameTemplate(templateInput);
-  if (!hasDocumentDbConfig()) throw new Error("Storage не налаштований для збереження шаблону ніку.");
-  await storageWrite(
-    "settings",
-    "guild-nickname-policy:save",
-    () => getDocumentDb().collection(SETTINGS_COLLECTION).doc(POLICY_DOC_ID).set({
-      template,
-      updatedAt: FieldValue.serverTimestamp(),
-      updatedBy: actor?.name || actor?.login || actor?.id || null,
-    }, { merge: true }),
-    { timeoutMs: 3_000, logEvent: "guild.nickname_policy_write_failed" },
-  );
-  return setNicknamePolicyCache({
-    ...normalizePolicyData({ template }),
-    updatedAt: new Date().toISOString(),
-    updatedBy: actor?.name || actor?.login || actor?.id || null,
-  });
-}
-
 export async function setGuildDiscordManagementSettings(input: {
   template?: unknown;
   nicknameCleanupConcurrency?: unknown;

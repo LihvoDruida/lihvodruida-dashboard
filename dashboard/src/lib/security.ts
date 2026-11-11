@@ -173,10 +173,6 @@ export function getRequestHost(request: Request | NextRequest) {
   return normalizeHost(request.headers.get("host") || request.headers.get("x-forwarded-host") || "");
 }
 
-export function getForwardedHost(request: Request | NextRequest) {
-  return normalizeHost(request.headers.get("x-forwarded-host"));
-}
-
 export function isLocalHost(host: string) {
   const normalized = normalizeHost(host);
   return (

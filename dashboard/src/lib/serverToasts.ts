@@ -25,7 +25,3 @@ export function dashboardToastCookie(toast: DashboardToastCookie) {
 
   return `${TOAST_COOKIE_NAME}=${encodeURIComponent(JSON.stringify(payload))}; Path=/; Max-Age=45; SameSite=Lax`;
 }
-
-export function clearDashboardToastCookie() {
-  return `${TOAST_COOKIE_NAME}=; Path=/; Max-Age=0; SameSite=Lax`;
-}

@@ -68,18 +68,46 @@ function filesUnder(directory) {
     }
     assert.ok(response?.ok, logs); const data = await response.json(); assert.equal(data.ok, true); assert.equal(data.service, 'mistblossom-dashboard'); assert.ok(response.headers.get('cache-control').includes('no-store'));
   });
-  await check('packaged streamer route passes private Host proxy only with site token and reaches its database handler', async () => {
+  await check('packaged site status route passes private Host proxy only with site token and reaches its database handler', async () => {
     const get = token => new Promise((resolve, reject) => {
-      const request = http.get(base + '/api/site/streamers', { headers: { Host: 'dashboard:3000', ...(token ? { Authorization: 'Bearer ' + token } : {}) } }, result => {
+      const request = http.get(base + '/api/site/status', { headers: { Host: 'dashboard:3000', ...(token ? { Authorization: 'Bearer ' + token } : {}) } }, result => {
         const chunks = []; result.on('data', chunk => chunks.push(chunk)); result.on('error', reject);
         result.on('end', () => resolve({ status: result.statusCode, headers: result.headers, data: JSON.parse(Buffer.concat(chunks).toString('utf8')) }));
       });
-      request.on('error', reject); request.setTimeout(5000, () => request.destroy(new Error('Streamer route timed out')));
+      request.on('error', reject); request.setTimeout(5000, () => request.destroy(new Error('Site status route timed out')));
     });
     for (const token of [null, 'invalid']) { const r = await get(token); assert.equal(r.status, 401); assert.equal(r.headers.location, undefined); }
     const r = await get('standalone-bridge-'.repeat(4));
     assert.equal(r.status, 503, 'Without database the actual handler must return 503, never a proxy redirect');
-    assert.equal(r.data.code, 'database_unavailable'); assert.equal(r.headers.location, undefined); assert.match(r.headers['cache-control'], /no-store/);
+    assert.equal(r.data.error, 'database_unavailable'); assert.equal(r.headers.location, undefined); assert.match(r.headers['cache-control'], /no-store/);
+  });
+  await check('legacy raid thumbnail URLs redirect to canonical files without duplicate assets', async () => {
+    for (const difficulty of ['normal','heroic','mythic']) {
+      const oldPath = '/assets/raid-thumbnails/raid-' + difficulty + '.png';
+      const result = await new Promise((resolve, reject) => {
+        const request = http.get(base + oldPath, { headers: { Host: 'guild.test', 'x-mistblossom-trusted-proxy': 'cloudflare' } }, response => {
+          response.resume(); response.on('end', () => resolve({status: response.statusCode, location: response.headers.location})); response.on('error', reject);
+        });
+        request.on('error', reject); request.setTimeout(3000, () => request.destroy(new Error('Thumbnail redirect timed out')));
+      });
+      assert.equal(result.status, 308);
+      assert.equal(new URL(result.location, 'https://guild.test').pathname, '/assets/raid-thumbnails/' + difficulty + '.png');
+      assert.ok(fs.existsSync(path.join(root, 'public/assets/raid-thumbnails', difficulty + '.png')));
+      assert.ok(!fs.existsSync(path.join(root, 'public' + oldPath)));
+    }
+  });
+  await check('retired admin and GitHub login handlers are absent from the build and old public paths return 404', async () => {
+    const manifest = JSON.parse(fs.readFileSync(path.join(root, '.next/server/app-paths-manifest.json'), 'utf8'));
+    for (const route of ['/admin/page','/admin/[...path]/page','/api/admin/[...path]/route','/api/auth/github/start/route','/api/auth/github/callback/route']) assert.ok(!Object.hasOwn(manifest, route), 'Retired handler in build: ' + route);
+    for (const route of ['/admin','/admin/settings','/api/auth/github/start','/api/auth/github/callback']) {
+      const result = await new Promise((resolve, reject) => {
+        const request = http.get(base + route, { headers: { Host: 'guild.test', 'x-mistblossom-trusted-proxy': 'cloudflare' } }, response => {
+          response.resume(); response.on('end', () => resolve({status: response.statusCode, location: response.headers.location})); response.on('error', reject);
+        });
+        request.on('error', reject); request.setTimeout(5000, () => request.destroy(new Error('Retired path request timed out')));
+      });
+      assert.equal(result.status, 404, route); assert.equal(result.location, undefined, route);
+    }
   });
   await check('standalone server serves the exact traced welcome background', async () => {
     const response = await new Promise((resolve, reject) => {

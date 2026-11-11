@@ -101,11 +101,6 @@ COPY docs/DATABASE.md /repo/docs/DATABASE.md
 COPY docs/OPERATIONS.md /repo/docs/OPERATIONS.md
 COPY docs/RELEASE_INSTALL_2026-10-19_UA.md /repo/docs/RELEASE_INSTALL_2026-10-19_UA.md
 
-# The CMS integrity check requires the legacy PostgreSQL import in the
-# builder filesystem. Docker does not copy the full build context by default.
-# Keep this source confined to builder; never COPY it into the runner image.
-COPY import/legacy-site/migrate_site_articles.sql /repo/import/legacy-site/migrate_site_articles.sql
-
 # CI scheduling audit also verifies the real VPS cron endpoint. The dashboard
 # build context is the repository root, but files are not present in a stage
 # until they are explicitly copied. Include both non-secret cron scripts for
@@ -201,6 +196,8 @@ COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/assets/fonts/welcome .
 # Runtime gets only the maintenance entrypoints actually invoked on the VPS;
 # CI/audit/build scripts stay in the builder stage and never reach production.
 COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/scripts/db-init.mjs ./dashboard/scripts/db-init.mjs
+COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/scripts/remove-media-data.mjs ./dashboard/scripts/remove-media-data.mjs
+COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/scripts/sql/remove-media.sql ./dashboard/scripts/sql/remove-media.sql
 COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/scripts/discord-storage-diagnose.mjs ./dashboard/scripts/discord-storage-diagnose.mjs
 COPY --from=builder --chown=nextjs:nodejs /repo/dashboard/src/lib/db/schema.sql ./dashboard/src/lib/db/schema.sql
 

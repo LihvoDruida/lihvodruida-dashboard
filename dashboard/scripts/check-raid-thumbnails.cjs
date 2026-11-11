@@ -20,7 +20,7 @@ function readPngSize(filePath) {
 }
 
 for (const difficulty of required) {
-  for (const name of [`${difficulty}.png`, `raid-${difficulty}.png`]) {
+  for (const name of [`${difficulty}.png`]) {
     const filePath = path.join(assetsDir, name);
     if (!fs.existsSync(filePath)) {
       throw new Error(`Missing raid thumbnail asset: ${name}`);
@@ -35,4 +35,4 @@ for (const difficulty of required) {
   }
 }
 
-console.log(`[raid-thumbnails] OK — ${required.length * 2} PNG assets are present and valid.`);
+console.log(`[raid-thumbnails] OK — ${required.length} PNG assets are present and valid.`);

@@ -202,13 +202,6 @@ export function findWowSpec(
   return spec ? { cls, spec } : null;
 }
 
-export function wowClassColorInt(classKey: unknown): number {
-  const cls = findWowClass(classKey);
-  const hex = (cls?.color || "#94a3b8").replace("#", "");
-  const parsed = Number.parseInt(hex, 16);
-  return Number.isFinite(parsed) ? parsed : 0x94a3b8;
-}
-
 /**
  * Повна назва спеки у форматі «спека + клас», як прийнято в англомовному
  * ком'юніті WoW: "Restoration Druid", "Frost Death Knight", "Beast Mastery Hunter".
@@ -225,16 +218,4 @@ export function wowSpecFullName(
       ? resolvedCls.specs.find((item) => item.key === String(spec || "").trim().toLowerCase()) || null
       : spec;
   return resolvedSpec ? `${resolvedSpec.label} ${resolvedCls.label}` : resolvedCls.label;
-}
-
-export function roleLabelShort(role: WowCharacterRole): string {
-  if (role === "tank") return "Танк";
-  if (role === "healer") return "Хіл";
-  return "ДД";
-}
-
-export function roleEmoji(role: WowCharacterRole): string {
-  if (role === "tank") return "🛡️";
-  if (role === "healer") return "💚";
-  return "⚔️";
 }

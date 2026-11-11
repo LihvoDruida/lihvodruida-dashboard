@@ -1,13 +1,13 @@
 import "server-only";
 
-import { FieldValue } from "@/lib/db/documentValues";
-import type { DashboardSession } from "@/lib/auth";
+
+
 import {
   getDocumentDb,
   hasDocumentDbConfig,
 } from "@/lib/documentDb";
 import { resilientRead } from "@/lib/runtimeResilience";
-import { storageWrite } from "@/lib/storageAccess";
+
 import { timestampToIso } from "@/lib/values";
 
 const SETTINGS_COLLECTION = "dashboardSettings";
@@ -533,82 +533,6 @@ export async function getDashboardApiSettings(options: { bypassCache?: boolean }
   return setSettingsCache(settings);
 }
 
-export async function setDashboardApiSettings(input: DashboardApiSettingsInput, actor?: DashboardSession | null) {
-  if (!hasDocumentDbConfig()) {
-    throw new Error("Storage не налаштований для збереження параметрів фонового API.");
-  }
-
-  const doc = getDocumentDb()
-    .collection(SETTINGS_COLLECTION)
-    .doc(DASHBOARD_API_SETTINGS_DOC_ID);
-  const settings = normalizeSettings(input, "documentStore");
-
-  const payload: Record<string, unknown> = {
-    backgroundRefreshMinSeconds: settings.backgroundRefreshMinSeconds,
-    profileViewRefreshMinSeconds: settings.profileViewRefreshMinSeconds,
-    profileExternalRefreshMinSeconds: settings.profileExternalRefreshMinSeconds,
-    profileExternalRefreshBatchLimit: settings.profileExternalRefreshBatchLimit,
-    profileCharacterRefreshConcurrency: settings.profileCharacterRefreshConcurrency,
-    profileCharacterRefreshMaxConcurrency: settings.profileCharacterRefreshMaxConcurrency,
-    profileExternalRefreshConcurrency: settings.profileExternalRefreshConcurrency,
-    profileExternalRefreshMaxConcurrency: settings.profileExternalRefreshMaxConcurrency,
-    dashboardApiDebugAuditLogs: settings.dashboardApiDebugAuditLogs,
-    dashboardApiWarningAuditLogs: settings.dashboardApiWarningAuditLogs,
-    guildRosterRegion: settings.guildRosterRegion,
-    guildRosterRealm: settings.guildRosterRealm,
-    guildRosterName: settings.guildRosterName,
-    guildRosterCacheTtlSeconds: settings.guildRosterCacheTtlSeconds,
-    guildRosterCacheReadTtlMs: settings.guildRosterCacheReadTtlMs,
-    guildRosterCacheWriteBatchSize: settings.guildRosterCacheWriteBatchSize,
-    guildRosterCacheDeleteStaleMembers: settings.guildRosterCacheDeleteStaleMembers,
-    guildRosterRefreshConcurrency: settings.guildRosterRefreshConcurrency,
-    guildRosterRefreshMaxConcurrency: settings.guildRosterRefreshMaxConcurrency,
-    raiderIoRequestTimeoutMs: settings.raiderIoRequestTimeoutMs,
-    raiderIoRequestRetries: settings.raiderIoRequestRetries,
-    raiderIoRateLimitCooldownSeconds: settings.raiderIoRateLimitCooldownSeconds,
-    raiderIoRequestMinDelayMs: settings.raiderIoRequestMinDelayMs,
-    battleNetRequestTimeoutMs: settings.battleNetRequestTimeoutMs,
-    battleNetRequestRetries: settings.battleNetRequestRetries,
-    profileReadCacheTtlMs: settings.profileReadCacheTtlMs,
-    profileListCacheTtlMs: settings.profileListCacheTtlMs,
-    profileCharacterLinksCacheTtlMs: settings.profileCharacterLinksCacheTtlMs,
-    raidListCacheTtlMs: settings.raidListCacheTtlMs,
-    raidItemCacheTtlMs: settings.raidItemCacheTtlMs,
-    raidDiscordDeleteAfterStartHours: settings.raidDiscordDeleteAfterStartHours,
-    guildRosterRecordsChunkSize: settings.guildRosterRecordsChunkSize,
-    raiderIoCharacterCacheTtlMs: settings.raiderIoCharacterCacheTtlMs,
-    guildRosterMemberLimit: settings.guildRosterMemberLimit,
-    guildRosterRefreshStepBudgetMs: settings.guildRosterRefreshStepBudgetMs,
-    guildRosterSyncJobTtlSeconds: settings.guildRosterSyncJobTtlSeconds,
-    guildRosterShardedCacheEnabled: settings.guildRosterShardedCacheEnabled,
-    guildRosterShardedCacheThreshold: settings.guildRosterShardedCacheThreshold,
-    guildRosterBattleNetStepSize: settings.guildRosterBattleNetStepSize,
-    guildRosterBattleNetTtlSeconds: settings.guildRosterBattleNetTtlSeconds,
-    guildRosterRaiderIoStepSize: settings.guildRosterRaiderIoStepSize,
-    guildRosterRaiderIoTtlSeconds: settings.guildRosterRaiderIoTtlSeconds,
-    guildRosterClientDrivenSyncEnabled: settings.guildRosterClientDrivenSyncEnabled,
-    guildRosterClientStepDelayMs: settings.guildRosterClientStepDelayMs,
-    guildRosterClientRequestTimeoutMs: settings.guildRosterClientRequestTimeoutMs,
-    guildRosterClientMaxSteps: settings.guildRosterClientMaxSteps,
-    updatedAt: FieldValue.serverTimestamp(),
-    updatedBy: actor?.name || actor?.login || actor?.id || null,
-  };
-
-  await storageWrite(
-    "settings",
-    "dashboard-api-settings:save",
-    () => doc.set(payload, { merge: true }),
-    { timeoutMs: 3_000, logEvent: "dashboard_api.settings_write_failed" },
-  );
-
-  return setSettingsCache({
-    ...settings,
-    updatedAt: new Date().toISOString(),
-    updatedBy: actor?.name || actor?.login || actor?.id || null,
-    source: "documentStore",
-  });
-}
-
 export async function getExternalCharacterDataSettings() {
   const settings = await getDashboardApiSettings();
   return {
@@ -665,15 +589,4 @@ export async function getSiteRuntimeSettings() {
     dashboardApiWarningAuditLogs: settings.dashboardApiWarningAuditLogs,
     dashboardApiDebugAuditLogs: settings.dashboardApiDebugAuditLogs,
   };
-}
-
-
-export function dashboardApiSettingsSummary(settings: DashboardApiSettings) {
-  const rosterSync = `Guild roster: ${settings.guildRosterName}-${settings.guildRosterRealm}-${settings.guildRosterRegion}; ${settings.guildRosterMemberLimit} перс.; Battle.net крок ${settings.guildRosterBattleNetStepSize}; Raider.IO крок ${settings.guildRosterRaiderIoStepSize}; cooldown ${settings.raiderIoRateLimitCooldownSeconds}с; кеш ${settings.guildRosterCacheTtlSeconds}с; бюджет ${settings.guildRosterRefreshStepBudgetMs}мс; client ${settings.guildRosterClientDrivenSyncEnabled ? "ON" : "OFF"}`;
-  const apiDiagnostics = `API diagnostics: debug ${settings.dashboardApiDebugAuditLogs ? "ON" : "OFF"}, warnings ${settings.dashboardApiWarningAuditLogs ? "ON" : "OFF"}`;
-  return `Оновлення: ${Math.round(settings.backgroundRefreshMinSeconds / 60)} хв; Discord-повідомлення рейду зберігається ${settings.raidDiscordDeleteAfterStartHours} год після старту; персонажі: ${Math.round(settings.profileViewRefreshMinSeconds / 60)} хв; batch: ${settings.profileExternalRefreshBatchLimit}; ${apiDiagnostics}; ${rosterSync}; chunks ${settings.guildRosterRecordsChunkSize}.`;
-}
-
-export function dashboardApiSettingsMinBackgroundRefreshSeconds() {
-  return MIN_BACKGROUND_REFRESH_SECONDS;
 }

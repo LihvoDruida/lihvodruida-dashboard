@@ -78,21 +78,6 @@ type RaiderIoProfileCacheEntry = {
 };
 
 const profileCache = new Map<string, RaiderIoProfileCacheEntry>();
-export const RAIDERIO_CHARACTER_DETAIL_FIELDS = [
-  "gear",
-  "guild",
-  "mythic_plus_scores_by_season:current",
-  "mythic_plus_ranks",
-  "mythic_plus_best_runs",
-  "mythic_plus_recent_runs",
-  "mythic_plus_highest_level_runs",
-  "mythic_plus_weekly_highest_level_runs",
-  "mythic_plus_previous_weekly_highest_level_runs",
-  "mythic_plus_alternate_runs",
-  "raid_progression",
-  "raid_achievement_curve",
-  "raid_achievement_meta",
-].join(",");
 
 function cleanText(value: unknown, maxLength = 500) {
   return String(value || "")

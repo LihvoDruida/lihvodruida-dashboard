@@ -209,10 +209,6 @@ export function extractAutoroleButtonsFromMessage(message: Record<string, unknow
   return readButtons(message.components);
 }
 
-export function isAutoroleMessage(message: Record<string, unknown>) {
-  return extractAutoroleButtonsFromMessage(message).length > 0;
-}
-
 export async function handleAutoroleInteraction(params: {
   customId: string;
   userId: string;

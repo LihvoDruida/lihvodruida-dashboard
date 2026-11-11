@@ -19,7 +19,6 @@ import {
 } from "@/lib/storageAccess";
 import {
   inferStructuredLogCategory,
-  listStructuredLogs,
   recordStructuredLog,
   type StructuredLogLevel,
 } from "@/lib/structuredLogs";
@@ -875,38 +874,6 @@ function auditSummary(action: string, details: Record<string, unknown>) {
     );
   }
   return action;
-}
-
-/**
- * Compatibility reader for code that still expects the old audit shape.
- * Source of truth is now PostgreSQL `system_logs`; Discord is never read back
- * as log storage.
- */
-export async function listAdminAuditLogs(
-  limitInput: unknown = 100,
-): Promise<AdminAuditLogItem[]> {
-  const limit = Math.max(
-    10,
-    Math.min(250, Math.floor(Number(limitInput) || 50)),
-  );
-  const logs = await listStructuredLogs({ limit, sinceHours: 72 });
-  return logs.map((item) => ({
-    id: item.id,
-    action: item.event,
-    actorId: item.actorId || (item.source === "system" ? "system" : ""),
-    actorName: item.actorName,
-    actorGroupId: item.actorGroupId,
-    isServerOwner: Boolean(item.details.isServerOwner),
-    status:
-      item.level === "warning" ||
-      item.level === "error" ||
-      item.level === "success"
-        ? item.level
-        : "info",
-    summary: item.message,
-    details: item.details,
-    createdAt: item.createdAt,
-  }));
 }
 
 /**

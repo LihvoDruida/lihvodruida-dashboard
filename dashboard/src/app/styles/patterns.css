@@ -23,8 +23,8 @@
 [class*="-row "]:not(:where([role="row"])),
 [class$="__row"],
 [class*="__row "],
-[class$="-bar"]:not(:where(.action-bar)),
-[class*="-bar "]:not(:where(.action-bar)),
+[class$="-bar"],
+[class*="-bar "],
 [class$="__bar"],
 [class*="__bar "],
 [class$="-toolbar"],
@@ -174,8 +174,8 @@
   letter-spacing: 0.02em;
 }
 
-[class$="-header"]:not(:where(.section-header)),
-[class*="-header "]:not(:where(.section-header)),
+[class$="-header"],
+[class*="-header "],
 [class$="__header"],
 [class*="__header "] {
   display: flex;

@@ -1,4 +1,4 @@
-# Dashboard 3.16.0
+# Dashboard 3.21.0
 
 [Чинна інструкція парного релізу](../docs/RELEASE_INSTALL_2026-10-19_UA.md).
 
@@ -44,11 +44,6 @@ Smoke перевіряє `/api/health` і всі статичні `page`-мар�
 | `npm run smoke:http` | безпечний GET-smoke запущеного сайту (за замовчуванням `http://0.0.0.0:3000`) |
 | `npm run db:init` | застосувати схему бази |
 
-## Стрімери гільдії
-
-[Діагностика додавання YouTube та виправлення 3.15.1](../docs/STREAMER_YOUTUBE_DIAGNOSTICS_2026-10-18_UA.md).
-
-Налаштування `/dashboard/streamers` доступні лише власнику й адміністратору. Одна картка об’єднує платформи учасника; [спільна форма й журнал](../docs/STREAMER_MEMBER_PLATFORMS_2026-10-18_UA.md). Підключення платформ і порядок парного оновлення: [інструкція](../docs/GUILD_STREAMERS_2026-10-18_UA.md).
 
 ## Документація
 
@@ -64,3 +59,5 @@ Smoke перевіряє `/api/health` і всі статичні `page`-мар�
 `/dashboard/server` is available only when the active dashboard session has `isServerOwner=true`.
 The matching `GET /api/dashboard/server-status` endpoint repeats the same owner check and returns live CPU/core, RAM, swap, filesystem and uptime metrics with `Cache-Control: no-store`.
 The browser keeps only a short in-memory chart history; metrics are not persisted to PostgreSQL. `SERVER_STATS_DISK_PATH` can override the filesystem path used for disk capacity metrics (default: `/`).
+
+Модуль стрімерів видалено; відеофон відновлено. Порядок очищення старих даних: [MEDIA_REMOVAL_2026-11-10_UA.md](../docs/MEDIA_REMOVAL_2026-11-10_UA.md).

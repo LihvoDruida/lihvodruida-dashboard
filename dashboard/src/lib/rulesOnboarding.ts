@@ -1,10 +1,9 @@
 import "server-only";
 
 import { createHmac, timingSafeEqual } from "crypto";
-import { FieldValue } from "@/lib/db/documentValues";
+
 import { getDashboardUrl } from "@/lib/oauth";
-import { getDocumentDb, hasDocumentDbConfig } from "@/lib/documentDb";
-import { storageWrite } from "@/lib/storageAccess";
+
 import {
   buildProfileDiscordNicknamePlan,
   cleanProfileGrammaticalGender,
@@ -236,10 +235,6 @@ export function parseRulesRoleToken(tokenInput: unknown) {
   return parseRulesRoleTokenDetails(tokenInput).roleIds;
 }
 
-export function rulesAcceptPath(roleIds: string[]) {
-  return `/rules/accept?rt=${encodeURIComponent(createRulesRoleToken(roleIds))}`;
-}
-
 export function rulesAcceptPathForDiscordUser(
   roleIds: string[],
   discordUserId: string,
@@ -248,27 +243,12 @@ export function rulesAcceptPathForDiscordUser(
   return `/rules/accept?rt=${encodeURIComponent(createRulesRoleToken(roleIds, { ...options, discordUserId }))}`;
 }
 
-export function rulesAcceptUrl(roleIds: string[]) {
-  return `${getDashboardUrl()}${rulesAcceptPath(roleIds)}`;
-}
-
 export function rulesAcceptUrlForDiscordUser(
   roleIds: string[],
   discordUserId: string,
   options: Omit<CreateRulesRoleTokenOptions, "discordUserId"> = {},
 ) {
   return `${getDashboardUrl()}${rulesAcceptPathForDiscordUser(roleIds, discordUserId, options)}`;
-}
-
-export function rulesLoginPath(roleToken: string) {
-  const safeToken = String(roleToken || "").trim();
-  const next = safeToken ? `/rules/accept?rt=${encodeURIComponent(safeToken)}` : "/rules/accept";
-  return `/api/auth/discord/start?force=1&next=${encodeURIComponent(next)}`;
-}
-
-export function rulesLoginUrl(roleIds: string[]) {
-  const token = createRulesRoleToken(roleIds);
-  return `${getDashboardUrl()}${rulesLoginPath(token)}`;
 }
 
 export function parseRulesRoleIdsFromUrl(urlInput: unknown) {
@@ -391,27 +371,4 @@ export function rulesOnboardingStatus(profile: DashboardProfile | null | undefin
     nicknamePlan,
     missing: steps.filter((step) => !step.complete),
   };
-}
-
-export async function markRulesOnboardingCompleted(profileId: string, input: { roleIds: string[]; nickname?: string | null }) {
-  if (!hasDocumentDbConfig()) return;
-  const cleanProfileId = String(profileId || "").trim();
-  if (!/^id[a-f0-9]{16,40}$/.test(cleanProfileId)) return;
-  await storageWrite(
-    "rules",
-    `profile:${cleanProfileId}:rules-onboarding`,
-    () => getDocumentDb().collection("dashboardProfiles").doc(cleanProfileId).set({
-      rulesOnboarding: {
-        completedAt: FieldValue.serverTimestamp(),
-        roleIds: cleanRoleIds(input.roleIds),
-        nickname: input.nickname || null,
-      },
-      updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true }),
-    {
-      timeoutMs: 3_000,
-      logEvent: "rules.onboarding_write_failed",
-      fallback: () => undefined,
-    },
-  );
 }

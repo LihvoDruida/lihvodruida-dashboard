@@ -19,17 +19,7 @@ export function isBattleNetCharacterProfileUnavailableError(error: unknown) {
   );
 }
 
-export function battleNetProfileUnavailableReason(
-  error: unknown,
-): BattleNetProfileUnavailableReason | null {
-  if (!(error instanceof ApiHttpError)) return null;
-  if (error.status === 404) return "not_found";
-  if (error.status === 403) return "forbidden";
-  return null;
-}
-
 const ALL_BATTLE_NET_REGIONS: BattleNetRegion[] = ["eu", "us", "kr", "tw"];
-export const BATTLE_NET_REGIONS: BattleNetRegion[] = ALL_BATTLE_NET_REGIONS;
 
 export function getEnabledBattleNetRegions(): BattleNetRegion[] {
   const raw = process.env.BATTLENET_ENABLED_REGIONS || process.env.BATTLENET_REGIONS || "eu";

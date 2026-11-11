@@ -1085,10 +1085,6 @@ export function raidPollUniqueDayRecommendations(poll: RaidPollRecommendationCon
   return raidPollDayRecommendations(poll, limit).map((slot) => ({ ...slot, pollId, pollTitle: cleanString(poll.title, 160) || "Raid poll" }));
 }
 
-export function raidPollBestSlot(poll: Pick<RaidPollItem, "days" | "votes"> & Partial<Pick<RaidPollItem, "difficulty">>) {
-  return raidPollSlotRecommendations(poll, 1)[0] || null;
-}
-
 export function raidPollSlotSummary(slot: RaidPollSlotRecommendation | null | undefined) {
   if (!slot) return "Ще немає достатніх голосів.";
   const core = slot.coreReady ? "ядро готове" : "ядро не готове";
@@ -3290,10 +3286,6 @@ async function deleteRaidPollUnderPublicationLease(pollId: string) {
   clearRaidPollRuntimeCaches(poll.id);
   clearRaidPollDiscordSignatureCache(poll.id);
   return { poll, discordDeleted, discordDeleteFailed };
-}
-
-export function raidPollDayLabel(value: RaidPollDay) {
-  return dayLabel(value);
 }
 
 export function raidPollDayFullLabel(value: RaidPollDay) {

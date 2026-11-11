@@ -23,9 +23,8 @@ module.exports = function loadServerTs(relativePath, modules = {}, globals = {})
       if(name==='@/lib/httpBody')return auto('src/lib/httpBody.ts');
       if(name==='@/lib/apiHttp')return auto('src/lib/apiHttp.ts',{'@/lib/httpBody':context.require('@/lib/httpBody')});
       if(name==='@/lib/providerCooldown')return auto('src/lib/providerCooldown.ts',{'@/lib/db/pgPool':modules['@/lib/db/pgPool']||{hasPostgresConfig:()=>false},'@/lib/apiHttp':context.require('@/lib/apiHttp')});
-      if(name==='@/lib/providerHttp'&&modules['@/lib/apiHttp'])return {...modules['@/lib/apiHttp'],providerFetchJson:modules['@/lib/apiHttp'].apiFetchJson,providerFetch:globals.fetch||fetch};
+      if(name==='@/lib/providerHttp'&&modules['@/lib/apiHttp'])return {...modules['@/lib/apiHttp'],providerFetchJson:modules['@/lib/apiHttp'].apiFetchJson};
       if(name==='@/lib/providerHttp')return auto('src/lib/providerHttp.ts',{'@/lib/apiHttp':context.require('@/lib/apiHttp'),'@/lib/providerCooldown':context.require('@/lib/providerCooldown')});
-      if(name==='./message')return auto('src/lib/streamers/message.ts',{'./contract':modules['./contract']||module.exports('src/lib/streamers/contract.ts',{},globals).exports});
       if (name === "@/lib/guildRosterViewState") return module.exports("src/lib/guildRosterViewState.ts", {}, globals).exports;
       if (name === "@/lib/automationTaskCatalog") return module.exports("src/lib/automationTaskCatalog.ts", {}, globals).exports;
       if (name === "@/lib/automationTaskRuns") return module.exports("src/lib/automationTaskRuns.ts", { '@/lib/documentDb': { hasDocumentDbConfig: () => false } }, globals).exports;

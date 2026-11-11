@@ -38,10 +38,10 @@ function loadTs(relative, mocks = {}) {
 (async () => {
   const redirects = loadTs("src/lib/dashboardRedirects.ts");
   await check("return paths allow internal management and reject external URLs", () => {
-    for (const allowed of ["/", "/discord/static", "/admin", "/dashboard", "/profile/id" + "a".repeat(16), "/raids/abc?tab=members"]) {
+    for (const allowed of ["/", "/discord/static", "/dashboard", "/profile/id" + "a".repeat(16), "/raids/abc?tab=members"]) {
       assert.equal(redirects.safeDashboardReturnPath(allowed, { scope: "discord-auth", fallback: "" }), allowed);
     }
-    for (const blocked of ["https://evil.example", "//evil.example", "/api/auth/logout", "/login", "/\\evil.example"]) {
+    for (const blocked of ["https://evil.example", "//evil.example", "/api/auth/logout", "/admin", "/admin/settings", "/login", "/\\evil.example"]) {
       assert.equal(redirects.safeDashboardReturnPath(blocked, { scope: "discord-auth", fallback: "" }), "");
     }
   });

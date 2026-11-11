@@ -55,7 +55,7 @@ npm run build:ci
 npm run lint
 ```
 
-Браузерні suite потребують Playwright, esbuild і Chromium; їхнє зовнішнє розташування задають MISTBLOSSOM_QA_MODULES, MISTBLOSSOM_QA_CHROMIUM та MISTBLOSSOM_QA_OUTPUT. Chromium не є новою залежністю Docker build. Машинний підсумок: [R7_2_VALIDATION_2026-10-15.json](R7_2_VALIDATION_2026-10-15.json).
+Браузерні suite потребують Playwright, esbuild і Chromium; їхнє зовнішнє розташування задають MISTBLOSSOM_QA_MODULES, MISTBLOSSOM_QA_CHROMIUM та MISTBLOSSOM_QA_OUTPUT. Chromium не є новою залежністю Docker build. Машинний підсумок: R7_2_VALIDATION_2026-10-15.json (історичний JSON-звіт прибрано в 3.20.0).
 
 ## Межі та подальший порядок
 

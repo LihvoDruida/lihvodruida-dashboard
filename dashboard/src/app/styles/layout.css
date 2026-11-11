@@ -47,12 +47,8 @@ main .dashboard-shell {
 }
 
 /* ---------- Секція / панель сторінки ---------- */
-.page-section {
-  scroll-margin-top: calc(var(--nav-space) + var(--space-md));
-}
 
 /* ---------- Шапка секції ---------- */
-.section-header,
 .dashboard-list-head,
 [class$="__head"],
 [class*="__head "],
@@ -65,18 +61,10 @@ main .dashboard-shell {
   gap: var(--space-md);
 }
 
-.section-header > div,
 .dashboard-list-head > div {
   min-width: 0;
 }
 
-.section-header h1,
-.section-header h2,
-.section-header h3 {
-  margin-bottom: var(--space-2xs);
-}
-
-.section-header p,
 .dashboard-list-head p {
   max-width: 72ch;
   color: var(--text-soft);
@@ -214,7 +202,6 @@ main .dashboard-shell {
 [class*="-hero__actions "],
 [class$="__actions"],
 [class*="__actions "],
-.action-bar,
 .action-row,
 .form-actions,
 .dashboard-list-actions,

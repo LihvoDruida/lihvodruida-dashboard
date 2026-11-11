@@ -348,17 +348,6 @@ export function dashboardProfileUrl() {
   return `${dashboardBaseUrl()}/profile`;
 }
 
-export function dashboardLoginUrl(nextPath = "/profile") {
-  const url = new URL("/login", `${dashboardBaseUrl()}/`);
-  if (nextPath)
-    url.searchParams.set(
-      "next",
-      nextPath.startsWith("/") ? nextPath : `/${nextPath}`,
-    );
-  url.searchParams.set("error", "session_required");
-  return url.toString();
-}
-
 export function dashboardRaidRulesUrl() {
   const value = String(
     process.env.RAID_RULES_URL ||
@@ -533,15 +522,6 @@ const RAID_LIFECYCLE_TASK_TYPES: RaidLifecycleTaskType[] = [
   "reminder_delete",
   "discord_delete",
 ];
-
-// Backwards-compatible parser kept for runtime settings/UI that still expose
-// the old field. Raid lifecycle no longer uses this value for closing signup:
-// signup closes at the configured registration deadline, or at raid start.
-export function raidDiscordDeleteAfterStartHoursFromSettings(value: unknown) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return RAID_DISCORD_MESSAGE_RETENTION_HOURS;
-  return Math.max(0, Math.min(168, Math.floor(parsed)));
-}
 
 function raidMainDiscordDeleteDue(
   raid: Pick<RaidItem, "date" | "time"> | Record<string, unknown>,
@@ -1306,10 +1286,6 @@ export function raidCapacity(raid: Pick<RaidItem, "composition">) {
   return (
     raid.composition.tanks + raid.composition.healers + raid.composition.dps
   );
-}
-
-export function raidCompositionLabel(raid: Pick<RaidItem, "composition">) {
-  return `${raid.composition.tanks} / ${raid.composition.healers} / ${raid.composition.dps}`;
 }
 
 type RaidAutoInput = Pick<
@@ -3061,8 +3037,6 @@ async function deleteRaidUnderPublicationLease(raidId: string) {
   };
 }
 
-export const deleteDraftRaid = deleteRaid;
-
 export type ProfileRaidSignup = {
   raid: RaidItem;
   signup: RaidSignup;
@@ -4048,28 +4022,6 @@ export function raidGroupLayoutSlotCounts(
   return { roster: tanks + healers + dps, tanks, healers, dps, late, tentative };
 }
 
-export function raidGroupLayoutRoleCounts(
-  layout: Pick<RaidGroupLayout, "parties">,
-): RaidLayoutCounts {
-  let roster = 0;
-  let tanks = 0;
-  let healers = 0;
-  let dps = 0;
-  let late = 0;
-  let tentative = 0;
-  for (const party of layout.parties) {
-    for (const item of party.members) {
-      roster += 1;
-      if (item.role === "tank") tanks += 1;
-      else if (item.role === "healer") healers += 1;
-      else if (item.role === "dps") dps += 1;
-      if (item.status === "late") late += 1;
-      else if (item.status === "tentative") tentative += 1;
-    }
-  }
-  return { roster, tanks, healers, dps, late, tentative };
-}
-
 export function buildRaidGroupLayout(raid: RaidAutoInput): RaidGroupLayout {
   const roster = rosterForGroups(raid);
   const targetSize = raidLayoutTargetSize(raid);
@@ -4180,14 +4132,6 @@ export function buildRaidGroupLayout(raid: RaidAutoInput): RaidGroupLayout {
     warnings,
     missingCriticalBuffs: missingBuffs,
   };
-}
-
-export function buildRaidParties(raid: RaidAutoInput): RaidParty[] {
-  return buildRaidGroupLayout(raid).parties;
-}
-
-export function buildRaidBench(raid: RaidAutoInput): RaidBench {
-  return buildRaidGroupLayout(raid).bench;
 }
 
 function isSignupBelowRaidMinimum(
