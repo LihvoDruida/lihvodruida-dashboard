@@ -11,16 +11,16 @@ const location = load('src/lib/clientListLocation.ts', { '@/lib/listViewState': 
 let passed = 0;
 async function check(name, fn) { await fn(); passed++; console.log('PASS', name); }
 function guildPageFixture() {
-  let allowed = true, user = { provider: 'discord', id: 'fixture', role: 'member' }, reads = 0;
+  let user = { provider: 'discord', id: 'fixture', role: 'member' }, reads = 0;
   const Explorer = () => null;
   const modules = {
     'react/jsx-runtime': require('react/jsx-runtime'),
     'next/navigation': { redirect: url => { throw Error('redirect:' + url); } },
     '@/components/AppProblemScreen': { default: () => null }, '@/components/DashboardIdentity': { default: () => null },
     '@/components/GuildRosterExplorer': { default: Explorer }, '@/components/GuildRosterLiveHeroStats': { default: () => null },
-    '@/lib/auth': { getSessionUser: async () => user }, '@/lib/permissions': { canViewGuildRoster: () => allowed },
+    '@/lib/auth': { getSessionUser: async () => user },
     '@/lib/guildRoster': { loadGuildRosterData: async () => { reads++; return { members: [], stats: {}, source: 'fixture' }; } },
-    '@/lib/profiles': { getOwnProfilePath: async () => '/profile' }, '@/lib/seo': { buildPageMetadata: () => ({}) },
+    '@/lib/seo': { buildPageMetadata: () => ({}) },
     '@/lib/dashboardApiSettings': { getDashboardApiSettings: async () => ({}) },
     '@/lib/dashboardSystemLogs': { recordDashboardSystemLog: async () => {} },
     '@/lib/listNavigationScope': { listNavigationScope: () => 'account-and-access-scope' },
@@ -33,7 +33,7 @@ function guildPageFixture() {
   const mod = { exports: {} };
   vm.runInNewContext(compiled, { exports: mod.exports, module: mod, console, require: name => { assert.ok(Object.hasOwn(modules, name), name); return modules[name]; } });
   const find = node => !node || typeof node !== 'object' ? null : Array.isArray(node) ? node.map(find).find(Boolean) : node.type === Explorer ? node.props : find(node.props?.children);
-  return { run: async () => find(await mod.exports.default()), reads: () => reads, deny: () => { allowed = false; }, anonymous: () => { user = null; } };
+  return { run: async () => find(await mod.exports.default()), reads: () => reads, anonymous: () => { user = null; } };
 }
 (async () => {
   await check('guild URL retains all valid filters, page, size and expanded panel', () => {
@@ -79,11 +79,13 @@ function guildPageFixture() {
       for (const input of [members, [...members].reverse()]) assert.deepEqual([...input].sort((a, b) => view.compareGuildRosterMembers(a, b, sort, 'all')).map(m => m.key), ['a', 'b', 'c']);
     }
   });
-  await check('server page denies catalog access before reading cached guild data', async () => {
-    const f = guildPageFixture(); f.deny(); await assert.rejects(f.run(), /redirect:\/profile/); assert.equal(f.reads(), 0);
+  await check('public guild roster is readable even without an assigned site access role', async () => {
+    const f = guildPageFixture(); const props = await f.run();
+    assert.ok(props); assert.equal(f.reads(), 1);
   });
-  await check('anonymous server page denies access before reading guild data', async () => {
-    const f = guildPageFixture(); f.anonymous(); await assert.rejects(f.run(), /redirect:\/login/); assert.equal(f.reads(), 0);
+  await check('anonymous visitor can read the guild roster without logging in', async () => {
+    const f = guildPageFixture(); f.anonymous(); const props = await f.run();
+    assert.ok(props); assert.equal(f.reads(), 1);
   });
   await check('authorized server page supplies isolated navigation scope', async () => {
     const f = guildPageFixture(); const props = await f.run(); assert.equal(props.navigationScope, 'account-and-access-scope'); assert.equal(f.reads(), 1);

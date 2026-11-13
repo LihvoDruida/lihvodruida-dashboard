@@ -11,15 +11,15 @@ const search = load('src/lib/raidListSearch.ts');
 let passed=0;
 async function check(name,fn){await fn();passed++;console.log('PASS',name)}
 function pageFixture(){
- let manager=false,allowed=true,reads=0;
- const user={provider:'discord',id:'fixture00',role:'member'};
+ let manager=false,reads=0;
+ let user={provider:'discord',id:'fixture00',role:'member'};
  const cards=[{id:'active00',title:'Вечірній рейд',date:'2026-10-15',time:'19:00',status:'published'},{id:'draft000',title:'Приватна чернетка',status:'draft'},{id:'closed00',title:'Минулий рейд',date:'2026-10-01',status:'closed'}];
  const Card=()=>null;
  const mocks={
   'react/jsx-runtime':require('react/jsx-runtime'),
   'next/navigation':{redirect:href=>{throw Error('redirect:'+href)}},
   '@/components/ListViewMemory':{default:()=>null},'@/lib/listNavigationScope':{listNavigationScope:()=> 'scope'},'@/lib/listViewState':state,'@/lib/raidListSearch':search,
-  '@/lib/auth':{getSession:async()=>user},'@/lib/permissions':{canManageRaids:()=>manager,canViewRaidDirectory:()=>allowed},'@/lib/profiles':{getOwnProfilePath:async()=>'/profile'},
+  '@/lib/auth':{getSession:async()=>user},'@/lib/permissions':{canManageRaids:()=>manager},
   '@/lib/discordAdmin':{hasDiscordEmbedConfig:()=>true},'@/lib/raids':{hasRaidStorage:()=>true,isRaidClosed:r=>r.status==='closed',listRaids:async()=>{reads++;return cards}},
   '@/components/RaidViews':{RaidListCard:Card,RaidPageShell:()=>null,StatusNotice:()=>null,formatRaidDateTime:()=>''},'@/lib/seo':{buildPageMetadata:()=>({})},'@/lib/dashboardSystemLogs':{recordDashboardSystemLog:async()=>{}},'@/components/RaidArchiveLoadMore':{default:()=>null},
  };
@@ -27,7 +27,7 @@ function pageFixture(){
  const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText;
  const mod={exports:{}};vm.runInNewContext(js,{module:mod,exports:mod.exports,require:name=>{if(Object.hasOwn(mocks,name))return mocks[name];throw Error('unexpected:'+name)},URL,URLSearchParams,Error,console});
  const ids=node=>{if(!node||typeof node!=='object')return [];if(Array.isArray(node))return node.flatMap(ids);return [...(node.type===Card?[node.props.raid.id]:[]),...ids(node.props?.children)]};
- return {run:async p=>ids(await mod.exports.default({searchParams:Promise.resolve(p)})),manager:v=>manager=v,allowed:v=>allowed=v,reads:()=>reads};
+ return {run:async p=>ids(await mod.exports.default({searchParams:Promise.resolve(p)})),manager:v=>manager=v,anonymous:()=>{user=null},reads:()=>reads};
 }
 (async()=>{
  await check('raid URLs retain only valid filters and bounded archive count',()=>{
@@ -65,8 +65,12 @@ function pageFixture(){
  await check('actual raid page applies state and search after permission selection',async()=>{
   const f=pageFixture();f.manager(true);assert.deepEqual(await f.run({state:'draft'}),['draft000']);assert.deepEqual(await f.run({state:'closed',q:'минулий'}),['closed00']);assert.deepEqual(await f.run({state:'active',q:'2026-10-15'}),['active00']);
  });
- await check('actual raid page denies directory access before reading data',async()=>{
-  const f=pageFixture();f.allowed(false);await assert.rejects(f.run({state:'draft'}),/redirect:\/profile/);assert.equal(f.reads(),0);
+ await check('anonymous public raid directory reads published and archived raids without revealing drafts',async()=>{
+  const f=pageFixture();f.anonymous();
+  assert.deepEqual(await f.run({}),['active00','closed00']);
+  assert.deepEqual(await f.run({state:'draft'}),[]);
+  assert.deepEqual(await f.run({q:'Приватна'}),[]);
+  assert.equal(f.reads(),3);
  });
  console.log(`[check-raid-list-navigation] ${passed}/${passed} passed`);
 })().catch(e=>{console.error(e);process.exitCode=1});

@@ -1,12 +1,9 @@
-import { redirect } from "next/navigation";
 import AppProblemScreen from "@/components/AppProblemScreen";
 import DashboardIdentity from "@/components/DashboardIdentity";
 import GuildRosterExplorer from "@/components/GuildRosterExplorer";
 import GuildRosterLiveHeroStats from "@/components/GuildRosterLiveHeroStats";
 import { getSessionUser } from "@/lib/auth";
 import { loadGuildRosterData } from "@/lib/guildRoster";
-import { getOwnProfilePath } from "@/lib/profiles";
-import { canViewGuildRoster } from "@/lib/permissions";
 import { buildPageMetadata } from "@/lib/seo";
 import { getDashboardApiSettings } from "@/lib/dashboardApiSettings";
 import { recordDashboardSystemLog } from "@/lib/dashboardSystemLogs";
@@ -28,8 +25,7 @@ export const metadata = buildPageMetadata({
 
 export default async function GuildRosterPage() {
   const user = await getSessionUser();
-  // Guild roster is a public, read-only view. Manager-only controls remain gated.
-  if (user && !canViewGuildRoster(user)) redirect(await getOwnProfilePath(user));
+  // Public, read-only roster: Discord login is not required for viewing.
 
   const [roster, apiSettings] = await Promise.all([
     loadGuildRosterData().catch((error) => {

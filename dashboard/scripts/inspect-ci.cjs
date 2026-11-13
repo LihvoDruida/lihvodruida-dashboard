@@ -151,7 +151,7 @@ if (exists('src/proxy.ts')) {
 
 if (exists('src/app/page.tsx')) {
   const rootPageText = read('src/app/page.tsx');
-  assert(/redirect\(user \? "\/profile" : "\/login"\)/.test(rootPageText), 'Root route must remain a redirect-only entry point after removing the legacy home page.');
+  assert(/redirect\("\/raids"\)/.test(rootPageText), 'Root route must redirect visitors to the public raid list without requiring a dashboard session.');
   assert(!/Home(?:DashboardLiveSync|LocalTime|UpcomingRaidList)/.test(rootPageText), 'Root route must not reintroduce legacy home-page UI components.');
 }
 assert(!exists('src/components/HomeDashboardLiveSync.tsx'), 'Legacy HomeDashboardLiveSync component must stay removed.');
@@ -310,7 +310,8 @@ if (exists('src/app/api/discord/interactions/route.ts')) {
   assert(/handleRaidPollDiscordVote\([\s\S]{0,500}messageRef/.test(interactionsText), 'Raid-poll Discord interactions must pass messageRef to authoritative storage lookup.');
   assert(/handleRaidPollDiscordVote\([\s\S]{0,650}interactionMessage:\s*interaction\?\.message/.test(interactionsText), 'Raid-poll Discord interactions must pass message payload for orphan recovery.');
   assert(/handleRaidSignupMenuInteraction\([\s\S]{0,150}interaction,/.test(interactionsText), 'Raid menu interactions must pass the signed message payload to the menu handler.');
-  assert(interactionsText.includes('getProfileByDiscordUserIdForInteraction'), 'Discord rules/raid signup must use authoritative profile lookup rather than the page cache.');
+  assert(interactionsText.includes('rulesAcceptUrlForDiscordUser') && interactionsText.includes('handleRaidSignupMenuInteraction'), 'Discord rules must use a signed member link and raid signup must use the Discord-only handler without web profile lookup.');
+  assert(!interactionsText.includes('getProfileByDiscordUserIdForInteraction'), 'Discord-only rules and raid signup must not require a website profile.');
 }
 if (exists('src/lib/discordInteractionStorage.ts')) {
   const discordStorageText = read('src/lib/discordInteractionStorage.ts');
