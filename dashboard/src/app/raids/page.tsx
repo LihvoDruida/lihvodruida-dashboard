@@ -4,8 +4,7 @@ import { listViewUrl } from "@/lib/listViewState";
 import { matchesRaidListSearch } from "@/lib/raidListSearch";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { canManageRaids, canViewRaidDirectory } from "@/lib/permissions";
-import { getOwnProfilePath } from "@/lib/profiles";
+import { canManageRaids } from "@/lib/permissions";
 import { hasDiscordEmbedConfig } from "@/lib/discordAdmin";
 import { hasRaidStorage, isRaidClosed, listRaids } from "@/lib/raids";
 import {
@@ -22,7 +21,7 @@ export const runtime = "nodejs";
 export const metadata = buildPageMetadata({
   title: "Рейди",
   description:
-    "Список активних і минулих рейдів Mistblossom Vanguard із записом, складом, правилами та архівом.",
+    "Публічний список рейдів, склад, правила та архів. Запис відбувається тільки в Discord.",
   path: "/raids",
   keywords: ["рейди WoW", "запис на рейд", "архів рейдів"],
 });
@@ -36,11 +35,6 @@ export default async function RaidsListPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const user = await getSession();
-  if (!user) {
-    redirect("/login");
-    throw new Error("Login required");
-  }
-  if (!canViewRaidDirectory(user)) redirect(await getOwnProfilePath(user));
 
   const canManage = canManageRaids(user);
   const params = await searchParams;
@@ -84,11 +78,11 @@ export default async function RaidsListPage({
   return (
     <RaidPageShell
       user={user}
-      title={canManage ? "Рейди" : "Мої рейди"}
+      title="Рейди"
       description={
         canManage
           ? "Керування рейдами, оголошеннями, складом, лімітами та записами. Минулі рейди залишаються в архіві до ручного видалення."
-          : "Опубліковані рейди, запис на участь і посилання на правила без зайвих адмінських блоків."
+          : "Переглядай рейди та їхні склади без входу. Запис на участь доступний лише через Discord."
       }
     >
       <StatusNotice params={params} />
@@ -142,7 +136,7 @@ export default async function RaidsListPage({
             <p>
               {canManage
                 ? "Активні рейди та чернетки. Закриті рейди винесені в окремий архів нижче."
-                : "Тут видно рейди, на які можна записатися або переглянути свій статус."}
+                : "Тут видно опубліковані рейди. Для запису відкрий відповідне оголошення в Discord."}
             </p>
             <div className="raid-list-kpis" aria-label="Коротка статистика рейдів">
               <span>

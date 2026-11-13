@@ -537,26 +537,29 @@ export async function resolveAccessGroupFromDiscord(
   const admin =
     groups.find((group) => group.id === DEFAULT_ADMIN_GROUP_ID) ||
     DEFAULT_GROUPS[0];
-  if (user && owner && user === owner) {
-    return { group: admin, isServerOwner: true };
+  const { getAuthAccessPolicy } = await import("@/lib/authAccessPolicy");
+  const policy = await getAuthAccessPolicy();
+  if (user && owner && user === owner && policy.allowServerOwner) {
+    return { group: admin, isServerOwner: true, matchedExplicitMapping: true };
   }
 
   const roleIds = new Set(
     roleIdsInput.map((roleId) => String(roleId || "").trim()).filter(Boolean),
   );
+  const allowedGroupIds = new Set(policy.roleGroupMappings
+    .filter((mapping) => roleIds.has(mapping.roleId))
+    .map((mapping) => mapping.groupId));
   const matched = groups
-    .filter((group) =>
-      group.discordRoleIds.some((roleId) => roleIds.has(roleId)),
-    )
+    .filter((group) => allowedGroupIds.has(group.id))
     .sort((a, b) => b.rank - a.rank);
 
-  if (matched[0]) return { group: matched[0], isServerOwner: false };
+  if (matched[0]) return { group: matched[0], isServerOwner: false, matchedExplicitMapping: true };
 
   const member =
     groups.find((group) => group.id === DEFAULT_MEMBER_GROUP_ID) ||
     DEFAULT_GROUPS.find((group) => group.id === DEFAULT_MEMBER_GROUP_ID) ||
     DEFAULT_GROUPS[DEFAULT_GROUPS.length - 1];
-  return { group: member, isServerOwner: false };
+  return { group: member, isServerOwner: false, matchedExplicitMapping: false };
 }
 
 export function applyAccessGroupToSession(

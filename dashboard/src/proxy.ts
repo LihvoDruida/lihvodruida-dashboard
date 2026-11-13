@@ -18,7 +18,7 @@ const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 function isKnownLegacyPageMutation(request: NextRequest, pathname: string) {
   if (request.method !== "POST") return false;
   if (pathname === "/dashboard/discord") return true;
-  return /^\/raids\/[^/]+$/.test(pathname) && request.nextUrl.searchParams.has("nxtPraidId");
+  return false; // Legacy page-based raid signups are no longer supported.
 }
 
 function isUnsupportedPageMutation(request: NextRequest, pathname: string) {
@@ -45,13 +45,15 @@ function hasDashboardSessionCookie(request: NextRequest) {
 }
 
 function isProtectedPagePath(pathname: string) {
-  if (pathname === "/") return true;
+  if (pathname === "/") return false;
   // /polls і /roster раніше були відсутні: сторінки покладалися лише на
   // серверний getSession(), тож неавторизований користувач бачив спалах layout
   // замість чистого редиректу на /login.
-  return /^\/(?:dashboard|applications|guild|profile|profiles|raids|polls|roster|discord|content)(?:\/|$)/.test(
-    pathname,
-  );
+  // Public read-only raid pages do not need a session. All administrative,
+  // profile and mutation paths remain protected by the route handlers.
+  if (pathname === "/raids" || /^\/raids\/[^/]+$/.test(pathname)) return false;
+  if (pathname === "/guild" || pathname === "/polls" || /^\/polls\/[^/]+$/.test(pathname)) return false;
+  return /^\/(?:dashboard|applications|guild|profile|profiles|raids|polls|roster|discord|content)(?:\/|$)/.test(pathname);
 }
 
 function isPublicSiteBridgePath(pathname: string) {
@@ -78,6 +80,9 @@ function isPublicApiPath(pathname: string) {
     pathname === "/api/client-errors" ||
     pathname === "/api/background/settings" ||
     pathname === "/api/calendar/raids.ics" ||
+    /^\/api\/raids\/[^/]+\/snapshot$/.test(pathname) ||
+    // A retired POST endpoint responds with HTTP 410 even for unauthenticated clients.
+    /^\/api\/raids\/[^/]+\/attendance$/.test(pathname) ||
     pathname === "/api/discord/interactions" ||
     pathname === "/api/rules/accept/complete" ||
     pathname === "/api/static/accept" ||
@@ -449,25 +454,6 @@ export function proxy(request: NextRequest) {
       { path: "/", maxAge: 45, sameSite: "lax" },
     );
     return response;
-  }
-
-  const staleRaidActionMatch =
-    request.nextUrl.pathname.match(/^\/raids\/([^/]+)$/);
-  if (
-    request.method === "POST" &&
-    staleRaidActionMatch &&
-    request.nextUrl.searchParams.has("nxtPraidId")
-  ) {
-    const target = request.nextUrl.clone();
-    target.pathname = `/api/raids/${encodeURIComponent(staleRaidActionMatch[1])}/attendance`;
-    target.search = "";
-    logDashboardEvent(
-      "warn",
-      "proxy.raid_stale_server_action_rewrite",
-      request,
-      { raidId: staleRaidActionMatch[1] },
-    );
-    return NextResponse.rewrite(target, { headers: noStoreHeaders() });
   }
 
   const nonce = createNonce();

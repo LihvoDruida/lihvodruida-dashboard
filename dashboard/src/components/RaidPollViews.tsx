@@ -68,7 +68,7 @@ export function RaidPollPageShell({
   return (
     <main className="container app-page raid-page raid-poll-page poll-page">
       <section className="dashboard-shell content-shell raid-shell app-page-stack" aria-label="Панель рейд-пулів Mistblossom Vanguard">
-        {user ? <DashboardIdentity user={user} activeSection={activeSection} /> : null}
+        <DashboardIdentity user={user || null} activeSection={activeSection} />
 
         {/* Спрощений херо: один рядок сенсу + компактна стрічка метрик замість
             важкої бічної панелі, яка займала половину першого екрана. */}

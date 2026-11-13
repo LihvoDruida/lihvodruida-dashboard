@@ -92,7 +92,18 @@ export async function POST(request: NextRequest) {
 
   try {
     const form = await request.formData();
+    const mappings = [...form.entries()]
+      .filter(([key]) => key.startsWith("roleMap:"))
+      .map(([key, value]) => ({ roleId: key.slice("roleMap:".length), groupId: String(value || "").trim() }))
+      .filter(({ groupId }) => groupId !== "");
+    const manualRoleId = String(form.get("manualRoleId") || "").trim();
+    const manualGroupId = String(form.get("manualGroupId") || "").trim();
+    if (manualRoleId || manualGroupId) {
+      if (!/^\d{16,25}$/.test(manualRoleId) || !manualGroupId) throw new Error("Для ручної ролі вкажи коректний Discord ID та групу сайту.");
+      mappings.push({ roleId: manualRoleId, groupId: manualGroupId });
+    }
     const policy = await setAuthAccessPolicy({
+      roleGroupMappings: mappings,
       enabled: form.get("enabled"),
       requireConfiguredRole: form.get("requireConfiguredRole"),
       allowServerOwner: form.get("allowServerOwner"),
@@ -112,11 +123,9 @@ export async function POST(request: NextRequest) {
     return adminResponse(request, {
       ok: true,
       title: "Правила авторизації збережено",
-      message: policy.requiredRoleIds.length
-        ? `Вхід дозволено тільки учасникам Discord із вибраними ролями: ${policy.requiredRoleIds.length}.`
-        : policy.requireConfiguredRole
-          ? "Вхід для не-власників сервера заблоковано, поки не вибрано обовʼязкову роль."
-          : "Вхід дозволено всім учасникам Discord-сервера з доступом у групах.",
+      message: policy.roleGroupMappings.length
+        ? `Дозволених відповідностей Discord-роль → група сайту: ${policy.roleGroupMappings.length}.`
+        : "Для інших користувачів вхід заблоковано до призначення Discord-ролей. Власник сервера зберігає виняток, якщо він увімкнений.",
       data: { policy, refresh: true },
     });
   } catch (error) {

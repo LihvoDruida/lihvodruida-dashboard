@@ -197,8 +197,9 @@ mustContain("src/components/RaidImagePicker.tsx", [
   'maxLength={2048}',
 ]);
 mustContain("src/app/dashboard/page.tsx", [
-  'name="requiredRoleIdsText"',
-  'maxLength={1024}',
+  'name={`roleMap:${role.id}`}',
+  'name="manualRoleId"',
+  'name="manualGroupId"',
   'name="blockedCountries"',
   'maxLength={512}',
 ]);

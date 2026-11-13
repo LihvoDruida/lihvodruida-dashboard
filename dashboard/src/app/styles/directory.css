@@ -907,3 +907,16 @@
   width: 58%;
   height: 58%;
 }
+
+/* Staff-only Discord raid preferences; horizontally scrollable on mobile. */
+.admin-discord-signup-profiles { display: grid; gap: var(--space-sm); min-width: 0; }
+.admin-discord-signup-profiles > h2 { margin: 0; color: var(--text-strong); }
+.admin-discord-signup-profiles > p { margin: 0; color: var(--text-muted); }
+.admin-discord-signup-profiles__scroll { width: 100%; max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+.admin-discord-signup-profiles__scroll > table { width: 100%; border-collapse: collapse; min-width: 700px; text-align: left; }
+.admin-discord-signup-profiles__scroll th,
+.admin-discord-signup-profiles__scroll td { padding: var(--space-sm); border-bottom: 1px solid var(--border-subtle); vertical-align: top; }
+.admin-discord-signup-profiles__scroll th { color: var(--text-muted); white-space: nowrap; }
+.admin-discord-signup-profiles__scroll td { color: var(--text-strong); overflow-wrap: anywhere; }
+.admin-discord-signup-profiles__scroll td:first-child { min-width: 140px; }
+.admin-discord-signup-profiles__scroll td small { display: block; color: var(--text-faint); font-size: 0.72rem; }

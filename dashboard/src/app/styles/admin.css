@@ -2860,7 +2860,7 @@
 
 .settings-toggle-row input {
   margin-top: 4px;
-  accent-color: var(--accent, #f59e0b);
+  accent-color: var(--c-accent-400);
 }
 
 .settings-toggle-row span {
@@ -3025,7 +3025,7 @@
   height: 25px;
   border-radius: var(--radius-pill);
   background: rgba(245, 158, 11, 0.13);
-  color: var(--accent, #f59e0b);
+  color: var(--c-accent-400);
   font-size: 0.75rem;
 }
 
@@ -3162,3 +3162,24 @@
     width: 100%;
   }
 }
+
+/* Discord role to website group mapping. Every row has a real select. */
+.auth-access-role-option { grid-template-columns: minmax(0, 1fr); gap: var(--space-xs); }
+.auth-access-role-option > select,
+.admin-policy-input--manual-role select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-strong);
+  background: var(--surface-sunken);
+  font: inherit;
+  font-size: 0.82rem;
+}
+.auth-access-role-option > select:focus-visible,
+.admin-policy-input--manual-role select:focus-visible { outline: 2px solid var(--border-strong); outline-offset: 2px; }
+.auth-access-role-option > select:disabled { opacity: 0.65; cursor: not-allowed; }
+.admin-policy-input--manual-role { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-sm); }
+@media (max-width: 650px) { .admin-policy-input--manual-role { grid-template-columns: minmax(0, 1fr); } }

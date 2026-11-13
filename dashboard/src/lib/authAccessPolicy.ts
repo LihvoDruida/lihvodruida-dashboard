@@ -5,7 +5,8 @@ import { getDocumentDb, hasDocumentDbConfig } from "@/lib/documentDb";
 import type { DashboardSession } from "@/lib/auth";
 import { resilientRead } from "@/lib/runtimeResilience";
 import { storageWrite } from "@/lib/storageAccess";
-import { envFlag, timestampToIso } from "@/lib/values";
+import { timestampToIso } from "@/lib/values";
+import { listAccessGroupsForManagement } from "@/lib/accessGroups";
 
 const SETTINGS_COLLECTION = "dashboardSettings";
 const AUTH_ACCESS_DOC_ID = "authAccessPolicy";
@@ -28,12 +29,15 @@ function setAuthPolicyCache(policy: AuthAccessPolicy) {
   return policy;
 }
 
+export type DiscordSiteRoleMapping = { roleId: string; groupId: string };
+
 export type AuthAccessPolicy = {
   enabled: boolean;
   requireConfiguredRole: boolean;
   allowServerOwner: boolean;
   allowEmergencyTokenLogin: boolean;
   requiredRoleIds: string[];
+  roleGroupMappings: DiscordSiteRoleMapping[];
   updatedAt?: string | null;
   updatedBy?: string | null;
 };
@@ -55,20 +59,31 @@ export function cleanDiscordRoleIds(value: unknown) {
   ).slice(0, 25);
 }
 
-function defaultAuthAccessPolicy(): AuthAccessPolicy {
-  const requiredRoleIds = cleanDiscordRoleIds(
-    process.env.AUTH_ACCESS_REQUIRED_ROLE_IDS ||
-    process.env.DISCORD_AUTH_REQUIRED_ROLE_IDS ||
-    process.env.REQUIRED_DISCORD_ROLE_IDS ||
-    ""
-  );
+export function cleanRoleGroupMappings(value: unknown): DiscordSiteRoleMapping[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const mappings: DiscordSiteRoleMapping[] = [];
+  for (const entry of value.slice(0, 200)) {
+    if (!entry || typeof entry !== "object") continue;
+    const record = entry as Record<string, unknown>;
+    const roleId = String(record.roleId || "").trim();
+    const groupId = String(record.groupId || "").trim();
+    if (!/^\d{16,25}$/.test(roleId) || !/^[A-Za-z0-9_-]{1,32}$/.test(groupId) || seen.has(roleId)) continue;
+    seen.add(roleId);
+    mappings.push({ roleId, groupId });
+    if (mappings.length === 100) break;
+  }
+  return mappings;
+}
 
+function defaultAuthAccessPolicy(): AuthAccessPolicy {
   return {
-    enabled: envFlag("AUTH_ACCESS_RESTRICTIONS_ENABLED", true),
-    requireConfiguredRole: envFlag("AUTH_ACCESS_REQUIRE_CONFIGURED_ROLE", true),
-    allowServerOwner: envFlag("AUTH_ACCESS_ALLOW_SERVER_OWNER", true),
-    allowEmergencyTokenLogin: envFlag("AUTH_ACCESS_ALLOW_EMERGENCY_TOKEN_LOGIN", false),
-    requiredRoleIds,
+    enabled: true,
+    requireConfiguredRole: true,
+    allowServerOwner: true,
+    allowEmergencyTokenLogin: false,
+    requiredRoleIds: [],
+    roleGroupMappings: [],
     updatedAt: null,
     updatedBy: null,
   };
@@ -76,14 +91,14 @@ function defaultAuthAccessPolicy(): AuthAccessPolicy {
 
 function normalizePolicyData(data?: Record<string, unknown> | null): AuthAccessPolicy {
   const fallback = defaultAuthAccessPolicy();
-  const hasStoredRoleIds = Boolean(data && Object.prototype.hasOwnProperty.call(data, "requiredRoleIds"));
-
+  // Explicit mappings are required. Old flat role allowlists do not authorize
+  // access because they had no target group and often included newcomers.
+  const roleGroupMappings = cleanRoleGroupMappings(data?.roleGroupMappings);
   return {
-    enabled: typeof data?.enabled === "boolean" ? data.enabled : fallback.enabled,
-    requireConfiguredRole: typeof data?.requireConfiguredRole === "boolean" ? data.requireConfiguredRole : fallback.requireConfiguredRole,
-    allowServerOwner: typeof data?.allowServerOwner === "boolean" ? data.allowServerOwner : fallback.allowServerOwner,
-    allowEmergencyTokenLogin: typeof data?.allowEmergencyTokenLogin === "boolean" ? data.allowEmergencyTokenLogin : fallback.allowEmergencyTokenLogin,
-    requiredRoleIds: hasStoredRoleIds ? cleanDiscordRoleIds(data?.requiredRoleIds) : fallback.requiredRoleIds,
+    ...fallback,
+    allowServerOwner: typeof data?.allowServerOwner === "boolean" ? data.allowServerOwner : true,
+    roleGroupMappings,
+    requiredRoleIds: roleGroupMappings.map((mapping) => mapping.roleId),
     updatedAt: timestampToIso(data?.updatedAt),
     updatedBy: typeof data?.updatedBy === "string" ? data.updatedBy : null,
   };
@@ -126,19 +141,28 @@ export async function setAuthAccessPolicy(input: {
   allowEmergencyTokenLogin?: unknown;
   requiredRoleIds?: unknown;
   requiredRoleIdsText?: unknown;
+  roleGroupMappings?: unknown;
 }, actor?: DashboardSession | null) {
   if (!hasDocumentDbConfig()) throw new Error("Storage не налаштований для збереження правил авторизації.");
 
-  const selectedRoleIds = [
-    ...cleanDiscordRoleIds(input.requiredRoleIds),
-    ...cleanDiscordRoleIds(input.requiredRoleIdsText),
-  ];
+  const supplied = input.roleGroupMappings;
+  if (!Array.isArray(supplied) || supplied.length > 100) throw new Error("Некоректний перелік відповідностей Discord-ролей.");
+  const mappings = cleanRoleGroupMappings(supplied);
+  if (mappings.length !== supplied.length) throw new Error("Повторення або некоректні Discord-ролі чи групи сайту.");
+  const groups = await listAccessGroupsForManagement();
+  const byId = new Map(groups.map((group) => [group.id, group]));
+  for (const mapping of mappings) {
+    const group = byId.get(mapping.groupId);
+    if (!group || !group.permissions.includes("dashboard.view")) throw new Error("Вибрана група сайту недоступна для авторизації.");
+    if (!actor?.isServerOwner && (group.role === "admin" || group.permissions.includes("groups.manage"))) {
+      throw new Error("Привʼязувати Discord-ролі до адміністративної групи може лише власник Discord-сервера.");
+    }
+  }
   const nextPolicy = normalizePolicyData({
-    enabled: input.enabled === "on" || input.enabled === "1" || input.enabled === true,
-    requireConfiguredRole: input.requireConfiguredRole === "on" || input.requireConfiguredRole === "1" || input.requireConfiguredRole === true,
-    allowServerOwner: input.allowServerOwner === "on" || input.allowServerOwner === "1" || input.allowServerOwner === true,
-    allowEmergencyTokenLogin: input.allowEmergencyTokenLogin === "on" || input.allowEmergencyTokenLogin === "1" || input.allowEmergencyTokenLogin === true,
-    requiredRoleIds: selectedRoleIds,
+    allowServerOwner: actor?.isServerOwner
+      ? input.allowServerOwner === "on" || input.allowServerOwner === "1" || input.allowServerOwner === true
+      : (await getAuthAccessPolicy()).allowServerOwner,
+    roleGroupMappings: mappings,
   });
 
   await storageWrite(
@@ -150,6 +174,7 @@ export async function setAuthAccessPolicy(input: {
       allowServerOwner: nextPolicy.allowServerOwner,
       allowEmergencyTokenLogin: nextPolicy.allowEmergencyTokenLogin,
       requiredRoleIds: nextPolicy.requiredRoleIds,
+      roleGroupMappings: nextPolicy.roleGroupMappings,
       updatedAt: FieldValue.serverTimestamp(),
       updatedBy: actor?.name || actor?.login || actor?.id || null,
     }, { merge: true }),
@@ -171,11 +196,7 @@ export function evaluateAuthAccessPolicy(policy: AuthAccessPolicy, params: {
   const userId = String(params.userId || "").trim();
   const ownerId = String(params.ownerId || "").trim();
   const memberRoleIds = cleanDiscordRoleIds(params.roleIds || []);
-  const requiredRoleIds = cleanDiscordRoleIds(policy.requiredRoleIds || []);
-
-  if (!policy.enabled) {
-    return { allowed: true, reason: "disabled", requiredRoleIds, matchedRoleIds: [] };
-  }
+  const requiredRoleIds = cleanRoleGroupMappings(policy.roleGroupMappings).map((mapping) => mapping.roleId);
 
   if (policy.allowServerOwner && userId && ownerId && userId === ownerId) {
     return { allowed: true, reason: "server_owner", requiredRoleIds, matchedRoleIds: [] };
@@ -183,8 +204,8 @@ export function evaluateAuthAccessPolicy(policy: AuthAccessPolicy, params: {
 
   if (requiredRoleIds.length === 0) {
     return {
-      allowed: !policy.requireConfiguredRole,
-      reason: policy.requireConfiguredRole ? "no_required_role_configured" : "allowed",
+      allowed: false,
+      reason: "no_required_role_configured",
       requiredRoleIds,
       matchedRoleIds: [],
     };
@@ -200,20 +221,7 @@ export function evaluateAuthAccessPolicy(policy: AuthAccessPolicy, params: {
   };
 }
 
-/**
- * Keeps the bootstrap/newcomer role compatible with the dashboard auth gate.
- * We only append; we never remove an administrator-selected access role.
- */
-export async function ensureAuthAccessRequiredRole(roleIdInput: unknown, actor?: DashboardSession | null) {
-  const roleId = cleanDiscordRoleIds([roleIdInput])[0] || "";
-  if (!roleId) return getAuthAccessPolicy();
-  const policy = await getAuthAccessPolicy({ bypassCache: true });
-  if (policy.requiredRoleIds.includes(roleId)) return policy;
-  return setAuthAccessPolicy({
-    enabled: policy.enabled,
-    requireConfiguredRole: policy.requireConfiguredRole,
-    allowServerOwner: policy.allowServerOwner,
-    allowEmergencyTokenLogin: policy.allowEmergencyTokenLogin,
-    requiredRoleIds: [...policy.requiredRoleIds, roleId],
-  }, actor);
+/** Newcomer onboarding must never auto-grant website authorization. */
+export async function ensureAuthAccessRequiredRole(_roleIdInput: unknown, _actor?: DashboardSession | null) {
+  return getAuthAccessPolicy();
 }

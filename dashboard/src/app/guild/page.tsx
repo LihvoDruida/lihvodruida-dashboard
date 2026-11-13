@@ -28,11 +28,8 @@ export const metadata = buildPageMetadata({
 
 export default async function GuildRosterPage() {
   const user = await getSessionUser();
-  if (!user) {
-    redirect("/login");
-    throw new Error("Login required");
-  }
-  if (!canViewGuildRoster(user)) redirect(await getOwnProfilePath(user));
+  // Guild roster is a public, read-only view. Manager-only controls remain gated.
+  if (user && !canViewGuildRoster(user)) redirect(await getOwnProfilePath(user));
 
   const [roster, apiSettings] = await Promise.all([
     loadGuildRosterData().catch((error) => {
@@ -138,7 +135,7 @@ export default async function GuildRosterPage() {
             stats={roster.stats}
             source={roster.source}
             error={roster.error}
-            allowManualRefresh={Boolean(user.isServerOwner)}
+            allowManualRefresh={Boolean(user?.isServerOwner)}
             refreshSettings={{
               clientDrivenSyncEnabled:
                 apiSettings.guildRosterClientDrivenSyncEnabled,

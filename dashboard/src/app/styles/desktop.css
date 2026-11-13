@@ -1,7 +1,8 @@
 /* =========================================================
    DESKTOP — єдиний робочий каркас Mistblossom Vanguard
 
-   Цей файл навмисно підключається останнім. Доменні файли описують
+   Цей файл йде після основних доменних шарів, але перед явними
+   інтеграційними винятками (guild-banner / management). Доменні файли описують
    зміст конкретних сторінок, а тут задається ОДНА геометрія ПК:
    ширина полотна, ритм секцій, картки, контролі, таблиці й профіль.
    ========================================================= */
@@ -376,3 +377,12 @@ select {
     max-width: 260px;
   }
 }
+
+/* Logged-out public navigation shares the regular design language. */
+.dashboard-public-nav { display: flex; flex-wrap: wrap; gap: var(--space-sm); align-items: center; }
+.dashboard-public-nav a { display: inline-flex; align-items: center; min-height: 36px; padding: 5px 10px; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: var(--text-soft); text-decoration: none; }
+.dashboard-public-nav a:hover,
+.dashboard-public-nav a[aria-current="page"] { color: var(--text-strong); border-color: var(--border-strong); background: var(--surface-sunken); }
+.dashboard-public-nav--mobile { gap: 4px; flex-wrap: nowrap; }
+.dashboard-public-nav--mobile a { padding: 5px 7px; font-size: 0.77rem; white-space: nowrap; }
+@media (max-width: 380px) { .dashboard-public-nav--mobile a { padding: 4px 5px; font-size: 0.7rem; } }

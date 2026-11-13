@@ -22,18 +22,16 @@ export const metadata = buildPageMetadata({
 
 export default async function PollsPage() {
   const user = await getSession();
-  if (!user) {
-    redirect("/login");
-    throw new Error("Login required");
-  }
-  if (!canViewRaidDirectory(user)) redirect(await getOwnProfilePath(user));
+  // Public visitors can view Discord-published polls, but not unpublished drafts.
+  if (user && !canViewRaidDirectory(user)) redirect(await getOwnProfilePath(user));
 
   const canManage = canManageRaids(user);
   const polls = await listRaidPolls(120).catch(() => []);
   const publishedPolls = polls.filter((poll) => poll.channelId && poll.messageId);
-  const scheduledCount = polls.filter((poll) => raidPollStateKey(poll) === "scheduled").length;
-  const openCount = polls.filter((poll) => raidPollStateKey(poll) === "open").length;
-  const pausedCount = polls.filter((poll) => raidPollStateKey(poll) === "paused").length;
+  const visiblePolls = canManage ? polls : publishedPolls;
+  const scheduledCount = visiblePolls.filter((poll) => raidPollStateKey(poll) === "scheduled").length;
+  const openCount = visiblePolls.filter((poll) => raidPollStateKey(poll) === "open").length;
+  const pausedCount = visiblePolls.filter((poll) => raidPollStateKey(poll) === "paused").length;
 
   return (
     <RaidPollPageShell
@@ -44,7 +42,7 @@ export default async function PollsPage() {
         { label: "Заплановані", value: scheduledCount },
         { label: "Активні", value: openCount },
         { label: "На паузі", value: pausedCount },
-        { label: "Усього", value: polls.length },
+        { label: "Усього", value: visiblePolls.length },
         { label: "У Discord", value: publishedPolls.length },
       ]}
       actions={canManage ? <RaidPollRecalculateButton /> : null}
@@ -56,7 +54,7 @@ export default async function PollsPage() {
         <div className="notice panel error-note raid-notice">Публікація рейд-пулів у Discord недоступна: не налаштовано bot token або worker relay.</div>
       ) : null}
 
-      <RaidPollList navigationScope={listNavigationScope(user)} polls={polls} relatedPolls={publishedPolls} canManage={canManage} createHref="/polls/new" />
+      <RaidPollList navigationScope={listNavigationScope(user)} polls={visiblePolls} relatedPolls={publishedPolls} canManage={canManage} createHref="/polls/new" />
     </RaidPollPageShell>
   );
 }

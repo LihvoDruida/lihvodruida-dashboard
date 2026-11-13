@@ -41,6 +41,12 @@ for (const file of walk(apiRoot).filter((name) => name.endsWith(`${path.sep}rout
   if (rel === 'auth/logout/route.ts') {
     if (source.includes('clearSession(') && source.includes('expireAuthCookies(')) continue;
   }
+  // Retired website attendance is permanently disabled, even for authenticated users.
+  // Public routing is safe only while it exposes a static 410 and no raid writes.
+  if (rel === 'raids/[raidId]/attendance/route.ts') {
+    if (source.includes('status: 410') && source.includes('discord_only') &&
+        !source.includes('handleRaidSessionAction(') && !source.includes('recordRaidSignup(')) continue;
+  }
   if (rel === 'client-errors/route.ts') {
     if (source.includes('assertRequestBodySize(') && source.includes('checkRateLimit(') && source.includes('cleanStack(')) continue;
   }

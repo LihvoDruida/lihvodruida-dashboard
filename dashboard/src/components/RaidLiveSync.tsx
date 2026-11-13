@@ -33,16 +33,13 @@ export default function RaidLiveSync({ raidId, initialRevision }: { raidId: stri
     initialData: null,
     refreshOnMount: false,
     request: () => ({
-      url: "/api/background/refresh",
-      method: "POST",
-      headers: { "X-Dashboard-Action": "background-raid-snapshot" },
-      json: { resources: [{ key: `raid:${raidId}:snapshot`, kind: "raid-snapshot", raidId }] },
+      url: `/api/raids/${encodeURIComponent(raidId)}/snapshot`,
+      method: "GET",
+      // Read-only public snapshot: works without a website session.
       select: (payload) => {
-        const first = payload && typeof payload === "object" && "resources" in payload
-          ? (payload as { resources?: Array<{ ok?: boolean; data?: RaidSnapshot; error?: string }> }).resources?.[0]
-          : null;
-        if (!first?.ok || !first.data?.ok) throw new Error(first?.error || "snapshot_failed");
-        return first.data;
+        const snapshot = payload as RaidSnapshot | null;
+        if (!snapshot?.ok) throw new Error("snapshot_unavailable");
+        return snapshot;
       },
     }),
   });

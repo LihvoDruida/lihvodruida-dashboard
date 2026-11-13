@@ -3,16 +3,12 @@ import { randomUUID } from "node:crypto";
 import type { ReactNode } from "react";
 import DashboardIdentity from "@/components/DashboardIdentity";
 import HeroSidePanel from "@/components/HeroSidePanel";
-import RaidAttendanceClient, {
-  type RaidSignupCharacterOption,
-} from "@/components/RaidAttendanceClient";
 import RaidRoleMentionPicker from "@/components/RaidRoleMentionPicker";
 import RaidImagePicker from "@/components/RaidImagePicker";
 import RaidEditorFormEnhancer from "@/components/RaidEditorFormEnhancer";
 import type { DiscordRoleOption } from "@/components/DiscordEmbedEditor";
 import { DiscordMarkdown } from "@/components/DiscordMarkdown";
 import type { DashboardSession } from "@/lib/auth";
-import type { DashboardProfile } from "@/lib/profiles";
 import { hierarchyTitle } from "@/lib/permissions";
 import { pickWowAvatarImageUrl } from "@/lib/wowCharacters";
 import { isInternalRaidThumbnail } from "@/lib/raidThumbnailAssets";
@@ -35,16 +31,12 @@ import {
   resolveRaidThumbnailUrl,
   raidMinItemLevelWarning,
   raidMinItemLevelBlockMessage,
-  raidSignupCharacterMinimumNote,
-  isRaidSubjectBlockedByMinItemLevel,
-  isRaidSubjectWarnedByMinItemLevel,
   raidBenchPriorityMatch,
   type RaidBenchPrioritySettings,
   type RaidCharacterRole,
   type RaidItem,
   type RaidParty,
   type RaidSignup,
-  raidManualClassOptions,
 } from "@/lib/raids";
 import { RoleMarkerStack, formatRaidDateTime, raidPartyRoleLabel, signupSpecLabel, todayIso } from "@/components/RaidSignupPresentation";
 
@@ -547,145 +539,6 @@ export function RosterSideList({
   );
 }
 
-function characterSignupOption(
-  character: DashboardProfile["characters"][number],
-  raid: Pick<RaidItem, "minItemLevel" | "minItemLevelRequired">,
-): RaidSignupCharacterOption {
-  const realm = character.realmName || character.realmSlug || "realm";
-  const warningPrefix = isRaidSubjectWarnedByMinItemLevel(raid, character)
-    ? "⚠️ "
-    : "";
-  const guildPrefix = character.verifiedGuild ? "" : "🤝 ";
-  const minimumNote = raidSignupCharacterMinimumNote(raid, character);
-  const meta = [
-    minimumNote || null,
-    character.verifiedGuild ? "Гільдійний" : "Інший персонаж",
-    character.activeSpecName || null,
-    character.className || null,
-    character.itemLevel ? `${character.itemLevel} ilvl` : null,
-  ]
-    .filter(Boolean)
-    .join(" • ");
-  return {
-    key: character.key,
-    label: `${warningPrefix}${guildPrefix}${character.name} • ${realm}`,
-    meta,
-  };
-}
-
-export function RaidAttendanceActions({
-  raid,
-  user,
-  profile = null,
-}: {
-  raid: RaidItem;
-  user?: DashboardSession | null;
-  profile?: DashboardProfile | null;
-}) {
-  const closed = isRaidClosed(raid) || raid.status !== "published";
-  const newSignupWouldStartOnBench = isRaidRegistrationFull(raid);
-  const registrationLocked = isRaidRegistrationLocked(raid);
-  const registrationLock = raidRegistrationLockSummary(raid);
-  const viewerDiscordId =
-    user?.provider === "discord" && /^\d{16,25}$/.test(user.id) ? user.id : "";
-  const viewerSignup = viewerDiscordId
-    ? raid.signups.find((item) => item.discordId === viewerDiscordId)
-    : null;
-  const viewerAlreadyActive =
-    viewerSignup?.status === "going" ||
-    viewerSignup?.status === "tentative" ||
-    viewerSignup?.status === "late";
-  const allCharacters = profile?.characters || [];
-  const characterOptions = allCharacters
-    .filter((character) => !isRaidSubjectBlockedByMinItemLevel(raid, character))
-    .map((character) => characterSignupOption(character, raid));
-  const selectedCharacterKey = viewerSignup?.characterKey || "";
-  const hiddenByMinItemLevel = Math.max(
-    0,
-    allCharacters.length - characterOptions.length,
-  );
-  const hasAnyCharacter = characterOptions.length > 0;
-  const needsLogin = !user;
-  const needsDiscordLogin = Boolean(user && !viewerDiscordId);
-  const needsEligibleCharacter = Boolean(
-    viewerDiscordId &&
-    allCharacters.length > 0 &&
-    !characterOptions.length &&
-    raid.minItemLevelRequired &&
-    raid.minItemLevel,
-  );
-  const needsCharacter = Boolean(viewerDiscordId && !hasAnyCharacter);
-  const canSubmitAnyAction = Boolean(user && viewerDiscordId);
-  const activeJoinDisabled =
-    closed ||
-    registrationLocked ||
-    needsLogin ||
-    needsDiscordLogin;
-  const skipDisabled = closed || registrationLocked || !canSubmitAnyAction;
-  const title = closed
-    ? "Запис на цей рейд уже вимкнено."
-    : registrationLocked
-      ? "Запис закрито: усі кнопки й зміни складу заблоковані."
-      : needsLogin
-        ? "Спочатку увійди через Discord."
-        : needsDiscordLogin
-          ? "Для запису потрібен Discord-вхід."
-          : needsEligibleCharacter
-            ? `Немає персонажа з мінімальним item level ${raid.minItemLevel}. Персонажі нижче порогу приховані.`
-            : needsCharacter
-              ? "Спочатку додай хоча б одного персонажа Battle.net у профілі."
-              : newSignupWouldStartOnBench && !viewerAlreadyActive
-                ? "Основний склад заповнений. Новий запис піде в лаву запасних, якщо місця в основі не звільняться."
-                : undefined;
-  const showRequirement = needsLogin || needsDiscordLogin;
-  const requirementTitle =
-    needsLogin || needsDiscordLogin
-      ? "Потрібна авторизація"
-      : needsEligibleCharacter
-        ? "Немає доступного персонажа"
-        : "Потрібен персонаж";
-  const requirementMessage =
-    needsLogin || needsDiscordLogin
-      ? "Щоб підписатися на рейд, увійди через Discord. Після входу додай персонажа Battle.net у профілі."
-      : needsEligibleCharacter
-        ? `Для цього рейду потрібен мінімум ${raid.minItemLevel} ilvl. Персонажі нижче порогу приховані, бо увімкнено блокування запису.`
-        : "Запис на рейд бере роль, item level і нік із вибраного персонажа. Додай персонажа Battle.net у профілі та повтори запис.";
-  return (
-    <RaidAttendanceClient
-      raidId={raid.id}
-      closed={closed}
-      full={newSignupWouldStartOnBench}
-      viewerAlreadyActive={Boolean(viewerAlreadyActive)}
-      activeJoinDisabled={activeJoinDisabled}
-      skipDisabled={skipDisabled}
-      registrationLocked={registrationLocked}
-      registrationLockMessage={
-        registrationLock.enabled
-          ? `${registrationLock.label}. ${registrationLock.detail}`
-          : ""
-      }
-      showRequirement={showRequirement}
-      requirementTitle={requirementTitle}
-      requirementMessage={requirementMessage}
-      loginHref={`/login?next=${encodeURIComponent(`/raids/${raid.id}`)}&error=session_required`}
-      profileHref="/profile"
-      rulesHref={dashboardRaidRulesUrl()}
-      characterOptions={characterOptions}
-      selectedCharacterKey={selectedCharacterKey}
-      selectedStatus={viewerSignup?.status || "going"}
-      selectedRole={viewerSignup?.role || "dps"}
-      selectedManualClassKey={viewerSignup?.manualClassKey || ""}
-      selectedManualSpecKey={viewerSignup?.manualSpecKey || ""}
-      manualClasses={raidManualClassOptions()}
-      title={
-        hiddenByMinItemLevel > 0 && !needsEligibleCharacter
-          ? `${hiddenByMinItemLevel} персонаж(ів) нижче мінімального ilvl приховано.`
-          : title
-      }
-    />
-  );
-}
-
 export function RaidManageActions({ raid }: { raid: RaidItem }) {
   const closed = isRaidClosed(raid);
   return (
@@ -859,8 +712,8 @@ export function RaidAnnouncementPreview({
       <div className="raid-attendance-panel">
         <div className="raid-attendance-panel__head">
           <div>
-            <strong>Моя участь</strong>
-            <span>{closed ? "Рейд уже закритий — доступний лише перегляд." : "Обери персонажа й одразу зафіксуй свій статус."}</span>
+            <strong>Участь через Discord</strong>
+            <span>{closed ? "Рейд закрито — доступний лише перегляд." : "Для запису використовуй оголошення та кнопки Discord-бота."}</span>
           </div>
           {!closed && registrationLock.enabled ? <small>{registrationLock.label}</small> : null}
         </div>
@@ -869,10 +722,7 @@ export function RaidAnnouncementPreview({
             className={`raid-preview-buttons${closed ? " is-disabled" : ""}`}
             aria-hidden="true"
           >
-            <span className="raid-action raid-action--go">✓ Підписатися</span>
-            <span className="raid-action raid-action--maybe">❓ 50/50</span>
-            <span className="raid-action raid-action--skip">↩ Пропустити</span>
-            <span className="raid-action raid-action--late">🕒 Затримаюсь</span>
+            {raid.messageUrl ? <a className="btn primary" href={raid.messageUrl} target="_blank" rel="noopener noreferrer">Відкрити оголошення в Discord ↗</a> : <span>Публікація в Discord очікується</span>}
           </div>
         )}
       </div>
@@ -922,8 +772,7 @@ export function RaidAnnouncementPreview({
         <div className="raid-member-roster-note">
           <strong>Склад формують офіцери</strong>
           <span>
-            Ти можеш записатися, обрати 50/50, пропустити рейд або позначити запізнення.
-            Детальний розподіл паті видно офіцерам.
+            Запис і зміна статусу — в Discord. Детальний розподіл паті видно офіцерам.
           </span>
         </div>
       )}
@@ -1326,7 +1175,7 @@ export function RaidForm({
               />
               <span>
                 <strong>Закривати запис до старту</strong>
-                <small>Після дедлайну всі кнопки запису стають неактивними на сайті й у Discord.</small>
+                <small>Після дедлайну кнопки запису в Discord стають неактивними.</small>
               </span>
             </label>
             <label className="field-label raid-dependent-field">
@@ -1713,7 +1562,7 @@ export function RaidPageShell({
         className="dashboard-shell content-shell raid-shell app-page-stack"
         aria-label="Панель рейдів Mistblossom Vanguard"
       >
-        {user ? <DashboardIdentity user={user} activeSection="raids" /> : null}
+        <DashboardIdentity user={user || null} activeSection="raids" />
         <header className="hero panel dashboard-hero raid-dashboard-hero app-page-hero">
           <div className="hero-copy dashboard-hero__copy guild-hero__copy">
             <div className="eyebrow">Mistblossom Vanguard • Рейди</div>

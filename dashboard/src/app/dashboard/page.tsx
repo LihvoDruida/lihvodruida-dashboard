@@ -21,6 +21,7 @@ import {
 import { getGeoAccessPolicy } from "@/lib/geoAccessPolicy";
 import { getAuthAccessPolicy } from "@/lib/authAccessPolicy";
 import { fetchDiscordRoles } from "@/lib/discordAdmin";
+import { ensureDefaultAccessGroups, listAccessGroupsForManagement } from "@/lib/accessGroups";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -79,23 +80,29 @@ export default async function AdminOverviewPage() {
         roles: [] as Array<{ id: string; name: string; color: number; position: number; managed: boolean }>,
         error: "",
       });
-  const [policy, geoPolicy, authPolicy, rolesResult, automationOverview] = await Promise.all([
+  const [policy, geoPolicy, authPolicy, rolesResult, automationOverview, loadedGroups] = await Promise.all([
     getGuildNicknamePolicy(),
     getGeoAccessPolicy(),
     getAuthAccessPolicy(),
     rolesPromise,
     canManageDiscordMembers(user) ? getAutomationOverview() : Promise.resolve(null),
+    canEditAuthPolicy ? listAccessGroupsForManagement().catch(() => []) : Promise.resolve([]),
   ]);
+  // On a fresh deployment the group catalog may not exist yet.
+  // Initialize via the canonical storage writer, never from cached fallback rights.
+  const siteGroups = loadedGroups.length || !canEditAuthPolicy
+    ? loadedGroups
+    : await ensureDefaultAccessGroups()
+        .then(() => listAccessGroupsForManagement())
+        .catch(() => []);
   const discordRoles = rolesResult.roles;
   const authRolesError = rolesResult.error;
 
-  const selectedAuthRoleIds = new Set(authPolicy.requiredRoleIds);
-  const loadedAuthRoleIds = new Set(discordRoles.map((role) => role.id));
-  const manualAuthRoleIds = discordRoles.length
-    ? authPolicy.requiredRoleIds.filter(
-        (roleId) => !loadedAuthRoleIds.has(roleId),
-      )
-    : authPolicy.requiredRoleIds;
+  const mappings = new Map(authPolicy.roleGroupMappings.map((mapping) => [mapping.roleId, mapping.groupId]));
+  const knownRoleIds = new Set(discordRoles.map((role) => role.id));
+  const unknownMappings = authPolicy.roleGroupMappings.filter((mapping) => !knownRoleIds.has(mapping.roleId));
+  const eligibleGroups = siteGroups.filter((group) => group.permissions.includes("dashboard.view") &&
+    (user.isServerOwner || (group.role !== "admin" && !group.permissions.includes("groups.manage"))));
 
   return (
     <main className="container app-page admin-container">
@@ -141,7 +148,7 @@ export default async function AdminOverviewPage() {
 
         <ManagementSections sections={[
           { id: "overview-status", label: "Стан системи", description: "Інтеграції та чинні правила гільдії в одному місці." },
-          { id: "overview-auth", label: "Вхід і реєстрація", description: "Хто може авторизуватися: членство на сервері, Discord-ролі й винятки." },
+          { id: "overview-auth", label: "Доступ за Discord-ролями", description: "Яка Discord-роль відповідає якій групі сайту." },
           { id: "overview-geo", label: "Географія доступу", description: "Країни та винятки для доступу до сайту." },
         ]}>
           <div>
@@ -177,10 +184,9 @@ export default async function AdminOverviewPage() {
                 🔐
               </span>
               <div className="admin-policy-card__title">
-                <strong>Авторизація та реєстрація</strong>
+                <strong>Вхід для команди за Discord-ролями</strong>
                 <small>
-                  Хто може входити в панель: перевірка участі на Discord-сервері,
-                  дозволених ролей і резервного доступу.
+                  Публічні рейди не потребують входу. Тут зіставляються Discord-ролі з групами адміністративної панелі.
                 </small>
               </div>
               <div
@@ -203,159 +209,69 @@ export default async function AdminOverviewPage() {
             >
               <div className="admin-policy-layout admin-policy-layout--auth">
                 <fieldset className="admin-policy-fieldset admin-policy-fieldset--mode">
-                  <legend>Режим входу</legend>
-                  <p className="admin-policy-section-intro">
-                    Основні правила перевірки застосовуються під час входу та
-                    повторної перевірки активної сесії.
-                  </p>
-
+                  <legend>Правила доступу</legend>
+                  <p className="admin-policy-section-intro">Сайт і рейди відкриті для перегляду без входу. OAuth потрібен лише тим, кому призначена Discord-роль із групою доступу сайту.</p>
+                  <strong>Роль Discord → група сайту</strong>
+                  <small>За відсутності відповідності вхід заборонено. Права беруться з вибраної групи доступу, а не з профілю користувача.</small>
                   <label className="admin-policy-toggle">
-                    <input
-                      type="checkbox"
-                      name="enabled"
-                      defaultChecked={authPolicy.enabled}
-                      disabled={!canEditAuthPolicy}
-                    />
-                    <span className="admin-policy-toggle__copy">
-                      <strong>Обмежити вхід Discord-роллю</strong>
-                      <small>
-                        Пускати лише учасників сервера, які мають дозволену роль.
-                      </small>
-                    </span>
-                  </label>
-
-                  <label className="admin-policy-toggle">
-                    <input
-                      type="checkbox"
-                      name="requireConfiguredRole"
-                      defaultChecked={authPolicy.requireConfiguredRole}
-                      disabled={!canEditAuthPolicy}
-                    />
-                    <span className="admin-policy-toggle__copy">
-                      <strong>Блокувати, якщо роль не вибрана</strong>
-                      <small>
-                        Захищає від випадкового відкриття входу при порожньому списку ролей.
-                      </small>
-                    </span>
-                  </label>
-
-                  <label className="admin-policy-toggle">
-                    <input
-                      type="checkbox"
-                      name="allowServerOwner"
-                      defaultChecked={authPolicy.allowServerOwner}
-                      disabled={!canEditAuthPolicy}
-                    />
-                    <span className="admin-policy-toggle__copy">
-                      <strong>Дозволити власнику сервера без ролі</strong>
-                      <small>
-                        Окремий виняток для Discord-власника, якому роль може бути недоступна.
-                      </small>
-                    </span>
-                  </label>
-
-                  <label className="admin-policy-toggle admin-policy-toggle--danger">
-                    <input
-                      type="checkbox"
-                      name="allowEmergencyTokenLogin"
-                      defaultChecked={authPolicy.allowEmergencyTokenLogin}
-                      disabled={!canEditAuthPolicy}
-                    />
-                    <span className="admin-policy-toggle__copy">
-                      <strong>Дозволити аварійний вхід</strong>
-                      <small>
-                        Резервний режим відновлення. Він обходить перевірку Discord-ролі.
-                      </small>
-                    </span>
+                    <input type="checkbox" name="allowServerOwner" defaultChecked={authPolicy.allowServerOwner} disabled={!user.isServerOwner} />
+                    <span className="admin-policy-toggle__copy"><strong>Вхід власника Discord-сервера без окремої ролі</strong><small>Керувати винятком може лише власник сервера.</small></span>
                   </label>
                 </fieldset>
-
                 <fieldset className="admin-policy-fieldset admin-policy-fieldset--roles">
-                  <legend>Дозволені Discord-ролі</legend>
-                  <div className="admin-policy-section-headline">
-                    <p className="admin-policy-section-intro">
-                      Для входу достатньо мати хоча б одну з вибраних ролей.
-                    </p>
-                    <span className="admin-policy-selection-count">
-                      Збережено: {roleCountLabel(authPolicy.requiredRoleIds.length)}
-                    </span>
+                  <legend>Відповідності ролей</legend>
+                  <p className="admin-policy-section-intro">Для кожної Discord-ролі вибери групу доступу або «Без доступу». Якщо користувач має кілька дозволених ролей, діє група з вищим рангом.</p>
+                  {authRolesError ? <small className="error-note">Не вдалося завантажити ролі Discord. Існуючі відповідності збережено нижче.</small> : null}
+                  <div className="auth-access-role-list">
+                    {discordRoles.map((role) => (
+                      <label className="auth-access-role-option" key={role.id}>
+                        <span className="auth-access-role-option__copy"><strong>{role.name}</strong><small>{role.id}</small></span>
+                        <select name={`roleMap:${role.id}`} defaultValue={mappings.get(role.id) || ""} disabled={!canEditAuthPolicy || !eligibleGroups.length} aria-label={`Група сайту для Discord-ролі ${role.name}`}>
+                          <option value="">Без доступу</option>
+                          {eligibleGroups.map((group) => <option value={group.id} key={group.id}>{group.name} · {group.role}</option>)}
+                        </select>
+                      </label>
+                    ))}
+                    {unknownMappings.map((mapping) => (
+                      <label className="auth-access-role-option" key={mapping.roleId}>
+                        <span className="auth-access-role-option__copy"><strong>Discord ID {mapping.roleId}</strong><small>Роль не повернута Discord API</small></span>
+                        <select name={`roleMap:${mapping.roleId}`} defaultValue={mapping.groupId} disabled={!canEditAuthPolicy}>
+                          <option value="">Без доступу</option>
+                          {eligibleGroups.map((group) => <option value={group.id} key={group.id}>{group.name}</option>)}
+                        </select>
+                      </label>
+                    ))}
                   </div>
-
-                  {authRolesError ? (
-                    <small className="error-note">
-                      Не вдалося завантажити ролі Discord. Можна вставити ID ролі вручну нижче.
-                    </small>
-                  ) : null}
-
-                  {discordRoles.length ? (
-                    <div className="auth-access-role-list">
-                      {discordRoles.map((role) => (
-                        <label className="auth-access-role-option" key={role.id}>
-                          <input
-                            type="checkbox"
-                            name="requiredRoleIds"
-                            value={role.id}
-                            defaultChecked={selectedAuthRoleIds.has(role.id)}
-                            disabled={!canEditAuthPolicy}
-                          />
-                          <span className="auth-access-role-option__copy">
-                            <strong>{role.name}</strong>
-                            <small>{role.id}</small>
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  ) : (
-                    <small className="admin-policy-empty">
-                      Список ролей недоступний або порожній.
-                    </small>
-                  )}
-
-                  <label className="admin-policy-input admin-policy-input--manual-role">
-                    <span>ID ролей вручну</span>
-                    <small>
-                      Лише для ролей, яких немає у списку вище. Кілька ID розділяй комою.
-                    </small>
-                    <input
-                      name="requiredRoleIdsText"
-                      defaultValue={manualAuthRoleIds.join(", ")}
-                      placeholder="123456789012345678, 234567890123456789"
-                      maxLength={1024}
-                      autoComplete="off"
-                      disabled={!canEditAuthPolicy}
-                    />
-                  </label>
+                  <div className="admin-policy-input admin-policy-input--manual-role">
+                    <label>Discord role ID (додати вручну)<input name="manualRoleId" placeholder="123456789012345678" pattern="[0-9]{16,25}" maxLength={25} disabled={!canEditAuthPolicy}/></label>
+                    <label>Група доступу сайту<select name="manualGroupId" defaultValue="" disabled={!canEditAuthPolicy}><option value="">Не додавати</option>{eligibleGroups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select></label>
+                  </div>
+                  {!eligibleGroups.length ? <p className="error-note">Групи сайту недоступні. Збереження вимкнено, щоб не скинути права випадково.</p> : null}
                 </fieldset>
               </div>
 
               <div className="admin-policy-current-state" aria-label="Поточна конфігурація входу">
                 <div>
-                  <span>Discord-роль</span>
-                  <strong>{authPolicy.enabled ? "Перевіряється" : "Не обмежує"}</strong>
+                  <span>Роль Discord</span><strong>Обовʼязкова</strong>
                 </div>
                 <div>
-                  <span>Без налаштованої ролі</span>
-                  <strong>{authPolicy.requireConfiguredRole ? "Блокувати" : "Дозволяти"}</strong>
+                  <span>Без відповідності</span><strong>Вхід заборонено</strong>
                 </div>
                 <div>
                   <span>Власник сервера</span>
                   <strong>{authPolicy.allowServerOwner ? "Має виняток" : "За загальними правилами"}</strong>
                 </div>
-                <div data-tone={authPolicy.allowEmergencyTokenLogin ? "warning" : "good"}>
-                  <span>Аварійний вхід</span>
-                  <strong>{authPolicy.allowEmergencyTokenLogin ? "Дозволено" : "Вимкнено"}</strong>
-                </div>
+                <div data-tone="good"><span>Звичайний учасник</span><strong>Перегляд без входу</strong></div>
               </div>
 
               <footer className="admin-policy-footer">
                 <small>
-                  Рекомендована конфігурація: перевірка ролі увімкнена,
-                  порожній список ролей блокує вхід, аварійний доступ вимкнений.
+                  Сайт не приймає заявок на рейди. Доступ до панелі отримують лише Discord-ролі, явно зіставлені з групами сайту.
                 </small>
                 <button
                   className="btn primary"
                   type="submit"
-                  disabled={!canEditAuthPolicy}
+                  disabled={!canEditAuthPolicy || !eligibleGroups.length}
                 >
                   Зберегти правила входу
                 </button>

@@ -273,7 +273,7 @@ async function refreshDiscordAccess(
         guild?.ownerId || null,
       );
       const liveSession: DashboardSession | null =
-        resolved.group.permissions.includes("dashboard.view")
+        resolved.matchedExplicitMapping && resolved.group.permissions.includes("dashboard.view")
           ? applyAccessGroupToSession(
               {
                 ...session,

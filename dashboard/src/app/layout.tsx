@@ -24,8 +24,8 @@ const guildMastheadFont = localFont({
   variable: "--font-guild-masthead",
 });
 import type { Metadata, Viewport } from "next";
-// Порядок шарів повторює порядок сайту lihvodruida.github.io:
-// variables → style → site-polish → nav → сторінкові стилі.
+// Порядок: токени → база → компоненти → доменні сторінки → desktop →
+// інтеграційні винятки (guild banner / cleanup / management).
 import "./styles/tokens.css";
 import "./styles/base.css";
 import "./styles/layout.css";
@@ -45,6 +45,7 @@ import "./styles/admin.css";
 import "./styles/polls.css";
 import "./styles/roster.css";
 import "./styles/desktop.css";
+// Інтеграційні винятки мають іти після desktop, зокрема для шапки гільдії.
 import "./styles/guild-banner.css";
 import "./styles/discord-cleanup.css";
 import "./styles/management.css";

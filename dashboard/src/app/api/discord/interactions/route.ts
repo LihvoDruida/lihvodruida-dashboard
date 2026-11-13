@@ -7,11 +7,9 @@ import {
   kickGuildMember,
   verifyDiscordInteractionSignature,
 } from "@/lib/discordAdmin";
-import { getMainCharacter, getProfileByDiscordUserIdForInteraction } from "@/lib/profiles";
 import { rulesAcceptUrlForDiscordUser } from "@/lib/rulesOnboarding";
 import {
   handleRaidSignupMenuInteraction,
-  dashboardProfileUrl,
   dashboardRaidRulesUrl,
   decodeRaidAttendanceCustomId,
   decodeRaidCharacterSelectCustomId,
@@ -19,7 +17,6 @@ import {
   decodeRaidManualSpecCustomId,
   decodeRaidRoleSelectCustomId,
   decodeRaidSignupSubmitCustomId,
-  raidActionHelpComponents,
 } from "@/lib/raids";
 import { handleRaidPollDiscordVote } from "@/lib/raidPolls";
 // Розбір custom_id — зі спільного пакета: бот користується тим самим кодом,
@@ -83,7 +80,7 @@ function finishDecision(interaction: any, content: string, components: unknown[]
 
 function rulesConfirmationResponse(action: { action: string; roleIds: string[] }) {
   if (action.action === "confirm_raid_signup") {
-    return ephemeral("🐉 Підтверди правила рейду. Система перевірить твій профіль і мейн-персонажа.", [
+    return ephemeral("🐉 Підтверди правила рейду. Для запису в рейд обери клас і спеціалізацію безпосередньо в Discord.", [
       {
         type: 1,
         components: [
@@ -563,24 +560,11 @@ async function processInteraction(request: NextRequest, onClaimed: (id: string) 
   }
 
   if (effectiveParsed.action === "raid_signup") {
-    try {
-      const profile = await getProfileByDiscordUserIdForInteraction(userId);
-      const mainCharacter = profile ? getMainCharacter(profile) : null;
-      if (!profile || !mainCharacter) {
-        logDashboardEvent("warn", "discord.raid_rules.profile_missing", request, { guildId, userId });
-        return finishDecision(interaction, `❌ Підпис не зараховано: спочатку увійди через Discord у панелі, додай персонажа Battle.net і вибери мейна.
-Профіль: ${dashboardProfileUrl()}
-Правила рейду: ${dashboardRaidRulesUrl()}`, raidActionHelpComponents());
-      }
-
-      logDashboardEvent("info", "discord.raid_rules.signed", request, { guildId, userId, profileId: profile.profileId, character: mainCharacter.name });
-      return finishDecision(interaction, `✅ Підпис на правила рейду підтверджено. Мейн: ${mainCharacterLabel(mainCharacter)}.`);
-    } catch (error) {
-      logDashboardEvent("error", "discord.raid_rules.failed", request, { message: safeErrorMessage(error), guildId, userId });
-      return finishDecision(interaction, `❌ Не вдалося підтвердити підпис. Спробуй ще раз пізніше або перевір, що в профілі вибрано мейн-персонажа.
-Профіль: ${dashboardProfileUrl()}
-Правила рейду: ${dashboardRaidRulesUrl()}`, raidActionHelpComponents());
-    }
+    // Confirming the rules is not a raid registration. Registration is performed
+    // exclusively by the signed Discord raid menu; no site/Battle.net profile.
+    logDashboardEvent("info", "discord.raid_rules.confirmed", request, { guildId, userId });
+    return finishDecision(interaction,
+      `✅ Правила рейду підтверджено. Щоб записатися на конкретний рейд, відкрий оголошення рейду в Discord і обери клас, спеціалізацію та статус.\nПравила: ${dashboardRaidRulesUrl()}`);
   }
 
   try {

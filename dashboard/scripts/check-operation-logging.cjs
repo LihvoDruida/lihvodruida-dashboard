@@ -95,35 +95,24 @@ function publication(kind) {
       const result = privacy.diagnosticErrorSummary(input); assert.equal(result.errorKind, kind); assert.ok(!JSON.stringify(result).includes(secret));
     }
   });
-  await check('attendance commit emits one result with phase/duration and no submitted character or preference', async () => {
-    const f = attendance(), response = await f.post(); assert.equal(response.status, 200); assert.equal(f.events.length, 1);
-    const details = f.events[0][3]; assert.equal(details.outcome, 'committed'); assert.equal(details.discordSync, 'scheduled'); assert.equal(details.resourceId, 'fixture00'); assert.ok(details.durationMs >= 0); assert.ok(!JSON.stringify(f.events).includes(secret)); assert.equal(f.writes(), 1);
+  // Website signup was retired. These cases must not request a session,
+  // touch the raid store, schedule Discord sync or log submitted character data.
+  await check('retired website attendance always rejects with 410 and no writes', async () => {
+    const f = attendance();
+    for (const body of ['{', '{}', JSON.stringify({ action: 'going', characterKey: secret })]) {
+      const response = await f.post(body);
+      assert.equal(response.status, 410);
+      assert.equal((await response.json()).error, 'discord_only');
+    }
+    assert.equal(f.writes(), 0); assert.equal(f.syncs(), 0);
+    assert.equal(f.after.length, 0); assert.equal(f.events.length, 0);
   });
-  await check('logging failure cannot turn committed attendance into a failed response', async () => {
-    const f = attendance(); f.loggerFails(); assert.equal((await f.post()).status, 200); assert.equal(f.writes(), 1);
-  });
-  await check('unavailable after scheduling retains committed attendance and reports partial follow-up', async () => {
-    const f = attendance(); f.scheduleFails(); const body = await (await f.post()).json(); assert.equal(body.ok, true); assert.equal(body.toast.tone, 'warning'); assert.equal(f.writes(), 1); assert.equal(f.events[0][3].reason, 'after_unavailable'); assert.equal(f.events[0][3].outcome, 'committed');
-  });
-  await check('background Discord false result is unconfirmed while the saved signup remains committed', async () => {
-    const f = attendance(); f.syncResult(false); await f.post(); await f.after[0](); assert.equal(f.syncs(), 1); assert.equal(f.events[1][0], 'warn'); assert.equal(f.events[1][3].phase, 'discord_sync'); assert.equal(f.events[1][3].commitState, 'committed'); assert.equal(f.events[1][3].outcome, 'unconfirmed');
-  });
-  await check('successful background sync is debug-only and not persisted', async () => {
-    const f = attendance(); await f.post(); await f.after[0](); assert.equal(f.events[1][0], 'debug'); assert.equal(f.events[1][4].persist, false);
-  });
-  await check('background exceptions are classified without replay or raw sensitive errors', async () => {
-    const f = attendance(); f.syncError(Object.assign(Error(secret), { code: 'ETIMEDOUT' })); await f.post(); await f.after[0](); assert.equal(f.writes(), 1); assert.equal(f.syncs(), 1); assert.equal(f.events[1][3].errorKind, 'timeout'); assert.ok(!JSON.stringify(f.events).includes(secret));
-  });
-  await check('bad input and policy denial log different phases and never claim commit', async () => {
-    const f = attendance(); await f.post('{'); assert.equal(f.writes(), 0); assert.equal(f.events[0][3].phase, 'input'); assert.equal(f.events[0][3].reason, 'invalid_input');
-    const g = attendance(); g.policyRejects(); await g.post(); assert.equal(g.events[0][3].phase, 'commit'); assert.equal(g.events[0][3].reason, 'policy_rejected');
-  });
-  await check('HTML form denial logs the actual redirect status while retaining its reason', async () => {
-    const f = attendance(); f.formMode(); f.policyRejects(); const response = await f.post(); assert.equal(response.status, 303); assert.equal(f.events[0][3].statusCode, response.status); assert.equal(f.events[0][3].reason, 'policy_rejected');
-    const g = attendance(); g.formMode(); g.anonymous(); const login = await g.post(); assert.equal(login.status, 303); assert.equal(g.events[0][3].statusCode, login.status); assert.equal(g.events[0][3].reason, 'session_required'); assert.equal(g.writes(), 0);
-  });
-  await check('uncertain storage failure is not described as a rejected policy or successful save', async () => {
-    const f = attendance(); f.writeError(Object.assign(Error(secret), { cause: { code: '08006' } })); await f.post(); const details = f.events[0][3]; assert.equal(details.outcome, 'unconfirmed'); assert.equal(details.errorKind, 'database_unavailable'); assert.ok(!JSON.stringify(f.events).includes(secret));
+  await check('no session, logger failure or HTML form can revive website signup', async () => {
+    const f = attendance(); f.formMode(); f.anonymous(); f.loggerFails(); f.scheduleFails();
+    const response = await f.post();
+    assert.equal(response.status, 410); assert.equal(f.writes(), 0);
+    assert.equal(f.events.length, 0); assert.equal(f.after.length, 0);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
   });
   for (const kind of ['identity', 'characters']) {
     await check(kind + ' normal reads stay quiet; writes log committed metadata without input values', async () => {

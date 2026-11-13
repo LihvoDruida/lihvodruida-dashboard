@@ -26,16 +26,14 @@ export async function generateMetadata({ params }: { params: Promise<{ pollId: s
 
 export default async function PollDetailsPage({ params }: { params: Promise<{ pollId: string }> }) {
   const user = await getSession();
-  if (!user) {
-    redirect("/login");
-    throw new Error("Login required");
-  }
-  if (!canViewRaidDirectory(user)) redirect(await getOwnProfilePath(user));
+  if (user && !canViewRaidDirectory(user)) redirect(await getOwnProfilePath(user));
 
   const { pollId } = await params;
-  const poll = await getRaidPoll(pollId).catch(() => null);
-  const relatedPolls = poll ? (await listRaidPolls(120).catch(() => [poll])).filter((item) => item.channelId && item.messageId) : [];
   const canManage = canManageRaids(user);
+  const storedPoll = await getRaidPoll(pollId).catch(() => null);
+  // Unpublished polls and draft preferences remain invisible to guests.
+  const poll = storedPoll && (canManage || (storedPoll.channelId && storedPoll.messageId)) ? storedPoll : null;
+  const relatedPolls = poll ? (await listRaidPolls(120).catch(() => [poll])).filter((item) => item.channelId && item.messageId) : [];
 
   return (
     <RaidPollPageShell
@@ -48,7 +46,7 @@ export default async function PollDetailsPage({ params }: { params: Promise<{ po
       {!hasRaidPollStorage() ? <div className="notice panel error-note raid-notice">Рейд-пули тимчасово недоступні: сховище не налаштоване.</div> : null}
       {poll ? <>
         {canManage ? <DiscordPublicationWorkbench kind="poll" id={poll.id} /> : null}
-        <RaidPollLiveSync pollId={poll.id} initialRevision={raidPollLiveRevision(poll)} />
+        {canManage ? <RaidPollLiveSync pollId={poll.id} initialRevision={raidPollLiveRevision(poll)} /> : null}
         <RaidPollResults poll={poll} relatedPolls={relatedPolls} canManage={canManage} />
       </> : <section className="panel raid-member-panel"><h2>Рейд-пул не знайдено</h2><p>Перевір посилання або повернись до списку.</p><a className="btn subtle" href="/polls">До списку</a></section>}
     </RaidPollPageShell>

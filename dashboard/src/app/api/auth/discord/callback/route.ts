@@ -406,7 +406,7 @@ export async function GET(request: NextRequest) {
       ownerId: guild?.ownerId || null,
       roleIds: discordRoleIds,
     });
-    if (!authDecision.allowed && !hasRulesOnboardingRoleToken) {
+    if (!authDecision.allowed) {
       logDashboardEvent(
         "warn",
         "auth.discord.callback.required_role_missing",
@@ -440,39 +440,12 @@ export async function GET(request: NextRequest) {
       return response;
     }
 
-    if (!authDecision.allowed && hasRulesOnboardingRoleToken) {
-      logDashboardEvent(
-        "info",
-        "auth.discord.callback.rules_onboarding_role_gate_deferred",
-        request,
-        {
-          userId: user.id,
-          profileId,
-          reason: authDecision.reason,
-          requestedRuleRoles: rulesRoleIds.length,
-          memberRoles: discordRoleIds.length,
-        },
-      );
-      await recordSystemAudit(
-        "auth.discord.rules_onboarding_role_gate_deferred",
-        {
-          status: "info",
-          summary:
-            "Discord-вхід продовжено для завершення правил: роль буде видана тільки після повного профілю.",
-          userId: String(user.id),
-          profileId,
-          reason: authDecision.reason,
-          requestedRoleIds: rulesRoleIds,
-        },
-      ).catch(() => false);
-    }
-
     const resolved = await resolveAccessGroupFromDiscord(
       discordRoleIds,
       String(user.id),
       guild?.ownerId || null,
     );
-    if (!resolved.group.permissions.includes("dashboard.view")) {
+    if (!resolved.matchedExplicitMapping || !resolved.group.permissions.includes("dashboard.view")) {
       logDashboardEvent(
         "warn",
         "auth.discord.callback.access_denied",

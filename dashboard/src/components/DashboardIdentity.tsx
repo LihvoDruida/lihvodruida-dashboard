@@ -6,7 +6,6 @@ import {
   canManageGeneralEmbeds,
   canManageRaids,
   canManageSiteContent,
-  canViewProfiles,
   canViewGuildRoster,
   canViewRaidDirectory,
   canManageGroups,
@@ -93,11 +92,11 @@ export default async function DashboardIdentity({
   const canUseDiscord = canManageGeneralEmbeds(user);
   const canUseRaids = canViewRaidDirectory(user);
   const canCreateRaids = canManageRaids(user);
-  const canUseProfiles = canViewProfiles(user);
+  const canUseProfiles = canManageGroups(user);
   const canUseGuildRoster = canViewGuildRoster(user);
   const canUseContent = canManageSiteContent(user);
   const canUseAdmin = canManageGroups(user) || canManageDiscordMembers(user);
-  const profileHref = user?.profileId ? `/profile/${user.profileId}` : "/profile";
+  const profileHref = user?.profileId ? `/profile/${user.profileId}` : "/raids";
 
   const navItems: NavEntry[] = user
     ? (
@@ -149,7 +148,7 @@ export default async function DashboardIdentity({
 
       {user ? (
         <header className="dashboard-topbar" aria-label="Навігація панелі Mistblossom Vanguard">
-          <Link prefetch={false} href={profileHref} className="dashboard-brand" aria-label={`${guild.name} — мій профіль`}>
+          <Link prefetch={false} href={profileHref} className="dashboard-brand" aria-label={`${guild.name} — ${user ? "панель" : "рейди"}`}>
             <span className="dashboard-brand__mark">
               <img src={guild.iconUrl} alt="" width={34} height={34} loading="eager" referrerPolicy="no-referrer" />
             </span>
@@ -193,14 +192,26 @@ export default async function DashboardIdentity({
             </nav>
           </div>
         </header>
-      ) : null}
+      ) : (
+        <header className="dashboard-topbar dashboard-topbar--public" aria-label="Публічні сторінки гільдії">
+          <Link prefetch={false} href="/raids" className="dashboard-brand" aria-label={`${guild.name} — рейди`}>
+            <span className="dashboard-brand__mark"><img src={guild.iconUrl} alt="" width={34} height={34} loading="eager" /></span>
+            <span className="dashboard-brand__copy"><strong>{guild.name}</strong><small>Рейди · Discord-запис</small></span>
+          </Link>
+          <nav className="dashboard-public-nav" aria-label="Публічна навігація">
+            <Link prefetch={false} href="/raids" aria-current={activeSection === "raids" ? "page" : undefined}>Рейди</Link>
+            <Link prefetch={false} href="/guild" aria-current={activeSection === "guild" ? "page" : undefined}>Гільдія</Link>
+            <Link prefetch={false} href="/polls" aria-current={activeSection === "polls" ? "page" : undefined}>Рейд-пули</Link>
+          </nav>
+        </header>
+      )}
 
       {/* Мобільна шапка лишається окремою: desktop-перебудова не робить
           телефонну версію залежною від ширини робочої панелі. */}
       <aside className="sidebar dashboard-mobile-nav">
         <header className="site-nav" aria-label="Мобільна навігація">
           <div className="site-nav__shell">
-            <Link prefetch={false} href={profileHref} className="site-nav__brand" aria-label={`${guild.name} — мій профіль`}>
+            <Link prefetch={false} href={profileHref} className="site-nav__brand" aria-label={`${guild.name} — ${user ? "панель" : "рейди"}`}>
               <img
                 className="site-nav__brand-mark"
                 src={guild.iconUrl}
@@ -224,7 +235,7 @@ export default async function DashboardIdentity({
                 <span className="nav-burger__bars" aria-hidden="true" />
               </button>
             ) : (
-              <Link prefetch={false} className="btn primary nav-account__login" href="/login">Увійти</Link>
+              <nav className="dashboard-public-nav dashboard-public-nav--mobile" aria-label="Публічна навігація"><Link prefetch={false} href="/raids">Рейди</Link><Link prefetch={false} href="/guild">Гільдія</Link><Link prefetch={false} href="/polls">Пули</Link></nav>
             )}
           </div>
         </header>

@@ -6,6 +6,7 @@ import ProfileAvatar from "@/components/ProfileAvatar";
 import { getSession } from "@/lib/auth";
 import {
   canManageDiscordMembers,
+  canManageGroups,
   canViewProfiles,
   guildStatusLabel,
 } from "@/lib/permissions";
@@ -19,6 +20,8 @@ import { listDashboardProfilePage, profileDirectoryFilters } from "@/lib/profile
 import { redirect } from "next/navigation";
 import { buildPageMetadata } from "@/lib/seo";
 import { fetchDiscordGuildMembersCachedForUi } from "@/lib/discordAdmin";
+import { listRaidDiscordPreferences } from "@/lib/raidDiscordPresets";
+import { wowSpecFullName } from "@/lib/wowClassCatalog";
 
 export const metadata = buildPageMetadata({
   title: "Профілі учасників",
@@ -186,6 +189,9 @@ export default async function ProfilesPage({
     }
   }
   const canManageCleanup = canManageDiscordMembers(user);
+  // Saved Discord raid preferences are not a member directory. Admin-only.
+  if (!canManageGroups(user)) redirect("/access-denied?reason=profiles&from=/profiles");
+  const raidPreferences = await listRaidDiscordPreferences(100).catch(() => []);
   const hasFilters = Boolean(query || linkFilter !== "all" || roleFilter !== "all" || sort !== "activity");
   const paginationState = filters;
 
@@ -196,6 +202,20 @@ export default async function ProfilesPage({
         aria-label="Профілі учасників Mistblossom Vanguard"
       >
         <DashboardIdentity user={user} activeSection="profiles" />
+        {canManageGroups(user) ? <section className="panel admin-discord-signup-profiles" aria-label="Discord-профілі запису в рейди">
+          <h2>Налаштування запису через Discord</h2>
+          <p>Збережені класи, спеціалізації, статуси та нагадування. Дані привʼязані до Discord ID і не залежать від авторизації на сайті. Розділ доступний лише адміністрації.</p>
+          {raidPreferences.length ? <div className="admin-discord-signup-profiles__scroll"><table>
+            <thead><tr><th>Учасник</th><th>Останній клас / спек</th><th>Статус</th><th>Нагадування</th><th>Вибори</th><th>Оновлено</th></tr></thead>
+            <tbody>{raidPreferences.map((item) => <tr key={item.discordId}>
+              <td><strong>{item.displayName}</strong><small>{item.discordId}</small></td>
+              <td>{item.lastClassKey ? wowSpecFullName(item.lastClassKey, item.lastSpecKey) : "Не вибрано"}</td>
+              <td>{item.lastStatus}</td><td>{item.reminderEnabled ? "Увімкнено" : "Вимкнено"}</td>
+              <td>{item.presets.map((preset) => `${wowSpecFullName(preset.classKey, preset.specKey)} ×${preset.count}`).join(" · ") || "—"}</td>
+              <td>{formatDate(item.updatedAt)}</td>
+            </tr>)}</tbody>
+          </table></div> : <p>Збережених налаштувань Discord-записів ще немає.</p>}
+        </section> : null}
 
         <header className="hero panel dashboard-hero profile-directory-hero-modern app-page-hero profile-directory-hero-ref directory-hero">
           <div className="hero-copy dashboard-hero__copy profile-directory-hero-modern__copy">

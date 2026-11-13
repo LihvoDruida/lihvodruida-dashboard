@@ -102,7 +102,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ra
         );
       } catch (error) {
         logDashboardEvent("error", "raids.discord_action.manual_spec_failed", request, { raidId, message: safeErrorMessage(error) });
-        return NextResponse.json({ ok: false, content: "❌ Не вдалося показати список спеків. Запишись на сторінці рейду." }, { headers: noStoreHeaders() });
+        return NextResponse.json({ ok: false, content: "❌ Не вдалося показати список спеків. Спробуй ще раз у Discord." }, { headers: noStoreHeaders() });
       }
     }
 

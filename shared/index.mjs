@@ -345,7 +345,7 @@ export function decodeRaidSignupMenuId(value) {
   const id=String(value||'');
   let m=id.match(/^mbv1:raid-menu:([A-Za-z0-9_-]{8,80})$/);
   if(m)return {kind:'open',raidId:m[1]};
-  m=id.match(/^mbv1:raid-draft:([a-f0-9]{32}):(\d{1,8}):(character|manual|pick|class|spec|page|skip)$/);
+  m=id.match(/^mbv1:raid-draft:([a-f0-9]{32}):(\d{1,8}):(character|manual|pick|class|spec|preset|page|skip)$/);
   if(m)return {kind:m[3],draftId:m[1],revision:Number(m[2])};
   m=id.match(/^mbv1:raid-form:([a-f0-9]{32}):(\d{1,8}):(tank|healer|dps):([01]):(going|tentative|late|skipped)$/);
   if(m)return {kind:'form',draftId:m[1],revision:Number(m[2]),role:m[3],reminder:m[4]==='1',status:m[5]};
@@ -363,7 +363,8 @@ export function raidSignupModalFor(customId) {
   const select=(id,label,options,value)=>({type:18,label,component:{type:3,custom_id:id,options:options.map(([key,text])=>({label:text,value:key,default:key===value})),min_values:1,max_values:1}});
   return {type:9,data:{custom_id:`mbv1:raid-save:${action.draftId}:${action.revision}`,title:'Запис на рейд',components:[
     select('attendance','Участь',[['going','Буду'],['tentative','50/50'],['late','Затримаюсь'],['skipped','Пропускаю']],action.status),
-    select('role','Роль на цей рейд',[['tank','Танк'],['healer','Хіл'],['dps','ДД']],action.role),
-    {type:18,label:'Нагадати в особисті за 15 хвилин',description:'Зберігається для всіх твоїх рейдів, також до реєстрації на сайті.',component:{type:23,custom_id:'raid_reminder',default:action.reminder}},
+    // Class and spec are selected in the preceding private menu. Their role
+    // is authoritative; never offer a conflicting role in the confirmation.
+    {type:18,label:'Нагадати в особисті за 15 хвилин',description:'Зберігається для твого Discord ID.',component:{type:23,custom_id:'raid_reminder',default:action.reminder}},
   ]}};
 }

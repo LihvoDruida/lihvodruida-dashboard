@@ -25,7 +25,7 @@ ok(raids.includes('status: "closed"') && raids.includes('closedReason: "auto"'),
 ok(raids.includes('reminderChannelId?: string | null') && raids.includes('reminderMessageId?: string | null'), 'raid records must persist reminder message identity');
 ok(raids.includes('reminderScheduleChanged') && raids.includes('remove stale reminder'), 'editing raid date/time/channel must invalidate an already-sent stale reminder');
 ok(raids.includes('discordCloseSyncedAt') && raids.includes('will retry'), 'closed raids must retain Discord close retry state');
-ok(raids.includes('disabled: activeJoinDisabled') && views.includes('const skipDisabled = closed || registrationLocked'), 'all signup buttons, including skip, must disable at registration close');
+ok(raids.includes('disabled: activeJoinDisabled') && views.includes('Участь через Discord') && !views.includes('const skipDisabled ='), 'Discord closes all signup buttons and website view contains no signup action');
 ok(raids.includes('Запис закрито') && !raids.includes('RAID_DISCORD_DELETE_AFTER_CLOSE_MINUTES'), 'closed UI must say signup is closed and old close-relative deletion must be gone');
 
 ok(raids.includes('RAID_LIFECYCLE_TASK_COLLECTION = "dashboardRaidLifecycleTasks"'), 'raid lifecycle must use a dedicated per-record task collection');

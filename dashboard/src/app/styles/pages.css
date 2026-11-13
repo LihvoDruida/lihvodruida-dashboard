@@ -1609,7 +1609,7 @@ body:has(.login-screen) .app-footer--site-wide {
 
 .discord-preview-panel {
   position: sticky;
-  top: calc(var(--header-offset, 88px) + 8px);
+  top: calc(var(--nav-space) + var(--space-xs));
 }
 
 @media (max-width: 1200px) {

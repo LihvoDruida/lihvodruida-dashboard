@@ -8,7 +8,7 @@ import {setTimeout as wait} from 'node:timers/promises';
 import {decodeRaidSignupMenuId,raidSignupModalFor,interactionDomainFor} from '../../shared/index.mjs';
 const guild='1977770001112223001',draft='a'.repeat(32),form=`mbv1:raid-form:${draft}:3:healer:0:going`;
 test('raid form has native selectors and optional checkbox restoring false',()=>{
- const modal=raidSignupModalFor(form);assert.equal(modal.type,9);assert.equal(modal.data.components.length,3);assert.equal(modal.data.components[2].component.type,23);assert.equal(modal.data.components[2].component.default,false);assert.equal(modal.data.components[2].component.required,undefined);assert.equal(modal.data.components[1].component.options.find(x=>x.default).value,'healer');
+ const modal=raidSignupModalFor(form);assert.equal(modal.type,9);assert.equal(modal.data.components.length,2);assert.equal(modal.data.components[1].component.type,23);assert.equal(modal.data.components[1].component.default,false);assert.equal(modal.data.components[1].component.required,undefined);assert.ok(!modal.data.components.some(x=>x.component.custom_id==='role'));assert.equal(modal.data.components[0].component.options.find(x=>x.default).value,'going');
  for(const id of [form,modal.data.custom_id,`mbv1:raid-menu:fixture00`,`mbv1:raid-draft:${draft}:3:manual`]){assert.equal(interactionDomainFor(id),'raid');assert.ok(id.length<=100)}
  for(const id of [form.replace(':healer:',':owner:'),form.replace(':3:',':999999999:'),'mbv1:raid-save:wrong:1'])assert.equal(decodeRaidSignupMenuId(id),null);
 });

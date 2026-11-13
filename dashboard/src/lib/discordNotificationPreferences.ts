@@ -19,6 +19,7 @@ export async function getRaidReminderPreference(discordId: string): Promise<Raid
 // never be acknowledged without the corresponding durable signup commit.
 export async function prepareRaidReminderPreferenceWrite(
   transaction: any, discordId: string, enabled: boolean, profileId?: string | null, expectedRevision?: number,
+  syncLinkedProfile = true,
 ) {
   if (!/^\d{16,25}$/.test(discordId) || typeof enabled !== "boolean") throw new Error("Некоректне налаштування нагадування.");
   const db = getDocumentDb();
@@ -26,7 +27,9 @@ export async function prepareRaidReminderPreferenceWrite(
   const snapshot = await transaction.get(ref);
   const current = raidReminderPreference(snapshot.data());
   if (expectedRevision !== undefined && current.revision !== expectedRevision) throw new Error("Налаштування нагадування вже змінилося. Відкрий меню рейду ще раз.");
-  const linkedProfileId = profileId || String(snapshot.data()?.profileId || "");
+  // Discord-only raid signup must never load or mutate website profiles.
+  // The opt-in linkage remains for the separate authenticated profile settings.
+  const linkedProfileId = syncLinkedProfile ? (profileId || String(snapshot.data()?.profileId || "")) : "";
   const profileRef = /^id[a-f0-9]{16,40}$/.test(linkedProfileId) ? db.collection("dashboardProfiles").doc(linkedProfileId) : null;
   const profile = profileRef ? await transaction.get(profileRef) : null;
   const ownProfile = profile?.exists && profile.data()?.provider === "discord" && profile.data()?.providerUserId === discordId;
