@@ -180,12 +180,6 @@ function getInteractionMessageRef(interaction: any) {
   return channelId && messageId ? { channelId, messageId } : null;
 }
 
-function mainCharacterLabel(character: any) {
-  const name = String(character?.name || "").trim();
-  const realm = String(character?.realmName || character?.realmSlug || "").trim();
-  return name ? `${name}${realm ? ` • ${realm}` : ""}` : "мейн-персонаж не знайдений";
-}
-
 function discordSignatureDiagnostics(request: NextRequest, rawBody: string, fallbackReason = "ed25519_verification_failed") {
   const ed25519 = String(request.headers.get("x-signature-ed25519") || "").trim();
   const timestamp = String(request.headers.get("x-signature-timestamp") || "").trim();

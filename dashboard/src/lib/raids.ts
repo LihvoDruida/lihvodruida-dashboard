@@ -6255,9 +6255,6 @@ const RAID_MODAL_PAGE_SIZE = 25;
 function raidModalSpecs() {
   return WOW_CLASS_CATALOG.flatMap((cls) => cls.specs.map((spec) => ({ cls, spec })));
 }
-function modalPages(length: number) {
-  return Math.max(1, Math.ceil(length / RAID_MODAL_PAGE_SIZE));
-}
 function raidMenuComponentId(id: string, draft: RaidSignupMenuDraft, kind: string) {
   return `mbv1:raid-draft:${id}:${draft.revision}:${kind}`;
 }
@@ -6335,7 +6332,7 @@ export async function prepareRaidSignupModal(params: { customId: string; userId:
   components.push({ type: 18, label: "Нагадати в особисті за 15 хвилин", description: "Прапорець зберігається для твого Discord ID.",
     component: { type: 23, custom_id: "raid_reminder", default: draft!.reminderEnabled } });
   return { type: 9, data: { custom_id: `mbv1:raid-save:${action.draftId}:${action.revision}:${action.mode}:${page}`,
-    title: action.mode === "character" ? "Запис на рейд · персонаж" : "Запис на рейд · вручну", components } };
+    title: "Запис на рейд · клас і спеціалізація", components } };
 }
 export function raidSignupModalValues(components: unknown, mode: "character" | "manual" | "legacy" = "legacy") {
   const fields = new Map<string, any>();

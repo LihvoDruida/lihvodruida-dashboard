@@ -284,15 +284,6 @@
   font-weight: var(--font-weight-medium);
 }
 
-.admin-policy-empty {
-  padding: var(--space-lg) var(--space-md);
-  border: 1px dashed var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  color: var(--text-muted);
-  text-align: center;
-  font-size: 0.85rem;
-}
 
 /* =========================================================
    6. ЖУРНАЛ ПОДІЙ
@@ -1721,29 +1712,8 @@
   line-height: var(--line-height-body);
 }
 
-.admin-policy-section-headline {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  min-width: 0;
-}
 
-.admin-policy-section-headline .admin-policy-section-intro {
-  flex: 1 1 auto;
-}
 
-.admin-policy-selection-count {
-  flex: 0 0 auto;
-  padding: 4px 8px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-pill);
-  background: var(--surface-sunken);
-  color: var(--text-muted);
-  font-size: var(--font-size-2xs);
-  font-weight: var(--font-weight-bold);
-  white-space: nowrap;
-}
 
 .admin-policy-toggle {
   display: grid;
@@ -2042,10 +2012,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .admin-policy-section-headline {
-    align-items: flex-start;
-    flex-direction: column;
-  }
 
   .admin-policy-card__header > .admin-policy-status {
     width: fit-content;

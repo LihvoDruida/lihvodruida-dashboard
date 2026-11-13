@@ -65,7 +65,7 @@ export async function saveRaidDiscordPreference(input: {
 export async function listRaidDiscordPreferences(limit = 100) {
   if (!hasDocumentDbConfig()) return [] as RaidDiscordPreference[];
   const snapshot = await getDocumentDb().collection(COLLECTION).orderBy("updatedAt", "desc").limit(Math.max(1, Math.min(limit, 200))).get();
-  return snapshot.docs.flatMap((doc: {id: string; data: () => Record<string, unknown>}) => {
+  return snapshot.docs.flatMap((doc) => {
     const item = parsePreference(doc.id, doc.data());
     return item ? [item] : [];
   });

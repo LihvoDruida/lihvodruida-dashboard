@@ -2,7 +2,9 @@ import "server-only";
 import { createHash } from "node:crypto";
 import type { DashboardSession } from "@/lib/auth";
 
-export function listNavigationScope(user: DashboardSession): string {
+export function listNavigationScope(user: DashboardSession | null): string {
+  // Public read-only lists have no dashboard session or private navigation scope.
+  if (!user) return "public:anonymous";
   return createHash("sha256").update(JSON.stringify({
     provider: user.provider, id: user.id, profileId: user.profileId || "", role: user.role,
     group: user.groupId || "", rank: user.groupRank ?? null,

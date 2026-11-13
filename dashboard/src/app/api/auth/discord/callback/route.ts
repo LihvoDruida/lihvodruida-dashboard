@@ -52,7 +52,6 @@ import {
 import { getGuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
 import {
   normalizeRulesAcceptPath,
-  parseRulesRoleIdsFromUrl,
   rulesOnboardingStatus,
 } from "@/lib/rulesOnboarding";
 import { deleteDashboardProfilesByDiscordUserId } from "@/lib/profileCleanup";
@@ -194,10 +193,6 @@ export async function GET(request: NextRequest) {
     { scope: "discord-auth", fallback: "" },
   );
   const rulesNextPath = normalizeRulesAcceptPath(nextPath);
-  const rulesRoleIds = parseRulesRoleIdsFromUrl(rulesNextPath);
-  const hasRulesOnboardingRoleToken = Boolean(
-    rulesNextPath && rulesRoleIds.length,
-  );
   const remainingNonces = parsedState?.nonce
     ? rememberedNonces.filter(
         (item) => item !== parsedState.nonce && item !== state,

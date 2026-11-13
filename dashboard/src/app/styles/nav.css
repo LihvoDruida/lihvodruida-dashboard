@@ -647,10 +647,6 @@
     transform: rotate(-45deg);
   }
 
-  .nav-account__login {
-    min-height: 40px;
-    padding-inline: 16px;
-  }
 
   .nav-sheet {
     position: fixed;
