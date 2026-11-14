@@ -338,7 +338,6 @@
 /* =========================================================
    8. OWNER SERVER MONITORING
    ========================================================= */
-.server-status-container,
 .server-status-page,
 .server-status-dashboard {
   min-width: 0;

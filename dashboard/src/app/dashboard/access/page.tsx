@@ -1,8 +1,8 @@
+import FormField from "@/components/ui/FormField";
+import ManagementShell from "@/components/management/ManagementShell";
 import { redirect } from "next/navigation";
-import DashboardIdentity from "@/components/DashboardIdentity";
 import AdminPageHeader from "@/components/AdminPageHeader";
 import ManagementSections from "@/components/ManagementSections";
-import AdminTabs from "@/components/AdminTabs";
 import { buildPageMetadata } from "@/lib/seo";
 import { getSession } from "@/lib/auth";
 import { canManageGroups } from "@/lib/permissions";
@@ -61,9 +61,7 @@ export default async function DashboardAccessPage() {
     (user.isServerOwner || (group.role !== "admin" && !group.permissions.includes("groups.manage"))));
   const canEditAuthPolicy = !authRolesError && eligibleGroups.length > 0;
   const canEditGeoPolicy = true;
-  return <main className="container app-page admin-container">
-    <section className="dashboard-shell content-shell admin-workspace admin-page app-page-stack">
-      <DashboardIdentity user={user} activeSection="admin" />
+  return <ManagementShell user={user} active="access" className="">
       <AdminPageHeader eyebrow="Mistblossom Vanguard • Безпека" title="Авторизація та доступ"
         description="Публічний сайт — без авторизації. Вхід до керування — лише через дозволені Discord-ролі й групи сайту."
         metrics={[
@@ -72,7 +70,7 @@ export default async function DashboardAccessPage() {
           { label: "Груп доступу", value: String(siteGroups.length) },
           { label: "Геообмеження", value: geoPolicy.enabled ? "Увімкнено" : "Вимкнено" },
         ]} />
-      <AdminTabs active="access" user={user} />
+      
       <ManagementSections sections={[
         { id: "overview-auth", label: "Discord → групи", description: "Список ролей і призначених їм груп доступу; без відповідності вхід заборонено." },
         { id: "overview-geo", label: "Географія", description: "Додаткові обмеження для входу та публічних заявок." },
@@ -142,7 +140,7 @@ export default async function DashboardAccessPage() {
                     ))}
                   </div>
                   <div className="admin-policy-input admin-policy-input--manual-role">
-                    <label>Discord role ID (додати вручну)<input name="manualRoleId" placeholder="123456789012345678" pattern="[0-9]{16,25}" maxLength={25} disabled={!canEditAuthPolicy}/></label>
+                    <FormField label="Discord role ID (додати вручну)" name="manualRoleId" placeholder="123456789012345678" pattern="[0-9]{16,25}" maxLength={25} disabled={!canEditAuthPolicy} />
                     <label>Група доступу сайту<select name="manualGroupId" defaultValue="" disabled={!canEditAuthPolicy}><option value="">Не додавати</option>{eligibleGroups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select></label>
                   </div>
                   {!eligibleGroups.length ? <p className="error-note">Групи сайту недоступні. Збереження вимкнено, щоб не скинути права випадково.</p> : null}
@@ -346,7 +344,7 @@ export default async function DashboardAccessPage() {
 
               <footer className="admin-policy-footer">
                 <small>
-                  Dashboard і Worker використовують одну політику, тому після збереження правило діє і для входу, і для заявок.
+                  Сайт і Dashboard використовують одну політику, тому після збереження правило діє і для входу, і для заявок.
                 </small>
                 <button
                   className="btn primary"
@@ -359,6 +357,5 @@ export default async function DashboardAccessPage() {
             </form>
           </article>
       </ManagementSections>
-    </section>
-  </main>;
+    </ManagementShell>;
 }

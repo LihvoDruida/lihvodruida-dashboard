@@ -1,9 +1,8 @@
+import ManagementShell from "@/components/management/ManagementShell";
 import ManagementSections from "@/components/ManagementSections";
 import ManagementWelcomePreview from "@/components/ManagementWelcomePreview";
 import { redirect } from "next/navigation";
 
-import AdminTabs from "@/components/AdminTabs";
-import DashboardIdentity from "@/components/DashboardIdentity";
 import AdminPageHeader from "@/components/AdminPageHeader";
 import { getSession } from "@/lib/auth";
 import { fetchDiscordRoleControlSnapshotCachedForUi, fetchDiscordTextChannels } from "@/lib/discordAdmin";
@@ -94,9 +93,7 @@ export default async function WelcomeCardDashboardPage({
   const previewUrl = `/api/dashboard/welcome-card/preview?${previewParams.toString()}`;
 
   return (
-    <main className="container app-page admin-container server-status-container">
-      <section className="dashboard-shell content-shell admin-workspace admin-page server-status-page app-page-stack" aria-label="Welcome-картки та onboarding">
-        <DashboardIdentity user={user} activeSection="admin" />
+    <ManagementShell user={user} active="welcome" className="server-status-page" label="Welcome-картки та onboarding">
         <AdminPageHeader
           eyebrow="Mistblossom Vanguard • Owner only"
           title="Welcome-картки та onboarding"
@@ -108,7 +105,7 @@ export default async function WelcomeCardDashboardPage({
             { label: "Gateway", value: gatewayHealth.ready ? "Live" : "Fallback", note: gatewayHealth.ready ? `черга ${gatewayHealth.queueSize}` : (gatewayHealth.lastError || "cron recovery"), tone: gatewayHealth.ready ? "good" : "warning" },
           ]}
         />
-        <AdminTabs active="welcome" user={user} />
+        
 
         <ManagementSections initialSection={paramValue(params, "repairPreview") === "1" ? "welcome-recovery" : Object.keys(params).some(key => key.startsWith("test")) ? "welcome-test" : "welcome-settings"} sections={[
           { id: "welcome-settings", label: "Привітання", description: "Канал, текст картки та стартова роль для нових учасників." },
@@ -234,9 +231,9 @@ export default async function WelcomeCardDashboardPage({
                 <strong>Стартова роль: {repairPreview.roleName || repairPreview.roleId || "не задано"}</strong>
                 <p>Учасників у Discord: {repairPreview.totalMembers}. Без явних ролей: {repairPreview.rolelessCount}.</p>
                 {repairPreview.members.length ? (
-                  <div style={{ display: "grid", gap: ".45rem", marginTop: ".75rem" }}>
+                  <div className="management-member-preview">
                     {repairPreview.members.slice(0, 25).map((member) => (
-                      <div key={member.userId} style={{ display: "flex", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+                      <div key={member.userId} className="management-member-preview__row">
                         <span><strong>{member.displayName}</strong> <code>{member.userId}</code></span>
                         <small>{member.joinedAt ? new Date(member.joinedAt).toLocaleString("uk-UA") : "час вступу невідомий"}</small>
                       </div>
@@ -338,22 +335,14 @@ export default async function WelcomeCardDashboardPage({
             <a className="btn btn-secondary" href={previewUrl} target="_blank" rel="noreferrer">Відкрити PNG</a>
           </div>
 
-          <div className="panel preview-panel" style={{ padding: "1rem", display: "grid", justifyItems: "start" }}>
+          <div className="panel preview-panel management-preview">
             <div
               aria-label="Discord-sized preview frame"
-              style={{
-                width: "100%",
-                maxWidth: "640px",
-                padding: "12px",
-                borderRadius: "16px",
-                background: "rgba(32, 34, 37, 0.88)",
-                border: "1px solid rgba(255,255,255,0.06)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)",
-              }}
+              className="management-preview__frame"
             >
               <ManagementWelcomePreview url={previewUrl} />
             </div>
-            <p className="text-muted" style={{ margin: 0 }}>Preview у панелі обмежений до приблизного desktop-розміру вкладення в Discord, щоб візуально збігатися з публікацією в каналі.</p>
+            <p className="text-muted management-preview__caption">Preview у панелі обмежений до приблизного desktop-розміру вкладення в Discord, щоб візуально збігатися з публікацією в каналі.</p>
           </div>
 
           <div className="nickname-warning-settings__group">
@@ -402,7 +391,6 @@ export default async function WelcomeCardDashboardPage({
           </form>
         </section>
         </ManagementSections>
-      </section>
-    </main>
+      </ManagementShell>
   );
 }

@@ -17,8 +17,8 @@ const store = {
   getAll: async (...refs) => refs.map(r => ({ id: r.id, exists: false })),
 };
 const mod = subject({}, store, groups, 'documentStore');
-const admin = { provider: 'discord', id: 'no-own', role: 'admin' };
-const member = { ...admin, role: 'member', groupId: 'member', groupRank: 10, permissions: ['profiles.group.view'] };
+const admin = { provider: 'discord', id: 'no-own', role: 'admin', permissions: ['dashboard.view', 'profiles.view'] };
+const member = { ...admin, role: 'member', groupId: 'member', groupRank: 10, permissions: ['dashboard.view', 'profiles.group.view'] };
 let passed = 0;
 async function check(name, run) { await run(); passed++; console.log('✓ ' + name); }
 (async () => {

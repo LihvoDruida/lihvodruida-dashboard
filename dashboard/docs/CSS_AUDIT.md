@@ -66,3 +66,7 @@ Fallback-правила для доменних `*-card`, `__card`, `*-panel`, `
 ## Межа перевірки
 
 У локальному робочому середовищі немає встановленого dashboard `node_modules`, тому повний `next build`/TypeScript semantic typecheck тут не видається за пройдений. Структурні, route, import, CSS, UI і TS/TSX syntax-перевірки виконані; production Docker `build:ci` додатково запускає повний typecheck перед Next build.
+
+## Актуалізація 3.22.0
+
+Історичні лічильники вище описують попередній аудит. Поточні результати та межі перевірки наведено в REFACTOR_3.22.0_UA.md; виконано повний npm ci, TypeScript і Next production build. Статичні inline-стилі Welcome/Content прибрано, звичайні admin controls повернено до спільних токенів. Браузерний запуск обмежено середовищем.

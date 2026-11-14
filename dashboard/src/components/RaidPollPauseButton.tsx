@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { notifyDashboardDataChanged } from "@/lib/dashboardLiveRefresh";
-import { useRaidPollMutation } from "@/lib/useRaidPollMutation";
+import { useRaidPollMutation } from "@/hooks/useRaidPollMutation";
 import RaidPollActionResult from "@/components/RaidPollActionResult";
 
 export default function RaidPollPauseButton({ pollId, paused, compact = false, disabled = false, onPendingChange }: {

@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { dispatchDashboardToast } from "@/lib/clientToasts";
 import { requestRaidPollMutation, raidPollMutationFailure } from "@/lib/raidPollMutation";
-import { useDashboardRequests } from "@/lib/useDashboardRequests";
-import { useActionFocus } from "@/lib/useActionFocus";
+import { useDashboardRequests } from "@/hooks/useDashboardRequests";
+import { useActionFocus } from "@/hooks/useActionFocus";
 import RaidPollActions from "@/components/RaidPollActions";
 
 import ListViewMemory from "@/components/ListViewMemory";

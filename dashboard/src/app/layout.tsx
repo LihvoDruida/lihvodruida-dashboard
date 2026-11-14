@@ -33,6 +33,7 @@ import "./styles/layout.css";
 // ПЕРЕД іменними шарами, щоб будь-яке конкретне правило їх перекривало.
 import "./styles/patterns.css";
 import "./styles/components.css";
+import "./styles/ui.css";
 import "./styles/lists.css";
 import "./styles/applications.css";
 import "./styles/nav.css";

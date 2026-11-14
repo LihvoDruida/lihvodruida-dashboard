@@ -1,33 +1,14 @@
 import Link from "next/link";
 import type { DashboardSession } from "@/lib/auth";
-import { canManageDiscordMembers, canManageGroups, canViewAdminLogs } from "@/lib/permissions";
 
-export type AdminTabKey = "overview" | "access" | "groups" | "profiles" | "cleanup" | "discord" | "logs" | "server" | "welcome" | "settings";
+import { MANAGEMENT_SECTIONS, managementItems, type AdminTabKey } from "@/lib/navigation/management";
+export type { AdminTabKey } from "@/lib/navigation/management";
 
-type NavItem = { key: AdminTabKey; href: string; label: string; description: string; visible: boolean };
 export default function AdminTabs({ active, user }: { active: AdminTabKey; user?: DashboardSession | null }) {
-  const groups = canManageGroups(user);
-  const discord = canManageDiscordMembers(user);
-  const logs = canViewAdminLogs(user);
-  const owner = Boolean(user?.isServerOwner);
-  const sections: Array<{ id: string; title: string; items: NavItem[] }> = [
-    { id: "access", title: "Доступ і права", items: [
-      { key: "overview", href: "/dashboard", label: "Огляд", description: "Стан і швидкі дії", visible: groups || discord || logs || owner },
-      { key: "access", href: "/dashboard/access", label: "Авторизація", description: "Discord → група сайту", visible: groups },
-      { key: "groups", href: "/dashboard/groups", label: "Групи", description: "Права й ранги", visible: groups },
-    ] },
-    { id: "discord", title: "Discord та учасники", items: [
-      { key: "discord", href: "/dashboard/discord", label: "Учасники", description: "Ролі й ніки", visible: discord },
-      { key: "cleanup", href: "/dashboard/discord/cleanup", label: "Модерація", description: "Виключення за правилами", visible: discord },
-      { key: "profiles", href: "/dashboard/profiles", label: "Профілі", description: "Аудит і очищення", visible: owner },
-      { key: "welcome", href: "/dashboard/welcome", label: "Привітання", description: "Стартова роль", visible: owner },
-      { key: "settings", href: "/dashboard/settings", label: "Статик", description: "Статичні ролі", visible: groups },
-    ] },
-    { id: "system", title: "Система", items: [
-      { key: "server", href: "/dashboard/server", label: "Сервер", description: "Ресурси", visible: owner },
-      { key: "logs", href: "/dashboard/logs", label: "Журнали", description: "Аудит і помилки", visible: logs },
-    ] },
-  ];
+  const items = managementItems(user);
+  const sections = MANAGEMENT_SECTIONS.map(section => ({
+    ...section, items: items.filter(item => item.section === section.id).map(item => ({ ...item, visible: true })),
+  }));
   if (!sections.some(section => section.items.some(item => item.visible))) return null;
   return <nav className="management-nav" aria-label="Розділи панелі керування">
     {sections.map(section => {

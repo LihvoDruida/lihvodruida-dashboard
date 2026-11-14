@@ -39,12 +39,9 @@ ARG REACT_SECURITY_VERSION
 ARG SHARP_SECURITY_VERSION
 WORKDIR /repo/dashboard
 
-# Локальний vendor-пакет підміняє node-domexception (див. overrides у
-# package.json), а `shared/` — це залежність file:../shared. Обидва потрібні
-# ще до npm ci, інакше встановлення впаде на нерозвʼязаному посиланні.
+# shared/ is the local Discord contract dependency and must exist before npm ci.
 COPY shared /repo/shared
 COPY dashboard/package.json dashboard/package-lock.json ./
-COPY dashboard/vendor ./vendor
 
 # npm ci відтворює lock-файл байт у байт. `--ignore-scripts` не ставимо:
 # sharp качає нативний бінарник саме в postinstall.

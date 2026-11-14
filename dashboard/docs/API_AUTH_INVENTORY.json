@@ -1,0 +1,1299 @@
+[
+  {
+    "route": "/api/applications/[number]/delivery",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "guards": [
+      "canManageApplications",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/applications/[number]",
+    "methods": [
+      "GET",
+      "DELETE"
+    ],
+    "guards": [
+      "canViewApplications",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/applications/[number]/status",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "canManageApplications",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/applications/bulk-status",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "canManageApplications",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/applications",
+    "methods": [
+      "GET"
+    ],
+    "guards": [
+      "canManageApplications",
+      "canViewApplicationBattleTag",
+      "canViewApplications",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/auth/battlenet/callback",
+    "methods": [
+      "GET"
+    ],
+    "guards": [
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/auth/battlenet/start",
+    "methods": [
+      "GET"
+    ],
+    "guards": [
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/auth/discord/callback",
+    "methods": [
+      "GET"
+    ],
+    "guards": [],
+    "note": "Handler-specific public/token contract; see source"
+  },
+  {
+    "route": "/api/auth/discord/start",
+    "methods": [
+      "GET"
+    ],
+    "guards": [],
+    "note": "Handler-specific public/token contract; see source"
+  },
+  {
+    "route": "/api/auth/login",
+    "methods": [
+      "POST"
+    ],
+    "guards": [],
+    "note": "Handler-specific public/token contract; see source"
+  },
+  {
+    "route": "/api/auth/logout",
+    "methods": [
+      "POST",
+      "GET"
+    ],
+    "guards": [],
+    "note": "Handler-specific public/token contract; see source"
+  },
+  {
+    "route": "/api/auth/session",
+    "methods": [
+      "GET"
+    ],
+    "guards": [
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/background/refresh",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "canManageRaids",
+      "canViewGuildRoster",
+      "canViewProfile",
+      "canViewRaidDirectory",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/background/settings",
+    "methods": [
+      "GET"
+    ],
+    "guards": [],
+    "note": "Handler-specific public/token contract; see source"
+  },
+  {
+    "route": "/api/calendar/raids.ics",
+    "methods": [
+      "GET"
+    ],
+    "guards": [],
+    "note": "Handler-specific public/token contract; see source"
+  },
+  {
+    "route": "/api/client-errors",
+    "methods": [
+      "POST"
+    ],
+    "guards": [],
+    "note": "Handler-specific public/token contract; see source"
+  },
+  {
+    "route": "/api/content/create",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "canManageSiteContent",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/content/delete",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "canManageSiteContent",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/content/list",
+    "methods": [
+      "GET"
+    ],
+    "guards": [
+      "canManageSiteContent",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/content/update",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "canManageSiteContent",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/access-groups",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "guards": [
+      "canManageGroups",
+      "canViewAccessGroups",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/discord/applications/automation",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "guards": [
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/discord/applications/test-channel",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "requireDiscordAdmin"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/discord/member-cleanup/automation",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/discord/member-cleanup",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "guards": [
+      "canManageDiscordMembers",
+      "getSession",
+      "requireDiscordAdmin"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/discord/nickname",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "requireDiscordAdmin"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/discord/nicknames/automation",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/discord/nicknames/inspect",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "requireDiscordAdmin"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/discord/nicknames/notify",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "requireDiscordAdmin"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/discord/nicknames/test-message",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "requireDiscordAdmin"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/discord/officers/sync",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "requireDiscordAdmin"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/discord/onboarding/automation",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/discord/profile-nicknames/automation",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "guards": [
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/discord/profiles/cleanup",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "requireDiscordAdmin"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/discord/profiles/cleanup-settings",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "requireDiscordAdmin"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/discord/roles/add",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "requireDiscordAdmin"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/discord/roles/remove",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "requireDiscordAdmin"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/discord/settings",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "requireDiscordAdmin"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/impersonation/end",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/logs/export",
+    "methods": [
+      "GET"
+    ],
+    "guards": [
+      "canViewAdminLogs",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/logs/ingest",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/logs/maintenance",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/logs/query",
+    "methods": [
+      "GET"
+    ],
+    "guards": [
+      "canViewAdminLogs",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/logs/security-test",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "canManageGroups",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/logs/settings",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "guards": [
+      "canManageGroups",
+      "canViewAdminLogs",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/profiles/orphan-cleanup/apply",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "guards": [
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/profiles/orphan-cleanup",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "guards": [
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/profiles/refresh-external-data",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "guards": [
+      "getSession",
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/rules/acceptance-settings",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "requireDiscordAdmin"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/security/auth-access",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "canManageGroups",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/security/geo-access",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "canManageGroups",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/server-status",
+    "methods": [
+      "GET"
+    ],
+    "guards": [
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/static-roles",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "guards": [
+      "getSession",
+      "staticPermission"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/welcome-card/preview",
+    "methods": [
+      "GET"
+    ],
+    "guards": [
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/welcome-card/publish-test",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "requireDiscordAdmin"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/welcome-card/repair-roleless",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "requireDiscordAdmin"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/welcome-card/run-onboarding",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "requireDiscordAdmin"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/dashboard/welcome-card/settings",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "requireDiscordAdmin"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/discord/embeds/message",
+    "methods": [
+      "GET"
+    ],
+    "guards": [
+      "canManageDiscordMembers",
+      "canManageGeneralEmbeds",
+      "canManageRulesEmbeds",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/discord/embeds/publish",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "canManageDiscordMembers",
+      "canManageGeneralEmbeds",
+      "canManageRulesEmbeds",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/discord/interactions",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "verifyDiscordInteractionSignature",
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/guild/refresh",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "canViewGuildRoster",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/guild/sync",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/health",
+    "methods": [
+      "GET"
+    ],
+    "guards": [],
+    "note": "Handler-specific public/token contract; see source"
+  },
+  {
+    "route": "/api/integrations/status",
+    "methods": [
+      "GET"
+    ],
+    "guards": [
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/internal/discord/interaction-deliveries",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "guards": [
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/internal/discord/interaction-ingress",
+    "methods": [
+      "POST",
+      "GET",
+      "PATCH"
+    ],
+    "guards": [
+      "verifyDiscordInteractionSignature",
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/internal/discord/member-joined",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/internal/discord/member-nickname",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/internal/discord/raid-modal",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "verifyDiscordInteractionSignature",
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/internal/discord/static-confirm",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/internal/discord/static-enforce",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/internal/health",
+    "methods": [
+      "GET"
+    ],
+    "guards": [
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/polls/[pollId]/close",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "canManageRaids",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/polls/[pollId]/discord-sync",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "guards": [
+      "canManageRaids",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/polls/[pollId]/pause",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "canManageRaids",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/polls/[pollId]",
+    "methods": [
+      "GET",
+      "PATCH",
+      "PUT",
+      "DELETE"
+    ],
+    "guards": [
+      "canManageRaids",
+      "canViewRaidDirectory",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/polls/[pollId]/vote",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/polls/close-due",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "guards": [
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/polls/recalculate-recommendations",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "canManageRaids",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/polls",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "guards": [
+      "canManageRaids",
+      "canViewRaidDirectory",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/profile/[profileId]/refresh-external-data",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "canViewProfile",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/profile/battlenet/candidates/expire",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/profile/characters/add",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/profile/characters/bulk-add",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/profile/characters/main",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/profile/characters/remove",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/profile/characters/setup",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "guards": [
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/profile/discord-lookup",
+    "methods": [
+      "GET"
+    ],
+    "guards": [
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/profile/discord-nickname",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/profile/gender",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/profile/identity",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "guards": [
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/profile/name",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/profile/name-mode",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/profile/nickname-characters",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/profile/notifications",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "guards": [
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/profile/raid-role",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/raids/[raidId]/attendance",
+    "methods": [
+      "POST"
+    ],
+    "guards": [],
+    "note": "Handler-specific public/token contract; see source"
+  },
+  {
+    "route": "/api/raids/[raidId]/close",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "canManageRaids",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/raids/[raidId]/delete",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "canManageRaids",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/raids/[raidId]/discord-action",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/raids/[raidId]/discord-sync",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "guards": [
+      "canManageRaids",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/raids/[raidId]/snapshot",
+    "methods": [
+      "GET"
+    ],
+    "guards": [
+      "canManageRaids",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/raids/bench-priority",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "canManageRaids",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/raids/images",
+    "methods": [
+      "GET"
+    ],
+    "guards": [
+      "canManageRaids",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/raids/lifecycle",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "guards": [
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/raids/publish",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "canManageRaids",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/raids/reminder-preference",
+    "methods": [
+      "GET"
+    ],
+    "guards": [
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/raids",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "canManageRaids",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/roster/discord-action",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "verifyInternalBearerToken"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/roster",
+    "methods": [
+      "POST"
+    ],
+    "guards": [
+      "canManageRaids",
+      "getSession"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/rules/accept/complete",
+    "methods": [
+      "POST"
+    ],
+    "guards": [],
+    "note": "Handler-specific public/token contract; see source"
+  },
+  {
+    "route": "/api/site/applications",
+    "methods": [
+      "OPTIONS",
+      "GET",
+      "POST"
+    ],
+    "guards": [],
+    "note": "Handler-specific public/token contract; see source"
+  },
+  {
+    "route": "/api/site/content",
+    "methods": [
+      "GET",
+      "OPTIONS"
+    ],
+    "guards": [],
+    "note": "Handler-specific public/token contract; see source"
+  },
+  {
+    "route": "/api/site/guild",
+    "methods": [
+      "OPTIONS",
+      "GET"
+    ],
+    "guards": [],
+    "note": "Handler-specific public/token contract; see source"
+  },
+  {
+    "route": "/api/site/media/[id]",
+    "methods": [
+      "GET"
+    ],
+    "guards": [],
+    "note": "Handler-specific public/token contract; see source"
+  },
+  {
+    "route": "/api/site/status",
+    "methods": [
+      "GET"
+    ],
+    "guards": [],
+    "note": "Handler-specific public/token contract; see source"
+  },
+  {
+    "route": "/api/site/sync",
+    "methods": [
+      "GET"
+    ],
+    "guards": [],
+    "note": "Handler-specific public/token contract; see source"
+  },
+  {
+    "route": "/api/static/accept",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "guards": [],
+    "note": "Handler-specific public/token contract; see source"
+  },
+  {
+    "route": "/api/static/bans",
+    "methods": [
+      "GET"
+    ],
+    "guards": [
+      "getSession",
+      "staticPermission"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/static/events",
+    "methods": [
+      "GET"
+    ],
+    "guards": [
+      "getSession",
+      "staticPermission"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/static/manage",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "guards": [
+      "getSession",
+      "staticPermission"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/static/rules",
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "guards": [
+      "getSession",
+      "staticPermission"
+    ],
+    "note": "Server-side checks; public read branches may have separate serialization"
+  },
+  {
+    "route": "/api/static/status",
+    "methods": [
+      "GET"
+    ],
+    "guards": [],
+    "note": "Handler-specific public/token contract; see source"
+  }
+]

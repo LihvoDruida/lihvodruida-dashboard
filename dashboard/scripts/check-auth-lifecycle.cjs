@@ -27,6 +27,8 @@ function loadTs(relative, mocks = {}) {
   const compiledModule = { exports: {} };
   const requireMock = (name) => {
     if (Object.hasOwn(mocks, name)) return mocks[name];
+    if (name === "react") return { cache: fn => fn };
+    if (name === "@/lib/auth/sessionSignature") return loadTs("src/lib/auth/sessionSignature.ts");
     if (name === "server-only" || name === "next/headers") return {};
     if (name.startsWith("@/lib/")) return {};
     throw new Error(`Unexpected import ${name} in ${relative}`);

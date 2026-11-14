@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { dispatchDashboardToast, type DashboardToastInput } from "@/lib/clientToasts";
-import { useDashboardRequests } from "@/lib/useDashboardRequests";
-import { useActionFocus } from "@/lib/useActionFocus";
+import { useDashboardRequests } from "@/hooks/useDashboardRequests";
+import { useActionFocus } from "@/hooks/useActionFocus";
 import { requestRaidPollMutation, raidPollMutationFailure, type RaidPollMutationOptions, type RaidPollMutationReply } from "@/lib/raidPollMutation";
 
 export function useRaidPollMutation(onPendingChange?: (pending: boolean) => void) {

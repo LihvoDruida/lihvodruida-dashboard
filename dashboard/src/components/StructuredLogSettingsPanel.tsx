@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { dashboardApiJson } from "@/lib/dashboardApiClient";
 import { ApiHttpError } from "@/lib/apiHttp";
-import { useDashboardRequests } from "@/lib/useDashboardRequests";
-import { useActionFocus } from "@/lib/useActionFocus";
+import { useDashboardRequests } from "@/hooks/useDashboardRequests";
+import { useActionFocus } from "@/hooks/useActionFocus";
 import { confirmLogSettingsSave, confirmSecurityMirrorTest, logSettingsDraft, parseLogSettingsSnapshot, sameLogSettingsChoice, validLogSettingsDraft, type LogSettingsDraft, type LogSettingsSnapshot } from "@/lib/logSettingsView";
 import type { StructuredLogSettings } from "@/lib/logSettings";
 import styles from "@/app/dashboard/logs/logs.module.css";

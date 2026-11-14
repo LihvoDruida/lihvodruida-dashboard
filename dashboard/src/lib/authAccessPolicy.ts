@@ -104,7 +104,13 @@ function normalizePolicyData(data?: Record<string, unknown> | null): AuthAccessP
   };
 }
 
-export async function getAuthAccessPolicy(options: { bypassCache?: boolean } = {}): Promise<AuthAccessPolicy> {
+export async function getAuthAccessPolicy(options: { bypassCache?: boolean; strict?: boolean } = {}): Promise<AuthAccessPolicy> {
+  if (options.strict) {
+    if (!hasDocumentDbConfig()) throw new Error("Access policy storage unavailable.");
+    const snapshot = await getDocumentDb().collection(SETTINGS_COLLECTION).doc(AUTH_ACCESS_DOC_ID).get();
+    // A missing policy is a new installation, never a cached grant.
+    return snapshot.exists ? normalizePolicyData(snapshot.data()) : defaultAuthAccessPolicy();
+  }
   if (!options.bypassCache && authPolicyCacheFresh()) {
     return globalThis.__mistblossomAuthAccessPolicyCache!.policy;
   }

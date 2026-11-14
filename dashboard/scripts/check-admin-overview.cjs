@@ -6,9 +6,10 @@ const page = fs.readFileSync(path.join(root, "src/app/dashboard/page.tsx"), "utf
 const access = fs.readFileSync(path.join(root, "src/app/dashboard/access/page.tsx"), "utf8");
 const css = fs.readFileSync(path.join(root, "src/app/styles/admin.css"), "utf8");
 
+const catalog = fs.readFileSync(path.join(root, "src/lib/navigation/management.ts"), "utf8");
 const checks = [
-  [page.includes('href: "/dashboard/access"') && access.includes('canManageGroups(user)'), "security settings are separate and permission checked"],
-  [page.includes('href: "/dashboard/profiles"'), "profile maintenance is a dedicated task"],
+  [catalog.includes('href: "/dashboard/access"') && access.includes('canManageGroups(user)'), "security settings are separate and permission checked"],
+  [catalog.includes('href: "/dashboard/profiles"'), "profile maintenance is a dedicated task"],
   [page.includes('className="management-hub__grid"'), "overview uses a task hub"],
   [access.includes('className="admin-policy-layout admin-policy-layout--auth"'), "auth policy has a desktop layout wrapper"],
   [access.includes('className="admin-policy-layout admin-policy-layout--geo"'), "geo policy has a desktop layout wrapper"],

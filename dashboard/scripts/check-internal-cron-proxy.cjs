@@ -33,7 +33,7 @@ const security = load("src/lib/security.ts", {
   "@/lib/values": { envFlag: (name) => env[name] === "true" },
 }, env, "getRequestHost,isAllowedHost,isLocalHost,getCanonicalDashboardOrigin,noStoreHeaders,forbiddenResponse,unauthorizedResponse,verifyTrustedOrigin,verifyInternalBearerToken,assertRequestBodySize,safeErrorMessage");
 const events = [];
-const { proxy } = load("src/proxy.ts", { "@/lib/siteBridgeAuth": {hasSiteBridgeToken:()=>false}, "next/server": { NextResponse },
+const { proxy } = load("src/proxy.ts", { "@/lib/auth/sessionSignature": { verifySessionEnvelope: async () => null }, "@/lib/siteBridgeAuth": {hasSiteBridgeToken:()=>false}, "next/server": { NextResponse },
   "@/lib/security": { ...security, logDashboardEvent: (...args) => events.push(args) } }, env, "proxy");
 const endpoint = "/api/dashboard/discord/profile-nicknames/automation";
 let calls = 0, queueFails = false;
@@ -47,7 +47,7 @@ function request(p = endpoint, { host = "dashboard:3000", token = env.INTERNAL_A
     headers: { host, ...(token === null ? {} : { authorization: `Bearer ${token}` }), ...headers } });
   r.nextUrl = new URL(r.url); r.cookies = { get: () => undefined }; return r;
 }
-async function through(r) { const response = proxy(r); return response.passed ? POST(r) : response; }
+async function through(r) { const response = await proxy(r); return response.passed ? POST(r) : response; }
 
 // Exercise the real proxy, bearer check, Ed25519 verifier and modal route together.
 // A fake HTTP server returning type 9 cannot detect a missing proxy allowlist entry.
@@ -82,14 +82,14 @@ function modalRequest({ token = env.INTERNAL_API_TOKEN, host = "dashboard:3000",
       "x-mistblossom-source": source, "x-signature-ed25519": signature, "x-signature-timestamp": timestamp } });
   r.nextUrl = new URL(r.url); r.cookies = { get: () => undefined }; return r;
 }
-async function throughModal(r) { const result = proxy(r); return result.passed ? modalRoute.POST(r) : result; }
+async function throughModal(r) { const result = await proxy(r); return result.passed ? modalRoute.POST(r) : result; }
 (async () => {
   let total = 0;
   async function check(name, fn) { await fn(); total++; console.log("PASS", name); }
   const cron = fs.readFileSync(path.resolve(__dirname, "../../deploy/cron/run-cron.sh"), "utf8");
   const paths = [...new Set([...cron.matchAll(/call "(\/api\/[^\"]+)"/g)].map((m) => m[1]))];
   assert.ok(paths.length >= 9, "Discover all production cron endpoints");
-  for (const p of paths) await check(`production cron POST ${p}`, () => assert.equal(proxy(request(p)).passed, true));
+  for (const p of paths) await check(`production cron POST ${p}`, async () => assert.equal((await proxy(request(p))).passed, true));
   await check("valid cron executes queue without session or Cloudflare and emits no rejection", async () => {
     const r = await through(request()); assert.equal(r.status, 200); assert.equal(calls, 1);
     assert.match(r.headers.get("cache-control"), /no-store/); assert.equal(events.length, 0);
@@ -117,9 +117,9 @@ async function throughModal(r) { const result = proxy(r); return result.passed ?
     assert.equal((await through(request(endpoint, { token: null, headers: { "x-worker-stats-token": "forged" } }))).status, 401);
     assert.equal(calls, 2);
   });
-  await check("unrelated admin API is not exempt", () => assert.equal(proxy(request("/api/dashboard/discord/profile-nicknames/settings")).status, 421));
-  await check("unknown Host is not exempt even with valid bearer", () => assert.equal(proxy(request(endpoint, { host: "attacker.invalid" })).status, 421));
-  await check("public Host still requires Cloudflare", () => assert.equal(proxy(request(endpoint, { host: "guild.lihvodruida.pp.ua" })).status, 403));
+  await check("unrelated admin API is not exempt", async () => assert.equal((await proxy(request("/api/dashboard/discord/profile-nicknames/settings"))).status, 421));
+  await check("unknown Host is not exempt even with valid bearer", async () => assert.equal((await proxy(request(endpoint, { host: "attacker.invalid" }))).status, 421));
+  await check("public Host still requires Cloudflare", async () => assert.equal((await proxy(request(endpoint, { host: "guild.lihvodruida.pp.ua" }))).status, 403));
   await check("trusted public ingress still requires authentication", async () => {
     assert.equal((await through(request(endpoint, { host: "guild.lihvodruida.pp.ua", token: null,
       headers: { "x-mistblossom-trusted-proxy": "cloudflare", origin: env.DASHBOARD_URL } }))).status, 401);

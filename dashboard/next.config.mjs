@@ -31,11 +31,6 @@ const nextConfig = {
   experimental: {
     cpus: Number(process.env.NEXT_BUILD_CPUS || 2),
   },
-  typescript: {
-    // Збірка не запускає окремий TypeScript-воркер, щоб деплой не витрачав
-    // хвилини на перевірку, яку вже зробив CI. Строгий шлюз — `npm run build:ci`.
-    ignoreBuildErrors: true,
-  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "cdn.discordapp.com" },

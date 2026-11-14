@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ApiHttpError } from "@/lib/apiHttp";
 import { dashboardApiJson } from "@/lib/dashboardApiClient";
 import { unknownPublicationStatus, type PublicationStatus } from "@/lib/publicationStatus";
-import { useActionFocus } from "@/lib/useActionFocus";
+import { useActionFocus } from "@/hooks/useActionFocus";
 
 type Reply = { ok: boolean; publication?: PublicationStatus | null; warning?: string | null };
 export default function DiscordPublicationStatus({ endpoint, initialStatus, discordEnabled }: { endpoint: string; initialStatus: PublicationStatus; discordEnabled: boolean }) {

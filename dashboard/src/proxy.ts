@@ -1,3 +1,4 @@
+import { verifySessionEnvelope } from "@/lib/auth/sessionSignature";
 import {hasSiteBridgeToken} from '@/lib/siteBridgeAuth';
 import { NextRequest, NextResponse } from "next/server";
 import {
@@ -38,10 +39,9 @@ const SESSION_COOKIE_NAMES = isDevelopment
   ? ["__Host-mistblossom_dashboard_session", "mistblossom_dashboard_session"]
   : ["__Host-mistblossom_dashboard_session"];
 
-function hasDashboardSessionCookie(request: NextRequest) {
-  return SESSION_COOKIE_NAMES.some((name) =>
-    Boolean(request.cookies.get(name)?.value),
-  );
+async function hasDashboardSessionCookie(request: NextRequest) {
+  const name = isDevelopment ? SESSION_COOKIE_NAMES[1] : SESSION_COOKIE_NAMES[0];
+  return Boolean(await verifySessionEnvelope(request.cookies.get(name)?.value));
 }
 
 function isProtectedPagePath(pathname: string) {
@@ -51,8 +51,8 @@ function isProtectedPagePath(pathname: string) {
   // замість чистого редиректу на /login.
   // Public read-only raid pages do not need a session. All administrative,
   // profile and mutation paths remain protected by the route handlers.
-  if (pathname === "/raids" || /^\/raids\/[^/]+$/.test(pathname)) return false;
-  if (pathname === "/guild" || pathname === "/polls" || /^\/polls\/[^/]+$/.test(pathname)) return false;
+  if (pathname === "/raids" || (/^\/raids\/[^/]+$/.test(pathname) && !["/raids/new", "/raids/bench-priority"].includes(pathname))) return false;
+  if (pathname === "/guild" || pathname === "/polls" || (/^\/polls\/[^/]+$/.test(pathname) && pathname !== "/polls/new")) return false;
   return /^\/(?:dashboard|applications|guild|profile|profiles|raids|polls|roster|discord|content)(?:\/|$)/.test(pathname);
 }
 
@@ -256,7 +256,7 @@ function isLoopbackHost(host: string) {
   return host.startsWith("127.0.0.1") || host.startsWith("localhost") || host.startsWith("[::1]");
 }
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const host = getRequestHost(request);
   const pathname = request.nextUrl.pathname;
   const hasInternalBearerAuth =
@@ -356,10 +356,13 @@ export function proxy(request: NextRequest) {
     return forbiddenResponse("Недовірене джерело запиту.");
   }
 
+  const requiresSession = isProtectedPagePath(pathname) || (isProtectedApiPath(pathname) && !hasInternalBearerAuth);
+  const validSession = requiresSession ? await hasDashboardSessionCookie(request) : false;
+
   if (
     (request.method === "GET" || request.method === "HEAD") &&
     isProtectedPagePath(request.nextUrl.pathname) &&
-    !hasDashboardSessionCookie(request)
+    !validSession
   ) {
     const response = NextResponse.redirect(loginRedirectFor(request), 303);
     response.headers.set(
@@ -384,7 +387,7 @@ export function proxy(request: NextRequest) {
   if (
     isProtectedApiPath(request.nextUrl.pathname) &&
     !hasInternalBearerAuth &&
-    !hasDashboardSessionCookie(request)
+    !validSession
   ) {
     return NextResponse.json(
       {

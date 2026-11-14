@@ -56,3 +56,7 @@ Desktop profile має дві колонки: стабільний sidebar `--si
 `npm run audit:ui` перевіряє стандартний page shell, класифікує всі `<button>` як shared `.btn` або свідомий спеціалізований control, а також перевіряє action-like `<a>`: вони мають бути `.btn` або одним із явно дозволених rich CTA.
 
 Обидві перевірки входять у `verify` та `build:ci`. Якщо додається новий тип кнопки або сторінки, спочатку треба вирішити, чи це справді новий UI-патерн, а не локальна копія вже існуючого.
+
+## Спільні React-примітиви (3.22.0)
+
+Використовуйте components/ui/Button, FormField і DataTable та components/management/ManagementShell. Вони працюють зі спільними CSS-токенами. Не додавайте глобальне локальне перевизначення .btn для конкретної групи сторінок. Приклади впроваджені в ManagementSections, /dashboard/access і read-only /dashboard/groups.

@@ -3,11 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { dashboardApiJson } from "@/lib/dashboardApiClient";
 import { ApiHttpError } from "@/lib/apiHttp";
-import { useDashboardRequests } from "@/lib/useDashboardRequests";
+import { useDashboardRequests } from "@/hooks/useDashboardRequests";
 import { DISCORD_CLEANUP_PERIODS, type DiscordCleanupPeriod } from "@/lib/discordCleanupPolicy";
 import type { CleanupTab } from "@/lib/discordMemberCleanup";
 import { readCleanupView, isCleanupSettings, type CleanupPage as Page, type CleanupOverview as Overview } from "@/lib/discordCleanupView";
-import { useActionFocus } from "@/lib/useActionFocus";
+import { useActionFocus } from "@/hooks/useActionFocus";
 
 type RoleOption = { id: string; name: string; blockedReason: string | null };
 type Props = { initial: Overview; initialTab?: CleanupTab; roles: RoleOption[]; canConfigure: boolean; warning: string | null };

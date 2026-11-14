@@ -77,7 +77,7 @@ if (exists('package-lock.json')) {
       assert(/^11\./.test(String(meta.version || '')), `Deprecated uuid version in package-lock: ${meta.version || 'unknown'}.`);
     }
     if (name.endsWith('node_modules/node-domexception')) {
-      assert(String(meta.resolved || '').includes('vendor/node-domexception'), 'node-domexception must resolve to the native DOMException shim to avoid npm deprecated warnings.');
+      assert(false, 'Unused node-domexception shim must not return; use native DOMException on Node 24+.');
     }
     const resolved = String(meta.resolved || '');
     if (/^https?:\/\//.test(resolved)) {

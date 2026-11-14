@@ -5,7 +5,6 @@ export {
   OAUTH_STATE_COOKIE,
   SESSION_COOKIE,
   createOAuthStateToken,
-  createSessionCookie,
   createSessionToken,
   getSession,
   getSessionUser,

@@ -22,6 +22,8 @@ function load(relative, mocks = {}) {
   const compiledModule = { exports: {} };
   const mockRequire = (id) => {
     if (Object.hasOwn(mocks, id)) return mocks[id];
+    if (id === "react") return { cache: fn => fn };
+    if (id === "@/lib/auth/sessionSignature") return load("src/lib/auth/sessionSignature.ts");
     if (id === "server-only") return {};
     if (id.startsWith("node:")) return require(id);
     if (id.startsWith("@/lib/") || id.startsWith("@mistblossom/")) return {};

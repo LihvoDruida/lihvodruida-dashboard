@@ -5,7 +5,7 @@ import type { ApplicationStatus } from "@/lib/applicationsStore";
 import { dashboardApiJson } from "@/lib/dashboardApiClient";
 import { notifyDashboardDataChanged } from "@/lib/dashboardLiveRefresh";
 import { dispatchDashboardToast } from "@/lib/clientToasts";
-import { useActionFocus } from "@/lib/useActionFocus";
+import { useActionFocus } from "@/hooks/useActionFocus";
 import {
   readApplicationDecision, submitApplicationDecisions, summarizeApplicationDecisions, uncertainApplicationResult,
   type ApplicationDecision, type ApplicationDecisionResult,

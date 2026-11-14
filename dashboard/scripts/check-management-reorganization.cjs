@@ -12,6 +12,7 @@ const cleanupRoute = read("src/app/api/dashboard/discord/profiles/cleanup/route.
 const directory = read("src/app/profiles/page.tsx");
 const cleanupState = read("src/lib/accountCleanupAutomation.ts");
 const attendance = read("src/app/api/raids/[raidId]/attendance/route.ts");
+const catalog = fs.readFileSync(path.join(root, "src/lib/navigation/management.ts"), "utf8");
 const checks = [
   [!overview.includes('name={`roleMap:') && !overview.includes('name="blockedCountries"'), "overview does not render edit forms"],
   [access.includes('canManageGroups(user)') && access.includes('getSession({ live: true })'), "role/geo policy has live authorization"],
@@ -21,7 +22,7 @@ const checks = [
   [cleanupRoute.includes('if (apply && !guard.session.isServerOwner)') && cleanupRoute.includes('acquireAccountCleanupExecutionLock'), "destructive endpoint is owner-only and locked"],
   [cleanupRoute.includes('preview?.scopeLimit !== requestedLimit') && cleanupRoute.includes('now - previewAt <= 15 * 60_000'), "apply requires a recent preview with the exact same scope"],
   [!discord.includes('action="/api/dashboard/discord/profiles/cleanup"') && discord.includes('href="/dashboard/profiles"'), "destructive controls no longer clutter Discord member tools"],
-  [nav.includes('href: "/dashboard/access"') && nav.includes('href: "/dashboard/profiles"') && !nav.includes('if (active !== "logs")'), "navigation is grouped consistently for every section"],
+  [catalog.includes('href: "/dashboard/access"') && catalog.includes('href: "/dashboard/profiles"') && !nav.includes('if (active !== "logs")'), "navigation is grouped consistently for every section"],
   [directory.indexOf('if (!canManageGroups(user))') < directory.indexOf('listDashboardProfilePage({ viewer: user') && directory.includes('getSession({ live: true })'), "profile catalog checks live admin role before DB reads"],
   [cleanupState.includes('scopeLimit?: number | null') && cleanupState.includes('scopeLimit: input.scopeLimit'), "cleanup preview scope persists in durable run history"],
   [cleanupState.includes('actorId?: string | null') && cleanupRoute.includes('run.actorId === guard.session.id') && cleanupRoute.includes('actorId: guard.session.id'), "only the same owner who completed the preview can apply deletion"],

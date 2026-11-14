@@ -1,5 +1,7 @@
 "use client";
 
+import Button from "@/components/ui/Button";
+
 import { Children, useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 type Section = { id: string; label: string; description: string };
@@ -38,7 +40,7 @@ export default function ManagementSections({ sections, children, initialSection 
   }
   return <div className="management-sections">
     <div className="management-section-tabs" role="tablist" aria-label="Задачі на цій сторінці">
-      {sections.map((section, index) => <button key={section.id} type="button" className="btn management-section-tab" role="tab"
+      {sections.map((section, index) => <Button key={section.id} type="button" className="btn management-section-tab" role="tab"
         id={`${prefix}-tab-${section.id}`} aria-controls={`${prefix}-panel-${section.id}`}
         aria-selected={active === section.id} tabIndex={active === section.id ? 0 : -1}
         ref={element => { tabs.current[index] = element; }}
@@ -50,7 +52,7 @@ export default function ManagementSections({ sections, children, initialSection 
           else if (event.key === "End") next = sections.length - 1;
           else return;
           event.preventDefault(); select(sections[next].id); tabs.current[next]?.focus();
-        }}><span className="management-section-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>{section.label}</button>)}
+        }}><span className="management-section-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>{section.label}</Button>)}
     </div>
     {sections.map((section, index) => <div key={section.id} className="management-section-panel" role="tabpanel"
       id={`${prefix}-panel-${section.id}`} aria-labelledby={`${prefix}-tab-${section.id}`}

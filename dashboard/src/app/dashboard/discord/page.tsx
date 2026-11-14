@@ -1,10 +1,9 @@
+import ManagementShell from "@/components/management/ManagementShell";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
 import AdminPageHeader from "@/components/AdminPageHeader";
 import ManagementSections from "@/components/ManagementSections";
-import AdminTabs from "@/components/AdminTabs";
-import DashboardIdentity from "@/components/DashboardIdentity";
 import AutomationOverview from "@/components/AutomationOverview";
 import { getAutomationOverview } from "@/lib/automationOverview";
 import { getSession } from "@/lib/auth";
@@ -185,9 +184,7 @@ export default async function AdminDiscordPage() {
   ];
 
   return (
-    <main className="container app-page admin-container">
-      <section className="dashboard-shell content-shell admin-workspace admin-page discord-management-page app-page-stack" aria-label="Керування Discord-учасниками">
-        <DashboardIdentity user={user} activeSection="admin" />
+    <ManagementShell user={user} active="discord" className="discord-management-page" label="Керування Discord-учасниками">
         <AdminPageHeader
           eyebrow="Mistblossom Vanguard • Discord"
           title="Discord-учасники"
@@ -200,7 +197,7 @@ export default async function AdminDiscordPage() {
           ]}
         />
 
-        <AdminTabs active="discord" user={user} />
+        
 
         <section className="panel discord-management-section management-shortcut" aria-label="Автоматичне очищення Discord">
           <SectionHeader eyebrow="Автоматизація" title="Очищення Discord за роллю та строком" description="Люди без ролей або лише з однією вибраною роллю; дата вступу, автоматичне виключення та окрема історія." />
@@ -566,7 +563,6 @@ export default async function AdminDiscordPage() {
         </section>
 
         </ManagementSections>
-      </section>
-    </main>
+      </ManagementShell>
   );
 }

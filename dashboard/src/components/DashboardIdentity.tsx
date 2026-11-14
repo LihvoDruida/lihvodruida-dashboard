@@ -1,3 +1,4 @@
+import { canAccessManagement } from "@/lib/navigation/management";
 import Link from "next/link";
 import type { DashboardSession } from "@/lib/auth";
 import { getGuildBranding } from "@/lib/branding";
@@ -9,7 +10,6 @@ import {
   canViewGuildRoster,
   canViewRaidDirectory,
   canManageGroups,
-  canManageDiscordMembers,
   hierarchyTitle,
   siteStatusLabel,
 } from "@/lib/permissions";
@@ -95,7 +95,7 @@ export default async function DashboardIdentity({
   const canUseProfiles = canManageGroups(user);
   const canUseGuildRoster = canViewGuildRoster(user);
   const canUseContent = canManageSiteContent(user);
-  const canUseAdmin = canManageGroups(user) || canManageDiscordMembers(user);
+  const canUseAdmin = canAccessManagement(user);
   const profileHref = user?.profileId ? `/profile/${user.profileId}` : "/raids";
 
   const navItems: NavEntry[] = user

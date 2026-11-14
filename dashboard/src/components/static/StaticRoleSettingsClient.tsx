@@ -2,8 +2,8 @@
 import Link from "next/link";
 import { dashboardApiJson } from "@/lib/dashboardApiClient";
 import { ApiHttpError } from "@/lib/apiHttp";
-import { useDashboardRequests } from "@/lib/useDashboardRequests";
-import { useActionFocus } from "@/lib/useActionFocus";
+import { useDashboardRequests } from "@/hooks/useDashboardRequests";
+import { useActionFocus } from "@/hooks/useActionFocus";
 import { confirmStaticRoleSave, filterStaticRoles, indexStaticRoles, parseStaticRoleOverview, sameStaticRoleChoice, type StaticRoleOverview } from "@/lib/staticRoleSettingsView";
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./static.module.css";

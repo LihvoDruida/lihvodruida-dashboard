@@ -1,4 +1,4 @@
-import type { DashboardRole, DashboardSession } from "@/lib/auth";
+import type { DashboardRole, DashboardSession } from "@/types/auth";
 
 import { DASHBOARD_PERMISSION_KEYS, type DashboardPermissionKey } from "@/lib/accessGroupSchema";
 
@@ -20,51 +20,56 @@ export function dashboardRoleRank(role: DashboardRole | null | undefined) {
   return role ? DASHBOARD_ROLE_ORDER[role] || 0 : 0;
 }
 
-function permitted(session: DashboardSession | null | undefined, permission: DashboardPermissionKey, fallbackRoles: DashboardRole[] = []) {
+export function hasDashboardPermission(session: DashboardSession | null | undefined, permission: DashboardPermissionKey) {
   if (!session) return false;
   if (session.isServerOwner) return true;
-  if (session.groupId || session.permissions?.length) return Boolean(session.permissions?.includes(permission));
-  return fallbackRoles.includes(session.role);
+  return Boolean(session.permissions?.includes("dashboard.view") && session.permissions.includes(permission));
 }
 
+const permitted = hasDashboardPermission;
+
 export function isDashboardStaff(session: DashboardSession | null | undefined) {
-  return permitted(session, "applications.manage", ["admin", "moderator"]);
+  return permitted(session, "applications.manage");
 }
 
 export function isDashboardAdmin(session: DashboardSession | null | undefined) {
-  return Boolean(session && (session.isServerOwner || (session.role === "admin" && (session.groupId ? session.permissions?.includes("groups.manage") : true))));
+  return canManageGroups(session);
 }
 
 export function canViewRaidDirectory(session: DashboardSession | null | undefined) {
-  return permitted(session, "raids.view", ["admin", "moderator", "mentor", "member"]);
+  return permitted(session, "raids.view");
 }
 
 export function canViewGuildRoster(session: DashboardSession | null | undefined) {
-  return permitted(session, "guild.roster.view", ["admin", "moderator", "mentor", "member"]);
+  return permitted(session, "guild.roster.view");
 }
 
 export function canViewRaidRoster(session: DashboardSession | null | undefined) {
-  return permitted(session, "raids.roster.view", ["admin", "moderator"]);
+  return permitted(session, "raids.roster.view");
 }
 
 export function canViewProfileAccessDetails(session: DashboardSession | null | undefined) {
-  return permitted(session, "profiles.access.view", ["admin", "moderator"]);
+  return permitted(session, "profiles.access.view");
 }
 
 export function canViewAllProfiles(session: DashboardSession | null | undefined) {
-  return permitted(session, "profiles.view", ["admin", "moderator"]);
+  return permitted(session, "profiles.view");
 }
 
 export function canViewProfilesInOwnGroupOrBelow(session: DashboardSession | null | undefined) {
-  return permitted(session, "profiles.group.view", ["admin", "moderator", "mentor", "member"]);
+  return permitted(session, "profiles.group.view");
 }
 
 export function canViewProfiles(session: DashboardSession | null | undefined) {
   return canViewAllProfiles(session) || canViewProfilesInOwnGroupOrBelow(session);
 }
 
+export function canViewAccessGroups(session: DashboardSession | null | undefined) {
+  return permitted(session, "groups.view") || canManageGroups(session);
+}
+
 export function canManageGroups(session: DashboardSession | null | undefined) {
-  return Boolean(session && (session.isServerOwner || (session.role === "admin" && permitted(session, "groups.manage", ["admin"]))));
+  return Boolean(session && (session.isServerOwner || (session.role === "admin" && permitted(session, "groups.manage"))));
 }
 
 export function hierarchyTitle(role: DashboardRole) {
@@ -96,45 +101,45 @@ export function siteStatusLabel(role: DashboardRole) {
 }
 
 export function canViewApplications(session: DashboardSession | null | undefined) {
-  return permitted(session, "applications.view", ["admin", "moderator", "mentor"]);
+  return permitted(session, "applications.view");
 }
 
 export function canManageApplications(session: DashboardSession | null | undefined) {
-  return permitted(session, "applications.manage", ["admin", "moderator"]);
+  return permitted(session, "applications.manage");
 }
 
 export function canViewApplicationBattleTag(session: DashboardSession | null | undefined) {
   if (!session) return false;
   if (session.role !== "admin" && session.role !== "moderator") return false;
-  return permitted(session, "applications.sensitive.view", ["admin", "moderator"]);
+  return permitted(session, "applications.sensitive.view");
 }
 
 export function canManageGeneralEmbeds(session: DashboardSession | null | undefined) {
-  return permitted(session, "discord.embeds.manage", ["admin", "moderator"]);
+  return permitted(session, "discord.embeds.manage");
 }
 
 export function canManageRulesEmbeds(session: DashboardSession | null | undefined) {
-  return permitted(session, "discord.rules.manage", ["admin"]);
+  return permitted(session, "discord.rules.manage");
 }
 
 export function canManageDiscordMembers(session: DashboardSession | null | undefined) {
-  return permitted(session, "discord.members.manage", ["admin"]);
+  return permitted(session, "discord.members.manage");
 }
 
 export function canViewAdminLogs(session: DashboardSession | null | undefined) {
-  return permitted(session, "admin.logs.view", ["admin"]);
+  return permitted(session, "admin.logs.view");
 }
 
 export function canManageRaids(session: DashboardSession | null | undefined) {
-  return permitted(session, "raids.manage", ["admin", "moderator"]);
+  return permitted(session, "raids.manage");
 }
 
 export function canViewRulesStats(session: DashboardSession | null | undefined) {
-  return permitted(session, "rules.stats.view", ["admin", "moderator"]);
+  return permitted(session, "rules.stats.view");
 }
 
 export function canManageSiteContent(session: DashboardSession | null | undefined) {
-  return permitted(session, "content.manage", ["admin"]);
+  return permitted(session, "content.manage");
 }
 
 export { DASHBOARD_PERMISSION_KEYS };

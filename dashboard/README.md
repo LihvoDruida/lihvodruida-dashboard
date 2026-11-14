@@ -1,4 +1,4 @@
-# Dashboard 3.21.0
+# Dashboard 3.22.0
 
 [Чинна інструкція парного релізу](../docs/RELEASE_INSTALL_2026-10-19_UA.md).
 
@@ -61,3 +61,5 @@ The matching `GET /api/dashboard/server-status` endpoint repeats the same owner 
 The browser keeps only a short in-memory chart history; metrics are not persisted to PostgreSQL. `SERVER_STATS_DISK_PATH` can override the filesystem path used for disk capacity metrics (default: `/`).
 
 Модуль стрімерів видалено; відеофон відновлено. Порядок очищення старих даних: [MEDIA_REMOVAL_2026-11-10_UA.md](../docs/MEDIA_REMOVAL_2026-11-10_UA.md).
+
+Аудит, матриця доступу, видалення та впровадження 3.22.0: [docs/REFACTOR_3.22.0_UA.md](docs/REFACTOR_3.22.0_UA.md).

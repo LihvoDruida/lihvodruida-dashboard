@@ -1,7 +1,6 @@
+import ManagementShell from "@/components/management/ManagementShell";
 import { redirect } from "next/navigation";
-import DashboardIdentity from "@/components/DashboardIdentity";
 import AdminPageHeader from "@/components/AdminPageHeader";
-import AdminTabs from "@/components/AdminTabs";
 import StructuredLogsExplorer from "@/components/StructuredLogsExplorer";
 import StructuredLogSettingsPanel from "@/components/StructuredLogSettingsPanel";
 import { buildPageMetadata } from "@/lib/seo";
@@ -44,9 +43,7 @@ export default async function AdminLogsPage() {
   const canTuneStorage = Boolean(user.isServerOwner);
 
   return (
-    <main className="container app-page admin-container">
-      <section className="dashboard-shell content-shell admin-page admin-logs-page app-page-stack" aria-label="Журнал системи">
-        <DashboardIdentity user={user} activeSection="admin" />
+    <ManagementShell user={user} active="logs" className="admin-logs-page" label="Журнал системи">
         <AdminPageHeader
           eyebrow="Mistblossom Vanguard • Observability"
           title="Журнал системи"
@@ -60,7 +57,7 @@ export default async function AdminLogsPage() {
           ]}
         />
 
-        <AdminTabs active="logs" user={user} />
+        
 
         <StructuredLogsExplorer initialItems={items} initialOverview={overview} settings={settings} initialNow={initialNow} />
 
@@ -71,7 +68,6 @@ export default async function AdminLogsPage() {
           configured={hasPostgresConfig()}
           initialError={loadedSettings ? "" : "Не вдалося прочитати налаштування журналу. Онови їх перед зміною."}
         />
-      </section>
-    </main>
+      </ManagementShell>
   );
 }

@@ -24,3 +24,7 @@ Server monitoring uses two refresh speeds:
 Background refresh does not toggle the manual button into a loading state,
 pauses while the tab is hidden, resumes immediately when visible, aborts stale
 requests and backs off after errors.
+
+## 3.22.0
+
+Спільний ManagementShell, бічна desktop-навігація та один каталог розділів у src/lib/navigation/management.ts. Усі 10 management-сторінок використовують цей shell; groups.view відкриває режим читання. Деталі: [REFACTOR_3.22.0_UA.md](REFACTOR_3.22.0_UA.md).

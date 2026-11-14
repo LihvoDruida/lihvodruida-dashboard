@@ -1,0 +1,16 @@
+/* Shared primitives. Domain pages provide content, never basic control geometry. */
+.ui-field { display: grid; gap: var(--space-xs); min-width: 0; }
+.ui-field > label { font-weight: var(--font-weight-medium); color: var(--text-body); }
+.ui-field > input { width: 100%; }
+.ui-table-scroll { max-width: 100%; overflow-x: auto; border: 1px solid var(--border); border-radius: var(--card-radius); background: var(--surface); }
+.ui-table { width: 100%; border-collapse: collapse; text-align: left; }
+.ui-table caption { text-align: left; padding: var(--space-md); color: var(--text-soft); }
+.ui-table :is(th, td) { padding: var(--space-sm) var(--space-md); border-bottom: 1px solid var(--border); vertical-align: top; overflow-wrap: anywhere; }
+.ui-table thead { background: var(--surface-raised); }
+.ui-table tbody tr:hover { background: var(--surface-hover); }
+.ui-table tbody tr:last-child :is(th, td) { border-bottom: 0; }
+.management-member-preview { display: grid; gap: var(--space-xs); margin-top: var(--space-sm); }
+.management-member-preview__row { display: flex; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap; }
+.management-preview { padding: var(--space-md); display: grid; justify-items: start; gap: var(--space-sm); }
+.management-preview__frame { width: 100%; max-width: 640px; padding: var(--space-sm); border-radius: var(--card-radius); background: var(--surface-sunken); border: 1px solid var(--border-subtle); }
+.management-preview__caption { margin: 0; }

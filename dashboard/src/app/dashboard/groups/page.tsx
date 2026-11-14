@@ -1,11 +1,13 @@
+import DataTable from "@/components/ui/DataTable";
+import { canViewAccessGroups } from "@/lib/permissions";
+import { PERMISSION_META } from "@/lib/accessGroupSchema";
+import ManagementShell from "@/components/management/ManagementShell";
 import { createHash, randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
-import DashboardIdentity from "@/components/DashboardIdentity";
 import AdminPageHeader from "@/components/AdminPageHeader";
 import AccessGroupsManager from "@/components/AccessGroupsManager";
-import AdminTabs from "@/components/AdminTabs";
 import { buildPageMetadata } from "@/lib/seo";
 import { getSession, setSession } from "@/lib/auth";
 import { logDashboardEvent } from "@/lib/security";
@@ -197,7 +199,7 @@ export default async function AdminGroupsPage() {
     redirect("/login");
     throw new Error("Login required");
   }
-  if (!canManageGroups(user)) {
+  if (!canViewAccessGroups(user)) {
     redirect("/access-denied?reason=groups&from=/dashboard/groups");
     throw new Error("Access denied");
   }
@@ -222,7 +224,7 @@ export default async function AdminGroupsPage() {
     const ownGroup = groups.find((group) => group.id === user.groupId);
     if (
       !ownGroup ||
-      !canManageGroups(applyAccessGroupToSession(user, ownGroup))
+      !canViewAccessGroups(applyAccessGroupToSession(user, ownGroup))
     )
       redirect("/access-denied?reason=groups&from=/dashboard/groups");
   }
@@ -233,12 +235,7 @@ export default async function AdminGroupsPage() {
     .digest("hex");
 
   return (
-    <main className="container app-page admin-container access-groups-container">
-      <section
-        className="dashboard-shell content-shell admin-workspace admin-page access-groups-page app-page-stack"
-        aria-label="Керування групами та правами доступу Mistblossom Vanguard"
-      >
-        <DashboardIdentity user={user} activeSection="admin" />
+    <ManagementShell user={user} active="groups" className="access-groups-page" label="Керування групами та правами доступу Mistblossom Vanguard">
         <AdminPageHeader
           eyebrow="Mistblossom Vanguard • Права"
           title="Групи та права доступу"
@@ -263,7 +260,8 @@ export default async function AdminGroupsPage() {
             },
           ]}
         />
-        <AdminTabs active="groups" user={user} />
+        
+        {canManageGroups(user) ? (
         <AccessGroupsManager
           groups={groups}
           draftScope={draftScope}
@@ -273,7 +271,11 @@ export default async function AdminGroupsPage() {
           deleteGroupAction={deleteGroupAction}
           impersonateAction={impersonateAction}
         />
-      </section>
-    </main>
+        ) : <DataTable caption="Групи та дозволи — лише перегляд" headings={["Група", "Ранг", "Дозволи"]}>
+          {groups.map(group => <tr key={group.id}><th scope="row">{group.name}</th><td>{group.rank}</td>
+            <td>{group.permissions.map(permission => PERMISSION_META[permission].title).join(", ") || "Немає дозволів"}</td></tr>)}
+        </DataTable>}
+
+      </ManagementShell>
   );
 }

@@ -162,7 +162,7 @@ async function main() {
   // Execute the real production proxy too: direct route tests missed the old
   // Host allowlist omission that blocked every Docker cron request with 421.
   const { NextRequest, NextResponse } = require('next/server');
-  const proxyModules = { '@/lib/siteBridgeAuth': {hasSiteBridgeToken:()=>false}, 'next/server': { NextRequest, NextResponse }, '@/lib/security': {
+  const proxyModules = { '@/lib/auth/sessionSignature': { verifySessionEnvelope: async () => null }, '@/lib/siteBridgeAuth': {hasSiteBridgeToken:()=>false}, 'next/server': { NextRequest, NextResponse }, '@/lib/security': {
     forbiddenResponse: (error) => NextResponse.json({ ok: false, error }, { status: 403 }),
     getCanonicalDashboardOrigin: () => 'https://guild.example', getRequestHost: (r) => r.headers.get('host') || r.nextUrl.host,
     isAllowedHost: (host) => host === 'guild.example', isLocalHost: () => false,
@@ -173,15 +173,15 @@ async function main() {
   const previousIngress = load('src/proxy.ts', proxyModules, proxyGlobals, (source) => source.replace('    pathname === "/api/dashboard/discord/member-cleanup/automation" ||\n', ''));
   const cronPath = '/api/dashboard/discord/member-cleanup/automation';
   const internalRequest = (pathname = cronPath, host = 'dashboard:3000', token = 'controlled-test-token') => new NextRequest(`http://${host}${pathname}`, { method: 'POST', headers: { host, ...(token ? { authorization: `Bearer ${token}` } : {}) } });
-  check(previousIngress.proxy(internalRequest()).status === 421, 'previous proxy reproduces the actual cron Host blocker');
-  check(ingress.proxy(internalRequest()).headers.get('x-middleware-next') === '1', 'Docker cleanup request reaches its authenticated route');
-  check(ingress.proxy(internalRequest(cronPath, 'dashboard:3000', '')).status === 421, 'internal cleanup without bearer still rejected');
-  check(ingress.proxy(internalRequest('/api/dashboard/discord/member-cleanup')).status === 421, 'browser admin route never inherits internal Host exception');
-  check(ingress.proxy(internalRequest(`${cronPath}/unexpected`)).status === 421, 'internal exception applies to the exact cleanup path only');
-  check(ingress.proxy(internalRequest(cronPath, 'attacker.example')).status === 421, 'bearer header cannot bypass arbitrary Host validation');
-  check(ingress.proxy(internalRequest(cronPath, 'guild.example', '')).status === 403, 'public production Cloudflare policy remains enforced');
+  check((await previousIngress.proxy(internalRequest())).status === 421, 'previous proxy reproduces the actual cron Host blocker');
+  check((await ingress.proxy(internalRequest())).headers.get('x-middleware-next') === '1', 'Docker cleanup request reaches its authenticated route');
+  check((await ingress.proxy(internalRequest(cronPath, 'dashboard:3000', ''))).status === 421, 'internal cleanup without bearer still rejected');
+  check((await ingress.proxy(internalRequest('/api/dashboard/discord/member-cleanup'))).status === 421, 'browser admin route never inherits internal Host exception');
+  check((await ingress.proxy(internalRequest(`${cronPath}/unexpected`))).status === 421, 'internal exception applies to the exact cleanup path only');
+  check((await ingress.proxy(internalRequest(cronPath, 'attacker.example'))).status === 421, 'bearer header cannot bypass arbitrary Host validation');
+  check((await ingress.proxy(internalRequest(cronPath, 'guild.example', ''))).status === 403, 'public production Cloudflare policy remains enforced');
   bearer = false;
-  check(ingress.proxy(internalRequest()).status === 200 && (await automatic.POST(request({}))).status === 401, 'route rejects wrong secret after proxy admits a potential bearer');
+  check((await ingress.proxy(internalRequest())).status === 200 && (await automatic.POST(request({}))).status === 401, 'route rejects wrong secret after proxy admits a potential bearer');
   let calls = 0, responseStatus = 429;
   const discordModules = { '@/lib/concurrency': {}, '@/lib/rulesOnboarding': {}, '@/lib/security': { logDashboardEvent: () => {} }, '@/lib/values': { cleanSnowflake: (id) => /^\d{16,25}$/.test(id) ? id : '' }, '@/lib/discordAvatar': {}, '@/lib/discordRulesStats': {} };
   const transportGlobals = { process: { env: { DISCORD_BOT_TOKEN: 'controlled-test-token' } }, Headers, Response, FormData, AbortSignal, AbortController, setTimeout, clearTimeout, fetch: async () => { calls++; return responseStatus === 204 ? new Response(null, { status: 204 }) : Response.json({ message: 'controlled rejection', retry_after: 65, global: true }, { status: responseStatus }); } };

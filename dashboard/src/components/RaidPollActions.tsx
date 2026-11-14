@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { notifyDashboardDataChanged } from "@/lib/dashboardLiveRefresh";
-import { useRaidPollMutation } from "@/lib/useRaidPollMutation";
+import { useRaidPollMutation } from "@/hooks/useRaidPollMutation";
 import RaidPollPauseButton from "@/components/RaidPollPauseButton";
 import RaidPollActionResult from "@/components/RaidPollActionResult";
 

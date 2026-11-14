@@ -1,3 +1,4 @@
+import { canViewAccessGroups } from "@/lib/permissions";
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import {
@@ -61,7 +62,7 @@ async function boundedJson(request: NextRequest) {
 }
 export async function GET() {
   const session = await getSession();
-  if (!session || !canManageGroups(session))
+  if (!session || !canViewAccessGroups(session))
     return reply({ ok: false, error: "Немає доступу." }, session ? 403 : 401);
   try {
     const groups = await listAccessGroupsForManagement();
@@ -69,7 +70,7 @@ export async function GET() {
       const ownGroup = groups.find((group) => group.id === session.groupId);
       if (
         !ownGroup ||
-        !canManageGroups(applyAccessGroupToSession(session, ownGroup))
+        !canViewAccessGroups(applyAccessGroupToSession(session, ownGroup))
       )
         return reply(
           { ok: false, error: "Право керування групами вже змінено." },

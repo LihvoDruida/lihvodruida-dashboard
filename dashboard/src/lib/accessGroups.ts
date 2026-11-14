@@ -1,4 +1,5 @@
 import "server-only";
+import { canManageGroups } from "@/lib/permissions";
 
 import { createHash, randomUUID } from "node:crypto";
 import {
@@ -347,9 +348,7 @@ function normalizeGroup(
       raw.discordRoleId ?? raw.discordRoleIds,
     ),
     icon: cleanGroupIcon(raw.icon ?? fallback?.icon),
-    permissions: permissions.length
-      ? permissions
-      : fallback?.permissions || ["dashboard.view"],
+    permissions,
     createdAt: typeof raw.createdAt === "string" ? raw.createdAt : null,
     updatedAt: typeof raw.updatedAt === "string" ? raw.updatedAt : null,
   };
@@ -484,24 +483,6 @@ export async function ensureDefaultAccessGroups() {
           if (current.protectedGroup !== group.protectedGroup)
             patch.protectedGroup = group.protectedGroup;
           if (!current.icon && group.icon) patch.icon = group.icon;
-          if (group.id === DEFAULT_ADMIN_GROUP_ID) {
-            const permissions = Array.from(
-              new Set([...current.permissions, ...DASHBOARD_PERMISSION_KEYS]),
-            );
-            if (permissions.length !== current.permissions.length)
-              patch.permissions = permissions;
-          }
-          if (
-            (group.id === DEFAULT_MENTOR_GROUP_ID ||
-              group.id === DEFAULT_MEMBER_GROUP_ID) &&
-            !current.permissions.includes("profiles.group.view")
-          )
-            patch.permissions = Array.from(
-              new Set([
-                ...(patch.permissions || current.permissions),
-                "profiles.group.view",
-              ]),
-            );
           if (Object.keys(patch).length)
             transaction.set(
               doc,
@@ -581,24 +562,7 @@ export function applyAccessGroupToSession(
   };
 }
 
-export function hasPermission(
-  session: DashboardSession | null | undefined,
-  permission: DashboardPermissionKey,
-) {
-  if (!session) return false;
-  if (session.isServerOwner) return true;
-  if (session.groupId || session.permissions?.length)
-    return Boolean(session.permissions?.includes(permission));
-  return session.role === "admin";
-}
-
-export function canManageGroups(session: DashboardSession | null | undefined) {
-  return Boolean(
-    session &&
-    session.role === "admin" &&
-    hasPermission(session, "groups.manage"),
-  );
-}
+export { hasDashboardPermission as hasPermission, canManageGroups } from "@/lib/permissions";
 
 export function canEditTargetGroup(
   viewer: DashboardSession | null | undefined,

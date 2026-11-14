@@ -18,6 +18,7 @@ module.exports = function loadServerTs(relativePath, modules = {}, globals = {})
     require(name) {
       if (name === "server-only") return {};
       if (Object.hasOwn(modules, name)) return modules[name];
+      if (name === "@/lib/permissions") return module.exports("src/lib/permissions.ts", { "@/lib/accessGroupSchema": module.exports("src/lib/accessGroupSchema.ts", {}, globals).exports }, globals).exports;
       if(autoModules.has(name))return autoModules.get(name);
       const auto=(file,deps={})=>{const exports=module.exports(file,deps,globals).exports;autoModules.set(name,exports);return exports;};
       if(name==='@/lib/httpBody')return auto('src/lib/httpBody.ts');

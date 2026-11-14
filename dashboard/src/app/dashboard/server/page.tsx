@@ -1,7 +1,6 @@
+import ManagementShell from "@/components/management/ManagementShell";
 import { redirect } from "next/navigation";
 
-import AdminTabs from "@/components/AdminTabs";
-import DashboardIdentity from "@/components/DashboardIdentity";
 import AdminPageHeader from "@/components/AdminPageHeader";
 import ServerStatusDashboard from "@/components/ServerStatusDashboard";
 import { getSession } from "@/lib/auth";
@@ -31,9 +30,7 @@ export default async function ServerStatusPage() {
   const snapshot = await getServerStatusSnapshot();
 
   return (
-    <main className="container app-page admin-container server-status-container">
-      <section className="dashboard-shell content-shell admin-workspace admin-page server-status-page app-page-stack" aria-label="Стан сервера Mistblossom Vanguard">
-        <DashboardIdentity user={user} activeSection="admin" />
+    <ManagementShell user={user} active="server" className="server-status-page" label="Стан сервера Mistblossom Vanguard">
         <AdminPageHeader
           eyebrow="Mistblossom Vanguard • Owner only"
           title="Стан сервера"
@@ -45,9 +42,8 @@ export default async function ServerStatusPage() {
             { label: "Диск", value: snapshot.disk.usagePercent === null ? "—" : `${Math.round(snapshot.disk.usagePercent)}%`, tone: (snapshot.disk.usagePercent ?? 0) >= 85 ? "danger" : (snapshot.disk.usagePercent ?? 0) >= 70 ? "warning" : "good" },
           ]}
         />
-        <AdminTabs active="server" user={user} />
+        
         <ServerStatusDashboard initialSnapshot={snapshot} />
-      </section>
-    </main>
+      </ManagementShell>
   );
 }

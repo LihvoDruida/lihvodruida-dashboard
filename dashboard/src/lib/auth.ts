@@ -1,3 +1,8 @@
+import { base64UrlEncode, base64UrlDecode, sign, constantTimeEqual, verifySessionEnvelope } from "@/lib/auth/sessionSignature";
+import "server-only";
+import { cache } from "react";
+import { refreshSessionAuthorization } from "@/lib/auth/authorization";
+import { DASHBOARD_PERMISSION_KEYS } from "@/lib/accessGroupSchema";
 import { cookies } from "next/headers";
 import {
   fetchDiscordGuildMemberSnapshot,
@@ -30,27 +35,8 @@ import { safeDashboardReturnPath } from "@/lib/dashboardRedirects";
 import { BNET_OAUTH_STATE_COOKIE, LEGACY_BNET_OAUTH_STATE_COOKIE } from "@/lib/authCookieNames";
 import { isSessionTokenRevoked, revokeSessionToken } from "@/lib/sessionRevocation";
 
-export type DashboardRole = "admin" | "moderator" | "mentor" | "member";
-
-export type DashboardSession = {
-  provider: "discord" | "github" | "token";
-  id: string;
-  name: string;
-  login?: string;
-  role: DashboardRole;
-  profileId?: string;
-  avatar?: string | null;
-  avatar_url?: string | null;
-  discordRoleIds?: string[];
-  groupId?: string;
-  groupName?: string;
-  groupRank?: number;
-  permissions?: string[];
-  isServerOwner?: boolean;
-  impersonatedBy?: string;
-};
-
-export type SessionUser = DashboardSession;
+import type { DashboardRole, DashboardSession } from "@/types/auth";
+export type { DashboardRole, DashboardSession, SessionUser } from "@/types/auth";
 
 export const SESSION_COOKIE = "__Host-mistblossom_dashboard_session";
 export const LEGACY_SESSION_COOKIE = "mistblossom_dashboard_session";
@@ -350,61 +336,6 @@ async function enforceNonDiscordSessionPolicy(
   return null;
 }
 
-function getSecret() {
-  const secret =
-    process.env.SESSION_SECRET || process.env.NEXTAUTH_SECRET || "";
-  if (secret.length < 32) {
-    throw new Error(
-      "SESSION_SECRET must be set and at least 32 characters long.",
-    );
-  }
-  return secret;
-}
-
-function base64UrlEncode(input: string | Uint8Array) {
-  const bytes =
-    typeof input === "string" ? new TextEncoder().encode(input) : input;
-  return btoa(String.fromCharCode(...bytes))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-}
-
-function base64UrlDecode(input: string) {
-  const normalized = input.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
-  const binary = atob(padded);
-  return new TextDecoder().decode(
-    Uint8Array.from(binary, (c) => c.charCodeAt(0)),
-  );
-}
-
-async function sign(data: string) {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(getSecret()),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-
-  const signature = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    new TextEncoder().encode(data),
-  );
-  return base64UrlEncode(new Uint8Array(signature));
-}
-
-function constantTimeEqual(a: string, b: string) {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let index = 0; index < a.length; index += 1) {
-    diff |= a.charCodeAt(index) ^ b.charCodeAt(index);
-  }
-  return diff === 0;
-}
-
 export type OAuthStatePayload = {
   nonce: string;
   nextPath?: string;
@@ -598,22 +529,11 @@ export async function createSessionToken(session: DashboardSession) {
 export async function verifySessionToken(
   token?: string | null,
 ): Promise<DashboardSession | null> {
-  if (!token || !token.includes(".")) return null;
-
-  const [payload, signature, extra] = token.split(".");
-  if (!payload || !signature || extra) return null;
-
-  const expected = await sign(payload);
-  if (!constantTimeEqual(expected, signature)) return null;
-
-  try {
-    return normalizeSessionPayload(JSON.parse(base64UrlDecode(payload)));
-  } catch {
-    return null;
-  }
+  const payload = await verifySessionEnvelope(token);
+  return payload ? normalizeSessionPayload(payload) : null;
 }
 
-export async function getStoredSession(): Promise<DashboardSession | null> {
+export const getStoredSession = cache(async (): Promise<DashboardSession | null> => {
   const store = await cookies();
   // Production accepts only the host-only Secure cookie. Reading the legacy
   // cookie as a fallback would allow a sibling subdomain to plant a valid
@@ -634,7 +554,7 @@ export async function getStoredSession(): Promise<DashboardSession | null> {
     } catch { return null; }
   }
   return verified;
-}
+});
 
 export async function getSession(
   options: { live?: boolean; enforceNonDiscordPolicy?: boolean } = {},
@@ -647,7 +567,7 @@ export async function getSession(
     if (session.provider !== "discord" || session.impersonatedBy !== session.id)
       return null;
     const verifiedOwner = await refreshDiscordAccess({ ...session, impersonatedBy: undefined });
-    return verifiedOwner?.isServerOwner ? session : null;
+    return verifiedOwner?.isServerOwner ? refreshSessionAuthorization(session) : null;
   }
 
   const shouldEnforceNonDiscordPolicy = options.enforceNonDiscordPolicy ?? true;
@@ -677,7 +597,8 @@ export async function getSession(
     process.env.NODE_ENV === "production" && gatedSession?.provider === "discord"
       ? true
       : options.live ?? authEnvFlag("SESSION_LIVE_ACCESS_SYNC_ENABLED", false);
-  return liveAccessEnabled ? refreshDiscordAccess(gatedSession) : gatedSession;
+  const verifiedSession = liveAccessEnabled ? await refreshDiscordAccess(gatedSession) : gatedSession;
+  return refreshSessionAuthorization(verifiedSession);
 }
 
 export async function setSession(session: DashboardSession) {
@@ -752,36 +673,6 @@ export function canModerate(user: DashboardSession | null | undefined) {
   return hasPermission(user, "applications.manage");
 }
 
-export async function createSessionCookie(
-  session: (Partial<DashboardSession> & { login?: string }) | string,
-) {
-  if (typeof session === "string") {
-    const verified = await verifyToken(session);
-    if (!verified) {
-      throw new Error("Invalid dashboard token.");
-    }
-    return createSessionToken(verified);
-  }
-
-  return createSessionToken({
-    provider: session.provider || "token",
-    id: String(session.id || "local"),
-    name: String(session.name || session.login || "Local admin"),
-    login: session.login || session.name || "Local admin",
-    role:
-      session.role === "moderator"
-        ? "moderator"
-        : session.role === "mentor"
-          ? "mentor"
-          : session.role === "member"
-            ? "member"
-            : "admin",
-    avatar: session.avatar || null,
-    avatar_url: session.avatar_url || session.avatar || null,
-    discordRoleIds: session.discordRoleIds || [],
-  });
-}
-
 export async function verifyToken(token: string) {
   const expected = String(process.env.ADMIN_DASHBOARD_TOKEN || "").trim();
   const provided = String(token || "").trim();
@@ -803,5 +694,6 @@ export async function verifyToken(token: string) {
     login: "Emergency Admin",
     role: "admin",
     discordRoleIds: [],
+    permissions: [...DASHBOARD_PERMISSION_KEYS],
   } satisfies DashboardSession;
 }

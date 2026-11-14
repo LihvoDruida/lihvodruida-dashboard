@@ -7,7 +7,7 @@ import { dashboardApiJson } from "@/lib/dashboardApiClient";
 import { notifyDashboardDataChanged } from "@/lib/dashboardLiveRefresh";
 import { ApplicationNextReview, useApplicationModerationQueue } from "@/components/ApplicationModerationQueue";
 import type { ApplicationStatus } from "@/lib/applicationsStore";
-import { useActionFocus } from "@/lib/useActionFocus";
+import { useActionFocus } from "@/hooks/useActionFocus";
 
 const LABELS: Record<ApplicationStatus, string> = { review: "На розгляді", accepted: "Прийнято", declined: "Відхилено" };
 export default function ApplicationStatusActions({ issueNumber, initialStatus, issueState = "open", canModerate = true, canDelete = false }: {

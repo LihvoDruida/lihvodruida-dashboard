@@ -3,8 +3,8 @@ import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "rea
 import { useRouter } from "next/navigation";
 import { dashboardApiJson } from "@/lib/dashboardApiClient";
 import { ApiHttpError } from "@/lib/apiHttp";
-import { useDashboardRequests } from "@/lib/useDashboardRequests";
-import { useActionFocus } from "@/lib/useActionFocus";
+import { useDashboardRequests } from "@/hooks/useDashboardRequests";
+import { useActionFocus } from "@/hooks/useActionFocus";
 import { wowRoleLabel } from "@/lib/wowRoles";
 import type {
   CharacterSetupRequest,

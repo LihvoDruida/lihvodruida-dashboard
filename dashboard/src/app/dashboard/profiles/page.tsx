@@ -1,7 +1,6 @@
+import ManagementShell from "@/components/management/ManagementShell";
 import { redirect } from "next/navigation";
 import AdminPageHeader from "@/components/AdminPageHeader";
-import AdminTabs from "@/components/AdminTabs";
-import DashboardIdentity from "@/components/DashboardIdentity";
 import { getSession } from "@/lib/auth";
 import { getAccountCleanupAutomationSettings, nextAccountCleanupAt, type AccountCleanupRunStatus } from "@/lib/accountCleanupAutomation";
 import { buildPageMetadata } from "@/lib/seo";
@@ -35,12 +34,10 @@ export default async function ProfileMaintenancePage() {
   const cleanupAutomation = await getAccountCleanupAutomationSettings();
   const nextCleanupCheckAt = nextAccountCleanupAt(cleanupAutomation.lastCheckAt, cleanupAutomation.checkIntervalHours, cleanupAutomation.autoCheckEnabled);
   const nextCleanupApplyAt = nextAccountCleanupAt(cleanupAutomation.lastCleanupAt, cleanupAutomation.cleanupIntervalHours, cleanupAutomation.autoCleanupEnabled);
-  return <main className="container app-page admin-container">
-    <section className="dashboard-shell content-shell admin-workspace admin-page app-page-stack">
-      <DashboardIdentity user={user} activeSection="admin" />
+  return <ManagementShell user={user} active="profiles" className="">
       <AdminPageHeader eyebrow="Mistblossom Vanguard • Обслуговування" title="Очищення профілів"
         description="Лише власник: попередня перевірка, підтверджене видалення та історія запусків. Дані з Discord-записів у рейди не є вебпрофілями." />
-      <AdminTabs active="profiles" user={user} />
+      
       <div className="panel management-cleanup-notice" role="note">
         <strong>Безпечний порядок: спочатку перевірка, потім підтвердження.</strong>
         <p>Не видаляємо всіх користувачів лише тому, що рейди перейшли в Discord. Чинні адміністративні облікові записи, учасники Discord і roster захищаються поточними перевірками. Перевірку має виконати той самий власник не раніше ніж за 15 хвилин до видалення; ліміт повинен збігатися.</p>
@@ -193,6 +190,5 @@ export default async function ProfileMaintenancePage() {
             </article>
           </div>
         </section>
-    </section>
-  </main>;
+    </ManagementShell>;
 }

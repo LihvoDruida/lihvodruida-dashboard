@@ -6096,7 +6096,7 @@ export async function handleRaidDiscordAction(params: {
       blockedByMaxPlayers: true,
     };
 
-  let profile: DashboardProfile | null = null;
+  const profile: DashboardProfile | null = null;
   const manualSelection = params.manual
     ? cleanRaidManualSelection(params.manual.classKey, params.manual.specKey)
     : null;

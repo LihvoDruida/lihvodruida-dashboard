@@ -1,3 +1,4 @@
+import AdminPageHeader from "@/components/AdminPageHeader";
 import {redirect} from 'next/navigation';
 import DashboardIdentity from '@/components/DashboardIdentity';
 import ContentEditor from '@/components/content/ContentEditor';
@@ -26,7 +27,7 @@ export default async function ContentPage({searchParams}:{searchParams:Promise<R
  }catch{failure='Не вдалося завантажити матеріали. Перевір підключення до сховища та повтори спробу.';}
  const siteUrl=(process.env.PUBLIC_SITE_URL||'https://lihvodruida.pp.ua').replace(/\/+$/,'');
  return <main className="container app-page"><section className="dashboard-shell app-page-stack" aria-label="Керування матеріалами сайту"><DashboardIdentity user={user} activeSection="content"/>
-  <header className="panel" style={{padding:'24px 28px'}}><span className="eyebrow">Лігво Друїда / Редакція</span><h1 style={{margin:'10px 0',fontSize:'clamp(1.7rem,4vw,2.5rem)'}}>{isNew?'Створення матеріалу':item?'Редагування матеріалу':'Контент сайту'}</h1><p className="muted">{isNew||item?'Підготуй текст, перевір вигляд і збережи чернетку або опублікуй.':'Новини та гайди: від першої чернетки до публікації на сайті.'}</p></header>
+  <AdminPageHeader eyebrow="Лігво Друїда / Редакція" title={isNew?'Створення матеріалу':item?'Редагування матеріалу':'Контент сайту'} description={isNew||item?'Підготуй текст, перевір вигляд і збережи чернетку або опублікуй.':'Новини та гайди: від першої чернетки до публікації на сайті.'} />
   {params.published||params.updated?<div className="notice panel success" role="status">Матеріал збережено.</div>:null}
   {params.deleted?<div className="notice panel success" role="status">Матеріал видалено.</div>:null}{params.error?<div className="notice panel error-note" role="alert">{params.error}</div>:null}
   {failure?<section className="notice panel error-note" role="alert"><p>{failure}</p><a className="btn subtle" href={editing?`/content?edit=${encodeURIComponent(params.edit!)}`:'/content'}>Повторити</a> <a className="btn subtle" href="/content">До бібліотеки</a></section>:isNew||item?<ContentEditor key={item?.path||'new'} initialItem={item} author={identity!.primaryName} authorSuggestions={identity!.suggestions} siteUrl={siteUrl} userId={user.id}/>:<ContentLibrary initial={items} siteUrl={siteUrl}/>}
