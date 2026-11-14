@@ -3,15 +3,18 @@ const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
 const page = fs.readFileSync(path.join(root, "src/app/dashboard/page.tsx"), "utf8");
+const access = fs.readFileSync(path.join(root, "src/app/dashboard/access/page.tsx"), "utf8");
 const css = fs.readFileSync(path.join(root, "src/app/styles/admin.css"), "utf8");
 
 const checks = [
-  [page.includes('className="admin-overview-top-grid"'), "overview uses a dedicated top grid"],
-  [page.includes('className="admin-policy-layout admin-policy-layout--auth"'), "auth policy has a desktop layout wrapper"],
-  [page.includes('className="admin-policy-layout admin-policy-layout--geo"'), "geo policy has a desktop layout wrapper"],
-  [page.includes('className="auth-access-role-option__copy"'), "role option keeps name and id in one copy block"],
-  [page.includes('className="admin-policy-current-state"'), "policy cards expose a compact current-state summary"],
-  [page.includes('className="geo-country-summary"'), "geo country selection has a compact summary"],
+  [page.includes('href: "/dashboard/access"') && access.includes('canManageGroups(user)'), "security settings are separate and permission checked"],
+  [page.includes('href: "/dashboard/profiles"'), "profile maintenance is a dedicated task"],
+  [page.includes('className="management-hub__grid"'), "overview uses a task hub"],
+  [access.includes('className="admin-policy-layout admin-policy-layout--auth"'), "auth policy has a desktop layout wrapper"],
+  [access.includes('className="admin-policy-layout admin-policy-layout--geo"'), "geo policy has a desktop layout wrapper"],
+  [access.includes('className="auth-access-role-option__copy"'), "role option keeps name and id in one copy block"],
+  [access.includes('className="admin-policy-current-state"'), "policy cards expose a compact current-state summary"],
+  [access.includes('className="geo-country-summary"'), "geo country selection has a compact summary"],
   [css.includes(".integration-status-grid"), "integration status has explicit grid styling"],
   [css.includes("grid-template-columns: repeat(5, minmax(0, 1fr));"), "desktop integration status uses horizontal capacity"],
   [css.includes(".auth-access-role-option:has(input:checked)"), "selected Discord roles are visually distinct"],

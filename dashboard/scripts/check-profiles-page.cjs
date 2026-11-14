@@ -18,7 +18,7 @@ const checks = [
   ["search supports sorting", page.includes('name="sort"') && page.includes('value="characters"')],
   ["pagination preserves filters", page.includes("paginationState") && page.includes("buildProfilesHref")],
   ["dangerous cleanup removed from directory", !page.includes('action="/api/dashboard/discord/profiles/cleanup"')],
-  ["maintenance links to management page", page.includes('/dashboard/discord#discord-profiles')],
+  ["maintenance links to management page", page.includes('/dashboard/profiles')],
   ["hero statistics are compact", page.includes('className="profile-directory-hero-metrics"')],
   ["desktop profile grid has explicit columns", css.includes(".profile-directory-head,") && css.includes("minmax(230px, 1.65fr)")],
   ["profile cards have hover state", css.includes(".profile-directory-row:hover")],

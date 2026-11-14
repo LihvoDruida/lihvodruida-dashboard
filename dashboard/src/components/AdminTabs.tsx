@@ -1,113 +1,47 @@
+import Link from "next/link";
 import type { DashboardSession } from "@/lib/auth";
-import {
-  canManageDiscordMembers,
-  canManageGroups,
-  canViewAdminLogs,
-} from "@/lib/permissions";
+import { canManageDiscordMembers, canManageGroups, canViewAdminLogs } from "@/lib/permissions";
 
-export type AdminTabKey =
-  "overview" | "groups" | "cleanup" | "discord" | "logs" | "server" | "welcome" | "settings";
+export type AdminTabKey = "overview" | "access" | "groups" | "profiles" | "cleanup" | "discord" | "logs" | "server" | "welcome" | "settings";
 
-export default function AdminTabs({
-  active,
-  user,
-}: {
-  active: AdminTabKey;
-  user?: DashboardSession | null;
-}) {
-  const canOpenGroups = canManageGroups(user);
-  const canOpenDiscord = canManageDiscordMembers(user);
-  const canOpenLogs = canViewAdminLogs(user);
-  const tabs = [
-    {
-      key: "overview" as const,
-      href: "/dashboard",
-      label: "Огляд",
-      description: "центр керування",
-      visible: canOpenGroups || canOpenDiscord || canOpenLogs,
-    },
-    {
-      key: "settings" as const,
-      href: "/dashboard/settings",
-      label: "Налаштування",
-      description: "ролі Статика",
-      visible: canOpenGroups,
-    },
-    {
-      key: "groups" as const,
-      href: "/dashboard/groups",
-      label: "Групи",
-      description: "ролі й доступи",
-      visible: canOpenGroups,
-    },
-    {
-      key: "discord" as const,
-      href: "/dashboard/discord",
-      label: "Discord",
-      description: "учасники й ніки",
-      visible: canOpenDiscord,
-    },
-    {
-      key: "logs" as const,
-      href: "/dashboard/logs",
-      label: "Логи",
-      description: "результати дій",
-      visible: canOpenLogs,
-    },
-    {
-      key: "server" as const,
-      href: "/dashboard/server",
-      label: "Сервер",
-      description: "CPU · RAM · Swap · Docker",
-      visible: Boolean(user?.isServerOwner),
-    },
-    {
-      key: "welcome" as const,
-      href: "/dashboard/welcome",
-      label: "Welcome",
-      description: "картки · стартова роль",
-      visible: Boolean(user?.isServerOwner),
-    },
-  ].filter((tab) => tab.visible);
-
-  if (!tabs.length) return null;
-
-  // Logs retain their existing navigation and presentation.
-  if (active !== "logs") {
-    const sections = [
-      { label: "Доступ і склад", keys: ["overview", "groups", "settings"] },
-      { label: "Discord та автоматизація", keys: ["discord", "cleanup", "welcome"] },
-      { label: "Система", keys: ["server", "logs"] },
-    ];
-    const managementTabs = [...tabs, { key: "cleanup" as const, href: "/dashboard/discord/cleanup", label: "Очищення", description: "роль та строк", visible: canOpenDiscord }].filter(tab => tab.visible);
-    return <nav className="management-nav" aria-label="Розділи керування">
-      {sections.map(section => {
-        const links = section.keys.map(key => managementTabs.find(tab => tab.key === key)).filter(tab => tab !== undefined);
-        return links.length ? <div className="management-nav-group" key={section.label}>
-          <span className="management-nav-label">{section.label}</span>
-          <div className="management-nav-links">{links.map(tab => <a key={tab.key} href={tab.href}
-            aria-current={active === tab.key ? "page" : undefined}>
-            <strong>{tab.key === "settings" ? "Статик" : tab.key === "welcome" ? "Привітання" : tab.label}</strong><small>{tab.description}</small>
-          </a>)}</div>
-        </div> : null;
-      })}
-    </nav>;
-  }
-
-
-  return (
-    <nav className="admin-tabs dashboard-subnav" aria-label="Розділи керування">
-      {tabs.map((tab) => (
-        <a
-          key={tab.key}
-          href={tab.href}
-          className={active === tab.key ? "is-active" : undefined}
-          aria-current={active === tab.key ? "page" : undefined}
-        >
-          <strong>{tab.label}</strong>
-          <small>{tab.description}</small>
-        </a>
-      ))}
-    </nav>
-  );
+type NavItem = { key: AdminTabKey; href: string; label: string; description: string; visible: boolean };
+export default function AdminTabs({ active, user }: { active: AdminTabKey; user?: DashboardSession | null }) {
+  const groups = canManageGroups(user);
+  const discord = canManageDiscordMembers(user);
+  const logs = canViewAdminLogs(user);
+  const owner = Boolean(user?.isServerOwner);
+  const sections: Array<{ id: string; title: string; items: NavItem[] }> = [
+    { id: "access", title: "Доступ і права", items: [
+      { key: "overview", href: "/dashboard", label: "Огляд", description: "Стан і швидкі дії", visible: groups || discord || logs || owner },
+      { key: "access", href: "/dashboard/access", label: "Авторизація", description: "Discord → група сайту", visible: groups },
+      { key: "groups", href: "/dashboard/groups", label: "Групи", description: "Права й ранги", visible: groups },
+    ] },
+    { id: "discord", title: "Discord та учасники", items: [
+      { key: "discord", href: "/dashboard/discord", label: "Учасники", description: "Ролі й ніки", visible: discord },
+      { key: "cleanup", href: "/dashboard/discord/cleanup", label: "Модерація", description: "Виключення за правилами", visible: discord },
+      { key: "profiles", href: "/dashboard/profiles", label: "Профілі", description: "Аудит і очищення", visible: owner },
+      { key: "welcome", href: "/dashboard/welcome", label: "Привітання", description: "Стартова роль", visible: owner },
+      { key: "settings", href: "/dashboard/settings", label: "Статик", description: "Статичні ролі", visible: groups },
+    ] },
+    { id: "system", title: "Система", items: [
+      { key: "server", href: "/dashboard/server", label: "Сервер", description: "Ресурси", visible: owner },
+      { key: "logs", href: "/dashboard/logs", label: "Журнали", description: "Аудит і помилки", visible: logs },
+    ] },
+  ];
+  if (!sections.some(section => section.items.some(item => item.visible))) return null;
+  return <nav className="management-nav" aria-label="Розділи панелі керування">
+    {sections.map(section => {
+      const visible = section.items.filter(item => item.visible);
+      if (!visible.length) return null;
+      return <div className="management-nav-group" key={section.id}>
+        <span className="management-nav-label">{section.title}</span>
+        <div className="management-nav-links">
+          {visible.map(item => <Link key={item.key} href={item.href}
+            aria-current={active === item.key ? "page" : undefined}>
+            <strong>{item.label}</strong><small>{item.description}</small>
+          </Link>)}
+        </div>
+      </div>;
+    })}
+  </nav>;
 }

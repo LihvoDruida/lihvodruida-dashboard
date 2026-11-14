@@ -1038,7 +1038,6 @@ details > *:not(:where(summary)) {
 }
 
 /* Смуга вкладок */
-.admin-tabs,
 [class$="-tabs"],
 [class*="-tabs "] {
   display: flex;

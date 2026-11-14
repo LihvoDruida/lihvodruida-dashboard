@@ -5,14 +5,11 @@ import { listEntryId } from "@/lib/listViewState";
 import ProfileAvatar from "@/components/ProfileAvatar";
 import { getSession } from "@/lib/auth";
 import {
-  canManageDiscordMembers,
   canManageGroups,
-  canViewProfiles,
   guildStatusLabel,
 } from "@/lib/permissions";
 import {
   getMainCharacter,
-  getOwnProfilePath,
   getProfilePublicName,
   type DashboardProfile,
 } from "@/lib/profiles";
@@ -166,12 +163,12 @@ export default async function ProfilesPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  const user = await getSession();
+  const user = await getSession({ live: true });
   if (!user) {
     redirect("/login");
     throw new Error("Login required");
   }
-  if (!canViewProfiles(user)) redirect(await getOwnProfilePath(user));
+  if (!canManageGroups(user)) redirect("/access-denied?reason=profiles&from=/profiles");
 
   const params = await searchParams;
   const filters = profileDirectoryFilters({ query: params.q, link: params.link, role: params.role, sort: params.sort });
@@ -188,9 +185,8 @@ export default async function ProfilesPage({
       if (member.avatarUrl) liveDiscordAvatars.set(member.userId, member.avatarUrl);
     }
   }
-  const canManageCleanup = canManageDiscordMembers(user);
+  const canManageCleanup = Boolean(user.isServerOwner);
   // Saved Discord raid preferences are not a member directory. Admin-only.
-  if (!canManageGroups(user)) redirect("/access-denied?reason=profiles&from=/profiles");
   const raidPreferences = await listRaidDiscordPreferences(100).catch(() => []);
   const hasFilters = Boolean(query || linkFilter !== "all" || roleFilter !== "all" || sort !== "activity");
   const paginationState = filters;
@@ -318,9 +314,9 @@ export default async function ProfilesPage({
             <div><span>На сторінці</span><strong>{formatNumber(profiles.length)}</strong></div>
             <div><span>Позиція</span><strong>{result.start}–{result.end}</strong></div>
             {canManageCleanup ? (
-              <a className="profile-directory-maintenance-link" href="/dashboard/discord#discord-profiles">
+              <a className="profile-directory-maintenance-link" href="/dashboard/profiles">
                 <span>Обслуговування профілів</span>
-                <strong>Імпорт та очищення →</strong>
+                <strong>Аудит та очищення →</strong>
               </a>
             ) : null}
           </div>

@@ -20,7 +20,7 @@ const scheduler = read('src/app/api/dashboard/profiles/orphan-cleanup/route.ts')
 const settingsLib = read('src/lib/accountCleanupAutomation.ts');
 const settingsRoute = read('src/app/api/dashboard/discord/profiles/cleanup-settings/route.ts');
 const manualRoute = read('src/app/api/dashboard/discord/profiles/cleanup/route.ts');
-const page = read('src/app/dashboard/discord/page.tsx');
+const page = read('src/app/dashboard/profiles/page.tsx');
 const styles = read('src/app/styles/admin.css');
 const cron = read('deploy/cron/run-cron.sh', repo);
 const discord = read('src/lib/discordAdmin.ts');
@@ -39,6 +39,7 @@ assert(settingsLib.includes('autoCleanupEnabled: false'), 'Destructive automatic
 assert(settingsLib.includes('recentRuns'), 'Cleanup state must retain recent run history.');
 assert(settingsRoute.includes('guard.session.isServerOwner'), 'Only the server owner may change automatic cleanup settings.');
 assert(settingsRoute.includes('discord.profiles.cleanup_settings_update'), 'Cleanup setting changes must be audited.');
+assert(manualRoute.includes('confirmDeletion') && manualRoute.includes('guard.session.isServerOwner'), 'Manual delete must enforce owner-only rights and explicit confirmation on the server.');
 assert(manualRoute.includes('source: "manual"'), 'Manual cleanup runs must be included in the same run history.');
 assert(manualRoute.includes('acquireAccountCleanupExecutionLock'), 'Manual cleanup must refuse overlapping automatic cleanup runs.');
 assert(page.includes('Зберегти автоматизацію'), 'Discord management UI must expose automation settings.');

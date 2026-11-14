@@ -196,7 +196,7 @@ mustContain("src/components/RaidImagePicker.tsx", [
   'type="url"',
   'maxLength={2048}',
 ]);
-mustContain("src/app/dashboard/page.tsx", [
+mustContain("src/app/dashboard/access/page.tsx", [
   'name={`roleMap:${role.id}`}',
   'name="manualRoleId"',
   'name="manualGroupId"',

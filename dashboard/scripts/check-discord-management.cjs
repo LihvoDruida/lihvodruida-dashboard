@@ -3,6 +3,7 @@ const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
 const page = fs.readFileSync(path.join(root, "src/app/dashboard/discord/page.tsx"), "utf8");
+const profiles = fs.readFileSync(path.join(root, "src/app/dashboard/profiles/page.tsx"), "utf8");
 const css = fs.readFileSync(path.join(root, "src/app/styles/admin.css"), "utf8");
 
 const checks = [
@@ -14,7 +15,8 @@ const checks = [
   [page.includes('className="discord-role-option__copy"'), "role name, position and id have structured non-overlapping markup"],
   [css.includes('.discord-role-option__copy') && css.includes('word-break: break-all;'), "long Discord ids cannot collide with role labels"],
   [css.includes('@media (max-width: 700px)') && css.includes('max-height: none;'), "mobile role lists avoid nested scroll containers"],
-  [css.includes('.discord-management-health-grid') && css.includes('.discord-profile-maintenance-grid'), "new Discord workspace has explicit desktop grids"],
+  [css.includes('.discord-management-health-grid') && css.includes('.discord-profile-maintenance-grid'), "Discord and separate profile maintenance retain responsive grids"],
+  [profiles.includes('!user.isServerOwner') && !page.includes('id="discord-profiles"'), "profile cleanup is isolated behind owner authorization"],
 ];
 
 const failed = checks.filter(([ok]) => !ok);

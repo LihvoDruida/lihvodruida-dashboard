@@ -356,11 +356,6 @@ select {
   }
 
   /* ---------- Адмінські екрани ---------- */
-  .admin-tabs,
-[class*="admin-tabs"] {
-    border-radius: 12px;
-  }
-
   .app-footer {
     padding-top: 24px;
     padding-bottom: 24px;

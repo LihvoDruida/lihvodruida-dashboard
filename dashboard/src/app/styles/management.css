@@ -30,8 +30,8 @@
 .admin-workspace .management-nav { display: grid; grid-template-columns: 1.1fr 1.25fr .8fr; gap: 12px; padding: 16px; border: 1px solid var(--border); border-radius: 18px; background: var(--nav-surface); }
 .admin-workspace .management-nav-group { min-width: 0; }
 .admin-workspace .management-nav-label { display: block; margin: 0 0 9px 8px; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); }
-.admin-workspace .management-nav-links { display: flex; gap: 5px; }
-.admin-workspace .management-nav a { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; padding: 11px 10px; border: 1px solid transparent; border-radius: 11px; color: var(--text-body); text-decoration: none; transition: background .15s ease, border-color .15s ease; }
+.admin-workspace .management-nav-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(114px, 100%), 1fr)); gap: 5px; }
+.admin-workspace .management-nav a { min-width: 0; display: flex; flex-direction: column; gap: 3px; padding: 11px 10px; border: 1px solid transparent; border-radius: 11px; color: var(--text-body); text-decoration: none; transition: background .15s ease, border-color .15s ease; }
 .admin-workspace .management-nav a strong { font-size: 13px; font-family: inherit; }
 .admin-workspace .management-nav a small { font-size: 10px; color: var(--text-muted); line-height: 1.4; overflow-wrap: anywhere; }
 .admin-workspace .management-nav a:hover { background: var(--surface-hover); }
@@ -48,7 +48,6 @@
 .admin-workspace .management-section-panel > :where(.panel, article, section) { padding: clamp(20px, 2.6vw, 30px); }
 .admin-workspace .management-section-panel > .discord-management-health-grid { padding: 0; }
 .admin-workspace .management-section-panel > .discord-management-zone { padding: 0; }
-.admin-workspace .admin-overview-top-grid { gap: 18px; }
 .admin-workspace :where(.admin-policy-current-state, .access-group-summary, .nickname-policy-card, .discord-management-status__item, .server-summary-card, .account-cleanup-status-card) { border-radius: 13px; border-color: var(--border); }
 .admin-workspace :where(.auth-access-card, .geo-access-card) { margin: 0; }
 .admin-workspace .admin-policy-layout { gap: 24px; }
@@ -136,3 +135,22 @@
 .admin-workspace .access-draft-comparison table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .admin-workspace .access-draft-comparison :is(th, td) { text-align: left; vertical-align: top; padding: 9px; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
 .admin-workspace .access-draft-comparison caption { text-align: left; padding-bottom: 8px; color: var(--text-muted); }
+
+/* Management hub and protected maintenance use the same surface/tokens as all admin sections. */
+.admin-workspace .management-hub { display: grid; gap: 15px; }
+.admin-workspace .management-hub__header { display: grid; gap: 5px; }
+.admin-workspace .management-hub__header h2 { margin: 0; font-size: 1.12rem; color: var(--text-strong); }
+.admin-workspace .management-hub__header p { margin: 0; color: var(--text-muted); }
+.admin-workspace .management-hub__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.admin-workspace .management-hub__link { position: relative; display: flex; flex-direction: column; min-width: 0; gap: 6px; padding: 15px 34px 15px 15px; border: 1px solid var(--border); border-radius: 12px; background: var(--nav-surface); text-decoration: none; color: var(--text-body); }
+.admin-workspace .management-hub__link:hover, .admin-workspace .management-hub__link:focus-visible { border-color: var(--border-strong); background: var(--surface-hover); }
+.admin-workspace .management-hub__link strong { color: var(--text-strong); font-size: .96rem; }
+.admin-workspace .management-hub__link small { color: var(--text-muted); line-height: 1.4; }
+.admin-workspace .management-hub__link > span { position: absolute; right: 15px; top: 15px; font-size: 1.1rem; }
+.admin-workspace .management-cleanup-notice { display: grid; gap: 5px; border-color: var(--border-strong); }
+.admin-workspace .management-cleanup-notice p { margin: 0; color: var(--text-muted); }
+.admin-workspace .account-cleanup-confirm-label { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--border-strong); border-radius: 11px; background: var(--nav-surface); }
+.admin-workspace .account-cleanup-confirm-label input { margin-top: 4px; flex: none; }
+.admin-workspace .account-cleanup-confirm-label span { line-height: 1.4; }
+@media (max-width: 980px) { .admin-workspace .management-hub__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .admin-workspace .management-hub__grid { grid-template-columns: 1fr; } }

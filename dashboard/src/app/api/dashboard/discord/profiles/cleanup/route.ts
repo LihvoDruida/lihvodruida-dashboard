@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 
 import { auditDiscordAdmin, adminDiscordResponse, discordAdminError, requireDiscordAdmin } from "@/lib/dashboardDiscordRoute";
 import { cleanupDashboardProfilesDiscordMembership } from "@/lib/discordMemberManagement";
-import { acquireAccountCleanupExecutionLock, recordAccountCleanupRun } from "@/lib/accountCleanupAutomation";
+import { acquireAccountCleanupExecutionLock, getAccountCleanupAutomationSettings, recordAccountCleanupRun } from "@/lib/accountCleanupAutomation";
 
 export const revalidate = 0;
 
@@ -24,7 +24,28 @@ export async function POST(request: NextRequest) {
   try {
     const form = await request.formData();
     const mode = String(form.get("mode") || "inspect").toLowerCase();
+    const limitText = String(form.get("limit") ?? "0").trim();
+    const requestedLimit = /^(0|[1-9][0-9]{0,4})$/.test(limitText) ? Number(limitText) : -1;
+    if (requestedLimit < 0 || requestedLimit > 50_000) {
+      return adminDiscordResponse(request, { ok: false, title: "Некоректний ліміт", message: "Дозволено ціле число від 0 до 50000.", status: 400 });
+    }
     const apply = mode === "apply";
+    // Checking may be delegated to authorized moderators; destructive changes may not.
+    if (mode !== "inspect" && mode !== "apply") {
+      return adminDiscordResponse(request, {
+        ok: false, title: "Невідомий режим", message: "Дозволено лише перевірку або підтверджене очищення.", status: 400,
+      });
+    }
+    if (apply && !guard.session.isServerOwner) {
+      return adminDiscordResponse(request, {
+        ok: false, title: "Недостатньо прав", message: "Видалення вебпрофілів дозволено лише власнику Discord-сервера.", status: 403,
+      });
+    }
+    if (apply && form.get("confirmDeletion") !== "DELETE_STALE_PROFILES") {
+      return adminDiscordResponse(request, {
+        ok: false, title: "Потрібне підтвердження", message: "Перед очищенням переглянь кандидатів і підтвердь видалення у формі.", status: 400,
+      });
+    }
     const execution = await acquireAccountCleanupExecutionLock(`manual:${apply ? "apply" : "inspect"}`);
     if (!execution) {
       return adminDiscordResponse(request, {
@@ -37,9 +58,22 @@ export async function POST(request: NextRequest) {
     }
 
     try {
+    if (apply) {
+      const settings = await getAccountCleanupAutomationSettings({ fresh: true });
+      const preview = settings.recentRuns.find(run => run.mode === "inspect" && run.source === "manual" && run.actorId === guard.session.id);
+      const previewAt = preview ? Date.parse(preview.completedAt) : Number.NaN;
+      const lastApplyAt = settings.lastCleanupAt ? Date.parse(settings.lastCleanupAt) : Number.NaN;
+      const now = Date.now();
+      const previewFresh = preview?.status === "success" && Number.isFinite(previewAt) && previewAt <= now && now - previewAt <= 15 * 60_000;
+      if (!previewFresh || preview?.scopeLimit !== requestedLimit || (Number.isFinite(lastApplyAt) && lastApplyAt >= previewAt)) {
+        return adminDiscordResponse(request, {
+          ok: false, title: "Спочатку виконай перевірку", message: "Для видалення потрібен успішний ручний dry-run за останні 15 хвилин. Після кожного видалення перевірку треба повторити.", status: 409,
+        });
+      }
+    }
       const startedAt = new Date().toISOString();
       const result = await cleanupDashboardProfilesDiscordMembership({
-      limit: form.get("limit") || 0,
+      limit: requestedLimit,
       dryRun: !apply,
       reason: `Mistblossom Discord profile cleanup by ${guard.session.name || guard.session.id}`,
     });
@@ -64,6 +98,8 @@ export async function POST(request: NextRequest) {
       status: runStatus,
       startedAt,
       checkedProfiles: result.checkedDiscordProfiles,
+      scopeLimit: requestedLimit,
+      actorId: guard.session.id,
       candidates: result.targetProfilesTotal,
       deletedProfiles: result.deletedProfilesTotal,
       removedRaidSignups: result.removedRaidSignupsTotal,

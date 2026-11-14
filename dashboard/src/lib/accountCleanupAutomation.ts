@@ -58,6 +58,8 @@ export type AccountCleanupRunSummary = {
   startedAt: string;
   completedAt: string;
   checkedProfiles: number;
+  scopeLimit?: number | null;
+  actorId?: string | null;
   candidates: number;
   deletedProfiles: number;
   removedRaidSignups: number;
@@ -157,6 +159,8 @@ function normalizeRun(value: unknown): AccountCleanupRunSummary | null {
     startedAt,
     completedAt,
     checkedProfiles: int(run.checkedProfiles, 0, 0, 1_000_000),
+    scopeLimit: run.scopeLimit === null || run.scopeLimit === undefined ? null : int(run.scopeLimit, 0, 0, 50_000),
+    actorId: typeof run.actorId === "string" ? run.actorId.slice(0, 128) : null,
     candidates: int(run.candidates, 0, 0, 1_000_000),
     deletedProfiles: int(run.deletedProfiles, 0, 0, 1_000_000),
     removedRaidSignups: int(run.removedRaidSignups, 0, 0, 1_000_000),
@@ -284,6 +288,8 @@ export async function recordAccountCleanupRun(input: {
   startedAt: string;
   completedAt?: string;
   checkedProfiles?: number;
+  scopeLimit?: number;
+  actorId?: string;
   candidates?: number;
   deletedProfiles?: number;
   removedRaidSignups?: number;
@@ -304,6 +310,8 @@ export async function recordAccountCleanupRun(input: {
     startedAt: input.startedAt,
     completedAt,
     checkedProfiles: int(input.checkedProfiles, 0, 0, 1_000_000),
+    scopeLimit: input.scopeLimit === undefined ? null : int(input.scopeLimit, 0, 0, 50_000),
+    actorId: input.actorId ? String(input.actorId).slice(0, 128) : null,
     candidates: int(input.candidates, 0, 0, 1_000_000),
     deletedProfiles: int(input.deletedProfiles, 0, 0, 1_000_000),
     removedRaidSignups: int(input.removedRaidSignups, 0, 0, 1_000_000),
