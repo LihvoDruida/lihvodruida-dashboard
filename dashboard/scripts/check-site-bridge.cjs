@@ -19,7 +19,7 @@ const roster = read('dashboard/src/lib/guildRoster.ts');
 const raidSeasonResolver = read('dashboard/src/lib/raidSeasonResolver.ts');
 const compose = read('docker-compose.yml');
 const envExample = read('.env.example');
-const page = read('dashboard/src/app/applications/page.tsx');
+const page = require('./lib/read-ui-workspace.cjs')('src/app/applications/page.tsx');
 const proxy = read('dashboard/src/proxy.ts');
 const discord = read('dashboard/src/lib/discord.ts');
 const delivery = read('dashboard/src/lib/applicationDelivery.ts');
@@ -29,7 +29,7 @@ const discordPage = read('dashboard/src/app/dashboard/discord/page.tsx');
 const applicationActions = read('dashboard/src/components/ApplicationStatusActions.tsx');
 const applicationDeleteRoute = read('dashboard/src/app/api/applications/[number]/route.ts');
 const guildSyncRoute = read('dashboard/src/app/api/guild/sync/route.ts');
-const guildPage = read('dashboard/src/app/guild/page.tsx');
+const guildPage = require('./lib/read-ui-workspace.cjs')('src/app/guild/page.tsx');
 
 check(proxy.includes('pathname === \"/api/site/content\"') && proxy.includes('site\\/media'), 'public CMS and media routes must be admitted by proxy without Dashboard session');
 check(proxy.includes('isInternalSiteRead') && proxy.includes('hasSiteBridgeToken'), 'site Docker SSR transport must authenticate read-only GET requests');
@@ -72,8 +72,8 @@ check(guildSyncRoute.includes('missingRaidSeasonSnapshot') && guildSyncRoute.inc
 check(guildPage.includes('raidSeasonSnapshot: null'), 'guild page fallback stats must satisfy GuildRosterStats after raid season metadata became required');
 check(compose.includes('PUBLIC_SITE_ORIGINS:'), 'dashboard container must receive the public-site origin allowlist');
 check(envExample.includes('PUBLIC_SITE_ORIGINS='), 'public-site origin allowlist must be documented in env example');
-check(page.includes('Main Site ↔ VPS'), 'applications UI must expose bridge health/source context');
-check(page.includes('PostgreSQL source of truth'), 'applications UI must identify the server source of truth');
+check(page.includes('item.source_system === "public-site"'), 'applications UI must expose bridge health/source context');
+check(page.includes('loadApplicationWorkspace') && page.includes('listApplications(listParams)'), 'applications UI must load the authoritative server queue without invented online status');
 
 
 check(discordSettings.includes('applicationsChannelId: string'), 'Discord management settings must persist a dedicated applications channel');
@@ -86,6 +86,6 @@ check(discord.includes('notifyDiscordStatusChange') && discord.includes('deleteD
 check(applicationDeleteRoute.includes('session.isServerOwner'), 'application deletion must be restricted to the Discord server owner');
 check(applicationDeleteRoute.includes('deleteDiscordApplicationMessage(issue)') && applicationDeleteRoute.includes('deleteGuildApplication(issueNumber)'), 'owner deletion must remove Discord message before server record');
 check(applicationActions.includes('canDelete?: boolean') && applicationActions.includes('method: "DELETE"'), 'applications UI must expose owner-only deletion through DELETE API');
-check(page.includes('canDelete={Boolean(user.isServerOwner)}'), 'applications page must only expose delete action to server owner');
+check(page.includes('isOwner={Boolean(user.isServerOwner)}') && page.includes('canDelete={isOwner && canManage}'), 'applications page must only expose delete action to server owner');
 
 console.log(`[check-site-bridge] OK — ${checked}/${checked} public-site bridge, Discord applications, privacy, raid and application invariants checked.`);

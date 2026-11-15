@@ -1,0 +1,16 @@
+.stack { display: grid; gap: var(--section-gap); min-width: 0; }
+.fields { display: grid; gap: var(--space-md); grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--dropdown-min)), 1fr)); }
+.field { display: grid; gap: var(--space-xs); color: var(--text-body); min-width: 0; }
+.field :is(input, select) { width: 100%; min-width: 0; max-width: 100%; }
+.hint, .field small { font-size: var(--font-size-meta); color: var(--text-muted); line-height: var(--line-height-copy); }
+.toggle { display: flex; align-items: start; gap: var(--space-sm); padding: var(--space-sm); border: var(--stroke-width) solid var(--border); border-radius: var(--control-radius); background: var(--surface-sunken); }
+.toggle > span { display: grid; gap: var(--space-2xs); }
+.toggle small { color: var(--text-soft); line-height: var(--line-height-body); }
+.toggle:has(input:checked) { border-color: var(--border-strong); background: var(--accent-soft); }
+.roles { display: grid; gap: var(--space-xs); }
+.roleRow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-md); align-items: center; padding: var(--space-sm); border-bottom: var(--stroke-width) solid var(--border-subtle); }
+.roleRow[hidden] { display: none; }
+.roleRow > label { display: grid; gap: var(--space-2xs); overflow-wrap: anywhere; }
+.roleRow small { font-size: var(--font-size-meta); color: var(--text-muted); }
+.roleRow select { min-width: 0; width: 100%; }
+@container (max-width: 640px) { .roleRow { grid-template-columns: minmax(0, 1fr); } }

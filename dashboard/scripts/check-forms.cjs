@@ -1,3 +1,4 @@
+const readUiWorkspace = require("./lib/read-ui-workspace.cjs");
 const fs = require("node:fs");
 const path = require("node:path");
 
@@ -59,7 +60,7 @@ function extractJsxControls(source) {
 }
 
 function mustContain(file, needles) {
-  const source = fs.readFileSync(path.join(__dirname, "..", file), "utf8");
+  const source = readUiWorkspace(file);
   for (const needle of needles) {
     if (!source.includes(needle)) {
       throw new Error(`${file}: missing form invariant: ${needle}`);
@@ -160,7 +161,7 @@ mustContain("src/components/content/ContentEditor.tsx", [
 // Snowflakes and URL fields should be bounded before submission.
 // Inspect the actual control, so formatting changes cannot break this guard
 // and attributes on unrelated fields cannot accidentally satisfy it.
-const groupEditor = fs.readFileSync(path.join(root, "components/AccessGroupsManager.tsx"), "utf8");
+const groupEditor = readUiWorkspace("src/components/AccessGroupsManager.tsx");
 const groupControls = extractJsxControls(groupEditor);
 for (const [name, attributes] of [
   ["id", ['maxLength={32}', 'pattern="[A-Za-z0-9_-]{1,32}"']],
@@ -197,7 +198,7 @@ mustContain("src/components/RaidImagePicker.tsx", [
   'maxLength={2048}',
 ]);
 mustContain("src/app/dashboard/access/page.tsx", [
-  'name={`roleMap:${role.id}`}',
+  'name={`roleMap:${row.roleId}`}',
   'name="manualRoleId"',
   'name="manualGroupId"',
   'name="blockedCountries"',

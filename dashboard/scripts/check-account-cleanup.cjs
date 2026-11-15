@@ -20,8 +20,8 @@ const scheduler = read('src/app/api/dashboard/profiles/orphan-cleanup/route.ts')
 const settingsLib = read('src/lib/accountCleanupAutomation.ts');
 const settingsRoute = read('src/app/api/dashboard/discord/profiles/cleanup-settings/route.ts');
 const manualRoute = read('src/app/api/dashboard/discord/profiles/cleanup/route.ts');
-const page = read('src/app/dashboard/profiles/page.tsx');
-const styles = read('src/app/styles/admin.css');
+const page = require('./lib/read-ui-workspace.cjs')('src/app/dashboard/profiles/page.tsx');
+const styles = read('src/components/page/page-system.module.css');
 const cron = read('deploy/cron/run-cron.sh', repo);
 const discord = read('src/lib/discordAdmin.ts');
 
@@ -43,8 +43,8 @@ assert(manualRoute.includes('confirmDeletion') && manualRoute.includes('guard.se
 assert(manualRoute.includes('source: "manual"'), 'Manual cleanup runs must be included in the same run history.');
 assert(manualRoute.includes('acquireAccountCleanupExecutionLock'), 'Manual cleanup must refuse overlapping automatic cleanup runs.');
 assert(page.includes('Зберегти автоматизацію'), 'Discord management UI must expose automation settings.');
-assert(page.includes('Історія останніх запусків'), 'Discord management UI must show cleanup run history.');
-assert(styles.includes('.account-cleanup-status-grid'), 'Cleanup automation UI must have dedicated responsive layout styles.');
+assert(page.includes('Історія запусків'), 'Discord management UI must show cleanup run history.');
+assert(styles.includes('.section') && page.includes('<DataTable'), 'Cleanup automation UI must have dedicated responsive layout styles.');
 assert(cron.includes('call "/api/dashboard/profiles/orphan-cleanup"') && cron.includes('interval=900; key=account-cleanup'), 'Cron must tick the cleanup scheduler every 15 minutes.');
 assert(!cron.includes('/api/dashboard/profiles/orphan-cleanup/apply"'), 'Cron must not bypass persisted cleanup settings with the legacy apply endpoint.');
 

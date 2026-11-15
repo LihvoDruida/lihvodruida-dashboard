@@ -1,5 +1,7 @@
 "use client";
 
+import DropdownMenu from "@/components/ui/DropdownMenu";
+import styles from "@/components/polls/poll-workspace.module.css";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { notifyDashboardDataChanged } from "@/lib/dashboardLiveRefresh";
@@ -71,15 +73,17 @@ export default function RaidPollActions({
     });
   }
   const pending = operation.pending ? kind : null;
-  return <div ref={operation.scopeRef} className="raid-poll-action" aria-busy={operation.pending || pausePending}>
+  return <div ref={operation.scopeRef} className={styles.actions} aria-busy={operation.pending || pausePending}>
     <RaidPollActionResult message={operation.message} unconfirmed={operation.unconfirmed} href={href} />
     {showView ? <a className="btn subtle poll-card__primary" href={href}>Результати</a> : null}
     {messageUrl ? <a className="btn subtle" href={messageUrl} target="_blank" rel="noreferrer">Discord</a> : null}
+    {canManage ? <DropdownMenu label="Керування рейд-пулом" closeOnAction={false}>
     {canManage && editHref ? <a className="btn subtle" href={editHref}>Редагувати</a> : null}
     {canManage && state !== "closed" && state !== "scheduled" ? <RaidPollPauseButton pollId={pollId} paused={state === "paused"} disabled={disabled || operation.pending} onPendingChange={setPausePending} /> : null}
     {canManage && state !== "scheduled" ? <button className="btn subtle" type="button" onClick={event => run("sync", event.currentTarget)} disabled={locked} aria-busy={pending === "sync"}>{pending === "sync" ? "Синхронізуємо…" : "Синхронізувати Discord"}</button> : null}
     {canManage && state !== "closed" ? <button className="btn danger" type="button" onClick={event => run("close", event.currentTarget)} disabled={locked} aria-busy={pending === "close"}>{pending === "close" ? (state === "scheduled" ? "Скасовуємо…" : "Закриваємо…") : (state === "scheduled" ? "Скасувати план" : "Закрити")}</button> : null}
     {canManage && state === "closed" ? <button className="btn subtle" type="button" onClick={event => run("reopen", event.currentTarget)} disabled={locked} aria-busy={pending === "reopen"}>{pending === "reopen" ? "Відкриваємо…" : "Відкрити знову"}</button> : null}
     {canManage ? <button className="btn danger" type="button" onClick={event => run("delete", event.currentTarget)} disabled={locked} aria-busy={pending === "delete"}>{pending === "delete" ? "Видаляємо…" : "Видалити"}</button> : null}
+    </DropdownMenu> : null}
   </div>;
 }

@@ -1,4 +1,5 @@
 "use client";
+import styles from "@/components/polls/poll-workspace.module.css";
 
 import { useRouter } from "next/navigation";
 import { notifyDashboardDataChanged } from "@/lib/dashboardLiveRefresh";
@@ -20,9 +21,9 @@ export default function RaidPollPauseButton({ pollId, paused, compact = false, d
     });
   }
   const label = operation.pending ? (paused ? "Відновлюємо…" : "Ставимо на паузу…") : (paused ? "Відновити" : "Пауза");
-  return <div ref={operation.scopeRef} className="raid-poll-action" aria-busy={operation.pending}>
+  return <div ref={operation.scopeRef} className={styles.actions} aria-busy={operation.pending}>
     <RaidPollActionResult message={operation.message} unconfirmed={operation.unconfirmed} href={`/polls/${encodeURIComponent(pollId)}`} />
-    <button className={`btn subtle raid-poll-pause-button${paused ? " is-paused" : ""}`} type="button" onClick={event => toggle(event.currentTarget)} disabled={disabled || operation.pending} aria-busy={operation.pending} aria-label={compact ? label : undefined} title={paused ? "Відновити голосування і повернути заморожений час" : "Призупинити голосування без втрати часу та голосів"}>
+    <button className="btn subtle" type="button" onClick={event => toggle(event.currentTarget)} disabled={disabled || operation.pending} aria-busy={operation.pending} aria-label={compact ? label : undefined} title={paused ? "Відновити голосування і повернути заморожений час" : "Призупинити голосування без втрати часу та голосів"}>
       <span aria-hidden="true">{paused ? "▶" : "⏸"}</span>{compact ? null : <span>{label}</span>}
     </button>
   </div>;

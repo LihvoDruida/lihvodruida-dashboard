@@ -70,3 +70,17 @@ Fallback-правила для доменних `*-card`, `__card`, `*-panel`, `
 ## Актуалізація 3.22.0
 
 Історичні лічильники вище описують попередній аудит. Поточні результати та межі перевірки наведено в REFACTOR_3.22.0_UA.md; виконано повний npm ci, TypeScript і Next production build. Статичні inline-стилі Welcome/Content прибрано, звичайні admin controls повернено до спільних токенів. Браузерний запуск обмежено середовищем.
+
+## 3.23.0 — scope кроку 1
+
+Для нового foundation і reference overview введено token-only CSS Modules та автоматичний zero-drift guard. audit:styles тепер враховує CSS Modules для token usage/імпортів/структури. Видалено старі integration-status-* і management-hub* правила без споживачів. Доменний CSS інших сторінок ще не оголошено мігрованим.
+
+## 3.24.0 — етап 2
+
+Видалено 599 правил для 227 підтверджено невикористаних class names і --sidebar-width. Нові workspace CSS Modules використовують токени; domain character controls збережено. Перелік: CSS_CLEANUP_STEP2.json. Деталі: [PAGE_ARCHITECTURE_STEP2_UA.md](PAGE_ARCHITECTURE_STEP2_UA.md).
+
+Додатково видалено 65 старих правил груп: їх перенесено в ізольований groups.module.css із токенами. Разом прибрано 664 глобальні правила. Дві залишкові змінні доменних character cards замінено центральними --section-gap і --card-radius.
+
+## 3.25.0 — етап 3
+
+Прибрано 443 глобальні правила і 221 підтверджено unused class name; видалено GuildRoster.module.css та порожній applications.css. Нові native Progress й таблиці використовують токени; 13 WoW class colors централізовано. Перелік: CSS_CLEANUP_STEP3.json. Деталі: [PAGE_ARCHITECTURE_STEP3_UA.md](PAGE_ARCHITECTURE_STEP3_UA.md).

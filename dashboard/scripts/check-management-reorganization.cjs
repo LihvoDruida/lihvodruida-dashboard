@@ -1,22 +1,23 @@
+const readUiWorkspace = require("./lib/read-ui-workspace.cjs");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const root = path.resolve(__dirname, "..");
 const read = rel => fs.readFileSync(path.join(root, rel), "utf8");
 const overview = read("src/app/dashboard/page.tsx");
-const access = read("src/app/dashboard/access/page.tsx");
-const profiles = read("src/app/dashboard/profiles/page.tsx");
+const access = readUiWorkspace("src/app/dashboard/access/page.tsx");
+const profiles = readUiWorkspace("src/app/dashboard/profiles/page.tsx");
 const discord = read("src/app/dashboard/discord/page.tsx");
 const nav = read("src/components/AdminTabs.tsx");
 const cleanupRoute = read("src/app/api/dashboard/discord/profiles/cleanup/route.ts");
-const directory = read("src/app/profiles/page.tsx");
+const directory = readUiWorkspace("src/app/profiles/page.tsx");
 const cleanupState = read("src/lib/accountCleanupAutomation.ts");
 const attendance = read("src/app/api/raids/[raidId]/attendance/route.ts");
 const catalog = fs.readFileSync(path.join(root, "src/lib/navigation/management.ts"), "utf8");
 const checks = [
   [!overview.includes('name={`roleMap:') && !overview.includes('name="blockedCountries"'), "overview does not render edit forms"],
   [access.includes('canManageGroups(user)') && access.includes('getSession({ live: true })'), "role/geo policy has live authorization"],
-  [access.includes('disabled={!canEditAuthPolicy || !eligibleGroups.length}') && access.includes('!authRolesError'), "role map cannot be saved after Discord API failure"],
+  [access.includes('disabled={!canEdit || !groups.length}') && access.includes('!rolesResult.error') && access.includes('canEdit={canEditAuthPolicy}'), "role map cannot be saved after Discord API failure"],
   [profiles.includes('!user.isServerOwner') && profiles.includes('getSession({ live: true })'), "cleanup page is owner-only"],
   [profiles.includes('name="confirmDeletion"') && cleanupRoute.includes('form.get("confirmDeletion") !== "DELETE_STALE_PROFILES"'), "cleanup requires an explicit server-checked confirmation"],
   [cleanupRoute.includes('if (apply && !guard.session.isServerOwner)') && cleanupRoute.includes('acquireAccountCleanupExecutionLock'), "destructive endpoint is owner-only and locked"],

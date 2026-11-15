@@ -6,7 +6,8 @@ import GuildRosterRefreshButton, {
 } from "@/components/GuildRosterRefreshButton";
 import type { GuildRosterMember, GuildRosterStats } from "@/lib/guildRoster";
 import { useDashboardApiResource } from "@/lib/dashboardBackgroundApi";
-import styles from "./GuildRoster.module.css";
+import PageHeader from "@/components/page/PageHeader";
+import styles from "./community/workspace.module.css";
 
 type Props = {
   members: GuildRosterMember[];
@@ -83,38 +84,11 @@ export default function GuildRosterLiveHeroStats({
   const rioProfiles = liveMembers.filter((member) => member.hasRaiderIo).length;
   const raidProfiles = liveMembers.filter((member) => member.raidProgression?.length).length;
 
-  return (
-    <div className={styles.summary} aria-label="Стан синхронізації складу">
-      <div className={styles.summaryTop}>
-        <div className={styles.summaryBrand}>
-          <img src="/mistblossom-icon.png" alt="" loading="lazy" decoding="async" />
-          <div>
-            <strong>{liveStats.guildName}</strong>
-            <small>{liveStats.guildRealm} · {liveStats.guildFaction}</small>
-          </div>
-        </div>
-        <div className={styles.summaryFreshness}>
-          <strong>{liveStats.memberCount.toLocaleString("uk-UA")} персонажів</strong>
-          <small>База: {formatDate(liveStats.updatedAt)}</small>
-        </div>
-      </div>
-
-      <div className={styles.summaryMetrics}>
-        <div className={styles.summaryMetric}><span>Сер. RIO</span><strong>{round(liveStats.averageRioAll)}</strong></div>
-        <div className={styles.summaryMetric}><span>Сер. ILVL</span><strong>{round(liveStats.averageItemLevel)}</strong></div>
-        <div className={styles.summaryMetric}><span>RIO профілі</span><strong>{rioProfiles}</strong></div>
-        <div className={styles.summaryMetric}><span>Рейд дані</span><strong>{raidProfiles}</strong></div>
-      </div>
-
-      <div className={styles.summaryBottom}>
-        <span className={styles.autoStatus}>
-          <span className={styles.autoDot} aria-hidden="true" />
-          Автосинхронізація на VPS · Battle.net → Raider.IO → PostgreSQL
-        </span>
-        {allowManualRefresh && refreshSettings ? (
-          <GuildRosterRefreshButton settings={refreshSettings} />
-        ) : null}
-      </div>
-    </div>
-  );
+  const unavailable = Boolean(rosterResource.data.error && !liveMembers.length);
+  return <PageHeader title="Склад гільдії" eyebrow={liveStats.guildName} description={`${liveStats.guildRealm} · ${liveStats.guildFaction}. Персонажі, спорядження та прогрес гільдії.`}
+    breadcrumbs={[{label: "Склад гільдії"}]}
+    actions={allowManualRefresh && refreshSettings ? <GuildRosterRefreshButton settings={refreshSettings} /> : undefined}
+    metrics={[{label: "Персонажі",value: unavailable ? "—" : liveStats.memberCount.toLocaleString("uk-UA")},{label: "Середній RIO",value: unavailable ? "—" : round(liveStats.averageRioAll)},
+      {label: "Середній ilvl",value: unavailable ? "—" : round(liveStats.averageItemLevel)},{label: "RIO-профілі",value: unavailable ? "—" : rioProfiles},{label: "Рейдові дані",value: unavailable ? "—" : raidProfiles},
+      {label: "Оновлено",value: <span className={styles.metadata}>{formatDate(liveStats.updatedAt)}</span>}]} />;
 }

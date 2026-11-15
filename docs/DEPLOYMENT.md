@@ -1,6 +1,6 @@
 # Розгортання
 
 Чинний порядок встановлення, env, TLS, оновлення cron, перевірки та відкату:
-[Dashboard 3.22.0 / Site 4.6.3](RELEASE_INSTALL_2026-10-19_UA.md).
+[Dashboard 3.25.0 / Site 4.6.3](RELEASE_INSTALL_2026-10-19_UA.md).
 
 [Очищення стрімерів та повернення відеофону](MEDIA_REMOVAL_2026-11-10_UA.md).

@@ -1,4 +1,6 @@
 "use client";
+import DropdownMenu from "@/components/ui/DropdownMenu";
+import styles from "@/components/applications/applications-workspace.module.css";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -9,7 +11,7 @@ import { ApplicationNextReview, useApplicationModerationQueue } from "@/componen
 import type { ApplicationStatus } from "@/lib/applicationsStore";
 import { useActionFocus } from "@/hooks/useActionFocus";
 
-const LABELS: Record<ApplicationStatus, string> = { review: "На розгляді", accepted: "Прийнято", declined: "Відхилено" };
+
 export default function ApplicationStatusActions({ issueNumber, initialStatus, issueState = "open", canModerate = true, canDelete = false }: {
   issueNumber: number; initialStatus: ApplicationStatus; issueState?: string; canModerate?: boolean; canDelete?: boolean;
 }) {
@@ -49,18 +51,17 @@ export default function ApplicationStatusActions({ issueNumber, initialStatus, i
     } finally { setDeleting(false); queue.release(issueNumber); }
   }
   const fallback = !canModerate ? "Доступний лише перегляд." : isClosed && status === "review" ? "Заявку закрито без остаточного рішення. Повторна модерація вимкнена." : isClosed || status !== "review" ? "Рішення збережено. Повторна модерація вимкнена." : "Обери остаточне рішення. Статус зміниться після підтвердження сервера.";
-  return <div ref={scopeRef} id={`application-decision-${issueNumber}`} className="action-panel" role="group" aria-label={`Рішення щодо заявки #${issueNumber}`} aria-busy={busy || deleting} data-status={status} data-busy={busy} data-closed={isClosed} data-locked={locked}>
-    <div className={`status-pill status-pill--${status}`}><span className="status-dot" />{busy ? "Перевіряємо…" : LABELS[status]}</div>
-    {!locked ? <div className="application-decision__actions action-row" aria-label={`Рішення щодо заявки #${issueNumber}`}>
+  return <div ref={scopeRef} id={`application-decision-${issueNumber}`} className={styles.stack} role="group" aria-label={`Рішення щодо заявки #${issueNumber}`} aria-busy={busy || deleting} data-status={status} data-busy={busy} data-closed={isClosed} data-locked={locked}>
+    {!locked ? <div className={styles.actions} aria-label={`Рішення щодо заявки #${issueNumber}`}>
       <button className="btn primary" type="button" data-decision-primary disabled={busy || deleting} onClick={(event) => { beginActionFocus(event.currentTarget); void queue.moderate([issueNumber], "accepted"); }}>Прийняти</button>
       <button className="btn danger" type="button" disabled={busy || deleting} onClick={(event) => { beginActionFocus(event.currentTarget); void queue.moderate([issueNumber], "declined"); }}>Відхилити</button>
     </div> : null}
-    <p id={`application-result-${issueNumber}`} className="application-decision__message sync-message application-card__decision-state" data-action-result tabIndex={-1} data-outcome={row?.outcome || "idle"} role="status" aria-live="polite" aria-atomic="true">{busy ? "Перевіряємо та зберігаємо результат…" : row?.message || fallback}</p>
+    <p id={`application-result-${issueNumber}`} className={styles.message} data-action-result tabIndex={-1} data-outcome={row?.outcome || "idle"} role="status" aria-live="polite" aria-atomic="true">{busy ? "Перевіряємо та зберігаємо результат…" : row?.message || fallback}</p>
     {canModerate && uncertain ? <button className="btn subtle" type="button" disabled={busy} onClick={(event) => { beginActionFocus(event.currentTarget); void queue.reconcile(issueNumber); }}>{busy ? "Перевіряємо стан…" : "Перевірити збережений стан"}</button> : null}
     {canModerate && (isClosed || status !== "review") ? <ApplicationNextReview issueNumber={issueNumber} /> : null}
-    {canDelete ? <div ref={deleteScopeRef} className="application-delete-row">
+    {canDelete ? <div ref={deleteScopeRef} className={styles.stack}><DropdownMenu label="Інші дії із заявкою" closeOnAction={false}>
       <button className="btn danger" type="button" onClick={(event) => void deleteApplication(event.currentTarget)} disabled={deleting || busy || deleteUncertain} aria-busy={deleting}>{deleting ? "Видаляємо…" : "Видалити заявку"}</button>
-      <small>Тільки власник сервера · видаляє запис і Discord-повідомлення.</small>
+      </DropdownMenu>
       <small id={`application-delete-result-${issueNumber}`} data-action-result tabIndex={-1} role="status" aria-live="polite" aria-atomic="true">{deleteMessage}</small>
       {deleteUncertain ? <button className="btn subtle" type="button" onClick={() => router.refresh()}>Оновити список</button> : null}
     </div> : null}

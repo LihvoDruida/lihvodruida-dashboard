@@ -1,0 +1,619 @@
+{
+  "version": "3.25.0",
+  "baseline": "3.24.0",
+  "stage": 3,
+  "routesMigrated": [
+    "/guild",
+    "/applications",
+    "/raids",
+    "/raids/[raidId]",
+    "/polls",
+    "/polls/[pollId]"
+  ],
+  "added": [
+    {
+      "file": "dashboard/docs/CSS_CLEANUP_STEP3.json",
+      "sha256": "efda7fdcfc6aba8276de55ff75886c2e4c45edfde31b452b05e892def86a577b",
+      "bytes": 8079
+    },
+    {
+      "file": "dashboard/docs/PAGE_ARCHITECTURE_STEP3_UA.md",
+      "sha256": "87419d3ce9e81230ca9ffc97da4c23bd7fc736edb6cc68d4cd3bae12e7f843fa",
+      "bytes": 13657
+    },
+    {
+      "file": "dashboard/docs/PAGE_COMMUNITY_SOURCE.md",
+      "sha256": "1b9c7694f6d51527a7899bddfda28ca747a2279956fe33bf8e8bb2432a962f4c",
+      "bytes": 440454
+    },
+    {
+      "file": "dashboard/docs/validation/step3/VALIDATION.md",
+      "sha256": "240e13d7c312461feeaaafcb8ea50940abf6c0537c125ae14d5a68f18f7520b7",
+      "bytes": 2283
+    },
+    {
+      "file": "dashboard/docs/validation/step3/browser.log",
+      "sha256": "57ea0d3eee1d514f0f56955f8c5b357bb2d6de1f09b11616c45fef0fe77a76df",
+      "bytes": 7737
+    },
+    {
+      "file": "dashboard/docs/validation/step3/build.log",
+      "sha256": "f4ab9e32139dd9ddd00013e692bd6ddb38abde526f6444ce081b5c3bc9027c9c",
+      "bytes": 6624
+    },
+    {
+      "file": "dashboard/docs/validation/step3/checks.json",
+      "sha256": "e189db8691b7b20f2f828bc5cb98b4988bc1b9d60f8d0fceacb0a89fd928a0b5",
+      "bytes": 4188
+    },
+    {
+      "file": "dashboard/docs/validation/step3/runtime-security.log",
+      "sha256": "4ffe43b3e79376c908bd1d2a3333be05f0ff8b9885b58b8aef496cfaf9847369",
+      "bytes": 389
+    },
+    {
+      "file": "dashboard/docs/validation/step3/standalone.json",
+      "sha256": "64281b3fe4d21b88352f1b68c47fe123f0228875fb0e4dd3de72ac28f9bd483f",
+      "bytes": 1056
+    },
+    {
+      "file": "dashboard/docs/validation/step3/standalone.log",
+      "sha256": "f1db7c96016f171868af47cd19180d918ac9eade0d2ec22f5edb4859730ebb08",
+      "bytes": 1051
+    },
+    {
+      "file": "dashboard/docs/validation/step3/verify.log",
+      "sha256": "e394c62ffe14666fa749402909da9c30be6394b8b9cbcbad5813f5ac4b94000d",
+      "bytes": 104214
+    },
+    {
+      "file": "dashboard/scripts/check-community-workspaces.cjs",
+      "sha256": "a3804cebd2d170ffc7c93b952daa848648d0205edb5e6b6653d6ca4d3feca38c",
+      "bytes": 18917
+    },
+    {
+      "file": "dashboard/src/app/applications/error.tsx",
+      "sha256": "1c7d7ea0aadd0efbf71b9b6d669a69abd76f9173d6c84b0bc5c3da56a61b8c8e",
+      "bytes": 72
+    },
+    {
+      "file": "dashboard/src/app/applications/loading.tsx",
+      "sha256": "16caa2e1d87486b8fd53ce373c7b93fe17b85e452342b3252b1d1197ff75c4e1",
+      "bytes": 287
+    },
+    {
+      "file": "dashboard/src/app/guild/error.tsx",
+      "sha256": "1c7d7ea0aadd0efbf71b9b6d669a69abd76f9173d6c84b0bc5c3da56a61b8c8e",
+      "bytes": 72
+    },
+    {
+      "file": "dashboard/src/app/guild/loading.tsx",
+      "sha256": "16caa2e1d87486b8fd53ce373c7b93fe17b85e452342b3252b1d1197ff75c4e1",
+      "bytes": 287
+    },
+    {
+      "file": "dashboard/src/app/polls/[pollId]/error.tsx",
+      "sha256": "1c7d7ea0aadd0efbf71b9b6d669a69abd76f9173d6c84b0bc5c3da56a61b8c8e",
+      "bytes": 72
+    },
+    {
+      "file": "dashboard/src/app/polls/[pollId]/loading.tsx",
+      "sha256": "16caa2e1d87486b8fd53ce373c7b93fe17b85e452342b3252b1d1197ff75c4e1",
+      "bytes": 287
+    },
+    {
+      "file": "dashboard/src/app/polls/error.tsx",
+      "sha256": "1c7d7ea0aadd0efbf71b9b6d669a69abd76f9173d6c84b0bc5c3da56a61b8c8e",
+      "bytes": 72
+    },
+    {
+      "file": "dashboard/src/app/polls/loading.tsx",
+      "sha256": "16caa2e1d87486b8fd53ce373c7b93fe17b85e452342b3252b1d1197ff75c4e1",
+      "bytes": 287
+    },
+    {
+      "file": "dashboard/src/app/raids/[raidId]/error.tsx",
+      "sha256": "1c7d7ea0aadd0efbf71b9b6d669a69abd76f9173d6c84b0bc5c3da56a61b8c8e",
+      "bytes": 72
+    },
+    {
+      "file": "dashboard/src/app/raids/[raidId]/loading.tsx",
+      "sha256": "16caa2e1d87486b8fd53ce373c7b93fe17b85e452342b3252b1d1197ff75c4e1",
+      "bytes": 287
+    },
+    {
+      "file": "dashboard/src/app/raids/error.tsx",
+      "sha256": "1c7d7ea0aadd0efbf71b9b6d669a69abd76f9173d6c84b0bc5c3da56a61b8c8e",
+      "bytes": 72
+    },
+    {
+      "file": "dashboard/src/app/raids/loading.tsx",
+      "sha256": "16caa2e1d87486b8fd53ce373c7b93fe17b85e452342b3252b1d1197ff75c4e1",
+      "bytes": 287
+    },
+    {
+      "file": "dashboard/src/components/applications/ApplicationCard.tsx",
+      "sha256": "de628570893c37bea887e199877762030e622b16b66f992afc2cf70563c8c384",
+      "bytes": 3089
+    },
+    {
+      "file": "dashboard/src/components/applications/ApplicationPerformance.tsx",
+      "sha256": "ef4f1d57db0769ee6ca71d1b02883b9893f4b50869e92c656b48915c982d0521",
+      "bytes": 4521
+    },
+    {
+      "file": "dashboard/src/components/applications/ApplicationWorkspaceView.tsx",
+      "sha256": "d602f38f2b35ed2d5fbb213032b5fc246cc2c479bfa538c31831a6336058ec25",
+      "bytes": 4411
+    },
+    {
+      "file": "dashboard/src/components/applications/applications-workspace.module.css",
+      "sha256": "d1c53489c40a225ca3b9acc0e8ad16fc392b8c35bb5963c893e3d55a8149a023",
+      "bytes": 2814
+    },
+    {
+      "file": "dashboard/src/components/community/publication.module.css",
+      "sha256": "8efe4e44245927d3f4a14a36de4d86446139232052b4abbab518c050a7a963bf",
+      "bytes": 1384
+    },
+    {
+      "file": "dashboard/src/components/community/workspace.module.css",
+      "sha256": "419d7c1337d3945b39412704942b61d1608a55e90f75988af6fc91712b3ce3c5",
+      "bytes": 1185
+    },
+    {
+      "file": "dashboard/src/components/guild/GuildDiscordGuide.tsx",
+      "sha256": "5818da4539b70ffa77ce88f46c466194e62320c1288ecd4456a61722a318adb1",
+      "bytes": 968
+    },
+    {
+      "file": "dashboard/src/components/guild/GuildRosterTable.tsx",
+      "sha256": "eee87a08bad41093909d32e4d0dce8034fd2bb5ec76bb38652bfa72ee223edf7",
+      "bytes": 3809
+    },
+    {
+      "file": "dashboard/src/components/guild/guild-workspace.module.css",
+      "sha256": "fb2adabed7eb97c3a2fb982c3a229fb0b63cc98e5fd344e0a813ccadd94cc2be",
+      "bytes": 4064
+    },
+    {
+      "file": "dashboard/src/components/polls/PollAvailabilityMatrix.tsx",
+      "sha256": "915c75f7e04a566eec9aaf409a6cfd32da129f4dfc6a69943f59a57de10c1d6e",
+      "bytes": 2916
+    },
+    {
+      "file": "dashboard/src/components/polls/PollDetailsView.tsx",
+      "sha256": "3c23bf61507fa200b5bdfb580665bf531f11d8a0fc344460a223b665a2430687",
+      "bytes": 2410
+    },
+    {
+      "file": "dashboard/src/components/polls/PollDirectoryCard.tsx",
+      "sha256": "5815306aa6f55bacdcd87e65cfbf1e566070beec2508bce949f5f8d7a52e8c9b",
+      "bytes": 2314
+    },
+    {
+      "file": "dashboard/src/components/polls/PollDirectoryList.tsx",
+      "sha256": "d14187e7ba2151ae43febc265b14ea8142b082d7491a39f0e9ebf1f5864ec968",
+      "bytes": 692
+    },
+    {
+      "file": "dashboard/src/components/polls/PollDirectoryView.tsx",
+      "sha256": "6b7b9cf3f9f174d9b4290548dba6e530e5851f4277e024324711123d76a742aa",
+      "bytes": 2755
+    },
+    {
+      "file": "dashboard/src/components/polls/PollRecommendations.tsx",
+      "sha256": "5240cf104a6138ece039ed1cd054cc59fb6e12c4703991257f2249b5cb22060b",
+      "bytes": 3549
+    },
+    {
+      "file": "dashboard/src/components/polls/PollResults.tsx",
+      "sha256": "30aae9363b2a0547dd9c8312240c411e6fc7316d2d74b51c41f41500422168d3",
+      "bytes": 4465
+    },
+    {
+      "file": "dashboard/src/components/polls/PollVotes.tsx",
+      "sha256": "144b0e1c7be16d3d722ff7b1e4bd6974092bd760029ff5cfcba58d4af70db0f0",
+      "bytes": 1827
+    },
+    {
+      "file": "dashboard/src/components/polls/poll-workspace.module.css",
+      "sha256": "79ff4d5ea54c325571ba2422466c97d1078735daee8f04710afd4ff073de35cb",
+      "bytes": 2776
+    },
+    {
+      "file": "dashboard/src/components/raids/RaidDetailsView.tsx",
+      "sha256": "699e1c8ef20beb8fd996cf2ee26d9ad2da020d8d7ee7c865093be017adcae93e",
+      "bytes": 3087
+    },
+    {
+      "file": "dashboard/src/components/raids/RaidDirectoryCard.tsx",
+      "sha256": "fb73ba62c4c3e1d28b2c46951b62b83c77fd9b987d8f60cf97486d9b628e7426",
+      "bytes": 2400
+    },
+    {
+      "file": "dashboard/src/components/raids/RaidDirectoryView.tsx",
+      "sha256": "8658efa925f0984b8b035218fa431cc413087b62245f0789f98a9dfb3300ec1a",
+      "bytes": 5473
+    },
+    {
+      "file": "dashboard/src/components/raids/RaidManageActions.tsx",
+      "sha256": "6bf91cb86f087a5bbc233b608c2c8c7ab186939efbe657f40f1aa0bd03e8d2c5",
+      "bytes": 1149
+    },
+    {
+      "file": "dashboard/src/components/raids/RaidOverview.tsx",
+      "sha256": "305857f5637391f1682115db9ff8df0eb93ff51dfae9168f5b66013bbb2be511",
+      "bytes": 5922
+    },
+    {
+      "file": "dashboard/src/components/raids/RaidRoster.tsx",
+      "sha256": "a1618415a58c482c34e0a5c97ad5259f691ed0e4bd1a3ca073627068576bc5b7",
+      "bytes": 15277
+    },
+    {
+      "file": "dashboard/src/components/raids/raid-workspace.module.css",
+      "sha256": "1ce024ae90a38f4951744993290d6d6156be89b0ee9f0ad4a63c63a5531149e6",
+      "bytes": 3462
+    },
+    {
+      "file": "dashboard/src/lib/guildRosterPresentation.ts",
+      "sha256": "aaf935067dcee44d055c5405b4d97d096815c45dff9da9de4adee145c9b4c72f",
+      "bytes": 2712
+    },
+    {
+      "file": "dashboard/src/lib/raidPollPresentation.ts",
+      "sha256": "39a4d6be847d29e2b43e6f2205f2cf1de7d50d7c3f7f25af2901c4b4663c470d",
+      "bytes": 4860
+    },
+    {
+      "file": "dashboard/src/lib/raidPresentation.ts",
+      "sha256": "18d54687f2e243003a614a92651b23a4f286786499c4013951ac9043e3f0b3b4",
+      "bytes": 400
+    },
+    {
+      "file": "dashboard/src/services/applicationWorkspace.ts",
+      "sha256": "b065c64fabe7d6da4fec14fa7351ec71cd43aaef99b72d341998d44e83b69bd1",
+      "bytes": 2597
+    },
+    {
+      "file": "dashboard/src/services/guildWorkspace.ts",
+      "sha256": "fd1980d713d5fe047d27bfdaecdfc8c729da950634c729dbe3797374bae15697",
+      "bytes": 2698
+    },
+    {
+      "file": "dashboard/src/services/pollWorkspace.ts",
+      "sha256": "18928abdba315940e05f0a52bc38e112e8ded7e892a5b1306982fc5b9bf98e69",
+      "bytes": 2201
+    },
+    {
+      "file": "dashboard/src/services/raidDetailsWorkspace.ts",
+      "sha256": "b74de8001fcba822b6c86a6494dd465da549460c020cd7076e3e993aa35fb413",
+      "bytes": 920
+    },
+    {
+      "file": "dashboard/src/services/raidDirectoryWorkspace.ts",
+      "sha256": "171f86916c1515482ddb2381d2b1a6a21646732c0e9081e439a25a8762df7a9b",
+      "bytes": 2800
+    }
+  ],
+  "changed": [
+    {
+      "file": "README.md",
+      "sha256": "53ce884c1031347d82eb9c47d9a381b17c05a7b526f4c41a06c609fe7095da4b",
+      "bytes": 1292
+    },
+    {
+      "file": "dashboard/README.md",
+      "sha256": "4853e2b7523712ed0bf7b2981b3fe432f5317168695349127003bfff93695cdd",
+      "bytes": 4515
+    },
+    {
+      "file": "dashboard/docs/CSS_AUDIT.md",
+      "sha256": "7fb5a6508ca5e42f0ec1d3d05d11856151aecf73135b17d1d7e80de0a598f7c3",
+      "bytes": 6789
+    },
+    {
+      "file": "dashboard/docs/MANAGEMENT_UI.md",
+      "sha256": "a3b94d8891c95d55218fef829fc1e50132e234c9c18fb21a7f638dd227dc0c3d",
+      "bytes": 3000
+    },
+    {
+      "file": "dashboard/docs/PAGE_ROUTE_INVENTORY.json",
+      "sha256": "7f47663ca99c923e35e9d0e879041ae985a929a80e2336022e593b1aadd4e5a0",
+      "bytes": 26180
+    },
+    {
+      "file": "dashboard/docs/PAGE_ROUTE_INVENTORY.md",
+      "sha256": "f84d3ceb567ddca57f8b62aea42af036ed7d46ee51504cc361aeb8d763784b9c",
+      "bytes": 8878
+    },
+    {
+      "file": "dashboard/docs/STYLE_AUDIT.md",
+      "sha256": "a2bdb807ab342b085dadebb736184800f70c5c1375239b26273088bb53b94c6d",
+      "bytes": 7760
+    },
+    {
+      "file": "dashboard/docs/UI_SYSTEM.md",
+      "sha256": "ef595ee9a75349db9ae4f6849d1b69f5198f898ac31b9d62c60929a4838cd4de",
+      "bytes": 7284
+    },
+    {
+      "file": "dashboard/package-lock.json",
+      "sha256": "ff7cc1b1c974258aa1bb648bcf1785a8563e0ae9afe7891981164675fdef6b36",
+      "bytes": 273543
+    },
+    {
+      "file": "dashboard/package.json",
+      "sha256": "67d2185b925c69127914502d026eea93f04030444a807da286e5c67364b21010",
+      "bytes": 18312
+    },
+    {
+      "file": "dashboard/scripts/check-application-delivery-browser.cjs",
+      "sha256": "e38e760cbdae05e10001c792e7457d5c9a771000ae6b278bf58f916df5aa39db",
+      "bytes": 6552
+    },
+    {
+      "file": "dashboard/scripts/check-character-data.cjs",
+      "sha256": "2f0642c0bbae62e0b6f18238864284397c56d2f10bef0341649fa3a9776951f3",
+      "bytes": 4529
+    },
+    {
+      "file": "dashboard/scripts/check-guild-list-navigation.cjs",
+      "sha256": "6c641c34cb52985727f1cb0dc3e36257510a9d175a54e17f29275f37fbb1abea",
+      "bytes": 7831
+    },
+    {
+      "file": "dashboard/scripts/check-guild-mobile.cjs",
+      "sha256": "3f6957e2eca10b4d0a5643f23d2bee741d71b88916cc8c240c021e8c632d679d",
+      "bytes": 2052
+    },
+    {
+      "file": "dashboard/scripts/check-newcomer-onboarding.cjs",
+      "sha256": "c99e23566fccfac483c0b24e3759b70c570950e07d12d36c15dbf2dd192976dd",
+      "bytes": 5905
+    },
+    {
+      "file": "dashboard/scripts/check-poll-actions-browser.cjs",
+      "sha256": "c8c70d80f8e367e8a23c102d40fad9ca1de458f31941f331f83432e6cd2cb028",
+      "bytes": 14501
+    },
+    {
+      "file": "dashboard/scripts/check-poll-scheduling.cjs",
+      "sha256": "a4f966f36f295b6574eedd069667221455db7ca346d6faefd7728d3f05af8f19",
+      "bytes": 7474
+    },
+    {
+      "file": "dashboard/scripts/check-raid-lifecycle.cjs",
+      "sha256": "013db623c352483688ddef746f1a006a76b751eb67b1a11aced0de6cf86b97bb",
+      "bytes": 7068
+    },
+    {
+      "file": "dashboard/scripts/check-raid-list-navigation.cjs",
+      "sha256": "80aa687cd23023c42a95af5643aaac68f490c633254789536a656272f56c9da6",
+      "bytes": 7239
+    },
+    {
+      "file": "dashboard/scripts/check-raid-ui.cjs",
+      "sha256": "cdfddd23cf15102be05bc35881d1113323846cde34afeb2ad18f58a60648a1be",
+      "bytes": 2643
+    },
+    {
+      "file": "dashboard/scripts/check-site-bridge.cjs",
+      "sha256": "c163152e93703d10e1f8bd2f9ee7e8119c2324c49c7b34f1074dfdff6d46ec44",
+      "bytes": 10244
+    },
+    {
+      "file": "dashboard/scripts/check-workflow-accessibility-browser.cjs",
+      "sha256": "0859ccb1ef63173db2f9348065f0930cb99730acf3c75f67b632bd0f1e8f0ff9",
+      "bytes": 18689
+    },
+    {
+      "file": "dashboard/scripts/inspect-ci.cjs",
+      "sha256": "a7d76f5508383db8ac4acde9bb3b0a0b310322f7d2b4a3822b97dfd3619f7a4f",
+      "bytes": 26863
+    },
+    {
+      "file": "dashboard/scripts/lib/read-ui-workspace.cjs",
+      "sha256": "bbac5a815064d8f0eabe8cfb7531ff63dda90b7f7ce450631615a82c70787b45",
+      "bytes": 1560
+    },
+    {
+      "file": "dashboard/src/app/applications/page.tsx",
+      "sha256": "47e823fc5b416402f9fe89a2131aee23eec9acf517a9a7254163336075527806",
+      "bytes": 914
+    },
+    {
+      "file": "dashboard/src/app/guild/page.tsx",
+      "sha256": "c848eafb29fb32df773d08b237b65e009bca9060f2b74a11f9a8293c105b736a",
+      "bytes": 2038
+    },
+    {
+      "file": "dashboard/src/app/layout.tsx",
+      "sha256": "92ea7aea179621d04a83c4a2934bcd13ae25796fd373f822e8001c7bbe661f9e",
+      "bytes": 6603
+    },
+    {
+      "file": "dashboard/src/app/polls/[pollId]/page.tsx",
+      "sha256": "b63efa186da0760e8e2005568d431279d48f6df017efc96d2a387b2e2d1c55ea",
+      "bytes": 891
+    },
+    {
+      "file": "dashboard/src/app/polls/page.tsx",
+      "sha256": "efbe2f569bca359b6a1b6e83ab108a816ae278dfa08d104eef1a46bf1632feeb",
+      "bytes": 765
+    },
+    {
+      "file": "dashboard/src/app/raids/[raidId]/page.tsx",
+      "sha256": "7c6cadcc12fccedab9cb78854ceadbe09155aac37c677f1842dfe3105f0dd630",
+      "bytes": 1031
+    },
+    {
+      "file": "dashboard/src/app/raids/page.tsx",
+      "sha256": "305c4d83211e3416c77df7bb5234a6891403e3b9c1d1104cf69993acb5222cc0",
+      "bytes": 839
+    },
+    {
+      "file": "dashboard/src/app/styles/components.css",
+      "sha256": "35263b838a70c5ae3935e2d2e13b5a7c74745bcdd275ace2d9c074e2beeefbb1",
+      "bytes": 33201
+    },
+    {
+      "file": "dashboard/src/app/styles/directory.css",
+      "sha256": "42bc68b752e9883ed5ca3c8228884d2dcf59c5e203f4e44a789d95b2f27dc25c",
+      "bytes": 6389
+    },
+    {
+      "file": "dashboard/src/app/styles/layout.css",
+      "sha256": "26219ff888135e13569eda084533ec56fa77e6f7b3f93560b2151dc687a6c20e",
+      "bytes": 11753
+    },
+    {
+      "file": "dashboard/src/app/styles/lists.css",
+      "sha256": "235dfa8c7e0e90c46fe46a6a9cc2307982007534e222d1d465a501aec7030323",
+      "bytes": 4011
+    },
+    {
+      "file": "dashboard/src/app/styles/pages.css",
+      "sha256": "2f011672b0fc76432ae429ad7747fb5ed8f1dbebcdae45bb327c60e09a696699",
+      "bytes": 56206
+    },
+    {
+      "file": "dashboard/src/app/styles/patterns.css",
+      "sha256": "1263abd65083f89dc124450489779b64d01313b46ffb0767c07cdfd336730e50",
+      "bytes": 9717
+    },
+    {
+      "file": "dashboard/src/app/styles/polls.css",
+      "sha256": "d47636422677a4cd1b4cdbad711c93b45df600781033103c674131302b76af0b",
+      "bytes": 14997
+    },
+    {
+      "file": "dashboard/src/app/styles/raids.css",
+      "sha256": "84761b2940dd86ba06711f8cd2867b39659800f751dbdbd9785075fdc63e386b",
+      "bytes": 36801
+    },
+    {
+      "file": "dashboard/src/app/styles/tokens.css",
+      "sha256": "4c24cefd47028cdf763f7aa7067352778cbf18bc1ea169d0b836342fc834990b",
+      "bytes": 10048
+    },
+    {
+      "file": "dashboard/src/components/ApplicationDelivery.tsx",
+      "sha256": "b592cce6eed51b9a2cf1c84c1a703f85dbee3e2b0e221582b33a0af226821abd",
+      "bytes": 5198
+    },
+    {
+      "file": "dashboard/src/components/ApplicationFilters.tsx",
+      "sha256": "b67a8eefbcd98624aa49168134f8bd6a15ddc1b07f93ec342ca9dae5a3815a0a",
+      "bytes": 7401
+    },
+    {
+      "file": "dashboard/src/components/ApplicationModerationQueue.tsx",
+      "sha256": "b6f63a410c2f15dcf228fa02579c9bb79fdc15acdaac8cd3729836d93b2cbbee",
+      "bytes": 11878
+    },
+    {
+      "file": "dashboard/src/components/ApplicationStatusActions.tsx",
+      "sha256": "d901beb938c88ef18ca72abe34273482ddb1f94a93d4cbc1612e27d3503a34ba",
+      "bytes": 6634
+    },
+    {
+      "file": "dashboard/src/components/DiscordPublicationStatus.tsx",
+      "sha256": "6f900e47aedbaf9f7c9343d80388f228e1994434ee37681fa6133650579075dc",
+      "bytes": 6624
+    },
+    {
+      "file": "dashboard/src/components/GuildRosterExplorer.tsx",
+      "sha256": "b0c2d8f5b9ea80d70ba582a04649589e964577e3a8e68d5d0de420360397ec3e",
+      "bytes": 24943
+    },
+    {
+      "file": "dashboard/src/components/GuildRosterLiveHeroStats.tsx",
+      "sha256": "4faa41c6cc2534abbcad13387b0280b08cc2ee72f2080a769c7a5dd359b9e336",
+      "bytes": 3858
+    },
+    {
+      "file": "dashboard/src/components/RaidArchiveLoadMore.tsx",
+      "sha256": "9c297ee3d094d848e143ce14c1e95767acd36240193980a42d3d7093fe195457",
+      "bytes": 1819
+    },
+    {
+      "file": "dashboard/src/components/RaidPollActionResult.tsx",
+      "sha256": "251a2123c9bd90b37e0fdd1713c1ae33b798d0e040d5cc470c3f8c5f010fdcc7",
+      "bytes": 440
+    },
+    {
+      "file": "dashboard/src/components/RaidPollActions.tsx",
+      "sha256": "70c64ef966d5ba537640e59352ab64e37cff5d33736a571c09d385b29432ca3d",
+      "bytes": 6904
+    },
+    {
+      "file": "dashboard/src/components/RaidPollBrowser.tsx",
+      "sha256": "56af972a6a0c2d5094bc415776adb8c8006bf4731bb7ac92ffc29bb23f4df5b1",
+      "bytes": 12432
+    },
+    {
+      "file": "dashboard/src/components/RaidPollPauseButton.tsx",
+      "sha256": "48c1d502d99ad32a1303c05ff7e837bab128c4e0d8aebb70ec576518ef84e772",
+      "bytes": 2422
+    },
+    {
+      "file": "dashboard/src/components/RaidPollRecalculateButton.tsx",
+      "sha256": "70ebbc8542793300778d944d724e2b00c51eaea3b481de96b88763d01867cd0f",
+      "bytes": 1813
+    },
+    {
+      "file": "dashboard/src/components/RaidPollViews.tsx",
+      "sha256": "d519467828643d17cc67eba0b1f187e652aa95bb20adf88eeb7a6137a30020cd",
+      "bytes": 3056
+    },
+    {
+      "file": "dashboard/src/components/RaidViews.tsx",
+      "sha256": "cda41c0110b653df88eca62812b347957fa1bb5f3cb418adfea09062a8558344",
+      "bytes": 32561
+    },
+    {
+      "file": "dashboard/src/components/page/DataCard.tsx",
+      "sha256": "dadb66985884c8e4c779fbe00de113e645564cc08be40068c6c41aa1b01126c6",
+      "bytes": 1102
+    },
+    {
+      "file": "dashboard/src/components/ui/DropdownMenu.tsx",
+      "sha256": "1aab07dabdc756d96df3a3ccb304f8be3ab8cd8681b5311edac2f4853f9d093e",
+      "bytes": 2821
+    },
+    {
+      "file": "docs/CONFIGURATION.md",
+      "sha256": "13c6a32df716cef7730b2455eaa8d84ea6bc4348ecf20212c88e05d0cabaaf2b",
+      "bytes": 11017
+    },
+    {
+      "file": "docs/DEPLOYMENT.md",
+      "sha256": "42ea729b47dc2d2c55764a6ee75050bf88f889265c758b55c4231e7eae2b4cc7",
+      "bytes": 339
+    },
+    {
+      "file": "docs/RELEASE_INSTALL_2026-10-19_UA.md",
+      "sha256": "44ffd2d7d270142ac531dea0430cea38f204ebac5e3708bc518a82ee21766e5b",
+      "bytes": 7928
+    },
+    {
+      "file": "release-manifest.json",
+      "sha256": "6e0e752d3499acdae9d4b13202f31e9173a164d7ce96fe99548105358d4f3e04",
+      "bytes": 292
+    }
+  ],
+  "deletedFiles": [
+    "dashboard/src/app/styles/applications.css",
+    "dashboard/src/components/GuildRoster.module.css"
+  ],
+  "removedGlobalCssRules": 443,
+  "removedUnusedGlobalCssClassNames": 221,
+  "apiRoutesChanged": 0,
+  "verifyGroups": 106,
+  "communityWorkspaceScenarios": 19,
+  "standaloneScenarios": 10,
+  "browser": "BLOCKED: Chromium Unix socket permission; no visual PASS",
+  "productionDataChanged": false
+}

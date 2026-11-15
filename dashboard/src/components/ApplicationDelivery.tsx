@@ -1,4 +1,5 @@
 "use client";
+import styles from "@/components/applications/applications-workspace.module.css";
 import { useEffect, useRef, useState } from "react";
 import { ApiHttpError } from "@/lib/apiHttp";
 import { dashboardApiJson } from "@/lib/dashboardApiClient";
@@ -27,7 +28,7 @@ export default function ApplicationDelivery({ number }: { number: number }) {
     catch (error) { setError(error instanceof ApiHttpError && error.status >= 400 && error.status < 500 ? error.message : "Відповідь не отримано. Перевір стан доставки перед повторною дією."); }
     finally { lock.current = false; setBusy(false); refresh.current(); }
   }
-  return <form className="application-delivery" onSubmit={reconcile} aria-label={`Доставка заявки #${number}`} aria-busy={busy}>
+  return <form className={styles.delivery} onSubmit={reconcile} aria-label={`Доставка заявки #${number}`} aria-busy={busy}>
     <strong>Discord</strong><p role="status">{delivery ? labels[delivery.state] || "Стан невідомий" : "Перевіряємо доставку…"}</p>
     {delivery?.messageUrl && <a href={delivery.messageUrl} target="_blank" rel="noreferrer">Відкрити повідомлення ↗</a>}
     {delivery && !["delivered", "cancelled", "untracked"].includes(delivery.state) && <>

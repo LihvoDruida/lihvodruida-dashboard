@@ -47,32 +47,13 @@
 .admin-workspace .management-section-panel > :where(.panel, article, section) { padding: clamp(20px, 2.6vw, 30px); }
 .admin-workspace .management-section-panel > .discord-management-health-grid { padding: 0; }
 .admin-workspace .management-section-panel > .discord-management-zone { padding: 0; }
-.admin-workspace :where(.admin-policy-current-state, .access-group-summary, .nickname-policy-card, .discord-management-status__item, .server-summary-card, .account-cleanup-status-card) { border-radius: var(--card-radius); border-color: var(--border); }
-.admin-workspace :where(.auth-access-card, .geo-access-card) { margin: 0; }
-.admin-workspace .admin-policy-layout { gap: 24px; }
+.admin-workspace :where(.nickname-policy-card, .discord-management-status__item, .server-summary-card) { border-radius: var(--card-radius); border-color: var(--border); }
 .admin-workspace :where(.discord-management-card, .discord-management-section) { padding: clamp(20px, 2.5vw, 28px); }
-.admin-workspace :where(.discord-settings-card__limits, .discord-member-actions-grid, .discord-automation-grid, .discord-profile-maintenance-grid) { gap: 18px; }
-.admin-workspace :where(.discord-management-card__body, .account-cleanup-body) { gap: 18px; }
-.admin-workspace :where(.discord-management-details, .permissions-category) { border: 1px solid var(--border); border-radius: var(--card-radius); background: var(--surface-sunken); }
-.admin-workspace :where(.discord-management-details, .permissions-category) > summary { padding: 13px 15px; cursor: pointer; min-height: 44px; color: var(--text-body); }
+.admin-workspace :where(.discord-settings-card__limits, .discord-member-actions-grid, .discord-automation-grid) { gap: 18px; }
+.admin-workspace :where(.discord-management-card__body) { gap: 18px; }
+.admin-workspace :where(.discord-management-details) { border: 1px solid var(--border); border-radius: var(--card-radius); background: var(--surface-sunken); }
+.admin-workspace :where(.discord-management-details) > summary { padding: 13px 15px; cursor: pointer; min-height: 44px; color: var(--text-body); }
 .admin-workspace :where(.discord-management-details) > :not(summary) { margin: 0 15px 15px; }
-.admin-workspace .access-groups-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 20px; align-items: start; }
-.admin-workspace .access-groups-list { position: sticky; top: calc(var(--nav-space, 72px) + 16px); max-height: calc(100dvh - var(--nav-space, 72px) - 32px); overflow-y: auto; overscroll-behavior: contain; padding: 15px; display: grid; gap: 7px; }
-.admin-workspace .access-groups-list__header { padding: 4px 4px 9px; }
-.admin-workspace .access-groups-search { display: grid; gap: 6px; color: var(--text-soft); font-size: 12px; margin-bottom: 7px; }
-.admin-workspace .access-group-tab { text-align: left; width: 100%; padding: 12px; background: transparent; border-color: transparent; }
-.admin-workspace .access-group-tab.is-active { background: var(--accent-soft); border-color: var(--border-strong); }
-.admin-workspace .access-group-tab span { font-size: 11px; color: var(--text-muted); }
-.admin-workspace .access-group-card { padding: clamp(20px, 2.8vw, 30px); }
-.admin-workspace .access-group-card__head p { max-width: 66ch; font-size: 13px; }
-.admin-workspace .access-form-grid { gap: 18px; }
-.admin-workspace .permissions-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
-.admin-workspace .permissions-category summary { font-weight: 650; }
-.admin-workspace .permissions-category small { margin-left: 8px; font-weight: 400; font-size: 11px; color: var(--text-muted); }
-.admin-workspace .permissions-category .permission-check { margin: 4px 10px; padding: 10px; }
-.admin-workspace .permissions-category .permission-check strong { font-size: 13px; }
-.admin-workspace .permissions-category .permission-check small { margin: 3px 0 0; font-size: 11px; }
-.admin-workspace .access-form-actions { border-top: 1px solid var(--border); padding-top: 20px; margin-top: 20px; }
 .admin-workspace .management-welcome-preview { width: 100%; }
 .admin-workspace .management-welcome-preview img { width: 100%; height: auto; border-radius: 14px; display: block; }
 .admin-workspace .management-preview-placeholder { display: grid; justify-items: center; text-align: center; align-content: center; gap: 10px; min-height: 210px; padding: 24px; background: radial-gradient(ellipse at top, var(--accent-soft), var(--surface-sunken)); border-radius: var(--card-radius); }
@@ -87,8 +68,6 @@
   .admin-workspace .management-nav { grid-template-columns: 1fr 1fr; }
   .admin-workspace .management-nav-group:last-child { grid-column: 1 / -1; }
   .admin-workspace .management-nav-group:last-child .management-nav-links { max-width: 360px; }
-  .admin-workspace .access-groups-layout { grid-template-columns: 220px minmax(0, 1fr); }
-  .admin-workspace .permissions-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 700px) {
   .admin-workspace { gap: 16px; }
@@ -105,13 +84,11 @@
   .admin-workspace .management-section-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
   .admin-workspace .management-section-tabs button { padding: 11px 10px; text-align: left; font-size: 12px; }
   .admin-workspace .management-section-number { display: none; }
-  .admin-workspace .access-groups-layout { grid-template-columns: 1fr; }
-  .admin-workspace .access-groups-list { position: static; max-height: none; overflow: visible; }
-  .admin-workspace :where(.access-group-card, .discord-management-card, .discord-management-section) { padding: 18px; }
+  .admin-workspace :where(.discord-management-card, .discord-management-section) { padding: 18px; }
   .admin-workspace .management-section-panel > :where(.panel, article, section) { padding: 18px; }
   .admin-workspace .management-section-panel > :where(.discord-management-health-grid, .discord-management-zone) { padding: 0; }
-  .admin-workspace :where(.form-actions, .access-form-actions, .admin-policy-footer) { gap: 10px; }
-  .admin-workspace :where(.form-actions, .access-form-actions, .admin-policy-footer) .btn { white-space: normal; }
+  .admin-workspace :where(.form-actions) { gap: 10px; }
+  .admin-workspace :where(.form-actions) .btn { white-space: normal; }
   .admin-workspace .management-section-description { font-size: 12px; margin-bottom: 16px; }
 }
 @media (prefers-reduced-motion: reduce) { .admin-workspace .management-nav a { transition: none; } }
@@ -125,34 +102,8 @@
 }
 
 /* R5: drafts and revision review use the existing system colour tokens. */
-.admin-workspace .access-groups-editor { min-width: 0; }
-.admin-workspace .access-draft-badge { display: block; color: var(--c-accent-300); font-size: 12px; margin-top: 6px; }
-.admin-workspace .access-draft-notice { padding: 12px 16px; border: 1px solid var(--border); border-radius: var(--card-radius); background: var(--accent-soft); color: var(--text-soft); }
-.admin-workspace .access-draft-conflict { margin-bottom: 16px; padding: 16px; border-radius: var(--card-radius); border: 1px solid var(--border-strong); }
-.admin-workspace .access-draft-conflict h3 { margin-top: 0; }
-.admin-workspace .access-draft-comparison { overflow-x: auto; max-width: 100%; margin-block: 12px; }
-.admin-workspace .access-draft-comparison table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.admin-workspace .access-draft-comparison :is(th, td) { text-align: left; vertical-align: top; padding: 9px; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
-.admin-workspace .access-draft-comparison caption { text-align: left; padding-bottom: 8px; color: var(--text-muted); }
 
 /* Management hub and protected maintenance use the same surface/tokens as all admin sections. */
-.admin-workspace .management-hub { display: grid; gap: 15px; }
-.admin-workspace .management-hub__header { display: grid; gap: 5px; }
-.admin-workspace .management-hub__header h2 { margin: 0; font-size: 1.12rem; color: var(--text-strong); }
-.admin-workspace .management-hub__header p { margin: 0; color: var(--text-muted); }
-.admin-workspace .management-hub__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.admin-workspace .management-hub__link { position: relative; display: flex; flex-direction: column; min-width: 0; gap: 6px; padding: 15px 34px 15px 15px; border: 1px solid var(--border); border-radius: var(--card-radius); background: var(--nav-surface); text-decoration: none; color: var(--text-body); }
-.admin-workspace .management-hub__link:hover, .admin-workspace .management-hub__link:focus-visible { border-color: var(--border-strong); background: var(--surface-hover); }
-.admin-workspace .management-hub__link strong { color: var(--text-strong); font-size: .96rem; }
-.admin-workspace .management-hub__link small { color: var(--text-muted); line-height: 1.4; }
-.admin-workspace .management-hub__link > span { position: absolute; right: 15px; top: 15px; font-size: 1.1rem; }
-.admin-workspace .management-cleanup-notice { display: grid; gap: 5px; border-color: var(--border-strong); }
-.admin-workspace .management-cleanup-notice p { margin: 0; color: var(--text-muted); }
-.admin-workspace .account-cleanup-confirm-label { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--border-strong); border-radius: 11px; background: var(--nav-surface); }
-.admin-workspace .account-cleanup-confirm-label input { margin-top: 4px; flex: none; }
-.admin-workspace .account-cleanup-confirm-label span { line-height: 1.4; }
-@media (max-width: 980px) { .admin-workspace .management-hub__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 620px) { .admin-workspace .management-hub__grid { grid-template-columns: 1fr; } }
 
 /* Administration keeps navigation beside the task, with a single content column. */
 .management-workspace-grid { display: grid; grid-template-columns: 232px minmax(0, 1fr); gap: var(--page-gap); align-items: start; }
@@ -173,10 +124,4 @@
   .management-workspace-sidebar .management-nav { grid-template-columns: minmax(0, 1fr); }
   .management-workspace-sidebar .management-nav-links { display: flex; flex-wrap: wrap; }
   .management-workspace-sidebar .management-nav-links a { flex: 1 1 auto; }
-}
-
-@container (max-width: 800px) {
-  .admin-workspace .access-groups-layout { grid-template-columns: minmax(0, 1fr); }
-  .admin-workspace .access-groups-list { position: static; max-height: none; }
-  .admin-workspace .permissions-grid { grid-template-columns: minmax(0, 1fr); }
 }

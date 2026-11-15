@@ -1,271 +1,10 @@
 /* PROFILE SETUP — registration remains separate from public guild rules acceptance. */
-.profile-setup-progress-panel__head > span:not(:where([class])) {
-  display: grid;
-  gap: var(--space-3xs);
-  min-width: 0;
-}
-.profile-setup-progress-panel {
-  display: grid;
-  gap: var(--space-sm);
-  padding: var(--pad-card-compact);
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--c-accent-400);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  min-width: 0;
-}
-
-.profile-setup-progress-panel.is-complete {
-  border-left-color: var(--c-success);
-}
-
-.profile-setup-progress-panel.is-missing {
-  border-left-color: var(--c-warning);
-}
-.profile-setup-progress-panel__head {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.profile-setup-progress-panel__icon,
-.profile-setup-callout__icon {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  border: 1px solid var(--border);
-  background: var(--surface-raised);
-  color: var(--text-soft);
-  font-size: 0.85rem;
-  font-weight: var(--font-weight-bold);
-  line-height: 1;
-}
-
-.is-complete .profile-setup-progress-panel__icon {
-  border-color: rgba(124, 196, 143, 0.4);
-  background: rgba(124, 196, 143, 0.14);
-  color: var(--c-success);
-}
-
-.is-missing .profile-setup-progress-panel__icon {
-  border-color: rgba(232, 179, 74, 0.4);
-  background: rgba(232, 179, 74, 0.14);
-  color: var(--c-warning);
-}
-
-.profile-setup-progress-panel__bar {
-  display: block;
-  height: 6px;
-  border-radius: var(--radius-pill);
-  background: var(--surface);
-  border: 1px solid var(--border-subtle);
-  overflow: hidden;
-}
-
-.profile-setup-progress-panel__bar > span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--accent-gradient);
-  transition: width var(--dur-base) var(--ease-out);
-}
-.profile-setup-progress-panel__steps {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
-  gap: var(--space-sm);
-  min-width: 0;
-}
-.profile-setup-progress-step {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  gap: var(--space-2xs) var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-raised);
-  color: inherit;
-  min-width: 0;
-  transition: border-color var(--dur-fast) var(--ease-out),
-    background-color var(--dur-fast) var(--ease-out),
-    transform var(--dur-fast) var(--ease-out);
-}
-
-.profile-setup-progress-step:hover {
-  border-color: var(--border-strong);
-  background: var(--surface-hover);
-  transform: translateY(-2px);
-  color: inherit;
-}
-.profile-setup-progress-step > span[aria-hidden] {
-  grid-row: span 2;
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 1px solid var(--border);
-  background: var(--surface-sunken);
-  font-size: var(--font-size-ui);
-  font-weight: var(--font-weight-bold);
-  line-height: 1;
-}
-
-.profile-setup-progress-step.is-complete > span[aria-hidden] {
-  border-color: rgba(124, 196, 143, 0.4);
-  background: rgba(124, 196, 143, 0.14);
-  color: var(--c-success);
-}
-
-.profile-setup-progress-step.is-missing > span[aria-hidden] {
-  border-color: rgba(232, 179, 74, 0.4);
-  background: rgba(232, 179, 74, 0.14);
-  color: var(--c-warning);
-}
-
-.profile-setup-progress-step > strong {
-  font-size: 0.88rem;
-  color: var(--text-strong);
-  overflow-wrap: anywhere;
-}
-
-.profile-setup-progress-step > small {
-  font-size: var(--font-size-meta);
-  line-height: var(--line-height-body);
-  color: var(--text-muted);
-}
-
-.profile-setup-progress-step.is-complete {
-  border-left: 3px solid var(--c-success);
-}
-
-.profile-setup-progress-step.is-missing {
-  border-left: 3px solid var(--c-warning);
-}
-.profile-setup-callout {
-  display: grid;
-  gap: var(--space-2xs);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--c-accent-400);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  color: var(--text-soft);
-  font-size: 0.85rem;
-  line-height: var(--line-height-relaxed);
-  min-width: 0;
-}
-
-.profile-setup-callout {
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.profile-setup-callout strong {
-  color: var(--text-strong);
-}
-@media (max-width: 860px) {
-  .profile-setup-progress-panel__head {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-  .profile-setup-progress-panel__head > .profile-count-pill {
-    grid-column: 2;
-    justify-self: start;
-  }
-
-  
-
-  
-
-}
-.profile-settings-page {
-  min-width: 0;
-}
-
-.profile-account-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  min-width: 0;
-}
-.profile-account-overview {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
-  gap: var(--space-sm);
-  min-width: 0;
-}
-
-.profile-account-overview-card--primary {
-  border-left: 3px solid var(--c-accent-400);
-}
-.profile-account-overview-card > div,
-.profile-account-overview-card > span:not(:where([class$="__icon"])) {
-  display: grid;
-  gap: var(--space-3xs);
-  min-width: 0;
-}
-
-.profile-account-overview-card strong {
-  font-size: var(--font-size-body);
-  color: var(--text-strong);
-}
-
-.profile-account-overview-card small,
-.profile-account-overview-card p {
-  margin: 0;
-  font-size: var(--font-size-ui);
-  line-height: var(--line-height-body);
-  color: var(--text-muted);
-}
-.profile-account-sidebar__nav {
-  display: grid;
-  gap: var(--space-2xs);
-  width: 100%;
-}
-
-.profile-account-sidebar__nav a {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-  min-height: 40px;
-  padding: 0 var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  color: var(--text-soft);
-  font-size: 0.84rem;
-  font-weight: var(--font-weight-medium);
-  transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
-}
-
-.profile-account-sidebar__nav a:hover {
-  border-color: var(--border-strong);
-  color: var(--text-strong);
-}
-
-.profile-account-sidebar__pills {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--space-2xs);
-}
-.profile-gender-box,
-.profile-raid-role-box,
 .profile-name-panel {
   display: grid;
   gap: var(--space-sm);
   min-width: 0;
 }
 
-.profile-gender-box__head,
-.profile-raid-role-box__head,
 .profile-discord-standard__head {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -274,76 +13,19 @@
   min-width: 0;
 }
 
-.profile-gender-box__icon {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  flex: 0 0 auto;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--surface-raised);
-  color: var(--c-accent-300);
-}
-
-.profile-gender-box__head > span:not(:where([class$="__icon"])),
-.profile-raid-role-box__head > span,
 .profile-discord-standard__head > span {
   display: grid;
   gap: var(--space-3xs);
   min-width: 0;
 }
 
-.profile-gender-box__head strong,
-.profile-raid-role-box__head strong,
 .profile-discord-standard__head strong {
   font-size: var(--font-size-body);
   color: var(--text-strong);
 }
 
-.profile-gender-box__head small,
-.profile-raid-role-box__head small,
 .profile-discord-standard__head small {
   font-size: var(--font-size-ui);
-  line-height: var(--line-height-body);
-  color: var(--text-muted);
-}
-.profile-gender-form {
-  display: grid;
-  gap: var(--space-xs);
-}
-.profile-gender-form label {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  cursor: pointer;
-  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
-}
-
-.profile-gender-form label:hover {
-  border-color: var(--border-strong);
-  background: var(--surface-hover);
-}
-
-.profile-gender-form label > span {
-  display: grid;
-  gap: var(--space-3xs);
-  min-width: 0;
-}
-
-.profile-gender-form strong {
-  font-size: 0.88rem;
-  color: var(--text-strong);
-}
-
-.profile-gender-form small,
-.profile-gender-form em {
-  font-size: var(--font-size-meta);
   line-height: var(--line-height-body);
   color: var(--text-muted);
 }
@@ -354,16 +36,6 @@
   color: var(--text-soft);
 }
 
-.profile-nickname-character-list {
-  display: grid;
-  gap: var(--space-2xs);
-}
-
-.profile-nickname-character-form {
-  display: grid;
-  gap: var(--space-xs);
-}
-
 .profile-discord-standard__identity {
   display: grid;
   gap: var(--space-3xs);
@@ -371,173 +43,20 @@
 }
 
 @media (max-width: 860px) {
-  .profile-account-overview {
-    grid-template-columns: minmax(0, 1fr);
-  }
 
-  .profile-gender-box__head,
-.profile-raid-role-box__head,
-.profile-discord-standard__head {
+  .profile-discord-standard__head {
     grid-template-columns: auto minmax(0, 1fr);
   }
-  .profile-gender-box__head > *:nth-child(3),
-.profile-raid-role-box__head > *:nth-child(3),
-.profile-discord-standard__head > *:nth-child(3) {
+  .profile-discord-standard__head > *:nth-child(3) {
     grid-column: 1 / -1;
     justify-self: start;
   }
 }
-.profile-account-page,
 #profile-gender-settings {
   min-width: 0;
 }
 
-.profile-account-header__actions,
-.profile-account-sidebar__footer {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-xs);
-}
-
-.profile-account-overview--clean {
-  gap: var(--space-sm);
-}
-
-.profile-account-overview-card--success {
-  border-left: 3px solid var(--c-success);
-}
-
-.profile-account-overview-card--main-role {
-  border-left: 3px solid var(--c-accent-400);
-}
-.profile-gender-option {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  cursor: pointer;
-}
-
-.profile-gender-option:hover {
-  border-color: var(--border-strong);
-  background: var(--surface-hover);
-}
-
-.profile-gender-option.is-selected {
-  border-color: var(--border-strong);
-  background: var(--accent-soft);
-}
-.profile-gender-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: var(--space-3xs) var(--space-sm);
-  border: 1px solid color-mix(in srgb, var(--tone, var(--c-ink-400)) 32%, transparent);
-  border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--tone, var(--c-ink-400)) 12%, transparent);
-  color: var(--tone, var(--text-soft));
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-bold);
-  white-space: nowrap;
-}
-
-.profile-gender-pill.is-selected {
-  --tone: var(--c-success);
-}
-
-.profile-gender-pill.is-missing {
-  --tone: var(--c-warning);
-}
-.profile-gender-form,
-.profile-raid-role-form {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.profile-gender-option,
-.profile-raid-role-option,
-.profile-nickname-character-option {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 9px;
-  min-width: 0;
-  min-height: 60px;
-  padding: 9px 11px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  cursor: pointer;
-  transition: border-color var(--dur-fast) var(--ease-out),
-    background-color var(--dur-fast) var(--ease-out),
-    transform var(--dur-fast) var(--ease-out),
-    opacity var(--dur-fast) var(--ease-out);
-}
-
-.profile-gender-option:hover,
-.profile-raid-role-option:hover,
-.profile-nickname-character-option:hover {
-  border-color: var(--border-strong);
-  background: var(--surface-hover);
-}
-
-.profile-gender-option.is-selected,
-.profile-raid-role-option.is-selected,
-.profile-nickname-character-option.is-selected,
-.profile-gender-option:has(input:checked),
-.profile-raid-role-option:has(input:checked),
-.profile-nickname-character-option:has(input:checked) {
-  border-color: color-mix(in srgb, var(--c-accent-400) 58%, var(--border-strong));
-  background: var(--accent-soft);
-}
-
-.profile-gender-option.is-disabled-choice,
-.profile-raid-role-option.is-disabled-choice,
-.profile-nickname-character-option.is-disabled-choice {
-  opacity: 0.48;
-  cursor: not-allowed;
-}
-
-.profile-gender-option > span,
-.profile-raid-role-option > span,
-.profile-nickname-character-option > span {
-  display: grid;
-  gap: var(--space-3xs);
-  min-width: 0;
-}
-
-.profile-gender-option strong,
-.profile-raid-role-option strong,
-.profile-nickname-character-option strong {
-  color: var(--text-strong);
-  font-size: 0.86rem;
-  overflow-wrap: anywhere;
-}
-
-.profile-gender-option small,
-.profile-gender-option em,
-.profile-raid-role-option small,
-.profile-nickname-character-option small {
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  line-height: var(--line-height-body);
-  overflow-wrap: anywhere;
-}
-
-.profile-nickname-character-list {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
 @media (max-width: 760px) {
-
-  .profile-gender-form,
-.profile-raid-role-form,
-.profile-nickname-character-list {
-    grid-template-columns: minmax(0, 1fr);
-  }
 
   .profile-candidate-bulk-buttons .btn {
     width: 100%;
@@ -545,55 +64,7 @@
     justify-self: stretch;
   }
 
-  .profile-gender-option,
-.profile-raid-role-option,
-.profile-nickname-character-option {
-    min-height: 56px;
-    padding: 8px 10px;
-  }
-
   .profile-candidates-box {
     border-radius: var(--radius-md);
-  }
-}
-.profile-gender-option input[type="radio"],
-.profile-raid-role-option input[type="radio"],
-.profile-nickname-character-option input[type="checkbox"] {
-  inline-size: 18px;
-  block-size: 18px;
-  margin: 2px 0 0;
-  accent-color: var(--c-accent-400);
-  flex: 0 0 auto;
-}
-
-.profile-gender-option:focus-within,
-.profile-raid-role-option:focus-within,
-.profile-nickname-character-option:focus-within {
-  outline: 2px solid color-mix(in srgb, var(--c-accent-400) 62%, transparent);
-  outline-offset: 2px;
-}
-
-.profile-gender-option,
-.profile-raid-role-option,
-.profile-nickname-character-option {
-  touch-action: manipulation;
-}
-
-@media (hover: none) and (pointer: coarse) {
-  .profile-gender-option:hover,
-.profile-raid-role-option:hover,
-.profile-nickname-character-option:hover {
-    border-color: var(--border-subtle);
-    background: var(--surface-sunken);
-  }
-
-  .profile-gender-option.is-selected,
-.profile-raid-role-option.is-selected,
-.profile-nickname-character-option.is-selected,
-.profile-gender-option:has(input:checked),
-.profile-raid-role-option:has(input:checked),
-.profile-nickname-character-option:has(input:checked) {
-    border-color: color-mix(in srgb, var(--c-accent-400) 58%, var(--border-strong));
-    background: var(--accent-soft);
   }
 }

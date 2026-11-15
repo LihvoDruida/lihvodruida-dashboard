@@ -118,7 +118,6 @@ a[class*="__card "]:hover {
 /* Шапка картки: заголовок ліворуч,
 дії праворуч */
 .profile-card-head,
-.poll-section-head,
 .content-section-head,
 .content-form-section-head,
 [class$="__head"],
@@ -175,7 +174,6 @@ a[class*="__card "]:hover {
   flex: 0 0 auto;
 }
 
-.profile-account-overview-card__icon,
 .global-toast__icon {
   width: 38px;
   height: 38px;
@@ -256,15 +254,13 @@ a[class*="__card "]:hover {
 }
 
 /* Прозора */
-.btn.ghost,
-.btn-ghost {
+.btn.ghost {
   border-color: transparent;
   background: transparent;
   color: var(--text-soft);
 }
 
-.btn.ghost:hover,
-.btn-ghost:hover {
+.btn.ghost:hover {
   background: var(--surface-hover);
   border-color: var(--border-subtle);
 }
@@ -337,8 +333,6 @@ a[class*="__card "]:hover {
    ========================================================= */
 .content-field,
 .raid-poll-field,
-.application-filter-field,
-.admin-policy-toggle,
 [class$="-field"]:not(:where([class*="filter-shell"])),
 [class*="-field "]:not(:where([class*="filter-shell"])),
 [class$="__field"],
@@ -517,7 +511,6 @@ input[type="radio"] {
 /* Секція форми */
 .content-form-section,
 .raid-form-section,
-.admin-policy-fieldset,
 [class$="-form-section"],
 [class*="-form-section "] {
   display: grid;
@@ -557,7 +550,6 @@ form {
 .raid-notice,
 .discord-notice,
 .raid-ilvl-notice,
-.profile-storage-warning,
 [class$="-alert"],
 [class*="-alert "],
 [class$="-notice"],
@@ -588,7 +580,6 @@ form {
 }
 
 .warning-note,
-.profile-storage-warning,
 .notice.warning,
 .notice.is-warning {
   border-color: var(--tint-warning-border);
@@ -616,11 +607,8 @@ form {
    5. ПІГУЛКИ ТА ЧІПИ
    ========================================================= */
 .status-pill,
-.poll-chip,
 .status-chip,
-.poll-state,
 .raid-state,
-.dashboard-table-pill,
 .profile-count-pill,
 .content-mode-pill,
 [class$="-pill"],
@@ -709,11 +697,8 @@ form {
 }
 
 .status-pill,
-.poll-chip,
 .status-chip,
-.poll-state,
 .raid-state,
-.dashboard-table-pill,
 .profile-count-pill,
 .content-mode-pill,
 [class$="-pill"],
@@ -744,11 +729,6 @@ form {
   cursor: pointer;
   transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
-
-
-
-
-
 
 
 [class$="--tank"],
@@ -798,9 +778,6 @@ form {
   gap: var(--space-xs);
   min-width: 0;
 }
-
-
-
 
 
 /* Складений рядок: зміст ліворуч, дії праворуч */
@@ -868,9 +845,7 @@ a.dashboard-list-row:hover {
 }
 
 
-
 .raid-empty,
-.poll-empty,
 .content-empty,
 [class$="-empty"]:not(:where([class*="characters"])):not(:where([class*="--empty"])),
 [class*="-empty "]:not(:where([class*="characters"])):not(:where([class*="--empty"])) {
@@ -917,11 +892,6 @@ a.dashboard-list-row:hover {
   gap: var(--space-xs);
   min-width: 0;
 }
-
-
-
-
-
 
 
 /* Мобільний вигляд рядків: картка з підписами колонок */
@@ -990,12 +960,6 @@ a.dashboard-list-row:hover {
 
   
 
-  
-}
-
-@media (max-width: 520px) {
-  /* Одна колонка: на вузькому екрані пара «підпис + значення»
-     вже не влазить поруч із сусідньою. */
   
 }
 
@@ -1284,15 +1248,12 @@ label:has(> input[type="checkbox"]:checked) {
    ========================================================= */
 @media (max-width: 860px) {
   .btn-sm,
-.raid-list-icon-action,
-.poll-tab,
 .nav-sheet__link {
     min-height: 44px;
   }
 
   /* Іконкові кнопки лишаються квадратними, просто більшими */
-  .raid-list-icon-action,
-.profile-icon-action {
+  .profile-icon-action {
     width: 44px;
     min-width: 44px;
     height: 44px;
@@ -1324,15 +1285,6 @@ input[type="radio"] {
 /* Товщий бігунок діапазону там, де вказівник грубий.
    pointer: coarse точніший за ширину екрана: планшет із мишею
    лишається з тонким бігунком, телефон отримує великий. */
-@media (pointer: coarse) {
-  
-
-  
-
-  
-
-  
-}
 
 /* =========================================================
    12. ДОПОМІЖНІ ВИБОРИ — компактні чипи, не окремі кнопки дії
@@ -1391,15 +1343,6 @@ input[type="radio"] {
 }
 
 /* R6.7 publication recovery, scoped to its own panel. */
-.publication-workbench { display: grid; gap: 1rem; min-width: 0; padding: clamp(1rem, 2vw, 1.5rem); }
-.publication-workbench h2, .publication-workbench p { margin: 0; }
-.publication-workbench__states { display: grid; gap: 1rem; margin: 0; }
-.publication-workbench__states dt { font-weight: 700; }
-.publication-workbench__states dd { margin: .35rem 0 0; overflow-wrap: anywhere; }
-.publication-workbench__link { display: grid; gap: .5rem; min-width: 0; }
-.publication-workbench__link input { width: 100%; min-width: 0; }
-.publication-workbench__actions { display: flex; flex-wrap: wrap; gap: .65rem; }
-.publication-workbench__actions .btn { white-space: normal; overflow-wrap: anywhere; max-width: 100%; }
 /* Async actions may replace their button with a focusable result. */
 [data-action-result]:focus,
 [data-workflow-title]:focus {
@@ -1421,8 +1364,3 @@ input[type="radio"] {
 }
 
 /* Durable feedback for individual and bulk raid-poll actions. */
-.raid-poll-action { display: contents; }
-.raid-poll-action-result { flex-basis: 100%; max-width: 100%; margin: 0; color: var(--text-soft); overflow-wrap: anywhere; }
-.poll-bulk-results { display: grid; gap: var(--space-sm); padding: 0; list-style: none; }
-.poll-bulk-results li { display: flex; flex-wrap: wrap; gap: var(--space-sm); min-width: 0; overflow-wrap: anywhere; }
-.poll-bulk-results span { flex-basis: 100%; }

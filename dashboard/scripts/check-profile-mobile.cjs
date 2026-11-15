@@ -6,36 +6,29 @@ const page = fs.readFileSync(path.join(root, "src/app/profile/[profileId]/page.t
 const characters = fs.readFileSync(path.join(root, "src/components/ProfileCharactersLiveSection.tsx"), "utf8");
 const css = fs.readFileSync(path.join(root, "src/app/styles/profile.css"), "utf8");
 const desktop = fs.readFileSync(path.join(root, "src/app/styles/desktop.css"), "utf8");
-const mobileStart = css.indexOf("19. PROFILE UI NORMALIZATION — v3.8.19");
-const normalized = mobileStart >= 0 ? css.slice(mobileStart) : "";
-const polishStart = css.indexOf("20. PROFILE MOBILE POLISH — v3.8.20");
-const polish = polishStart >= 0 ? css.slice(polishStart) : "";
-
+const workspace = fs.readFileSync(path.join(root, "src/components/profile/profile-workspace.module.css"), "utf8");
+const foundation = fs.readFileSync(path.join(root, "src/components/page/page-system.module.css"), "utf8");
+const raids = fs.readFileSync(path.join(root, "src/components/profile/ProfileRaidSignups.tsx"), "utf8");
+const sidebar = fs.readFileSync(path.join(root, "src/components/profile/ProfileSidebar.tsx"), "utf8");
+const mobileStart = css.indexOf("19. PROFILE UI NORMALIZATION");
+const normalized = css.slice(mobileStart);
+const polish = css.slice(css.indexOf("20. PROFILE MOBILE POLISH"));
 const checks = [
-  [mobileStart >= 0, "profile normalization layer exists"],
-  [normalized.includes("@media (max-width: 760px)"), "phone/tablet breakpoint is explicit"],
-  [normalized.includes("grid-template-columns: 56px minmax(0, 1fr);"), "mobile sidebar identity keeps avatar beside account data"],
-  [normalized.includes(".profile-account-sidebar__facts") && normalized.includes("repeat(2, minmax(0, 1fr))"), "mobile profile facts use a compact two-column grid"],
-  [normalized.includes(".profile-account-header__actions") && normalized.includes("repeat(2, minmax(0, 1fr))"), "profile header actions are normalized for mobile"],
-  [normalized.includes(".profile-character-artwork") && normalized.includes("height: 172px;"), "mobile character artwork height is reduced"],
-  [normalized.includes(".profile-character-actions__row") && normalized.includes("repeat(2, minmax(0, 1fr))"), "character actions use a touch-friendly two-column row"],
-  [page.includes('className="profile-raid-meta-item__detail"'), "raid metadata detail has dedicated markup"],
-  [page.includes('className="profile-raid-card__difficulty"'), "raid difficulty has dedicated markup"],
-  [normalized.includes("grid-template-columns: minmax(230px, 0.82fr) minmax(0, 1.55fr);"), "profile raid cards have a dedicated desktop split layout"],
-  [normalized.includes(".profile-raid-card__meta") && normalized.includes("minmax(180px, 1.55fr)"), "desktop raid metadata uses a structured grid"],
-  [normalized.includes(".profile-raid-meta-item") && normalized.includes("display: grid;"), "raid labels and values cannot concatenate inline"],
-  [normalized.includes(".profile-raid-card {\n    grid-template-columns: minmax(0, 1fr);"), "raid cards collapse to one column on mobile"],
-  [normalized.includes(".profile-raid-meta-item--character {\n    grid-column: 1 / -1;"), "mobile character metadata gets full card width"],
-  [desktop.includes("@media (min-width: 1001px)"), "global desktop stylesheet remains independently scoped"],
-  [polishStart >= 0, "v3.8.20 profile mobile polish layer exists"],
-  [characters.includes('profile-character-mobile-badge'), "character markup exposes a dedicated mobile guild-state badge"],
-  [polish.includes('.profile-character-badges--art {\n    display: none;'), "art-overlay guild badge is removed on mobile"],
-  [polish.includes('.profile-character-title-row--stacked') && polish.includes('grid-template-columns: minmax(0, 1fr) auto;'), "mobile character title reserves the far-right badge column"],
-  [polish.includes('.profile-character-mobile-badge {\n    display: inline-flex;') && polish.includes('justify-self: end;'), "guild/other badge is visible at the right edge on mobile"],
-  [polish.includes('.profile-account-sidebar__nav {') && polish.includes('grid-template-columns: repeat(2, minmax(0, 1fr));'), "mobile profile menu is an explicit 2-column grid"],
-  [polish.includes('.profile-account-sidebar__nav a .profile-account-sidebar__nav-label') && polish.includes('position: static;'), "mobile profile menu labels are always visible"],
-  [polish.includes('.profile-account-sidebar__nav-count {\n    position: static;'), "mobile profile menu counter no longer floats over invisible controls"],
-  [polish.includes('.profile-character-artwork {\n    height: 148px;'), "mobile character artwork is compacted further"],
+  [page.includes("loadProfileOverview") && page.includes("<ProfileOverviewView"), "profile page uses server loader and shared view"],
+  [foundation.includes("@media (max-width: 1000px)") && foundation.includes("grid-template-columns: minmax(0, 1fr)"), "page sidebar collapses on smaller screens"],
+  [workspace.includes(".facts { grid-template-columns: repeat(2, minmax(0, 1fr))"), "mobile facts use two columns"],
+  [workspace.includes(".navigation { grid-template-columns: repeat(2, minmax(0, 1fr))"), "mobile navigation has visible two-column labels"],
+  [sidebar.includes('aria-current=') && sidebar.includes('overviewHref'), "profile navigation keeps current state and rules return URL"],
+  [raids.includes("<DataGrid") && raids.includes("<DataCard"), "raid cards share the adaptive data grid"],
+  [raids.includes("raidDifficultyLabel") && raids.includes("Роль і спеціалізація") && raids.includes("<dt>Персонаж</dt>"), "raid metadata retains difficulty, character and role"],
+  [raids.includes("unavailable ? <ErrorState") && raids.includes("<EmptyState"), "failed reads and empty raid list remain distinct"],
+  [normalized.includes(".profile-character-actions__row") && normalized.includes("repeat(2, minmax(0, 1fr))"), "character actions keep a touch-friendly row"],
+  [characters.includes("profile-character-mobile-badge"), "character guild-state badge remains available"],
+  [polish.includes(".profile-character-badges--art") && polish.includes("display: none"), "duplicate artwork badge stays hidden on mobile"],
+  [polish.includes(".profile-character-title-row--stacked") && polish.includes("grid-template-columns: minmax(0, 1fr) auto"), "character title reserves badge space"],
+  [polish.includes(".profile-character-mobile-badge") && polish.includes("justify-self: end"), "guild badge remains aligned to the edge"],
+  [polish.includes("height: 148px"), "mobile character artwork remains compact"],
+  [desktop.includes("@media (min-width: 1001px)"), "global desktop stylesheet remains scoped"],
 ];
 
 let failed = 0;

@@ -3,7 +3,7 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..', '..');
 const raids = fs.readFileSync(path.join(root, 'dashboard/src/lib/raids.ts'), 'utf8');
-const views = fs.readFileSync(path.join(root, 'dashboard/src/components/RaidViews.tsx'), 'utf8');
+const views = require('./lib/read-ui-workspace.cjs')('src/components/RaidViews.tsx');
 const route = fs.readFileSync(path.join(root, 'dashboard/src/app/api/raids/lifecycle/route.ts'), 'utf8');
 const cron = fs.readFileSync(path.join(root, 'deploy/cron/run-cron.sh'), 'utf8');
 const schema = fs.readFileSync(path.join(root, 'dashboard/src/lib/db/schema.sql'), 'utf8');

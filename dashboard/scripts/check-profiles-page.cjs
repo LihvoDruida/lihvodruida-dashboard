@@ -1,37 +1,26 @@
+"use strict";
+const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-
-const root = path.resolve(__dirname, "..");
-const pagePath = path.join(root, "src/app/profiles/page.tsx");
-const cssPath = path.join(root, "src/app/styles/directory.css");
-const page = fs.readFileSync(pagePath, "utf8");
-const css = fs.readFileSync(cssPath, "utf8");
-
+const read = file => fs.readFileSync(path.resolve(__dirname, "..", file), "utf8");
+const page = require("./lib/read-ui-workspace.cjs")("src/app/profiles/page.tsx");
+const navigation = read("src/lib/profileDirectoryNavigation.ts");
+const css = read("src/components/profile/directory/directory.module.css");
 const checks = [
-  ["catalog uses server page contract", page.includes("listDashboardProfilePage") && !page.includes("filteredProfiles.slice") && !page.includes("limit: 500")],
-  ["cursor navigation preserves filters", page.includes("result.previousCursor") && page.includes("result.nextCursor") && page.includes('params.set("cursor", cursor)')],
-  ["empty storage is explicit unavailable state", page.includes("result.unavailable") && page.includes("Каталог недоступний")],
-  ["profiles use dedicated roster rows", page.includes('className="profile-directory-row"')],
-  ["profile avatar is visible", page.includes('className="profile-directory-avatar"')],
-  ["search supports Battle.net filter", page.includes('name="link"') && page.includes('value="linked"')],
-  ["search supports role filter", page.includes('name="role"') && page.includes('value="moderator"')],
-  ["search supports sorting", page.includes('name="sort"') && page.includes('value="characters"')],
-  ["pagination preserves filters", page.includes("paginationState") && page.includes("buildProfilesHref")],
-  ["dangerous cleanup removed from directory", !page.includes('action="/api/dashboard/discord/profiles/cleanup"')],
-  ["maintenance links to management page", page.includes('/dashboard/profiles')],
-  ["hero statistics are compact", page.includes('className="profile-directory-hero-metrics"')],
-  ["desktop profile grid has explicit columns", css.includes(".profile-directory-head,") && css.includes("minmax(230px, 1.65fr)")],
-  ["profile cards have hover state", css.includes(".profile-directory-row:hover")],
-  ["tablet layout exists", css.includes("@media (max-width: 860px)") && css.includes(".profile-directory-user,")],
-  ["mobile layout exists", css.includes("@media (max-width: 560px)")],
-  ["mobile search becomes single column", css.includes(".profile-directory-hero-metrics,") && css.includes(".profile-directory-search,")],
-  ["empty state is dedicated", page.includes('className="profile-directory-empty"') && css.includes(".profile-directory-empty")],
+  [page.includes("listDashboardProfilePage") && !page.includes("filteredProfiles.slice"), "catalog loads the full permitted server result"],
+  [page.includes("result.previousCursor") && page.includes("result.nextCursor") && navigation.includes('params.set("cursor", cursor)'), "cursor navigation preserves filters"],
+  [page.includes("result.unavailable ? <ErrorState") && page.includes("<EmptyState"), "unavailable and empty states differ"],
+  [page.includes("<DataTable") && page.includes('<th scope="row"') && !page.includes('role="row"'), "directory has native table semantics"],
+  [page.includes("<ProfileAvatar") && page.includes("liveDiscordAvatars"), "avatar uses the live cache and fallback"],
+  [page.includes('name="link"') && page.includes('value="linked"'), "Battle.net filter retained"],
+  [page.includes('name="role"') && page.includes('value="moderator"'), "role filter retained"],
+  [page.includes('name="sort"') && page.includes('value="characters"'), "sort filter retained"],
+  [page.includes("paginationState") && page.includes("buildProfilesHref"), "pagination shares the filter state"],
+  [!page.includes('action="/api/dashboard/discord/profiles/cleanup"') && page.includes('/dashboard/profiles'), "destructive cleanup stays on its dedicated page"],
+  [page.includes("<PageHeader") && page.includes('label: "Персонажі"'), "header uses shared semantic metrics"],
+  [css.includes("table-layout: fixed") && css.includes("@container (max-width: 800px)") && css.includes("content: attr(data-label)"), "table adapts to labelled rows in narrow containers"],
+  [page.includes("<FilterNavigationForm") && page.includes("router.push") && page.includes("scroll: false"), "filters navigate without a full reload"],
+  [page.includes("data-list-entry=\"profiles\"") && page.includes("<ListViewMemory"), "row and filter return state retained"],
 ];
-
-const failed = checks.filter(([, ok]) => !ok);
-for (const [name, ok] of checks) console.log(`${ok ? "✓" : "✗"} ${name}`);
-if (failed.length) {
-  console.error(`[check-profiles-page] failed: ${failed.length}/${checks.length}`);
-  process.exit(1);
-}
-console.log(`[check-profiles-page] OK — ${checks.length}/${checks.length}`);
+for(const [ok,label] of checks)assert.ok(ok,label);
+console.log(`[check-profiles-page] ${checks.length}/${checks.length} directory structure invariants`);

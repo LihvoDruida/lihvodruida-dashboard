@@ -191,8 +191,8 @@
 [class*="-callout "],
 [class$="-banner"],
 [class*="-banner "],
-[class$="-warning"]:not(:where(.warning-note)):not(:where(.profile-storage-warning)),
-[class*="-warning "]:not(:where(.warning-note)):not(:where(.profile-storage-warning)) {
+[class$="-warning"]:not(:where(.warning-note)),
+[class*="-warning "]:not(:where(.warning-note)) {
   padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--border-subtle);
   border-left: 3px solid var(--c-accent-400);
@@ -318,8 +318,8 @@
 }
 
 /* ---------- Елементи списків ---------- */
-[class$="-item"]:not(:where(.dashboard-list-row)):not(:where(.raid-list-item)),
-[class*="-item "]:not(:where(.dashboard-list-row)):not(:where(.raid-list-item)),
+[class$="-item"]:not(:where(.dashboard-list-row)),
+[class*="-item "]:not(:where(.dashboard-list-row)),
 [class$="__item"]:not(:where(.dashboard-nav-measure__item)),
 [class*="__item "]:not(:where(.dashboard-nav-measure__item)) {
   min-width: 0;

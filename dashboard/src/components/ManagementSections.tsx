@@ -1,4 +1,5 @@
 "use client";
+import styles from "./management/sections.module.css";
 
 import Button from "@/components/ui/Button";
 
@@ -7,11 +8,13 @@ import { Children, useEffect, useId, useRef, useState, type ReactNode } from "re
 type Section = { id: string; label: string; description: string };
 
 /** Panels stay mounted: switching tasks must not discard unsaved form values. */
-export default function ManagementSections({ sections, children, initialSection }: {
+export default function ManagementSections({ sections, children, initialSection, variant = "legacy" }: {
   sections: Section[];
   children: ReactNode;
   initialSection?: string;
+  variant?: "legacy" | "universal";
 }) {
+  const universal = variant === "universal";
   const [active, setActive] = useState(initialSection || sections[0]?.id);
   const tabs = useRef<Array<HTMLButtonElement | null>>([]);
   const prefix = useId();
@@ -36,11 +39,11 @@ export default function ManagementSections({ sections, children, initialSection 
   }, [sections, prefix]);
   function select(id: string) {
     setActive(id);
-    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${id}`);
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}#${id}`);
   }
-  return <div className="management-sections">
-    <div className="management-section-tabs" role="tablist" aria-label="Задачі на цій сторінці">
-      {sections.map((section, index) => <Button key={section.id} type="button" className="btn management-section-tab" role="tab"
+  return <div className={universal ? styles.sections : "management-sections"}>
+    <div className={universal ? styles.tabs : "management-section-tabs"} role="tablist" aria-label="Задачі на цій сторінці">
+      {sections.map((section, index) => <Button key={section.id} type="button" className={`btn ${universal ? styles.tab : "management-section-tab"}`} role="tab"
         id={`${prefix}-tab-${section.id}`} aria-controls={`${prefix}-panel-${section.id}`}
         aria-selected={active === section.id} tabIndex={active === section.id ? 0 : -1}
         ref={element => { tabs.current[index] = element; }}
@@ -52,12 +55,12 @@ export default function ManagementSections({ sections, children, initialSection 
           else if (event.key === "End") next = sections.length - 1;
           else return;
           event.preventDefault(); select(sections[next].id); tabs.current[next]?.focus();
-        }}><span className="management-section-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>{section.label}</Button>)}
+        }}>{!universal ? <span className="management-section-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span> : null}{section.label}</Button>)}
     </div>
-    {sections.map((section, index) => <div key={section.id} className="management-section-panel" role="tabpanel"
+    {sections.map((section, index) => <div key={section.id} className={universal ? styles.panel : "management-section-panel"} role="tabpanel"
       id={`${prefix}-panel-${section.id}`} aria-labelledby={`${prefix}-tab-${section.id}`}
       hidden={active !== section.id} tabIndex={0}>
-      <p className="management-section-description">{section.description}</p>
+      <p className={universal ? styles.description : "management-section-description"}>{section.description}</p>
       {panels[index]}
     </div>)}
   </div>;

@@ -1,0 +1,1 @@
+BLOCKED: Chromium could not create its Unix singleton socket: Operation not permitted. No screenshots or responsive results were produced. Fixture bundled successfully.

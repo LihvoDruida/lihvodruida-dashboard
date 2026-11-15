@@ -27,6 +27,8 @@ function guildPageFixture() {
     '@/lib/discordGuildLinks': { discordGuildChannelUrl: () => '#', MISTBLOSSOM_DISCORD_CHANNELS: { general: {}, rules: {}, announcements: {}, raids: {} } },
     '@/components/GuildRoster.module.css': { default: {} },
   };
+  modules['@/services/guildWorkspace'] = load('src/services/guildWorkspace.ts', modules);
+  for (const key of ['@/components/page/PageContainer','@/components/page/PageErrorBoundary','@/components/guild/GuildDiscordGuide']) modules[key] = {default: () => null};
   for (const adapter of Object.values(modules)) if (Object.hasOwn(adapter, 'default')) adapter.__esModule = true;
   const file = path.join(__dirname, '../src/app/guild/page.tsx');
   const compiled = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;

@@ -168,9 +168,6 @@ const LIST_STYLE_SOURCE = 'src/app/styles/components.css';
 const listStyleText = exists(LIST_STYLE_SOURCE) ? read(LIST_STYLE_SOURCE) : '';
 assert(/dashboard-list-panel/.test(listStyleText) && /dashboard-list-row/.test(listStyleText), `Global dashboard list styles must stay centralized in ${LIST_STYLE_SOURCE}.`);
 const listUnifiedFiles = {
-  'src/components/RaidViews.tsx': ['dashboard-list-row', 'dashboard-list-actions'],
-  'src/components/RaidPollBrowser.tsx': ['dashboard-list-panel', 'dashboard-list-head', 'dashboard-list', 'dashboard-list-row', 'dashboard-list-actions'],
-  'src/app/raids/page.tsx': ['dashboard-list-panel', 'dashboard-list-head', 'dashboard-list'],
   'src/components/content/ContentLibrary.tsx': ['dashboard-list-panel', 'dashboard-list-row', 'dashboard-list-actions'],
   'src/app/discord/rules/page.tsx': ['dashboard-list-panel', 'dashboard-list-row', 'dashboard-list-actions'],
 };
@@ -183,8 +180,8 @@ for (const [file, requiredClasses] of Object.entries(listUnifiedFiles)) {
 }
 
 if (exists('src/components/GuildRosterExplorer.tsx')) {
-  const rosterText = read('src/components/GuildRosterExplorer.tsx');
-  assert(rosterText.includes('GuildRoster.module.css'), 'Guild roster must keep its page-specific layout in GuildRoster.module.css.');
+  const rosterText = require('./lib/read-ui-workspace.cjs')('src/components/GuildRosterExplorer.tsx');
+  assert(rosterText.includes('guild-workspace.module.css') && rosterText.includes('GuildRosterTable'), 'Guild roster must use the scoped workspace and shared native table.');
   const rosterView = read('src/lib/guildRosterViewState.ts');
   assert(rosterText.includes('pageSize = Number(view.size)') && rosterView.includes('["25", "50", "100"] as const, "25"'), 'Guild roster must default to 25 characters per page and accept only approved sizes.');
   assert(rosterText.includes('pagedMembers'), 'Guild roster must paginate filtered members before rendering rows.');
@@ -210,22 +207,27 @@ if (exists('src/app/api/guild/sync/route.ts')) {
 }
 
 if (exists('src/app/profiles/page.tsx')) {
-  const profilesText = read('src/app/profiles/page.tsx');
-  assert(profilesText.includes('profile-directory-panel') && profilesText.includes('profile-directory-row'), 'Profiles page must use the dedicated readable profile directory layout.');
+  const profilesText = require('./lib/read-ui-workspace.cjs')('src/app/profiles/page.tsx');
+  assert(profilesText.includes('<PageContainer') && profilesText.includes('<ProfileDirectoryTable') && profilesText.includes('<DataTable'), 'Profiles page must use the dedicated readable profile directory layout.');
   const directoryText = exists('src/lib/profileDirectory.ts') ? read('src/lib/profileDirectory.ts') : '';
   assert(/export const PROFILE_DIRECTORY_PAGE_SIZE = 20/.test(directoryText) && profilesText.includes('listDashboardProfilePage'), 'Profiles catalog must keep a server page size of 20.');
   assert(!profilesText.includes('filteredProfiles.slice') && directoryText.includes('previousCursor') && directoryText.includes('nextCursor'), 'Profiles catalog must use server cursor pagination over the complete permitted set.');
   assert(profilesText.includes('buildProfilesHref') && profilesText.includes('paginationState'), 'Profiles page must preserve pagination links with active filters and search query.');
 }
 
-if (exists('src/components/RaidViews.tsx')) {
-  const raidViewsText = read('src/components/RaidViews.tsx');
-  assert(raidViewsText.includes('raid-list-action-open'), 'Raid cards must keep a full-width open action at the top of the action column.');
-  assert(raidViewsText.includes('raid-list-action-tools'), 'Raid cards must group edit/delete actions in one compact row.');
-  assert(raidViewsText.includes('raid-list-icon-action--edit') && raidViewsText.includes('aria-label={`Редагувати рейд'), 'Raid edit action must be icon-only visually but accessible by aria-label.');
-  assert(raidViewsText.includes('raid-list-icon-action--delete') && raidViewsText.includes('aria-label={raid.status === "draft"'), 'Raid delete action must be icon-only visually but accessible by aria-label.');
-  assert(raidViewsText.includes('raid-list-archive-note'), 'Raid cards must keep the archive/draft/state note below action buttons.');
+for (const [file, primitives] of Object.entries({
+  'src/app/raids/page.tsx': ['<PageContainer','<PageHeader','<FilterToolbar','<DataGrid'],
+  'src/components/RaidPollBrowser.tsx': ['<FilterToolbar','<DataGrid','<PollDirectoryCard'],
+  'src/components/raids/RaidDirectoryCard.tsx': ['<DataCard','<StatusBadge','<Progress','<RaidManageActions'],
+})) {
+  const source = require('./lib/read-ui-workspace.cjs')(file);
+  for(const primitive of primitives) assert(source.includes(primitive),file+' must use '+primitive);
 }
+const raidActions = read('src/components/raids/RaidManageActions.tsx');
+assert(raidActions.includes('<DropdownMenu') && raidActions.includes('Редагувати'), 'Secondary raid actions must share one accessible disclosure.');
+assert(raidActions.includes('data-confirm-message') && raidActions.includes('type="submit"'), 'Destructive raid actions must preserve native form confirmation and endpoint checks.');
+const raidDetail = read('src/components/raids/RaidDetailsView.tsx');
+assert(raidDetail.includes('showRosterDetails={canSeeRoster}') && raidDetail.includes('showItemLevel={canManage}'), 'Raid data must obey roster and item-level visibility.');
 
 
 assert(!exists('src/components/SectionIcon.tsx'), 'SectionIcon registry must be removed: the dashboard is intentionally iconless.');

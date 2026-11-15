@@ -43,8 +43,7 @@ main .dashboard-shell {
     gap: var(--page-gap);
   }
 
-  .profile-card,
-.content-form-section,
+  .content-form-section,
 .raid-form-section,
 .discord-management-section {
     gap: var(--section-gap);
@@ -63,18 +62,7 @@ main .dashboard-shell {
   /* Fallback для доменних surface-класів. :where() має нульову
      специфічність, тому свідомий стиль конкретного компонента завжди
      сильніший за глобальну нормалізацію. */
-  :where(
-    [class$="-card"]:not([class*="nav"]),
-    [class*="-card "]:not([class*="nav"]),
-    [class$="__card"],
-    [class*="__card "],
-    [class$="-panel"]:not(.dashboard-list-panel),
-    [class*="-panel "]:not(.dashboard-list-panel),
-    [class$="__panel"],
-    [class*="__panel "],
-    [class$="-box"],
-    [class*="-box "]
-  ) {
+  :where([class$="-card"]:not([class*="nav"]), [class*="-card "]:not([class*="nav"]), [class$="__card"], [class*="__card "], [class$="-panel"]:not(.dashboard-list-panel), [class*="-panel "]:not(.dashboard-list-panel), [class$="__panel"], [class*="__panel "], [class$="-box"], [class*="-box "]) {
     border-radius: var(--card-radius);
     border-color: rgba(255, 226, 196, 0.1);
   }
@@ -84,13 +72,7 @@ main .dashboard-shell {
   }
 
 
-  :where(.panel) :where(
-    .panel,
-    [class$="-card"],
-    [class*="-card "],
-    [class$="__card"],
-    [class*="__card "]
-  ) {
+  :where(.panel) :where(.panel, [class$="-card"], [class*="-card "], [class$="__card"], [class*="__card "]) {
     border-color: rgba(255, 226, 196, 0.075);
     background: rgba(12, 10, 7, 0.3);
     box-shadow: none;
@@ -160,8 +142,7 @@ main .dashboard-shell {
     line-height: 1.25;
   }
 
-  .profile-account-header__actions,
-.raid-greylist-mini-actions {
+  .raid-greylist-mini-actions {
     gap: var(--space-xs);
   }
 
@@ -202,19 +183,11 @@ select {
   }
 
   /* ---------- Сітки: один ритм, без випадкових 12/24/32px ---------- */
-  :where(
-    [class$="-grid"],
-    [class*="-grid "],
-    [class$="__grid"],
-    [class*="__grid "]
-  ) {
+  :where([class$="-grid"], [class*="-grid "], [class$="__grid"], [class*="__grid "]) {
     gap: var(--section-gap);
   }
 
-  :where(
-    [class$="-layout"]:not(.profile-account-layout):not(.access-groups-layout),
-    [class*="-layout "]:not(.profile-account-layout):not(.access-groups-layout)
-  ) {
+  :where([class$="-layout"]:not(.access-groups-layout), [class*="-layout "]:not(.access-groups-layout)) {
     gap: var(--page-gap);
   }
 
@@ -248,62 +221,6 @@ select {
   /* =======================================================
      PROFILE — виправлення проблем зі скріну
      ======================================================= */
-  .profile-account-layout {
-    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
-    gap: var(--space-lg);
-    align-items: start;
-  }
-
-  .profile-account-sidebar {
-    top: 92px;
-    gap: var(--space-md);
-    padding: 22px;
-    border-radius: var(--card-radius);
-  }
-
-  .profile-account-sidebar__avatar {
-    width: 88px;
-    height: 88px;
-  }
-
-  .profile-account-sidebar__facts {
-    width: 100%;
-  }
-
-  .profile-account-sidebar__nav,
-.profile-account-sidebar__footer,
-.profile-account-sidebar__footer > *,
-.profile-account-logout,
-.profile-account-logout > .btn {
-    width: 100%;
-  }
-
-  .profile-account-sidebar__nav a {
-    min-height: 40px;
-    padding: 0 12px;
-    border-radius: var(--control-radius);
-  }
-
-  .profile-account-main {
-    gap: 18px;
-  }
-
-  .profile-account-header {
-    align-items: end;
-    gap: 18px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--border-subtle);
-  }
-
-  .profile-account-overview {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: var(--space-sm);
-  }
-
-  .profile-account-overview-card {
-    min-height: 82px;
-    padding: 14px 16px;
-  }
 
   .profile-card-toolbar--compact {
     gap: var(--space-xs);

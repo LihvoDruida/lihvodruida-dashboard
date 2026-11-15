@@ -1,4 +1,5 @@
 "use client";
+import styles from "@/components/community/publication.module.css";
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -52,23 +53,23 @@ export default function DiscordPublicationStatus({ endpoint, initialStatus, disc
       else setStatus(unknownPublicationStatus());
     } finally { lock.current = false; setPending(null); }
   }
-  return <section ref={scopeRef} id="discord-publication" className="panel publication-workbench" aria-label="Стан публікації Discord" aria-busy={pending !== null}>
+  return <section ref={scopeRef} id="discord-publication" className={styles.panel} aria-label="Стан публікації Discord" aria-busy={pending !== null}>
     <div><span className="eyebrow">Discord · збережений стан</span><h2>Публікація та відновлення</h2>
-      <p className="muted">Дії використовують останні збережені дані. Зміни у формі спочатку збережи.</p></div>
-    <dl className="publication-workbench__states">
+      <p className={styles.metadata}>Дії використовують останні збережені дані. Зміни у формі спочатку збережи.</p></div>
+    <dl className={styles.states}>
       <div><dt>Оголошення · {status.message.label}</dt><dd>{status.message.description}</dd></div>
       {status.event ? <div><dt>Подія · {status.event.label}</dt><dd>{status.event.description}</dd></div> : null}
     </dl>
     {status.scheduled ? <p>Розклад збережено. Публікація доступна лише після настання запланованого часу.</p> : null}
-    {status.manualAllowed ? <label className="publication-workbench__link">Посилання на вже створене оголошення (необовʼязково)
+    {status.manualAllowed ? <label className={styles.field}>Посилання на вже створене оголошення (необовʼязково)
       <input type="url" aria-label="Посилання на вже створене оголошення" value={messageUrl} onChange={event => setMessageUrl(event.target.value)} placeholder="https://discord.com/channels/…" maxLength={300} disabled={pending !== null} />
-      <span className="muted">Посилання перевіряється за каналом, автором, часом і записом. Воно не дозволяє примусове повторне надсилання.</span>
+      <span className={styles.metadata}>Посилання перевіряється за каналом, автором, часом і записом. Воно не дозволяє примусове повторне надсилання.</span>
     </label> : null}
     {!discordEnabled ? <p>Discord-публікація зараз недоступна. Збережений стан можна перечитати.</p> : null}
-    <div className="publication-workbench__actions">
+    <div className={styles.actions}>
       <button type="button" className="btn subtle" disabled={pending !== null} onClick={(event) => run(false, event.currentTarget)}>{pending === "read" ? "Читаємо стан…" : "Оновити стан"}</button>
       {status.canAct && discordEnabled ? <button type="button" className="btn primary" disabled={pending !== null} onClick={(event) => run(true, event.currentTarget)}>{pending === "write" ? "Виконуємо…" : status.actionLabel}</button> : null}
     </div>
-    <p data-action-result tabIndex={-1} role="status" aria-live="polite" aria-atomic="true">{pending ? pending === "read" ? "Читаємо збережений стан…" : "Звіряємо та зберігаємо результат Discord…" : notice}</p>
+    <p className={styles.result} data-action-result tabIndex={-1} role="status" aria-live="polite" aria-atomic="true">{pending ? pending === "read" ? "Читаємо збережений стан…" : "Звіряємо та зберігаємо результат Discord…" : notice}</p>
   </section>;
 }

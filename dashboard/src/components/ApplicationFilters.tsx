@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import FilterToolbar from "@/components/page/FilterToolbar";
+import styles from "@/components/community/workspace.module.css";
 import { listViewUrl } from "@/lib/listViewState";
 
 type ApplicationFiltersProps = {
@@ -123,8 +125,7 @@ export default function ApplicationFilters({
   const hasActiveFilters = Boolean(query.trim()) || status !== DEFAULTS.status || className !== DEFAULTS.class || sort !== DEFAULTS.sort;
 
   return (
-    <section className="toolbar panel applications-live-filters" aria-label="Фільтри заявок" data-updating={isPending ? "true" : "false"}>
-      <label className="application-filter-field application-filter-field--search">
+    <FilterToolbar label="Фільтри заявок" busy={isPending} search={<label className={styles.field}>
         <span>Пошук</span>
         <input
           className="input"
@@ -136,9 +137,7 @@ export default function ApplicationFilters({
           autoComplete="off"
           onChange={(event) => { resettingRef.current = false; setQuery(event.currentTarget.value); }}
         />
-      </label>
-
-      <label className="application-filter-field">
+      </label>} filters={<>      <label className={styles.field}>
         <span>Статус</span>
         <select
           className="select"
@@ -157,7 +156,7 @@ export default function ApplicationFilters({
         </select>
       </label>
 
-      <label className="application-filter-field">
+      <label className={styles.field}>
         <span>Клас</span>
         <select
           className="select"
@@ -175,7 +174,7 @@ export default function ApplicationFilters({
         </select>
       </label>
 
-      <label className="application-filter-field">
+      <label className={styles.field}>
         <span>Сортування</span>
         <select
           className="select"
@@ -192,10 +191,8 @@ export default function ApplicationFilters({
         </select>
       </label>
 
-      <div className="application-filter-actions">
-        <button className="btn subtle btn-sm" type="button" disabled={!hasActiveFilters || isPending} onClick={resetFilters}>Скинути</button>
-        <span className="application-filter-state" aria-live="polite">{isPending ? "Оновлюємо..." : "Автофільтр"}</span>
-      </div>
-    </section>
+</>} actions={<>        <button className="btn subtle btn-sm" type="button" disabled={!hasActiveFilters || isPending} onClick={resetFilters}>Скинути</button>
+</>} result={isPending ? "Оновлюємо список…" : "Пошук застосовується автоматично"} />
+
   );
 }

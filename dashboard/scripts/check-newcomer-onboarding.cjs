@@ -18,7 +18,7 @@ const dmApi = read('src/lib/discordAdmin.ts');
 const route = read('src/app/api/dashboard/discord/onboarding/automation/route.ts');
 const rulesComplete = read('src/app/api/rules/accept/complete/route.ts');
 const proxy = read('src/proxy.ts');
-const guildPage = read('src/app/guild/page.tsx');
+const guildPage = require('./lib/read-ui-workspace.cjs')('src/app/guild/page.tsx');
 const guildLinks = read('src/lib/discordGuildLinks.ts');
 const cron = readRepo('deploy/cron/run-cron.sh');
 const memberJoinedRoute = read('src/app/api/internal/discord/member-joined/route.ts');
@@ -52,7 +52,7 @@ assert(botServer.includes('startDiscordGatewayBridge') && botServer.includes('di
 assert(compose.includes('DISCORD_GATEWAY_ENABLED') && compose.includes('DISCORD_BOT_TOKEN') && compose.includes('DISCORD_GUILD_ID'), 'bot compose service must receive optional gateway configuration');
 assert(proxy.includes('pathname === "/api/internal/discord/member-joined"'), 'internal host gate must allow the targeted member-joined route');
 
-assert(guildPage.includes('Що доступно учаснику гільдії') && guildPage.includes('guildGuideGrid'), 'guild panel must expose the quick Discord guide');
+assert(guildPage.includes('Ключові канали гільдії') && guildPage.includes('MISTBLOSSOM_DISCORD_CHANNELS.raids'), 'guild panel must expose the quick Discord guide');
 for (const id of ['1449768498397057064', '1449767282195562568', '1449767282195562569', '1449768050076291111']) {
   assert(guildLinks.includes(id), `guild Discord quick links must include channel ${id}`);
 }

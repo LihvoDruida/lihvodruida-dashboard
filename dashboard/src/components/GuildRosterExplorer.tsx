@@ -1,29 +1,26 @@
 "use client";
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-  type KeyboardEvent,
-  type MouseEvent,
-} from "react";
-import type {
-  GuildRaidProgress,
-  GuildRosterMember,
-  GuildRosterStats,
-  GuildScoreSegment,
-} from "@/lib/guildRoster";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { GuildRosterMember, GuildRosterStats, GuildScoreSegment } from "@/lib/guildRoster";
 import { useDashboardApiResource } from "@/lib/dashboardBackgroundApi";
-import { currentSeasonRaidProgress, currentSeasonRaidSlugs, primaryCurrentRaidProgress } from "@/lib/characterRaidProgress";
+import { currentSeasonRaidProgress, currentSeasonRaidSlugs } from "@/lib/characterRaidProgress";
 import { formatStableNumber, stableTextCompare } from "@/lib/stableUiText";
 import { useSearchParams } from "next/navigation";
 import ListViewMemory from "@/components/ListViewMemory";
-import { listEntryId, listViewUrl } from "@/lib/listViewState";
+import { listViewUrl } from "@/lib/listViewState";
 import { replaceClientListLocation } from "@/lib/clientListLocation";
 import { readGuildRosterView, compareGuildRosterMembers, type GuildRosterSort, type GuildRaidClearFilter, type GuildLinkFilter } from "@/lib/guildRosterViewState";
-import styles from "./GuildRoster.module.css";
+import styles from "./guild/guild-workspace.module.css";
+import { normalizedRaidProgress, bestRaid, raidWeight, raidIsClear, raidHasProgress, friendlySource } from "@/lib/guildRosterPresentation";
+import GuildRosterTable from "@/components/guild/GuildRosterTable";
+import FilterToolbar from "@/components/page/FilterToolbar";
+import FormField from "@/components/ui/FormField";
+import FormSection from "@/components/page/FormSection";
+import PageSection from "@/components/page/PageSection";
+import EmptyState from "@/components/page/EmptyState";
+import ErrorState from "@/components/page/ErrorState";
+import StatusBadge from "@/components/page/StatusBadge";
+import Button from "@/components/ui/Button";
 
 type Props = {
   members: GuildRosterMember[];
@@ -55,27 +52,11 @@ const SEGMENT_LABELS: Record<GuildScoreSegment, string> = {
 };
 
 const ROLE_FILTERS = [
-  { value: "all", label: "Всі" },
-  { value: "tank", label: "Tank" },
-  { value: "healer", label: "Heal" },
-  { value: "dps", label: "DPS" },
+  { value: "all", label: "Усі" },
+  { value: "tank", label: "Танк" },
+  { value: "healer", label: "Хіл" },
+  { value: "dps", label: "ДД" },
 ] as const;
-
-const CLASS_COLOR: Record<string, string> = {
-  "death knight": "#c41e3a",
-  "demon hunter": "#a330c9",
-  druid: "#ff7c0a",
-  evoker: "#33937f",
-  hunter: "#aad372",
-  mage: "#3fc7eb",
-  monk: "#00ff98",
-  paladin: "#f48cba",
-  priest: "#ffffff",
-  rogue: "#fff468",
-  shaman: "#0070dd",
-  warlock: "#8788ee",
-  warrior: "#c69b6d",
-};
 
 function formatNumber(value: number, digits = 0) {
   if (!Number.isFinite(value) || value <= 0) return "—";
@@ -97,102 +78,6 @@ function uniqueSorted(values: string[]) {
   return Array.from(
     new Set(values.map((value) => value.trim()).filter(Boolean)),
   ).sort((a, b) => stableTextCompare(a, b));
-}
-
-function roleShort(role: string) {
-  if (role === "tank") return "Tank";
-  if (role === "healer") return "Heal";
-  if (role === "dps") return "DPS";
-  return "—";
-}
-
-function classColor(className: string) {
-  return CLASS_COLOR[className.trim().toLowerCase()] || "#f6efe2";
-}
-
-function roleStyleClass(role: GuildRosterMember["role"]) {
-  if (role === "tank") return styles.roleTank;
-  if (role === "healer") return styles.roleHealer;
-  if (role === "dps") return styles.roleDps;
-  return "";
-}
-
-function openProfileCard(event: MouseEvent<HTMLElement>, href?: string | null) {
-  if (!href) return;
-  const target = event.target as HTMLElement | null;
-  if (target?.closest("a,button,input,select,textarea,label")) return;
-  window.location.href = href;
-}
-
-function openProfileCardWithKeyboard(
-  event: KeyboardEvent<HTMLElement>,
-  href?: string | null,
-) {
-  if (!href || (event.key !== "Enter" && event.key !== " ")) return;
-  const target = event.target as HTMLElement | null;
-  if (target?.closest("a,button,input,select,textarea,label")) return;
-  event.preventDefault();
-  window.location.href = href;
-}
-
-function normalizedRaidProgress(member: GuildRosterMember) {
-  return Array.isArray(member.raidProgression) ? member.raidProgression : [];
-}
-
-function bestRaid(member: GuildRosterMember, snapshot: GuildRosterStats["raidSeasonSnapshot"], raidSlug = "all") {
-  const raids = normalizedRaidProgress(member);
-  if (raidSlug !== "all") {
-    return raids.find((raid) => raid.slug === raidSlug) || null;
-  }
-  return primaryCurrentRaidProgress(raids, snapshot);
-}
-
-function raidWeight(raid: GuildRaidProgress | null) {
-  if (!raid) return 0;
-  return raid.mythicKills * 1_000_000 + raid.heroicKills * 10_000 + raid.normalKills * 100 + raid.totalBosses;
-}
-
-function raidIsClear(raid: GuildRaidProgress | null, difficulty: "normal" | "heroic" | "mythic") {
-  if (!raid || raid.totalBosses <= 0) return false;
-  if (difficulty === "mythic") return raid.mythicKills >= raid.totalBosses;
-  if (difficulty === "heroic") return raid.heroicKills >= raid.totalBosses;
-  return raid.normalKills >= raid.totalBosses;
-}
-
-function raidHasProgress(raid: GuildRaidProgress | null) {
-  return Boolean(raid && (raid.normalKills > 0 || raid.heroicKills > 0 || raid.mythicKills > 0));
-}
-
-function raidSummary(raid: GuildRaidProgress | null) {
-  if (!raid) return { main: "—", detail: "Немає даних" };
-  const total = raid.totalBosses || 0;
-  if (!total) return { main: raid.summary || "—", detail: raid.name };
-
-  const highest = raid.mythicKills > 0
-    ? `M ${raid.mythicKills}/${total}`
-    : raid.heroicKills > 0
-      ? `H ${raid.heroicKills}/${total}`
-      : `N ${raid.normalKills}/${total}`;
-  const detail = [
-    raid.mythicKills > 0 ? `M ${raid.mythicKills}/${total}` : null,
-    raid.heroicKills > 0 ? `H ${raid.heroicKills}/${total}` : null,
-    raid.normalKills > 0 ? `N ${raid.normalKills}/${total}` : null,
-  ].filter(Boolean).join(" · ") || raid.summary || "Без убивств";
-
-  return { main: highest, detail };
-}
-
-function compactRaidName(name: string) {
-  return name.length > 30 ? `${name.slice(0, 29)}…` : name;
-}
-
-function friendlySource(value: string) {
-  const source = String(value || "").toLowerCase();
-  if (source.includes("raider")) return "Raider.IO → PostgreSQL";
-  if (source.includes("battle")) return "Battle.net → PostgreSQL";
-  if (source.includes("storage") || source.includes("database") || source.includes("records")) return "PostgreSQL";
-  if (source.includes("live-sync")) return "Battle.net + Raider.IO";
-  return value || "PostgreSQL";
 }
 
 function FilterSelect({
@@ -515,88 +400,28 @@ export default function GuildRosterExplorer({ members, stats, source, error, nav
   const listMemory = <div className={styles.viewMemory}><ListViewMemory key={navigationScope} kind="guild" scope={navigationScope} currentUrl={currentUrl} clientLocation /></div>;
 
   if (!liveMembers.length) {
-    return (
-      <>{listMemory}<section className={`${styles.emptyState} panel`} aria-live="polite">
-        <span className="eyebrow">Склад гільдії</span>
-        <h2>Дані складу ще готуються</h2>
-        <p>
-          Сервер синхронізує Battle.net і Raider.IO у фоні. Сторінка більше не запускає
-          масові зовнішні запити з браузера.
-        </p>
-        {liveError ? <small>{liveError}</small> : null}
-        <button className="btn subtle" type="button" onClick={() => void rosterResource.refresh("guild-empty-retry", { force: true })}>
-          Перевірити базу
-        </button>
-      </section></>
-    );
+    const actions = <Button onClick={() => void rosterResource.refresh("guild-empty-retry", {force: true})}>Повторити</Button>;
+    return <>{listMemory}{liveError || rosterResource.status === "error"
+      ? <ErrorState title="Склад тимчасово недоступний" description="Не вдалося отримати склад гільдії. Спробуй оновити дані." actions={actions} />
+      : <EmptyState title="Склад ще готується" description="Персонажі зʼявляться після завершення синхронізації." actions={actions} />}</>;
   }
-
-  return (
-    <section className={`${styles.rosterPanel} panel`} aria-label="Склад гільдії">
-      {listMemory}
-      <div className={styles.toolbar}>
-        <div className={styles.toolbarTitle}>
-          <div>
-            <span className="eyebrow">Склад</span>
-            <h2>Персонажі гільдії</h2>
-          </div>
-          <span className={styles.resultCount}>{filteredMembers.length} з {liveMembers.length}</span>
-        </div>
-
-        <div className={styles.searchRow}>
-          <label className={styles.searchBox} htmlFor="guild-roster-search">
-            <span aria-hidden="true">⌕</span>
-            <input
-              id="guild-roster-search"
-              type="search"
-              maxLength={160}
-              value={query}
-              onChange={(event) => changeQuery(event.target.value)}
-              placeholder="Ім’я, клас, спек, рейд…"
-              autoComplete="off"
-            />
-            {query ? (
-              <button className="btn" type="button" onClick={() => changeQuery("")} aria-label="Очистити пошук">×</button>
-            ) : null}
-          </label>
-
-          <div className={styles.quickRoles} aria-label="Швидкий фільтр ролі">
-            {ROLE_FILTERS.map((item) => (
-              <button
-                type="button"
-                key={item.value}
-                className="btn"
-                aria-pressed={roleFilter === item.value}
-                onClick={() => setRoleFilter(item.value)}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-
-          <button
-            type="button"
-            className={`btn ${styles.filtersButton}`}
-            onClick={() => replaceClientListLocation("guild", { filters: filtersOpen ? null : "1" })}
-            aria-expanded={filtersOpen}
-          >
-            Фільтри{activeFilterCount ? ` · ${activeFilterCount}` : ""}
-          </button>
-        </div>
-      </div>
-
-      <div className={styles.metrics} aria-label="Показники складу">
-        <div><span>Персонажів</span><strong>{liveStats.memberCount || liveMembers.length}</strong></div>
-        <div><span>Показано</span><strong>{filteredMembers.length}</strong></div>
-        <div><span>Сер. ilvl</span><strong>{formatNumber(liveStats.averageItemLevel)}</strong></div>
-        <div><span>Топ M+</span><strong>{formatNumber(liveStats.maxRioAll, 1)}</strong></div>
-        <div><span>Рейд-профілі</span><strong>{raidStats.profiles}</strong></div>
-        <div><span>Heroic clear</span><strong>{raidStats.heroicClears}</strong></div>
-        <div><span>Mythic clear</span><strong>{raidStats.mythicClears}</strong></div>
-      </div>
-
+  return <PageSection id="guild-roster-title" title="Персонажі гільдії" description="Пошук, ролі, спорядження та прогрес поточного сезону.">
+    {listMemory}
+    <FilterToolbar label="Пошук і фільтри складу" search={<FormField id="guild-roster-search" label="Пошук персонажа" type="search" maxLength={160} value={query} onChange={event => changeQuery(event.target.value)} placeholder="Імʼя, клас, спек або рейд" autoComplete="off" />}
+      filters={<div className={styles.actions} aria-label="Швидкий фільтр ролі">{ROLE_FILTERS.map(item => <Button key={item.value} aria-pressed={roleFilter === item.value} onClick={() => setRoleFilter(item.value)}>{item.label}</Button>)}</div>}
+      actions={<><Button onClick={() => replaceClientListLocation("guild", {filters: filtersOpen ? null : "1"})} aria-expanded={filtersOpen}>Фільтри{activeFilterCount ? ` · ${activeFilterCount}` : ""}</Button><Button onClick={resetFilters} disabled={!activeFilterCount}>Скинути</Button></>}
+      result={`Знайдено ${filteredMembers.length} із ${liveMembers.length}`} />
+    <dl className={styles.metrics} aria-label="Показники складу">
+      <div><dt>Персонажів</dt><dd>{liveStats.memberCount || liveMembers.length}</dd></div>
+      <div><dt>Показано</dt><dd>{filteredMembers.length}</dd></div>
+      <div><dt>Сер. ilvl</dt><dd>{formatNumber(liveStats.averageItemLevel)}</dd></div>
+      <div><dt>Топ M+</dt><dd>{formatNumber(liveStats.maxRioAll, 1)}</dd></div>
+      <div><dt>Рейд-профілі</dt><dd>{raidStats.profiles}</dd></div>
+      <div><dt>Heroic clear</dt><dd>{raidStats.heroicClears}</dd></div>
+      <div><dt>Mythic clear</dt><dd>{raidStats.mythicClears}</dd></div>
+    </dl>
       {filtersOpen ? (
-        <div className={styles.filtersPanel} aria-label="Розширені фільтри">
+        <FormSection title="Розширені фільтри"><div className={styles.filtersPanel}>
           <FilterSelect
             id="guild-rio-segment"
             label="RIO показник"
@@ -677,118 +502,12 @@ export default function GuildRosterExplorer({ members, stats, source, error, nav
             <button type="button" className="btn subtle" onClick={resetFilters}>Скинути все</button>
             <small>База: {formatRosterDate(liveStats.updatedAt)}</small>
           </div>
-        </div>
+        </div></FormSection>
       ) : null}
 
-      <div className={styles.syncLine}>
-        <span className={rosterResource.status === "error" ? styles.syncError : styles.syncOk} aria-hidden="true" />
-        <span>
-          {rosterResource.status === "checking"
-            ? "Перевіряю нові дані в локальній базі…"
-            : liveSyncLabel || `Автооновлення з VPS · останні дані ${formatRosterDate(liveStats.updatedAt)}`}
-        </span>
-        <span className={styles.syncSource}>{friendlySource(liveSource)}</span>
-      </div>
 
-      <div className={styles.tableScroll}>
-        <div className={styles.table} role="table" aria-label="Персонажі гільдії">
-          <div className={styles.tableHead} role="row">
-            <span role="columnheader">Персонаж</span>
-            <span role="columnheader">Клас / спек</span>
-            <span role="columnheader">Роль</span>
-            <span role="columnheader">ILVL</span>
-            <span role="columnheader">RIO</span>
-            <span role="columnheader">Рейд</span>
-            <span role="columnheader">Ранг</span>
-            <span role="columnheader">Посилання</span>
-          </div>
-
-          {pagedMembers.length ? pagedMembers.map((member) => {
-            const score = member.scores[segment] || 0;
-            const ownerProfileHref = member.ownerProfileId
-              ? `/profile/${encodeURIComponent(member.ownerProfileId)}?from=guild`
-              : null;
-            const raid = bestRaid(member, liveStats.raidSeasonSnapshot, raidFilter);
-            const raidView = raidSummary(raid);
-            return (
-              <article
-                className={styles.tableRow}
-                key={member.key}
-                id={listEntryId("guild", member.key)}
-                data-list-entry="guild"
-                data-list-href={ownerProfileHref || undefined}
-                role="row"
-                tabIndex={ownerProfileHref ? 0 : undefined}
-                onClick={(event) => openProfileCard(event, ownerProfileHref)}
-                onKeyDown={(event) => openProfileCardWithKeyboard(event, ownerProfileHref)}
-              >
-                <div className={styles.mobileIdentity} role="cell" data-label="Персонаж">
-                  <span className={styles.avatarWrap}>
-                    {member.avatarUrl ? <img src={member.avatarUrl} alt="" loading="lazy" decoding="async" /> : <span>{member.name.charAt(0).toUpperCase()}</span>}
-                  </span>
-                  <span className={styles.mobileIdentityCopy}>
-                    <span className={styles.mobileIdentityName}>
-                      <strong style={{ color: classColor(member.className) }}>{member.name}</strong>
-                      <span className={`${styles.rolePill} ${roleStyleClass(member.role)}`}>{roleShort(member.role)}</span>
-                    </span>
-                    <small>{member.realmName || member.realmSlug}</small>
-                    <span className={styles.mobileClassLine}>
-                      <span className={styles.classMark} style={{ "--guild-class-color": classColor(member.className) } as CSSProperties}>
-                        {(member.className || "?").trim().charAt(0).toUpperCase() || "?"}
-                      </span>
-                      <span>
-                        <strong>{member.className || "—"}</strong>
-                        <small>{member.specName || "—"}</small>
-                      </span>
-                    </span>
-                  </span>
-                </div>
-
-                <div className={styles.characterCell} role="cell" data-label="Персонаж">
-                  <span className={styles.avatarWrap}>
-                    {member.avatarUrl ? <img src={member.avatarUrl} alt="" loading="lazy" decoding="async" /> : <span>{member.name.charAt(0).toUpperCase()}</span>}
-                  </span>
-                  <span className={styles.characterCopy}>
-                    <strong style={{ color: classColor(member.className) }}>{member.name}</strong>
-                    <small>{member.realmName || member.realmSlug}</small>
-                  </span>
-                </div>
-
-                <div className={styles.classCell} role="cell" data-label="Клас / спек">
-                  <span className={styles.classMark} style={{ "--guild-class-color": classColor(member.className) } as CSSProperties}>
-                    {(member.className || "?").trim().charAt(0).toUpperCase() || "?"}
-                  </span>
-                  <span><strong>{member.className || "—"}</strong><small>{member.specName || "—"}</small></span>
-                </div>
-
-                <div className={styles.roleCell} role="cell" data-label="Роль"><span className={`${styles.rolePill} ${roleStyleClass(member.role)}`}>{roleShort(member.role)}</span></div>
-                <div className={styles.numericCell} role="cell" data-label="ILVL"><strong>{member.itemLevel || "—"}</strong></div>
-                <div className={styles.scoreCell} role="cell" data-label="RIO">
-                  <strong style={member.scoreColors?.[segment] ? { color: member.scoreColors[segment] } : undefined}>{formatNumber(score, 1)}</strong>
-                  <small>{SEGMENT_LABELS[segment]}</small>
-                </div>
-                <div className={styles.raidCell} role="cell" data-label="Рейд поточного сезону" title={raid ? `${raid.name}: ${raidView.detail}` : undefined}>
-                  <strong>{raidView.main}</strong>
-                  <small>{raid ? compactRaidName(raid.name) : raidView.detail}</small>
-                </div>
-                <div className={styles.numericCell} role="cell" data-label="Ранг"><strong>{member.rank === null || member.rank === undefined ? "—" : `#${member.rank}`}</strong></div>
-                <div className={styles.linksCell} role="cell" data-label="Посилання">
-                  {ownerProfileHref ? <a href={ownerProfileHref} onClick={(event) => event.stopPropagation()}>Профіль</a> : null}
-                  {member.profileUrl ? <a href={member.profileUrl} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>RIO ↗</a> : null}
-                  {!ownerProfileHref && !member.profileUrl ? <span>—</span> : null}
-                </div>
-              </article>
-            );
-          }) : (
-            <div className={styles.emptyRows} role="row">
-              <strong>Нікого не знайдено</strong>
-              <span>Зміни пошук або фільтри.</span>
-              <button type="button" className="btn subtle" onClick={resetFilters}>Скинути фільтри</button>
-            </div>
-          )}
-        </div>
-      </div>
-
+    <div className={styles.actions} role="status" aria-live="polite"><StatusBadge tone={rosterResource.status === "error" ? "warning" : "neutral"}>{rosterResource.status === "checking" ? "Оновлюємо дані" : rosterResource.status === "error" ? "Показано останні доступні дані" : "Дані синхронізовано"}</StatusBadge><small className={styles.metadata}>{liveSyncLabel || `Оновлено ${formatRosterDate(liveStats.updatedAt)}`} · {friendlySource(liveSource)}</small></div>
+    {pagedMembers.length ? <GuildRosterTable members={pagedMembers} segment={segment} raidFilter={raidFilter} snapshot={liveStats.raidSeasonSnapshot} /> : <EmptyState title="Нікого не знайдено" description="Зміни пошук або скинь фільтри." actions={<Button onClick={resetFilters}>Скинути фільтри</Button>} />}
       <footer className={styles.footer}>
         <div className={styles.pageSize}>
           <span>На сторінці</span>
@@ -804,6 +523,5 @@ export default function GuildRosterExplorer({ members, stats, source, error, nav
           <button type="button" className="btn subtle" disabled={safePage >= pageCount} onClick={() => setPage(Math.min(pageCount, safePage + 1))}>Далі</button>
         </div>
       </footer>
-    </section>
-  );
+  </PageSection>;
 }

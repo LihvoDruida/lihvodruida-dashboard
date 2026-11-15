@@ -74,3 +74,15 @@ STYLE AUDIT: no conservatively confirmed unused class/ID selectors, custom prope
 ## Оновлення 3.22.0
 
 Поточний стан: 21 глобальний CSS-файл і 28 CSS-файлів разом із CSS Modules. Видалено 26 незадіяних графічних асетів і мертвий селектор .server-status-container; ManagementShell і ui.css задають спільну геометрію. Актуальний звіт: REFACTOR_3.22.0_UA.md.
+
+## 3.23.0 — актуальний маршрут і новий каркас
+
+Поточний / перенаправляє на /raids (історичний опис вище більше не описує чинну поведінку). Повний актуальний перелік 45 routes: [PAGE_ROUTE_INVENTORY.md](PAGE_ROUTE_INVENTORY.md). /dashboard мігровано на спільні шаблони; для інших 41 UI-сторінки визначено наступні етапи. Стан browser verification і виконані перевірки наведено в PAGE_ARCHITECTURE_STEP1_UA.md.
+
+## 3.24.0 — етап 2
+
+Профілі, каталог, групи, політики та очищення мають спільну шапку, поля/секції/статуси. Різниця між empty і failed reads рейдових записів виправлена; візуальну browser QA блокує Unix socket Chromium. Деталі: [PAGE_ARCHITECTURE_STEP2_UA.md](PAGE_ARCHITECTURE_STEP2_UA.md).
+
+## 3.25.0 — етап 3
+
+Склад, заявки, списки й деталі рейдів/пулів мають універсальний каркас. Різні empty/error розділено; raw style= у нових компонентах відсутні. Browser bundling пройдено, запуск Chromium заблоковано; це не візуальне підтвердження. Деталі: [PAGE_ARCHITECTURE_STEP3_UA.md](PAGE_ARCHITECTURE_STEP3_UA.md).

@@ -1,0 +1,888 @@
+[
+  {
+    "route": "/",
+    "name": "Перенаправлення на /raids",
+    "patterns": "Redirect; власного UI немає",
+    "migrationStage": 6,
+    "status": "redirect-review",
+    "source": "src/app/page.tsx",
+    "baselineLines": 6,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [],
+    "authSignals": []
+  },
+  {
+    "route": "/access-denied",
+    "name": "Немає доступу",
+    "patterns": "Пояснення відмови, безпечні посилання й contextual navigation",
+    "migrationStage": 6,
+    "status": "pending",
+    "source": "src/app/access-denied/page.tsx",
+    "baselineLines": 74,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "AppProblemScreen",
+      "DashboardIdentity"
+    ],
+    "authSignals": [
+      "getSession"
+    ]
+  },
+  {
+    "route": "/applications",
+    "name": "Заявки до гільдії",
+    "patterns": "Фільтри, черга модерації, bulk actions, картки й доставка в Discord",
+    "migrationStage": 3,
+    "status": "completed",
+    "source": "src/app/applications/page.tsx",
+    "baselineLines": 306,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "ApplicationDelivery",
+      "ApplicationStatusActions",
+      "ApplicationFilters",
+      "ListViewMemory",
+      "DashboardIdentity"
+    ],
+    "authSignals": [
+      "canManageApplications",
+      "canViewApplicationBattleTag",
+      "canViewApplications",
+      "getSessionUser"
+    ],
+    "completedVersion": "3.25.0",
+    "currentRouteLines": 16
+  },
+  {
+    "route": "/content",
+    "name": "Матеріали сайту",
+    "patterns": "Бібліотека, пошук, Markdown-редактор, зображення, чернетки й публікація",
+    "migrationStage": 4,
+    "status": "pending",
+    "source": "src/app/content/page.tsx",
+    "baselineLines": 35,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "AdminPageHeader",
+      "DashboardIdentity",
+      "ContentEditor",
+      "ContentLibrary"
+    ],
+    "authSignals": [
+      "canManageSiteContent",
+      "getSession"
+    ]
+  },
+  {
+    "route": "/dashboard",
+    "name": "Центр керування",
+    "patterns": "Шапка, пошук і категорії, картки розділів, інтеграції, автоматизації",
+    "migrationStage": 1,
+    "status": "completed",
+    "source": "src/app/dashboard/page.tsx",
+    "baselineLines": 47,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "ManagementShell",
+      "AdminPageHeader",
+      "IntegrationStatusPanel",
+      "AutomationOverview"
+    ],
+    "authSignals": [
+      "canAccessManagement",
+      "canManageDiscordMembers",
+      "getSession"
+    ]
+  },
+  {
+    "route": "/dashboard/access",
+    "name": "Авторизація та доступ",
+    "patterns": "Дві форми: відповідності Discord-ролей і груп; геообмеження",
+    "migrationStage": 2,
+    "status": "completed",
+    "source": "src/app/dashboard/access/page.tsx",
+    "baselineLines": 361,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 2,
+    "components": [
+      "FormField",
+      "ManagementShell",
+      "AdminPageHeader",
+      "ManagementSections"
+    ],
+    "authSignals": [
+      "canManageGroups",
+      "getSession"
+    ],
+    "completedVersion": "3.24.0",
+    "currentRouteLines": 46
+  },
+  {
+    "route": "/dashboard/discord",
+    "name": "Discord-учасники",
+    "patterns": "Вкладки задач, форми ролей/ніків/автоматизацій, діагностика",
+    "migrationStage": 5,
+    "status": "pending",
+    "source": "src/app/dashboard/discord/page.tsx",
+    "baselineLines": 568,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 5,
+    "components": [
+      "ManagementShell",
+      "AdminPageHeader",
+      "ManagementSections",
+      "AutomationOverview"
+    ],
+    "authSignals": [
+      "canManageDiscordMembers",
+      "getSession"
+    ]
+  },
+  {
+    "route": "/dashboard/discord/cleanup",
+    "name": "Модерація Discord",
+    "patterns": "Фільтри кандидатів, списки, preview і дії очищення",
+    "migrationStage": 5,
+    "status": "pending",
+    "source": "src/app/dashboard/discord/cleanup/page.tsx",
+    "baselineLines": 27,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "ManagementShell",
+      "AdminPageHeader",
+      "DiscordMemberCleanupPanel"
+    ],
+    "authSignals": [
+      "canManageDiscordMembers",
+      "getSession"
+    ]
+  },
+  {
+    "route": "/dashboard/groups",
+    "name": "Групи та права",
+    "patterns": "Пошук груп, master/detail-редактор, дозволи, чернетки, read-only таблиця",
+    "migrationStage": 2,
+    "status": "completed",
+    "source": "src/app/dashboard/groups/page.tsx",
+    "baselineLines": 281,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "DataTable",
+      "ManagementShell",
+      "AdminPageHeader",
+      "AccessGroupsManager"
+    ],
+    "authSignals": [
+      "canManageGroups",
+      "canViewAccessGroups",
+      "getSession"
+    ],
+    "completedVersion": "3.24.0",
+    "currentRouteLines": 244
+  },
+  {
+    "route": "/dashboard/logs",
+    "name": "Журнал системи",
+    "patterns": "Пошук/фільтри, часові графіки, список подій, експорт, налаштування",
+    "migrationStage": 5,
+    "status": "pending",
+    "source": "src/app/dashboard/logs/page.tsx",
+    "baselineLines": 73,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "ManagementShell",
+      "AdminPageHeader",
+      "StructuredLogsExplorer",
+      "StructuredLogSettingsPanel"
+    ],
+    "authSignals": [
+      "canManageGroups",
+      "canViewAdminLogs",
+      "getSession"
+    ]
+  },
+  {
+    "route": "/dashboard/profiles",
+    "name": "Обслуговування профілів",
+    "patterns": "Форми preview/apply очищення, підтвердження, історія запусків",
+    "migrationStage": 2,
+    "status": "completed",
+    "source": "src/app/dashboard/profiles/page.tsx",
+    "baselineLines": 194,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 2,
+    "components": [
+      "ManagementShell",
+      "AdminPageHeader"
+    ],
+    "authSignals": [
+      "getSession"
+    ],
+    "completedVersion": "3.24.0",
+    "currentRouteLines": 21
+  },
+  {
+    "route": "/dashboard/server",
+    "name": "Стан сервера",
+    "patterns": "Метрики, графіки ресурсів, таблиці процесів/диска, автооновлення",
+    "migrationStage": 5,
+    "status": "pending",
+    "source": "src/app/dashboard/server/page.tsx",
+    "baselineLines": 49,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "ManagementShell",
+      "AdminPageHeader",
+      "ServerStatusDashboard"
+    ],
+    "authSignals": [
+      "getSession"
+    ]
+  },
+  {
+    "route": "/dashboard/settings",
+    "name": "Ролі Статика",
+    "patterns": "Форма вибору ролей і дозволів керівника",
+    "migrationStage": 5,
+    "status": "pending",
+    "source": "src/app/dashboard/settings/page.tsx",
+    "baselineLines": 20,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "ManagementShell",
+      "AdminPageHeader",
+      "StaticRoleSettingsClient"
+    ],
+    "authSignals": [
+      "getSession",
+      "staticPermission"
+    ]
+  },
+  {
+    "route": "/dashboard/welcome",
+    "name": "Привітання та onboarding",
+    "patterns": "П’ять форм, налаштування, тестові дані, прев’ю зображення",
+    "migrationStage": 5,
+    "status": "pending",
+    "source": "src/app/dashboard/welcome/page.tsx",
+    "baselineLines": 396,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 5,
+    "components": [
+      "ManagementShell",
+      "ManagementSections",
+      "ManagementWelcomePreview",
+      "AdminPageHeader"
+    ],
+    "authSignals": [
+      "getSession"
+    ]
+  },
+  {
+    "route": "/discord",
+    "name": "Discord-публікації",
+    "patterns": "Hero, картки переходів, дії для ембедів/правил/ролей",
+    "migrationStage": 4,
+    "status": "pending",
+    "source": "src/app/discord/page.tsx",
+    "baselineLines": 148,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "DashboardIdentity",
+      "HeroSidePanel"
+    ],
+    "authSignals": [
+      "canManageDiscordMembers",
+      "canManageGeneralEmbeds",
+      "canManageRaids",
+      "canManageRulesEmbeds",
+      "canViewRulesStats",
+      "getSession"
+    ]
+  },
+  {
+    "route": "/discord/autoroles",
+    "name": "Авторолі Discord",
+    "patterns": "Редактор ембеда, кнопки ролей, preview та публікація",
+    "migrationStage": 4,
+    "status": "pending",
+    "source": "src/app/discord/autoroles/page.tsx",
+    "baselineLines": 147,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "DashboardIdentity",
+      "DiscordEmbedEditor"
+    ],
+    "authSignals": [
+      "canManageDiscordMembers",
+      "getSession"
+    ]
+  },
+  {
+    "route": "/discord/embed",
+    "name": "Редактор Discord-повідомлення",
+    "patterns": "Форма полів, JSON/Markdown, ролі, live preview і публікація",
+    "migrationStage": 4,
+    "status": "pending",
+    "source": "src/app/discord/embed/page.tsx",
+    "baselineLines": 130,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "DashboardIdentity",
+      "DiscordEmbedEditor"
+    ],
+    "authSignals": [
+      "canManageGeneralEmbeds",
+      "getSession"
+    ]
+  },
+  {
+    "route": "/discord/rules",
+    "name": "Правила та прийняття",
+    "patterns": "Статистичні картки, списки підписів, фільтри та посилання редагування",
+    "migrationStage": 5,
+    "status": "pending",
+    "source": "src/app/discord/rules/page.tsx",
+    "baselineLines": 485,
+    "baselineDirectInlineStyles": 1,
+    "baselineDirectForms": 0,
+    "components": [
+      "DashboardIdentity"
+    ],
+    "authSignals": [
+      "canManageRulesEmbeds",
+      "canViewRulesStats",
+      "getSession"
+    ]
+  },
+  {
+    "route": "/discord/rules/edit",
+    "name": "Редагування правил Discord",
+    "patterns": "Редактор наявного повідомлення, preview і публікація змін",
+    "migrationStage": 4,
+    "status": "pending",
+    "source": "src/app/discord/rules/edit/page.tsx",
+    "baselineLines": 124,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "DashboardIdentity",
+      "DiscordEmbedEditor"
+    ],
+    "authSignals": [
+      "canManageRulesEmbeds",
+      "getSession"
+    ]
+  },
+  {
+    "route": "/discord/rules/new",
+    "name": "Створення правил Discord",
+    "patterns": "Редактор, preview і параметри прийняття правил",
+    "migrationStage": 4,
+    "status": "pending",
+    "source": "src/app/discord/rules/new/page.tsx",
+    "baselineLines": 91,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "DashboardIdentity",
+      "DiscordEmbedEditor"
+    ],
+    "authSignals": [
+      "canManageRulesEmbeds",
+      "getSession"
+    ]
+  },
+  {
+    "route": "/discord/static",
+    "name": "Склад Статика",
+    "patterns": "Клієнтський реєстр, запрошення, підтвердження та керування учасниками",
+    "migrationStage": 5,
+    "status": "pending",
+    "source": "src/app/discord/static/page.tsx",
+    "baselineLines": 16,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "DashboardIdentity",
+      "StaticManageClient"
+    ],
+    "authSignals": [
+      "getSession"
+    ]
+  },
+  {
+    "route": "/discord/static/bans",
+    "name": "Порушення Статика",
+    "patterns": "Список порушень, пошук і дисциплінарні дії",
+    "migrationStage": 5,
+    "status": "pending",
+    "source": "src/app/discord/static/bans/page.tsx",
+    "baselineLines": 16,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "DashboardIdentity",
+      "StaticBansClient"
+    ],
+    "authSignals": [
+      "getSession",
+      "staticPermission"
+    ]
+  },
+  {
+    "route": "/discord/static/events",
+    "name": "Події Статика",
+    "patterns": "Історія дій та фільтри подій",
+    "migrationStage": 5,
+    "status": "pending",
+    "source": "src/app/discord/static/events/page.tsx",
+    "baselineLines": 19,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "DashboardIdentity",
+      "StaticEventsClient"
+    ],
+    "authSignals": [
+      "getSession",
+      "staticPermission"
+    ]
+  },
+  {
+    "route": "/discord/static/rules",
+    "name": "Правила Статика",
+    "patterns": "Markdown-перегляд/редактор із перевіркою прав",
+    "migrationStage": 5,
+    "status": "pending",
+    "source": "src/app/discord/static/rules/page.tsx",
+    "baselineLines": 19,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "DashboardIdentity",
+      "StaticRulesClient"
+    ],
+    "authSignals": [
+      "getSession",
+      "staticPermission"
+    ]
+  },
+  {
+    "route": "/guild",
+    "name": "Склад гільдії",
+    "patterns": "Hero/progress, фільтри, сортування, щільна таблиця/мобільні рядки",
+    "migrationStage": 3,
+    "status": "completed",
+    "source": "src/app/guild/page.tsx",
+    "baselineLines": 205,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "AppProblemScreen",
+      "DashboardIdentity",
+      "GuildRosterExplorer",
+      "GuildRosterLiveHeroStats",
+      "rosterStyles"
+    ],
+    "authSignals": [
+      "getSessionUser"
+    ],
+    "completedVersion": "3.25.0",
+    "currentRouteLines": 30
+  },
+  {
+    "route": "/login",
+    "name": "Вхід",
+    "patterns": "Discord OAuth CTA, відеофон, повідомлення помилок і стан сесії",
+    "migrationStage": 6,
+    "status": "pending",
+    "source": "src/app/login/page.tsx",
+    "baselineLines": 241,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 1,
+    "components": [
+      "LoginBackground"
+    ],
+    "authSignals": [
+      "getSession"
+    ]
+  },
+  {
+    "route": "/polls",
+    "name": "Каталог рейд-пулів",
+    "patterns": "Картки голосувань, фільтри, стани публікації/закриття",
+    "migrationStage": 3,
+    "status": "completed",
+    "source": "src/app/polls/page.tsx",
+    "baselineLines": 60,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "RaidPollRecalculateButton"
+    ],
+    "authSignals": [
+      "canManageRaids",
+      "canViewRaidDirectory",
+      "getSession"
+    ],
+    "completedVersion": "3.25.0",
+    "currentRouteLines": 17
+  },
+  {
+    "route": "/polls/[pollId]",
+    "name": "Результати рейд-пулу",
+    "patterns": "Календар/часова сітка, голоси, рекомендації, contextual actions",
+    "migrationStage": 3,
+    "status": "completed",
+    "source": "src/app/polls/[pollId]/page.tsx",
+    "baselineLines": 54,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "ListReturnLink",
+      "DiscordPublicationWorkbench",
+      "RaidPollLiveSync"
+    ],
+    "authSignals": [
+      "canManageRaids",
+      "canViewRaidDirectory",
+      "getSession"
+    ],
+    "completedVersion": "3.25.0",
+    "currentRouteLines": 20
+  },
+  {
+    "route": "/polls/[pollId]/edit",
+    "name": "Редагування рейд-пулу",
+    "patterns": "Форма параметрів, preview і стан Discord-публікації",
+    "migrationStage": 4,
+    "status": "pending",
+    "source": "src/app/polls/[pollId]/edit/page.tsx",
+    "baselineLines": 116,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "ListReturnLink",
+      "DiscordPublicationWorkbench"
+    ],
+    "authSignals": [
+      "canManageRaids",
+      "getSession"
+    ]
+  },
+  {
+    "route": "/polls/new",
+    "name": "Створення рейд-пулу",
+    "patterns": "Форма дат, часу, складу, Discord-публікації та повторення",
+    "migrationStage": 4,
+    "status": "pending",
+    "source": "src/app/polls/new/page.tsx",
+    "baselineLines": 78,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [],
+    "authSignals": [
+      "canManageRaids",
+      "getSession"
+    ]
+  },
+  {
+    "route": "/privacy",
+    "name": "Політика конфіденційності",
+    "patterns": "Статичний текстовий документ із заголовками та посиланнями",
+    "migrationStage": 6,
+    "status": "pending",
+    "source": "src/app/privacy/page.tsx",
+    "baselineLines": 71,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "HeroSidePanel"
+    ],
+    "authSignals": []
+  },
+  {
+    "route": "/profile",
+    "name": "Мій профіль",
+    "patterns": "Redirect на власний профіль або вхід",
+    "migrationStage": 6,
+    "status": "redirect-review",
+    "source": "src/app/profile/page.tsx",
+    "baselineLines": 20,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [],
+    "authSignals": [
+      "getSession"
+    ]
+  },
+  {
+    "route": "/profile/[profileId]",
+    "name": "Профіль учасника",
+    "patterns": "Sidebar, дані доступу, персонажі, підключення та contextual actions",
+    "migrationStage": 2,
+    "status": "completed",
+    "source": "src/app/profile/[profileId]/page.tsx",
+    "baselineLines": 880,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 1,
+    "components": [
+      "DashboardIdentity",
+      "ListReturnLink",
+      "LogoutButton",
+      "ProfileCharacterSetup",
+      "ProfileCandidateBulkActions",
+      "ProfileCandidateExpiryTimer",
+      "ProfileCandidateCharacterRow",
+      "ProfileCharactersLiveSection",
+      "ProfileAvatar"
+    ],
+    "authSignals": [
+      "canViewGuildRoster",
+      "canViewProfile",
+      "canViewProfileAccessDetails",
+      "canViewProfiles",
+      "getSession"
+    ],
+    "completedVersion": "3.24.0",
+    "currentRouteLines": 11
+  },
+  {
+    "route": "/profile/[profileId]/characters/[characterKey]",
+    "name": "Старий маршрут персонажа",
+    "patterns": "Redirect на профіль; власного UI немає",
+    "migrationStage": 6,
+    "status": "redirect-review",
+    "source": "src/app/profile/[profileId]/characters/[characterKey]/page.tsx",
+    "baselineLines": 16,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [],
+    "authSignals": []
+  },
+  {
+    "route": "/profile/[profileId]/settings",
+    "name": "Налаштування профілю",
+    "patterns": "Форми імені, персонажів, main/spec, сповіщень і підключень",
+    "migrationStage": 2,
+    "status": "completed",
+    "source": "src/app/profile/[profileId]/settings/page.tsx",
+    "baselineLines": 945,
+    "baselineDirectInlineStyles": 1,
+    "baselineDirectForms": 3,
+    "components": [
+      "RaidReminderPreferenceControls",
+      "DashboardIdentity",
+      "ListReturnLink",
+      "LogoutButton",
+      "ProfileNameControls",
+      "ProfileAvatar"
+    ],
+    "authSignals": [
+      "canViewProfiles",
+      "getSession"
+    ],
+    "completedVersion": "3.24.0",
+    "currentRouteLines": 11
+  },
+  {
+    "route": "/profiles",
+    "name": "Каталог учасників",
+    "patterns": "Каталог рядків/карток, серверні фільтри, пошук, cursor pagination",
+    "migrationStage": 2,
+    "status": "completed",
+    "source": "src/app/profiles/page.tsx",
+    "baselineLines": 378,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 1,
+    "components": [
+      "DashboardIdentity",
+      "ListViewMemory",
+      "ProfileAvatar"
+    ],
+    "authSignals": [
+      "canManageGroups",
+      "getSession"
+    ],
+    "completedVersion": "3.24.0",
+    "currentRouteLines": 10
+  },
+  {
+    "route": "/raids",
+    "name": "Каталог рейдів",
+    "patterns": "Пошук, фільтри, поточні й архівні картки, дозавантаження",
+    "migrationStage": 3,
+    "status": "completed",
+    "source": "src/app/raids/page.tsx",
+    "baselineLines": 208,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 1,
+    "components": [
+      "ListViewMemory",
+      "RaidArchiveLoadMore"
+    ],
+    "authSignals": [
+      "canManageRaids",
+      "getSession"
+    ],
+    "completedVersion": "3.25.0",
+    "currentRouteLines": 18
+  },
+  {
+    "route": "/raids/[raidId]",
+    "name": "Деталі рейду",
+    "patterns": "Огляд, склад/відвідування, live snapshot, публікація й contextual actions",
+    "migrationStage": 3,
+    "status": "completed",
+    "source": "src/app/raids/[raidId]/page.tsx",
+    "baselineLines": 88,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "ListReturnLink",
+      "DiscordPublicationWorkbench",
+      "RaidLiveSync"
+    ],
+    "authSignals": [
+      "canManageRaids",
+      "canViewRaidDirectory",
+      "canViewRaidRoster",
+      "getSession"
+    ],
+    "completedVersion": "3.25.0",
+    "currentRouteLines": 22
+  },
+  {
+    "route": "/raids/[raidId]/edit",
+    "name": "Редагування рейду",
+    "patterns": "Редактор і preview, стан публікації, повернення до списку",
+    "migrationStage": 4,
+    "status": "pending",
+    "source": "src/app/raids/[raidId]/edit/page.tsx",
+    "baselineLines": 93,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "ListReturnLink",
+      "DiscordPublicationWorkbench",
+      "RaidEditorLivePreview"
+    ],
+    "authSignals": [
+      "canManageRaids",
+      "getSession"
+    ]
+  },
+  {
+    "route": "/raids/bench-priority",
+    "name": "Пріоритет лави запасних",
+    "patterns": "Форма й список правил глобальної черги",
+    "migrationStage": 4,
+    "status": "pending",
+    "source": "src/app/raids/bench-priority/page.tsx",
+    "baselineLines": 130,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [],
+    "authSignals": [
+      "canManageRaids",
+      "getSession"
+    ]
+  },
+  {
+    "route": "/raids/new",
+    "name": "Створення рейду",
+    "patterns": "Редактор, дата/час, ролі, зображення, live preview",
+    "migrationStage": 4,
+    "status": "pending",
+    "source": "src/app/raids/new/page.tsx",
+    "baselineLines": 111,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "RaidEditorLivePreview"
+    ],
+    "authSignals": [
+      "canManageRaids",
+      "getSession"
+    ]
+  },
+  {
+    "route": "/roster",
+    "name": "Конструктор сезонного складу",
+    "patterns": "Форми набору, ролі, планування складів, опубліковані оголошення",
+    "migrationStage": 4,
+    "status": "pending",
+    "source": "src/app/roster/page.tsx",
+    "baselineLines": 421,
+    "baselineDirectInlineStyles": 1,
+    "baselineDirectForms": 5,
+    "components": [
+      "DashboardIdentity",
+      "RaidRoleMentionPicker"
+    ],
+    "authSignals": [
+      "canManageRaids",
+      "getSession"
+    ]
+  },
+  {
+    "route": "/rules/accept",
+    "name": "Прийняття правил гільдії",
+    "patterns": "Підписане посилання, кроки авторизації/прийняття, статус завершення",
+    "migrationStage": 6,
+    "status": "pending",
+    "source": "src/app/rules/accept/page.tsx",
+    "baselineLines": 61,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "LoginBackground",
+      "GuildRulesAcceptForm"
+    ],
+    "authSignals": []
+  },
+  {
+    "route": "/static/accept",
+    "name": "Прийняття правил Статика",
+    "patterns": "Форма підтвердження та Discord DM challenge",
+    "migrationStage": 6,
+    "status": "pending",
+    "source": "src/app/static/accept/page.tsx",
+    "baselineLines": 9,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "StaticAcceptClient"
+    ],
+    "authSignals": []
+  },
+  {
+    "route": "/terms",
+    "name": "Умови використання",
+    "patterns": "Статичний текстовий документ із заголовками та посиланнями",
+    "migrationStage": 6,
+    "status": "pending",
+    "source": "src/app/terms/page.tsx",
+    "baselineLines": 68,
+    "baselineDirectInlineStyles": 0,
+    "baselineDirectForms": 0,
+    "components": [
+      "HeroSidePanel"
+    ],
+    "authSignals": []
+  }
+]

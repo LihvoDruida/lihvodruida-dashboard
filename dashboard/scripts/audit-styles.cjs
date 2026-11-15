@@ -173,11 +173,13 @@ const dynamicPrefixes = new Set();
 for (const file of sourceFiles) collectClassUsage(file, usedClasses, dynamicPrefixes);
 
 const cssFiles = walk(stylesRoot).filter((file) => file.endsWith('.css'));
-const invalidCssFiles = cssFiles
+const moduleCssFiles = walk(srcRoot).filter(file => file.endsWith('.module.css'));
+const allCssFiles = [...cssFiles, ...moduleCssFiles];
+const invalidCssFiles = allCssFiles
   .map((file) => ({ file, error: validateCssBraces(fs.readFileSync(file, 'utf8'), file) }))
   .filter(({ error }) => error);
-const unreferencedCssFiles = cssFiles.filter((file) => !sourceText.includes(path.basename(file)));
-const cssText = cssFiles.map((file) => fs.readFileSync(file, 'utf8')).join('\n');
+const unreferencedCssFiles = allCssFiles.filter((file) => !sourceText.includes(path.basename(file)));
+const cssText = allCssFiles.map((file) => fs.readFileSync(file, 'utf8')).join('\n');
 const cssWithoutComments = stripCssComments(cssText);
 const selectorClasses = new Map();
 const selectorIds = new Map();

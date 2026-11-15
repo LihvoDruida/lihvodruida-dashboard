@@ -1,0 +1,22 @@
+{
+  "passed": 10,
+  "failed": 0,
+  "scenarios": [
+    "welcome route trace includes its background and three bundled fonts",
+    "standalone contains no dashboard source, CI scripts or builder-only configuration",
+    "packaged server chunks match the current build byte for byte",
+    "Sharp resolves from standalone rather than the source node_modules",
+    "packaged Sharp and assets pass the real renderer suite",
+    "packaged Next server starts and returns healthy no-store liveness without integrations",
+    "packaged site status route passes private Host proxy only with site token and reaches its database handler",
+    "legacy raid thumbnail URLs redirect to canonical files without duplicate assets",
+    "retired admin and GitHub login handlers are absent from the build and old public paths return 404",
+    "standalone server serves the exact traced welcome background"
+  ],
+  "traceFiles": 287,
+  "traceBytes": 53678472,
+  "standaloneFiles": 3217,
+  "standaloneBytes": 84032710,
+  "scriptsInStandalone": 0,
+  "sourceFilesInStandalone": 0
+}

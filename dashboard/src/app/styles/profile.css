@@ -19,142 +19,16 @@
 /* =========================================================
    1. ОБОЛОНКА
    ========================================================= */
-.profile-page-container,
-.profile-shell {
-  min-width: 0;
-}
 
 /* Дві колонки: липка бічна навігація + основний потік */
-.profile-account-layout {
-  display: grid;
-  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
-  gap: var(--gap-grid);
-  align-items: start;
-}
-
-.profile-account-main {
-  display: grid;
-  gap: var(--gap-grid);
-  min-width: 0;
-}
 
 /* ---------- Бічна колонка ---------- */
-.profile-account-sidebar {
-  position: sticky;
-  top: calc(var(--nav-space) + var(--space-sm));
-  display: grid;
-  gap: var(--space-md);
-  justify-items: center;
-  text-align: center;
-}
-
-.profile-account-sidebar__identity {
-  display: grid;
-  gap: var(--space-3xs);
-  justify-items: center;
-  min-width: 0;
-}
-
-.profile-account-sidebar__identity strong {
-  font-size: 1.05rem;
-  color: var(--text-strong);
-}
-
-.profile-account-sidebar__identity span,
-.profile-account-sidebar__identity small {
-  font-size: var(--font-size-ui-lg);
-  color: var(--text-muted);
-}
-
-.profile-account-sidebar__avatar {
-  width: 96px;
-  height: 96px;
-  border-radius: var(--radius-lg);
-  object-fit: cover;
-  border: 1px solid var(--border);
-  background: var(--surface-sunken);
-}
-
-.profile-account-sidebar__avatar--fallback {
-  display: grid;
-  place-items: center;
-  font-family: var(--font-display);
-  font-size: 2rem;
-  color: var(--c-accent-300);
-}
 
 /* =========================================================
    2. СТАТУСНА СМУГА
    ========================================================= */
-.profile-account-overview {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
-  gap: var(--space-sm);
-  min-width: 0;
-}
-
-.profile-account-overview-card {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--c-ink-500);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  min-width: 0;
-}
 
 /* Іконка-плитка: без неї в розмітці лишалося порожнє коло */
-.profile-account-overview-card__icon {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: var(--control-height-sm);
-  flex: 0 0 auto;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--surface-raised);
-  color: var(--c-accent-300);
-  font-size: 0.95rem;
-  line-height: 1;
-}
-
-.profile-account-overview-card--primary {
-  border-left-color: var(--c-accent-400);
-}
-
-.profile-account-overview-card--success {
-  border-left-color: var(--c-success);
-}
-
-.profile-account-overview-card--main-role {
-  border-left-color: var(--c-role-dps);
-}
-
-.profile-account-overview-card > div,
-.profile-account-overview-card > span:not(:where([class$="__icon"])),
-.profile-account-overview-card__meta {
-  display: grid;
-  gap: var(--space-3xs);
-  min-width: 0;
-}
-
-.profile-account-overview-card strong {
-  font-size: 0.92rem;
-  color: var(--text-strong);
-  overflow-wrap: anywhere;
-}
-
-.profile-account-overview-card small,
-.profile-account-overview-card p,
-.profile-account-overview-card__meta {
-  margin: 0;
-  font-size: var(--font-size-meta);
-  line-height: var(--line-height-body);
-  color: var(--text-muted);
-}
 
 /* =========================================================
    3. СЕКЦІЇ — ОДНА ЗА ОДНОЮ
@@ -163,21 +37,6 @@
    ставали в ряд. Тепер це просто вертикальний стек: форма →
    форма → форма, як у будь-якому майстрі налаштувань.
    ========================================================= */
-.profile-grid,
-.profile-grid--settings,
-.profile-grid--single {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--gap-grid);
-  min-width: 0;
-}
-
-.profile-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-stack);
-  min-width: 0;
-}
 
 /* Шапка секції: заголовок ліворуч, дії праворуч */
 .profile-card-head {
@@ -191,25 +50,6 @@
 
 .profile-card-head--inline {
   align-items: center;
-}
-
-.profile-card-title-with-icon {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  min-width: 0;
-}
-
-.profile-card-title-icon {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: var(--control-height-sm);
-  flex: 0 0 auto;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--surface-raised);
-  color: var(--c-accent-300);
 }
 
 .profile-card-lead {
@@ -238,20 +78,6 @@
 }
 
 /* Підрозділ усередині секції */
-.profile-subsection-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-xs);
-  padding-bottom: var(--space-2xs);
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.profile-subsection-head--compact {
-  padding-bottom: 0;
-  border-bottom: 0;
-}
 
 /* =========================================================
    4. ІМʼЯ ТА ВІДОБРАЖЕННЯ
@@ -538,198 +364,17 @@
   width: 100%;
 }
 
-.profile-character-add-footer {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  padding-top: var(--space-sm);
-  border-top: 1px solid var(--border-subtle);
-  color: var(--text-muted);
-  font-size: var(--font-size-ui-lg);
-}
-
-.profile-character-add-button {
-  flex: 0 0 auto;
-}
-
 /* =========================================================
    6. BATTLE.NET
    ========================================================= */
-.profile-bnet-status {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  min-width: 0;
-}
-
-.profile-bnet-status__icon {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: var(--control-height-sm);
-  flex: 0 0 auto;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--surface-raised);
-  color: var(--c-accent-300);
-}
-
-.profile-bnet-status__copy {
-  display: grid;
-  gap: var(--space-3xs);
-  min-width: 0;
-}
-
-.profile-bnet-status__copy strong {
-  font-size: 0.88rem;
-  color: var(--text-strong);
-}
-
-.profile-bnet-status__copy small,
-.profile-bnet-status__copy a {
-  font-size: var(--font-size-ui);
-}
-
-.profile-bnet-status__action {
-  flex: 0 0 auto;
-}
-
-.profile-bnet-cta {
-  display: grid;
-  gap: var(--space-xs);
-  padding: var(--pad-card-compact);
-  border: 1px dashed var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  text-align: center;
-  justify-items: center;
-}
-
-.profile-bnet-cta__eyebrow {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
 
 /* Лічильники «0 гільдійних · 0 інших» — сітка пар, не суцільний рядок */
 
 /* =========================================================
    7. РЕЙДОВІ ЗАПИСИ
    ========================================================= */
-.profile-raid-list {
-  display: grid;
-  gap: var(--space-sm);
-  min-width: 0;
-}
-
-.profile-raid-list--nested {
-  gap: var(--space-xs);
-}
-
-.profile-raid-card {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 180px;
-
-  display: grid;
-  gap: var(--space-sm);
-  padding: var(--pad-card-compact);
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--c-accent-400);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  min-width: 0;
-}
-
-.profile-raid-card__main,
-.profile-raid-card__body {
-  display: grid;
-  gap: var(--space-2xs);
-  min-width: 0;
-}
-
-.profile-raid-card__headline {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-}
-
-.profile-raid-card__title {
-  font-size: 0.95rem;
-  color: var(--text-strong);
-  overflow-wrap: anywhere;
-}
-
-.profile-raid-card__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3xs) var(--space-sm);
-  color: var(--text-muted);
-  font-size: var(--font-size-meta);
-}
-
-.profile-raid-card__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-}
-
-.profile-raid-card__action {
-  flex: 0 0 auto;
-}
-
-.profile-raid-skipped {
-  opacity: 0.75;
-  border-left-color: var(--c-ink-500);
-}
 
 /* Порожній стан із дією, а не голий текст */
-.profile-raid-empty-state {
-  display: grid;
-  gap: var(--space-xs);
-  justify-items: center;
-  padding: var(--space-xl) var(--space-md);
-  border: 1px dashed var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  text-align: center;
-  color: var(--text-muted);
-}
-
-.profile-raid-empty-state strong {
-  color: var(--text-soft);
-  font-size: 0.95rem;
-}
-
-.profile-raid-empty-state__icon {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 1px solid var(--border);
-  background: var(--surface-raised);
-  color: var(--c-accent-300);
-}
-
-.profile-raid-empty-state__action {
-  margin-top: var(--space-2xs);
-}
-
-.profile-raid-meta-item--character,
-.profile-raid-meta-item--order {
-  white-space: nowrap;
-}
 
 /* =========================================================
    8. КАНДИДАТИ НА ДОДАВАННЯ
@@ -744,7 +389,6 @@
   min-width: 0;
 }
 
-.profile-candidate-groups,
 .profile-candidate-group,
 .profile-character-candidates {
   display: grid;
@@ -813,47 +457,11 @@
   min-width: 0;
 }
 
-.profile-rules-return-callout {
-  display: grid;
-  gap: var(--space-xs);
-  padding: var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--c-accent-400);
-  border-radius: var(--radius-md);
-  background: var(--accent-soft);
-  color: var(--text-soft);
-  font-size: 0.85rem;
-}
-
 /* =========================================================
    9. АДАПТИВ
    ========================================================= */
-@media (max-width: 1000px) {
-  .profile-account-layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .profile-account-sidebar {
-    position: static;
-  }
-
-  /* Навігація профілю стає рядком пігулок над контентом */
-  .profile-account-sidebar__nav {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .profile-account-sidebar__nav a {
-    flex: 1 1 140px;
-    justify-content: center;
-  }
-}
 
 @media (max-width: 860px) {
-  .profile-account-overview {
-    grid-template-columns: minmax(0, 1fr);
-  }
 
   .profile-character-card {
     grid-template-columns: minmax(0, 1fr);
@@ -869,34 +477,13 @@
     justify-self: start;
   }
 
-  .profile-bnet-status {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .profile-bnet-status__action {
-    grid-column: 1 / -1;
-  }
-
-  .profile-bnet-status__action > * {
-    width: 100%;
-  }
-
   .profile-card-head {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .profile-character-add-footer {
     flex-direction: column;
     align-items: stretch;
   }
 }
 
 @media (max-width: 520px) {
-  .profile-account-sidebar__avatar {
-    width: 76px;
-    height: 76px;
-  }
 
   .profile-character-actions__row {
     grid-template-columns: minmax(0, 1fr);
@@ -1161,38 +748,6 @@
 }
 
 /* ---------- Роль у рейді ---------- */
-.profile-raid-role-form {
-  display: grid;
-  gap: var(--space-xs);
-  min-width: 0;
-}
-
-.profile-raid-role-pill {
-  --tone: var(--c-role-dps);
-  display: inline-flex;
-  align-items: center;
-  padding: var(--space-3xs) var(--space-sm);
-  border: 1px solid color-mix(in srgb, var(--tone) 32%, transparent);
-  border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--tone) 12%, transparent);
-  color: var(--tone);
-  font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-bold);
-  white-space: nowrap;
-}
-
-.profile-raid-role-pill--tank {
-  --tone: var(--c-role-tank);
-}
-
-.profile-raid-role-pill--healer {
-  --tone: var(--c-role-healer);
-}
-
-.profile-raid-role-pill--dps,
-.profile-raid-role-pill--auto {
-  --tone: var(--c-role-dps);
-}
 
 .profile-nickname-hint code {
   padding: 0 var(--space-3xs);
@@ -1384,138 +939,9 @@
        високим блоком, який відсовував увесь вміст униз.
    ========================================================= */
 
-.profile-account-sidebar__facts {
-  display: grid;
-  gap: var(--space-2xs);
-  width: 100%;
-  margin: 0;
-  padding: var(--space-sm) 0;
-  border-top: 1px solid var(--border-subtle);
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.profile-account-sidebar__facts > div {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  min-width: 0;
-}
-
-.profile-account-sidebar__facts dt {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
-
-.profile-account-sidebar__facts dd {
-  margin: 0;
-  font-size: 0.85rem;
-  font-weight: var(--font-weight-bold);
-  color: var(--text-strong);
-  overflow-wrap: anywhere;
-  text-align: right;
-}
-
 /* Активний пункт навігації */
-.profile-account-sidebar__nav a[aria-current="page"] {
-  border-color: var(--border-strong);
-  background: var(--accent-soft);
-  color: var(--c-accent-200);
-}
-
-.profile-account-sidebar__nav-count {
-  margin-left: auto;
-  display: inline-grid;
-  place-items: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 var(--space-3xs);
-  border-radius: var(--radius-pill);
-  background: var(--surface-raised);
-  color: var(--text-faint);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-}
-
-.profile-account-sidebar__footer {
-  width: 100%;
-  padding-top: var(--space-sm);
-  border-top: 1px solid var(--border-subtle);
-}
-
-.profile-account-sidebar__footer > * {
-  width: 100%;
-}
 
 /* ---------- Мобільна поведінка колонки ---------- */
-@media (max-width: 1000px) {
-  .profile-account-sidebar {
-    /* Горизонтальна смуга: аватар та імʼя ліворуч, стан праворуч.
-       Вертикальний блок на 390px займав перший екран цілком. */
-    grid-template-columns: auto minmax(0, 1fr);
-    justify-items: stretch;
-    text-align: left;
-    align-items: center;
-  }
-
-  .profile-account-sidebar__identity {
-    grid-column: 1 / -1;
-    grid-template-columns: auto minmax(0, 1fr);
-    justify-items: start;
-    text-align: left;
-    align-items: center;
-    gap: var(--space-sm);
-  }
-
-  .profile-account-sidebar__avatar {
-    grid-row: span 3;
-    width: 64px;
-    height: 64px;
-  }
-
-  .profile-account-sidebar__facts {
-    grid-column: 1 / -1;
-    grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
-    gap: var(--space-sm);
-  }
-
-  .profile-account-sidebar__facts > div {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1px;
-  }
-
-  .profile-account-sidebar__facts dd {
-    text-align: left;
-  }
-
-  .profile-account-sidebar__nav {
-    grid-column: 1 / -1;
-  }
-
-  .profile-account-sidebar__footer {
-    grid-column: 1 / -1;
-  }
-}
-
-@media (max-width: 520px) {
-  .profile-account-sidebar__identity {
-    grid-template-columns: minmax(0, 1fr);
-    justify-items: center;
-    text-align: center;
-  }
-
-  .profile-account-sidebar__avatar {
-    grid-row: auto;
-  }
-
-  .profile-account-sidebar__pills {
-    justify-content: center;
-  }
-}
 
 /* =========================================================
    14. ПРОФІЛЬ ЗА ЗРАЗКОМ РЕФЕРЕНСУ
@@ -1534,199 +960,20 @@
    ========================================================= */
 
 /* ---------- Картка-колонка ---------- */
-.profile-account-sidebar {
-  gap: var(--space-md);
-  padding: 0;
-  overflow: hidden;
-}
 
 /* Верх картки — окремий блок із роздільником, як у зразку */
-.profile-account-sidebar__identity {
-  width: 100%;
-  padding: var(--space-lg) var(--space-md) var(--space-md);
-  border-bottom: 1px solid var(--border-subtle);
-}
 
 /* Аватар у кольоровому кільці */
-.profile-account-sidebar__avatar {
-  box-shadow: 0 0 0 4px var(--accent-soft);
-}
-
-.profile-account-sidebar__identity strong {
-  font-size: var(--font-size-base);
-}
-
-.profile-account-sidebar__facts,
-.profile-account-sidebar__nav,
-.profile-account-sidebar__footer {
-  padding-inline: var(--space-md);
-}
-
-.profile-account-sidebar__facts {
-  border-top: 0;
-}
-
-.profile-account-sidebar__footer {
-  padding-bottom: var(--space-md);
-}
 
 /* ---------- Навігація ---------- */
-.profile-account-sidebar__nav a {
-  justify-content: flex-start;
-  gap: var(--space-sm);
-}
-
-.profile-account-sidebar__nav .profile-ui-icon {
-  flex: 0 0 auto;
-}
 
 /* ---------- Картки показників в основному потоці ---------- */
-.profile-account-overview-card {
-  gap: var(--space-md);
-  padding: var(--space-md);
-}
-
-.profile-account-overview-card__icon {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-md);
-  font-size: 1.05rem;
-}
 
 /* Підпис угорі, значення крупно під ним — порядок із зразка */
-.profile-account-overview-card > div,
-.profile-account-overview-card > span:not(:where([class$="__icon"])) {
-  gap: var(--space-3xs);
-}
-
-.profile-account-overview-card small {
-  order: -1;
-  font-size: var(--font-size-2xs);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
-
-.profile-account-overview-card strong {
-  font-size: 1.15rem;
-}
 
 /* Тонований варіант картки: рамка й фон у колір стану */
-.profile-account-overview-card--primary {
-  border-color: color-mix(in srgb, var(--c-accent-400) 30%, transparent);
-  background: color-mix(in srgb, var(--c-accent-400) 8%, var(--surface-sunken));
-}
-
-.profile-account-overview-card--primary .profile-account-overview-card__icon {
-  border-color: color-mix(in srgb, var(--c-accent-400) 34%, transparent);
-  background: color-mix(in srgb, var(--c-accent-400) 16%, transparent);
-  color: var(--c-accent-200);
-}
-
-.profile-account-overview-card--success {
-  border-color: color-mix(in srgb, var(--c-success) 30%, transparent);
-  background: color-mix(in srgb, var(--c-success) 8%, var(--surface-sunken));
-}
-
-.profile-account-overview-card--success .profile-account-overview-card__icon,
-.profile-account-overview-card--success strong {
-  color: var(--c-success);
-}
-
-.profile-account-overview-card--success .profile-account-overview-card__icon {
-  border-color: color-mix(in srgb, var(--c-success) 34%, transparent);
-  background: color-mix(in srgb, var(--c-success) 16%, transparent);
-}
 
 /* ---------- Телефон і планшет ---------- */
-@media (max-width: 1000px) {
-  .profile-account-sidebar {
-    grid-template-columns: minmax(0, 1fr);
-    text-align: center;
-  }
-
-  /* Верх картки центрований, як у зразку */
-  .profile-account-sidebar__identity {
-    grid-template-columns: minmax(0, 1fr);
-    justify-items: center;
-    text-align: center;
-  }
-
-  .profile-account-sidebar__avatar {
-    grid-row: auto;
-    width: 72px;
-    height: 72px;
-  }
-
-  .profile-account-sidebar__pills {
-    justify-content: center;
-  }
-
-  /* Навігація — смуга самих іконок */
-  .profile-account-sidebar__nav {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(0, 1fr);
-    gap: var(--space-2xs);
-    padding-block: var(--space-2xs);
-  }
-
-  .profile-account-sidebar__nav a {
-    justify-content: center;
-    min-height: 48px;
-    padding: 0;
-  }
-
-  .profile-account-sidebar__nav-label {
-    /* Прибираємо візуально, але лишаємо для скрінрідерів */
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
-  .profile-account-sidebar__nav-count {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    margin: 0;
-    min-width: 16px;
-    height: 16px;
-    font-size: 0.6rem;
-  }
-
-  .profile-account-sidebar__nav a {
-    position: relative;
-  }
-
-  /* Показники — у рядок, як пігулки під аватаром */
-  .profile-account-sidebar__facts {
-    grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr));
-    text-align: left;
-  }
-}
-
-@media (max-width: 520px) {
-  .profile-account-sidebar__facts {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  /* Картка показника: іконка й текст лишаються в рядок,
-     але значення отримує повну ширину клітинки */
-  .profile-account-overview-card {
-    padding: var(--space-sm) var(--space-md);
-  }
-
-  .profile-account-overview-card__icon {
-    width: 38px;
-    height: 38px;
-  }
-}
 
 /* =========================================================
    14. ШАБЛОН ПРОФІЛЮ ЗА ЗРАЗКОМ
@@ -1743,115 +990,16 @@
    ========================================================= */
 
 /* ---------- Бічна картка ---------- */
-.profile-account-sidebar {
-  gap: var(--space-md);
-  padding: var(--pad-card-compact);
-}
-
-.profile-account-sidebar__avatar {
-  border-radius: 50%;
-  box-shadow: 0 0 0 4px var(--accent-soft);
-}
-
-.profile-account-sidebar__identity strong {
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-  letter-spacing: 0.02em;
-}
 
 /* ---------- Вертикальна навігація ---------- */
-.profile-account-sidebar__nav a {
-  position: relative;
-  justify-content: flex-start;
-  gap: var(--space-sm);
-  border-color: transparent;
-  background: transparent;
-}
-
-.profile-account-sidebar__nav a:hover {
-  background: var(--surface-hover);
-}
 
 /* Активний пункт: заливка + бурштинова риска зліва, як у зразку */
-.profile-account-sidebar__nav a[aria-current="page"] {
-  border-color: transparent;
-  background: var(--surface-hover);
-  color: var(--c-accent-200);
-}
-
-.profile-account-sidebar__nav a[aria-current="page"]::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 20%;
-  bottom: 20%;
-  width: 3px;
-  border-radius: var(--radius-pill);
-  background: var(--accent-gradient);
-}
-
-.profile-account-sidebar__nav a svg {
-  width: 18px;
-  height: 18px;
-  flex: 0 0 auto;
-  opacity: 0.75;
-}
-
-.profile-account-sidebar__nav a[aria-current="page"] svg {
-  opacity: 1;
-}
 
 /* ---------- Показники ---------- */
-.profile-account-overview-card {
-  gap: var(--space-md);
-  padding: var(--space-md);
-  border-left-width: 1px;
-}
-
-.profile-account-overview-card__icon {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-md);
-  font-size: 1.1rem;
-}
 
 /* Підпис дрібний згори, значення велике знизу — порядок із зразка */
-.profile-account-overview-card small {
-  order: -1;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
-
-.profile-account-overview-card strong {
-  font-size: 1.15rem;
-  line-height: 1.2;
-}
 
 /* Тонований варіант: рамка й іконка беруть колір стану */
-.profile-account-overview-card--success {
-  border-color: color-mix(in srgb, var(--c-success) 28%, transparent);
-  background: color-mix(in srgb, var(--c-success) 7%, var(--surface-sunken));
-}
-
-.profile-account-overview-card--success .profile-account-overview-card__icon {
-  border-color: color-mix(in srgb, var(--c-success) 40%, transparent);
-  background: color-mix(in srgb, var(--c-success) 14%, transparent);
-  color: var(--c-success);
-}
-
-.profile-account-overview-card--primary {
-  border-color: var(--border-strong);
-  background: color-mix(in srgb, var(--c-accent-400) 8%, var(--surface-sunken));
-}
-
-.profile-account-overview-card--primary .profile-account-overview-card__icon {
-  border-color: var(--border-strong);
-  background: var(--accent-soft);
-  color: var(--c-accent-300);
-}
 
 /* ---------- Шапка панелі з іконкою ---------- */
 .profile-card-head {
@@ -1859,89 +1007,11 @@
   border-bottom: 1px solid var(--border-subtle);
 }
 
-.profile-card-title-icon {
-  width: 30px;
-  height: 30px;
-  border-color: transparent;
-  background: transparent;
-  color: var(--c-accent-300);
-}
-
-.profile-card-title-with-icon h2 {
-  margin: 0;
-  font-size: 1.05rem;
-}
-
 /* ---------- Рядок «опис + дія» ---------- */
 
 /* =========================================================
    15. МОБІЛЬНА СХЕМА ЗА ЗРАЗКОМ
    ========================================================= */
-@media (max-width: 1000px) {
-  /* Навігація — смуга самих іконок в один рядок.
-     Підписи ховаються: сім пунктів із текстом на 390px
-     давали або перенос у три ряди, або обрізані слова. */
-  .profile-account-sidebar__nav {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(0, 1fr);
-    gap: var(--space-3xs);
-    padding-top: var(--space-sm);
-    border-top: 1px solid var(--border-subtle);
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .profile-account-sidebar__nav::-webkit-scrollbar {
-    display: none;
-  }
-
-  .profile-account-sidebar__nav a {
-    justify-content: center;
-    min-width: 48px;
-    padding: 0;
-    border-radius: var(--radius-md);
-  }
-
-  .profile-account-sidebar__nav a > span:not(:where(.profile-account-sidebar__nav-count)) {
-    /* Підпис лишається для скрінрідерів, але не займає місця */
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
-  .profile-account-sidebar__nav a[aria-current="page"] {
-    background: var(--accent-soft);
-  }
-
-  .profile-account-sidebar__nav a[aria-current="page"]::before {
-    display: none;
-  }
-
-  .profile-account-sidebar__nav-count {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    min-width: 16px;
-    height: 16px;
-    margin: 0;
-    font-size: 0.6rem;
-  }
-
-  .profile-account-sidebar__nav a svg {
-    width: 20px;
-    height: 20px;
-  }
-}
-
-@media (max-width: 860px) {
-  .profile-account-overview-card strong {
-    font-size: 1.05rem;
-  }
-}
 
 /* =========================================================
    16. КАРТКА ПЕРСОНАЖА ЗА ЗРАЗКОМ
@@ -2102,87 +1172,6 @@
    Малюємо маскою: колір береться з currentColor, тож іконка
    збігається з текстом кнопки й не потребує окремих файлів.
    ========================================================= */
-.profile-ui-icon {
-  display: inline-block;
-  width: 1.05em;
-  height: 1.05em;
-  flex: 0 0 auto;
-  border: 0;
-  border-radius: 0;
-  background-color: currentColor;
-  mask-repeat: no-repeat;
-  mask-position: center;
-  mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  -webkit-mask-size: contain;
-  vertical-align: -0.15em;
-}
-
-.profile-ui-icon--home {
-  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M3%2010.5%2012%204l9%206.5V20a1%201%200%200%201-1%201h-5v-6H9v6H4a1%201%200%200%201-1-1z%27%2F%3E%3C%2Fsvg%3E");
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M3%2010.5%2012%204l9%206.5V20a1%201%200%200%201-1%201h-5v-6H9v6H4a1%201%200%200%201-1-1z%27%2F%3E%3C%2Fsvg%3E");
-}
-
-.profile-ui-icon--gear {
-  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%2712%27%20r%3D%273.2%27%2F%3E%3Cpath%20d%3D%27M4.5%2012a7.5%207.5%200%200%201%20.3-2l-2-1.5%202-3.5%202.3%201a7.5%207.5%200%200%201%201.7-1L9.2%202h4l.4%202.5a7.5%207.5%200%200%201%201.7%201l2.3-1%202%203.5-2%201.5a7.5%207.5%200%200%201%200%204l2%201.5-2%203.5-2.3-1a7.5%207.5%200%200%201-1.7%201l-.4%202.5h-4l-.4-2.5a7.5%207.5%200%200%201-1.7-1l-2.3%201-2-3.5%202-1.5a7.5%207.5%200%200%201-.3-2z%27%2F%3E%3C%2Fsvg%3E");
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%2712%27%20r%3D%273.2%27%2F%3E%3Cpath%20d%3D%27M4.5%2012a7.5%207.5%200%200%201%20.3-2l-2-1.5%202-3.5%202.3%201a7.5%207.5%200%200%201%201.7-1L9.2%202h4l.4%202.5a7.5%207.5%200%200%201%201.7%201l2.3-1%202%203.5-2%201.5a7.5%207.5%200%200%201%200%204l2%201.5-2%203.5-2.3-1a7.5%207.5%200%200%201-1.7%201l-.4%202.5h-4l-.4-2.5a7.5%207.5%200%200%201-1.7-1l-2.3%201-2-3.5%202-1.5a7.5%207.5%200%200%201-.3-2z%27%2F%3E%3C%2Fsvg%3E");
-}
-
-.profile-ui-icon--swords {
-  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M14.5%2017.5%203%206V3h3l11.5%2011.5%27%2F%3E%3Cpath%20d%3D%27m13%2019%206-6%27%2F%3E%3Cpath%20d%3D%27m16%2016%204%204%27%2F%3E%3Cpath%20d%3D%27M9.5%206.5%2021%2018v3h-3L6.5%209.5%27%2F%3E%3C%2Fsvg%3E");
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M14.5%2017.5%203%206V3h3l11.5%2011.5%27%2F%3E%3Cpath%20d%3D%27m13%2019%206-6%27%2F%3E%3Cpath%20d%3D%27m16%2016%204%204%27%2F%3E%3Cpath%20d%3D%27M9.5%206.5%2021%2018v3h-3L6.5%209.5%27%2F%3E%3C%2Fsvg%3E");
-}
-
-.profile-ui-icon--shield {
-  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M12%203l7%203v6c0%204.4-3%208.3-7%209-4-.7-7-4.6-7-9V6z%27%2F%3E%3C%2Fsvg%3E");
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M12%203l7%203v6c0%204.4-3%208.3-7%209-4-.7-7-4.6-7-9V6z%27%2F%3E%3C%2Fsvg%3E");
-}
-
-.profile-ui-icon--user {
-  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%278%27%20r%3D%274%27%2F%3E%3Cpath%20d%3D%27M4%2021a8%208%200%200%201%2016%200%27%2F%3E%3C%2Fsvg%3E");
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%278%27%20r%3D%274%27%2F%3E%3Cpath%20d%3D%27M4%2021a8%208%200%200%201%2016%200%27%2F%3E%3C%2Fsvg%3E");
-}
-
-.profile-ui-icon--group {
-  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Ccircle%20cx%3D%279%27%20cy%3D%278%27%20r%3D%273.5%27%2F%3E%3Cpath%20d%3D%27M2.5%2021a6.5%206.5%200%200%201%2013%200%27%2F%3E%3Cpath%20d%3D%27M16%205.2a3.5%203.5%200%200%201%200%206.6%27%2F%3E%3Cpath%20d%3D%27M17.5%2014.6A6.5%206.5%200%200%201%2021.5%2021%27%2F%3E%3C%2Fsvg%3E");
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Ccircle%20cx%3D%279%27%20cy%3D%278%27%20r%3D%273.5%27%2F%3E%3Cpath%20d%3D%27M2.5%2021a6.5%206.5%200%200%201%2013%200%27%2F%3E%3Cpath%20d%3D%27M16%205.2a3.5%203.5%200%200%201%200%206.6%27%2F%3E%3Cpath%20d%3D%27M17.5%2014.6A6.5%206.5%200%200%201%2021.5%2021%27%2F%3E%3C%2Fsvg%3E");
-}
-
-.profile-ui-icon--link {
-  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M10%2013a5%205%200%200%200%207%200l3-3a5%205%200%200%200-7-7l-1.5%201.5%27%2F%3E%3Cpath%20d%3D%27M14%2011a5%205%200%200%200-7%200l-3%203a5%205%200%200%200%207%207L12.5%2019.5%27%2F%3E%3C%2Fsvg%3E");
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M10%2013a5%205%200%200%200%207%200l3-3a5%205%200%200%200-7-7l-1.5%201.5%27%2F%3E%3Cpath%20d%3D%27M14%2011a5%205%200%200%200-7%200l-3%203a5%205%200%200%200%207%207L12.5%2019.5%27%2F%3E%3C%2Fsvg%3E");
-}
-
-.profile-ui-icon--check {
-  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27m5%2013%204%204%2010-10%27%2F%3E%3C%2Fsvg%3E");
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27m5%2013%204%204%2010-10%27%2F%3E%3C%2Fsvg%3E");
-}
-
-.profile-ui-icon--sync {
-  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M21%2012a9%209%200%201%201-3-6.7%27%2F%3E%3Cpath%20d%3D%27M21%204v5h-5%27%2F%3E%3C%2Fsvg%3E");
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M21%2012a9%209%200%201%201-3-6.7%27%2F%3E%3Cpath%20d%3D%27M21%204v5h-5%27%2F%3E%3C%2Fsvg%3E");
-}
-
-.profile-ui-icon--plus {
-  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M12%205v14%27%2F%3E%3Cpath%20d%3D%27M5%2012h14%27%2F%3E%3C%2Fsvg%3E");
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M12%205v14%27%2F%3E%3Cpath%20d%3D%27M5%2012h14%27%2F%3E%3C%2Fsvg%3E");
-}
-
-.profile-ui-icon--calendar {
-  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Crect%20x%3D%273%27%20y%3D%275%27%20width%3D%2718%27%20height%3D%2716%27%20rx%3D%272%27%2F%3E%3Cpath%20d%3D%27M8%203v4%27%2F%3E%3Cpath%20d%3D%27M16%203v4%27%2F%3E%3Cpath%20d%3D%27M3%2011h18%27%2F%3E%3C%2Fsvg%3E");
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Crect%20x%3D%273%27%20y%3D%275%27%20width%3D%2718%27%20height%3D%2716%27%20rx%3D%272%27%2F%3E%3Cpath%20d%3D%27M8%203v4%27%2F%3E%3Cpath%20d%3D%27M16%203v4%27%2F%3E%3Cpath%20d%3D%27M3%2011h18%27%2F%3E%3C%2Fsvg%3E");
-}
-
-.profile-ui-icon--crown {
-  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M3%208l4%204%205-7%205%207%204-4v9a1%201%200%200%201-1%201H4a1%201%200%200%201-1-1z%27%2F%3E%3C%2Fsvg%3E");
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M3%208l4%204%205-7%205%207%204-4v9a1%201%200%200%201-1%201H4a1%201%200%200%201-1-1z%27%2F%3E%3C%2Fsvg%3E");
-}
-
-.profile-ui-icon--leaf {
-  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M20%204C10%204%204%209%204%2017v3h3c8%200%2013-6%2013-16z%27%2F%3E%3Cpath%20d%3D%27M4%2020%2014%2010%27%2F%3E%3C%2Fsvg%3E");
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%23000%27%20stroke-width%3D%271.8%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M20%204C10%204%204%209%204%2017v3h3c8%200%2013-6%2013-16z%27%2F%3E%3Cpath%20d%3D%27M4%2020%2014%2010%27%2F%3E%3C%2Fsvg%3E");
-}
 
 /* =========================================================
    18. СМУГА ЛІЧИЛЬНИКІВ ПЕРСОНАЖІВ
@@ -2243,11 +1232,6 @@
   max-width: 360px;
 }
 
-.profile-account-sidebar__avatar--fallback svg {
-  width: 54%;
-  height: 54%;
-}
-
 @media (max-width: 520px) {
   .profile-character-list--single-flow {
     grid-template-columns: minmax(0, 1fr);
@@ -2266,17 +1250,8 @@
    телефоні. Desktop-каркас інших сторінок не зачіпається.
    Рейдові картки нижче навмисно оновлені і для desktop, і для mobile.
    ========================================================= */
-.profile-account-page {
-  --profile-ui-gap: var(--space-md);
-  --profile-ui-gap-compact: var(--space-sm);
-  --profile-ui-pad-mobile: 14px;
-  --profile-ui-radius: var(--radius-lg);
-}
 
 /* ---------- Рейдові записи: новий desktop + mobile card pattern ---------- */
-.profile-card--raids-modern {
-  overflow: hidden;
-}
 
 .profile-card-head--raids {
   align-items: center;
@@ -2293,412 +1268,16 @@
   margin: 0;
 }
 
-.profile-raid-list {
-  gap: var(--profile-ui-gap-compact);
-}
-
-.profile-raid-card {
-  grid-template-columns: minmax(230px, 0.82fr) minmax(0, 1.55fr);
-  gap: var(--space-lg);
-  padding: var(--space-md);
-  border-left-width: 3px;
-  border-radius: var(--profile-ui-radius);
-  background: color-mix(in srgb, var(--surface-sunken) 88%, transparent);
-}
-
-.profile-raid-card--going {
-  border-left-color: var(--c-success);
-}
-
-.profile-raid-card--tentative {
-  border-left-color: var(--c-warning);
-}
-
-.profile-raid-card--late {
-  border-left-color: var(--c-info);
-}
-
-.profile-raid-card--skipped {
-  border-left-color: var(--c-ink-500);
-}
-
-.profile-raid-card__main {
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  align-content: start;
-  align-items: start;
-  gap: var(--space-sm);
-  min-width: 0;
-  color: inherit;
-  text-decoration: none;
-}
-
-.profile-raid-card__main:hover .profile-raid-card__title strong {
-  color: var(--c-accent-200);
-}
-
-.profile-raid-card__icon {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: var(--control-height);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-raised);
-  color: var(--c-accent-300);
-  font-size: var(--font-size-base);
-}
-
-.profile-raid-card__icon--tank {
-  color: var(--c-role-tank);
-  border-color: color-mix(in srgb, var(--c-role-tank) 30%, var(--border-subtle));
-  background: color-mix(in srgb, var(--c-role-tank) 9%, var(--surface-raised));
-}
-
-.profile-raid-card__icon--healer {
-  color: var(--c-role-healer);
-  border-color: color-mix(in srgb, var(--c-role-healer) 30%, var(--border-subtle));
-  background: color-mix(in srgb, var(--c-role-healer) 9%, var(--surface-raised));
-}
-
-.profile-raid-card__icon--dps {
-  color: var(--c-role-dps);
-  border-color: color-mix(in srgb, var(--c-role-dps) 30%, var(--border-subtle));
-  background: color-mix(in srgb, var(--c-role-dps) 9%, var(--surface-raised));
-}
-
-.profile-raid-card__title {
-  display: grid;
-  gap: var(--space-2xs);
-  min-width: 0;
-  color: inherit;
-}
-
-.profile-raid-card__title strong {
-  min-width: 0;
-  color: var(--text-strong);
-  font-size: 0.98rem;
-  line-height: var(--line-height-tight);
-  overflow-wrap: anywhere;
-  transition: color var(--dur-fast) var(--ease-out);
-}
-
-.profile-raid-card__title small {
-  color: var(--text-muted);
-  font-size: 0.74rem;
-  line-height: 1.4;
-}
-
-.profile-raid-card__difficulty {
-  justify-self: start;
-  margin-top: 2px;
-  padding: 2px 8px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-pill);
-  background: var(--surface-raised);
-  color: var(--text-soft);
-  font-size: var(--font-size-2xs);
-  font-style: normal;
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-body);
-}
-
-.profile-raid-card__body {
-  display: grid;
-  align-content: start;
-  gap: var(--space-sm);
-  min-width: 0;
-}
-
-.profile-raid-card__headline {
-  justify-content: flex-start;
-  gap: var(--space-2xs);
-}
-
-.profile-raid-status-chip,
-.profile-raid-role-chip {
-  min-height: 28px;
-  padding-inline: var(--space-sm);
-  font-size: var(--font-size-xs);
-}
-
-.profile-raid-role-chip--tank {
-  --tone: var(--c-role-tank);
-}
-
-.profile-raid-role-chip--healer {
-  --tone: var(--c-role-healer);
-}
-
-.profile-raid-role-chip--dps {
-  --tone: var(--c-role-dps);
-}
-
-.profile-raid-card__meta {
-  display: grid;
-  grid-template-columns: minmax(74px, 0.58fr) minmax(180px, 1.55fr) minmax(120px, 0.9fr) minmax(120px, 1fr);
-  gap: var(--space-xs);
-  min-width: 0;
-  color: inherit;
-  font-size: inherit;
-}
-
-.profile-raid-meta-item {
-  display: grid;
-  align-content: start;
-  gap: var(--space-3xs);
-  min-width: 0;
-  padding: 9px 10px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--surface-raised) 58%, transparent);
-  white-space: normal;
-}
-
-.profile-raid-meta-item small {
-  color: var(--text-faint);
-  font-size: 0.6rem;
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.09em;
-  line-height: var(--line-height-tight);
-  text-transform: uppercase;
-}
-
-.profile-raid-meta-item strong {
-  min-width: 0;
-  color: var(--text-strong);
-  font-size: var(--font-size-ui);
-  line-height: 1.4;
-  overflow-wrap: anywhere;
-}
-
-.profile-raid-meta-item__detail {
-  min-width: 0;
-  color: var(--text-muted);
-  font-size: var(--font-size-xs);
-  line-height: var(--line-height-tight);
-  overflow-wrap: anywhere;
-}
-
-.profile-raid-meta-item--character,
-.profile-raid-meta-item--order {
-  white-space: normal;
-}
-
-.profile-raid-card__actions {
-  justify-content: flex-end;
-}
-
-.profile-raid-card__action {
-  min-width: 132px;
-  justify-content: center;
-}
-
-.profile-raid-skipped {
-  display: grid;
-  gap: var(--space-sm);
-  padding: var(--space-sm);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--profile-ui-radius);
-  background: color-mix(in srgb, var(--surface-sunken) 72%, transparent);
-}
-
-.profile-raid-skipped > summary {
-  cursor: pointer;
-  color: var(--text-soft);
-  font-size: var(--font-size-ui);
-  font-weight: var(--font-weight-bold);
-}
-
 /* ---------- Mobile profile normalization ---------- */
 @media (max-width: 760px) {
-  .profile-account-page {
-    --profile-ui-gap: var(--space-sm);
-    --profile-ui-gap-compact: 8px;
-  }
 
-  .profile-account-layout,
-  .profile-account-main,
-  .profile-grid,
   .profile-character-list {
-    gap: var(--profile-ui-gap);
+    gap: var(--section-gap);
   }
 
   /* Compact identity card: avatar remains beside the name even on phones. */
-  .profile-account-sidebar {
-    gap: 10px;
-    padding: var(--profile-ui-pad-mobile);
-    border-radius: var(--profile-ui-radius);
-    text-align: left;
-  }
-
-  .profile-account-sidebar__identity {
-    grid-template-columns: 56px minmax(0, 1fr);
-    grid-template-rows: auto auto auto;
-    column-gap: var(--space-sm);
-    row-gap: var(--space-3xs);
-    justify-items: stretch;
-    align-items: center;
-    text-align: left;
-  }
-
-  .profile-account-sidebar__identity > .profile-account-sidebar__avatar {
-    grid-column: 1;
-    grid-row: 1 / 4;
-    width: 56px;
-    height: 56px;
-  }
-
-  .profile-account-sidebar__identity > strong {
-    grid-column: 2;
-    grid-row: 1;
-    min-width: 0;
-    overflow-wrap: anywhere;
-  }
-
-  .profile-account-sidebar__identity > span:not(.profile-account-sidebar__pills) {
-    grid-column: 2;
-    grid-row: 2;
-  }
-
-  .profile-account-sidebar__pills {
-    grid-column: 2;
-    grid-row: 3;
-    justify-content: flex-start;
-    gap: 5px;
-    min-width: 0;
-  }
-
-  .profile-account-sidebar__pills .status-pill {
-    padding: 2px 8px;
-    font-size: 0.64rem;
-  }
-
-  .profile-account-sidebar__facts {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 7px;
-    padding: 0;
-    border: 0;
-  }
-
-  .profile-account-sidebar__facts > div {
-    display: grid;
-    gap: var(--space-3xs);
-    padding: 8px 10px;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
-    background: var(--surface-sunken);
-  }
-
-  .profile-account-sidebar__facts dt {
-    font-size: 0.58rem;
-  }
-
-  .profile-account-sidebar__facts dd {
-    font-size: var(--font-size-ui);
-  }
-
-  .profile-account-sidebar__nav {
-    gap: 5px;
-    padding-top: 9px;
-  }
-
-  .profile-account-sidebar__nav a {
-    min-height: var(--control-height);
-    min-width: 42px;
-  }
-
-  .profile-account-sidebar__footer {
-    display: flex;
-    justify-content: flex-end;
-    padding-top: 8px;
-  }
-
-  .profile-account-sidebar__footer > *,
-  .profile-account-sidebar__footer .profile-account-logout,
-  .profile-account-sidebar__footer .profile-account-logout > .btn {
-    width: auto;
-  }
-
-  .profile-account-header {
-    display: grid;
-    gap: var(--space-sm);
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--border-subtle);
-  }
-
-  .profile-account-header h1 {
-    margin-block: 5px;
-    font-size: clamp(1.7rem, 8vw, 2rem);
-    line-height: 1.08;
-  }
-
-  .profile-account-header p {
-    margin: 0;
-    color: var(--text-muted);
-    font-size: 0.83rem;
-    line-height: var(--line-height-body);
-  }
-
-  .profile-account-header__actions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    width: 100%;
-    gap: var(--space-xs);
-  }
-
-  .profile-account-header__actions .btn {
-    min-width: 0;
-    justify-content: center;
-  }
 
   /* Four overview cards no longer form a long single-column tower. */
-  .profile-account-overview {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-xs);
-  }
-
-  .profile-account-overview-card {
-    min-height: 66px;
-    gap: 9px;
-    padding: 10px 11px;
-    border-left-width: 1px;
-    border-radius: var(--radius-md);
-  }
-
-  .profile-account-overview-card:first-child,
-  .profile-account-overview-card--success {
-    grid-column: 1 / -1;
-  }
-
-  .profile-account-overview-card__icon {
-    width: 34px;
-    height: var(--control-height-sm);
-  }
-
-  .profile-account-overview-card small {
-    font-size: 0.58rem;
-    letter-spacing: 0.09em;
-  }
-
-  .profile-account-overview-card strong {
-    font-size: var(--font-size-body);
-    line-height: 1.25;
-  }
-
-  .profile-account-overview-card__meta {
-    font-size: 0.65rem !important;
-  }
-
-  .profile-card {
-    border-radius: var(--profile-ui-radius);
-  }
-
-  .profile-card--characters,
-  .profile-card--raids-modern {
-    gap: var(--space-sm);
-    padding: var(--profile-ui-pad-mobile);
-  }
 
   .profile-card-head {
     gap: var(--space-xs);
@@ -2732,7 +1311,7 @@
   }
 
   .profile-character-card {
-    border-radius: var(--profile-ui-radius);
+    border-radius: var(--card-radius);
   }
 
   .profile-character-artwork {
@@ -2791,23 +1370,6 @@
     min-height: var(--control-height);
   }
 
-  .profile-bnet-status {
-    gap: 9px;
-    padding: 10px;
-  }
-
-  .profile-bnet-cta {
-    gap: 10px;
-    padding: 14px 12px;
-  }
-
-  .profile-bnet-cta p {
-    margin: 0;
-    max-width: 34rem;
-    font-size: var(--font-size-ui-lg);
-    line-height: var(--line-height-body);
-  }
-
   /* Raid cards switch from desktop split layout to compact mobile stack. */
   .profile-card-head--raids {
     flex-direction: row;
@@ -2822,93 +1384,12 @@
     padding-bottom: 10px;
     border-bottom: 1px solid var(--border-subtle);
   }
-
-  .profile-raid-card {
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-sm);
-    padding: 12px;
-    border-radius: var(--profile-ui-radius);
-  }
-
-  .profile-raid-card__main {
-    grid-template-columns: 36px minmax(0, 1fr);
-    gap: 10px;
-  }
-
-  .profile-raid-card__icon {
-    width: 36px;
-    height: 36px;
-    border-radius: var(--control-radius);
-  }
-
-  .profile-raid-card__title strong {
-    font-size: 0.92rem;
-  }
-
-  .profile-raid-card__title small {
-    font-size: var(--font-size-caption);
-  }
-
-  .profile-raid-card__headline {
-    gap: 6px;
-  }
-
-  .profile-raid-card__meta {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 7px;
-  }
-
-  .profile-raid-meta-item {
-    padding: 8px 9px;
-  }
-
-  .profile-raid-meta-item--character {
-    grid-column: 1 / -1;
-  }
-
-  .profile-raid-card__actions {
-    justify-content: stretch;
-  }
-
-  .profile-raid-card__action {
-    width: 100%;
-    min-height: 40px;
-  }
-
-  .profile-raid-skipped {
-    padding: 10px;
-  }
 }
 
 @media (max-width: 430px) {
-  .profile-account-header__actions {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .profile-account-overview {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .profile-account-overview-card,
-  .profile-account-overview-card:first-child,
-  .profile-account-overview-card--success {
-    grid-column: 1;
-  }
-
-  .profile-account-overview-card {
-    min-height: 58px;
-  }
 
   .profile-character-artwork {
     height: 156px;
-  }
-
-  .profile-raid-card__meta {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .profile-raid-meta-item--character {
-    grid-column: 1;
   }
 }
 
@@ -2927,92 +1408,6 @@
 @media (max-width: 760px) {
   /* Меню профілю завжди видиме: 2x2, іконка + підпис. Раніше підпис
      ховався через clip-path, тому на темній темі меню виглядало порожнім. */
-  .profile-account-sidebar__nav {
-    display: grid;
-    grid-auto-flow: row;
-    grid-auto-columns: auto;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 7px;
-    width: 100%;
-    padding-top: 9px;
-    overflow: visible;
-    border-top: 1px solid var(--border-subtle);
-  }
-
-  .profile-account-sidebar__nav a {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    gap: var(--space-xs);
-    min-width: 0;
-    min-height: 44px;
-    padding: 0 11px;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
-    background: var(--surface-sunken);
-    color: var(--text-soft);
-  }
-
-  .profile-account-sidebar__nav a:hover,
-  .profile-account-sidebar__nav a:focus-visible {
-    border-color: var(--border-strong);
-    background: var(--surface-hover);
-    color: var(--text-strong);
-  }
-
-  .profile-account-sidebar__nav a[aria-current="page"] {
-    border-color: color-mix(in srgb, var(--c-accent-400) 34%, var(--border-strong));
-    background: var(--accent-soft);
-    color: var(--c-accent-200);
-  }
-
-  .profile-account-sidebar__nav a[aria-current="page"]::before {
-    display: none;
-  }
-
-  .profile-account-sidebar__nav a .profile-account-sidebar__nav-label,
-  .profile-account-sidebar__nav a > span:not(:where(.profile-account-sidebar__nav-count, .profile-ui-icon)) {
-    position: static;
-    width: auto;
-    height: auto;
-    margin: 0;
-    padding: 0;
-    overflow: visible;
-    clip: auto;
-    clip-path: none;
-    white-space: nowrap;
-    color: inherit;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-    line-height: 1.2;
-  }
-
-  .profile-account-sidebar__nav .profile-ui-icon {
-    display: inline-block;
-    width: 18px;
-    height: 18px;
-    flex: 0 0 auto;
-    opacity: 1;
-    color: currentColor;
-    background-color: currentColor;
-  }
-
-  .profile-account-sidebar__nav-count {
-    position: static;
-    width: auto;
-    min-width: 18px;
-    height: 18px;
-    margin: 0 0 0 auto;
-    padding-inline: 5px;
-    background: var(--surface-raised);
-    color: var(--text-muted);
-    font-size: 0.58rem;
-  }
-
-  .profile-account-sidebar__footer {
-    margin-top: 0;
-    padding-top: 9px;
-  }
 
   /* Персонаж: менше порожнього арту, чітка шапка і badge праворуч
      від імені/realm, а не поверх зображення. */
@@ -3118,18 +1513,6 @@
 }
 
 @media (max-width: 420px) {
-  .profile-account-sidebar__nav {
-    gap: 6px;
-  }
-
-  .profile-account-sidebar__nav a {
-    min-height: var(--control-height);
-    padding-inline: 9px;
-  }
-
-  .profile-account-sidebar__nav a .profile-account-sidebar__nav-label {
-    font-size: var(--font-size-xs);
-  }
 
   .profile-character-artwork {
     height: 136px;
@@ -3193,9 +1576,3 @@
 
 /* Final responsive exception after the consolidated profile-card rules.
    Keep touch layouts compact even when desktop styles above are extended. */
-@media (max-width: 520px) {
-  .profile-account-overview-card__icon {
-    width: 38px;
-    height: 38px;
-  }
-}

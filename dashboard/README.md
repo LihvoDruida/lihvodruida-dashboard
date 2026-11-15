@@ -1,4 +1,4 @@
-# Dashboard 3.22.0
+# Dashboard 3.25.0
 
 [Чинна інструкція парного релізу](../docs/RELEASE_INSTALL_2026-10-19_UA.md).
 
@@ -63,3 +63,9 @@ The browser keeps only a short in-memory chart history; metrics are not persiste
 Модуль стрімерів видалено; відеофон відновлено. Порядок очищення старих даних: [MEDIA_REMOVAL_2026-11-10_UA.md](../docs/MEDIA_REMOVAL_2026-11-10_UA.md).
 
 Аудит, матриця доступу, видалення та впровадження 3.22.0: [docs/REFACTOR_3.22.0_UA.md](docs/REFACTOR_3.22.0_UA.md).
+
+Універсальні шаблони та еталонний /dashboard (3.23.0): [docs/PAGE_ARCHITECTURE_STEP1_UA.md](docs/PAGE_ARCHITECTURE_STEP1_UA.md). Усі маршрути: [docs/PAGE_ROUTE_INVENTORY.md](docs/PAGE_ROUTE_INVENTORY.md).
+
+Етап 2 — профілі, доступ і групи (3.24.0): [docs/PAGE_ARCHITECTURE_STEP2_UA.md](docs/PAGE_ARCHITECTURE_STEP2_UA.md).
+
+Етап 3 — склад, заявки, рейди й пули (3.25.0): [docs/PAGE_ARCHITECTURE_STEP3_UA.md](docs/PAGE_ARCHITECTURE_STEP3_UA.md).

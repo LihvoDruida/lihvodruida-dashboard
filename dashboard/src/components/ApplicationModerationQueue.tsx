@@ -1,4 +1,6 @@
 "use client";
+import StatusBadge from "@/components/page/StatusBadge";
+import styles from "@/components/applications/applications-workspace.module.css";
 
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { ApplicationStatus } from "@/lib/applicationsStore";
@@ -128,16 +130,16 @@ export function ApplicationModerationProvider({ items, canModerate, children }: 
     }
   }
   return <Context.Provider value={{ rows, order: items.map((item) => item.issueNumber), selected, canModerate, select, toggle, moderate, reconcile, lock, release }}>
-    {canModerate && items.length ? <section ref={scopeRef} className="application-bulk panel" aria-label="Масова обробка видимих заявок" aria-busy={bulkBusy}>
-      <div className="application-bulk__heading"><div><strong>Дії з вибраними заявками</strong><p>Тільки заявки на розгляді з поточного списку. До 50 за одну дію.</p></div><span>Вибрано: {selectedEligible.length}</span></div>
-      <div className="application-bulk__actions">
+    {canModerate && items.length ? <section ref={scopeRef} className={styles.bulk} aria-label="Масова обробка видимих заявок" aria-busy={bulkBusy}>
+      <div className={styles.bulkHeading}><div><strong>Дії з вибраними заявками</strong><p>Тільки заявки на розгляді з поточного списку. До 50 за одну дію.</p></div><span>Вибрано: {selectedEligible.length}</span></div>
+      <div className={styles.actions}>
         <button className="btn subtle" type="button" onClick={() => select(eligible.slice(0, 50))} disabled={bulkBusy || !eligible.length}>Вибрати {Math.min(eligible.length, 50)}</button>
         <button className="btn subtle" type="button" onClick={() => select([])} disabled={bulkBusy || !selected.length}>Скинути вибір</button>
         <button className="btn primary" type="button" onClick={(event) => confirmBulk("accepted", event.currentTarget)} disabled={bulkBusy || !selectedEligible.length}>Прийняти вибрані</button>
         <button className="btn danger" type="button" onClick={(event) => confirmBulk("declined", event.currentTarget)} disabled={bulkBusy || !selectedEligible.length}>Відхилити вибрані</button>
       </div>
       <p data-action-result tabIndex={-1} role="status" aria-live="polite" aria-atomic="true">{bulkBusy ? "Обробляємо заявки. Після втрати відповіді перевіримо збережений стан за твоєю дією." : results.length ? `Змінено: ${summary.changed} · Вже розглянуто: ${summary.already} · Discord не підтверджено: ${summary.discordPending} · Непевний результат: ${summary.uncertain}` : ""}</p>
-      {results.length ? <div className="application-bulk__results">
+      {results.length ? <div className={styles.results} aria-label="Результати масової обробки">
         <ul>{results.map((item) => <li key={item.issueNumber} data-outcome={item.outcome}><a href={`#application-result-${item.issueNumber}`}>#{item.issueNumber}</a> — {item.message}</li>)}</ul>
       </div> : null}
     </section> : null}
@@ -148,7 +150,7 @@ export function ApplicationModerationProvider({ items, canModerate, children }: 
 export function ApplicationSelection({ issueNumber }: { issueNumber: number }) {
   const queue = useApplicationModerationQueue();
   if (!queue.canModerate) return null;
-  return <label className="application-selection"><input type="checkbox" checked={queue.selected.includes(issueNumber)} disabled={!available(queue.rows[issueNumber])} onChange={() => queue.toggle(issueNumber)} aria-label={`Вибрати заявку #${issueNumber}`} />Вибрати заявку</label>;
+  return <label className={styles.selection}><input type="checkbox" checked={queue.selected.includes(issueNumber)} disabled={!available(queue.rows[issueNumber])} onChange={() => queue.toggle(issueNumber)} aria-label={`Вибрати заявку #${issueNumber}`} />Вибрати заявку</label>;
 }
 
 export function ApplicationNextReview({ issueNumber }: { issueNumber: number }) {
@@ -161,4 +163,10 @@ export function ApplicationNextReview({ issueNumber }: { issueNumber: number }) 
     target?.scrollIntoView({ block: "center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
     target?.querySelector<HTMLButtonElement>("[data-decision-primary]")?.focus({ preventScroll: true });
   }}>Наступна заявка на розгляді</button>;
+}
+
+export function ApplicationStatusBadge({issueNumber,initialStatus}: {issueNumber: number;initialStatus: ApplicationStatus}) {
+  const queue = useApplicationModerationQueue();
+  const row = queue.rows[issueNumber], status = row?.status || initialStatus;
+  return <StatusBadge tone={row?.busy ? "info" : status === "accepted" ? "success" : status === "declined" ? "danger" : "warning"}>{row?.busy ? "Зберігаємо…" : status === "accepted" ? "Прийнято" : status === "declined" ? "Відхилено" : "На розгляді"}</StatusBadge>;
 }

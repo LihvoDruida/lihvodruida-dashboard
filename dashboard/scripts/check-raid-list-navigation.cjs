@@ -23,11 +23,24 @@ function pageFixture(){
   '@/lib/discordAdmin':{hasDiscordEmbedConfig:()=>true},'@/lib/raids':{hasRaidStorage:()=>true,isRaidClosed:r=>r.status==='closed',listRaids:async()=>{reads++;return cards}},
   '@/components/RaidViews':{RaidListCard:Card,RaidPageShell:()=>null,StatusNotice:()=>null,formatRaidDateTime:()=>''},'@/lib/seo':{buildPageMetadata:()=>({})},'@/lib/dashboardSystemLogs':{recordDashboardSystemLog:async()=>{}},'@/components/RaidArchiveLoadMore':{default:()=>null},
  };
- const source=fs.readFileSync(path.join(__dirname,'../src/app/raids/page.tsx'),'utf8');
- const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText;
- const mod={exports:{}};vm.runInNewContext(js,{module:mod,exports:mod.exports,require:name=>{if(Object.hasOwn(mocks,name))return mocks[name];throw Error('unexpected:'+name)},URL,URLSearchParams,Error,console});
+ mocks['@/services/raidDirectoryWorkspace'] = load('src/services/raidDirectoryWorkspace.ts',mocks);
+ mocks['@/components/raids/RaidDirectoryCard'] = {__esModule:true,default:Card};
+ mocks['./RaidDirectoryCard'] = {__esModule:true,default:Card};
+ mocks['@/components/RaidSignupPresentation'] = {formatRaidDateTime:()=>''};
+ const compile = file => {
+   const source=fs.readFileSync(path.join(__dirname,'../'+file),'utf8');
+   const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText;
+   const mod={exports:{}};
+   vm.runInNewContext(js,{module:mod,exports:mod.exports,require:name=>{
+     if(Object.hasOwn(mocks,name))return mocks[name];
+     if(name==='next/link'||name.startsWith('@/components/'))return {__esModule:true,default:()=>null};
+     throw Error('unexpected:'+name);
+   },URL,URLSearchParams,Error,console});return mod.exports;
+ };
+ mocks['@/components/raids/RaidDirectoryView'] = {...compile('src/components/raids/RaidDirectoryView.tsx'),__esModule:true};
+ const mod={exports:compile('src/app/raids/page.tsx')};
  const ids=node=>{if(!node||typeof node!=='object')return [];if(Array.isArray(node))return node.flatMap(ids);return [...(node.type===Card?[node.props.raid.id]:[]),...ids(node.props?.children)]};
- return {run:async p=>ids(await mod.exports.default({searchParams:Promise.resolve(p)})),manager:v=>manager=v,anonymous:()=>{user=null},reads:()=>reads};
+ return {run:async p=>{const page=await mod.exports.default({searchParams:Promise.resolve(p)});return ids(page.type(page.props));},manager:v=>manager=v,anonymous:()=>{user=null},reads:()=>reads};
 }
 (async()=>{
  await check('raid URLs retain only valid filters and bounded archive count',()=>{

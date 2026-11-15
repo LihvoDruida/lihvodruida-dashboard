@@ -6,10 +6,16 @@ import { dispatchDashboardToast } from "@/lib/clientToasts";
 import { requestRaidPollMutation, raidPollMutationFailure } from "@/lib/raidPollMutation";
 import { useDashboardRequests } from "@/hooks/useDashboardRequests";
 import { useActionFocus } from "@/hooks/useActionFocus";
-import RaidPollActions from "@/components/RaidPollActions";
+import PollDirectoryCard from "@/components/polls/PollDirectoryCard";
+import FilterToolbar from "@/components/page/FilterToolbar";
+import EmptyState from "@/components/page/EmptyState";
+import DataGrid from "@/components/page/DataGrid";
+import FormField from "@/components/ui/FormField";
+import Button from "@/components/ui/Button";
+import styles from "@/components/polls/poll-workspace.module.css";
 
 import ListViewMemory from "@/components/ListViewMemory";
-import { listEntryId, listViewUrl } from "@/lib/listViewState";
+import { listViewUrl } from "@/lib/listViewState";
 import { replaceClientListLocation } from "@/lib/clientListLocation";
 
 export type RaidPollCardModel = {
@@ -46,96 +52,9 @@ const TABS: Array<{ key: TabKey; label: string }> = [
   { key: "closed", label: "Архів" },
 ];
 
-function RaidPollCard({
-  card,
-  canManage,
-  selected,
-  selectionDisabled,
-  onToggle,
-}: {
-  card: RaidPollCardModel;
-  canManage: boolean;
-  selected: boolean;
-  selectionDisabled: boolean;
-  onToggle: (id: string) => void;
-}) {
-  const href = `/polls/${encodeURIComponent(card.id)}`;
-  return (
-    <article id={listEntryId("polls", card.id)} data-list-entry="polls" className={`poll-card dashboard-list-row poll-card--${card.state}${selected ? " is-selected" : ""}`}>
-      <div className="poll-card__rail" aria-hidden="true" />
-
-      {canManage ? (
-        <label className="poll-card__select">
-          <input type="checkbox" disabled={selectionDisabled} checked={selected} onChange={() => onToggle(card.id)} />
-          <span className="sr-only">Вибрати «{card.title}»</span>
-        </label>
-      ) : null}
-
-      <div className="poll-card__main">
-        <div className="poll-card__meta">
-          <span className={`poll-chip poll-chip--${card.difficulty}`}>{card.difficultyLabel}</span>
-          <span className={`poll-state poll-state--${card.state}`}>{card.statusLabel}</span>
-          {card.autoRepeat ? <span className="poll-chip poll-chip--ghost" title={`Автоповтор: ${card.repeatLabel}`}>↻ {card.repeatLabel}</span> : null}
-          <span className="poll-card__id" title={`ID: ${card.id}`}>{card.shortId}</span>
-        </div>
-
-        <h3 className="poll-card__title">
-          <a href={href}>{card.title}</a>
-        </h3>
-        <p className="poll-card__description">{card.description}</p>
-
-        {card.pausedNote ? <p className="poll-card__note">⏸ {card.pausedNote}</p> : null}
-
-        <ul className="poll-card__days" aria-label="Дні рейд-пулу">
-          {card.dayLabels.map((day) => (
-            <li key={day}>{day}</li>
-          ))}
-        </ul>
-      </div>
-
-      <dl className="poll-card__stats">
-        <div>
-          <dt>Голоси</dt>
-          <dd>
-            {card.votes}
-            <small>{card.tanks} танк · {card.healers} хіл · {card.dps} дд</small>
-          </dd>
-        </div>
-        <div>
-          <dt>{card.deadlineCaption}</dt>
-          <dd>
-            {card.remainingLabel}
-            <small>{card.deadlineLabel}</small>
-          </dd>
-        </div>
-        <div className="poll-card__stats-wide">
-          <dt>Рекомендація</dt>
-          <dd>
-            <span className="poll-card__recommendation">{card.recommendation}</span>
-          </dd>
-        </div>
-      </dl>
-
-      <footer className="poll-card__actions dashboard-list-actions">
-        <RaidPollActions
-          pollId={card.id}
-          pollTitle={card.title}
-          state={card.state}
-          canManage={canManage}
-          disabled={selectionDisabled}
-          editHref={`${href}/edit`}
-          messageUrl={card.messageUrl}
-          showView
-        />
-      </footer>
-    </article>
-  );
-}
-
 export default function RaidPollBrowser({
   cards,
   canManage = false,
-  createHref,
   navigationScope,
 }: {
   cards: RaidPollCardModel[];
@@ -252,54 +171,16 @@ export default function RaidPollBrowser({
   }
 
   return (
-    <section ref={scopeRef} className="panel poll-browser dashboard-list-panel" aria-label="Список рейд-пулів" aria-busy={bulkPending}>
-      <header className="poll-browser__head dashboard-list-head">
-        <div className="poll-browser__headline">
-          <h2>Рейд-пули</h2>
-          <p>Голосування за день і час рейду. Створення — через сайт, голоси — через Discord.</p>
-        </div>
-        {canManage && createHref ? (
-          <a className="btn primary poll-browser__create" href={createHref}>Створити рейд-пул</a>
-        ) : null}
-      </header>
-
+    <section ref={scopeRef} className={styles.stack} aria-label="Список рейд-пулів" aria-busy={bulkPending}>
       <ListViewMemory key={navigationScope} kind="polls" scope={navigationScope} currentUrl={currentUrl} />
-      <div className="poll-browser__controls">
-        <div className="poll-tabs" role="tablist" aria-label="Стан рейд-пулів">
-          {TABS.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              role="tab"
-              aria-selected={tab === item.key}
-              className={`poll-tab${tab === item.key ? " is-active" : ""}`}
-              disabled={bulkPending}
-              onClick={() => changeTab(item.key)}
-            >
-              <span>{item.label}</span>
-              <b>{counts[item.key]}</b>
-            </button>
-          ))}
-        </div>
-
-        <label className="poll-search">
-          <span className="sr-only">Пошук рейд-пулу</span>
-          <input
-            type="search"
-            maxLength={160}
-            value={query}
-            disabled={bulkPending}
-            onChange={(event) => changeQuery(event.target.value)}
-            placeholder="Пошук за назвою або складністю"
-            autoComplete="off"
-          />
-        </label>
-      </div>
-
-      <p className="raid-poll-action-result" role="status" aria-live="polite" aria-atomic="true" tabIndex={-1} data-action-result="" data-bulk-result="">{summary}</p>
-      {results.length ? <ul className="poll-bulk-results" aria-label="Результати масової дії">{results.map(item => <li key={item.id} data-poll-outcome={item.outcome}><strong>{item.title}</strong><span>{item.message}</span><a href={resultKind === "delete" && (item.outcome === "confirmed" || item.outcome === "partial") ? "/polls" : `/polls/${encodeURIComponent(item.id)}`}>{resultKind === "delete" && (item.outcome === "confirmed" || item.outcome === "partial") ? "До списку рейд-пулів" : "Перевірити стан"}</a></li>)}</ul> : null}
+      <FilterToolbar label="Пошук і фільтри рейд-пулів" search={<FormField label="Пошук рейд-пулу" type="search" maxLength={160} value={query} disabled={bulkPending} onChange={event => changeQuery(event.target.value)} placeholder="Назва, складність або ID" autoComplete="off" />}
+        filters={<label>Стан<select value={tab} disabled={bulkPending} onChange={event => changeTab(event.target.value as TabKey)}>{TABS.map(item => <option key={item.key} value={item.key}>{item.label} ({counts[item.key]})</option>)}</select></label>}
+        actions={<Button disabled={bulkPending || !query && tab === "all"} onClick={() => {setSelected([]);setQuery("");replaceClientListLocation("polls", {q: null,tab: "all",view: "all"});}}>Скинути</Button>}
+        result={`Показано ${visible.length} із ${cards.length}`} />
+      <p className={styles.result} role="status" aria-live="polite" aria-atomic="true" tabIndex={-1} data-action-result="" data-bulk-result="">{summary}</p>
+      {results.length ? <ul className={styles.results} aria-label="Результати масової дії">{results.map(item => <li key={item.id} data-poll-outcome={item.outcome}><strong>{item.title}</strong><span>{item.message}</span><a href={resultKind === "delete" && (item.outcome === "confirmed" || item.outcome === "partial") ? "/polls" : `/polls/${encodeURIComponent(item.id)}`}>{resultKind === "delete" && (item.outcome === "confirmed" || item.outcome === "partial") ? "До списку рейд-пулів" : "Перевірити стан"}</a></li>)}</ul> : null}
       {canManage && visibleSelection.length ? (
-        <div className="poll-bulk" role="region" aria-label="Масові дії">
+        <div className={styles.bulk} role="region" aria-label="Масові дії">
           <strong>Вибрано: {visibleSelection.length}</strong>
           <button type="button" className="btn subtle" onClick={() => setSelected([])} disabled={bulkPending}>Зняти вибір</button>
           <button type="button" className="btn subtle" onClick={() => setSelected(visible.map((card) => card.id))} disabled={bulkPending}>
@@ -314,10 +195,10 @@ export default function RaidPollBrowser({
         </div>
       ) : null}
 
-      <div className="poll-list dashboard-list">
+      <DataGrid label="Рейд-пули" columns="two">
         {visible.length ? (
           visible.map((card) => (
-            <RaidPollCard
+            <PollDirectoryCard
               key={card.id}
               card={card}
               canManage={canManage}
@@ -327,19 +208,9 @@ export default function RaidPollBrowser({
             />
           ))
         ) : (
-          <p className="poll-empty">
-            {query.trim()
-              ? "Нічого не знайдено за цим запитом."
-              : tab === "all" ? "Рейд-пулів ще немає." : tab === "scheduled"
-                ? "Запланованих публікацій немає."
-                : tab === "open"
-                  ? "Активних рейд-пулів немає."
-                  : tab === "paused"
-                    ? "Немає пулів на паузі."
-                    : "Архів порожній."}
-          </p>
+          <EmptyState title={query.trim() ? "Нічого не знайдено" : "У цьому списку поки немає пулів"} description="Зміни пошук або стан, щоб переглянути інші голосування." actions={<Button onClick={() => {changeQuery("");changeTab("all");}}>Показати всі</Button>} />
         )}
-      </div>
+      </DataGrid>
     </section>
   );
 }

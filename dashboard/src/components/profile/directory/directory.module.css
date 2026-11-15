@@ -1,0 +1,18 @@
+.area { min-width: 0; container-type: inline-size; }
+.table { width: 100%; table-layout: fixed; }
+.table :is(th, td) { font-size: var(--font-size-body-sm); font-weight: var(--font-weight-ui); }
+.table small { display: block; margin-top: var(--space-2xs); color: var(--text-muted); line-height: var(--line-height-body); font-size: var(--font-size-meta); }
+.identity { display: flex; gap: var(--space-xs); color: var(--text-body); text-decoration: none; min-width: 0; align-items: start; }
+.identity > span { min-width: 0; overflow-wrap: anywhere; }
+.identity:hover strong { color: var(--c-accent-300); }
+.avatar { border-radius: var(--control-radius); object-fit: cover; flex: none; background: var(--surface-raised); }
+.pagination { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: var(--space-sm); }
+@container (max-width: 800px) {
+  .table { display: block; }
+  .table thead { position: absolute; width: var(--stroke-width); height: var(--stroke-width); overflow: hidden; clip-path: inset(50%); }
+  .table tbody { display: grid; }
+  .table tr { display: grid; padding: var(--space-sm); border-bottom: var(--stroke-width) solid var(--border); }
+  .table :is(th, td) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: var(--space-sm); border: 0; padding: var(--space-xs); }
+  .table :is(th, td)::before { content: attr(data-label); color: var(--text-muted); font-size: var(--font-size-meta); font-weight: var(--font-weight-medium); }
+  .table :is(th, td) > small { grid-column: 2; }
+}

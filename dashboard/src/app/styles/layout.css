@@ -110,7 +110,6 @@ main .dashboard-shell {
 }
 
 .subtle:not(:where(.btn)),
-.hint,
 [class$="__hint"],
 [class*="__hint "],
 [class$="__meta"],
@@ -202,7 +201,6 @@ main .dashboard-shell {
 [class*="-hero__actions "],
 [class$="__actions"],
 [class*="__actions "],
-.action-row,
 .form-actions,
 .dashboard-list-actions,
 [class$="-actions"],

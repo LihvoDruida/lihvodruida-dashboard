@@ -1,16 +1,12 @@
-import AppProblemScreen from "@/components/AppProblemScreen";
 import DashboardIdentity from "@/components/DashboardIdentity";
 import GuildRosterExplorer from "@/components/GuildRosterExplorer";
 import GuildRosterLiveHeroStats from "@/components/GuildRosterLiveHeroStats";
-import { getSessionUser } from "@/lib/auth";
-import { loadGuildRosterData } from "@/lib/guildRoster";
-import { buildPageMetadata } from "@/lib/seo";
-import { getDashboardApiSettings } from "@/lib/dashboardApiSettings";
-import { recordDashboardSystemLog } from "@/lib/dashboardSystemLogs";
-import { MISTBLOSSOM_DISCORD_CHANNELS, discordGuildChannelUrl } from "@/lib/discordGuildLinks";
+import PageContainer from "@/components/page/PageContainer";
+import PageErrorBoundary from "@/components/page/PageErrorBoundary";
+import GuildDiscordGuide from "@/components/guild/GuildDiscordGuide";
+import { loadGuildWorkspace } from "@/services/guildWorkspace";
 import { listNavigationScope } from "@/lib/listNavigationScope";
-import rosterStyles from "@/components/GuildRoster.module.css";
-
+import { buildPageMetadata } from "@/lib/seo";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const revalidate = 0;
@@ -24,182 +20,11 @@ export const metadata = buildPageMetadata({
 });
 
 export default async function GuildRosterPage() {
-  const user = await getSessionUser();
-  // Public, read-only roster: Discord login is not required for viewing.
-
-  const [roster, apiSettings] = await Promise.all([
-    loadGuildRosterData().catch((error) => {
-      void recordDashboardSystemLog(
-        "error",
-        "page.guild.roster_read_failed",
-        {
-          summary:
-            "Сторінка складу відкрилась без даних зі сховища: читання roster не спрацювало.",
-          message:
-            error instanceof Error ? error.message : String(error || "unknown"),
-        },
-        { persist: true },
-      );
-      return {
-        members: [],
-        stats: {
-          guildName: "Mistblossom Vanguard",
-          guildRealm: "Terokkar",
-          guildFaction: "Alliance",
-          profileUrl: null,
-          memberCount: 0,
-          averageItemLevel: 0,
-          averageRioAll: 0,
-          maxItemLevel: 0,
-          maxRioAll: 0,
-          raidProgression: [],
-          raidRankings: [],
-          raidSeasonSnapshot: null,
-          updatedAt: null,
-        },
-        source: "fallback",
-        error:
-          "Склад тимчасово недоступний. Сторінку відкрито без live-збору; синхронізація відновить записи в базі даних покроково.",
-      };
-    }),
-    getDashboardApiSettings().catch((error) => {
-      void recordDashboardSystemLog(
-        "warning",
-        "page.guild.settings_read_failed",
-        {
-          summary:
-            "Налаштування синхронізації складу тимчасово недоступні, використано безпечні значення.",
-          message:
-            error instanceof Error ? error.message : String(error || "unknown"),
-        },
-        { persist: false },
-      );
-      return {
-        guildRosterClientDrivenSyncEnabled: false,
-        guildRosterClientStepDelayMs: 500,
-        guildRosterClientRequestTimeoutMs: 25_000,
-        guildRosterClientMaxSteps: 500,
-      };
-    }),
-  ]);
-  const members = roster.members;
-  const storageLimited = roster.source === "storage-temporary-unavailable" && members.length === 0;
-
-  if (storageLimited) {
-    return (
-      <AppProblemScreen
-        kind="quota"
-        eyebrow="Склад гільдії"
-        title="Склад тимчасово недоступний"
-        message="База даних зараз недоступна або читання тимчасово обмежене. Сторінка не запускає додаткове масове читання складу, щоб не збільшувати навантаження."
-        primaryLabel="Повторити"
-        secondaryHref="/profile"
-        secondaryLabel="До панелі"
-        details={[
-          roster.error || "Синхронізація складу відновиться після відновлення доступу до бази даних.",
-          "Адмінські дії, профілі та рейди не запускають зайвих читань цієї сторінки.",
-        ]}
-      />
-    );
-  }
-
-  return (
-    <main className="container app-page guild-page guild-page--modern">
-      <section
-        className="dashboard-shell content-shell guild-shell app-page-stack"
-        aria-label="Панель Mistblossom Vanguard"
-      >
-        <DashboardIdentity user={user} activeSection="guild" />
-        <header className={`panel ${rosterStyles.pageHero}`}>
-          <div className={rosterStyles.heroCopy}>
-            <div className="eyebrow">Mistblossom Vanguard • Склад гільдії</div>
-            <h1>Склад гільдії</h1>
-            <p>
-              Актуальна база персонажів із Battle.net, Raider.IO та рейд-прогресом.
-              Сервер оновлює дані автоматично — відкривати сторінку для синхронізації більше не потрібно.
-            </p>
-            <div className={rosterStyles.heroBadges} aria-label="Джерела даних">
-              <span className={rosterStyles.heroBadge}>Автооновлення VPS</span>
-              <span className={rosterStyles.heroBadge}>Battle.net roster</span>
-              <span className={rosterStyles.heroBadge}>Raider.IO M+</span>
-              <span className={rosterStyles.heroBadge}>Raid progress</span>
-            </div>
-          </div>
-
-          <GuildRosterLiveHeroStats
-            members={members}
-            stats={roster.stats}
-            source={roster.source}
-            error={roster.error}
-            allowManualRefresh={Boolean(user?.isServerOwner)}
-            refreshSettings={{
-              clientDrivenSyncEnabled:
-                apiSettings.guildRosterClientDrivenSyncEnabled,
-              clientStepDelayMs: apiSettings.guildRosterClientStepDelayMs,
-              clientRequestTimeoutMs:
-                apiSettings.guildRosterClientRequestTimeoutMs,
-              clientMaxSteps: apiSettings.guildRosterClientMaxSteps,
-            }}
-          />
-        </header>
-
-        <section className={`panel ${rosterStyles.guildGuide}`} aria-labelledby="guild-discord-guide-title">
-          <div className={rosterStyles.guildGuideHead}>
-            <div>
-              <div className="eyebrow">Discord • Швидка навігація</div>
-              <h2 id="guild-discord-guide-title">Що доступно учаснику гільдії</h2>
-              <p>
-                Основні канали Mistblossom Vanguard в одному місці. Нові учасники спочатку приймають правила,
-                після чого відкривається основний чат і далі працюють звичайні гільдійні ролі та системи панелі.
-              </p>
-            </div>
-            <span className={rosterStyles.guildGuideStatus}>4 ключові канали</span>
-          </div>
-
-          <div className={rosterStyles.guildGuideGrid}>
-            <a className={rosterStyles.guildGuideCard} href={discordGuildChannelUrl(MISTBLOSSOM_DISCORD_CHANNELS.rules.id)} target="_blank" rel="noreferrer">
-              <span className={rosterStyles.guildGuideIcon} aria-hidden="true">📜</span>
-              <span>
-                <strong>{MISTBLOSSOM_DISCORD_CHANNELS.rules.label}</strong>
-                <small>{MISTBLOSSOM_DISCORD_CHANNELS.rules.description}</small>
-              </span>
-              <b aria-hidden="true">↗</b>
-            </a>
-            <a className={rosterStyles.guildGuideCard} href={discordGuildChannelUrl(MISTBLOSSOM_DISCORD_CHANNELS.announcements.id)} target="_blank" rel="noreferrer">
-              <span className={rosterStyles.guildGuideIcon} aria-hidden="true">📣</span>
-              <span>
-                <strong>{MISTBLOSSOM_DISCORD_CHANNELS.announcements.label}</strong>
-                <small>{MISTBLOSSOM_DISCORD_CHANNELS.announcements.description}</small>
-              </span>
-              <b aria-hidden="true">↗</b>
-            </a>
-            <a className={rosterStyles.guildGuideCard} href={discordGuildChannelUrl(MISTBLOSSOM_DISCORD_CHANNELS.raids.id)} target="_blank" rel="noreferrer">
-              <span className={rosterStyles.guildGuideIcon} aria-hidden="true">🐉</span>
-              <span>
-                <strong>{MISTBLOSSOM_DISCORD_CHANNELS.raids.label}</strong>
-                <small>{MISTBLOSSOM_DISCORD_CHANNELS.raids.description}</small>
-              </span>
-              <b aria-hidden="true">↗</b>
-            </a>
-            <a className={rosterStyles.guildGuideCard} href={discordGuildChannelUrl(MISTBLOSSOM_DISCORD_CHANNELS.general.id)} target="_blank" rel="noreferrer">
-              <span className={rosterStyles.guildGuideIcon} aria-hidden="true">💬</span>
-              <span>
-                <strong>{MISTBLOSSOM_DISCORD_CHANNELS.general.label}</strong>
-                <small>{MISTBLOSSOM_DISCORD_CHANNELS.general.description}</small>
-              </span>
-              <b aria-hidden="true">↗</b>
-            </a>
-          </div>
-        </section>
-
-        <GuildRosterExplorer
-          navigationScope={listNavigationScope(user)}
-          members={members}
-          stats={roster.stats}
-          source={roster.source}
-          error={roster.error}
-        />
-      </section>
-    </main>
-  );
+  const {user, roster, apiSettings} = await loadGuildWorkspace();
+  return <PageContainer label="Склад гільдії" navigation={<DashboardIdentity user={user} activeSection="guild" />}>
+    <GuildRosterLiveHeroStats members={roster.members} stats={roster.stats} source={roster.source} error={roster.error} allowManualRefresh={Boolean(user?.isServerOwner)}
+      refreshSettings={{clientDrivenSyncEnabled: apiSettings.guildRosterClientDrivenSyncEnabled,clientStepDelayMs: apiSettings.guildRosterClientStepDelayMs,clientRequestTimeoutMs: apiSettings.guildRosterClientRequestTimeoutMs,clientMaxSteps: apiSettings.guildRosterClientMaxSteps}} />
+    <PageErrorBoundary><GuildRosterExplorer navigationScope={listNavigationScope(user)} members={roster.members} stats={roster.stats} source={roster.source} error={roster.error} /></PageErrorBoundary>
+    <GuildDiscordGuide />
+  </PageContainer>;
 }

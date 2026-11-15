@@ -12,7 +12,7 @@ const polls = read('src/lib/raidPolls.ts');
 const form = read('src/components/RaidPollCreateClientForm.tsx');
 const browser = read('src/components/RaidPollBrowser.tsx');
 const actions = read('src/components/RaidPollActions.tsx');
-const views = read('src/components/RaidPollViews.tsx');
+const views = require('./lib/read-ui-workspace.cjs')('src/components/RaidPollViews.tsx');
 const lifecycle = read('src/app/api/polls/close-due/route.ts');
 const createRoute = read('src/app/api/polls/route.ts');
 const cronPath = path.resolve(root, '..', 'deploy/cron/run-cron.sh');
@@ -32,7 +32,7 @@ const checks = [
   ['due scheduled polls are claimed with a persisted lock before Discord publish', polls.includes('claimScheduledRaidPoll') && polls.includes('scheduledPublishLockId') && polls.includes('scheduledPublishLockedAtMs')],
   ['failed DB commit retains receipt and marks publish for recovery', polls.includes('durable receipt retains the known ID') && polls.includes('markRaidPollPublishFailed')],
   ['failed scheduled publication remains due instead of being moved a week by an unrelated edit', !polls.includes('!previous.scheduledPublishAtMs || previous.scheduledPublishAtMs <= nowMs') && polls.includes('Прострочений timestamp лишається due')],
-  ['scheduled publish failures are persisted for admin diagnostics and automatic retry', shared.includes('scheduledPublishLastError?: string | null') && polls.includes('scheduledPublishLastErrorAt: failedAt.toISOString()') && views.includes('Остання спроба публікації не вдалася')],
+  ['scheduled publish failures are persisted for admin diagnostics and automatic retry', shared.includes('scheduledPublishLastError?: string | null') && polls.includes('scheduledPublishLastErrorAt: failedAt.toISOString()') && views.includes('Публікація потребує уваги')],
   ['lifecycle publishes scheduled polls before close/repeat work', lifecyclePublishIndex >= 0 && lifecycleRepeatIndex > lifecyclePublishIndex],
   ['recurrence cannot create a duplicate while the initial poll is still scheduled', polls.includes('if (poll.status === "scheduled" || !poll.autoRepeatWeekly') && polls.includes('if (poll.status === "scheduled" || !poll.repeatNextAtMs')],
   ['manual Discord sync cannot publish a scheduled poll early', polls.includes('const claimed = await claimScheduledRaidPoll(poll.id, Date.now(), lockId);') && polls.includes('if (!claimed) throw new Error(') && polls.includes('poll.scheduledPublishAtMs > nowMs) return null;')],
@@ -52,7 +52,7 @@ const checks = [
   ['optional third raid requires a viable core and meaningful turnout', polls.includes('raidPollExtraCandidateMakesSense') && polls.includes('Math.ceil(bestTotal * 0.6)')],
   ['optional third raid prefers the end of the WoW week', polls.includes('compareRaidPollExtraCandidates') && polls.includes('raidPollWowWeekDayIndex(b.candidate.day) - raidPollWowWeekDayIndex(a.candidate.day)')],
   ['Discord output presents two primary recommendations plus an optional extra', polls.includes('2 основні + додатковий') && polls.includes('🧩 **Додатковий**')],
-  ['dashboard poll UI requests three recommendations and explains the WoW reset', (views.match(/raidPollUniqueDayRecommendations\(poll, relatedPolls, 3\)/g) || []).length >= 2 && views.includes('RAID_POLL_WOW_WEEK_LABEL') && views.includes('3-й додатковий рейд')],
+  ['dashboard poll UI requests three recommendations and explains the WoW reset', (views.match(/raidPollUniqueDayRecommendations\(poll,\s*relatedPolls,\s*3\)/g) || []).length >= 2 && views.includes('RAID_POLL_WOW_WEEK_LABEL') && views.includes('Третій рейд є додатковим')],
   ['closed historical polls no longer reserve recommendation days', polls.includes('id !== current.id && poll.status === "closed"') && polls.includes('poll.status === "scheduled"')],
 ];
 

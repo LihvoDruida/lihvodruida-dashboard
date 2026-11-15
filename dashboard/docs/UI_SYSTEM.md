@@ -60,3 +60,15 @@ Desktop profile має дві колонки: стабільний sidebar `--si
 ## Спільні React-примітиви (3.22.0)
 
 Використовуйте components/ui/Button, FormField і DataTable та components/management/ManagementShell. Вони працюють зі спільними CSS-токенами. Не додавайте глобальне локальне перевизначення .btn для конкретної групи сторінок. Приклади впроваджені в ManagementSections, /dashboard/access і read-only /dashboard/groups.
+
+## 3.23.0 — універсальні сторінки
+
+Новий стандарт: components/page/PageContainer, PageHeader, PageSection, FilterToolbar, DataGrid, DataCard, FormSection, PageSkeleton, EmptyState, ErrorState, PageErrorBoundary та StatusBadge. На цьому етапі мігровано лише /dashboard. Нові сторінки використовують page-system.module.css і центральні токени; перелік та план: [PAGE_ARCHITECTURE_STEP1_UA.md](PAGE_ARCHITECTURE_STEP1_UA.md). Старі сторінки мігруються поетапно після підтвердження.
+
+## 3.24.0 — етап 2
+
+ManagementPage, ProfileSidebar і shared page primitives застосовано до access/groups/cleanup та трьох profile routes. Нові Notice, Progress, FilterNavigationForm, PageRouteError — спільні; локальні error/loading не зачіпають інші розділи. Деталі: [PAGE_ARCHITECTURE_STEP2_UA.md](PAGE_ARCHITECTURE_STEP2_UA.md).
+
+## 3.25.0 — етап 3
+
+Шість сторінок /guild, /applications, /raids, /raids/[raidId], /polls, /polls/[pollId] переведено на PageContainer/PageHeader, FilterToolbar, DataCard/DataGrid і системні стани. Токен --management-sidebar-width замінює історичний --sidebar-width для актуального page shell. Деталі: [PAGE_ARCHITECTURE_STEP3_UA.md](PAGE_ARCHITECTURE_STEP3_UA.md).

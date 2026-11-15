@@ -6,7 +6,7 @@ const store = read('dashboard/src/lib/characterDataStore.ts');
 const profiles = read('dashboard/src/lib/profiles.ts');
 const roster = read('dashboard/src/lib/guildRoster.ts');
 const raids = read('dashboard/src/lib/characterRaidProgress.ts');
-const explorer = read('dashboard/src/components/GuildRosterExplorer.tsx');
+const explorer = require('./lib/read-ui-workspace.cjs')('src/components/GuildRosterExplorer.tsx');
 const checks = [
   ['guild and external character databases are separate', store.includes('guildCharacterData') && store.includes('externalCharacterData')],
   ['guild canonical records delete parallel external copies', store.includes('batch.delete(canonicalDoc("external", member.key))')],

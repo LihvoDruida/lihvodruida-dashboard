@@ -1,3 +1,4 @@
+const readUiWorkspace = require("./lib/read-ui-workspace.cjs");
 const fs = require("node:fs");
 const path = require("node:path");
 
@@ -14,9 +15,9 @@ const callback = read("src/app/api/auth/discord/callback/route.ts");
 const discordAdmin = read("src/lib/discordAdmin.ts");
 const auth = read("src/lib/auth.ts");
 const avatarComponent = read("src/components/ProfileAvatar.tsx");
-const profilePage = read("src/app/profile/[profileId]/page.tsx");
-const settingsPage = read("src/app/profile/[profileId]/settings/page.tsx");
-const profilesPage = read("src/app/profiles/page.tsx");
+const profilePage = readUiWorkspace("src/app/profile/[profileId]/page.tsx");
+const settingsPage = readUiWorkspace("src/app/profile/[profileId]/settings/page.tsx");
+const profilesPage = readUiWorkspace("src/app/profiles/page.tsx");
 const css = read("src/app/styles/profile.css");
 
 const checks = [

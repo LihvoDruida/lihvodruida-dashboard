@@ -215,8 +215,46 @@
   --control-height: 42px;
   --control-height-sm: 34px;
   --control-pad-x: 16px;
-  --sidebar-width: 272px;
 
   /* ---------- Короткий alias для фокусу/форм ---------- */
   --orange-main: var(--c-accent-400);
+
+  /* Universal page foundation: approved semantic geometry and states. */
+  --heading-page-size: clamp(1.6rem, 2.8vw, 2.25rem);
+  --heading-section-size: clamp(1.15rem, 2vw, 1.45rem);
+  --heading-card-size: 1rem;
+  --stroke-width: 1px;
+  --focus-width: 2px;
+  --focus-offset: 3px;
+  --management-sidebar-width: 232px;
+  --data-grid-min: 16rem;
+  --toolbar-search-min: 14rem;
+  --dropdown-min: 13rem;
+  --data-card-min-height: 12rem;
+  --skeleton-card-height: var(--data-card-min-height);
+  --skeleton-line-height: 1rem;
+  --skeleton-row-height: 4rem;
+  --skeleton-duration: 1.2s;
+  --opacity-disabled: 0.5;
+  --opacity-skeleton-low: 0.45;
+  --opacity-skeleton-high: 0.8;
+  --tint-info-bg: rgba(121, 166, 216, 0.08);
+  --tint-info-border: rgba(121, 166, 216, 0.28);
+}
+
+/* Existing WoW class palette, centralized from the guild roster. */
+:root {
+  --c-wow-death-knight: #c41e3a;
+  --c-wow-demon-hunter: #a330c9;
+  --c-wow-druid: #ff7c0a;
+  --c-wow-evoker: #33937f;
+  --c-wow-hunter: #aad372;
+  --c-wow-mage: #3fc7eb;
+  --c-wow-monk: #00ff98;
+  --c-wow-paladin: #f48cba;
+  --c-wow-priest: #ffffff;
+  --c-wow-rogue: #fff468;
+  --c-wow-shaman: #0070dd;
+  --c-wow-warlock: #8788ee;
+  --c-wow-warrior: #c69b6d;
 }

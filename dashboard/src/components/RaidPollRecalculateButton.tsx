@@ -1,4 +1,5 @@
 "use client";
+import styles from "@/components/polls/poll-workspace.module.css";
 
 import { useRouter } from "next/navigation";
 import { notifyDashboardDataChanged } from "@/lib/dashboardLiveRefresh";
@@ -16,8 +17,8 @@ export default function RaidPollRecalculateButton() {
       return { tone: failed ? "warning" : "success", title: failed ? "Перерахунок частковий" : "Дні перераховано", message: failed ? `Оновлено ${updated}, з помилкою ${failed}. Перевір логи Discord/бази даних.` : `Оновлено ${updated} Discord-повідомлень без перетину рекомендованих днів.`, ttl: 7200 };
     });
   }
-  return <div ref={operation.scopeRef} className="raid-poll-action" aria-busy={operation.pending}>
+  return <div ref={operation.scopeRef} className={styles.actions} aria-busy={operation.pending}>
     <RaidPollActionResult message={operation.message} unconfirmed={operation.unconfirmed} href="/polls" />
-    <button className="btn subtle raid-poll-recalculate-button" type="button" onClick={event => recalculate(event.currentTarget)} disabled={operation.pending} aria-busy={operation.pending}>{operation.pending ? "Рахуємо..." : "Перерахувати дні Discord"}</button>
+    <button className="btn subtle" type="button" onClick={event => recalculate(event.currentTarget)} disabled={operation.pending} aria-busy={operation.pending}>{operation.pending ? "Рахуємо..." : "Перерахувати дні Discord"}</button>
   </div>;
 }

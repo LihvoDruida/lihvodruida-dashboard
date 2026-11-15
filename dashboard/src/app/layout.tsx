@@ -35,7 +35,6 @@ import "./styles/patterns.css";
 import "./styles/components.css";
 import "./styles/ui.css";
 import "./styles/lists.css";
-import "./styles/applications.css";
 import "./styles/nav.css";
 import "./styles/pages.css";
 import "./styles/directory.css";

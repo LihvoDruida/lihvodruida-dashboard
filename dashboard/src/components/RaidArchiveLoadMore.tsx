@@ -1,5 +1,7 @@
 "use client";
 
+import DataGrid from "@/components/page/DataGrid";
+import styles from "@/components/raids/raid-workspace.module.css";
 import { Children, type ReactNode, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { replaceClientListLocation } from "@/lib/clientListLocation";
@@ -19,11 +21,11 @@ export default function RaidArchiveLoadMore({ children, step = 6, total }: RaidA
   const remaining = Math.max(0, items.length - safeVisibleCount);
   const nextCount = Math.min(pageSize, remaining);
   const totalCount = typeof total === "number" && Number.isFinite(total) ? total : items.length;
-  return <div className="raid-archive-dynamic" aria-live="polite">
-    <div className="raid-manager-list raid-manager-list--archive">{items.slice(0, safeVisibleCount)}</div>
-    <div className="raid-archive-footer">
-      <span className="raid-archive-status">Показано {safeVisibleCount} з {totalCount}</span>
-      {remaining > 0 ? <button className="btn subtle raid-archive-more-button" type="button" onClick={() => replaceClientListLocation("raids", { archive: String(Math.min(items.length, safeVisibleCount + pageSize)) })}>Ще {nextCount}</button> : null}
+  return <div className={styles.archive} aria-live="polite">
+    <DataGrid label="Архів рейдів" columns="two">{items.slice(0, safeVisibleCount)}</DataGrid>
+    <div className={styles.archiveFooter}>
+      <span className={styles.metadata}>Показано {safeVisibleCount} з {totalCount}</span>
+      {remaining > 0 ? <button className="btn subtle" type="button" onClick={() => replaceClientListLocation("raids", { archive: String(Math.min(items.length, safeVisibleCount + pageSize)) })}>Ще {nextCount}</button> : null}
     </div>
   </div>;
 }

@@ -1,0 +1,551 @@
+{
+  "version": "3.24.0",
+  "baseline": "3.23.0",
+  "stage": 2,
+  "routesMigrated": [
+    "/dashboard/access",
+    "/dashboard/groups",
+    "/dashboard/profiles",
+    "/profiles",
+    "/profile/[profileId]",
+    "/profile/[profileId]/settings"
+  ],
+  "added": [
+    {
+      "file": "dashboard/docs/CSS_CLEANUP_STEP2.json",
+      "sha256": "2f68351447e1de472d08b39a89f61c397fe396ac3150fc74c76b2b52a0e63f1b",
+      "bytes": 8807
+    },
+    {
+      "file": "dashboard/docs/PAGE_ARCHITECTURE_STEP2_UA.md",
+      "sha256": "9959a9d641b8b1ab17b4c2d0734a2d1b3e60c30238f04d5c84460279ca39e52e",
+      "bytes": 11833
+    },
+    {
+      "file": "dashboard/docs/PAGE_IDENTITY_SOURCE.md",
+      "sha256": "e63b8ad007fa1c77627de8633c95719f118a19d8fd8daa2316ac7a9bba4fcdd5",
+      "bytes": 401916
+    },
+    {
+      "file": "dashboard/docs/validation/step2/VALIDATION.md",
+      "sha256": "8380602fa924edf84f34527e99e18958a0076ff92ee4a74d81936cf468d6e7ae",
+      "bytes": 2248
+    },
+    {
+      "file": "dashboard/docs/validation/step2/browser.log",
+      "sha256": "de537f3b3d08b3d93852dda413b0b0191034cdd357be6bf9043a12dc26cc2db7",
+      "bytes": 7743
+    },
+    {
+      "file": "dashboard/docs/validation/step2/build.log",
+      "sha256": "752243d7e70dcd79776db8513fabf5309ac7890f3523802832c5a047b8f4b963",
+      "bytes": 6624
+    },
+    {
+      "file": "dashboard/docs/validation/step2/checks.json",
+      "sha256": "b7b5f7aa5c70868a0cc5a6ac46f27d9c7437521eaa5242387de2bf9c0f6ad64d",
+      "bytes": 4411
+    },
+    {
+      "file": "dashboard/docs/validation/step2/runtime-security.log",
+      "sha256": "508b310adc4fcda8d390b4fada1552e21c95298a7828226a79d5cd84cbc8b16f",
+      "bytes": 389
+    },
+    {
+      "file": "dashboard/docs/validation/step2/standalone.json",
+      "sha256": "9c67405d06b33a191085d92ee080214720568b397841dfb03eee3be140108687",
+      "bytes": 1056
+    },
+    {
+      "file": "dashboard/docs/validation/step2/standalone.log",
+      "sha256": "020e1f60b18ddb462a1af24a85fc5408e5fd3cf7aea033db8a33301e4603c883",
+      "bytes": 1051
+    },
+    {
+      "file": "dashboard/docs/validation/step2/verify.log",
+      "sha256": "de1460cd11dacb021b17c5aab19afb5dfee3515a20277956a7e5c8f12d53a0dc",
+      "bytes": 103075
+    },
+    {
+      "file": "dashboard/scripts/check-identity-workspaces.cjs",
+      "sha256": "68fbf1bd31591701833c78b7ff0b8d98bd70472239b26f66d3442a4b0c1ca7c7",
+      "bytes": 13502
+    },
+    {
+      "file": "dashboard/scripts/lib/read-ui-workspace.cjs",
+      "sha256": "c464ceb7dfeb3d8dc7e5e1a685fd749b9ccde6042caea741370e2be5bd677ce6",
+      "bytes": 1423
+    },
+    {
+      "file": "dashboard/src/app/dashboard/access/error.tsx",
+      "sha256": "cca9a686b59ec2fef69020ff1ec6ec59e8bf5292bcc2837da8404c7e0661fb51",
+      "bytes": 74
+    },
+    {
+      "file": "dashboard/src/app/dashboard/access/loading.tsx",
+      "sha256": "58b6c7d3e3598547508993062a7d3e7a35aabd712b1a437f009a0c465f54433b",
+      "bytes": 290
+    },
+    {
+      "file": "dashboard/src/app/dashboard/groups/error.tsx",
+      "sha256": "cca9a686b59ec2fef69020ff1ec6ec59e8bf5292bcc2837da8404c7e0661fb51",
+      "bytes": 74
+    },
+    {
+      "file": "dashboard/src/app/dashboard/groups/loading.tsx",
+      "sha256": "58b6c7d3e3598547508993062a7d3e7a35aabd712b1a437f009a0c465f54433b",
+      "bytes": 290
+    },
+    {
+      "file": "dashboard/src/app/dashboard/profiles/error.tsx",
+      "sha256": "cca9a686b59ec2fef69020ff1ec6ec59e8bf5292bcc2837da8404c7e0661fb51",
+      "bytes": 74
+    },
+    {
+      "file": "dashboard/src/app/dashboard/profiles/loading.tsx",
+      "sha256": "58b6c7d3e3598547508993062a7d3e7a35aabd712b1a437f009a0c465f54433b",
+      "bytes": 290
+    },
+    {
+      "file": "dashboard/src/app/profile/[profileId]/error.tsx",
+      "sha256": "cca9a686b59ec2fef69020ff1ec6ec59e8bf5292bcc2837da8404c7e0661fb51",
+      "bytes": 74
+    },
+    {
+      "file": "dashboard/src/app/profile/[profileId]/loading.tsx",
+      "sha256": "58b6c7d3e3598547508993062a7d3e7a35aabd712b1a437f009a0c465f54433b",
+      "bytes": 290
+    },
+    {
+      "file": "dashboard/src/app/profile/[profileId]/settings/error.tsx",
+      "sha256": "cca9a686b59ec2fef69020ff1ec6ec59e8bf5292bcc2837da8404c7e0661fb51",
+      "bytes": 74
+    },
+    {
+      "file": "dashboard/src/app/profile/[profileId]/settings/loading.tsx",
+      "sha256": "58b6c7d3e3598547508993062a7d3e7a35aabd712b1a437f009a0c465f54433b",
+      "bytes": 290
+    },
+    {
+      "file": "dashboard/src/app/profiles/error.tsx",
+      "sha256": "cca9a686b59ec2fef69020ff1ec6ec59e8bf5292bcc2837da8404c7e0661fb51",
+      "bytes": 74
+    },
+    {
+      "file": "dashboard/src/app/profiles/loading.tsx",
+      "sha256": "58b6c7d3e3598547508993062a7d3e7a35aabd712b1a437f009a0c465f54433b",
+      "bytes": 290
+    },
+    {
+      "file": "dashboard/src/components/access-groups/AccessGroupFields.tsx",
+      "sha256": "aaab5b5068e8cfa4c4a407f294cc9549d53da2758750d273bb57c0e1bb6c8027",
+      "bytes": 4743
+    },
+    {
+      "file": "dashboard/src/components/access-groups/AccessGroupList.tsx",
+      "sha256": "e599e7165de317ddaafb09b0386d7b18e92e6baa6916cc06ba9cc86f56363884",
+      "bytes": 3035
+    },
+    {
+      "file": "dashboard/src/components/access-groups/AccessGroupPermissions.tsx",
+      "sha256": "474994daf2d8e9e0866dc0565d8706956dd0d9086d19ca192851976610f61a17",
+      "bytes": 2510
+    },
+    {
+      "file": "dashboard/src/components/access-groups/groupLabels.ts",
+      "sha256": "23cabdfb63fa9a9282f91e685e23bae413c884244cac30b1abd6478977def872",
+      "bytes": 738
+    },
+    {
+      "file": "dashboard/src/components/access-groups/groups.module.css",
+      "sha256": "1d4eed643fd37ef08347760b8352f686a34ddaf4cb9a338365f69b90413554fc",
+      "bytes": 6018
+    },
+    {
+      "file": "dashboard/src/components/management/ManagementPage.tsx",
+      "sha256": "2cac954e2fdd6dca75ebaf0215a680b180abe32d77b6c154087587b1f458b27c",
+      "bytes": 948
+    },
+    {
+      "file": "dashboard/src/components/management/access/AccessPolicyForms.tsx",
+      "sha256": "b5422f6dc8fb33f28bfeeb294597cd973ba072d3792e0acbb2c3b147e4b998d4",
+      "bytes": 5471
+    },
+    {
+      "file": "dashboard/src/components/management/access/RoleMappingsEditor.tsx",
+      "sha256": "afc7755df9815a707c351a656c363cec0f9f9e4a1647c1d50f7572fb77210a09",
+      "bytes": 2335
+    },
+    {
+      "file": "dashboard/src/components/management/access/access.module.css",
+      "sha256": "06e89ecc5c87937ec1e7c8ea7ba033f8e0452ae387f1578e8096c2492ab8d9b3",
+      "bytes": 1531
+    },
+    {
+      "file": "dashboard/src/components/management/cleanup/ProfileCleanupForms.tsx",
+      "sha256": "8a590e68796f48a5e123fb706491aaa95d9939f6174b3f70a0bc6306bdf0c10d",
+      "bytes": 8691
+    },
+    {
+      "file": "dashboard/src/components/management/sections.module.css",
+      "sha256": "131459baca3bdb211dbee680e2fb87c07094357711fb6dfb4db824cbfe19bf5a",
+      "bytes": 630
+    },
+    {
+      "file": "dashboard/src/components/page/FilterNavigationForm.tsx",
+      "sha256": "eb5865f06f0b329c9f6e46dc23781adc754b89157e012716448f1eefa5297129",
+      "bytes": 1166
+    },
+    {
+      "file": "dashboard/src/components/page/Notice.tsx",
+      "sha256": "13795e85cd20f29f4f1a59b99d4baa12441df84458e95c06abeaf24ae5df8484",
+      "bytes": 650
+    },
+    {
+      "file": "dashboard/src/components/page/PageRouteError.tsx",
+      "sha256": "ace5fe8319c7d40b13622c3f2cb0ca5ada85abaafd073c106c82d22bfd554f85",
+      "bytes": 822
+    },
+    {
+      "file": "dashboard/src/components/page/Progress.tsx",
+      "sha256": "68279332d44eac33dc90077b8e84fd7f71aab579fece0935e47e6fcfef6dc736",
+      "bytes": 464
+    },
+    {
+      "file": "dashboard/src/components/profile/ProfileBattleNetPanel.tsx",
+      "sha256": "ce57302ce54adbd74f5763ccf7f195ef13c3645c00747d29d0cb58b12f70cd59",
+      "bytes": 5250
+    },
+    {
+      "file": "dashboard/src/components/profile/ProfileOverviewView.tsx",
+      "sha256": "0ffd1adafb80e241057bf2f2211599bdab6474be58a3652e166a94d10ac8a7bf",
+      "bytes": 3794
+    },
+    {
+      "file": "dashboard/src/components/profile/ProfileRaidSignups.tsx",
+      "sha256": "cfa34b08e1dd7fcfa56d3693005eb342a815704c1edbe220189acfcde3b76454",
+      "bytes": 4116
+    },
+    {
+      "file": "dashboard/src/components/profile/ProfileSidebar.tsx",
+      "sha256": "c2e2b871e346192918df36687ac78b1547cdc0a5f66c98a7ce7bd3da03c9f7f6",
+      "bytes": 2415
+    },
+    {
+      "file": "dashboard/src/components/profile/directory/DiscordRaidPreferences.tsx",
+      "sha256": "72b5e3258eb4309c07e6e1ac4cb742fb45addc0a8f3debfb361c9d6298a16f72",
+      "bytes": 1725
+    },
+    {
+      "file": "dashboard/src/components/profile/directory/ProfileDirectoryFilters.tsx",
+      "sha256": "b6fdfc97da3147d8bf80b3dc46838b48d1244885144db22c8cb07f6229a74dfe",
+      "bytes": 2072
+    },
+    {
+      "file": "dashboard/src/components/profile/directory/ProfileDirectoryTable.tsx",
+      "sha256": "20483e76437a3dc6aa45777dd100a0774038d49eb4e8c16b8448d0503bf397b0",
+      "bytes": 3150
+    },
+    {
+      "file": "dashboard/src/components/profile/directory/ProfileDirectoryView.tsx",
+      "sha256": "a6af8c508526359a1dc8bf2c3212af5f4a4ee0dbb6e9bc32112b7f4d6bb165c4",
+      "bytes": 4346
+    },
+    {
+      "file": "dashboard/src/components/profile/directory/directory.module.css",
+      "sha256": "13aae62d5cd927c80054948d2b6a7de3f3d098c8d122363b5b318231ab9c69e0",
+      "bytes": 1551
+    },
+    {
+      "file": "dashboard/src/components/profile/profile-workspace.module.css",
+      "sha256": "245331a241263f0b67d3f3f01e6833a48b07aae98084306b07ca4724cb839ae4",
+      "bytes": 3089
+    },
+    {
+      "file": "dashboard/src/components/profile/settings/NicknameSelection.tsx",
+      "sha256": "5e1b6fec9c1ec1032ae5c0348f8ff2280c30739cf5c1a11e7549f99d85428463",
+      "bytes": 1449
+    },
+    {
+      "file": "dashboard/src/components/profile/settings/ProfileCompletion.tsx",
+      "sha256": "de5a53220efd0d9769fc0600d2b25e24467c2e88e228c853470af3a01965d154",
+      "bytes": 1332
+    },
+    {
+      "file": "dashboard/src/components/profile/settings/ProfilePreferences.tsx",
+      "sha256": "9dfd3f548c7de003b024a58bfb38777c4e21ec85f94bbee9d893e28837cf6098",
+      "bytes": 4781
+    },
+    {
+      "file": "dashboard/src/components/profile/settings/ProfileSettingsView.tsx",
+      "sha256": "b1f548e0e83546d7be603b401e99bb4483a260654d75c098144330823ac4d7b9",
+      "bytes": 5788
+    },
+    {
+      "file": "dashboard/src/lib/profileDirectoryNavigation.ts",
+      "sha256": "27e4e65969dfd89e48d9637cd4d4e5e73a97ee984eb1f5caf2b8f73defa2f8cb",
+      "bytes": 643
+    },
+    {
+      "file": "dashboard/src/services/profileDirectory.ts",
+      "sha256": "83948d51acb4c937b610db01bbaacdb76177691db21c2fc6a01116d61a1dc9bc",
+      "bytes": 2237
+    },
+    {
+      "file": "dashboard/src/services/profileOverview.ts",
+      "sha256": "d803f6e7ffb0ab691f8111497ffc47a1effe2f76c7e3857d58675a710488a17f",
+      "bytes": 8202
+    },
+    {
+      "file": "dashboard/src/services/profileSettings.ts",
+      "sha256": "8fda52b9716c5f33cd93671d36267a7e777abd005170fcd3ce0aa803957b1eeb",
+      "bytes": 6657
+    }
+  ],
+  "changed": [
+    {
+      "file": "README.md",
+      "sha256": "cf7fd281e4ab1f522070e8f3942e15a5fc610c9e0d59aaa20c284ebbafdc7300",
+      "bytes": 1292
+    },
+    {
+      "file": "dashboard/README.md",
+      "sha256": "3408dc217a561444557fa0cf9950cb4f12d5083fb74e7c47380b335a966d1a30",
+      "bytes": 4366
+    },
+    {
+      "file": "dashboard/docs/CSS_AUDIT.md",
+      "sha256": "132abdaa44622af2875ce7c2cb3566bfb42ea7f21af9ca6bc1060d0049a9d2a9",
+      "bytes": 6322
+    },
+    {
+      "file": "dashboard/docs/MANAGEMENT_UI.md",
+      "sha256": "9f7b1b672923ccaf6c4f10d7e2ab4feec0469ed11920b820532bae1fd672a438",
+      "bytes": 2448
+    },
+    {
+      "file": "dashboard/docs/PAGE_ROUTE_INVENTORY.json",
+      "sha256": "94b6fe8da796985605bc62315d051e05a24b263d71f1d2b821f9fcb13c6cd07a",
+      "bytes": 25790
+    },
+    {
+      "file": "dashboard/docs/PAGE_ROUTE_INVENTORY.md",
+      "sha256": "75da834698639777566969488d3e5ade1b1b506f05e9c3247add24c8182920b3",
+      "bytes": 8775
+    },
+    {
+      "file": "dashboard/docs/STYLE_AUDIT.md",
+      "sha256": "936188b5e0eda274aa043defa23bae25a8299bb0c124afc8f43cf5af0b11177f",
+      "bytes": 7277
+    },
+    {
+      "file": "dashboard/docs/UI_SYSTEM.md",
+      "sha256": "866841a3e12e4f926c89c590095ddb797405d7032b725172a19993fc3a4ececb",
+      "bytes": 6830
+    },
+    {
+      "file": "dashboard/package-lock.json",
+      "sha256": "943b01786ec5784aab03953499ffbeda213e2c7bfcd488e3be8e636f0ec29ae4",
+      "bytes": 273543
+    },
+    {
+      "file": "dashboard/package.json",
+      "sha256": "000c941ef3f23b83486ee5f0ff65d4fe7481fddb648083162d7f1fa32808787d",
+      "bytes": 18155
+    },
+    {
+      "file": "dashboard/scripts/check-account-cleanup.cjs",
+      "sha256": "9bd3da822e6a3d54b75b971f7f1ae0ac3cab6961a6c413ff1d4092a037f624d7",
+      "bytes": 4504
+    },
+    {
+      "file": "dashboard/scripts/check-admin-overview.cjs",
+      "sha256": "d19a8b1b56dc233d20735b58ddc5b01961793978829fcc1f4a118b9d3ba1c9ae",
+      "bytes": 2051
+    },
+    {
+      "file": "dashboard/scripts/check-discord-management.cjs",
+      "sha256": "175716813f472420f89b9933dbf7215ef4caf80c620c5f568f38a675965cd5cd",
+      "bytes": 2137
+    },
+    {
+      "file": "dashboard/scripts/check-forms.cjs",
+      "sha256": "5d6945eb2fc08354794b55ffd0152873e4ad40402757dd1a7c4582e81e6c981a",
+      "bytes": 7877
+    },
+    {
+      "file": "dashboard/scripts/check-management-reorganization.cjs",
+      "sha256": "ee85a9b7e86180dcf264ca42676254854642066e49cf4406e83f5303b165b3c2",
+      "bytes": 3521
+    },
+    {
+      "file": "dashboard/scripts/check-page-foundation.cjs",
+      "sha256": "7872417d30682a1805985867011e754067d168d24103e8f0facf40460d14bc92",
+      "bytes": 8834
+    },
+    {
+      "file": "dashboard/scripts/check-profile-avatars.cjs",
+      "sha256": "368313eeff637309c0517df1a4e8537efa3c46a0ee0f23c52431411ea95f3b95",
+      "bytes": 3014
+    },
+    {
+      "file": "dashboard/scripts/check-profile-groups-browser.cjs",
+      "sha256": "66fa2792949e204efa23072657c34953be4e81c06508c0c5fe9ed386fa3cd0bf",
+      "bytes": 16210
+    },
+    {
+      "file": "dashboard/scripts/check-profile-mobile.cjs",
+      "sha256": "4b4479ed6424dd006cb2d6ff66698b8d212775b71a11950c17b58bf0010f709a",
+      "bytes": 3567
+    },
+    {
+      "file": "dashboard/scripts/check-profiles-page.cjs",
+      "sha256": "af0ca6b5a60c6a7982c6ef6c25b2c2731e3027b299796490936ca47bd573a31d",
+      "bytes": 2468
+    },
+    {
+      "file": "dashboard/scripts/check-ui-standardization-performance.cjs",
+      "sha256": "2507b7626f1ae5b10dcd7eb6cc7580c4f5673cc67cdc7911f99d3f52adf9c1f8",
+      "bytes": 5323
+    },
+    {
+      "file": "dashboard/scripts/inspect-ci.cjs",
+      "sha256": "7922a6bae016b4ce5191136294bb071bef6aaad136517ffb1db032daa0450388",
+      "bytes": 26885
+    },
+    {
+      "file": "dashboard/src/app/dashboard/access/page.tsx",
+      "sha256": "726b4da5f2c78834061333f3100de77460f4e6790d757fa9952176ad7685add5",
+      "bytes": 4309
+    },
+    {
+      "file": "dashboard/src/app/dashboard/groups/page.tsx",
+      "sha256": "aed666403c0bd0eab69d24add13bbd300d5b144b38350ca7745d3e68a09bb465",
+      "bytes": 10335
+    },
+    {
+      "file": "dashboard/src/app/dashboard/profiles/page.tsx",
+      "sha256": "dc00115c2a23d756a586443096885987f83545b08ee7e5dbac5ca8c2439a5ea3",
+      "bytes": 1500
+    },
+    {
+      "file": "dashboard/src/app/profile/[profileId]/page.tsx",
+      "sha256": "0095605d652f874979df6d83cc9dad02cb9a03a694c8d1aee4a793275f61f6f4",
+      "bytes": 633
+    },
+    {
+      "file": "dashboard/src/app/profile/[profileId]/settings/page.tsx",
+      "sha256": "3ce2a6d89067b765f63960b13f9efc3568418d90bd045f7caf208377fa0597dd",
+      "bytes": 659
+    },
+    {
+      "file": "dashboard/src/app/profiles/page.tsx",
+      "sha256": "083bc9f6dc4a7c7386754ae272bd4db8f3b2829cd62e0a474cd7ae9112042abf",
+      "bytes": 663
+    },
+    {
+      "file": "dashboard/src/app/styles/admin.css",
+      "sha256": "b5e38ebb28c3693c0f2db7a20c3bbb32e9ad57e18f43005ae75c5ae9ed1d8330",
+      "bytes": 38736
+    },
+    {
+      "file": "dashboard/src/app/styles/components.css",
+      "sha256": "a19b7211ca1d69b66490126d754db1180dcd5430f19c78470fd9ad54ebda71e0",
+      "bytes": 34496
+    },
+    {
+      "file": "dashboard/src/app/styles/desktop.css",
+      "sha256": "7a01c0db9ed3aa71758c2234bc1dc15438b0e23906167eb8d8d21840decbb26d",
+      "bytes": 8767
+    },
+    {
+      "file": "dashboard/src/app/styles/directory.css",
+      "sha256": "c9701ff3be594493204acb4021e3a4e5cdeae684daea5745b44b5bed268cce06",
+      "bytes": 6523
+    },
+    {
+      "file": "dashboard/src/app/styles/management.css",
+      "sha256": "033f881dd1dbaa5fca250b92f2a98e08eefd5ccb14b11517bc812b7acfc797d2",
+      "bytes": 11434
+    },
+    {
+      "file": "dashboard/src/app/styles/onboarding.css",
+      "sha256": "a81fdb1c7e53ea83fcbf33cd443910e0c8a640685042e37e4ad56c882044eb9e",
+      "bytes": 1411
+    },
+    {
+      "file": "dashboard/src/app/styles/pages.css",
+      "sha256": "6e46c45c09f99ebbf046a9b439ca7addff81adcb615bb82afda6ea4300954048",
+      "bytes": 56318
+    },
+    {
+      "file": "dashboard/src/app/styles/patterns.css",
+      "sha256": "31024ce3c353f93a16633e49a531bcbac16095e43ca51910c37c68d18c2b06a3",
+      "bytes": 9775
+    },
+    {
+      "file": "dashboard/src/app/styles/profile.css",
+      "sha256": "16336bee67fe2c5b9a1ee08beba8dc42d06308c6d3b4dce7f6a0060897df4985",
+      "bytes": 47487
+    },
+    {
+      "file": "dashboard/src/app/styles/tokens.css",
+      "sha256": "bcf43e11dde84ea78aad18164a9cb67067aeaa076c925109da7a2e73cd5a39e8",
+      "bytes": 9608
+    },
+    {
+      "file": "dashboard/src/components/AccessGroupsManager.tsx",
+      "sha256": "5afc767021b47578c1e9c36792855a2878da5157e7d5cafd3dda86631a5ca01b",
+      "bytes": 31239
+    },
+    {
+      "file": "dashboard/src/components/ManagementSections.tsx",
+      "sha256": "fd6df1c3797324f115a5756f2a758938352707af9463389b0bf52b0a7001a249",
+      "bytes": 3714
+    },
+    {
+      "file": "dashboard/src/components/page/page-system.module.css",
+      "sha256": "7d918f16f1c4b19279e3d77356394bd2086bc27429701050ec4dd482edf33f3b",
+      "bytes": 12387
+    },
+    {
+      "file": "dashboard/src/components/ui/DataTable.tsx",
+      "sha256": "1be0f68ec5d172d70ff60a3c0b05eb8583e72c8749038e02dadc686b657a53ec",
+      "bytes": 611
+    },
+    {
+      "file": "dashboard/src/components/ui/DropdownMenu.tsx",
+      "sha256": "eac85316c36d57077cb9920ab33fda0808501632b8ffdd3bd0f002df19775bb9",
+      "bytes": 2740
+    },
+    {
+      "file": "docs/CONFIGURATION.md",
+      "sha256": "7614524ec2251852f5d6eed4dbf5ce972a9386ca71d681856736abecf924817a",
+      "bytes": 11017
+    },
+    {
+      "file": "docs/DEPLOYMENT.md",
+      "sha256": "d21d9aa6816fc45d919ae3a3dc41e3d76bf7acadfb6379dfd8989ca73d168016",
+      "bytes": 339
+    },
+    {
+      "file": "docs/RELEASE_INSTALL_2026-10-19_UA.md",
+      "sha256": "8ba1857437ea6aa055ae56214d6631ad44ddf6654d318fdb1ad783d3f4b88b82",
+      "bytes": 7928
+    },
+    {
+      "file": "release-manifest.json",
+      "sha256": "2baba83653b6b1604d57242640085fa547c375b19aa9e608541993af2c6787db",
+      "bytes": 292
+    }
+  ],
+  "deletedFiles": [],
+  "removedGlobalCssRules": 664,
+  "removedUnusedCssClassNames": 227,
+  "apiRoutesChanged": 0,
+  "verifyGroups": 105,
+  "identityWorkspaceScenarios": 14,
+  "standaloneScenarios": 10,
+  "browser": "BLOCKED: Chromium Unix socket permission; no visual PASS",
+  "productionDataChanged": false
+}

@@ -1,42 +1,18 @@
-const fs = require("node:fs");
-const path = require("node:path");
-
-const root = path.resolve(__dirname, "..");
-const explorer = fs.readFileSync(path.join(root, "src/components/GuildRosterExplorer.tsx"), "utf8");
-const css = fs.readFileSync(path.join(root, "src/components/GuildRoster.module.css"), "utf8");
-
-const desktopGrid = "grid-template-columns: minmax(210px, 1.35fr) minmax(180px, 1.1fr) 82px 76px 104px minmax(180px, 1.1fr) 72px 126px;";
-const mobileBlock = css.slice(css.indexOf("@media (max-width: 760px)"));
-
-const checks = [
-  ["desktop table grid is unchanged", css.includes(desktopGrid)],
-  ["mobile identity is rendered separately", explorer.includes("styles.mobileIdentity") && explorer.includes("styles.mobileIdentityCopy")],
-  ["desktop identity cells remain in markup", explorer.includes("styles.characterCell") && explorer.includes("styles.classCell")],
-  ["role cell can be hidden only on mobile", explorer.includes("styles.roleCell") && mobileBlock.includes(".roleCell")],
-  ["mobile identity is hidden by default", css.includes(".mobileIdentity {\n  display: none;")],
-  ["phone breakpoint enables compact mobile identity", mobileBlock.includes(".mobileIdentity {\n    display: grid;")],
-  ["mobile search cancels desktop flex basis", mobileBlock.includes(".searchBox {") && mobileBlock.includes("flex: 0 0 auto;") && mobileBlock.includes("height: 46px;")],
-  ["mobile metrics use horizontal swipe rail", mobileBlock.includes(".metrics {\n    display: flex;") && mobileBlock.includes("overflow-x: auto;") && mobileBlock.includes("scroll-snap-type: x proximity;")],
-  ["mobile roster rows are card grids", mobileBlock.includes(".tableRow {") && mobileBlock.includes("grid-template-columns: repeat(2, minmax(0, 1fr));") && (mobileBlock.includes("border-radius: 14px;") || mobileBlock.includes("border-radius: var(--radius-md);"))],
-  ["mobile stat cells are compact tiles", mobileBlock.includes('.tableRow > div[role="cell"]:not(.mobileIdentity)') && mobileBlock.includes('content: attr(data-label);')],
-  ["mobile links span the card", mobileBlock.includes(".linksCell {\n    grid-column: 1 / -1;") && mobileBlock.includes("min-height: 38px;")],
-  ["mobile quick-role filters can scroll instead of overflow", mobileBlock.includes(".quickRoles {") && mobileBlock.includes("-webkit-overflow-scrolling: touch;")],
-  ["advanced filters use two columns then one on narrow phones", mobileBlock.includes(".filtersPanel {\n    grid-template-columns: repeat(2, minmax(0, 1fr));") && css.includes("@media (max-width: 520px)") && css.includes(".filtersPanel {\n    grid-template-columns: minmax(0, 1fr);")],
-  ["mobile footer keeps pagination touch friendly", mobileBlock.includes(".pagination button {") && mobileBlock.includes("min-height: 40px;")],
+"use strict";
+const fs=require("node:fs"),path=require("node:path"),assert=require("node:assert/strict");
+const read=p=>fs.readFileSync(path.resolve(__dirname,"..",p),"utf8");
+const explorer=read("src/components/GuildRosterExplorer.tsx"),table=read("src/components/guild/GuildRosterTable.tsx"),css=read("src/components/guild/guild-workspace.module.css");
+const checks=[
+ [explorer.includes("<FilterToolbar")&&explorer.includes("<FormSection"),"search and advanced filters use shared primitives"],
+ [table.includes("<DataTable")&&table.includes('<th scope="row"')&&!table.includes('role="cell"'),"one native table replaces duplicated mobile/desktop identity markup"],
+ [css.includes("table-layout: fixed")&&css.includes("@container (max-width: 1100px)"),"native table adapts to its available container width"],
+ [css.includes("content: attr(data-label)")&&css.includes(".table tr { display: grid"),"narrow rows retain labelled fields"],
+ [table.includes('data-label="RIO"')&&table.includes('data-label="Рейд"')&&table.includes('data-label="Клас / спек"'),"rating, raid progress and class/spec remain visible on all widths"],
+ [css.includes(".actions")&&css.includes("flex-wrap: wrap"),"filters and navigation wrap without a horizontal rail"],
+ [explorer.includes('aria-pressed={roleFilter === item.value}'),"quick role filters expose their current selection"],
+ [css.includes(".filtersPanel")&&css.includes("repeat(auto-fit"),"advanced filters adapt without fixed field widths"],
+ [table.includes("onKeyDown")&&table.includes("event.key !== \"Enter\"")&&table.includes("?from=guild"),"row navigation and the profile return source are preserved"],
+ [table.includes("data-wow-class")&&!table.includes("style="),"class colors use central tokens, no inline styling"],
+ [explorer.includes("<ErrorState")&&explorer.includes("<EmptyState"),"empty roster and failed load are distinct states"],
 ];
-
-let failed = 0;
-for (const [label, ok] of checks) {
-  if (ok) console.log(`✓ ${label}`);
-  else {
-    failed += 1;
-    console.error(`✗ ${label}`);
-  }
-}
-
-if (failed) {
-  console.error(`[check-guild-mobile] FAILED — ${failed}/${checks.length} invariant(s) failed.`);
-  process.exit(1);
-}
-
-console.log(`[check-guild-mobile] OK — ${checks.length}/${checks.length} mobile/desktop isolation invariants checked.`);
+for(const[ok,label]of checks)assert.ok(ok,label);console.log(`[check-guild-mobile] ${checks.length}/${checks.length} responsive/structure invariants`);

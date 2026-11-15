@@ -1,25 +1,18 @@
 import DataTable from "@/components/ui/DataTable";
 import { canViewAccessGroups } from "@/lib/permissions";
 import { PERMISSION_META } from "@/lib/accessGroupSchema";
-import ManagementShell from "@/components/management/ManagementShell";
+import ManagementPage from "@/components/management/ManagementPage";
+import ErrorState from "@/components/page/ErrorState";
+import PageRefreshButton from "@/components/page/PageRefreshButton";
 import { createHash, randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
-import AdminPageHeader from "@/components/AdminPageHeader";
 import AccessGroupsManager from "@/components/AccessGroupsManager";
 import { buildPageMetadata } from "@/lib/seo";
 import { getSession, setSession } from "@/lib/auth";
 import { logDashboardEvent } from "@/lib/security";
-import {
-  applyAccessGroupToSession,
-  canManageGroups,
-  deleteAccessGroup,
-  getAccessGroup,
-  listAccessGroupsForManagement,
-  recordAdminAudit,
-  upsertAccessGroup,
-} from "@/lib/accessGroups";
+import { applyAccessGroupToSession, canManageGroups, deleteAccessGroup, getAccessGroup, listAccessGroupsForManagement, recordAdminAudit, upsertAccessGroup } from "@/lib/accessGroups";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -208,18 +201,11 @@ export default async function AdminGroupsPage() {
   try {
     groups = await listAccessGroupsForManagement();
   } catch {
-    return (
-      <main className="container app-page admin-container">
-        <section className="panel" role="alert">
-          <h1>Групи тимчасово недоступні</h1>
-          <p>
-            Не вдалося прочитати актуальні права. Онови сторінку; чернетки
-            залишаються у браузері.
-          </p>
-        </section>
-      </main>
-    );
+    return <ManagementPage user={user} active="groups" header={{ title: "Групи та права доступу", description: "Актуальний стан груп." }}>
+      <ErrorState title="Групи тимчасово недоступні" description="Не вдалося прочитати актуальні права. Чернетки залишаються у браузері." actions={<PageRefreshButton />} />
+    </ManagementPage>;
   }
+
   if (!user.isServerOwner) {
     const ownGroup = groups.find((group) => group.id === user.groupId);
     if (
@@ -235,32 +221,9 @@ export default async function AdminGroupsPage() {
     .digest("hex");
 
   return (
-    <ManagementShell user={user} active="groups" className="access-groups-page" label="Керування групами та правами доступу Mistblossom Vanguard">
-        <AdminPageHeader
-          eyebrow="Mistblossom Vanguard • Права"
-          title="Групи та права доступу"
-          description="Єдина модель доступу: Discord-роль, ранг і набір дозволів для кожної групи."
-          metrics={[
-            {
-              label: "Поточна група",
-              value: user.groupName || user.role,
-              note: user.isServerOwner ? "Власник сервера" : "Активна сесія",
-              tone: "good",
-            },
-            { label: "Груп", value: groups.length.toLocaleString("uk-UA") },
-            {
-              label: "Сховище",
-              value: "PostgreSQL",
-              note: "Права з бази даних",
-            },
-            {
-              label: "Діапазон рангів",
-              value: "1–100",
-              note: "100 = найвищий",
-            },
-          ]}
-        />
-        
+    <ManagementPage user={user} active="groups" header={{ title: "Групи та права доступу",
+      description: "Знайди групу, зміни її параметри й збережи після перевірки. Чернетки не змінюють серверні права.",
+      metrics: [{ label: "Поточна група", value: user.groupName || user.role }, { label: "Групи", value: groups.length }, { label: "Режим", value: canManageGroups(user) ? "Редагування" : "Лише перегляд" }] }}>
         {canManageGroups(user) ? (
         <AccessGroupsManager
           groups={groups}
@@ -276,6 +239,6 @@ export default async function AdminGroupsPage() {
             <td>{group.permissions.map(permission => PERMISSION_META[permission].title).join(", ") || "Немає дозволів"}</td></tr>)}
         </DataTable>}
 
-      </ManagementShell>
+      </ManagementPage>
   );
 }

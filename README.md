@@ -1,4 +1,4 @@
-# Mistblossom Dashboard 3.22.0
+# Mistblossom Dashboard 3.25.0
 
 Bot — 3.6.9. Окремий публічний Site до цього архіву не входить.
 

@@ -1,40 +1,20 @@
 "use client";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import type { DashboardRole } from "@/lib/auth";
-import {
-  DASHBOARD_PERMISSION_KEYS,
-  DEFAULT_ADMIN_GROUP_ID,
-  DEFAULT_MEMBER_GROUP_ID,
-  DEFAULT_MODERATOR_GROUP_ID,
-  FIXED_GROUP_IDS,
-  PERMISSION_META,
-  type AccessGroup,
-} from "@/lib/accessGroupSchema";
-import {
-  draftDirty,
-  groupDraftKey,
-  groupValues,
-  makeGroupDraft,
-  NEW_GROUP_DRAFT,
-  parseGroupDrafts,
-  reconcileGroupDrafts,
-  sameGroupValues,
-  updateGroupDraft,
-  type GroupDraft,
-  type GroupValues,
-} from "@/lib/accessGroupDrafts";
+
+import AccessGroupList from "@/components/access-groups/AccessGroupList";
+import AccessGroupFields from "@/components/access-groups/AccessGroupFields";
+import AccessGroupPermissions from "@/components/access-groups/AccessGroupPermissions";
+import { roleLabel, groupIcon } from "@/components/access-groups/groupLabels";
+import DropdownMenu from "@/components/ui/DropdownMenu";
+import styles from "@/components/access-groups/groups.module.css";
+import { DASHBOARD_PERMISSION_KEYS, DEFAULT_ADMIN_GROUP_ID, DEFAULT_MEMBER_GROUP_ID, DEFAULT_MODERATOR_GROUP_ID, FIXED_GROUP_IDS, PERMISSION_META, type AccessGroup } from "@/lib/accessGroupSchema";
+import { draftDirty, groupDraftKey, groupValues, makeGroupDraft, NEW_GROUP_DRAFT, parseGroupDrafts, reconcileGroupDrafts, sameGroupValues, updateGroupDraft, type GroupDraft, type GroupValues } from "@/lib/accessGroupDrafts";
 import { claimGroupDraftBucket } from "@/lib/accessGroupDraftStorage";
 import { dashboardApiJson } from "@/lib/dashboardApiClient";
 import { ApiHttpError } from "@/lib/apiHttp";
 import { useDashboardRequests } from "@/hooks/useDashboardRequests";
 import { useActionFocus } from "@/hooks/useActionFocus";
 
-const ROLE_OPTIONS: Array<{ value: DashboardRole; label: string }> = [
-  { value: "member", label: "Учасник" },
-  { value: "mentor", label: "Наставник" },
-  { value: "moderator", label: "Модератор" },
-  { value: "admin", label: "Адмін" },
-];
 type Props = {
   groups: AccessGroup[];
   draftScope: string;
@@ -44,17 +24,6 @@ type Props = {
   deleteGroupAction: (formData: FormData) => Promise<void>;
   impersonateAction: (formData: FormData) => Promise<void>;
 };
-const roleLabel = (role: DashboardRole) =>
-  ROLE_OPTIONS.find((item) => item.value === role)?.label || "Група";
-const groupIcon = (group: AccessGroup) =>
-  group.icon ||
-  (group.role === "admin"
-    ? "👑"
-    : group.role === "moderator"
-      ? "🛡️"
-      : group.role === "mentor"
-        ? "🌿"
-        : "🍃");
 function cannotEditReason(
   group: AccessGroup,
   currentGroupId: string | undefined,
@@ -461,7 +430,7 @@ export default function AccessGroupsManager({
         applyCatalog(fresh);
         if (expandedRef.current === key) select(groupDraftKey(result.group.id));
         setNotice(
-          "Групу збережено. Нові права застосуються після оновлення сесії." + migrationSummary(result.group),
+          "Групу збережено. Нові права перевірятимуться в наступних серверних запитах." + migrationSummary(result.group),
         );
       }
     } catch (error) {
@@ -529,102 +498,12 @@ export default function AccessGroupsManager({
   const otherDraft = externalDrafts.get(expanded),
     otherDiffers = otherDraft && !sameGroupValues(otherDraft.values, values);
   return (
-    <div ref={scopeRef} className="access-groups-layout" aria-busy={busy || refreshing}>
-      <aside
-        className="access-groups-list panel"
-        aria-label="Список груп доступу"
-      >
-        <div className="access-groups-list__header">
-          <span className="section-title">Групи</span>
-          <small>
-            {groups.length} груп · {drafts.size} чернеток
-          </small>
-        </div>
-        <label className="access-groups-search">
-          Знайти групу
-          <input
-            className="input"
-            type="search"
-            maxLength={120}
-            value={query}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setVisibleCount(10);
-            }}
-            placeholder="Назва, ID або Discord-роль"
-          />
-        </label>
-        {filteredGroups.slice(0, visibleCount).map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={`btn subtle access-group-tab${expanded === groupDraftKey(item.id) ? " is-active" : ""}`}
-            aria-pressed={expanded === groupDraftKey(item.id)}
-            onClick={() => select(groupDraftKey(item.id))}
-          >
-            <strong>
-              <span className="access-group-tab__icon" aria-hidden="true">
-                {groupIcon(item)}
-              </span>
-              {item.name}
-            </strong>
-            <span>
-              ID {item.id} · {roleLabel(item.role)} · {item.permissions.length}{" "}
-              прав
-            </span>
-            {drafts.has(groupDraftKey(item.id)) ? (
-              <small className="access-draft-badge">Незбережені зміни</small>
-            ) : null}
-          </button>
-        ))}
-        {!filteredGroups.length ? <p role="status">Груп не знайдено.</p> : null}
-        {filteredGroups.length > visibleCount ? (
-          <button
-            type="button"
-            className="btn subtle"
-            onClick={() => setVisibleCount((count) => count + 10)}
-          >
-            Показати ще 10 · {filteredGroups.length - visibleCount} залишилось
-          </button>
-        ) : null}
-        {[...drafts.keys()]
-          .filter(
-            (key) =>
-              key !== NEW_GROUP_DRAFT &&
-              !groups.some((item) => groupDraftKey(item.id) === key),
-          )
-          .map((key) => (
-            <button
-              className="btn subtle access-group-tab"
-              type="button"
-              key={key}
-              onClick={() => select(key)}
-            >
-              Чернетка видаленої групи · {drafts.get(key)!.values.name}
-            </button>
-          ))}
-        <button
-          type="button"
-          className={`btn subtle access-group-tab${expanded === NEW_GROUP_DRAFT ? " is-active" : ""}`}
-          onClick={() => select(NEW_GROUP_DRAFT)}
-        >
-          <strong>＋ Нова група</strong>
-          <span>
-            {drafts.has(NEW_GROUP_DRAFT)
-              ? "Є чернетка"
-              : "ID, назва, роль і права"}
-          </span>
-        </button>
-        <button
-          className="btn subtle"
-          type="button"
-          disabled={busy || refreshing}
-          onClick={(event) => void refresh(event.currentTarget)}
-        >
-          {refreshing ? "Оновлюємо…" : "Оновити список"}
-        </button>
-      </aside>
-      <div className="access-groups-editor">
+    <div ref={scopeRef} className={`access-groups-layout ${styles.workspace}`} aria-busy={busy || refreshing}>
+      <AccessGroupList groups={groups} filteredGroups={filteredGroups} visibleCount={visibleCount} drafts={drafts} expanded={expanded}
+        query={query} onQuery={value => { setQuery(value); setVisibleCount(10); }} onSelect={select}
+        onMore={() => setVisibleCount(count => count + 10)} busy={busy || refreshing} refreshing={refreshing}
+        onRefresh={button => void refresh(button)} />
+      <div className={`access-groups-editor ${styles.editor}`}>
         <p className="access-draft-notice" role="status" aria-live="polite" aria-atomic="true" data-action-result="" tabIndex={-1}>
           {notice}
         </p>
@@ -762,7 +641,7 @@ export default function AccessGroupsManager({
           </section>
         ) : null}
         <form
-          className="panel access-group-card"
+          className={`access-group-card ${styles.form}`}
           action={saveGroupAction}
           onSubmit={submit}
           data-dashboard-action-form="true"
@@ -779,7 +658,7 @@ export default function AccessGroupsManager({
             name="expectedRevision"
             value={draft?.baseRevision || group?.revision || ""}
           />
-          <div className="access-group-card__head">
+          <div className={`access-group-card__head ${styles.header}`}>
             <div>
               <span className="eyebrow">
                 {group
@@ -811,23 +690,11 @@ export default function AccessGroupsManager({
                 {dirty ? "Незбережені зміни" : "Без незбережених змін"}
               </span>
             </div>
-            {group && isServerOwner ? (
-              <button
-                className="btn subtle"
-                formAction={impersonateAction}
-                type="submit"
-                formNoValidate
-                disabled={busy}
-                data-dashboard-action="access-groups-impersonate"
-                data-loading-label="Вмикаємо перегляд..."
-              >
-                Переглянути як
-              </button>
-            ) : null}
+
           </div>
           {group ? (
             <div
-              className="access-group-summary"
+              className={`access-group-summary ${styles.summary}`}
               aria-label="Коротко про групу"
             >
               <span>
@@ -848,168 +715,13 @@ export default function AccessGroupsManager({
           ) : (
             <p>Системні ID 1, 2, 3 і 99 зайняті.</p>
           )}
-          <div className="form-grid compact-form-grid access-form-grid">
-            <label>
-              <span>ID групи</span>
-              <input
-                className="input"
-                name="id"
-                value={values.id}
-                onChange={(event) => edit({ id: event.target.value })}
-                required
-                maxLength={32}
-                pattern="[A-Za-z0-9_-]{1,32}"
-                readOnly={blocked || group?.lockedId}
-                autoComplete="off"
-              />
-              <small>
-                {group?.lockedId
-                  ? "Системний ID не змінюється."
-                  : "Латиниця, цифри, _ або -. При зміні ID призначення профілів переносяться разом із групою; старий ID залишається зарезервованим."}
-              </small>
-            </label>
-            <label>
-              <span>Назва групи</span>
-              <input
-                className="input"
-                name="name"
-                value={values.name}
-                onChange={(event) => edit({ name: event.target.value })}
-                required
-                maxLength={80}
-                readOnly={blocked}
-                autoComplete="off"
-              />
-            </label>
-            <label>
-              <span>Роль у системі</span>
-              <select
-                className="select"
-                name="role"
-                value={values.role}
-                onChange={(event) =>
-                  edit({ role: event.target.value as DashboardRole })
-                }
-                disabled={blocked || fixedRole}
-              >
-                {ROLE_OPTIONS.map((role) => (
-                  <option
-                    key={role.value}
-                    value={role.value}
-                    disabled={role.value === "admin" && !isServerOwner}
-                  >
-                    {role.label}
-                  </option>
-                ))}
-              </select>
-              <small>
-                {fixedRole
-                  ? "Для системної групи роль зафіксована."
-                  : "Права адміністратора видає лише власник сервера."}
-              </small>
-            </label>
-            <label>
-              <span>Ранг</span>
-              <input
-                className="input"
-                name="rank"
-                type="number"
-                min="1"
-                max="100"
-                value={values.rank}
-                onChange={(event) => edit({ rank: event.target.value })}
-                readOnly={blocked || fixedRank}
-              />
-              <small>Вищий ранг має пріоритет, якщо ролей кілька.</small>
-            </label>
-            <label>
-              <span>
-                Іконка групи <em>необов’язково</em>
-              </span>
-              <input
-                className="input"
-                name="icon"
-                value={values.icon}
-                onChange={(event) => edit({ icon: event.target.value })}
-                maxLength={24}
-                readOnly={blocked}
-                autoComplete="off"
-              />
-            </label>
-            <label>
-              <span>Discord role ID</span>
-              <input
-                className="input"
-                name="discordRoleId"
-                value={values.discordRoleId}
-                onChange={(event) =>
-                  edit({ discordRoleId: event.target.value })
-                }
-                maxLength={25}
-                inputMode="numeric"
-                pattern="[0-9]{16,25}"
-                readOnly={blocked}
-                autoComplete="off"
-              />
-              <small>
-                Одна група = одна Discord-роль. Поле може бути порожнім.
-              </small>
-            </label>
-          </div>
+          <AccessGroupFields values={values} group={group} blocked={blocked} fixedRole={fixedRole} fixedRank={fixedRank} isServerOwner={isServerOwner} edit={edit} />
           {reason ? (
             <p className="access-warning" role="status">
               {reason}
             </p>
           ) : null}
-          <div className="permissions-grid">
-            {categories.map((category, index) => (
-              <details
-                className="permissions-category"
-                key={`${expanded}:${category}`}
-                open={index === 0}
-              >
-                <summary>
-                  {category}
-                  <small>
-                    {
-                      DASHBOARD_PERMISSION_KEYS.filter(
-                        (key) => PERMISSION_META[key].category === category,
-                      ).length
-                    }{" "}
-                    прав
-                  </small>
-                </summary>
-                {DASHBOARD_PERMISSION_KEYS.filter(
-                  (key) => PERMISSION_META[key].category === category,
-                ).map((key) => (
-                  <label className="permission-check" key={key}>
-                    <input
-                      type="checkbox"
-                      name="permissions"
-                      value={key}
-                      checked={values.permissions.includes(key)}
-                      disabled={
-                        blocked ||
-                        key === "dashboard.view" ||
-                        (key === "groups.manage" && !isServerOwner)
-                      }
-                      onChange={(event) =>
-                        edit({
-                          permissions: event.target.checked
-                            ? [...values.permissions, key]
-                            : values.permissions.filter((item) => item !== key),
-                        })
-                      }
-                    />
-                    <span>
-                      <strong>{PERMISSION_META[key].title}</strong>
-                      <small>{PERMISSION_META[key].description}</small>
-                    </span>
-                  </label>
-                ))}
-              </details>
-            ))}
-          </div>
+          <AccessGroupPermissions categories={categories} expanded={expanded} values={values} blocked={blocked} isServerOwner={isServerOwner} edit={edit} />
           <div className="form-actions access-form-actions">
             <button
               className="btn primary"
@@ -1026,6 +738,7 @@ export default function AccessGroupsManager({
                   ? "Зберегти зміни"
                   : "Створити групу"}
             </button>
+            <DropdownMenu label="Інші дії з групою">
             <button
               className="btn subtle"
               type="button"
@@ -1047,6 +760,20 @@ export default function AccessGroupsManager({
                 Видалити групу
               </button>
             ) : null}
+            {group && isServerOwner ? (
+              <button
+                className="btn subtle"
+                formAction={impersonateAction}
+                type="submit"
+                formNoValidate
+                disabled={busy}
+                data-dashboard-action="access-groups-impersonate"
+                data-loading-label="Вмикаємо перегляд..."
+              >
+                Переглянути як
+              </button>
+            ) : null}
+            </DropdownMenu>
           </div>
         </form>
       </div>
