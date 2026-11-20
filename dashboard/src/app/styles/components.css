@@ -476,13 +476,7 @@ select option {
 /* Чекбокси та радіо */
 
 .inline-check {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  min-height: 36px;
   cursor: pointer;
-  color: var(--text-soft);
-  font-size: 0.85rem;
 }
 
 .inline-check > span {
@@ -1132,7 +1126,6 @@ details > *:not(:where(summary)) {
 input[type="checkbox"],
 input[type="radio"] {
   accent-color: var(--c-accent-500);
-  appearance: none;
   -webkit-appearance: none;
   position: relative;
   width: 20px;
@@ -1250,10 +1243,6 @@ input[type="radio"] {
 
   input[type="radio"]:checked::after {
     inset: 6px;
-  }
-
-  .inline-check {
-    min-height: 44px;
   }
 }
 
