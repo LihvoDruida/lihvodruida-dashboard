@@ -1725,3 +1725,7 @@
 }
 
 /* Discord role to website group mapping. Every row has a real select. */
+
+/* Owner-only Discord settings: the fieldset only carries the disabled state. */
+.discord-settings-fieldset { display: contents; border: 0; margin: 0; padding: 0; min-width: 0; }
+.discord-settings-owner-note { margin: 0 0 var(--space-sm); }

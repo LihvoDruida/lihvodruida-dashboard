@@ -2,6 +2,7 @@ import ManagementShell from "@/components/management/ManagementShell";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { staticPermission } from "@/lib/staticRules";
+import { canManageSettings } from "@/lib/permissions";
 import AdminPageHeader from "@/components/AdminPageHeader";
 import { buildPageMetadata } from "@/lib/seo";
 import StaticRoleSettingsClient from "@/components/static/StaticRoleSettingsClient";
@@ -12,7 +13,7 @@ export default async function StaticRoleSettingsClientPage() {
   const user = await getSession({ live: true });
   if (!user) redirect("/login?next=%2Fdashboard%2Fsettings");
   const permissions = await staticPermission(user);
-  if (!permissions.admin) redirect("/access-denied?reason=admin&from=/dashboard/settings");
+  if (!permissions.owner || !canManageSettings(user)) redirect("/access-denied?reason=owner&from=/dashboard/settings");
   return <ManagementShell user={user} active="settings" className="">
     <AdminPageHeader eyebrow="Mistblossom Vanguard • Склад" title="Ролі Статика" description="Роль учасника та відповідального за склад. Доступ перевіряється під час кожної зміни." />
     <StaticRoleSettingsClient />

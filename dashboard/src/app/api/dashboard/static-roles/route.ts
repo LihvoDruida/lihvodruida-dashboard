@@ -1,20 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { canManageSettings } from "@/lib/permissions";
 import { fetchDiscordRoleControlSnapshotCachedForUi } from "@/lib/discordAdmin";
 import { getStaticSettings, saveStaticSettings, staticPermission } from "@/lib/staticRules";
 import { assertRequestBodySize, checkRateLimit, noStoreHeaders, verifyTrustedOrigin } from "@/lib/security";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const reply = (data: unknown, status = 200) => NextResponse.json(data, { status, headers: noStoreHeaders() });
+// Static role configuration is a settings surface: owner only, re-verified against Discord.
 async function adminSession() {
   const session = await getSession({ live: true });
   const access = await staticPermission(session);
-  return { session, allowed: Boolean(session && access.admin) };
+  return { session, allowed: Boolean(session && access.owner && canManageSettings(session)) };
 }
 export async function GET() {
   try {
     const { allowed } = await adminSession();
-    if (!allowed) return reply({ ok: false, error: "Налаштування доступні лише адміністрації." }, 403);
+    if (!allowed) return reply({ ok: false, error: "Налаштування ролей Статика доступні лише власнику Discord-сервера." }, 403);
     const [settings, control] = await Promise.all([getStaticSettings(), fetchDiscordRoleControlSnapshotCachedForUi()]);
     return reply({ ok: true, settings, roles: control.roles, botCanManageRoles: control.botCanManageRoles, warning: control.error || null, guildName: control.guild?.name || null });
   } catch { return reply({ ok: false, error: "Не вдалося перевірити роль адміністратора." }, 503); }
@@ -25,7 +27,7 @@ export async function POST(request: NextRequest) {
   if (!verifyTrustedOrigin(request)) return reply({ ok: false, error: "Неприпустиме джерело запиту." }, 403);
   try {
     const { session, allowed } = await adminSession();
-    if (!allowed || !session) return reply({ ok: false, error: "Немає прав на зміну Discord-ролей." }, 403);
+    if (!allowed || !session) return reply({ ok: false, error: "Ролі Статика може змінювати лише власник Discord-сервера." }, 403);
     if (!checkRateLimit(`static-role-config:${session.id}`, 10, 60_000).ok) return reply({ ok: false, error: "Забагато запитів." }, 429);
     const body = await request.json().catch(() => ({}));
     if (typeof body.memberRoleId !== "string" || typeof body.managerRoleId !== "string") return reply({ ok: false, error: "Вибери дві Discord-ролі." }, 400);

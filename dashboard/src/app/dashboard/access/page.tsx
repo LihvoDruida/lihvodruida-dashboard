@@ -5,7 +5,7 @@ import PageSection from "@/components/page/PageSection";
 import ManagementSections from "@/components/ManagementSections";
 import { AuthAccessForm, GeoAccessForm } from "@/components/management/access/AccessPolicyForms";
 import { getSession } from "@/lib/auth";
-import { canManageGroups } from "@/lib/permissions";
+import { canManageSettings } from "@/lib/permissions";
 import { getGeoAccessPolicy } from "@/lib/geoAccessPolicy";
 import { getAuthAccessPolicy } from "@/lib/authAccessPolicy";
 import { fetchDiscordRoles } from "@/lib/discordAdmin";
@@ -18,7 +18,7 @@ export const metadata = buildPageMetadata({ title: "Авторизація та 
 export default async function AdminAccessPage() {
   const user = await getSession({ live: true });
   if (!user) redirect("/login?next=%2Fdashboard%2Faccess");
-  if (!canManageGroups(user)) redirect("/access-denied?reason=groups&from=/dashboard/access");
+  if (!canManageSettings(user)) redirect("/access-denied?reason=owner&from=/dashboard/access");
   const [authPolicy, geoPolicy, rolesResult, loadedGroups] = await Promise.all([
     getAuthAccessPolicy(), getGeoAccessPolicy(),
     fetchDiscordRoles().then(roles => ({ roles, error: false })).catch(() => ({ roles: [], error: true })),

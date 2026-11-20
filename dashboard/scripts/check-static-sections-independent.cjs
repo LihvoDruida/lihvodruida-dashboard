@@ -11,17 +11,18 @@ const validConfig = { text: '## Правила Статика\nСписок ви
 const roleList = [{ id: '111111111111111111', name: 'Статик', manageable: true }, { id: '222222222222222222', name: 'РЛ', manageable: false }];
 function rig(route, options = {}) {
   const calls = [];
-  const flags = { origin: true, admin: false, edit: false, view: true, available: true, ...options };
+  const flags = { origin: true, admin: false, owner: false, edit: false, view: true, available: true, ...options };
   const s = fs.readFileSync(path.join(ROOT, route), 'utf8');
   const source = ts.transpileModule(s, { fileName: route, compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const reply = (data, opt = {}) => ({ status: opt.status || 200, jsonData: data, headers: opt.headers });
   const mocks = {
     'next/server': { NextResponse: { json: reply } },
-    '@/lib/auth': { getSession: async () => flags.session === undefined ? SESSION : flags.session },
+    '@/lib/auth': { getSession: async () => flags.session === undefined ? { ...SESSION, isServerOwner: flags.owner } : flags.session },
+    '@/lib/permissions': { canManageSettings: session => Boolean(session?.isServerOwner && session.provider === 'discord' && !session.impersonatedBy) },
     '@/lib/security': { assertRequestBodySize: () => null, verifyTrustedOrigin: () => flags.origin, checkRateLimit: () => ({ ok: true }), noStoreHeaders: () => ({'cache-control':'no-store'}) },
     '@/lib/staticRulesDefault': { DEFAULT_STATIC_RULES_MARKDOWN: '## Example text of the approved rules' },
     '@/lib/staticRules': {
-      staticPermission: async () => ({ view: flags.view, edit: flags.edit, admin: flags.admin }),
+      staticPermission: async () => ({ view: flags.view, edit: flags.edit, admin: flags.admin || flags.owner, owner: flags.owner }),
       getStaticSettings: async () => validConfig,
       saveStaticSettings: async (input, id, only) => { calls.push({ name: 'save', input, id, only }); return { ...validConfig, ...input }; },
       listStaticAudit: async () => { calls.push({ name: 'audit' }); return [{ id: 'event1', kind: 'member.accepted' }]; },
@@ -59,11 +60,12 @@ async function check(title, callback) { await callback();pass++;console.log('PAS
   await check('overview: save-roles no longer accepted', async () => { const x=rig(overview,{edit:true});assert.equal((await x.handler.POST(post({action:'save-roles',memberRoleId:'1'}))).status,400); });
   await check('settings: RL cannot GET admin roles', async () => { const x=rig(roles,{edit:true});assert.equal((await x.handler.GET()).status,403); });
   await check('settings: RL cannot POST admin roles', async () => { const x=rig(roles,{edit:true});assert.equal((await x.handler.POST(post({memberRoleId:'1',managerRoleId:'2'}))).status,403); });
-  await check('settings: owner/admin can load list', async () => { const x=rig(roles,{admin:true,edit:true});assert.equal((await x.handler.GET()).jsonData.roles.length,2); });
-  await check('settings: Discord failure surfaced', async () => { const x=rig(roles,{admin:true,available:false});assert.equal((await x.handler.GET()).jsonData.warning,'API down'); });
-  await check('settings: admin can change roles', async () => { const x=rig(roles,{admin:true,edit:true});assert.equal((await x.handler.POST(post({memberRoleId:roleList[0].id,managerRoleId:roleList[1].id}))).status,200);assert.equal(x.calls[0].only,true); });
-  await check('settings: missing role selection denied', async () => { const x=rig(roles,{admin:true});assert.equal((await x.handler.POST(post({memberRoleId:12,managerRoleId:null}))).status,400); });
-  await check('settings: CSRF denied', async () => { const x=rig(roles,{admin:true,origin:false});assert.equal((await x.handler.POST(post({memberRoleId:'1',managerRoleId:'2'}))).status,403); });
+  await check('settings: non-owner admin cannot GET or POST roles (owner-only settings)', async () => { const x=rig(roles,{admin:true,edit:true});assert.equal((await x.handler.GET()).status,403);assert.equal((await x.handler.POST(post({memberRoleId:roleList[0].id,managerRoleId:roleList[1].id}))).status,403);assert.equal(x.calls.length,0); });
+  await check('settings: owner can load list', async () => { const x=rig(roles,{owner:true,edit:true});assert.equal((await x.handler.GET()).jsonData.roles.length,2); });
+  await check('settings: Discord failure surfaced', async () => { const x=rig(roles,{owner:true,available:false});assert.equal((await x.handler.GET()).jsonData.warning,'API down'); });
+  await check('settings: owner can change roles', async () => { const x=rig(roles,{owner:true,edit:true});assert.equal((await x.handler.POST(post({memberRoleId:roleList[0].id,managerRoleId:roleList[1].id}))).status,200);assert.equal(x.calls[0].only,true); });
+  await check('settings: missing role selection denied', async () => { const x=rig(roles,{owner:true});assert.equal((await x.handler.POST(post({memberRoleId:12,managerRoleId:null}))).status,400); });
+  await check('settings: CSRF denied', async () => { const x=rig(roles,{owner:true,origin:false});assert.equal((await x.handler.POST(post({memberRoleId:'1',managerRoleId:'2'}))).status,403); });
   await check('settings: anonymous GET denied', async () => { const x=rig(roles,{session:null});assert.equal((await x.handler.GET()).status,403); });
   console.log(`Independent Static sections route checks passed: ${pass}/${pass}`);
 })().catch(err => { console.error(err); process.exitCode = 1; });
