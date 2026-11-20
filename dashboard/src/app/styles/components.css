@@ -1257,13 +1257,6 @@ a.dashboard-list-row:hover {
 }
 }
 
-.raid-signup-avatar--empty {
-  display: grid;
-  place-items: center;
-  border-style: dashed;
-  color: var(--text-faint);
-}
-
 /* =========================================================
    9. ТОСТИ
    ========================================================= */
