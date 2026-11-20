@@ -34,12 +34,16 @@ main .dashboard-shell {
     max-width: none;
     padding: 0;
   }
+@layer patterns {
+  [class$="-shell"],
+[class*="-shell "] {
+    gap: var(--page-gap);
+  }
+}
 
   .dashboard-shell,
 .content-shell,
-.app-page-stack,
-[class$="-shell"],
-[class*="-shell "] {
+.app-page-stack {
     gap: var(--page-gap);
   }
 
@@ -79,9 +83,8 @@ main .dashboard-shell {
   }
 
   /* ---------- Заголовок сторінки ---------- */
-  .hero,
-.dashboard-hero,
-[class$="-hero"]:not(:where([class*="landing"])),
+@layer patterns {
+  [class$="-hero"]:not(:where([class*="landing"])),
 [class*="-hero "]:not(:where([class*="landing"])) {
     grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.7fr);
     gap: var(--space-lg);
@@ -96,19 +99,39 @@ main .dashboard-shell {
       0 16px 38px -30px rgba(0, 0, 0, 0.98),
       inset 0 1px 0 rgba(255, 255, 255, 0.024);
   }
-
-  .hero-copy h1,
-.dashboard-hero__copy h1,
-[class$="-hero__copy"] h1,
+}
+  .hero,
+.dashboard-hero {
+    grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.7fr);
+    gap: var(--space-lg);
+    min-height: 0;
+    padding: 22px 24px;
+    border-radius: var(--card-radius);
+    border-color: rgba(255, 178, 106, 0.14);
+    background:
+      linear-gradient(110deg, rgba(255, 155, 85, 0.05), transparent 42%),
+      rgba(25, 20, 16, 0.82);
+    box-shadow:
+      0 16px 38px -30px rgba(0, 0, 0, 0.98),
+      inset 0 1px 0 rgba(255, 255, 255, 0.024);
+  }
+@layer patterns {
+  [class$="-hero__copy"] h1,
 [class*="-hero__copy "] h1 {
     margin-bottom: 6px;
     font-size: clamp(1.55rem, 1.9vw, 2.1rem);
     line-height: 1.12;
   }
+}
 
-  .eyebrow,
-.app-state-eyebrow,
-[class$="__eyebrow"],
+  .hero-copy h1,
+.dashboard-hero__copy h1 {
+    margin-bottom: 6px;
+    font-size: clamp(1.55rem, 1.9vw, 2.1rem);
+    line-height: 1.12;
+  }
+@layer patterns {
+  [class$="__eyebrow"],
 [class*="__eyebrow "],
 [class$="-eyebrow"],
 [class*="-eyebrow "] {
@@ -117,12 +140,26 @@ main .dashboard-shell {
     font-size: 9.5px;
     letter-spacing: 0.12em;
   }
+}
 
-  .lead,
-[class$="__lead"],
+  .eyebrow,
+.app-state-eyebrow {
+    padding: 3px 9px;
+    margin-bottom: 6px;
+    font-size: 9.5px;
+    letter-spacing: 0.12em;
+  }
+@layer patterns {
+  [class$="__lead"],
 [class*="__lead "],
 [class$="-lead"],
 [class*="-lead "] {
+    font-size: var(--font-size-body);
+    line-height: 1.58;
+  }
+}
+
+  .lead {
     font-size: var(--font-size-body);
     line-height: 1.58;
   }

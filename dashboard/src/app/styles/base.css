@@ -8,18 +8,19 @@
 /* Системна підсвітка тапу блимає суцільним прямокутником на темній
    темі, перш ніж стати напівпрозорою. Прибираємо повністю й даємо
    власний відгук через :active. */
-
-button,
+@layer base {
+  button,
 a {
   transition: transform var(--dur-instant) ease;
 }
-
-button:active,
+  button:active,
 a:active {
   transform: scale(0.985);
 }
+}
 
 @media (prefers-reduced-motion: reduce) {
+@layer base {
   *,
 *::before,
 *::after {
@@ -29,25 +30,32 @@ a:active {
     scroll-behavior: auto !important;
   }
 }
+}
 
 /* Вимикаємо hover-підйоми на тач-пристроях */
 @media (hover: none) {
-  .panel:hover,
-[class*="-card"]:hover {
+@layer patterns {
+  [class*="-card"]:hover {
     transform: none;
   }
 }
+@layer base {
+  .panel:hover {
+    transform: none;
+  }
+}
+}
 
 /* ---------- 2. Ресет ---------- */
-*,
+@layer base {
+  *,
 *::before,
 *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
-
-html {
+  html {
   font-family: var(--font-sans);
   font-size: 100%;
   line-height: var(--line-height-body);
@@ -56,8 +64,7 @@ html {
   overscroll-behavior-y: contain;
   background: var(--site-bg-0);
 }
-
-body {
+  body {
   font-family: var(--font-sans);
   color: var(--text-body);
   min-height: 100vh;
@@ -81,8 +88,7 @@ body {
   padding-top: var(--nav-space);
   padding-bottom: 0;
 }
-
-#site-starfield {
+  #site-starfield {
   position: fixed;
   inset: 0;
   width: 100vw;
@@ -91,76 +97,71 @@ body {
   pointer-events: none;
   opacity: 0.82;
 }
+}
 
 /* Весь контент — над зоряним полем */
-body > *:not(:where(#site-starfield)) {
+@layer base {
+  body > *:not(:where(#site-starfield)) {
   position: relative;
   z-index: 1;
 }
-
-img,
+  img,
 svg,
 video,
 canvas {
   max-width: 100%;
   display: block;
 }
-
-input,
+  input,
 button,
 textarea,
 select {
   font: inherit;
   color: inherit;
 }
+}
 
 /* iOS не зумить інпут, якщо шрифт ≥ 16px */
-input,
+@layer base {
+  input,
 textarea,
 select {
   font-size: 16px;
 }
-
-a {
+  a {
   color: var(--c-accent-300);
   text-decoration: none;
   text-underline-offset: 0.14em;
   transition: color var(--dur-fast) var(--ease-out);
 }
-
-a:hover {
+  a:hover {
   color: var(--c-accent-200);
 }
-
-ul,
+  ul,
 ol {
   list-style: none;
 }
-
-hr {
+  hr {
   height: 1px;
   border: 0;
   background: var(--border-subtle);
   margin: var(--space-lg) 0;
 }
-
-code,
+  code,
 kbd,
 pre,
 samp {
   font-family: var(--font-mono);
   font-size: 0.9em;
 }
-
-code {
+  code {
   padding: 0.15em 0.4em;
   border-radius: var(--radius-sm);
   background: var(--surface-sunken);
   border: 1px solid var(--border-subtle);
   color: var(--c-accent-200);
 }
-
-pre {
+  pre {
   padding: var(--space-md);
   border-radius: var(--radius-md);
   background: var(--surface-sunken);
@@ -169,29 +170,27 @@ pre {
   color: var(--text-soft);
   line-height: var(--line-height-body);
 }
-
-pre code {
+  pre code {
   padding: 0;
   border: 0;
   background: none;
   color: inherit;
 }
+}
 
 /* ---------- 3. Фокус і доступність ---------- */
-:focus-visible {
+@layer base {
+  :focus-visible {
   outline: 2px solid var(--orange-main);
   outline-offset: 2px;
 }
-
-:focus:not(:where(:focus-visible)) {
+  :focus:not(:where(:focus-visible)) {
   outline: none;
 }
-
-:target {
+  :target {
   scroll-margin-top: calc(var(--nav-space) + var(--space-sm));
 }
-
-.sr-only {
+  .sr-only {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -203,13 +202,14 @@ pre code {
   white-space: nowrap;
   border: 0;
 }
-
-[hidden] {
+  [hidden] {
   display: none !important;
+}
 }
 
 /* ---------- 4. Типографіка ---------- */
-h1,
+@layer base {
+  h1,
 h2,
 h3 {
   margin: 0;
@@ -223,23 +223,19 @@ h3 {
   text-transform: none;
   text-wrap: balance;
 }
-
-h1 {
+  h1 {
   font-size: clamp(24px, 1.3rem + 0.9vw, 32px);
   line-height: 1.12;
 }
-
-h2 {
+  h2 {
   font-size: clamp(19px, 1.05rem + 0.4vw, 23px);
   line-height: 1.2;
 }
-
-h3 {
+  h3 {
   font-size: clamp(16px, 0.96rem + 0.24vw, 19px);
   line-height: 1.28;
 }
-
-h4,
+  h4,
 h5,
 h6 {
   margin: 0;
@@ -247,82 +243,75 @@ h6 {
   color: var(--text-strong);
   font-weight: var(--font-weight-bold);
 }
-
-h4 {
+  h4 {
   font-size: 15px;
 }
-
-h5 {
+  h5 {
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--c-accent-300);
 }
-
-h6 {
+  h6 {
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
-
-p {
+  p {
   line-height: var(--line-height-copy);
 }
-
-strong,
+  strong,
 b {
   color: var(--text-strong);
   font-weight: var(--font-weight-bold);
 }
-
-small {
+  small {
   font-size: var(--font-size-body-sm);
   color: var(--text-muted);
 }
+}
 
 /* ---------- 5. Скролбар ---------- */
-* {
+@layer base {
+  * {
   -webkit-tap-highlight-color: transparent;
   scrollbar-width: thin;
   scrollbar-color: var(--c-base-400) transparent;
 }
-
-*::-webkit-scrollbar {
+  *::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
-
-*::-webkit-scrollbar-track {
+  *::-webkit-scrollbar-track {
   background: transparent;
 }
-
-*::-webkit-scrollbar-thumb {
+  *::-webkit-scrollbar-thumb {
   background: var(--c-base-400);
   border-radius: var(--radius-pill);
   border: 2px solid transparent;
   background-clip: content-box;
 }
-
-*::-webkit-scrollbar-thumb:hover {
+  *::-webkit-scrollbar-thumb:hover {
   background: var(--c-base-500);
   background-clip: content-box;
 }
-
-::selection {
+  ::selection {
   background: var(--accent-ring);
   color: var(--c-ink-100);
+}
 }
 
 /* ---------- Performance safeguards ---------- */
 @media (max-width: 1000px) {
   /* Fixed page backgrounds are expensive on mobile compositors and can trigger
      large repaints while scrolling. The visual gradient stays the same. */
+@layer base {
   body {
     background-attachment: scroll;
   }
-
   #site-starfield {
     opacity: 0.68;
   }
+}
 }
