@@ -15,6 +15,11 @@ export default function StaticAcceptClient({ token, botId }: { token: string; bo
   const [status, setStatus] = useState("pending");
   const [working, setWorking] = useState(false);
   useEffect(() => {
+    if (!token) {
+      setError("Посилання неповне. Відкрий його ще раз із повідомлення бота в Discord.");
+      setLoading(false);
+      return;
+    }
     let active = true;
     fetch(`/api/static/accept?t=${encodeURIComponent(token)}`, { cache: "no-store" })
       .then(async (r) => { const json = await r.json(); if (!r.ok) throw new Error(json.error || "Не вдалося відкрити правила."); return json as Rules; })

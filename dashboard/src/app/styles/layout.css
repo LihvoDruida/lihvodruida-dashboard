@@ -436,6 +436,10 @@ main .dashboard-shell {
 }
 
 .app-footer__links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding-block: var(--space-3xs);
   color: var(--text-soft);
 }
 

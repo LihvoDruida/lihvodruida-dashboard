@@ -16,7 +16,7 @@ type Props = {
   busy: boolean; refreshing: boolean; onRefresh: (button: HTMLButtonElement) => void;
 };
 export default function AccessGroupList(props: Props) {
-  return <aside className={`access-groups-list ${styles.list}`} aria-label="Список груп доступу">
+  return <section className={`access-groups-list ${styles.list}`} aria-label="Список груп доступу">
     <FilterToolbar label="Пошук груп" search={<FormField label="Знайти групу" type="search" maxLength={120} value={props.query} onChange={event => props.onQuery(event.target.value)} placeholder="Назва, ID або Discord-роль" />}
       result={`${props.groups.length} груп · ${props.drafts.size} чернеток`} />
     {props.filteredGroups.slice(0, props.visibleCount).map(group => <Button key={group.id} className={`access-group-tab ${styles.groupButton}`} aria-pressed={props.expanded === groupDraftKey(group.id)} onClick={() => props.onSelect(groupDraftKey(group.id))}>
@@ -28,5 +28,5 @@ export default function AccessGroupList(props: Props) {
     {[...props.drafts.keys()].filter(key => key !== NEW_GROUP_DRAFT && !props.groups.some(group => groupDraftKey(group.id) === key)).map(key => <Button key={key} onClick={() => props.onSelect(key)}>Чернетка видаленої групи · {props.drafts.get(key)!.values.name}</Button>)}
     <Button tone="primary" aria-pressed={props.expanded === NEW_GROUP_DRAFT} onClick={() => props.onSelect(NEW_GROUP_DRAFT)}>Нова група</Button>
     <Button busy={props.refreshing} disabled={props.busy} onClick={event => props.onRefresh(event.currentTarget)}>{props.refreshing ? "Оновлюємо…" : "Оновити список"}</Button>
-  </aside>;
+  </section>;
 }

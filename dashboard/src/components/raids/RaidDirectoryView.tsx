@@ -21,7 +21,13 @@ import RaidArchiveLoadMore from "@/components/RaidArchiveLoadMore";
 import RaidDirectoryCard from "./RaidDirectoryCard";
 export default function RaidDirectoryView(model: RaidDirectoryWorkspaceModel) {
   const {user,canManage,unavailable,discordEnabled,activeRaids,draftRaids,closedRaids,nextRaid,currentUrl,query,state,visibleCurrent,visibleArchive} = model;
-  const empty = <EmptyState title={query || state !== "all" ? "Рейдів за цими фільтрами немає" : "Рейди ще не створені"} description="Зміни пошук, скинь фільтри або повернись пізніше." actions={<Link className="btn subtle" href="/raids?view=all" data-list-reset-position>Показати всі рейди</Link>} />;
+  const filtered = Boolean(query || state !== "all");
+  const reset = <Link className="btn subtle" href="/raids?view=all" data-list-reset-position>Показати всі рейди</Link>;
+  const empty = (section: "current" | "archive") => filtered
+    ? <EmptyState title="Рейдів за цими фільтрами немає" description="Зміни пошук або скинь фільтри." actions={reset} />
+    : section === "current"
+      ? <EmptyState title="Поточних рейдів немає" description={canManage ? "Створи рейд, щоб відкрити запис через Discord." : "Новий рейд з’явиться тут, щойно його опублікують."} actions={canManage ? <Link className="btn subtle" href="/raids/new">Створити рейд</Link> : null} />
+      : <EmptyState title="Минулих рейдів ще немає" description="Завершені рейди потрапляють в архів разом зі складом і записами." />;
   return <PageContainer label="Рейди" navigation={<DashboardIdentity user={user} activeSection="raids" />}>
     <PageHeader title="Рейди" description="Поточні рейди, їхній склад та архів. Запис на участь відбувається через Discord."
       breadcrumbs={[{label: "Рейди"}]} actions={canManage ? <><Link className="btn primary" href="/raids/new">Створити рейд</Link><DropdownMenu label="Інші інструменти" items={[{id:"roster",label:"Збір сезонного складу",href:"/roster"},{id:"polls",label:"Рейд-пули",href:"/polls"},{id:"bench",label:"Сірий список",href:"/raids/bench-priority"}]} /></> : null}
@@ -32,8 +38,8 @@ export default function RaidDirectoryView(model: RaidDirectoryWorkspaceModel) {
       actions={<><Button tone="primary" type="submit">Застосувати</Button><Link className="btn subtle" href="/raids?view=all" data-list-reset-position>Скинути</Link></>} /></FilterNavigationForm>
     <ListViewMemory key={listNavigationScope(user)} kind="raids" scope={listNavigationScope(user)} currentUrl={currentUrl} clientLocation restorePosition={!unavailable} />
     {unavailable ? <ErrorState title="Рейди тимчасово недоступні" description="Не вдалося отримати список рейдів. Фільтри збережено." actions={<PageRefreshButton />} /> : <>
-      {state !== "closed" ? <PageSection id="raids-current-title" title="Поточні рейди" description={canManage ? "Опубліковані рейди та чернетки." : "Опубліковані рейди для перегляду."}>{visibleCurrent.length ? <DataGrid label="Поточні рейди" columns="two">{visibleCurrent.map(raid => <RaidDirectoryCard key={raid.id} raid={raid} canManage={canManage} />)}</DataGrid> : empty}</PageSection> : null}
-      {state === "all" || state === "closed" ? <PageSection id="raids-archive-title" title="Минулі рейди" description={`Знайдено: ${visibleArchive.length}. Склад і записи зберігаються в архіві.`}>{visibleArchive.length ? <RaidArchiveLoadMore step={6} total={visibleArchive.length}>{visibleArchive.map(raid => <RaidDirectoryCard key={raid.id} raid={raid} canManage={canManage} />)}</RaidArchiveLoadMore> : empty}</PageSection> : null}
+      {state !== "closed" ? <PageSection id="raids-current-title" title="Поточні рейди" description={canManage ? "Опубліковані рейди та чернетки." : "Опубліковані рейди для перегляду."}>{visibleCurrent.length ? <DataGrid label="Поточні рейди" columns="two">{visibleCurrent.map(raid => <RaidDirectoryCard key={raid.id} raid={raid} canManage={canManage} />)}</DataGrid> : empty("current")}</PageSection> : null}
+      {state === "all" || state === "closed" ? <PageSection id="raids-archive-title" title="Минулі рейди" description={`Знайдено: ${visibleArchive.length}. Склад і записи зберігаються в архіві.`}>{visibleArchive.length ? <RaidArchiveLoadMore step={6} total={visibleArchive.length}>{visibleArchive.map(raid => <RaidDirectoryCard key={raid.id} raid={raid} canManage={canManage} />)}</RaidArchiveLoadMore> : empty("archive")}</PageSection> : null}
     </>}
   </PageContainer>;
 }

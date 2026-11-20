@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { DashboardSession } from "@/lib/auth";
 
+import ManagementNavScroll from "@/components/management/ManagementNavScroll";
 import { MANAGEMENT_SECTIONS, managementItems, type AdminTabKey } from "@/lib/navigation/management";
 export type { AdminTabKey } from "@/lib/navigation/management";
 
@@ -24,5 +25,6 @@ export default function AdminTabs({ active, user }: { active: AdminTabKey; user?
         </div>
       </div>;
     })}
+    <ManagementNavScroll />
   </nav>;
 }

@@ -387,7 +387,7 @@ export function RosterSideList({
   );
   const benchCount = layout.bench.members.length;
   return (
-    <aside className={styles.rosterPanel}>
+    <div className={styles.rosterPanel}>
       <div className={styles.rosterHeading}>
         <div>
           <strong>Склад рейду</strong>
@@ -464,7 +464,7 @@ export function RosterSideList({
           showBenchPriorityMarkers={showBenchPriorityMarkers}
         />
       ) : null}
-    </aside>
+    </div>
   );
 }
 

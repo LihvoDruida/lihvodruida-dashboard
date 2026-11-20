@@ -77,7 +77,7 @@ export function StaticMarkdown({ value }: { value: string }) {
       i += 1;
       while (i < lines.length && !fence(lines[i])) code.push(lines[i++]);
       if (i < lines.length) i += 1;
-      blocks.push(<pre key={key}><code>{code.join("\n")}</code></pre>);
+      blocks.push(<pre key={key} tabIndex={0}><code>{code.join("\n")}</code></pre>);
       continue;
     }
     const h = heading(line);

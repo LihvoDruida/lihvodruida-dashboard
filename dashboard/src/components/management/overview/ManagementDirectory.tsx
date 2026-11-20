@@ -1,7 +1,6 @@
 "use client";
 
 import { useId, useMemo } from "react";
-import Link from "next/link";
 import FilterToolbar from "@/components/page/FilterToolbar";
 import DataGrid from "@/components/page/DataGrid";
 import DataCard from "@/components/page/DataCard";
@@ -46,9 +45,8 @@ export default function ManagementDirectory({ items, initialFilters }: {
       : !results.length ? <EmptyState title="Нічого не знайдено" description="Спробуй іншу назву або скинь фільтри."
           actions={<Button onClick={reset}>Показати всі розділи</Button>} />
       : <DataGrid label="Доступні розділи керування">
-        {results.map(item => <DataCard key={item.key} title={item.label} description={item.description}
-          badge={<StatusBadge>{MANAGEMENT_CATEGORY_LABELS[item.section]}</StatusBadge>}
-          actions={<Link href={item.href} className="btn subtle" prefetch={false}>Відкрити<span className="sr-only"> {item.label}</span></Link>} />)}
+        {results.map(item => <DataCard key={item.key} title={item.label} description={item.description} titleHref={item.href} stretchLink
+          badge={<StatusBadge>{MANAGEMENT_CATEGORY_LABELS[item.section]}</StatusBadge>} />)}
       </DataGrid>}
   </>;
 }

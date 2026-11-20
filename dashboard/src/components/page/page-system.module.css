@@ -19,7 +19,7 @@
 .description { margin: 0; color: var(--text-soft); font-size: var(--font-size-body); line-height: var(--line-height-copy); overflow-wrap: anywhere; }
 .breadcrumbs { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin: 0; padding: 0; list-style: none; color: var(--text-muted); font-size: var(--font-size-meta); }
 .breadcrumbs li + li::before { content: "/"; margin-right: var(--space-xs); color: var(--text-faint); }
-.breadcrumbs a { color: var(--text-soft); }
+.breadcrumbs a { display: inline-block; min-height: 24px; padding-block: var(--space-3xs); color: var(--text-soft); }
 .actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-xs); min-width: 0; }
 .actions :global(.btn) { white-space: normal; max-width: 100%; overflow-wrap: anywhere; }
 .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--dropdown-min)), 1fr)); gap: var(--space-md); margin: 0; }
@@ -44,6 +44,12 @@
 .cardHeader { display: flex; align-items: start; flex-wrap: wrap; gap: var(--space-xs); }
 .cardHeader .cardTitle, .emptyState .cardTitle, .errorState .cardTitle { margin: 0; color: var(--text-strong); font-family: var(--font-display); font-size: var(--heading-card-size); font-weight: var(--font-weight-semibold); line-height: var(--line-height-compact); overflow-wrap: anywhere; }
 .cardHeader .cardTitle { flex: 1 1 var(--dropdown-min); }
+.linkCard { position: relative; transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out); }
+.linkCard .cardTitle a { color: inherit; text-decoration: none; }
+.linkCard .cardTitle a::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.linkCard:hover { border-color: var(--border-strong); background: var(--surface-hover); }
+.linkCard:has(.cardTitle a:focus-visible) { outline: var(--focus-width) solid var(--accent-ring); outline-offset: var(--focus-offset); }
+.linkCard .cardTitle a:focus-visible { outline: none; }
 .cardDescription { margin: 0; color: var(--text-soft); font-size: var(--font-size-body-sm); line-height: var(--line-height-copy); overflow-wrap: anywhere; }
 .cardBody { min-width: 0; }
 .cardActions { margin-top: auto; padding-top: var(--space-sm); display: flex; flex-wrap: wrap; gap: var(--space-xs); }
@@ -82,10 +88,18 @@
   .sidebar { position: static; max-height: none; overflow: visible; }
   .sidebar :global(.management-nav) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
-@media (max-width: 640px) {
-  .sidebar :global(.management-nav) { grid-template-columns: minmax(0, 1fr); }
-  .sidebar :global(.management-nav-links) { display: flex; flex-wrap: wrap; }
+/* Phones: one swipeable strip of sections instead of a menu taller than the screen. */
+@media (max-width: 700px) {
+  .sidebar :global(.management-nav) { display: flex; gap: var(--space-2xs); padding: var(--space-2xs); overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scroll-padding-inline: var(--space-2xs); scrollbar-width: none; }
+  .sidebar :global(.management-nav)::-webkit-scrollbar { display: none; }
+  .sidebar :global(.management-nav-group), .sidebar :global(.management-nav-links) { display: contents; }
+  .sidebar :global(.management-nav-label) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .sidebar :global(.management-nav-links) a { flex: 0 0 auto; align-content: center; min-height: var(--control-height); padding: var(--space-xs) var(--space-md); white-space: nowrap; scroll-snap-align: start; }
   .sidebar :global(.management-nav-links) a small { display: none; }
+}
+@media (max-width: 640px) {
+  .dataCard { min-block-size: auto; }
+  .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-sm); }
   .dropdownPanel { inset-inline-start: 0; inset-inline-end: auto; }
   .filters { width: 100%; }
   .filters > label { flex: 1 1 var(--dropdown-min); }

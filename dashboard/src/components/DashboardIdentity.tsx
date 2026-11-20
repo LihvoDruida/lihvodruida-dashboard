@@ -208,7 +208,7 @@ export default async function DashboardIdentity({
 
       {/* Мобільна шапка лишається окремою: desktop-перебудова не робить
           телефонну версію залежною від ширини робочої панелі. */}
-      <aside className="sidebar dashboard-mobile-nav">
+      <div className="sidebar dashboard-mobile-nav">
         <header className="site-nav" aria-label="Мобільна навігація">
           <div className="site-nav__shell">
             <Link prefetch={false} href={profileHref} className="site-nav__brand" aria-label={`${guild.name} — ${user ? "панель" : "рейди"}`}>
@@ -239,7 +239,7 @@ export default async function DashboardIdentity({
             )}
           </div>
         </header>
-      </aside>
+      </div>
 
       {user ? (
         <div className="nav-sheet" id="nav-sheet" aria-hidden="true">

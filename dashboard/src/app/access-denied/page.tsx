@@ -52,7 +52,7 @@ export default async function AccessDeniedPage({
 
   return (
     <>
-      <section className="container access-denied-topbar">
+      <section className="container access-denied-topbar" aria-label="Навігація панелі">
         <div className="dashboard-shell content-shell access-denied-shell">
           <DashboardIdentity user={user} activeSection="profile" />
         </div>
