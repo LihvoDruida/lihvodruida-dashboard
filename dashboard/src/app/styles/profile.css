@@ -52,9 +52,6 @@
 .profile-card-lead {
   margin: 0;
   max-width: 80ch;
-  color: var(--text-soft);
-  font-size: var(--font-size-body);
-  line-height: var(--line-height-copy);
 }
 
 .profile-card-note {
@@ -90,24 +87,8 @@
 /* Варіанти формату імені — картки-перемикачі, а не злиплі рядки */
 
 .profile-display-mode-option {
-  display: grid;
-  gap: var(--space-3xs);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
   cursor: pointer;
   transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
-}
-
-.profile-display-mode-option:hover {
-  border-color: var(--border-strong);
-  background: var(--surface-hover);
-}
-
-.profile-display-mode-option.is-selected {
-  border-color: var(--border-strong);
-  background: var(--accent-soft);
 }
 
 .profile-display-mode-option small,
@@ -1196,11 +1177,6 @@
   .profile-card-head {
     gap: var(--space-xs);
     padding-bottom: 10px;
-  }
-
-  .profile-card-lead {
-    font-size: 0.79rem;
-    line-height: var(--line-height-body);
   }
 
   .profile-card-toolbar--compact {

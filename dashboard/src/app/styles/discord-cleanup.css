@@ -1,10 +1,10 @@
-.discord-cleanup { display: grid; gap: 20px; min-width: 0; }
+.discord-cleanup { display: grid; min-width: 0; }
 .discord-cleanup-page .discord-cleanup-back { justify-self: start; }
 .discord-cleanup .panel { padding: clamp(18px, 3vw, 30px); }
 .discord-cleanup-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
 .discord-cleanup-heading h2 { margin: 5px 0 0; font-size: clamp(20px, 2vw, 26px); }
 .discord-cleanup-heading p { margin: 8px 0 0; color: var(--text-muted); line-height: 1.6; }
-.discord-cleanup-intro { max-width: 850px; line-height: 1.7; color: var(--text-muted); margin-bottom: 22px; }
+.discord-cleanup-intro { max-width: 850px; color: var(--text-muted); margin-bottom: 22px; }
 .discord-cleanup-intro strong { color: var(--text); }
 .discord-cleanup fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .discord-cleanup-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
@@ -19,7 +19,7 @@
 .discord-cleanup button { flex-shrink: 0; cursor: pointer; }
 .discord-cleanup button:disabled { opacity: .55; cursor: not-allowed; }
 .discord-cleanup fieldset:disabled button, .discord-cleanup fieldset:disabled select { cursor: not-allowed; }
-.discord-cleanup-note { color: var(--text-muted); font-size: 13px; line-height: 1.7; margin: 16px 0; }
+.discord-cleanup-note { color: var(--text-muted); font-size: 13px; margin: 16px 0; }
 .discord-cleanup-alert { padding: 16px 20px; border: 1px solid rgba(239, 180, 96, .35); border-radius: 14px; background: rgba(239, 180, 96, .08); color: var(--text-on-warning); line-height: 1.7; overflow-wrap: anywhere; }
 .discord-cleanup-notice { margin: 0; padding: 14px 20px; background: rgba(127, 198, 161, .08); border-radius: 14px; color: var(--text); }
 .discord-cleanup-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
@@ -55,7 +55,6 @@
   .discord-cleanup-member { grid-template-columns: minmax(140px, 1fr) minmax(150px, 1fr); gap: 14px 22px; }
 }
 @media (max-width: 640px) {
-  .discord-cleanup { gap: 14px; }
   .discord-cleanup-fields { grid-template-columns: 1fr; gap: 14px; }
   .discord-cleanup-heading { align-items: flex-start; flex-wrap: wrap; }
   .discord-cleanup-heading > .btn { width: 100%; }

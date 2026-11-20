@@ -449,7 +449,6 @@
   }
 
   .raid-poll-create-actions > * {
-    flex: 1 1 auto;
     text-align: center;
   }
 }

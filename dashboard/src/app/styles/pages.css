@@ -39,12 +39,6 @@
   gap: var(--space-sm);
 }
 
-.profile-card-head--inline {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: var(--space-sm);
-}
-
 .profile-empty-characters {
   display: grid;
   gap: var(--space-xs);
@@ -411,10 +405,6 @@
 
 /* Керування Discord */
 
-.discord-management-card--action {
-  border-color: var(--border-strong);
-}
-
 .discord-role-picker {
   --role-picker-gap: 6px;
   --role-picker-card-height: 40px;
@@ -679,7 +669,6 @@
 }
 
 .discord-visual-section {
-  display: grid;
   gap: var(--space-sm);
 }
 
@@ -805,9 +794,6 @@
 /* =========================================================
    АДМІН
    ========================================================= */
-.admin-page {
-  min-width: 0;
-}
 
 .admin-container {
   display: flex;
@@ -950,7 +936,7 @@ body:has(.login-screen) .app-footer--site-wide {
 .login-title-divider > span { height: 1px; background: linear-gradient(90deg, transparent, #d8b25e); }
 .login-title-divider > span:last-child { transform: scaleX(-1); }
 .login-title-divider > i { width: 7px; height: 7px; rotate: 45deg; border: 1px solid #d8b25e; }
-.login-lead { max-width: 34ch; margin: 0; color: #e0d5bb; font-size: .94rem; line-height: 1.65; }
+.login-lead { max-width: 34ch; margin: 0; color: #e0d5bb; line-height: 1.65; }
 .login-alert {
   width: 100%;
   margin: 0;
@@ -1082,7 +1068,6 @@ body:has(.login-screen) .app-footer--site-wide {
 }
 
 .discord-color-code {
-  font-family: var(--font-mono);
   font-size: var(--font-size-body-sm);
   color: var(--c-accent-200);
   text-transform: uppercase;
@@ -1102,7 +1087,6 @@ body:has(.login-screen) .app-footer--site-wide {
   display: inline-flex;
   align-items: center;
   gap: var(--space-xs);
-  min-height: 38px;
   color: var(--text-soft);
   font-size: var(--font-size-body-sm);
   cursor: pointer;
@@ -1360,7 +1344,6 @@ body:has(.login-screen) .app-footer--site-wide {
 .discord-load-message-btn {
   flex: 0 0 auto;
   min-width: 122px;
-  min-height: 46px;
 }
 
 .discord-color-picker-field .discord-color-picker {
@@ -1379,11 +1362,6 @@ body:has(.login-screen) .app-footer--site-wide {
 .discord-description-area {
   font-size: 0.85rem;
   font-family: var(--font-mono);
-  min-height: 160px;
-}
-
-.discord-description-area {
-  min-height: 170px;
 }
 
 .discord-author-footer-grid {
@@ -1422,14 +1400,6 @@ body:has(.login-screen) .app-footer--site-wide {
   justify-self: start;
 }
 
-.discord-autorole-toolbar {
-  align-items: end;
-}
-
-.discord-autorole-toolbar .btn {
-  min-height: var(--control-height);
-}
-
 .discord-autorole-card__head {
   align-items: start;
 }
@@ -1455,10 +1425,6 @@ body:has(.login-screen) .app-footer--site-wide {
   align-items: center;
   justify-content: flex-start;
   padding-top: var(--space-sm);
-}
-
-.discord-builder-actions .btn {
-  min-height: 46px;
 }
 
 .discord-preview-panel {
@@ -1747,11 +1713,6 @@ body:has(.login-screen) .app-footer--site-wide {
   margin-top: 12px;
 }
 
-.discord-dashboard-hero__side {
-  align-content: stretch;
-  gap: 10px;
-}
-
 .discord-dashboard-hero__side .guild-hero-summary {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-xs);
@@ -1925,10 +1886,6 @@ body:has(.login-screen) .app-footer--site-wide {
   .discord-dashboard-hero .hero-secure-note {
     margin-top: 9px;
     font-size: var(--font-size-ui);
-  }
-
-  .discord-dashboard-hero__side {
-    gap: var(--space-xs);
   }
 
   .discord-dashboard-hero__side .guild-hero-summary,

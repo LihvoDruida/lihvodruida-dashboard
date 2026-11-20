@@ -142,10 +142,6 @@ main .dashboard-shell {
     line-height: 1.25;
   }
 
-  .raid-greylist-mini-actions {
-    gap: var(--space-xs);
-  }
-
   /* ---------- Контроли ---------- */
   .btn {
     min-height: var(--control-height);

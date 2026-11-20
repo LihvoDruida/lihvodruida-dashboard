@@ -212,7 +212,6 @@
 }
 
 .raid-ilvl-notice.is-warning {
-  border-left-color: var(--c-warning);
   border-color: var(--tint-warning-border);
   background: var(--tint-warning-bg);
   color: var(--text-on-warning);
@@ -1277,9 +1276,7 @@
 }
 
 .raid-greylist-mini-actions {
-  display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2xs);
 }
 
 .raid-greylist-search {

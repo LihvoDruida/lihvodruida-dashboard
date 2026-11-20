@@ -12,18 +12,12 @@
    Жодного !important.
    ========================================================= */
 
-.discord-management-page,
-.admin-logs-page {
-  min-width: 0;
-}
-
 /* =========================================================
    1. ОБОЛОНКА Й РОЗКЛАДКА
    ========================================================= */
 .discord-management-section {
   display: grid;
   gap: var(--gap-stack);
-  min-width: 0;
 }
 
 .discord-management-section-head {
@@ -40,10 +34,6 @@
   gap: var(--space-sm);
 }
 
-.discord-management-section-head h2 {
-  margin: 0;
-}
-
 /* Картки дій парами: адмінська форма надто довга для трьох колонок */
 /* Overview is a vertical workspace. Internal sections decide their own columns. */
 /* =========================================================
@@ -51,24 +41,9 @@
    ========================================================= */
 .discord-management-card {
   display: flex;
-  border-left: 3px solid var(--c-ink-500);
-  min-width: 0;
 }
 
 /* Тон грані = ступінь ризику дії */
-
-.discord-management-card--action {
-  border-left-color: var(--c-warning);
-}
-
-.discord-management-card--settings {
-  border-left-color: var(--c-info);
-}
-
-
-.discord-management-card--compact {
-  border-left-color: var(--border-strong);
-}
 
 .discord-management-card__body {
   min-width: 0;
@@ -84,7 +59,6 @@
    ========================================================= */
 .discord-management-status {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
   gap: var(--space-sm);
 }
 
@@ -214,8 +188,6 @@
 .server-graphs-grid,
 .server-detail-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-md);
 }
 
 .server-summary-card,
@@ -246,10 +218,6 @@
 .server-graph-card.is-neutral,
 .server-core-card.is-neutral {
   --server-tone: var(--c-info);
-}
-
-.server-summary-card {
-  border-top: 2px solid var(--server-tone);
 }
 
 .server-summary-card > span {
@@ -290,7 +258,6 @@
 .server-graph-card {
   min-width: 0;
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
 }
 
 .server-graph-card__head,
@@ -350,10 +317,6 @@
   justify-content: space-between;
   color: var(--text-faint, var(--text-muted));
   font-size: 0.64rem;
-}
-
-.server-section__head h2 {
-  margin: var(--space-3xs) 0 0;
 }
 
 .server-section__head p {
@@ -424,17 +387,6 @@
   padding: 0 var(--space-xs);
   color: var(--text-muted);
   font-size: 0.74rem;
-  line-height: var(--line-height-relaxed);
-}
-
-@media (max-width: 1120px) {
-  .server-summary-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .server-graphs-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
 @media (max-width: 760px) {
@@ -454,10 +406,6 @@
   .server-summary-grid,
 .server-detail-grid {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .server-section {
-    padding: var(--space-md);
   }
 
   .server-section__head {
@@ -481,7 +429,6 @@
   --admin-card-radius: 14px;
   --admin-control-height: var(--control-height);
   display: grid;
-  gap: var(--space-md);
 }
 
 .admin-page-header {
@@ -516,23 +463,11 @@
   line-height: var(--line-height-relaxed);
 }
 
-.admin-page-header__metrics {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
-  gap: var(--space-xs);
-  min-width: 0;
-}
-
 .admin-page-header__metric {
   --admin-metric-tone: var(--border-strong);
   display: grid;
   align-content: center;
   gap: var(--space-2xs);
-  min-width: 0;
-  padding: 11px 13px;
-  border: 1px solid color-mix(in srgb, var(--admin-metric-tone) 36%, var(--border-subtle));
-  border-radius: 11px;
-  background: color-mix(in srgb, var(--admin-metric-tone) 5%, var(--surface-sunken));
 }
 
 .admin-page-header__metric.is-good { --admin-metric-tone: var(--c-success); }
@@ -550,9 +485,7 @@
 .admin-page-header__metric > strong {
   min-width: 0;
   color: var(--text-strong);
-  font-size: 0.92rem;
   line-height: 1.25;
-  overflow-wrap: anywhere;
 }
 
 .admin-page-header__metric > small {
@@ -585,7 +518,6 @@
 .admin-page :where(.profile-card-lead, .discord-management-section-head p) {
   color: var(--text-muted);
   font-size: var(--font-size-ui-lg);
-  line-height: var(--line-height-relaxed);
 }
 
 /* =========================================================
@@ -597,10 +529,8 @@
 }
 
 .server-status-toolbar {
-  gap: var(--space-md);
   display: grid;
   padding: 14px 16px;
-  border-radius: var(--admin-card-radius);
 }
 
 .server-status-toolbar__state {
@@ -640,14 +570,12 @@
 
 .server-summary-grid {
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 10px;
 }
 
 .server-summary-card {
   display: grid;
   gap: 7px;
   min-height: 128px;
-  padding: 14px 15px;
 }
 
 .server-summary-card > strong {
@@ -656,7 +584,6 @@
 
 .server-graphs-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
 }
 
 .server-graph-card {
@@ -672,7 +599,6 @@
 .server-section {
   display: grid;
   gap: 14px;
-  padding: 16px;
 }
 
 .server-docker-grid {
@@ -778,10 +704,6 @@
   line-height: var(--line-height-body);
 }
 
-.server-detail-grid {
-  gap: 10px;
-}
-
 .server-detail-card {
   gap: var(--space-md);
   display: grid;
@@ -799,16 +721,9 @@
 }
 
 @media (max-width: 860px) {
-  .admin-page {
-    gap: var(--space-sm);
-  }
 
   .admin-page-header {
     padding: 16px;
-  }
-
-  .admin-page-header__metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .server-graphs-grid,
@@ -914,11 +829,6 @@
   font-size: 1.02rem;
 }
 
-.discord-settings-card {
-  gap: 18px;
-  border-left-color: var(--c-info);
-}
-
 .discord-settings-card__primary,
 .discord-settings-card__limits {
   display: grid;
@@ -940,7 +850,6 @@
 .discord-member-actions-grid,
 .discord-automation-grid {
   display: grid;
-  gap: var(--discord-zone-gap);
   align-items: start;
   min-width: 0;
 }
@@ -957,16 +866,10 @@
   flex-direction: column;
   gap: var(--space-sm);
   padding: 16px;
-  border-left-width: 2px;
-}
-
-.discord-management-card--member-roles {
-  min-width: 0;
 }
 
 .discord-management-card__body {
   display: grid;
-  gap: var(--space-sm);
 }
 
 .discord-management-user-field {
@@ -1064,7 +967,6 @@
 
 .discord-management-status__item {
   background: var(--surface-sunken);
-  border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
   gap: var(--space-3xs);
   display: grid;
@@ -1134,18 +1036,11 @@
 .discord-management-details {
   gap: var(--space-xs);
   display: grid;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
 }
 
 .discord-management-details > summary {
-  min-height: var(--control-height);
-  padding: 10px 12px;
-  color: var(--text-soft);
   font-size: var(--font-size-meta);
   font-weight: var(--font-weight-bold);
-  cursor: pointer;
 }
 
 .discord-inline-warning {
@@ -1171,7 +1066,6 @@
   }
 
   .discord-settings-card__limits {
-    padding-left: 0;
     padding-top: 14px;
     border-left: 0;
     border-top: 1px solid var(--border-subtle);
@@ -1210,10 +1104,6 @@
     grid-template-columns: minmax(0, 1fr);
     max-height: none;
     overflow: visible;
-  }
-
-  .discord-management-card {
-    padding: 13px;
   }
 
   .discord-settings-card__limits > .btn,
@@ -1338,10 +1228,6 @@
 .nickname-policy-example strong {
   overflow-wrap: anywhere;
   font-size: 0.86rem;
-}
-
-.nickname-advanced-settings > summary {
-  color: var(--text-muted);
 }
 
 .nickname-advanced-settings__grid {

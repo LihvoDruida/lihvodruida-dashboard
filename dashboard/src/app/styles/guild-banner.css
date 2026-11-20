@@ -220,7 +220,6 @@ body .guild-status-banner {
 }
 
 /* Leave the content height stable while the pinned ribbon slides away. */
-body:has(.guild-status-banner) { padding-top: calc(var(--nav-space) + var(--guild-banner-height)); }
 body:has(.guild-status-banner) .dashboard-topbar {
   top: calc(var(--guild-banner-height) + 12px);
   transition: top .28s ease, background-color .2s ease;
