@@ -93,15 +93,15 @@ ok(
 );
 ok(dockerfile.includes('COPY bot/Dockerfile /repo/bot/Dockerfile'), 'dashboard builder must copy bot/Dockerfile consumed by check:security-performance');
 ok(dockerfile.includes('COPY bot/src /repo/bot/src'), 'dashboard builder must copy the bot source tree consumed by signature/logging security checks');
-ok(versionAtLeast(pinnedNext, '16.3.3'), `Docker Next.js security overlay must be >=16.3.3 (found ${pinnedNext || 'missing'})`);
+ok(versionAtLeast(pinnedNext, '16.4.6'), `Docker Next.js security overlay must be >=16.4.6 (found ${pinnedNext || 'missing'})`);
 ok(versionAtLeast(pinnedReact, '19.2.8'), `Docker React security overlay must be >=19.2.8 (found ${pinnedReact || 'missing'})`);
-ok(versionAtLeast(pinnedSharp, '0.35.4'), `Docker Sharp security overlay must be >=0.35.4 (found ${pinnedSharp || 'missing'})`);
+ok(versionAtLeast(pinnedSharp, '0.35.5'), `Docker Sharp security overlay must be >=0.35.5 (found ${pinnedSharp || 'missing'})`);
 ok(versionAtLeast(pinnedNode, '24.18.1') && versionAtLeast(pinnedBotNode, '24.18.1'), `dashboard/bot Node base must be >=24.18.1 (found ${pinnedNode || 'missing'} / ${pinnedBotNode || 'missing'})`);
 ok(dockerfile.includes('npm install --no-save --package-lock=false') && dockerfile.includes('next@${NEXT_SECURITY_VERSION}') && dockerfile.includes('react@${REACT_SECURITY_VERSION}') && dockerfile.includes('react-dom@${REACT_SECURITY_VERSION}') && dockerfile.includes('sharp@${SHARP_SECURITY_VERSION}'), 'Docker build must install pinned Next/React/Sharp security overlays');
 ok(!dockerfile.includes("require(pkg+'/package.json')") && dockerfile.includes("path.join(process.cwd(),'node_modules',pkg,'package.json')"), 'Docker overlay verifier must read package manifests from node_modules without relying on package.json subpath exports');
 ok(dockerfile.includes('MISTBLOSSOM_EXPECTED_NEXT_VERSION=${NEXT_SECURITY_VERSION}') && dockerfile.includes('MISTBLOSSOM_EXPECTED_REACT_VERSION=${REACT_SECURITY_VERSION}') && dockerfile.includes('MISTBLOSSOM_EXPECTED_SHARP_VERSION=${SHARP_SECURITY_VERSION}'), 'builder must expose expected security overlay versions to CI');
 ok(!dockerfile.includes('/repo/dashboard/scripts ./dashboard/scripts') && dockerfile.includes('scripts/db-init.mjs'), 'runtime image must not copy the whole CI/build scripts directory');
-ok(envExample.includes('NEXT_SECURITY_VERSION=16.3.5') && envExample.includes('REACT_SECURITY_VERSION=19.2.8') && envExample.includes('SHARP_SECURITY_VERSION=0.35.4'), 'root env example must pin approved Next/React/Sharp security releases');
+ok(envExample.includes('NEXT_SECURITY_VERSION=16.4.6') && envExample.includes('REACT_SECURITY_VERSION=19.2.8') && envExample.includes('SHARP_SECURITY_VERSION=0.35.5'), 'root env example must pin approved Next/React/Sharp security releases');
 ok(envExample.includes('SECURITY_REQUIRE_CLOUDFLARE=strict') && envExample.includes('SECURITY_STRICT_ORIGIN_CHECKS=true'), 'root env example must default production edge/CSRF enforcement to strict');
 ok(
   packageJson.dependencies?.next === lockRoot.dependencies?.next,
@@ -122,10 +122,10 @@ ok(
 );
 
 const installedRequirements = [
-  ['next', '16.3.3', String(process.env.MISTBLOSSOM_EXPECTED_NEXT_VERSION || pinnedNext).trim()],
+  ['next', '16.4.6', String(process.env.MISTBLOSSOM_EXPECTED_NEXT_VERSION || pinnedNext).trim()],
   ['react', '19.2.8', String(process.env.MISTBLOSSOM_EXPECTED_REACT_VERSION || pinnedReact).trim()],
   ['react-dom', '19.2.8', String(process.env.MISTBLOSSOM_EXPECTED_REACT_VERSION || pinnedReact).trim()],
-  ['sharp', '0.35.4', String(process.env.MISTBLOSSOM_EXPECTED_SHARP_VERSION || pinnedSharp).trim()],
+  ['sharp', '0.35.5', String(process.env.MISTBLOSSOM_EXPECTED_SHARP_VERSION || pinnedSharp).trim()],
 ];
 for (const [pkg, minimum, expected] of installedRequirements) {
   const installedPath = path.join(dashboardRoot, 'node_modules', pkg, 'package.json');
@@ -226,7 +226,7 @@ ok(cronSection.includes('read_only: true') && cronSection.includes('cap_drop:') 
 ok(dashboardEnvExample.includes('RATE_LIMIT_MAX_BUCKETS=20000'), 'rate-limit bucket cap must be documented in the production env template');
 ok(dashboardEnvExample.includes('DISCORD_LIVE_ACCESS_GRACE_SECONDS=600'), 'Discord access outage grace must be explicit in env template');
 ok(startScript.includes('chmod 600 "$f"') && startScript.includes('SECURITY_REQUIRE_CLOUDFLARE=$CF_MODE_VALUE') && startScript.includes('SECURITY_STRICT_ORIGIN_CHECKS=$STRICT_ORIGIN_VALUE'), 'deploy preflight must harden secret-file permissions and reject non-strict production edge/CSRF overrides');
-ok(startScript.includes('REACT_SECURITY_VERSION') && startScript.includes('SHARP_SECURITY_VERSION') && startScript.includes('>= 19.2.8') && startScript.includes('>= 0.35.4'), 'deploy preflight must enforce React and Sharp security floors');
+ok(startScript.includes('REACT_SECURITY_VERSION') && startScript.includes('SHARP_SECURITY_VERSION') && startScript.includes('>= 19.2.8') && startScript.includes('>= 0.35.5'), 'deploy preflight must enforce React and Sharp security floors');
 ok(backupScript.includes('umask 077') && backupScript.includes('flock') && backupScript.includes('chmod 600') && backupScript.includes('sha256sum'), 'database backups must be private, single-flight, validated and checksummed');
 ok(restoreScript.includes('umask 077') && restoreScript.includes('sha256sum -c') && restoreScript.includes('trap restart_services') && restoreScript.includes('--no-owner') && restoreScript.includes('--no-privileges'), 'database restore must verify integrity, recover services on failure and avoid replaying ownership/privileges');
 ok(securityAuditScript.includes('PasswordAuthentication') && securityAuditScript.includes('docker inspect --format') && !securityAuditScript.includes('out=\"$(docker compose port') && securityAuditScript.includes('backup files are private'), 'read-only host security audit must cover SSH, actual Docker host bindings, backups and secret permissions without Compose v5 false positives');

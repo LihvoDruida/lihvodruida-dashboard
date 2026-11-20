@@ -21,9 +21,9 @@ ARG NODE_IMAGE_REPOSITORY=public.ecr.aws/docker/library/node
 # Pinned security overlay. package-lock stays the reproducible baseline, then
 # the production image replaces only Next.js with the currently approved
 # patched release before build. CI below verifies that the overlay happened.
-ARG NEXT_SECURITY_VERSION=16.3.5
+ARG NEXT_SECURITY_VERSION=16.4.6
 ARG REACT_SECURITY_VERSION=19.2.8
-ARG SHARP_SECURITY_VERSION=0.35.4
+ARG SHARP_SECURITY_VERSION=0.35.5
 
 # Native renderer tests and production use the same fallback font package.
 # Install it once in a shared base so build:ci also works in bookworm-slim.

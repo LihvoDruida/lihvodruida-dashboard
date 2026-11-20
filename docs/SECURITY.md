@@ -17,9 +17,9 @@ The effective root `.env` defaults are intentionally fail-closed:
 ```env
 SECURITY_REQUIRE_CLOUDFLARE=strict
 SECURITY_STRICT_ORIGIN_CHECKS=true
-NEXT_SECURITY_VERSION=16.3.5
+NEXT_SECURITY_VERSION=16.4.6
 REACT_SECURITY_VERSION=19.2.8
-SHARP_SECURITY_VERSION=0.35.4
+SHARP_SECURITY_VERSION=0.35.5
 ```
 
 `make up` rejects explicit insecure overrides. Real `.env` files are automatically tightened to mode `0600` during deploy preflight.

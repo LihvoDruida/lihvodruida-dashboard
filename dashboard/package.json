@@ -152,13 +152,13 @@
   },
   "dependencies": {
     "@mistblossom/discord-contract": "file:../shared",
-    "next": "16.3.5",
+    "next": "16.4.6",
     "pg": "^8.23.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-markdown": "10.1.0",
     "remark-gfm": "4.0.1",
-    "sharp": "0.35.4"
+    "sharp": "0.35.5"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.10",
@@ -167,7 +167,7 @@
     "@types/react": "19.2.15",
     "@types/react-dom": "19.2.3",
     "eslint": "9.39.4",
-    "eslint-config-next": "16.3.5",
+    "eslint-config-next": "16.4.6",
     "eslint-plugin-react-hooks": "^7.1.1",
     "typescript": "6.0.3"
   }

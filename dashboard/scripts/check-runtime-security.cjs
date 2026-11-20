@@ -17,10 +17,10 @@ function atLeast(value, minimum) {
 }
 
 const requirements = [
-  ['next', '16.3.3', process.env.MISTBLOSSOM_EXPECTED_NEXT_VERSION],
+  ['next', '16.4.6', process.env.MISTBLOSSOM_EXPECTED_NEXT_VERSION],
   ['react', '19.2.8', process.env.MISTBLOSSOM_EXPECTED_REACT_VERSION],
   ['react-dom', '19.2.8', process.env.MISTBLOSSOM_EXPECTED_REACT_VERSION],
-  ['sharp', '0.35.4', process.env.MISTBLOSSOM_EXPECTED_SHARP_VERSION],
+  ['sharp', '0.35.5', process.env.MISTBLOSSOM_EXPECTED_SHARP_VERSION],
 ];
 
 let failed = false;

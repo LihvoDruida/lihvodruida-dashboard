@@ -31,7 +31,7 @@
 | `LETSENCRYPT_EMAIL` | так | адреса для сповіщень про закінчення сертифіката |
 | `IMAGE_TAG` | ні | тег образів, типово `latest` |
 | `BOT_LOG_LEVEL` | ні | `info` / `debug` |
-| `NEXT_SECURITY_VERSION` | ні | security-patched Next.js для production Docker build; релізний preset `16.3.5` |
+| `NEXT_SECURITY_VERSION` | ні | security-patched Next.js для production Docker build; релізний preset `16.4.6` |
 
 ---
 

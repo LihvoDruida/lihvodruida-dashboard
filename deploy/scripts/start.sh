@@ -332,11 +332,11 @@ NODE_IMAGE_REPOSITORY_VALUE="${NODE_IMAGE_REPOSITORY_VALUE:-public.ecr.aws/docke
 ok "Node.js base image repository: $NODE_IMAGE_REPOSITORY_VALUE"
 
 NEXT_SECURITY_VALUE="$(env_get .env NEXT_SECURITY_VERSION || true)"
-NEXT_SECURITY_VALUE="${NEXT_SECURITY_VALUE:-16.3.5}"
-if version_at_least "$NEXT_SECURITY_VALUE" "16.3.3"; then
+NEXT_SECURITY_VALUE="${NEXT_SECURITY_VALUE:-16.4.6}"
+if version_at_least "$NEXT_SECURITY_VALUE" "16.4.6"; then
   ok "Next.js security overlay: $NEXT_SECURITY_VALUE"
 else
-  problem "NEXT_SECURITY_VERSION=$NEXT_SECURITY_VALUE застарілий; потрібно >= 16.3.3"
+  problem "NEXT_SECURITY_VERSION=$NEXT_SECURITY_VALUE застарілий; потрібно >= 16.4.6"
 fi
 
 REACT_SECURITY_VALUE="$(env_get .env REACT_SECURITY_VERSION || true)"
@@ -348,11 +348,11 @@ else
 fi
 
 SHARP_SECURITY_VALUE="$(env_get .env SHARP_SECURITY_VERSION || true)"
-SHARP_SECURITY_VALUE="${SHARP_SECURITY_VALUE:-0.35.4}"
-if version_at_least "$SHARP_SECURITY_VALUE" "0.35.4"; then
+SHARP_SECURITY_VALUE="${SHARP_SECURITY_VALUE:-0.35.5}"
+if version_at_least "$SHARP_SECURITY_VALUE" "0.35.5"; then
   ok "Sharp/libheif security overlay: $SHARP_SECURITY_VALUE"
 else
-  problem "SHARP_SECURITY_VERSION=$SHARP_SECURITY_VALUE застарілий; потрібно >= 0.35.4"
+  problem "SHARP_SECURITY_VERSION=$SHARP_SECURITY_VALUE застарілий; потрібно >= 0.35.5"
 fi
 
 # --- Типова помилка з хостом бази ------------------------------------------

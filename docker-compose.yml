@@ -84,9 +84,9 @@ services:
         # from `.env` without editing the Dockerfile.
         NEXT_BUILD_CPUS: ${NEXT_BUILD_CPUS:-2}
         NODE_BUILD_MEMORY_MB: ${NODE_BUILD_MEMORY_MB:-2560}
-        NEXT_SECURITY_VERSION: ${NEXT_SECURITY_VERSION:-16.3.5}
+        NEXT_SECURITY_VERSION: ${NEXT_SECURITY_VERSION:-16.4.6}
         REACT_SECURITY_VERSION: ${REACT_SECURITY_VERSION:-19.2.8}
-        SHARP_SECURITY_VERSION: ${SHARP_SECURITY_VERSION:-0.35.4}
+        SHARP_SECURITY_VERSION: ${SHARP_SECURITY_VERSION:-0.35.5}
     image: mistblossom/dashboard:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file:
