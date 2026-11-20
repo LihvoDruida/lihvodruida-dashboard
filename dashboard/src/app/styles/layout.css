@@ -356,11 +356,6 @@ main .dashboard-shell {
   gap: var(--gap-grid);
 }
 }
-.access-form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
-  gap: var(--gap-grid);
-}
 
 /* Дрібніші плитки: статистика,
 лічильники */

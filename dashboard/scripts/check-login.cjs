@@ -5,6 +5,7 @@ const root = path.resolve(__dirname, "..");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const page = read("src/app/login/page.tsx");
 const css = read("src/app/styles/pages.css");
+const tokens = read("src/app/styles/tokens.css");
 const layout = read("src/app/styles/layout.css");
 const redirects = read("src/lib/dashboardRedirects.ts");
 const discordStart = read("src/app/api/auth/discord/start/route.ts");
@@ -25,7 +26,7 @@ const checks = [
   ["Discord stays the primary sign-in action", page.includes("Увійти через Discord") && page.includes("login-discord-button") && page.includes("Безпечна перевірка ролей і членства")],
   ["auth screen contains no navigation or extra trust badges", !page.includes("<nav") && !page.includes("login-trust-row") && !page.includes("login-pill") && !page.includes("/terms") && !page.includes("/privacy")],
   ["template landscape is bundled locally", css.includes('/assets/img/auth/forever-landscape.avif') && fs.existsSync(path.join(root, "public/assets/img/auth/forever-landscape.avif"))],
-  ["template navy, gold and ember styling is scoped to login", css.includes("#0c1734") && css.includes("#d8b25e") && css.includes("#8e1b16")],
+  ["template navy, gold and ember styling is scoped to login", tokens.includes("--auth-navy: #0c1734;") && tokens.includes("--auth-gold: #d8b25e;") && css.includes("var(--auth-navy)") && css.includes("var(--auth-gold)") && css.includes("#8e1b16")],
   ["login skips decorative starfield initialization", read("public/js/dashboard-starfield.js").includes('document.querySelector(".login-screen, .guild-agreement-screen")')],
   ["emergency owner access remains conditional", page.includes("authPolicy.allowEmergencyTokenLogin") && page.includes("{hasTokenFallback ? (") && page.includes('action="/api/auth/login"')],
   ["logged out state is explicit", page.includes("loggedOut?: string") && page.includes("Сесію завершено.")],
