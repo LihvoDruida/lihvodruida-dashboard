@@ -36,11 +36,17 @@ main .dashboard-shell {
 }
 
 /* ---------- Вертикальний стек секцій ---------- */
+@layer patterns {
+  [class$="-shell"],
+[class*="-shell "] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--page-gap);
+}
+}
 .dashboard-shell,
 .content-shell,
-.app-page-stack,
-[class$="-shell"],
-[class*="-shell "] {
+.app-page-stack {
   display: flex;
   flex-direction: column;
   gap: var(--page-gap);
@@ -49,11 +55,19 @@ main .dashboard-shell {
 /* ---------- Секція / панель сторінки ---------- */
 
 /* ---------- Шапка секції ---------- */
-.dashboard-list-head,
-[class$="__head"],
+@layer patterns {
+  [class$="__head"],
 [class*="__head "],
 [class$="-head"]:not(:where(.profile-card-head--inline)),
 [class*="-head "]:not(:where(.profile-card-head--inline)) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+}
+.dashboard-list-head {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
@@ -73,9 +87,8 @@ main .dashboard-shell {
 }
 
 /* ---------- Надзаголовок (section-tag сайту) ---------- */
-.eyebrow,
-.app-state-eyebrow,
-[class$="__eyebrow"],
+@layer patterns {
+  [class$="__eyebrow"],
 [class*="__eyebrow "],
 [class$="-eyebrow"],
 [class*="-eyebrow "] {
@@ -96,10 +109,30 @@ main .dashboard-shell {
   text-transform: uppercase;
   line-height: var(--line-height-copy);
 }
+}
+.eyebrow,
+.app-state-eyebrow {
+  display: inline-block;
+  /* У grid/flex-батьках inline-block блокифікується й розтягується
+     на всю ширину. fit-content + start тримають пігулку за змістом. */
+  width: fit-content;
+  justify-self: start;
+  align-self: start;
+  padding: var(--space-2xs) var(--space-sm);
+  margin-bottom: var(--space-xs);
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--orange-main);
+  font-size: 11px;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: var(--line-height-copy);
+}
 
 /* ---------- Лід-абзац і приглушений текст ---------- */
-.lead,
-[class$="__lead"],
+@layer patterns {
+  [class$="__lead"],
 [class*="__lead "],
 [class$="-lead"],
 [class*="-lead "] {
@@ -108,9 +141,15 @@ main .dashboard-shell {
   font-size: 0.95rem;
   line-height: var(--line-height-copy);
 }
-
-.subtle:not(:where(.btn)),
-[class$="__hint"],
+}
+.lead {
+  max-width: 72ch;
+  color: var(--text-soft);
+  font-size: 0.95rem;
+  line-height: var(--line-height-copy);
+}
+@layer patterns {
+  [class$="__hint"],
 [class*="__hint "],
 [class$="__meta"],
 [class*="__meta "],
@@ -118,6 +157,13 @@ main .dashboard-shell {
 [class*="__desc "],
 [class$="-note"]:not(:where(.error-note)):not(:where(.warning-note)),
 [class*="-note "]:not(:where(.error-note)):not(:where(.warning-note)) {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: var(--line-height-relaxed);
+}
+}
+
+.subtle:not(:where(.btn)) {
   color: var(--text-muted);
   font-size: 0.85rem;
   line-height: var(--line-height-relaxed);
@@ -131,9 +177,8 @@ main .dashboard-shell {
    HERO — велика картка-заголовок сторінки
    Контекстна панель із м’яким верхнім блиском.
    ========================================================= */
-.hero,
-.dashboard-hero,
-[class$="-hero"]:not(:where([class*="landing"])),
+@layer patterns {
+  [class$="-hero"]:not(:where([class*="landing"])),
 [class*="-hero "]:not(:where([class*="landing"])) {
   position: relative;
   display: grid;
@@ -147,11 +192,41 @@ main .dashboard-shell {
   box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
+}
+.hero,
+.dashboard-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-lg);
+  padding: clamp(var(--space-md), 2.4vw, var(--space-xl));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+@layer patterns {
+  [class$="-hero"]:not(:where([class*="landing"]))::before,
+[class*="-hero "]:not(:where([class*="landing"]))::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.045),
+    transparent 30%,
+    transparent 70%,
+    rgba(255, 255, 255, 0.02)
+  );
+}
+}
 
 .hero::before,
-.dashboard-hero::before,
-[class$="-hero"]:not(:where([class*="landing"]))::before,
-[class*="-hero "]:not(:where([class*="landing"]))::before {
+.dashboard-hero::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -172,37 +247,49 @@ main .dashboard-shell {
   z-index: 1;
   min-width: 0;
 }
-
-.hero-copy,
-.dashboard-hero__copy,
-.guild-hero__copy,
-[class$="-hero__copy"],
+@layer patterns {
+  [class$="-hero__copy"],
 [class*="-hero__copy "] {
   min-width: 0;
 }
+}
 
-.hero-copy h1,
-.dashboard-hero__copy h1,
-[class$="-hero__copy"] h1,
+.hero-copy,
+.dashboard-hero__copy,
+.guild-hero__copy {
+  min-width: 0;
+}
+@layer patterns {
+  [class$="-hero__copy"] h1,
 [class*="-hero__copy "] h1 {
   margin-bottom: var(--space-xs);
 }
+}
 
-.hero-copy p,
-.dashboard-hero__copy p,
-[class$="-hero__copy"] p,
+.hero-copy h1,
+.dashboard-hero__copy h1 {
+  margin-bottom: var(--space-xs);
+}
+@layer patterns {
+  [class$="-hero__copy"] p,
 [class*="-hero__copy "] p {
   max-width: 62ch;
   color: var(--text-soft);
   line-height: 1.58;
 }
+}
 
-[class$="-hero__actions"],
+.hero-copy p,
+.dashboard-hero__copy p {
+  max-width: 62ch;
+  color: var(--text-soft);
+  line-height: 1.58;
+}
+@layer patterns {
+  [class$="-hero__actions"],
 [class*="-hero__actions "],
 [class$="__actions"],
 [class*="__actions "],
-.form-actions,
-.dashboard-list-actions,
 [class$="-actions"],
 [class*="-actions "] {
   display: flex;
@@ -210,10 +297,20 @@ main .dashboard-shell {
   align-items: center;
   gap: var(--space-sm);
 }
+}
 
-[class$="-hero__actions"],
+.form-actions,
+.dashboard-list-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+@layer patterns {
+  [class$="-hero__actions"],
 [class*="-hero__actions "] {
   margin-top: var(--space-md);
+}
 }
 
 .form-actions--split {
@@ -221,10 +318,14 @@ main .dashboard-shell {
 }
 
 @media (max-width: 860px) {
-.hero,
-.dashboard-hero,
-[class$="-hero"]:not(:where([class*="landing"])),
+@layer patterns {
+  [class$="-hero"]:not(:where([class*="landing"])),
 [class*="-hero "]:not(:where([class*="landing"])) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.hero,
+.dashboard-hero {
     grid-template-columns: minmax(0, 1fr);
   }
 }
@@ -233,10 +334,16 @@ main .dashboard-shell {
    СІТКИ
    Один патерн auto-fit: не треба описувати кожну сітку окремо.
    ========================================================= */
-[class$="-grid"],
+@layer patterns {
+  [class$="-grid"],
 [class*="-grid "],
 [class$="__grid"],
-[class*="__grid "],
+[class*="__grid "] {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: var(--gap-grid);
+}
+}
 .access-form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
@@ -245,12 +352,14 @@ main .dashboard-shell {
 
 /* Дрібніші плитки: статистика,
 лічильники */
-[class*="-stats-grid"],
+@layer patterns {
+  [class*="-stats-grid"],
 [class*="-metrics"],
 [class$="-stat-grid"],
 [class*="-stat-grid "] {
   grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
   gap: var(--space-sm);
+}
 }
 
 /* Форма у дві колонки */
@@ -261,31 +370,37 @@ main .dashboard-shell {
 }
 
 /* Поле на всю ширину сітки */
-.content-field--wide,
-.raid-poll-field--wide,
-[class$="--wide"],
+@layer patterns {
+  [class$="--wide"],
 [class*="--wide "],
 [class$="--full"],
 [class*="--full "] {
   grid-column: 1 / -1;
 }
+}
+.content-field--wide,
+.raid-poll-field--wide {
+  grid-column: 1 / -1;
+}
 
 /* ---------- Головна: контент + бічний стек ---------- */
-
-[class$="-layout"]:not(:where(.access-groups-layout)),
+@layer patterns {
+  [class$="-layout"]:not(:where(.access-groups-layout)),
 [class*="-layout "]:not(:where(.access-groups-layout)) {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
   gap: var(--gap-grid);
   align-items: start;
 }
+}
 
 @media (max-width: 1000px) {
-
-[class$="-layout"]:not(:where(.access-groups-layout)),
+@layer patterns {
+  [class$="-layout"]:not(:where(.access-groups-layout)),
 [class*="-layout "]:not(:where(.access-groups-layout)) {
     grid-template-columns: minmax(0, 1fr);
   }
+}
 
   
 }

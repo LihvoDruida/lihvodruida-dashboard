@@ -26,6 +26,8 @@
 .admin-workspace .admin-page-header__metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 10px; min-width: 0; }
 .admin-workspace .admin-page-header__metric { padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--card-radius); background: var(--surface-raised); min-width: 0; }
 .admin-workspace .admin-page-header__metric strong { font-size: 18px; overflow-wrap: anywhere; }
+/* Toned metrics (is-good / is-warning / is-danger from AdminPageHeader) tint border and surface. */
+.admin-workspace .admin-page-header__metric:is(.is-good, .is-warning, .is-danger) { border-color: color-mix(in srgb, var(--admin-metric-tone) 36%, var(--border-subtle)); background: color-mix(in srgb, var(--admin-metric-tone) 5%, var(--surface-raised)); }
 .admin-workspace .management-nav { display: grid; grid-template-columns: 1.1fr 1.25fr .8fr; border: 1px solid var(--border); border-radius: var(--card-radius); background: var(--nav-surface); }
 .admin-workspace .management-nav-group { min-width: 0; }
 .admin-workspace .management-nav-label { display: block; margin: 0 0 9px 8px; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); }

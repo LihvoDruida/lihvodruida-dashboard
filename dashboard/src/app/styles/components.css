@@ -15,8 +15,8 @@
 /* =========================================================
    1. ПОВЕРХНІ: панель і картка
    ========================================================= */
-.panel,
-[class$="-card"]:not(:where([class*="nav"])),
+@layer patterns {
+  [class$="-card"]:not(:where([class*="nav"])),
 [class*="-card "]:not(:where([class*="nav"])),
 [class$="__card"],
 [class*="__card "],
@@ -32,12 +32,24 @@
   background: var(--surface);
   box-shadow: var(--shadow-md);
 }
+}
+.panel {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
 
 .panel:not(:where([class*="hero"])) {
   padding: var(--pad-card);
 }
-
-[class$="-card"]:not(:where([class*="nav"])),
+/* Tablets and phones: panels use the compact card padding (desktop.css restores the roomy one). */
+@media (max-width: 1000px) {
+  .panel:not(:where([class*="hero"])) { padding: var(--pad-card-compact); }
+}
+@layer patterns {
+  [class$="-card"]:not(:where([class*="nav"])),
 [class*="-card "]:not(:where([class*="nav"])),
 [class$="__card"],
 [class*="__card "],
@@ -48,6 +60,7 @@
 [class$="-box"],
 [class*="-box "] {
   padding: var(--pad-card-compact);
+}
 }
 
 /* Панель — вертикальний стек: кожна панель дихає однаково.
@@ -60,18 +73,23 @@
 }
 
 /* Панель усередині панелі не подвоює рамку */
-.panel .panel,
-.panel [class$="-card"],
+@layer patterns {
+  .panel [class$="-card"],
 .panel [class*="-card "],
 .panel [class$="__card"],
 .panel [class*="__card "] {
   background: var(--surface-raised);
   box-shadow: none;
 }
+}
+.panel .panel {
+  background: var(--surface-raised);
+  box-shadow: none;
+}
 
 /* Клікабельна картка */
-a.card,
-a[class$="-card"],
+@layer patterns {
+  a[class$="-card"],
 a[class*="-card "],
 a[class$="__card"],
 a[class*="__card "],
@@ -82,9 +100,15 @@ a[class*="__card "],
     border-color var(--dur-fast) var(--ease-out),
     box-shadow var(--dur-fast) var(--ease-out);
 }
-
-a.card:hover,
-a[class$="-card"]:hover,
+}
+a.card {
+  color: inherit;
+  transition: transform var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+@layer patterns {
+  a[class$="-card"]:hover,
 a[class*="-card "]:hover,
 a[class$="__card"]:hover,
 a[class*="__card "]:hover {
@@ -93,16 +117,24 @@ a[class*="__card "]:hover {
   box-shadow: var(--shadow-lg);
   color: inherit;
 }
+}
+
+a.card:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-lg);
+  color: inherit;
+}
 
 /* Виділена картка — смуга акценту зліва */
-.is-active[class$="-card"],
+@layer patterns {
+  .is-active[class$="-card"],
 .is-active[class*="-card "],
 .is-selected[class$="-card"],
 .is-selected[class*="-card "] {
   border-color: var(--border-strong);
 }
-
-.is-active[class$="-card"]::after,
+  .is-active[class$="-card"]::after,
 .is-active[class*="-card "]::after,
 .is-selected[class$="-card"]::after,
 .is-selected[class*="-card "]::after {
@@ -114,13 +146,12 @@ a[class*="__card "]:hover {
   background: var(--accent-gradient);
   pointer-events: none;
 }
+}
 
 /* Шапка картки: заголовок ліворуч,
 дії праворуч */
-.profile-card-head,
-.content-section-head,
-.content-form-section-head,
-[class$="__head"],
+@layer patterns {
+  [class$="__head"],
 [class*="__head "],
 [class$="-head"],
 [class*="-head "] {
@@ -131,47 +162,70 @@ a[class*="__card "]:hover {
   gap: var(--space-sm);
   min-width: 0;
 }
-
-.profile-card-head--inline,
-[class$="__head"] > div,
+}
+.profile-card-head,
+.content-section-head,
+.content-form-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+@layer patterns {
+  [class$="__head"] > div,
 [class*="__head "] > div,
 [class$="-head"] > div,
 [class*="-head "] > div {
   min-width: 0;
 }
+}
 
-[class$="__head"] strong,
+.profile-card-head--inline {
+  min-width: 0;
+}
+@layer patterns {
+  [class$="__head"] strong,
 [class*="__head "] strong,
 [class$="-head"] strong,
 [class*="-head "] strong {
   color: var(--text-strong);
 }
-
-[class$="__head"] small,
+  [class$="__head"] small,
 [class*="__head "] small,
 [class$="-head"] small,
 [class*="-head "] small {
   display: block;
   color: var(--text-muted);
 }
-
-.profile-card-lead,
-[class$="__lead"],
+  [class$="__lead"],
 [class*="__lead "] {
+  color: var(--text-soft);
+  font-size: var(--font-size-body);
+  line-height: 1.58;
+}
+}
+
+.profile-card-lead {
   color: var(--text-soft);
   font-size: var(--font-size-body);
   line-height: 1.58;
 }
 
 /* Іконка-плитка в шапці */
-[class$="__icon"],
-/* Іконка-плитка в шапці */
+@layer patterns {
+  [class$="__icon"],
+
 [class*="__icon "],
+
 [class$="-icon"],
+
 [class*="-icon "] {
   display: inline-grid;
   place-items: center;
   flex: 0 0 auto;
+}
 }
 
 .global-toast__icon {
@@ -331,9 +385,8 @@ a[class*="__card "]:hover {
 /* =========================================================
    3. ФОРМИ — геометрія з apply.css сайту
    ========================================================= */
-.content-field,
-.raid-poll-field,
-[class$="-field"]:not(:where([class*="filter-shell"])),
+@layer patterns {
+  [class$="-field"]:not(:where([class*="filter-shell"])),
 [class*="-field "]:not(:where([class*="filter-shell"])),
 [class$="__field"],
 [class*="__field "] {
@@ -341,11 +394,25 @@ a[class*="__card "]:hover {
   gap: var(--space-xs);
   min-width: 0;
 }
+}
+.content-field,
+.raid-poll-field {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+@layer patterns {
+  [class$="-field"] > span:first-child,
+[class*="-field "] > span:first-child {
+  font-size: var(--font-size-ui-lg);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.02em;
+  color: var(--text-soft);
+}
+}
 
 .content-field > span,
 .raid-poll-field > span,
-[class$="-field"] > span:first-child,
-[class*="-field "] > span:first-child,
 .field-label,
 label > span:first-child {
   font-size: var(--font-size-ui-lg);
@@ -360,9 +427,14 @@ label > span:first-child {
 }
 
 /* Підказка під полем */
-.content-field small,
-[class$="-field"] small,
+@layer patterns {
+  [class$="-field"] small,
 [class*="-field "] small {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+}
+.content-field small {
   font-size: 0.75rem;
   color: var(--text-muted);
 }
@@ -491,10 +563,19 @@ select option {
 }
 
 /* Секція форми */
-.content-form-section,
-.raid-form-section,
-[class$="-form-section"],
+@layer patterns {
+  [class$="-form-section"],
 [class*="-form-section "] {
+  display: grid;
+  gap: var(--space-md);
+  padding: var(--pad-card-compact);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+}
+.content-form-section,
+.raid-form-section {
   display: grid;
   gap: var(--space-md);
   padding: var(--pad-card-compact);
@@ -525,17 +606,29 @@ form {
    4. ПОВІДОМЛЕННЯ — нейтральне, помилка,
 попередження
    ========================================================= */
+@layer patterns {
+  [class$="-alert"],
+[class*="-alert "],
+[class$="-notice"],
+[class*="-notice "] {
+  display: block;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--c-ink-500);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-soft);
+  font-size: 0.86rem;
+  line-height: var(--line-height-relaxed);
+}
+}
 .notice,
 .error-note,
 .warning-note,
 .login-alert,
 .raid-notice,
 .discord-notice,
-.raid-ilvl-notice,
-[class$="-alert"],
-[class*="-alert "],
-[class$="-notice"],
-[class*="-notice "] {
+.raid-ilvl-notice {
   display: block;
   padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--border);
@@ -588,11 +681,8 @@ form {
 /* =========================================================
    5. ПІГУЛКИ ТА ЧІПИ
    ========================================================= */
-.status-pill,
-.raid-state,
-.profile-count-pill,
-.content-mode-pill,
-[class$="-pill"],
+@layer patterns {
+  [class$="-pill"],
 [class*="-pill "],
 [class$="-chip"],
 [class*="-chip "],
@@ -614,8 +704,35 @@ form {
   line-height: var(--line-height-copy);
   white-space: nowrap;
 }
+}
+.status-pill,
+.raid-state,
+.profile-count-pill,
+.content-mode-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: var(--space-3xs) var(--space-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  color: var(--text-soft);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
+  line-height: var(--line-height-copy);
+  white-space: nowrap;
+}
 
 /* Тони пігулок — один набір станів на весь дашборд */
+@layer patterns {
+  [class$="--ok"],
+[class*="--ok "],
+[class$="--success"],
+[class*="--success "] {
+  --tone: var(--c-success);
+}
+}
 .is-ok,
 .is-ready,
 .is-active,
@@ -624,21 +741,29 @@ form {
 .is-connected,
 .is-on,
 .good,
-.success,
-[class$="--ok"],
-[class*="--ok "],
-[class$="--success"],
-[class*="--success "] {
+.success {
   --tone: var(--c-success);
+}
+@layer patterns {
+  [class$="--warning"],
+[class*="--warning "] {
+  --tone: var(--c-warning);
+}
 }
 
 .is-warning,
 .is-pending,
 .is-paused,
-.warning,
-[class$="--warning"],
-[class*="--warning "] {
+.warning {
   --tone: var(--c-warning);
+}
+@layer patterns {
+  [class$="--danger"],
+[class*="--danger "],
+[class$="--error"],
+[class*="--error "] {
+  --tone: var(--c-danger);
+}
 }
 
 .is-problem,
@@ -647,41 +772,41 @@ form {
 .is-expired,
 .is-disconnected,
 .is-invalid,
-.danger,
-[class$="--danger"],
-[class*="--danger "],
-[class$="--error"],
-[class*="--error "] {
+.danger {
   --tone: var(--c-danger);
+}
+@layer patterns {
+  [class$="--accent"],
+[class*="--accent "] {
+  --tone: var(--c-accent-400);
+}
 }
 
 .is-selected,
 .is-open,
 .is-next,
 .is-main,
-.primary,
-[class$="--accent"],
-[class*="--accent "] {
+.primary {
   --tone: var(--c-accent-400);
+}
+@layer patterns {
+  [class$="--muted"],
+[class*="--muted "],
+[class$="--ghost"],
+[class*="--ghost "] {
+  --tone: var(--c-ink-400);
+}
 }
 
 .is-closed,
 .is-empty,
 .is-absent,
 .is-off,
-.subtle,
-[class$="--muted"],
-[class*="--muted "],
-[class$="--ghost"],
-[class*="--ghost "] {
+.subtle {
   --tone: var(--c-ink-400);
 }
-
-.status-pill,
-.raid-state,
-.profile-count-pill,
-.content-mode-pill,
-[class$="-pill"],
+@layer patterns {
+  [class$="-pill"],
 [class*="-pill "],
 [class$="-chip"],
 [class*="-chip "],
@@ -691,9 +816,20 @@ form {
   background: color-mix(in srgb, var(--tone, var(--c-ink-400)) 12%, transparent);
   color: var(--tone, var(--text-soft));
 }
+}
+
+.status-pill,
+.raid-state,
+.profile-count-pill,
+.content-mode-pill {
+  border-color: color-mix(in srgb, var(--tone, var(--c-ink-400)) 32%, transparent);
+  background: color-mix(in srgb, var(--tone, var(--c-ink-400)) 12%, transparent);
+  color: var(--tone, var(--text-soft));
+}
 
 /* Кнопка-фільтр у шапці таблиці */
-[class$="-filter"]:not(:where([class*="field"])),
+@layer patterns {
+  [class$="-filter"]:not(:where([class*="field"])),
 [class*="-filter "]:not(:where([class*="field"])) {
   display: inline-flex;
   align-items: center;
@@ -709,36 +845,30 @@ form {
   cursor: pointer;
   transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
-
-
-[class$="--tank"],
+  [class$="--tank"],
 [class*="--tank "] {
   --tone: var(--c-role-tank);
 }
-
-[class$="--healer"],
+  [class$="--healer"],
 [class*="--healer "] {
   --tone: var(--c-role-healer);
 }
-
-[class$="--dps"],
+  [class$="--dps"],
 [class*="--dps "] {
   --tone: var(--c-role-dps);
 }
-
-[class$="--mythic"],
+  [class$="--mythic"],
 [class*="--mythic "] {
   --tone: var(--c-diff-mythic);
 }
-
-[class$="--heroic"],
+  [class$="--heroic"],
 [class*="--heroic "] {
   --tone: var(--c-diff-heroic);
 }
-
-[class$="--normal"],
+  [class$="--normal"],
 [class*="--normal "] {
   --tone: var(--c-diff-normal);
+}
 }
 
 /* =========================================================
@@ -749,10 +879,17 @@ form {
   flex-direction: column;
   gap: var(--gap-stack);
 }
-
-.dashboard-list,
-[class$="-list"]:not(:where(.dashboard-nav-more__menu-list)):not(:where(.discord-preview-list)),
+@layer patterns {
+  [class$="-list"]:not(:where(.dashboard-nav-more__menu-list)):not(:where(.discord-preview-list)),
 [class*="-list "]:not(:where(.dashboard-nav-more__menu-list)):not(:where(.discord-preview-list)) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+}
+
+.dashboard-list {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
@@ -813,18 +950,14 @@ a.dashboard-list-row:hover {
   color: var(--text-muted);
   overflow-wrap: break-word;
 }
-
-.dashboard-list-row > [role="cell"] > [class$="-pill"],
+@layer patterns {
+  .dashboard-list-row > [role="cell"] > [class$="-pill"],
 .dashboard-list-row > [role="cell"] > [class*="-pill "],
 .dashboard-list-row > [role="cell"] > [class$="-chip"],
 .dashboard-list-row > [role="cell"] > [class*="-chip "] {
   justify-self: start;
 }
-
-
-.raid-empty,
-.content-empty,
-[class$="-empty"]:not(:where([class*="characters"])):not(:where([class*="--empty"])),
+  [class$="-empty"]:not(:where([class*="characters"])):not(:where([class*="--empty"])),
 [class*="-empty "]:not(:where([class*="characters"])):not(:where([class*="--empty"])) {
   display: grid;
   gap: var(--space-2xs);
@@ -835,18 +968,39 @@ a.dashboard-list-row:hover {
   text-align: center;
   color: var(--text-muted);
 }
+}
 
-[class$="-empty"]:not(:where([class*="--empty"])) strong,
+
+.raid-empty,
+.content-empty {
+  display: grid;
+  gap: var(--space-2xs);
+  padding: var(--space-xl) var(--space-md);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  text-align: center;
+  color: var(--text-muted);
+}
+@layer patterns {
+  [class$="-empty"]:not(:where([class*="--empty"])) strong,
 [class*="-empty "]:not(:where([class*="--empty"])) strong {
   color: var(--text-soft);
   font-size: 0.95rem;
 }
+}
 
 /* Смуга показників над таблицею */
-.guild-hero-stats,
-.raid-list-summary,
-[class$="-stats"]:not(:where([class*="grid"])),
+@layer patterns {
+  [class$="-stats"]:not(:where([class*="grid"])),
 [class*="-stats "]:not(:where([class*="grid"])) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr));
+  gap: var(--space-sm);
+}
+}
+.guild-hero-stats,
+.raid-list-summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr));
   gap: var(--space-sm);
@@ -919,8 +1073,12 @@ a.dashboard-list-row:hover {
   }
 
   /* Дії у складених рядках розтягуються на всю ширину картки */
-  .dashboard-list-actions,
-.dashboard-list-row [class$="-actions"] {
+@layer patterns {
+  .dashboard-list-row [class$="-actions"] {
+    width: 100%;
+  }
+}
+  .dashboard-list-actions {
     width: 100%;
   }
 
@@ -970,7 +1128,8 @@ details > *:not(:where(summary)) {
 }
 
 /* Смуга вкладок */
-[class$="-tabs"],
+@layer patterns {
+  [class$="-tabs"],
 [class*="-tabs "] {
   display: flex;
   gap: var(--space-2xs);
@@ -979,13 +1138,11 @@ details > *:not(:where(summary)) {
   padding-bottom: var(--space-2xs);
   scrollbar-width: none;
 }
-
-[class$="-tabs"]::-webkit-scrollbar,
+  [class$="-tabs"]::-webkit-scrollbar,
 [class*="-tabs "]::-webkit-scrollbar {
   display: none;
 }
-
-[class$="-tabs"] > a,
+  [class$="-tabs"] > a,
 [class*="-tabs "] > a,
 [class$="-tabs"] > button,
 [class*="-tabs "] > button {
@@ -1005,8 +1162,7 @@ details > *:not(:where(summary)) {
   cursor: pointer;
   transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
-
-[class$="-tabs"] > a.is-active,
+  [class$="-tabs"] > a.is-active,
 [class*="-tabs "] > a.is-active,
 [class$="-tabs"] > button.is-active,
 [class*="-tabs "] > button.is-active {
@@ -1014,16 +1170,18 @@ details > *:not(:where(summary)) {
   background: var(--accent-gradient);
   color: var(--text-on-accent);
 }
+}
 
 /* =========================================================
    8. АВАТАРИ ТА МЕДІА
    ========================================================= */
-[class$="-avatar"],
-/* =========================================================
-   8. АВАТАРИ ТА МЕДІА
-   ========================================================= */
+@layer patterns {
+  [class$="-avatar"],
+
 [class*="-avatar "],
+
 [class$="__avatar"],
+
 [class*="__avatar "] {
   width: 40px;
   height: 40px;
@@ -1033,10 +1191,16 @@ details > *:not(:where(summary)) {
   border: 1px solid var(--border);
   background: var(--surface-raised);
 }
-
-.raid-signup-avatar--empty,
-[class$="-avatar--empty"],
+  [class$="-avatar--empty"],
 [class*="-avatar--empty "] {
+  display: grid;
+  place-items: center;
+  border-style: dashed;
+  color: var(--text-faint);
+}
+}
+
+.raid-signup-avatar--empty {
   display: grid;
   place-items: center;
   border-style: dashed;
