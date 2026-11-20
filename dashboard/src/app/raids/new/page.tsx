@@ -101,7 +101,7 @@ export default async function NewRaidPage({
           defaultVoiceChannelId={defaultVoiceChannelId}
           editorAccountName={editorDefaults.accountName}
         />
-        <div className="raid-preview-column">
+        <div className="raid-preview-column" role="region" aria-label="Попередній перегляд рейду" tabIndex={0}>
           <RaidEditorLivePreview initialRaid={previewRaid} />
           <RosterSideList raid={previewRaid} />
         </div>

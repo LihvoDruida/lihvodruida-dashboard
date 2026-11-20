@@ -24,6 +24,7 @@ const guildMastheadFont = localFont({
   variable: "--font-guild-masthead",
 });
 import type { Metadata, Viewport } from "next";
+import { connection } from "next/server";
 // Порядок: токени → база → компоненти → доменні сторінки → desktop →
 // інтеграційні винятки (guild banner / cleanup / management).
 import "./styles/tokens.css";
@@ -151,9 +152,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
+  // The CSP is nonce-based ('strict-dynamic'): a prerendered page carries no
+  // nonce, so the browser blocks every script on it. Render each request.
+  await connection();
   return (
     <html lang="uk" className={`${guildDisplayFont.variable} ${guildHeadingFont.variable} ${guildMastheadFont.variable}`}>
       <body>

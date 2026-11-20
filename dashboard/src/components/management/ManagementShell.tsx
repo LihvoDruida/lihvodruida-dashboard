@@ -15,9 +15,9 @@ export default function ManagementShell({ user, active, children, className = ""
     <section className={`dashboard-shell content-shell admin-workspace admin-page app-page-stack ${className}`} aria-label={label}>
       <DashboardIdentity user={user} activeSection="admin" />
       <div className="management-workspace-grid">
-        <aside className="management-workspace-sidebar" aria-label="Навігація керування">
+        <div className="management-workspace-sidebar">
           <AdminTabs active={active} user={user} />
-        </aside>
+        </div>
         <div className="management-workspace-content">{children}</div>
       </div>
     </section>

@@ -310,7 +310,7 @@ export default function StructuredLogsExplorer({
           </div>
         </section>
 
-        <aside className={styles.detailsPanel} aria-label="Деталі події">
+        <section className={styles.detailsPanel} aria-label="Деталі події">
           {selected ? (
             <>
               <div className={styles.detailsHead}>
@@ -334,11 +334,11 @@ export default function StructuredLogsExplorer({
               {selected.message ? <p className={styles.detailMessage}>{selected.message}</p> : null}
               <div className={styles.jsonBlock}>
                 <span>Details</span>
-                <pre>{detailsText(selected.details)}</pre>
+                <pre tabIndex={0} aria-label="Деталі події (JSON)">{detailsText(selected.details)}</pre>
               </div>
             </>
           ) : <div className={styles.emptyDetails}>Вибери рядок журналу, щоб переглянути повні дані.</div>}
-        </aside>
+        </section>
       </div>
     </div>
   );

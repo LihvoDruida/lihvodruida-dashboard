@@ -82,7 +82,7 @@ export default async function EditRaidPage({
       {raid ? (
         <section className="raid-editor-layout">
           <RaidForm publicationEventPending={publicationEventPending} publicationPending={publicationPending} raid={raid} channels={channels} voiceChannels={voiceChannels} roles={roles} discordEnabled={discordEnabled} editorAccountName={user.name || user.login || ""} />
-          <div className="raid-preview-column">
+          <div className="raid-preview-column" role="region" aria-label="Попередній перегляд рейду" tabIndex={0}>
             <RaidEditorLivePreview initialRaid={raid} />
             <RosterSideList raid={raid} />
           </div>

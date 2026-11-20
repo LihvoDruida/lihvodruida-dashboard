@@ -53,7 +53,7 @@ export default async function NewPollPage() {
       {channelResult?.warning ? <div className="notice panel warning-note raid-notice">Список каналів прочитано з попередженням: {channelResult.warning}</div> : null}
       <section className="raid-poll-create-layout" aria-label="Створення рейд-пулу">
         <RaidPollCreateForm channels={channels} roles={roles} discordEnabled={discordEnabled && hasRaidPollStorage()} />
-        <aside className="panel raid-poll-help-card">
+        <div className="panel raid-poll-help-card">
           <div className="raid-poll-help-card__head">
             <span className="eyebrow">Логіка роботи</span>
             <h2>Сайт планує, Discord збирає голоси</h2>
@@ -71,7 +71,7 @@ export default async function NewPollPage() {
             <a className="btn subtle" href="/discord">Discord Hub</a>
             <a className="btn subtle" href="/polls">Усі пули</a>
           </div>
-        </aside>
+        </div>
       </section>
     </RaidPollPageShell>
   );

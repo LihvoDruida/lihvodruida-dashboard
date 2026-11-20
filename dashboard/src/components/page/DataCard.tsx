@@ -12,10 +12,12 @@ export type DataCardProps = {
   id?: string;
   listEntry?: "applications" | "raids" | "polls";
   titleHref?: string;
+  /** With titleHref: the whole card is the link target (title link stretched over the card). */
+  stretchLink?: boolean;
 };
-export default function DataCard({ title, description, badge, children, actions, headingLevel = 3, id, listEntry, titleHref }: DataCardProps) {
+export default function DataCard({ title, description, badge, children, actions, headingLevel = 3, id, listEntry, titleHref, stretchLink = false }: DataCardProps) {
   const Heading = headingLevel === 2 ? "h2" : "h3";
-  return <article className={styles.dataCard} id={id} data-list-entry={listEntry}>
+  return <article className={stretchLink && titleHref ? `${styles.dataCard} ${styles.linkCard}` : styles.dataCard} id={id} data-list-entry={listEntry}>
     <header className={styles.cardHeader}>
       <Heading className={styles.cardTitle}>{titleHref ? <Link href={titleHref} prefetch={false}>{title}</Link> : title}</Heading>{badge}
     </header>

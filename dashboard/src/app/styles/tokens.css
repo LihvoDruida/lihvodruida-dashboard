@@ -27,6 +27,7 @@
   --c-ink-200: #e6e1d8;
   --c-ink-300: #b8ada0;
   --c-ink-400: #9c948a;
+  --c-ink-450: #948979; /* ≥ 4.5:1 on every panel surface */
   --c-ink-500: #756b5e;
 
   /* ---------- Статуси, зведені до теплої бази ---------- */
@@ -97,7 +98,7 @@
   --text-body: var(--c-ink-200);
   --text-soft: var(--c-ink-300);
   --text-muted: var(--c-ink-400);
-  --text-faint: var(--c-ink-500);
+  --text-faint: var(--c-ink-450);
   /* compatibility aliases for older isolated modules */
   --text: var(--text-body);
 

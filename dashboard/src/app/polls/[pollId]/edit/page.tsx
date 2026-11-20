@@ -77,7 +77,7 @@ export default async function EditPollPage({ params }: { params: Promise<{ pollI
       <DiscordPublicationWorkbench kind="poll" id={poll.id} />
       <section className="raid-poll-create-layout" aria-label="Редагування рейд-пулу">
         <RaidPollEditForm poll={poll} channels={channels} roles={roles} discordEnabled={discordEnabled && hasRaidPollStorage()} />
-        <aside className="panel raid-poll-help-card">
+        <div className="panel raid-poll-help-card">
           <div className="raid-poll-help-card__head">
             <span className="eyebrow">Синхронізація</span>
             <h2>{poll.status === "scheduled" ? "План можна змінити до публікації" : "Один запис — один Discord embed"}</h2>
@@ -109,7 +109,7 @@ export default async function EditPollPage({ params }: { params: Promise<{ pollI
             <a className="btn subtle" href={`/polls/${encodeURIComponent(poll.id)}`}>До результатів</a>
             {poll.messageUrl ? <a className="btn subtle" href={poll.messageUrl} target="_blank" rel="noreferrer">Discord</a> : null}
           </div>
-        </aside>
+        </div>
       </section>
     </RaidPollPageShell>
   );

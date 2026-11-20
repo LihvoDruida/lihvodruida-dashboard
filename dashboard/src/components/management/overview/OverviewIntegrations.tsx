@@ -45,7 +45,7 @@ export default function OverviewIntegrations() {
       description={summary ? "Показано останні отримані дані. Спробуй оновити їх пізніше." : "Перевір підключення та повтори запит. Налаштування не змінені."} /> : null}
     {!summary && !resource.error ? <PageSkeleton label="Перевірка інтеграцій" count={5} />
       : summary?.items.length ? <DataGrid label="Стан інтеграцій" busy={pending}>
-        {summary.items.map(item => <DataCard key={item.key} title={item.label} description={item.message || labels[item.state]}
+        {summary.items.map(item => <DataCard key={item.key} title={item.label} description={item.message && item.message.trim().toLowerCase() !== labels[item.state].toLowerCase() ? item.message : undefined}
           badge={<StatusBadge tone={tones[item.state]}>{labels[item.state]}</StatusBadge>} />)}
       </DataGrid>
       : summary ? <EmptyState title="Інтеграцій немає" description="Сервіс не повернув підключень. Перевір налаштування або повтори запит." /> : null}

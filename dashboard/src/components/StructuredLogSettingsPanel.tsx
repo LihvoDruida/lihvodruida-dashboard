@@ -204,7 +204,7 @@ export default function StructuredLogSettingsPanel({ initialSettings, canEdit, c
             </div>
           </div>
 
-          <aside className={styles.storageCard}>
+          <div className={styles.storageCard}>
             <div className={styles.settingsSectionTitle}>
               <div><strong>Ліміт локального журналу</strong><small>Жорсткі межі для VPS; retention завжди 3 дні.</small></div>
             </div>
@@ -234,7 +234,7 @@ export default function StructuredLogSettingsPanel({ initialSettings, canEdit, c
             <p className={styles.storageNote}>
               Після перевищення row/storage budget maintenance видаляє найстаріші записи. Volumes, БД інших модулів і Docker cache це не зачіпає.
             </p>
-          </aside>
+          </div>
         </div>
       </form>
     </section>

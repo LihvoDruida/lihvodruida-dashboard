@@ -120,8 +120,11 @@
   .management-workspace-sidebar .management-nav-group:last-child { grid-column: auto; }
   .management-workspace-sidebar .management-nav-links { max-width: none; }
 }
-@media (max-width: 640px) {
-  .management-workspace-sidebar .management-nav { grid-template-columns: minmax(0, 1fr); }
-  .management-workspace-sidebar .management-nav-links { display: flex; flex-wrap: wrap; }
-  .management-workspace-sidebar .management-nav-links a { flex: 1 1 auto; }
+/* Phones: one swipeable strip of sections instead of a menu taller than the screen. */
+@media (max-width: 700px) {
+  .admin-workspace .management-workspace-sidebar .management-nav { display: flex; gap: var(--space-2xs); padding: var(--space-2xs); overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scroll-padding-inline: var(--space-2xs); scrollbar-width: none; }
+  .admin-workspace .management-workspace-sidebar .management-nav::-webkit-scrollbar { display: none; }
+  .admin-workspace .management-workspace-sidebar :where(.management-nav-group, .management-nav-links) { display: contents; }
+  .admin-workspace .management-workspace-sidebar .management-nav-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .admin-workspace .management-workspace-sidebar .management-nav a { flex: 0 0 auto; min-height: var(--control-height); justify-content: center; padding: var(--space-xs) var(--space-md); white-space: nowrap; scroll-snap-align: start; }
 }

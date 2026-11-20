@@ -372,7 +372,7 @@ function DiscordPreview({ embed, content, isValid, mentionRoles = [], actionButt
   const previewTimestamp = embed?.timestamp ? previewNow.label : "";
 
   return (
-    <aside className={`discord-preview-panel panel discord-preview-panel--${previewMode}`} aria-label="Попередній перегляд Discord-повідомлення">
+    <section className={`discord-preview-panel panel discord-preview-panel--${previewMode}`} aria-label="Попередній перегляд Discord-повідомлення">
       <div className="discord-preview-titlebar">
         <span>Перегляд</span>
         <div className="discord-preview-mode-toggle" aria-label="Режим перегляду Discord">
@@ -456,7 +456,7 @@ function DiscordPreview({ embed, content, isValid, mentionRoles = [], actionButt
           </div>
         </div>
       </div>
-    </aside>
+    </section>
   );
 }
 
@@ -1278,10 +1278,10 @@ export default function DiscordEmbedEditor(props: DiscordEmbedEditorProps) {
             <div className="notice panel">Редактор завантажується…</div>
           </div>
         </section>
-        <aside className="discord-preview-panel panel" aria-label="Попередній перегляд Discord-повідомлення">
+        <section className="discord-preview-panel panel" aria-label="Попередній перегляд Discord-повідомлення">
           <div className="discord-preview-titlebar"><span>Перегляд</span></div>
           <div className="discord-preview-canvas"><div className="notice panel">Preview зʼявиться після завантаження редактора.</div></div>
-        </aside>
+        </section>
       </div>
     );
   }

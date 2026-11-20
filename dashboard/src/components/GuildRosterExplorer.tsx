@@ -402,7 +402,7 @@ export default function GuildRosterExplorer({ members, stats, source, error, nav
   if (!liveMembers.length) {
     const actions = <Button onClick={() => void rosterResource.refresh("guild-empty-retry", {force: true})}>Повторити</Button>;
     return <>{listMemory}{liveError || rosterResource.status === "error"
-      ? <ErrorState title="Склад тимчасово недоступний" description="Не вдалося отримати склад гільдії. Спробуй оновити дані." actions={actions} />
+      ? <ErrorState headingLevel={2} title="Склад тимчасово недоступний" description="Не вдалося отримати склад гільдії. Спробуй оновити дані." actions={actions} />
       : <EmptyState title="Склад ще готується" description="Персонажі зʼявляться після завершення синхронізації." actions={actions} />}</>;
   }
   return <PageSection id="guild-roster-title" title="Персонажі гільдії" description="Пошук, ролі, спорядження та прогрес поточного сезону.">
