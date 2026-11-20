@@ -34,13 +34,6 @@
    ========================================================= */
 /* Сторінка профілю: бічна колонка + основний стовпчик */
 
-.profile-character-candidate__kind {
-  font-size: var(--font-size-caption);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
-
 .profile-discord-standard {
   display: grid;
   gap: var(--space-sm);
@@ -49,7 +42,6 @@
 .profile-card-head--inline {
   display: flex;
   flex-wrap: nowrap;
-  align-items: center;
   gap: var(--space-sm);
 }
 
@@ -66,22 +58,6 @@
 
 .profile-empty-characters--compact {
   padding: var(--space-md);
-}
-
-.profile-nickname-preview {
-  padding: var(--space-xs) var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  color: var(--c-accent-200);
-  overflow-wrap: anywhere;
-}
-
-.profile-nickname-hint {
-  font-size: var(--font-size-meta);
-  color: var(--text-muted);
 }
 
 /* =========================================================
@@ -434,24 +410,9 @@
 }
 
 /* Керування Discord */
-.discord-management-card {
-  display: grid;
-  gap: var(--space-sm);
-}
-
-.discord-management-card__body {
-  display: grid;
-  gap: var(--space-xs);
-  min-width: 0;
-}
 
 .discord-management-card--action {
   border-color: var(--border-strong);
-}
-
-.discord-management-section {
-  display: grid;
-  gap: var(--gap-stack);
 }
 
 .discord-role-picker {
@@ -1054,10 +1015,12 @@ body:has(.login-screen) .app-footer--site-wide {
   .login-content h1 { font-size: clamp(1.75rem, 7.5vw, 2rem); }
   .login-guild-name { font-size: .85rem; letter-spacing: .09em; }
   .login-lead { font-size: .9rem; }
-  .login-discord-button { min-height: 64px; gap: 10px; padding-inline: 12px; }
   .login-discord-button strong { font-size: .95rem; }
   .login-discord-button__arrow { display: none; }
-  .login-discord-button { grid-template-columns: auto minmax(0, 1fr); }
+  .login-discord-button {
+  padding-inline: 12px;
+  gap: 10px;
+  min-height: 64px; grid-template-columns: auto minmax(0, 1fr); }
   .login-token__row { display: grid; }
   .login-token__row button { width: 100%; }
 }
@@ -1087,7 +1050,6 @@ body:has(.login-screen) .app-footer--site-wide {
    РОСТЕР
    ========================================================= */
 .roster-inline-form {
-  display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-xs);
@@ -1102,18 +1064,12 @@ body:has(.login-screen) .app-footer--site-wide {
    ========================================================= */
 .discord-builder-textarea,
 .discord-description-area {
-  min-height: 180px;
   font-family: var(--font-mono);
   font-size: 0.85rem;
 }
 
 .discord-send-controls {
-  display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-xs);
-  padding-top: var(--space-sm);
-  border-top: 1px solid var(--border-subtle);
 }
 
 .discord-load-message-btn {
@@ -1149,11 +1105,7 @@ body:has(.login-screen) .app-footer--site-wide {
 /* Чекбокси ролей і службові прапорці */
 .discord-role-checkboxes {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
-  gap: var(--space-xs);
-  max-height: 260px;
   overflow-y: auto;
-  padding: var(--space-2xs);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   background: var(--surface-sunken);
@@ -1191,9 +1143,7 @@ body:has(.login-screen) .app-footer--site-wide {
 }
 
 .discord-management-blocked-roles {
-  display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2xs);
 }
 
 /* Таблиці Discord-розділу успадковують шаблон довідника */
@@ -1329,7 +1279,6 @@ body:has(.login-screen) .app-footer--site-wide {
   display: grid;
   gap: clamp(12px, 1.1vw, 16px);
   min-width: 0;
-  padding: clamp(16px, 1.45vw, 22px);
   border-radius: 18px;
 }
 
@@ -1356,10 +1305,6 @@ body:has(.login-screen) .app-footer--site-wide {
 .discord-builder-form .discord-autorole-card,
 .discord-builder-form .discord-role-picker {
   min-width: 0;
-}
-
-.discord-builder-form .content-field > span:first-child {
-  margin-bottom: 6px;
 }
 
 .discord-builder-form .input:not(textarea),
@@ -1501,12 +1446,6 @@ body:has(.login-screen) .app-footer--site-wide {
   min-height: var(--control-height);
 }
 
-.discord-autorole-card {
-  gap: clamp(12px, 1vw, 16px);
-  padding: clamp(14px, 1.1vw, 18px);
-  border-radius: 16px;
-}
-
 .discord-autorole-card__head {
   align-items: start;
 }
@@ -1518,10 +1457,6 @@ body:has(.login-screen) .app-footer--site-wide {
 
 .discord-autorole-card__actions .btn {
   min-height: 40px;
-}
-
-.discord-autorole-grid {
-  gap: clamp(12px, 1vw, 16px);
 }
 
 .discord-autorole-grid .content-field small {
