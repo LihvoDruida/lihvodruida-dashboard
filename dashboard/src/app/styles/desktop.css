@@ -17,8 +17,15 @@
   }
 
   /* ---------- Єдина ширина та відступ сторінок ---------- */
-  main,
-.container,
+@layer base {
+  main {
+    width: 100%;
+    max-width: var(--page-max);
+    margin-inline: auto;
+    padding: 24px var(--page-gutter) 64px;
+  }
+}
+  .container,
 .app-page,
 .admin-container {
     width: 100%;
@@ -66,21 +73,23 @@ main .dashboard-shell {
   /* Fallback для доменних surface-класів. :where() має нульову
      специфічність, тому свідомий стиль конкретного компонента завжди
      сильніший за глобальну нормалізацію. */
+@layer adaptive {
   :where([class$="-card"]:not([class*="nav"]), [class*="-card "]:not([class*="nav"]), [class$="__card"], [class*="__card "], [class$="-panel"]:not(.dashboard-list-panel), [class*="-panel "]:not(.dashboard-list-panel), [class$="__panel"], [class*="__panel "], [class$="-box"], [class*="-box "]) {
     border-radius: var(--card-radius);
     border-color: rgba(255, 226, 196, 0.1);
   }
+}
 
   .panel:not(:where([class*="hero"])) {
     padding: var(--panel-padding);
   }
-
-
+@layer adaptive {
   :where(.panel) :where(.panel, [class$="-card"], [class*="-card "], [class$="__card"], [class*="__card "]) {
     border-color: rgba(255, 226, 196, 0.075);
     background: rgba(12, 10, 7, 0.3);
     box-shadow: none;
   }
+}
 
   /* ---------- Заголовок сторінки ---------- */
 @layer patterns {
@@ -199,30 +208,30 @@ main .dashboard-shell {
     min-width: var(--control-height);
     padding: 0;
   }
-
+@layer base {
   input,
 textarea,
 select {
     font-size: 14px;
   }
-
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 select {
     min-height: var(--control-height);
   }
-
   textarea {
     min-height: 104px;
   }
+}
 
   /* ---------- Сітки: один ритм, без випадкових 12/24/32px ---------- */
+@layer adaptive {
   :where([class$="-grid"], [class*="-grid "], [class$="__grid"], [class*="__grid "]) {
     gap: var(--section-gap);
   }
-
   :where([class$="-layout"]:not(.access-groups-layout), [class*="-layout "]:not(.access-groups-layout)) {
     gap: var(--page-gap);
   }
+}
 
   /* ---------- Таблиці й списки ---------- */
   .dashboard-list-panel {
