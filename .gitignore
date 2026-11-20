@@ -44,3 +44,6 @@ dashboard.zip
 # Host-generated server monitoring snapshots
 runtime/server-stats/*.jsonl
 !runtime/server-stats/.gitkeep
+
+# Python bytecode (make configure tests)
+__pycache__/
