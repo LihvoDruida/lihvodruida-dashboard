@@ -355,10 +355,8 @@ label > span:first-child {
 }
 
 .field-label {
-  display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-xs);
 }
 
 /* Підказка під полем */
@@ -476,16 +474,6 @@ select option {
 }
 
 /* Чекбокси та радіо */
-input[type="checkbox"],
-input[type="radio"] {
-  width: 18px;
-  height: 18px;
-  min-height: 0;
-  flex: 0 0 auto;
-  padding: 0;
-  accent-color: var(--c-accent-500);
-  cursor: pointer;
-}
 
 .inline-check {
   display: inline-flex;
@@ -782,11 +770,7 @@ form {
 
 /* Складений рядок: зміст ліворуч, дії праворуч */
 .dashboard-list-row {
-  display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
 }
 
 .dashboard-list-row > *:first-child {
@@ -800,6 +784,9 @@ form {
 
 
 .dashboard-list-row {
+  justify-content: space-between;
+  align-items: center;
+  display: flex;
   gap: var(--space-sm);
   padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--border-subtle);
@@ -873,15 +860,6 @@ a.dashboard-list-row:hover {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr));
   gap: var(--space-sm);
-}
-
-.guild-hero-stat-card {
-  display: grid;
-  gap: var(--space-3xs);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
 }
 
 /* Керування у шапці таблиці */
@@ -1157,6 +1135,7 @@ details > *:not(:where(summary)) {
    ========================================================= */
 input[type="checkbox"],
 input[type="radio"] {
+  accent-color: var(--c-accent-500);
   appearance: none;
   -webkit-appearance: none;
   position: relative;

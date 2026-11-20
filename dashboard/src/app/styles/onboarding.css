@@ -1,9 +1,4 @@
 /* PROFILE SETUP — registration remains separate from public guild rules acceptance. */
-.profile-name-panel {
-  display: grid;
-  gap: var(--space-sm);
-  min-width: 0;
-}
 
 .profile-discord-standard__head {
   display: grid;
@@ -28,12 +23,6 @@
   font-size: var(--font-size-ui);
   line-height: var(--line-height-body);
   color: var(--text-muted);
-}
-
-.profile-name-panel__label {
-  font-size: var(--font-size-ui-lg);
-  font-weight: var(--font-weight-bold);
-  color: var(--text-soft);
 }
 
 .profile-discord-standard__identity {

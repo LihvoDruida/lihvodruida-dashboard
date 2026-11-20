@@ -8,9 +8,6 @@
 /* Системна підсвітка тапу блимає суцільним прямокутником на темній
    темі, перш ніж стати напівпрозорою. Прибираємо повністю й даємо
    власний відгук через :active. */
-* {
-  -webkit-tap-highlight-color: transparent;
-}
 
 button,
 a {
@@ -286,6 +283,7 @@ small {
 
 /* ---------- 5. Скролбар ---------- */
 * {
+  -webkit-tap-highlight-color: transparent;
   scrollbar-width: thin;
   scrollbar-color: var(--c-base-400) transparent;
 }

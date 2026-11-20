@@ -100,7 +100,6 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--gap-stack);
   overflow: hidden;
   min-width: 0;
 }
@@ -302,7 +301,6 @@
   min-height: 40px;
   color: var(--text-soft);
   font-size: 0.86rem;
-  cursor: pointer;
 }
 
 /* ---------- Склад рейду ---------- */
@@ -337,7 +335,6 @@
 .raid-party-card {
   display: grid;
   gap: var(--space-2xs);
-  padding: var(--space-md);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   background: var(--surface-sunken);
@@ -714,6 +711,7 @@
 }
 
 .raid-checkbox-line {
+  cursor: pointer;
   min-width: 0;
 }
 
@@ -1491,26 +1489,6 @@
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   background: var(--surface-sunken);
-}
-
-.raid-poll-create-preview > div {
-  display: grid;
-  gap: var(--space-3xs);
-  min-width: 0;
-}
-
-.raid-poll-create-preview strong {
-  font-size: var(--font-size-2xs);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
-
-.raid-poll-create-preview span {
-  color: var(--text-body);
-  font-size: 0.84rem;
-  overflow-wrap: anywhere;
 }
 
 /* =========================================================
