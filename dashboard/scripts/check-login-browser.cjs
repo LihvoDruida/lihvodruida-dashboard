@@ -9,15 +9,16 @@ fs.mkdirSync(output, { recursive: true });
 let child, browser, proxy, page, upstreamPort, passed = 0, failed = 0;
 const scenarios = [], errors = [], observations = {}, requests = [];
 const videoDirectory = path.join(root,'public/assets/video/auth');
+const emergencyToken = 'fixture-only-emergency-key-for-local-test';
 let videoMode = 'ok', releaseVideo;
 const videoNames = ['Hyjal02-1280.mp4','Zephras_01-1280.mp4','WowF_TheBarrens_01-1280.mp4'];
 const runtime = fs.mkdtempSync(path.join(os.tmpdir(), 'login-runtime-'));
 async function freePort() { const s = net.createServer(); s.listen(0, '127.0.0.1'); await once(s, 'listening'); const port = s.address().port; await new Promise(resolve => s.close(resolve)); return port; }
 async function check(name, run) { try { await run(); passed++; scenarios.push(name); console.log('PASS', name); } catch (error) { failed++; throw error; } }
 async function stop() { if (child && child.exitCode === null) { const process = child; process.kill('SIGTERM'); await once(process, 'exit'); } }
-async function start({ owner = false, discord = true, rules = false } = {}) {
+async function start({ legacyEmergency = false, discord = true, rules = false } = {}) {
  await stop(); upstreamPort = await freePort(); let logs = '';
- child = spawn(process.execPath, [path.join(runtime, 'dashboard/server.js')], { cwd: runtime, env: { NODE_ENV:'production',HOSTNAME:'127.0.0.1',PORT:String(upstreamPort),NEXT_TELEMETRY_DISABLED:'1',DASHBOARD_URL:'https://guild.test',DISCORD_OAUTH_CLIENT_ID:discord?'fixture-client-id':'',ADMIN_DASHBOARD_TOKEN:'fixture-only-emergency-key',AUTH_ACCESS_ALLOW_EMERGENCY_TOKEN_LOGIN:owner?'true':'false', ...(rules?{NODE_OPTIONS:'--require='+path.join(runtime,'rules-fixture.cjs'),DISCORD_BOT_TOKEN:'fixture-only-bot-token',DISCORD_GUILD_ID:'333333333333333333',DISCORD_GUILD_RULES_CHANNEL_ID:'555555555555555555',DASHBOARD_RULES_TOKEN_SECRET:'fixture-rules-key-with-at-least-32-characters'}:{}) }, stdio:['ignore','pipe','pipe'] });
+ child = spawn(process.execPath, [path.join(runtime, 'dashboard/server.js')], { cwd: runtime, env: { NODE_ENV:'production',HOSTNAME:'127.0.0.1',PORT:String(upstreamPort),NEXT_TELEMETRY_DISABLED:'1',DASHBOARD_URL:'https://guild.test',DISCORD_OAUTH_CLIENT_ID:discord?'fixture-client-id':'',ADMIN_DASHBOARD_TOKEN:emergencyToken,AUTH_ACCESS_ALLOW_EMERGENCY_TOKEN_LOGIN:legacyEmergency?'true':'false', ...(rules?{NODE_OPTIONS:'--require='+path.join(runtime,'rules-fixture.cjs'),DISCORD_BOT_TOKEN:'fixture-only-bot-token',DISCORD_GUILD_ID:'333333333333333333',DISCORD_GUILD_RULES_CHANNEL_ID:'555555555555555555',DASHBOARD_RULES_TOKEN_SECRET:'fixture-rules-key-with-at-least-32-characters'}:{}) }, stdio:['ignore','pipe','pipe'] });
  child.stdout.on('data',chunk=>logs=(logs+chunk).slice(-5000));child.stderr.on('data',chunk=>logs=(logs+chunk).slice(-5000));
  const deadline=Date.now()+15000;let ready=false;
  while(Date.now()<deadline){if(child.exitCode!==null)throw Error(logs);const response=await fetch('http://127.0.0.1:'+upstreamPort+'/api/health',{signal:AbortSignal.timeout(700)}).catch(()=>null);if(response?.ok){ready=true;break;}await new Promise(resolve=>setTimeout(resolve,75));}
@@ -66,7 +67,16 @@ async function start({ owner = false, discord = true, rules = false } = {}) {
  await check('keyboard activation targets the existing OAuth start without contacting Discord',async()=>{await visit();await page.keyboard.press('Tab');assert.equal(await button().evaluate(el=>el===document.activeElement),true);assert.equal(await button().evaluate(el=>getComputedStyle(el).outlineStyle),'solid');let navigated='';await page.route('**/api/auth/discord/start**',async route=>{navigated=new URL(route.request().url()).pathname;await route.fulfill({contentType:'text/html',body:'<!doctype html><title>Controlled OAuth handoff</title>'});});await page.keyboard.press('Enter');await page.waitForURL('**/api/auth/discord/start');assert.equal(navigated,'/api/auth/discord/start');await page.unroute('**/api/auth/discord/start**');});
  await check('reduced motion removes animated sign-in transitions',async()=>{await page.emulateMedia({reducedMotion:'reduce'});await visit();const duration=await button().evaluate(el=>getComputedStyle(el).transitionDuration);assert.ok(duration.split(',').every(value=>parseFloat(value)<=0.001));assert.equal(await page.locator('.login-background video').evaluateAll(items=>items.every(v=>!v.hasAttribute('src'))),true);await page.emulateMedia({reducedMotion:'no-preference'});});
  await check('login does not initialize the decorative starfield canvas',async()=>{await page.waitForFunction(()=>Array.from(document.scripts).some(script=>script.src.includes('dashboard-starfield.js')));assert.equal(await page.locator('#site-starfield').count(),0);});
- await check('emergency owner entry stays policy-gated and usable on mobile',async()=>{await start({owner:true});await visit();await page.setViewportSize({width:320,height:568});await page.getByText('Аварійний вхід власника',{exact:true}).click();const input=page.getByLabel('Резервний ключ');assert.equal(await input.isVisible(),true);assert.equal(await input.getAttribute('type'),'password');assert.equal(await page.locator('.login-token form').getAttribute('action'),'/api/auth/login');await fits();assert.ok(parseFloat(await input.evaluate(el=>getComputedStyle(el).fontSize))>=16);await page.getByRole('button',{name:'Увійти',exact:true}).scrollIntoViewIfNeeded();});
+ await check('legacy settings cannot enable emergency login while Discord access policy denies it',async()=>{
+  await start({legacyEmergency:true});
+  await page.setViewportSize({width:320,height:568});
+  await visit();
+  assert.equal(await page.locator('.login-token').count(),0);
+  await fits();
+  const response=await page.request.post(base+'/api/auth/login',{headers:{origin:base},form:{token:emergencyToken},maxRedirects:0});
+  assert.equal(response.status(),303);
+  assert.equal(new URL(response.headers().location,base).searchParams.get('error'),'token_disabled');
+ });
  await check('missing OAuth configuration displays an explicit unavailable state',async()=>{await start({discord:false});await visit();assert.equal(await button().count(),0);await page.getByRole('alert').filter({hasText:'Вхід через Discord тимчасово недоступний.'}).waitFor();assert.equal(await page.locator('nav:visible').count(),0);});
  await check('production login only requests local assets',()=>{assert.deepEqual(errors,[]);assert.ok(requests.every(url=>url.startsWith(base)),requests.filter(url=>!url.startsWith(base)).join('\n'));});
  if(videoDirectory){
