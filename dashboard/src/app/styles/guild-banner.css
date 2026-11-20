@@ -47,7 +47,7 @@ body .guild-status-banner {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 560px) minmax(0, 1fr);
   align-items: center;
-  gap: 24px;
+  gap: var(--space-lg);
 }
 
 .guild-status-banner__raid,
@@ -57,7 +57,7 @@ body .guild-status-banner {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 4px;
+  gap: var(--space-2xs);
   padding-bottom: 6px;
 }
 
@@ -78,7 +78,7 @@ body .guild-status-banner {
   text-decoration: none;
 }
 
-.guild-status-banner__raid:hover { color: #fff; }
+.guild-status-banner__raid:hover { color: var(--c-wow-priest); }
 .guild-status-banner__raid:focus-visible {
   outline: 2px solid #e2c275;
   outline-offset: 4px;
@@ -208,7 +208,7 @@ body .guild-status-banner {
   text-shadow: 0 1px rgba(0, 0, 0, .9), 0 2px 12px rgba(0, 0, 0, .8);
 }
 .guild-status-banner__clock-part small {
-  margin-top: 4px;
+  margin-top: var(--space-2xs);
   color: rgba(217, 208, 188, .65);
   font: 400 9px/1 var(--masthead-sans);
   letter-spacing: .14em;
@@ -239,12 +239,12 @@ html.guild-banner-collapsed body:has(.guild-status-banner) .dashboard-topbar { t
   .guild-status-banner__inner {
     width: calc(100% - 48px);
     grid-template-columns: minmax(0, 1fr) minmax(0, 440px) minmax(0, 1fr);
-    gap: 16px;
+    gap: var(--space-md);
   }
   .guild-status-banner .guild-status-banner__eyebrow { font-size: 8px; letter-spacing: .16em; }
   .guild-status-banner__wordmark { font-size: clamp(21px, 2.1vw, 27px); }
   .guild-status-banner__raid-name { font-size: 16px; }
-  .guild-status-banner__clock { gap: 8px; }
+  .guild-status-banner__clock { gap: var(--space-xs); }
   .guild-status-banner__clock-part { min-width: 28px; }
   .guild-status-banner__clock-part b { font-size: 22px; }
   .guild-status-banner__clock-part + .guild-status-banner__clock-part::before { left: -7px; font-size: 18px; }
@@ -258,7 +258,7 @@ html.guild-banner-collapsed body:has(.guild-status-banner) .dashboard-topbar { t
   .guild-status-banner__inner {
     width: calc(100% - 32px);
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 16px;
+    gap: var(--space-md);
   }
   .guild-status-banner__raid { display: none; }
   .guild-status-banner__brand {
@@ -281,7 +281,7 @@ html.guild-banner-collapsed body:has(.guild-status-banner) .dashboard-topbar { t
   .guild-status-banner__reset-desktop-label { display: none; }
   .guild-status-banner__reset-mobile-label { display: inline; }
   .guild-status-banner .guild-status-banner__eyebrow { font-size: 8.5px; letter-spacing: .18em; }
-  .guild-status-banner__clock { gap: 8px; padding-bottom: 5px; }
+  .guild-status-banner__clock { gap: var(--space-xs); padding-bottom: 5px; }
   .guild-status-banner__clock-part { min-width: 28px; }
   .guild-status-banner__clock-part b { font-size: 20px; }
   .guild-status-banner__clock-part + .guild-status-banner__clock-part::before { left: -7px; font-size: 18px; }
@@ -302,7 +302,7 @@ html.guild-banner-collapsed body:has(.guild-status-banner) .dashboard-topbar { t
 }
 
 @media (max-width: 420px) {
-  .guild-status-banner__inner { width: calc(100% - 24px); gap: 12px; }
+  .guild-status-banner__inner { width: calc(100% - 24px); gap: var(--space-sm); }
   .guild-status-banner__wordmark { font-size: clamp(16px, 4.3vw, 18px); }
   .guild-status-banner__brand-sub { font-size: 7px; gap: 5px; letter-spacing: .14em; }
   .guild-status-banner__brand-sub i:last-child { width: 18px; flex-basis: 18px; }

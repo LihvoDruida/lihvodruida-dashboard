@@ -472,7 +472,7 @@
   max-height: calc(100vh - 112px);
   overflow: auto;
   scrollbar-gutter: stable;
-  padding-right: 2px;
+  padding-right: var(--space-3xs);
 }
 
 .raid-form-stack {
@@ -1108,7 +1108,7 @@
   .raid-editor-jump-nav {
     flex-wrap: nowrap;
     overflow-x: auto;
-    padding-bottom: 2px;
+    padding-bottom: var(--space-3xs);
     scrollbar-width: none;
   }
 

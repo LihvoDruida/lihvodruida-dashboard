@@ -22,7 +22,7 @@
     width: 100%;
     max-width: var(--page-max);
     margin-inline: auto;
-    padding: 24px var(--page-gutter) 64px;
+    padding: var(--space-lg) var(--page-gutter) var(--space-3xl);
   }
 }
   .container,
@@ -31,7 +31,7 @@
     width: 100%;
     max-width: var(--page-max);
     margin-inline: auto;
-    padding: 24px var(--page-gutter) 64px;
+    padding: var(--space-lg) var(--page-gutter) var(--space-3xl);
   }
 
   .container .container,
@@ -98,7 +98,7 @@ main .dashboard-shell {
     grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.7fr);
     gap: var(--space-lg);
     min-height: 0;
-    padding: 22px 24px;
+    padding: 22px var(--space-lg);
     border-radius: var(--card-radius);
     border-color: rgba(255, 178, 106, 0.14);
     background:
@@ -114,7 +114,7 @@ main .dashboard-shell {
     grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.7fr);
     gap: var(--space-lg);
     min-height: 0;
-    padding: 22px 24px;
+    padding: 22px var(--space-lg);
     border-radius: var(--card-radius);
     border-color: rgba(255, 178, 106, 0.14);
     background:
@@ -198,7 +198,7 @@ main .dashboard-shell {
 
   .btn-sm {
     min-height: var(--control-height-sm);
-    padding-inline: 12px;
+    padding-inline: var(--space-sm);
     border-radius: var(--radius-sm);
     font-size: var(--font-size-meta);
   }
@@ -243,7 +243,7 @@ select {
   }
 
   .dashboard-list-head {
-    padding: 16px 18px;
+    padding: var(--space-md) 18px;
     border-bottom: 1px solid var(--border-subtle);
     background: rgba(255, 255, 255, 0.014);
   }
@@ -270,7 +270,7 @@ select {
 
   .profile-card-toolbar--compact > span {
     min-width: 84px;
-    padding: 7px 12px;
+    padding: 7px var(--space-sm);
   }
 
   /* auto-fit, не auto-fill: порожні треки більше не залишають
@@ -316,8 +316,8 @@ select {
 
   /* ---------- Адмінські екрани ---------- */
   .app-footer {
-    padding-top: 24px;
-    padding-bottom: 24px;
+    padding-top: var(--space-lg);
+    padding-bottom: var(--space-lg);
     background: rgba(12, 10, 7, 0.42);
   }
 
@@ -337,6 +337,6 @@ select {
 .dashboard-public-nav a { display: inline-flex; align-items: center; min-height: 36px; padding: 5px 10px; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: var(--text-soft); text-decoration: none; }
 .dashboard-public-nav a:hover,
 .dashboard-public-nav a[aria-current="page"] { color: var(--text-strong); border-color: var(--border-strong); background: var(--surface-sunken); }
-.dashboard-public-nav--mobile { gap: 4px; flex-wrap: nowrap; }
+.dashboard-public-nav--mobile { gap: var(--space-2xs); flex-wrap: nowrap; }
 .dashboard-public-nav--mobile a { padding: 5px 7px; font-size: 0.77rem; white-space: nowrap; }
-@media (max-width: 380px) { .dashboard-public-nav--mobile a { padding: 4px 5px; font-size: 0.7rem; } }
+@media (max-width: 380px) { .dashboard-public-nav--mobile a { padding: var(--space-2xs) 5px; font-size: 0.7rem; } }

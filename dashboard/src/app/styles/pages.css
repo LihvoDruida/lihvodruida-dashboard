@@ -146,7 +146,7 @@
   height: 40px;
   border-radius: 50%;
   background: var(--c-discord);
-  color: #fff;
+  color: var(--c-wow-priest);
   font-size: 0.75rem;
   font-weight: var(--font-weight-bold);
 }
@@ -164,7 +164,7 @@
 }
 
 .discord-chat-preview__meta strong {
-  color: #fff;
+  color: var(--c-wow-priest);
   font-size: 0.92rem;
 }
 
@@ -232,7 +232,7 @@
 .discord-preview-author {
   font-size: var(--font-size-body-sm);
   font-weight: var(--font-weight-medium);
-  color: #fff;
+  color: var(--c-wow-priest);
 }
 
 .discord-preview-title {
@@ -273,7 +273,7 @@
 
 .discord-preview-field-name {
   font-size: var(--font-size-body-sm);
-  color: #fff;
+  color: var(--c-wow-priest);
 }
 
 .discord-preview-field-value {
@@ -337,7 +337,7 @@
   background: none;
   -webkit-background-clip: border-box;
   background-clip: border-box;
-  color: #fff;
+  color: var(--c-wow-priest);
   font-size: 0.95rem;
   font-weight: var(--font-weight-bold);
   letter-spacing: 0;
@@ -454,7 +454,7 @@
   align-items: center;
   gap: 5px;
   min-height: 24px;
-  padding: 2px 8px;
+  padding: var(--space-3xs) var(--space-xs);
   border: 1px solid color-mix(in srgb, var(--border-strong) 72%, transparent);
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--c-accent-500) 10%, var(--surface-raised));
@@ -549,7 +549,7 @@
   gap: 7px;
   min-width: 0;
   min-height: var(--role-picker-card-height);
-  padding: 5px 8px;
+  padding: 5px var(--space-xs);
   border: 1px solid color-mix(in srgb, var(--border-subtle) 88%, transparent);
   border-radius: var(--radius-lg);
   background: color-mix(in srgb, var(--surface-raised) 76%, var(--surface-sunken));
@@ -626,7 +626,7 @@
   justify-content: center;
   min-width: 58px;
   min-height: 24px;
-  padding: 0 8px;
+  padding: 0 var(--space-xs);
   border: 1px solid color-mix(in srgb, var(--border-subtle) 72%, transparent);
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--surface-sunken) 72%, transparent);
@@ -646,7 +646,7 @@
 
 .discord-role-empty {
   grid-column: 1 / -1;
-  padding: 10px 12px;
+  padding: 10px var(--space-sm);
   border: 1px dashed var(--border-subtle);
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--surface-sunken) 82%, transparent);
@@ -718,7 +718,7 @@
     grid-template-areas: "control body badge";
     align-items: center;
     gap: 7px;
-    padding: 5px 8px;
+    padding: 5px var(--space-xs);
     border-radius: var(--radius-md);
   }
 
@@ -836,7 +836,7 @@ body:has(.login-screen) .app-footer--site-wide {
   min-height: 100vh;
   min-height: 100svh;
   width: 100%;
-  padding: max(36px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(36px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+  padding: max(36px, env(safe-area-inset-top)) max(var(--space-lg), env(safe-area-inset-right)) max(36px, env(safe-area-inset-bottom)) max(var(--space-lg), env(safe-area-inset-left));
   overflow: hidden;
   background: var(--auth-navy);
 }
@@ -910,7 +910,7 @@ body:has(.login-screen) .app-footer--site-wide {
   border-radius: 50%;
   pointer-events: none;
 }
-.login-title-block { display: grid; justify-items: center; gap: 12px; width: 100%; }
+.login-title-block { display: grid; justify-items: center; gap: var(--space-sm); width: 100%; }
 .login-guild-name {
   max-width: 100%;
   margin: 0;
@@ -940,7 +940,7 @@ body:has(.login-screen) .app-footer--site-wide {
 .login-alert {
   width: 100%;
   margin: 0;
-  padding: 12px 14px;
+  padding: var(--space-sm) 14px;
   border: 1px solid #b66051;
   border-left: 3px solid #d48b76;
   border-radius: 3px;
@@ -953,15 +953,15 @@ body:has(.login-screen) .app-footer--site-wide {
 }
 .login-alert.notice.success { border-color: #7eae8c; background: rgba(26, 56, 40, .65); color: #e3f3e5; }
 .login-alert strong { color: inherit; }
-.login-action-row { display: grid; gap: 12px; width: 100%; }
+.login-action-row { display: grid; gap: var(--space-sm); width: 100%; }
 .login-discord-button {
   position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-sm);
   min-height: 64px;
-  padding: 12px 16px;
+  padding: var(--space-sm) var(--space-md);
   border: 2px solid var(--auth-gold);
   border-radius: 3px;
   background: linear-gradient(180deg, #b82e25, #8e1b16 55%, #5a0d0a);
@@ -983,15 +983,15 @@ body:has(.login-screen) .app-footer--site-wide {
 .login-discord-button__arrow { color: #f3d58d; font-size: 1.3rem; }
 .login-token { width: 100%; padding-top: 18px; border-top: 1px solid rgb(var(--auth-gold-rgb) / 0.25); text-align: left; }
 .login-token summary { padding-block: 6px; color: #d8c69d; font-size: .85rem; cursor: pointer; }
-.login-token form { display: grid; gap: 9px; margin-top: 12px; }
+.login-token form { display: grid; gap: 9px; margin-top: var(--space-sm); }
 .login-token label { color: var(--auth-label); font-size: .85rem; }
 .login-token__row { display: flex; gap: 10px; }
 .login-token__row input { min-width: 0; flex: 1; border-color: rgb(var(--auth-gold-rgb) / 0.55); background: var(--auth-navy); color: var(--auth-ink); font-size: 16px; }
-.login-token__row button { flex: 0 0 auto; min-height: 46px; padding-inline: 16px; }
+.login-token__row button { flex: 0 0 auto; min-height: 46px; padding-inline: var(--space-md); }
 
 @media (max-width: 640px) {
   .login-screen {
-    padding: max(24px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+    padding: max(var(--space-lg), env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(var(--space-lg), env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
 
   }
   .login-shell { padding: 28px 22px; }
@@ -1004,7 +1004,7 @@ body:has(.login-screen) .app-footer--site-wide {
   .login-discord-button strong { font-size: .95rem; }
   .login-discord-button__arrow { display: none; }
   .login-discord-button {
-  padding-inline: 12px;
+  padding-inline: var(--space-sm);
   gap: 10px;
   min-height: 64px; grid-template-columns: auto minmax(0, 1fr); }
   .login-token__row { display: grid; }
@@ -1013,7 +1013,7 @@ body:has(.login-screen) .app-footer--site-wide {
 
 @media (max-height: 600px) and (min-width: 641px) {
   .login-screen { padding-block: 20px; }
-  .login-shell { padding-block: 24px; }
+  .login-shell { padding-block: var(--space-lg); }
   .login-content { gap: 14px; }
   .login-brandmark { width: 68px; height: 68px; }
   .login-brandmark img { width: 56px; height: 56px; }
@@ -1060,7 +1060,7 @@ body:has(.login-screen) .app-footer--site-wide {
   width: 46px;
   height: 44px;
   min-height: 0;
-  padding: 2px;
+  padding: var(--space-3xs);
   border: 1px solid var(--border);
   border-radius: var(--control-radius);
   background: var(--surface-sunken);
@@ -1290,13 +1290,13 @@ body:has(.login-screen) .app-footer--site-wide {
 .discord-footer-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(12px, 1vw, 16px);
+  gap: clamp(var(--space-sm), 1vw, var(--space-md));
   min-width: 0;
 }
 
 .discord-send-layout {
   display: grid;
-  gap: clamp(12px, 1vw, 16px);
+  gap: clamp(var(--space-sm), 1vw, var(--space-md));
 }
 
 .discord-send-controls {
@@ -1324,7 +1324,7 @@ body:has(.login-screen) .app-footer--site-wide {
 .discord-timestamp-check {
   grid-column: 4 / 5;
   min-height: 46px;
-  padding-inline: 2px;
+  padding-inline: var(--space-3xs);
   align-self: center;
 }
 
@@ -1349,7 +1349,7 @@ body:has(.login-screen) .app-footer--site-wide {
 .discord-color-picker-field .discord-color-picker {
   inline-size: 100%;
   block-size: 46px;
-  padding: 4px;
+  padding: var(--space-2xs);
   border-radius: var(--control-radius);
 }
 
@@ -1382,7 +1382,7 @@ body:has(.login-screen) .app-footer--site-wide {
 .discord-field-row {
   display: grid;
   gap: var(--space-sm);
-  padding: clamp(12px, 1vw, 16px);
+  padding: clamp(var(--space-sm), 1vw, var(--space-md));
   border: 1px solid var(--border-subtle);
   border-radius: 16px;
   background: color-mix(in srgb, var(--surface-sunken) 86%, transparent);
@@ -1523,7 +1523,7 @@ body:has(.login-screen) .app-footer--site-wide {
 /* Embed editor density normalization — shared by general embeds, rules and autoroles. */
 .discord-builder-form .content-form-section {
   min-width: 0;
-  gap: clamp(12px, 1.1vw, 16px);
+  gap: clamp(var(--space-sm), 1.1vw, var(--space-md));
   display: grid;
   padding: clamp(14px, 1.15vw, 18px);
 }
@@ -1537,7 +1537,7 @@ body:has(.login-screen) .app-footer--site-wide {
 }
 
 .discord-builder-form .content-field > span:first-child {
-  margin-bottom: 4px;
+  margin-bottom: var(--space-2xs);
   font-size: var(--font-size-ui);
   line-height: 1.2;
 }
@@ -1564,7 +1564,7 @@ body:has(.login-screen) .app-footer--site-wide {
 
 .discord-builder-form .discord-autorole-card,
 .discord-builder-form .discord-field-row {
-  padding: 12px;
+  padding: var(--space-sm);
 }
 
 .discord-builder-form .discord-builder-actions .btn {
@@ -1644,7 +1644,7 @@ body:has(.login-screen) .app-footer--site-wide {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-xs);
-  margin-top: 8px;
+  margin-top: var(--space-xs);
 }
 
 .discord-preview-component-button {
@@ -1652,7 +1652,7 @@ body:has(.login-screen) .app-footer--site-wide {
   border: 0;
   border-radius: 4px;
   min-height: 32px;
-  padding: 2px 16px;
+  padding: var(--space-3xs) var(--space-md);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1660,11 +1660,11 @@ body:has(.login-screen) .app-footer--site-wide {
   font: inherit;
   font-weight: var(--font-weight-semibold);
   line-height: 1;
-  color: #fff;
+  color: var(--c-wow-priest);
   cursor: default;
 }
 
-.discord-preview-component-button--1 { background: #5865f2; }
+.discord-preview-component-button--1 { background: var(--c-discord); }
 .discord-preview-component-button--2 { background: #4e5058; }
 .discord-preview-component-button--3 { background: #248046; }
 .discord-preview-component-button--4 { background: #da373c; }
@@ -1692,7 +1692,7 @@ body:has(.login-screen) .app-footer--site-wide {
    Primary actions stay prominent; tools keep a balanced 3-up desktop row.
    ========================================================= */
 .discord-hub-page {
-  --discord-hub-gap: clamp(12px, 1.25vw, 18px);
+  --discord-hub-gap: clamp(var(--space-sm), 1.25vw, 18px);
 }
 
 .discord-hub-shell {
@@ -1701,8 +1701,8 @@ body:has(.login-screen) .app-footer--site-wide {
 
 .discord-dashboard-hero {
   align-items: stretch;
-  gap: clamp(16px, 2vw, 24px);
-  padding: clamp(18px, 2vw, 24px);
+  gap: clamp(var(--space-md), 2vw, var(--space-lg));
+  padding: clamp(18px, 2vw, var(--space-lg));
 }
 
 .discord-dashboard-hero .lead {
@@ -1710,7 +1710,7 @@ body:has(.login-screen) .app-footer--site-wide {
 }
 
 .discord-dashboard-hero .hero-secure-note {
-  margin-top: 12px;
+  margin-top: var(--space-sm);
 }
 
 .discord-dashboard-hero__side .guild-hero-summary {
@@ -1768,7 +1768,7 @@ body:has(.login-screen) .app-footer--site-wide {
   gap: 11px;
   min-width: 0;
   min-height: 214px;
-  padding: clamp(16px, 1.4vw, 20px);
+  padding: clamp(var(--space-md), 1.4vw, 20px);
   color: inherit;
   text-decoration: none;
   overflow: hidden;
@@ -1900,7 +1900,7 @@ body:has(.login-screen) .app-footer--site-wide {
 
   .discord-dashboard-hero__side .guild-hero-stat-card {
     min-height: 54px;
-    padding: 8px;
+    padding: var(--space-xs);
   }
 
   .discord-dashboard-hero__side .guild-hero-stat-card > strong {
@@ -1976,44 +1976,44 @@ body:has(.guild-agreement-screen) { padding: 0; background: var(--auth-navy); }
 body:has(.guild-agreement-screen) #site-starfield { display: none; }
 .guild-agreement-screen {
   position: relative; isolation: isolate; width: 100%; max-width: none; margin: 0;
-  padding: max(48px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) 48px max(24px, env(safe-area-inset-left));
+  padding: max(48px, env(safe-area-inset-top)) max(var(--space-lg), env(safe-area-inset-right)) 48px max(var(--space-lg), env(safe-area-inset-left));
   flex: 1 0 auto; min-height: 80svh; color: var(--auth-ink-soft);
 }
 .guild-agreement-card {
   position: relative; z-index: 1; width: min(860px, 100%); margin: 0 auto;
-  border: 1px solid #94743e; border-radius: 18px; padding: clamp(24px, 4vw, 52px);
+  border: 1px solid #94743e; border-radius: 18px; padding: clamp(var(--space-lg), 4vw, 52px);
   background: linear-gradient(145deg, rgba(24, 30, 47, .96), rgba(15, 20, 35, .97));
   box-shadow: 0 24px 80px #0008, inset 0 0 0 4px rgb(var(--auth-gold-rgb) / 0.039);
 }
 .guild-agreement-heading { text-align: center; padding-bottom: 28px; border-bottom: 1px solid rgb(var(--auth-gold-rgb) / 0.2); }
 .guild-agreement-kicker { color: var(--auth-gold); font-size: 12px; letter-spacing: .15em; text-transform: uppercase; }
-.guild-agreement-heading h1 { margin: 12px 0; color: var(--auth-gold-pale); font-size: clamp(28px, 4vw, 42px); line-height: 1.2; overflow-wrap: anywhere; }
+.guild-agreement-heading h1 { margin: var(--space-sm) 0; color: var(--auth-gold-pale); font-size: clamp(28px, 4vw, 42px); line-height: 1.2; overflow-wrap: anywhere; }
 .guild-agreement-heading p,
 .guild-agreement-note { color: var(--auth-muted); }
-.guild-agreement-account { display: inline-block; margin-top: 12px; padding: 8px 14px; border-radius: 20px; background: #ffffff08; color: #d5d9e3; font-size: 13px; overflow-wrap: anywhere; }
+.guild-agreement-account { display: inline-block; margin-top: var(--space-sm); padding: var(--space-xs) 14px; border-radius: 20px; background: #ffffff08; color: #d5d9e3; font-size: 13px; overflow-wrap: anywhere; }
 .guild-agreement-text { padding-block: 28px; font-size: 16px; line-height: 1.8; overflow-wrap: anywhere; }
 .guild-agreement-text > :first-child { margin-top: 0; }
 .guild-agreement-text h2,
 .guild-agreement-text h3,
-.guild-agreement-text h4 { color: var(--auth-gold-light); margin-block: 26px 12px; line-height: 1.4; }
-.guild-agreement-text p { margin-block: 12px; }
+.guild-agreement-text h4 { color: var(--auth-gold-light); margin-block: 26px var(--space-sm); line-height: 1.4; }
+.guild-agreement-text p { margin-block: var(--space-sm); }
 .guild-agreement-text ul,
-.guild-agreement-text ol { padding-left: 24px; }
+.guild-agreement-text ol { padding-left: var(--space-lg); }
 .guild-agreement-text ul { list-style: disc; }
 .guild-agreement-text ol { list-style: decimal; }
-.guild-agreement-text li { margin-block: 8px; }
+.guild-agreement-text li { margin-block: var(--space-xs); }
 .guild-agreement-text a { color: var(--auth-gold-light); text-decoration: underline; }
-.guild-agreement-text blockquote { border-left: 3px solid var(--auth-gold); margin-inline: 0; padding: 4px 18px; background: #ffffff05; }
-.guild-agreement-text pre { overflow-x: auto; padding: 16px; background: #0004; }
+.guild-agreement-text blockquote { border-left: 3px solid var(--auth-gold); margin-inline: 0; padding: var(--space-2xs) 18px; background: #ffffff05; }
+.guild-agreement-text pre { overflow-x: auto; padding: var(--space-md); background: #0004; }
 .guild-agreement-text table { display: block; overflow-x: auto; max-width: 100%; border-collapse: collapse; }
 .guild-agreement-text th,
-.guild-agreement-text td { padding: 8px; border: 1px solid rgb(var(--auth-gold-rgb) / 0.2); }
-.guild-agreement-form { border-top: 1px solid rgb(var(--auth-gold-rgb) / 0.2); padding-top: 24px; }
-.guild-agreement-check { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; font-size: 15px; line-height: 1.6; min-height: 44px; }
-.guild-agreement-check input { flex: 0 0 22px; width: 22px; height: 22px; margin: 2px 0; accent-color: var(--auth-gold); }
-.guild-agreement-actions { display: grid; grid-template-columns: .75fr 1fr; gap: 12px; align-items: center; max-width: 432px; margin: 24px auto 0; }
+.guild-agreement-text td { padding: var(--space-xs); border: 1px solid rgb(var(--auth-gold-rgb) / 0.2); }
+.guild-agreement-form { border-top: 1px solid rgb(var(--auth-gold-rgb) / 0.2); padding-top: var(--space-lg); }
+.guild-agreement-check { display: flex; align-items: flex-start; gap: var(--space-sm); cursor: pointer; font-size: 15px; line-height: 1.6; min-height: 44px; }
+.guild-agreement-check input { flex: 0 0 22px; width: 22px; height: 22px; margin: var(--space-3xs) 0; accent-color: var(--auth-gold); }
+.guild-agreement-actions { display: grid; grid-template-columns: .75fr 1fr; gap: var(--space-sm); align-items: center; max-width: 432px; margin: var(--space-lg) auto 0; }
 .guild-agreement-login,
-.guild-agreement-submit { display: inline-flex; align-items: center; justify-content: center; text-align: center; border-radius: 8px; padding: 8px 12px; font-family: inherit; text-decoration: none; line-height: 1.3; }
+.guild-agreement-submit { display: inline-flex; align-items: center; justify-content: center; text-align: center; border-radius: 8px; padding: var(--space-xs) var(--space-sm); font-family: inherit; text-decoration: none; line-height: 1.3; }
 .guild-agreement-login { min-height: 45px; font-size: 12px; color: #b7bcc9; border: 1px solid #9dabc52e; background: #ffffff04; }
 .guild-agreement-submit { min-height: 60px; font-size: 16px; font-weight: 700; color: #fff1d2; background: linear-gradient(#a53023, #761810); border: 1px solid rgb(var(--auth-gold-rgb) / 0.6); cursor: pointer; transition: background-color .2s, box-shadow .2s; }
 .guild-agreement-submit:disabled { opacity: .5; cursor: default; }
@@ -2023,21 +2023,21 @@ body:has(.guild-agreement-screen) #site-starfield { display: none; }
 .guild-agreement-submit:focus-visible,
 .guild-agreement-check input:focus-visible { outline: 2px solid var(--auth-gold-pale); outline-offset: 4px; }
 .guild-agreement-note { text-align: center; font-size: 12px; line-height: 1.6; margin: 18px 0 0; }
-.guild-agreement-notice { padding: 16px; margin-block: 24px; border: 1px solid rgb(var(--auth-gold-rgb) / 0.4); border-radius: 10px; background: rgb(var(--auth-gold-rgb) / 0.051); line-height: 1.7; }
+.guild-agreement-notice { padding: var(--space-md); margin-block: var(--space-lg); border: 1px solid rgb(var(--auth-gold-rgb) / 0.4); border-radius: 10px; background: rgb(var(--auth-gold-rgb) / 0.051); line-height: 1.7; }
 .guild-agreement-success { border-top: 1px solid rgb(var(--auth-gold-rgb) / 0.2); padding-top: 28px; text-align: center; }
 .guild-agreement-success > span { color: #a7dcaf; font-size: 36px; }
 .guild-agreement-success .guild-agreement-login,
-.guild-agreement-unavailable .guild-agreement-login { width: 180px; margin-top: 12px; }
+.guild-agreement-unavailable .guild-agreement-login { width: 180px; margin-top: var(--space-sm); }
 .guild-agreement-unavailable { text-align: center; color: var(--auth-muted); }
 body:has(.guild-agreement-screen) .app-footer--site-wide { position: relative; z-index: 1; margin-top: 0; background: rgb(var(--auth-navy-rgb) / 0.91); }
 @media (max-width: 640px) {
-  .guild-agreement-screen { padding: max(20px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 24px max(12px, env(safe-area-inset-left)); }
-  .guild-agreement-card { padding: 24px 18px; border-radius: 12px; }
+  .guild-agreement-screen { padding: max(20px, env(safe-area-inset-top)) max(var(--space-sm), env(safe-area-inset-right)) var(--space-lg) max(var(--space-sm), env(safe-area-inset-left)); }
+  .guild-agreement-card { padding: var(--space-lg) 18px; border-radius: 12px; }
   .guild-agreement-text { font-size: 15px; line-height: 1.75; }
   .guild-agreement-submit { font-size: 14px; }
-  .guild-agreement-login { padding-inline: 8px; }
+  .guild-agreement-login { padding-inline: var(--space-xs); }
 }
 @media (prefers-reduced-motion: reduce) { .guild-agreement-submit { transition: none; } }
 .guild-rules-editor-note { color: var(--text-muted); line-height: 1.6; }
-.guild-rules-editor-preview { padding: 16px; border: 1px solid var(--border-subtle); border-radius: 12px; box-shadow: var(--shadow-sm); background: var(--auth-navy); color: var(--auth-ink-soft); }
+.guild-rules-editor-preview { padding: var(--space-md); border: 1px solid var(--border-subtle); border-radius: 12px; box-shadow: var(--shadow-sm); background: var(--auth-navy); color: var(--auth-ink-soft); }
 .guild-rules-editor-preview summary { cursor: pointer; min-height: 44px; align-content: center; }

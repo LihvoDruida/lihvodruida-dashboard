@@ -474,6 +474,6 @@
 
   .raid-poll-publication-option {
     min-height: 54px;
-    padding: 8px 10px;
+    padding: var(--space-xs) 10px;
   }
 }

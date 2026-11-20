@@ -356,7 +356,7 @@ a.card:hover {
 /* Розміри */
 .btn-sm {
   min-height: var(--control-height-sm);
-  padding: 0 12px;
+  padding: 0 var(--space-sm);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-meta);
 }
