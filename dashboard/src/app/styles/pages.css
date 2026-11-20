@@ -817,7 +817,7 @@
    ========================================================= */
 body:has(.login-screen) {
   padding: 0;
-  background: #0c1734;
+  background: var(--auth-navy);
 }
 
 body:has(.login-screen) #site-starfield,
@@ -838,7 +838,7 @@ body:has(.login-screen) .app-footer--site-wide {
   width: 100%;
   padding: max(36px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(36px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
   overflow: hidden;
-  background: #0c1734;
+  background: var(--auth-navy);
 }
 .login-background { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
 .login-background-poster { position: absolute; inset: 0; background: url("/assets/img/auth/forever-landscape.avif") center / cover no-repeat; transform: scale(1.06); }
@@ -847,26 +847,26 @@ body:has(.login-screen) .app-footer--site-wide {
 .login-background-video video { position: absolute; top: 50%; left: 50%; width: 100%; height: 100%; max-width: none; object-fit: cover; transform: translate(-50%, -50%) scale(1.12); opacity: 0; transition: opacity 1s; }
 .login-background-video video.is-retiring { opacity: 1; z-index: 1; transition: none; }
 .login-background-video video.is-shown { opacity: 1; z-index: 2; }
-.login-background::after { content: ""; position: absolute; inset: 0; background: radial-gradient(60% 45% at 50% 68%, rgba(6, 12, 30, .55) 0%, transparent 100%), radial-gradient(120% 80% at 50% 40%, transparent 35%, rgba(6, 12, 30, .75) 100%), linear-gradient(to bottom, rgba(6, 12, 30, .55) 0%, transparent 22%, transparent 45%, rgba(12, 23, 52, .92) 88%, #0c1734 100%); }
+.login-background::after { content: ""; position: absolute; inset: 0; background: radial-gradient(60% 45% at 50% 68%, rgb(var(--auth-night-rgb) / 0.55) 0%, transparent 100%), radial-gradient(120% 80% at 50% 40%, transparent 35%, rgb(var(--auth-night-rgb) / 0.75) 100%), linear-gradient(to bottom, rgb(var(--auth-night-rgb) / 0.55) 0%, transparent 22%, transparent 45%, rgb(var(--auth-navy-rgb) / 0.92) 88%, var(--auth-navy) 100%); }
 
 .login-shell {
   position: relative;
   z-index: 1;
   width: min(460px, 100%);
   padding: clamp(28px, 4vw, 42px) clamp(22px, 4vw, 36px);
-  border: 1px solid rgba(216, 178, 94, .65);
+  border: 1px solid rgb(var(--auth-gold-rgb) / 0.65);
   border-radius: 3px;
   background: linear-gradient(155deg, rgba(46, 33, 12, .95), rgba(9, 18, 44, .97));
-  box-shadow: 0 30px 80px rgba(0, 0, 0, .55), 0 0 60px rgba(245, 197, 52, .08), inset 0 0 0 5px rgba(6, 12, 30, .16);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .55), 0 0 60px rgba(245, 197, 52, .08), inset 0 0 0 5px rgb(var(--auth-night-rgb) / 0.16);
 }
 
 .login-shell__corner {
   position: absolute;
   width: 9px;
   height: 9px;
-  background: #d8b25e;
+  background: var(--auth-gold);
   rotate: 45deg;
-  box-shadow: 0 0 0 2px #2b1705;
+  box-shadow: 0 0 0 2px var(--auth-on-gold);
   pointer-events: none;
 }
 .login-shell__corner--tl { top: -5px; left: -5px; }
@@ -892,21 +892,21 @@ body:has(.login-screen) .app-footer--site-wide {
 .login-brandmark__halo {
   position: absolute;
   inset: -20px;
-  background: radial-gradient(circle, rgba(216, 178, 94, .17), transparent 68%);
+  background: radial-gradient(circle, rgb(var(--auth-gold-rgb) / 0.17), transparent 68%);
   pointer-events: none;
 }
 .login-brandmark img {
   width: 72px;
   height: 72px;
-  border: 1px solid #d8b25e;
+  border: 1px solid var(--auth-gold);
   border-radius: 50%;
-  background: #0c1734;
+  background: var(--auth-navy);
   box-shadow: 0 4px 18px rgba(0, 0, 0, .5);
 }
 .login-brandmark__frame {
   position: absolute;
   inset: 0;
-  border: 1px solid rgba(216, 178, 94, .45);
+  border: 1px solid rgb(var(--auth-gold-rgb) / 0.45);
   border-radius: 50%;
   pointer-events: none;
 }
@@ -914,7 +914,7 @@ body:has(.login-screen) .app-footer--site-wide {
 .login-guild-name {
   max-width: 100%;
   margin: 0;
-  color: #d8b25e;
+  color: var(--auth-gold);
   font-family: var(--font-guild-heading), Georgia, serif;
   font-size: 1rem;
   line-height: 1.35;
@@ -924,7 +924,7 @@ body:has(.login-screen) .app-footer--site-wide {
 }
 .login-content h1 {
   margin: 0;
-  color: #fff3d6;
+  color: var(--auth-ink);
   font-family: var(--font-guild-heading), Georgia, serif;
   font-size: clamp(1.9rem, 4vw, 2.3rem);
   font-weight: 700;
@@ -933,9 +933,9 @@ body:has(.login-screen) .app-footer--site-wide {
   text-shadow: 0 2px 12px rgba(0, 0, 0, .65);
 }
 .login-title-divider { display: grid; grid-template-columns: 1fr 7px 1fr; align-items: center; gap: 9px; width: 152px; }
-.login-title-divider > span { height: 1px; background: linear-gradient(90deg, transparent, #d8b25e); }
+.login-title-divider > span { height: 1px; background: linear-gradient(90deg, transparent, var(--auth-gold)); }
 .login-title-divider > span:last-child { transform: scaleX(-1); }
-.login-title-divider > i { width: 7px; height: 7px; rotate: 45deg; border: 1px solid #d8b25e; }
+.login-title-divider > i { width: 7px; height: 7px; rotate: 45deg; border: 1px solid var(--auth-gold); }
 .login-lead { max-width: 34ch; margin: 0; color: #e0d5bb; line-height: 1.65; }
 .login-alert {
   width: 100%;
@@ -962,15 +962,15 @@ body:has(.login-screen) .app-footer--site-wide {
   gap: 12px;
   min-height: 64px;
   padding: 12px 16px;
-  border: 2px solid #d8b25e;
+  border: 2px solid var(--auth-gold);
   border-radius: 3px;
   background: linear-gradient(180deg, #b82e25, #8e1b16 55%, #5a0d0a);
-  color: #fff3d6;
+  color: var(--auth-ink);
   text-align: left;
-  box-shadow: inset 0 1px 0 rgba(255, 220, 160, .45), 0 0 0 1px #2b1705, 0 8px 24px rgba(0, 0, 0, .35);
+  box-shadow: inset 0 1px 0 rgba(255, 220, 160, .45), 0 0 0 1px var(--auth-on-gold), 0 8px 24px rgba(0, 0, 0, .35);
   transition: filter .2s, transform .2s;
 }
-.login-discord-button:hover { color: #fff3d6; filter: brightness(1.12); }
+.login-discord-button:hover { color: var(--auth-ink); filter: brightness(1.12); }
 .login-discord-button:active { transform: translateY(1px); }
 .login-discord-button:focus-visible,
 .login-token summary:focus-visible,
@@ -981,12 +981,12 @@ body:has(.login-screen) .app-footer--site-wide {
 .login-discord-button strong { display: block; color: inherit; font-size: 1rem; line-height: 1.3; }
 .login-discord-button small { display: block; margin-top: 3px; color: #f3d7c3; font-size: .72rem; line-height: 1.4; }
 .login-discord-button__arrow { color: #f3d58d; font-size: 1.3rem; }
-.login-token { width: 100%; padding-top: 18px; border-top: 1px solid rgba(216, 178, 94, .25); text-align: left; }
+.login-token { width: 100%; padding-top: 18px; border-top: 1px solid rgb(var(--auth-gold-rgb) / 0.25); text-align: left; }
 .login-token summary { padding-block: 6px; color: #d8c69d; font-size: .85rem; cursor: pointer; }
 .login-token form { display: grid; gap: 9px; margin-top: 12px; }
-.login-token label { color: #efe2c0; font-size: .85rem; }
+.login-token label { color: var(--auth-label); font-size: .85rem; }
 .login-token__row { display: flex; gap: 10px; }
-.login-token__row input { min-width: 0; flex: 1; border-color: rgba(216, 178, 94, .55); background: #0c1734; color: #fff3d6; font-size: 16px; }
+.login-token__row input { min-width: 0; flex: 1; border-color: rgb(var(--auth-gold-rgb) / 0.55); background: var(--auth-navy); color: var(--auth-ink); font-size: 16px; }
 .login-token__row button { flex: 0 0 auto; min-height: 46px; padding-inline: 16px; }
 
 @media (max-width: 640px) {
@@ -1972,64 +1972,64 @@ body:has(.login-screen) .app-footer--site-wide {
 }
 
 /* Standalone guild agreement shares the full-viewport login background. */
-body:has(.guild-agreement-screen) { padding: 0; background: #0c1734; }
+body:has(.guild-agreement-screen) { padding: 0; background: var(--auth-navy); }
 body:has(.guild-agreement-screen) #site-starfield { display: none; }
 .guild-agreement-screen {
   position: relative; isolation: isolate; width: 100%; max-width: none; margin: 0;
   padding: max(48px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) 48px max(24px, env(safe-area-inset-left));
-  flex: 1 0 auto; min-height: 80svh; color: #f4ead6;
+  flex: 1 0 auto; min-height: 80svh; color: var(--auth-ink-soft);
 }
 .guild-agreement-card {
   position: relative; z-index: 1; width: min(860px, 100%); margin: 0 auto;
   border: 1px solid #94743e; border-radius: 18px; padding: clamp(24px, 4vw, 52px);
   background: linear-gradient(145deg, rgba(24, 30, 47, .96), rgba(15, 20, 35, .97));
-  box-shadow: 0 24px 80px #0008, inset 0 0 0 4px #d8b25e0a;
+  box-shadow: 0 24px 80px #0008, inset 0 0 0 4px rgb(var(--auth-gold-rgb) / 0.039);
 }
-.guild-agreement-heading { text-align: center; padding-bottom: 28px; border-bottom: 1px solid #d8b25e33; }
-.guild-agreement-kicker { color: #d8b25e; font-size: 12px; letter-spacing: .15em; text-transform: uppercase; }
-.guild-agreement-heading h1 { margin: 12px 0; color: #f4dfae; font-size: clamp(28px, 4vw, 42px); line-height: 1.2; overflow-wrap: anywhere; }
+.guild-agreement-heading { text-align: center; padding-bottom: 28px; border-bottom: 1px solid rgb(var(--auth-gold-rgb) / 0.2); }
+.guild-agreement-kicker { color: var(--auth-gold); font-size: 12px; letter-spacing: .15em; text-transform: uppercase; }
+.guild-agreement-heading h1 { margin: 12px 0; color: var(--auth-gold-pale); font-size: clamp(28px, 4vw, 42px); line-height: 1.2; overflow-wrap: anywhere; }
 .guild-agreement-heading p,
-.guild-agreement-note { color: #bfc4d1; }
+.guild-agreement-note { color: var(--auth-muted); }
 .guild-agreement-account { display: inline-block; margin-top: 12px; padding: 8px 14px; border-radius: 20px; background: #ffffff08; color: #d5d9e3; font-size: 13px; overflow-wrap: anywhere; }
 .guild-agreement-text { padding-block: 28px; font-size: 16px; line-height: 1.8; overflow-wrap: anywhere; }
 .guild-agreement-text > :first-child { margin-top: 0; }
 .guild-agreement-text h2,
 .guild-agreement-text h3,
-.guild-agreement-text h4 { color: #e9c77f; margin-block: 26px 12px; line-height: 1.4; }
+.guild-agreement-text h4 { color: var(--auth-gold-light); margin-block: 26px 12px; line-height: 1.4; }
 .guild-agreement-text p { margin-block: 12px; }
 .guild-agreement-text ul,
 .guild-agreement-text ol { padding-left: 24px; }
 .guild-agreement-text ul { list-style: disc; }
 .guild-agreement-text ol { list-style: decimal; }
 .guild-agreement-text li { margin-block: 8px; }
-.guild-agreement-text a { color: #e9c77f; text-decoration: underline; }
-.guild-agreement-text blockquote { border-left: 3px solid #d8b25e; margin-inline: 0; padding: 4px 18px; background: #ffffff05; }
+.guild-agreement-text a { color: var(--auth-gold-light); text-decoration: underline; }
+.guild-agreement-text blockquote { border-left: 3px solid var(--auth-gold); margin-inline: 0; padding: 4px 18px; background: #ffffff05; }
 .guild-agreement-text pre { overflow-x: auto; padding: 16px; background: #0004; }
 .guild-agreement-text table { display: block; overflow-x: auto; max-width: 100%; border-collapse: collapse; }
 .guild-agreement-text th,
-.guild-agreement-text td { padding: 8px; border: 1px solid #d8b25e33; }
-.guild-agreement-form { border-top: 1px solid #d8b25e33; padding-top: 24px; }
+.guild-agreement-text td { padding: 8px; border: 1px solid rgb(var(--auth-gold-rgb) / 0.2); }
+.guild-agreement-form { border-top: 1px solid rgb(var(--auth-gold-rgb) / 0.2); padding-top: 24px; }
 .guild-agreement-check { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; font-size: 15px; line-height: 1.6; min-height: 44px; }
-.guild-agreement-check input { flex: 0 0 22px; width: 22px; height: 22px; margin: 2px 0; accent-color: #d8b25e; }
+.guild-agreement-check input { flex: 0 0 22px; width: 22px; height: 22px; margin: 2px 0; accent-color: var(--auth-gold); }
 .guild-agreement-actions { display: grid; grid-template-columns: .75fr 1fr; gap: 12px; align-items: center; max-width: 432px; margin: 24px auto 0; }
 .guild-agreement-login,
 .guild-agreement-submit { display: inline-flex; align-items: center; justify-content: center; text-align: center; border-radius: 8px; padding: 8px 12px; font-family: inherit; text-decoration: none; line-height: 1.3; }
 .guild-agreement-login { min-height: 45px; font-size: 12px; color: #b7bcc9; border: 1px solid #9dabc52e; background: #ffffff04; }
-.guild-agreement-submit { min-height: 60px; font-size: 16px; font-weight: 700; color: #fff1d2; background: linear-gradient(#a53023, #761810); border: 1px solid #d8b25e99; cursor: pointer; transition: background-color .2s, box-shadow .2s; }
+.guild-agreement-submit { min-height: 60px; font-size: 16px; font-weight: 700; color: #fff1d2; background: linear-gradient(#a53023, #761810); border: 1px solid rgb(var(--auth-gold-rgb) / 0.6); cursor: pointer; transition: background-color .2s, box-shadow .2s; }
 .guild-agreement-submit:disabled { opacity: .5; cursor: default; }
-.guild-agreement-submit:not(:disabled):hover { box-shadow: 0 0 18px #d8b25e33; }
-.guild-agreement-login:hover { color: #f4ead6; background: #ffffff0c; }
+.guild-agreement-submit:not(:disabled):hover { box-shadow: 0 0 18px rgb(var(--auth-gold-rgb) / 0.2); }
+.guild-agreement-login:hover { color: var(--auth-ink-soft); background: #ffffff0c; }
 .guild-agreement-login:focus-visible,
 .guild-agreement-submit:focus-visible,
-.guild-agreement-check input:focus-visible { outline: 2px solid #f4dfae; outline-offset: 4px; }
+.guild-agreement-check input:focus-visible { outline: 2px solid var(--auth-gold-pale); outline-offset: 4px; }
 .guild-agreement-note { text-align: center; font-size: 12px; line-height: 1.6; margin: 18px 0 0; }
-.guild-agreement-notice { padding: 16px; margin-block: 24px; border: 1px solid #d8b25e66; border-radius: 10px; background: #d8b25e0d; line-height: 1.7; }
-.guild-agreement-success { border-top: 1px solid #d8b25e33; padding-top: 28px; text-align: center; }
+.guild-agreement-notice { padding: 16px; margin-block: 24px; border: 1px solid rgb(var(--auth-gold-rgb) / 0.4); border-radius: 10px; background: rgb(var(--auth-gold-rgb) / 0.051); line-height: 1.7; }
+.guild-agreement-success { border-top: 1px solid rgb(var(--auth-gold-rgb) / 0.2); padding-top: 28px; text-align: center; }
 .guild-agreement-success > span { color: #a7dcaf; font-size: 36px; }
 .guild-agreement-success .guild-agreement-login,
 .guild-agreement-unavailable .guild-agreement-login { width: 180px; margin-top: 12px; }
-.guild-agreement-unavailable { text-align: center; color: #bfc4d1; }
-body:has(.guild-agreement-screen) .app-footer--site-wide { position: relative; z-index: 1; margin-top: 0; background: #0c1734e8; }
+.guild-agreement-unavailable { text-align: center; color: var(--auth-muted); }
+body:has(.guild-agreement-screen) .app-footer--site-wide { position: relative; z-index: 1; margin-top: 0; background: rgb(var(--auth-navy-rgb) / 0.91); }
 @media (max-width: 640px) {
   .guild-agreement-screen { padding: max(20px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 24px max(12px, env(safe-area-inset-left)); }
   .guild-agreement-card { padding: 24px 18px; border-radius: 12px; }
@@ -2039,5 +2039,5 @@ body:has(.guild-agreement-screen) .app-footer--site-wide { position: relative; z
 }
 @media (prefers-reduced-motion: reduce) { .guild-agreement-submit { transition: none; } }
 .guild-rules-editor-note { color: var(--text-muted); line-height: 1.6; }
-.guild-rules-editor-preview { padding: 16px; border: 1px solid var(--border-subtle); border-radius: 12px; box-shadow: var(--shadow-sm); background: #0c1734; color: #f4ead6; }
+.guild-rules-editor-preview { padding: 16px; border: 1px solid var(--border-subtle); border-radius: 12px; box-shadow: var(--shadow-sm); background: var(--auth-navy); color: var(--auth-ink-soft); }
 .guild-rules-editor-preview summary { cursor: pointer; min-height: 44px; align-content: center; }

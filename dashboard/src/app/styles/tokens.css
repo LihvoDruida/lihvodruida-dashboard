@@ -82,6 +82,19 @@
 
   /* ---------- Брендовий колір інтеграції ---------- */
   --c-discord: #5865f2;
+  /* Login and guild agreement screens: night-blue and gold palette. */
+  --auth-navy: #0c1734;
+  --auth-navy-rgb: 12 23 52;
+  --auth-night-rgb: 6 12 30;
+  --auth-gold: #d8b25e;
+  --auth-gold-rgb: 216 178 94;
+  --auth-gold-light: #e9c77f;
+  --auth-gold-pale: #f4dfae;
+  --auth-ink: #fff3d6;
+  --auth-ink-soft: #f4ead6;
+  --auth-label: #efe2c0;
+  --auth-muted: #bfc4d1;
+  --auth-on-gold: #2b1705;
 
   /* =======================================================
      СЕМАНТИЧНИЙ ШАР — ним і треба користуватися у стилях
