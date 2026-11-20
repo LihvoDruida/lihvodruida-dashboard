@@ -51,15 +51,11 @@
    ========================================================= */
 .discord-management-card {
   display: flex;
-  flex-direction: column;
   border-left: 3px solid var(--c-ink-500);
   min-width: 0;
 }
 
 /* Тон грані = ступінь ризику дії */
-.discord-management-card--primary {
-  border-left-color: var(--c-accent-400);
-}
 
 .discord-management-card--action {
   border-left-color: var(--c-warning);
@@ -75,13 +71,10 @@
 }
 
 .discord-management-card__body {
-  display: grid;
   min-width: 0;
 }
 
 .discord-management-details {
-  display: grid;
-  gap: var(--space-xs);
   min-width: 0;
 }
 
@@ -96,11 +89,6 @@
 }
 
 .discord-management-status__item {
-  display: grid;
-  gap: var(--space-3xs);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
   min-width: 0;
 }
 
@@ -125,12 +113,6 @@
 }
 
 .discord-info-chip {
-  display: inline-flex;
-  gap: var(--space-3xs);
-  padding: var(--space-3xs) var(--space-sm);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-pill);
-  background: var(--surface-sunken);
   font-size: 0.74rem;
 }
 
@@ -197,15 +179,9 @@
   min-width: 0;
 }
 
-.server-status-dashboard {
-  display: grid;
-}
-
 .server-status-toolbar {
-  display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--space-md);
 }
 
 .server-status-toolbar > div:first-child {
@@ -273,7 +249,6 @@
 }
 
 .server-summary-card {
-  display: grid;
   border-top: 2px solid var(--server-tone);
 }
 
@@ -316,7 +291,6 @@
   min-width: 0;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  background: var(--surface-raised);
 }
 
 .server-graph-card__head,
@@ -378,10 +352,6 @@
   font-size: 0.64rem;
 }
 
-.server-section {
-  display: grid;
-}
-
 .server-section__head h2 {
   margin: var(--space-3xs) 0 0;
 }
@@ -417,11 +387,6 @@
 
 .server-detail-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.server-detail-card {
-  display: grid;
-  gap: var(--space-md);
 }
 
 .server-detail-card dl {
@@ -627,10 +592,13 @@
    10. SERVER MONITORING V2 — швидке тихе оновлення + Docker cache
    ========================================================= */
 .server-status-dashboard {
+  display: grid;
   gap: 14px;
 }
 
 .server-status-toolbar {
+  gap: var(--space-md);
+  display: grid;
   padding: 14px 16px;
   border-radius: var(--admin-card-radius);
 }
@@ -676,6 +644,7 @@
 }
 
 .server-summary-card {
+  display: grid;
   gap: 7px;
   min-height: 128px;
   padding: 14px 15px;
@@ -691,6 +660,7 @@
 }
 
 .server-graph-card {
+  background: var(--surface-raised);
   padding: 14px;
 }
 
@@ -700,6 +670,7 @@
 }
 
 .server-section {
+  display: grid;
   gap: 14px;
   padding: 16px;
 }
@@ -812,6 +783,8 @@
 }
 
 .server-detail-card {
+  gap: var(--space-md);
+  display: grid;
   padding: 14px 16px;
 }
 
@@ -942,7 +915,6 @@
 }
 
 .discord-settings-card {
-  display: grid;
   gap: 18px;
   border-left-color: var(--c-info);
 }
@@ -982,6 +954,7 @@
 }
 
 .discord-management-card {
+  flex-direction: column;
   gap: var(--space-sm);
   padding: 16px;
   border-left-width: 2px;
@@ -991,11 +964,8 @@
   min-width: 0;
 }
 
-.discord-management-card--danger {
-  border-left-color: var(--c-danger);
-}
-
 .discord-management-card__body {
+  display: grid;
   gap: var(--space-sm);
 }
 
@@ -1093,6 +1063,11 @@
 }
 
 .discord-management-status__item {
+  background: var(--surface-sunken);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  gap: var(--space-3xs);
+  display: grid;
   min-height: 90px;
   align-content: start;
   padding: 12px;
@@ -1114,6 +1089,12 @@
 }
 
 .discord-info-chip {
+  background: var(--surface-sunken);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+  padding: var(--space-3xs) var(--space-sm);
+  gap: var(--space-3xs);
+  display: inline-flex;
   align-items: center;
   white-space: normal;
 }
@@ -1151,6 +1132,8 @@
 }
 
 .discord-management-details {
+  gap: var(--space-xs);
+  display: grid;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   background: var(--surface-sunken);
@@ -1163,14 +1146,6 @@
   font-size: var(--font-size-meta);
   font-weight: var(--font-weight-bold);
   cursor: pointer;
-}
-
-.discord-management-details--explanation > p {
-  margin: 0;
-  padding: 0 12px 12px;
-  color: var(--text-muted);
-  font-size: var(--font-size-ui);
-  line-height: var(--line-height-copy);
 }
 
 .discord-inline-warning {
@@ -1276,6 +1251,7 @@
 
 /* Discord nickname warning automation */
 .discord-settings-card {
+  display: grid;
   align-items: start;
   grid-template-columns: minmax(320px, 0.78fr) minmax(520px, 1.22fr);
 }

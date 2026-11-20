@@ -309,6 +309,7 @@
 }
 
 .roster-inline-form {
+  align-items: center;
   display: inline-grid;
   min-width: 0;
 }

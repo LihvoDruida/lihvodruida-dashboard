@@ -329,6 +329,9 @@
 }
 
 .raid-poll-create-preview {
+  background: var(--surface-sunken);
+  padding: var(--pad-card-compact);
+  grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
   border-left: 3px solid var(--c-accent-400);
 }
 

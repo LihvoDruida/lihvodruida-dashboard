@@ -595,7 +595,6 @@ form {
    5. ПІГУЛКИ ТА ЧІПИ
    ========================================================= */
 .status-pill,
-.status-chip,
 .raid-state,
 .profile-count-pill,
 .content-mode-pill,
@@ -685,7 +684,6 @@ form {
 }
 
 .status-pill,
-.status-chip,
 .raid-state,
 .profile-count-pill,
 .content-mode-pill,
@@ -769,9 +767,6 @@ form {
 
 
 /* Складений рядок: зміст ліворуч, дії праворуч */
-.dashboard-list-row {
-  flex-wrap: wrap;
-}
 
 .dashboard-list-row > *:first-child {
   flex: 1 1 min(320px, 100%);
@@ -784,6 +779,7 @@ form {
 
 
 .dashboard-list-row {
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   display: flex;
