@@ -1,5 +1,7 @@
 import { NextRequest } from "next/server";
 
+import { canManageSettings } from "@/lib/permissions";
+
 import { auditDiscordAdmin, adminDiscordResponse, discordAdminError, requireDiscordAdmin } from "@/lib/dashboardDiscordRoute";
 import { setRulesAcceptanceSettings } from "@/lib/rulesAcceptanceSettings";
 
@@ -10,6 +12,9 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   const guard = await requireDiscordAdmin(request, "rules-acceptance-settings");
   if ("error" in guard) return guard.error;
+  if (!canManageSettings(guard.session)) {
+    return adminDiscordResponse(request, { ok: false, tone: "error", title: "Немає доступу", message: "Налаштування правил може змінювати лише власник Discord-сервера.", status: 403 });
+  }
 
   try {
     const form = await request.formData();

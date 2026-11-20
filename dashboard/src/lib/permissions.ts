@@ -28,6 +28,15 @@ export function hasDashboardPermission(session: DashboardSession | null | undefi
 
 const permitted = hasDashboardPermission;
 
+/**
+ * System and policy settings (login and geo policy, logging, Discord management, rules,
+ * Static roles, runtime settings) are reserved for the live-verified Discord server owner.
+ * Group permissions, impersonation ("view as group") and the emergency token never qualify.
+ */
+export function canManageSettings(session: DashboardSession | null | undefined) {
+  return Boolean(session?.isServerOwner && session.provider === "discord" && !session.impersonatedBy);
+}
+
 export function isDashboardStaff(session: DashboardSession | null | undefined) {
   return permitted(session, "applications.manage");
 }

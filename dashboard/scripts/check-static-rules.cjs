@@ -21,7 +21,7 @@ verify('lib/staticRules.ts', [
 ]);
 verify('app/api/static/accept/route.ts', [ 'verifyTrustedOrigin(', 'checkRateLimit(', 'assertRequestBodySize(', 'createStaticChallenge(' ], [ 'addGuildMemberRoles(' ]);
 verify('app/api/static/manage/route.ts', [ 'getSession({ live: true })', 'staticPermission(session)', 'if (!access.edit' ]);
-verify('app/api/dashboard/static-roles/route.ts', [ 'getSession({ live: true })', 'staticPermission(session)', 'access.admin', 'saveStaticSettings(' ]);
+verify('app/api/dashboard/static-roles/route.ts', [ 'getSession({ live: true })', 'staticPermission(session)', 'access.owner', 'canManageSettings(session)', 'saveStaticSettings(' ]);
 verify('app/api/static/rules/route.ts', [ 'getSession({ live: true })', 'staticPermission(session)', 'permissions.edit' ]);
 verify('app/api/static/events/route.ts', [ 'listStaticAudit(', 'staticPermission(session)' ]);
 verify('app/api/internal/discord/static-confirm/route.ts', [ 'verifyInternalBearerToken(', 'INTERNAL_API_TOKEN', 'confirmStaticChallenge(' ]);

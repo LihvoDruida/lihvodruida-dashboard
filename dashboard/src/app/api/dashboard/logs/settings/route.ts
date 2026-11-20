@@ -4,7 +4,7 @@ import { getSession } from "@/lib/auth";
 import { recordAdminAudit } from "@/lib/accessGroups";
 import { hasPostgresConfig } from "@/lib/db/pgPool";
 import { getStructuredLogSettings, updateStructuredLogSettings } from "@/lib/logSettings";
-import { canManageGroups, canViewAdminLogs } from "@/lib/permissions";
+import { canManageSettings, canViewAdminLogs } from "@/lib/permissions";
 import {
   assertRequestBodySize,
   checkRateLimit,
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
   if (!session || !canViewAdminLogs(session)) return responseFor(request, { ok: false, title: "Немає доступу", status: session ? 403 : 401 });
   try {
     const settings = await getStructuredLogSettings({ fresh: true, strict: true });
-    return NextResponse.json({ ok: true, settings, configured: hasPostgresConfig(), canEdit: canManageGroups(session), canTuneStorage: Boolean(session.isServerOwner) }, { headers: noStoreHeaders() });
+    return NextResponse.json({ ok: true, settings, configured: hasPostgresConfig(), canEdit: canManageSettings(session), canTuneStorage: canManageSettings(session) }, { headers: noStoreHeaders() });
   } catch {
     return NextResponse.json({ ok: false, message: "Не вдалося прочитати налаштування журналу зі сховища." }, { status: 503, headers: noStoreHeaders() });
   }
@@ -85,8 +85,8 @@ export async function POST(request: NextRequest) {
 
   const session = await getSession();
   if (!session) return responseFor(request, { ok: false, tone: "warning", title: "Потрібен вхід", status: 401 });
-  if (!canManageGroups(session)) {
-    return responseFor(request, { ok: false, title: "Немає доступу", message: "Налаштування журналу може змінювати тільки адміністратор.", status: 403 });
+  if (!canManageSettings(session)) {
+    return responseFor(request, { ok: false, title: "Немає доступу", message: "Налаштування журналу може змінювати лише власник Discord-сервера.", status: 403 });
   }
 
   const ip = getClientIp(request);

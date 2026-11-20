@@ -1,0 +1,10 @@
+.stack { display: grid; gap: var(--section-gap); min-width: 0; }
+.fields { display: grid; gap: var(--space-md); grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--dropdown-min)), 1fr)); }
+.field { display: grid; gap: var(--space-xs); color: var(--text-body); min-width: 0; }
+.field :is(input, select) { width: 100%; min-width: 0; max-width: 100%; }
+.labelRow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs); }
+.hint { font-size: var(--font-size-meta); color: var(--text-muted); line-height: var(--line-height-copy); }
+.envList { display: grid; gap: var(--space-xs); margin: 0; padding: 0; list-style: none; }
+.envRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-sm); align-items: center; padding: var(--space-sm); border-bottom: var(--stroke-width) solid var(--border); }
+.envRow small { display: block; font-size: var(--font-size-meta); color: var(--text-muted); overflow-wrap: anywhere; }
+.actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); align-items: center; }

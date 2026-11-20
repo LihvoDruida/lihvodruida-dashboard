@@ -1,5 +1,7 @@
 import { NextRequest } from "next/server";
 
+import { canManageSettings } from "@/lib/permissions";
+
 import { auditDiscordAdmin, adminDiscordResponse, discordAdminError, requireDiscordAdmin } from "@/lib/dashboardDiscordRoute";
 import { setGuildDiscordManagementSettings } from "@/lib/guildNicknamePolicy";
 
@@ -11,6 +13,9 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   const guard = await requireDiscordAdmin(request, "settings");
   if ("error" in guard) return guard.error;
+  if (!canManageSettings(guard.session)) {
+    return adminDiscordResponse(request, { ok: false, tone: "error", title: "Немає доступу", message: "Discord-налаштування може змінювати лише власник Discord-сервера.", status: 403 });
+  }
 
   try {
     const form = await request.formData();

@@ -15,7 +15,7 @@ import {
   type DiscordManageableRoleOption,
 } from "@/lib/discordAdmin";
 import { DEFAULT_NICKNAME_TEMPLATE, VALID_NICKNAME_STRUCTURES, getGuildNicknamePolicy, nicknameTemplateExample } from "@/lib/guildNicknamePolicy";
-import { canManageDiscordMembers } from "@/lib/permissions";
+import { canManageDiscordMembers, canManageSettings } from "@/lib/permissions";
 import { buildPageMetadata } from "@/lib/seo";
 import { getNicknameWarningAutomationState } from "@/lib/discordNicknameWarnings";
 
@@ -271,6 +271,8 @@ export default async function AdminDiscordPage() {
             />
           </div>
           <form className="panel discord-management-card discord-management-card--settings discord-settings-card" action="/api/dashboard/discord/settings" method="post" data-dashboard-action-form="true" data-dashboard-live-submit="true">
+            {!canManageSettings(user) ? <p className="muted discord-settings-owner-note" role="note">Ці налаштування змінює лише власник Discord-сервера.</p> : null}
+            <fieldset className="discord-settings-fieldset" disabled={!canManageSettings(user)}>
             <input type="hidden" name="template" value={DEFAULT_NICKNAME_TEMPLATE} />
             <input type="hidden" name="nicknameReminderIntervalHours" value={policy.nicknameReminderIntervalHours} />
 
@@ -410,6 +412,7 @@ export default async function AdminDiscordPage() {
                 <button className="btn primary" type="submit">Зберегти налаштування</button>
               </div>
             </div>
+            </fieldset>
           </form>
         </section>
 

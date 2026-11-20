@@ -49,18 +49,18 @@ export async function getStaticSettings(): Promise<StaticSettings> {
 }
 
 export async function staticPermission(session: DashboardSession | null) {
-  if (!session || session.impersonatedBy || session.provider !== "discord" || !snowflake(session.id)) return { view: false, edit: false, admin: false };
+  if (!session || session.impersonatedBy || session.provider !== "discord" || !snowflake(session.id)) return { view: false, edit: false, admin: false, owner: false };
   // Require a fresh authoritative guild membership read, not only a session claim.
   const [member, guild, settings] = await Promise.all([
     fetchDiscordGuildMemberSnapshot(session.id), fetchDiscordGuildSnapshot(), getStaticSettings(),
   ]);
-  if (!member.joinedAt) return { view: false, edit: false, admin: false };
+  if (!member.joinedAt) return { view: false, edit: false, admin: false, owner: false };
   const owner = guild.ownerId === session.id;
   // If roles changed since session issuance, do not keep elevated session privileges.
   const rolesCurrent = (session.discordRoleIds || []).every((role) => member.roleIds.includes(role));
   const admin = owner || (Boolean(session.discordRoleIds?.length) && rolesCurrent && isDashboardAdmin(session));
   const manager = Boolean(settings.managerRoleId && member.roleIds.includes(settings.managerRoleId));
-  return { view: true, edit: admin || manager, admin };
+  return { view: true, edit: admin || manager, admin, owner };
 }
 
 export async function saveStaticSettings(input: { text?: string; memberRoleId?: string; managerRoleId?: string }, actorId: string, settingsOnly = false) {

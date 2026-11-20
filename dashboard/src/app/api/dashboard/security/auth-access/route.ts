@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { recordAdminAudit } from "@/lib/accessGroups";
 import { setAuthAccessPolicy } from "@/lib/authAccessPolicy";
-import { canManageGroups } from "@/lib/permissions";
+import { canManageSettings } from "@/lib/permissions";
 import {
   assertRequestBodySize,
   checkRateLimit,
@@ -80,8 +80,8 @@ export async function POST(request: NextRequest) {
     return adminResponse(request, { ok: false, tone: "warning", title: "Потрібен вхід", message: "Сесія застаріла. Увійди в панель ще раз.", status: 401, data: { loginUrl: "/login" } });
   }
 
-  if (!canManageGroups(session)) {
-    return adminResponse(request, { ok: false, tone: "error", title: "Немає доступу", message: "Правила авторизації може змінювати тільки адміністратор із правом керування групами.", status: 403 });
+  if (!canManageSettings(session)) {
+    return adminResponse(request, { ok: false, tone: "error", title: "Немає доступу", message: "Ці налаштування може змінювати лише власник Discord-сервера.", status: 403 });
   }
 
   const ip = getClientIp(request);
