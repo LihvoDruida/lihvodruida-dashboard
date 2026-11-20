@@ -5,6 +5,8 @@
 #   make restart      повний перезапуск
 #   make stop         зупинка
 #   make check        тільки перевірки, нічого не запускати
+#   make configure    безпечно заповнити .env панелі, бота й сайту (KEY=NAME — одне значення)
+#   make configure-check  стан налаштувань без змін
 #   make cert         випуск або поновлення сертифіката (Let's Encrypt)
 #   make cert-origin  встановити Cloudflare Origin Certificate
 #                     CERT=origin.pem KEY=origin.key
@@ -47,10 +49,10 @@ export AUTO_PRUNE_BUILD_CACHE ?= 1
 .NOTPARALLEL:
 
 .PHONY: help start up restart stop check cert cert-self cert-status cert-origin \
-        backup restore deploy logs ps resources clean-cache docker-stats rebuild-dashboard rebuild-bot discord-check discord-endpoint-check discord-endpoint-fix internal-check security-audit guild-sync fix-perms
+        configure configure-check backup restore deploy logs ps resources clean-cache docker-stats rebuild-dashboard rebuild-bot discord-check discord-endpoint-check discord-endpoint-fix internal-check security-audit guild-sync fix-perms
 
 help:
-	@sed -n '3,18p' Makefile | sed 's/^# \?//'
+	@sed -n '3,20p' Makefile | sed 's/^# \?//'
 
 # Права відновлюються перед кожним викликом: дешевше, ніж діагностувати
 # Permission denied на середині запуску.
@@ -71,6 +73,15 @@ stop: fix-perms
 
 check: fix-perms
 	@$(SCRIPTS)/start.sh --check
+
+# Секрети вводяться приховано й ніколи не друкуються; спільні значення
+# (bridge-токен, внутрішній токен, ключі Discord) пишуться в усі потрібні файли.
+# SITE=/srv/lihvodruida-site — каталог публічного сайту (за замовчуванням поруч).
+configure:
+	@python3 $(SCRIPTS)/configure.py $(if $(KEY),--key $(KEY)) $(if $(SITE),--site $(SITE))
+
+configure-check:
+	@python3 $(SCRIPTS)/configure.py --check $(if $(SITE),--site $(SITE))
 
 cert: fix-perms
 	@$(SCRIPTS)/cert.sh

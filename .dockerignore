@@ -22,6 +22,8 @@
 
 # Артефакти розгортання й документація в образі не потрібні
 backups/
+# make configure: копії .env перед кожною зміною (секрети).
+.config-backups/
 # Keep only the public Markdown source and canonical release-check documents
 # in the build context. They are copied to builder only, never to runner.
 docs/**
