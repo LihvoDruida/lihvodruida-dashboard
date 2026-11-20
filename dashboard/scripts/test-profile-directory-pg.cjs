@@ -24,8 +24,8 @@ const groups = [
 ];
 const mod = subject(monitored, store, () => { if (groupsFail) throw Error('Groups unavailable'); return groups; });
 const legacy = subject(monitored, store, groups, 'documentStore');
-const admin = { id: '999', provider: 'discord', role: 'admin' };
-const member = { id: '999', provider: 'discord', role: 'member', groupId: 'member', groupRank: 10, permissions: ['profiles.group.view'] };
+const admin = { id: '999', provider: 'discord', role: 'admin', permissions: ['dashboard.view', 'profiles.view'] };
+const member = { id: '999', provider: 'discord', role: 'member', groupId: 'member', groupRank: 10, permissions: ['dashboard.view', 'profiles.group.view'] };
 const id = i => 'id' + i.toString(16).padStart(32, '0');
 let passed = 0, dataset = [];
 async function check(name, run) { await run(); passed++; console.log('✓ ' + name); }
@@ -122,7 +122,7 @@ async function traverse(params, expected) {
   });
   await check('Cursor is reset on changed filters, identity or permissions', async () => {
     const first = await mod.listDashboardProfilePage({ viewer: admin });
-    for (const params of [{ viewer: admin, role: 'member' }, { viewer: member }, { viewer: { ...admin, permissions: ['profiles.group.view'], groupId: 'member', groupRank: 10 } }]) {
+    for (const params of [{ viewer: admin, role: 'member' }, { viewer: member }, { viewer: { ...admin, permissions: member.permissions, groupId: 'member', groupRank: 10 } }]) {
       const page = await mod.listDashboardProfilePage({ ...params, cursor: first.nextCursor }); assert.ok(page.cursorReset); assert.equal(page.start, 1); assert.equal(page.total, (await oracle(params.viewer, params)).length);
     }
   });

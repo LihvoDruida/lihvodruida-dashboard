@@ -50,7 +50,7 @@ const poll={id:"poll0000",title:"Вихідні",description:"Час рейду"
 (async()=>{
  await test("public archive excludes overdue unpublished drafts under every filter",async()=>{
   const input=[raid,{...raid,id:"draft000",title:"Secret draft",status:"draft"},{...raid,id:"closed00",status:"closed"}];
-  const subject=load("src/services/raidDirectoryWorkspace.ts",{"next/navigation":{redirect:stop},"@/lib/auth":{getSession:async()=>null},"@/lib/permissions":{canManageRaids:()=>false},"@/lib/discordAdmin":{hasDiscordEmbedConfig:()=>true},"@/lib/raids":{hasRaidStorage:()=>true,listRaids:async()=>input,isRaidClosed:value=>value.id!==raid.id},"@/lib/listViewState":state,"@/lib/raidListSearch":search,"@/lib/dashboardSystemLogs":{recordDashboardSystemLog(){}}},globals).exports;
+  const subject=load("src/services/raidDirectoryWorkspace.ts",{"next/navigation":{redirect:stop},"@/lib/auth":{getSession:async()=>null},"@/lib/permissions":{canManageRaids:()=>false},"@/lib/discordAdmin":{hasDiscordEmbedConfig:()=>true},"@/lib/raids":{hasRaidStorage:()=>true,listRaids:async()=>input,isRaidClosed:value=>value.id!==raid.id,raidDateTimeToUtcMs:()=>Date.parse("2099-01-01T18:00:00Z")},"@/lib/listViewState":state,"@/lib/raidListSearch":search,"@/lib/dashboardSystemLogs":{recordDashboardSystemLog(){}}},globals).exports;
   for(const params of [{},{state:"closed"},{q:"Secret"},{state:"draft"}]){const model=await subject.loadRaidDirectoryWorkspace({searchParams:Promise.resolve(params)});assert.ok(!model.visibleCurrent.some(x=>x.id==="draft000"));assert.ok(!model.visibleArchive.some(x=>x.id==="draft000"));}
  });
  await test("raid directory distinguishes a failed storage read from an empty successful result",async()=>{

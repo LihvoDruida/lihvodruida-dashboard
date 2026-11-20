@@ -593,12 +593,12 @@
     position: relative;
     display: grid;
     place-items: center;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     flex: 0 0 auto;
     border: 0;
     border-radius: 11px;
-    background: rgba(255, 255, 255, 0.035);
+    background: var(--surface-hover);
     color: var(--text-strong);
     cursor: pointer;
   }
@@ -633,63 +633,48 @@
     top: 6px;
   }
 
-  .nav-burger.is-active .nav-burger__bars {
-    background: transparent;
-  }
-
-  .nav-burger.is-active .nav-burger__bars::before {
-    top: 0;
-    transform: rotate(45deg);
-  }
-
-  .nav-burger.is-active .nav-burger__bars::after {
-    top: 0;
-    transform: rotate(-45deg);
-  }
-
-
-  .nav-sheet {
+  .nav-sheet[open] {
     position: fixed;
     inset: 0;
-    z-index: calc(var(--z-navbar) - 1);
     display: block;
-    padding: calc(78px + env(safe-area-inset-top)) 12px calc(18px + env(safe-area-inset-bottom));
-    background: rgba(8, 7, 6, 0.76);
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transition: opacity 0.18s ease, visibility 0.18s;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: calc(var(--space-md) + env(safe-area-inset-top)) max(var(--space-sm), env(safe-area-inset-right))
+      calc(var(--space-md) + env(safe-area-inset-bottom)) max(var(--space-sm), env(safe-area-inset-left));
+    overflow: hidden;
+    border: 0;
+    background: transparent;
+    color: var(--text-body);
   }
 
-  .nav-sheet.is-open {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+  .nav-sheet::backdrop {
+    background: color-mix(in srgb, var(--site-bg-0) 76%, transparent);
+    backdrop-filter: blur(6px);
   }
 
   .nav-sheet__inner {
-    display: grid;
-    gap: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xs);
     width: min(100%, 640px);
     max-height: 100%;
     margin-inline: auto;
-    padding: 14px;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    border: 1px solid var(--border);
+    padding: var(--space-sm);
+    border: 1px solid var(--border-strong);
     border-radius: var(--radius-lg);
-    background: rgba(18, 15, 12, 0.985);
-    box-shadow: 0 30px 70px -24px rgba(0, 0, 0, 0.96);
+    background: var(--nav-surface-solid);
+    box-shadow: var(--nav-shadow);
   }
 
   .nav-sheet__brand {
     display: flex;
     align-items: center;
-    gap: 11px;
-    padding: 6px 7px 13px;
-    margin-bottom: 4px;
+    flex: 0 0 auto;
+    gap: var(--space-sm);
+    padding: var(--space-2xs) var(--space-xs) var(--space-sm);
     border-bottom: 1px solid var(--border-subtle);
   }
 
@@ -704,6 +689,7 @@
 
   .nav-sheet__brand div {
     display: grid;
+    flex: 1;
     gap: var(--space-3xs);
     min-width: 0;
   }
@@ -711,25 +697,43 @@
   .nav-sheet__brand strong {
     overflow: hidden;
     color: var(--text-strong);
-    font-size: 13px;
+    font-size: var(--font-size-body-sm);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .nav-sheet__brand span {
     overflow: hidden;
-    color: var(--text-faint);
-    font-size: 11px;
+    color: var(--text-muted);
+    font-size: var(--font-size-ui);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
+  .nav-sheet__close {
+    width: 44px;
+    min-height: 44px;
+  }
+
+  .nav-sheet__close svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .nav-sheet__links {
+    display: grid;
+    gap: var(--space-2xs);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: var(--space-2xs);
+  }
+
   .nav-sheet__group {
-    padding: 10px 10px 3px;
-    color: var(--text-faint);
-    font-size: 9px;
+    padding: var(--space-sm) var(--space-sm) var(--space-3xs);
+    color: var(--text-muted);
+    font-size: var(--font-size-meta);
     font-weight: var(--font-weight-bold);
-    letter-spacing: 0.16em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
   }
 
@@ -799,10 +803,6 @@
     max-width: 52vw;
     font-size: 11px;
     letter-spacing: 0.08em;
-  }
-
-  .nav-sheet {
-    padding-inline: 8px;
   }
 }
 

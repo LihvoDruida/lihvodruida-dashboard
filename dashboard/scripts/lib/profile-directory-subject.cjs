@@ -26,11 +26,13 @@ module.exports = function subject(pool, store, groups, mode = 'postgres', profil
   const guildPolicy = load('src/lib/guildNicknamePolicy.ts', { '@/lib/db/documentValues': compat, '@/lib/documentDb': storage, '@/lib/runtimeResilience': resilience, '@/lib/storageAccess': { storageWrite: (_key, _type, write) => write() }, '@/lib/values': values }).exports;
   const raidProgress = load('src/lib/characterRaidProgress.ts').exports;
   const canonical = load('src/lib/characterDataStore.ts', { '@/lib/db/documentValues': compat, '@/lib/documentDb': storage, '@/lib/runtimeResilience': resilience, '@/lib/characterRaidProgress': raidProgress }).exports;
+  const notificationPreferences = load('src/lib/discordNotificationPreferences.ts', { '@/lib/documentDb': storage }).exports;
   const deps = { ...dependencies(profileModule), crypto: require('node:crypto'), '@/lib/db/documentValues': compat, '@/lib/documentDb': storage,
     '@/lib/values': values, '@/lib/permissions': permissions, '@/lib/accessGroups': access, '@/lib/guildNicknamePolicy': guildPolicy,
     '@/lib/wowCharacters': load('src/lib/wowCharacters.ts', { crypto: require('node:crypto') }).exports,
     '@/lib/wowRoles': load('src/lib/wowRoles.ts').exports,
     '@/lib/characterDataStore': canonical, '@/lib/characterRaidProgress': raidProgress,
+    '@/lib/discordNotificationPreferences': notificationPreferences,
     '@/lib/runtimeResilience': resilience,
     '@/lib/storageAccess': { storageWrite: (_type, _key, writer) => writer() },
   };

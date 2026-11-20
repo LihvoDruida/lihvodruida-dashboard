@@ -109,6 +109,9 @@ export default async function DashboardIdentity({
                 desktopLabel: canCreateRaids ? "Рейди" : "Мої рейди",
               }
             : null,
+          canUseRaids
+            ? { href: "/polls", section: "polls", label: "Рейд-пули", desktopLabel: "Рейд-пули" }
+            : null,
           canUseGuildRoster
             ? { href: "/guild", section: "guild", label: "Склад гільдії", desktopLabel: "Гільдія" }
             : null,
@@ -199,9 +202,9 @@ export default async function DashboardIdentity({
             <span className="dashboard-brand__copy"><strong>{guild.name}</strong><small>Рейди · Discord-запис</small></span>
           </Link>
           <nav className="dashboard-public-nav" aria-label="Публічна навігація">
-            <Link prefetch={false} href="/raids" aria-current={activeSection === "raids" ? "page" : undefined}>Рейди</Link>
-            <Link prefetch={false} href="/guild" aria-current={activeSection === "guild" ? "page" : undefined}>Гільдія</Link>
-            <Link prefetch={false} href="/polls" aria-current={activeSection === "polls" ? "page" : undefined}>Рейд-пули</Link>
+            <Link prefetch={false} href="/raids" aria-current={current("raids")}>Рейди</Link>
+            <Link prefetch={false} href="/guild" aria-current={current("guild")}>Гільдія</Link>
+            <Link prefetch={false} href="/polls" aria-current={current("polls")}>Рейд-пули</Link>
           </nav>
         </header>
       )}
@@ -231,45 +234,58 @@ export default async function DashboardIdentity({
                 aria-label="Відкрити меню"
                 aria-expanded="false"
                 aria-controls="nav-sheet"
+                aria-haspopup="dialog"
               >
                 <span className="nav-burger__bars" aria-hidden="true" />
               </button>
             ) : (
-              <nav className="dashboard-public-nav dashboard-public-nav--mobile" aria-label="Публічна навігація"><Link prefetch={false} href="/raids">Рейди</Link><Link prefetch={false} href="/guild">Гільдія</Link><Link prefetch={false} href="/polls">Пули</Link></nav>
+              <nav className="dashboard-public-nav dashboard-public-nav--mobile" aria-label="Публічна навігація">
+                <Link prefetch={false} href="/raids" aria-current={current("raids")}>Рейди</Link>
+                <Link prefetch={false} href="/guild" aria-current={current("guild")}>Гільдія</Link>
+                <Link prefetch={false} href="/polls" aria-current={current("polls")}>Пули</Link>
+              </nav>
             )}
           </div>
         </header>
       </aside>
 
       {user ? (
-        <div className="nav-sheet" id="nav-sheet" aria-hidden="true">
-          <nav className="nav-sheet__inner" aria-label="Мобільна навігація">
+        <dialog className="nav-sheet" id="nav-sheet" aria-label="Мобільна навігація">
+          <div className="nav-sheet__inner">
             <div className="nav-sheet__brand">
               <img src={guild.iconUrl} alt="" width={42} height={42} referrerPolicy="no-referrer" />
               <div>
                 <strong>{guild.name}</strong>
                 <span>{displayName}</span>
               </div>
+              <form method="dialog">
+                <button type="submit" className="btn btn-icon subtle nav-sheet__close" aria-label="Закрити меню">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                    <path d="m6 6 12 12M18 6 6 18" />
+                  </svg>
+                </button>
+              </form>
             </div>
 
-            <p className="nav-sheet__group">Навігація</p>
-            {navItems.map((item) => (
-              <Link prefetch={false} key={item.href} className="nav-sheet__link" href={item.href} aria-current={current(item.section)}>
-                <DashboardNavIcon section={item.section} />
-                <span>{item.label}</span>
+            <nav className="nav-sheet__links" aria-label="Розділи панелі">
+              {navItems.map((item) => (
+                <Link prefetch={false} key={item.href} className="nav-sheet__link" href={item.href} aria-current={current(item.section)}>
+                  <DashboardNavIcon section={item.section} />
+                  <span>{item.label}</span>
+                </Link>
+              ))}
+
+              <p className="nav-sheet__group">Профіль</p>
+              <Link prefetch={false} className="nav-sheet__link" href={profileHref} aria-current={current("profile")}>
+                <DashboardNavIcon section="profile" />
+                <span>Мій профіль</span>
               </Link>
-            ))}
 
-            <p className="nav-sheet__group">Профіль</p>
-            <Link prefetch={false} className="nav-sheet__link" href={profileHref} aria-current={current("profile")}>
-              <DashboardNavIcon section="profile" />
-              <span>Мій профіль</span>
-            </Link>
-
-            <p className="nav-sheet__group">Сесія</p>
-            <LogoutButton className="nav-sheet__logout" errorClassName="nav-sheet__logout-error" />
-          </nav>
-        </div>
+              <p className="nav-sheet__group">Сесія</p>
+              <LogoutButton className="nav-sheet__logout" errorClassName="nav-sheet__logout-error" />
+            </nav>
+          </div>
+        </dialog>
       ) : null}
     </>
   );

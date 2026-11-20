@@ -389,7 +389,7 @@ const check = async (name, fn) => {
         provider: "discord",
         role: "admin",
         groupId: "manager",
-        permissions: ["groups.manage"],
+        permissions: ["dashboard.view", "groups.manage"],
       };
       await ref("manager").set(
         { permissions: ["dashboard.view"] },
@@ -415,7 +415,7 @@ const check = async (name, fn) => {
         provider: "discord",
         role: "admin",
         groupId: "manager",
-        permissions: ["groups.manage"],
+        permissions: ["dashboard.view", "groups.manage"],
       };
       for (const id of ["manager", "1"])
         await reject(

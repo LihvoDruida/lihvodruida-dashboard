@@ -2,15 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { patchListUrl } from "@/lib/clientListLocation";
 import { emptyListMemory, listMemoryKey, listViewUrl, parseListMemory, rememberListPosition, type ListKind, type ListMemory, type ListPosition } from "@/lib/listViewState";
 import styles from "./ListViewMemory.module.css";
 
-export default function ListViewMemory({ kind, scope, currentUrl, restorePosition = true, clientLocation = false }: { kind: ListKind; scope: string; currentUrl: string; restorePosition?: boolean; clientLocation?: boolean }) {
+export default function ListViewMemory({ kind, scope, currentUrl, restorePosition = true, clientLocation = false }: { kind: ListKind; scope: string; currentUrl: string; restorePosition?: boolean; clientLocation?: boolean | "archive" }) {
   const router = useRouter();
-  const navigationQuery = useSearchParams().toString();
+  const searchParams = useSearchParams();
+  const navigationQuery = searchParams.toString();
   const key = listMemoryKey(kind, scope);
   const allHref = `/${kind}?view=all`;
-  const effectiveUrl = clientLocation ? listViewUrl(kind, `/${kind}?${navigationQuery}`) || currentUrl : currentUrl;
+  const effectiveUrl = clientLocation === "archive"
+    ? patchListUrl(kind, currentUrl, { archive: searchParams.get("archive") })
+    : clientLocation ? listViewUrl(kind, `/${kind}?${navigationQuery}`) || currentUrl : currentUrl;
   const memory = useRef<ListMemory>(emptyListMemory(kind));
   const blocked = useRef(false);
   const first = useRef(true);
@@ -48,7 +52,7 @@ export default function ListViewMemory({ kind, scope, currentUrl, restorePositio
       if (!actual.search && !actual.hash && memory.current.last !== `/${kind}` && !blocked.current) {
         setMessage("Відновлено попередній перегляд.");
         historyArrival.current = memory.current.last;
-        if (clientLocation) window.history.replaceState(null, "", memory.current.last);
+        if (clientLocation === true) window.history.replaceState(null, "", memory.current.last);
         else router.replace(memory.current.last, { scroll: false });
         return;
       }
@@ -140,13 +144,15 @@ export default function ListViewMemory({ kind, scope, currentUrl, restorePositio
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kind, key, effectiveUrl, navigationQuery, restorePosition, router, clientLocation]);
 
-  function openClientView(event: React.MouseEvent<HTMLAnchorElement>) {
+  function openView(event: React.MouseEvent<HTMLAnchorElement>) {
     if (!clientLocation || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     const href = event.currentTarget.getAttribute("href") || "";
-    if (!listViewUrl(kind, href)) return;
+    const destination = listViewUrl(kind, href);
+    if (!destination) return;
     event.preventDefault();
-    historyArrival.current = listViewUrl(kind, href) || "";
-    window.history.pushState(null, "", href);
+    historyArrival.current = destination;
+    if (clientLocation === true) window.history.pushState(null, "", href);
+    else router.push(href, { scroll: false });
   }
 
   function saveView(event: React.FormEvent) {
@@ -167,12 +173,12 @@ export default function ListViewMemory({ kind, scope, currentUrl, restorePositio
     <div className={styles.views}>
       <span className={styles.label}>Мої подання</span>
       {views.map(view => <span key={view.name} className={styles.view}>
-        <a data-list-reset-position href={view.url === `/${kind}` ? allHref : view.url} onClick={openClientView}>{view.name}</a>
+        <a data-list-reset-position href={view.url === `/${kind}` ? allHref : view.url} onClick={openView}>{view.name}</a>
         <button className="btn subtle btn-sm" type="button" aria-label={`Видалити подання ${view.name}`} onClick={() => persist({ ...memory.current, at: Date.now(), views: memory.current.views.filter(item => item.name !== view.name) })}>×</button>
       </span>)}
     </div>
     <button type="button" className="btn subtle btn-sm" onClick={() => setEditing(!editing)} aria-expanded={editing}>Зберегти подання</button>
-    <a className="btn subtle btn-sm" data-list-reset-position href={allHref} onClick={openClientView}>Показати всі</a>
+    <a className="btn subtle btn-sm" data-list-reset-position href={allHref} onClick={openView}>Показати всі</a>
     {blocked.current ? <button className="btn subtle btn-sm" type="button" onClick={clearMemory}>Очистити пам’ять переглядів</button> : null}
     {editing ? <form className={styles.editor} onSubmit={saveView}>
       <label><span className={styles.label}>Назва подання</span><input className="input" aria-label="Назва подання" maxLength={40} value={name} onChange={event => setName(event.target.value)} /></label>

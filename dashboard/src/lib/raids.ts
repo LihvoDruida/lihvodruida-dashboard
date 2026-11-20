@@ -434,7 +434,7 @@ function cleanRoleStrict(value: unknown): RaidCharacterRole | null {
     return "dps";
   return null;
 }
-function raidDateTimeToUtcMs(
+export function raidDateTimeToUtcMs(
   input: Pick<RaidItem, "date" | "time"> | Record<string, unknown>,
 ) {
   const date = cleanString((input as Record<string, unknown>).date, 20);

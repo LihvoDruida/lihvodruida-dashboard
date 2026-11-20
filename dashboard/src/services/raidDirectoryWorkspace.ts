@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { canManageRaids } from "@/lib/permissions";
 import { hasDiscordEmbedConfig } from "@/lib/discordAdmin";
-import { hasRaidStorage, isRaidClosed, listRaids } from "@/lib/raids";
+import { hasRaidStorage, isRaidClosed, listRaids, raidDateTimeToUtcMs, type RaidItem } from "@/lib/raids";
 import { recordDashboardSystemLog } from "@/lib/dashboardSystemLogs";
 
 export async function loadRaidDirectoryWorkspace({searchParams}: {searchParams: Promise<Record<string, string | undefined>>}) {
@@ -41,7 +41,15 @@ export async function loadRaidDirectoryWorkspace({searchParams}: {searchParams: 
   const currentRaids = canManage
     ? [...activeRaids, ...draftRaids]
     : activeRaids;
-  const nextRaid = activeRaids[0] || null;
+  let nextRaid: RaidItem | null = null;
+  let nextStart = Infinity;
+  const now = Date.now();
+  for (const raid of activeRaids) {
+    const start = raidDateTimeToUtcMs(raid);
+    if (start === null || !Number.isFinite(start) || start < now || start >= nextStart) continue;
+    nextRaid = raid;
+    nextStart = start;
+  }
   const rawQuery = new URLSearchParams();
   for (const key of ["q", "state", "archive"]) if (typeof params[key] === "string") rawQuery.set(key, params[key]!);
   const currentUrl = listViewUrl("raids", `/raids?${rawQuery}`) || "/raids";

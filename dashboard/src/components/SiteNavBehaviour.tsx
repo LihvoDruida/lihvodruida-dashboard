@@ -19,7 +19,7 @@ const SCROLL_THRESHOLD = 8;
 export default function SiteNavBehaviour() {
   useEffect(() => {
     const burger = document.querySelector<HTMLButtonElement>(".nav-burger");
-    const sheet = document.querySelector<HTMLElement>(".nav-sheet");
+    const sheet = document.querySelector<HTMLDialogElement>(".nav-sheet");
     const accountRoot = document.querySelector<HTMLElement>(".nav-account");
     const sidebar = document.querySelector<HTMLElement>(".sidebar");
     const body = document.body;
@@ -27,63 +27,53 @@ export default function SiteNavBehaviour() {
     const cleanups: Array<() => void> = [];
 
     /* ---------- Мобільна панель ---------- */
-    let sheetScrollTop = 0;
     const mq = window.matchMedia(BREAKPOINT);
 
-    const sheetIsOpen = () => Boolean(sheet?.classList.contains("is-open"));
-
-    const openSheet = () => {
-      if (!sheet || !burger) return;
-      sheetScrollTop = window.scrollY || document.documentElement.scrollTop || 0;
-      body.style.top = `-${sheetScrollTop}px`;
-      body.classList.add("nav-open");
-
-      sheet.classList.add("is-open");
-      sheet.setAttribute("aria-hidden", "false");
-      burger.classList.add("is-active");
-      burger.setAttribute("aria-expanded", "true");
-      burger.setAttribute("aria-label", "Закрити меню");
-    };
-
-    const closeSheet = () => {
-      if (!sheet || !burger || !sheetIsOpen()) return;
-
-      const previousTop = body.style.top;
-      body.classList.remove("nav-open");
-      body.style.top = "";
-      const offset = previousTop ? Math.abs(parseInt(previousTop, 10)) : sheetScrollTop;
-      window.scrollTo(0, Number.isFinite(offset) ? offset : 0);
-
-      sheet.classList.remove("is-open");
-      sheet.setAttribute("aria-hidden", "true");
-      burger.classList.remove("is-active");
-      burger.setAttribute("aria-expanded", "false");
-      burger.setAttribute("aria-label", "Відкрити меню");
-    };
-
     if (sheet && burger) {
-      sheet.setAttribute("aria-hidden", "true");
+      let scrollTop = 0;
 
-      const onBurgerClick = () => (sheetIsOpen() ? closeSheet() : openSheet());
+      const openSheet = () => {
+        if (!mq.matches || sheet.open) return;
+        scrollTop = window.scrollY;
+        sheet.showModal();
+        body.style.top = `-${scrollTop}px`;
+        body.classList.add("nav-open");
+        burger.setAttribute("aria-expanded", "true");
+      };
+      const restorePage = () => {
+        if (sheet.open || !body.classList.contains("nav-open")) return;
+        body.classList.remove("nav-open");
+        body.style.top = "";
+        window.scrollTo({ top: scrollTop, behavior: "instant" });
+        burger.setAttribute("aria-expanded", "false");
+        if (mq.matches) burger.focus({ preventScroll: true });
+      };
+      const closeSheet = () => {
+        sheet.close();
+        restorePage();
+      };
+
       const onSheetClick = (event: MouseEvent) => {
-        const target = event.target as HTMLElement | null;
-        if (target === sheet || target?.closest("a")) closeSheet();
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        if (target === sheet || (target.closest("a[href]") && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey)) closeSheet();
       };
       const onBreakpointChange = () => {
-        if (!mq.matches) closeSheet();
+        if (!mq.matches && sheet.open) closeSheet();
       };
 
-      burger.addEventListener("click", onBurgerClick);
+      burger.addEventListener("click", openSheet);
       sheet.addEventListener("click", onSheetClick);
+      sheet.addEventListener("close", restorePage);
       mq.addEventListener?.("change", onBreakpointChange);
 
       cleanups.push(() => {
-        burger.removeEventListener("click", onBurgerClick);
+        burger.removeEventListener("click", openSheet);
         sheet.removeEventListener("click", onSheetClick);
+        sheet.removeEventListener("close", restorePage);
         mq.removeEventListener?.("change", onBreakpointChange);
-        // Сторінка може розмонтуватись при відкритій панелі —
-        // інакше body назавжди лишиться position: fixed.
-        closeSheet();
+        if (sheet.open) sheet.close();
+        restorePage();
       });
     }
 
@@ -117,43 +107,37 @@ export default function SiteNavBehaviour() {
       const onDocumentClick = (event: MouseEvent) => {
         if (!accountRoot.contains(event.target as Node)) closeDropdown();
       };
+      const onAccountEscape = (event: KeyboardEvent) => {
+        if (event.key !== "Escape" || !dropdownIsOpen()) return;
+        event.preventDefault();
+        closeDropdown();
+        dropdownTrigger.focus({ preventScroll: true });
+      };
 
       dropdownTrigger.addEventListener("click", onTriggerClick);
       accountRoot.addEventListener("focusout", onFocusOut);
+      accountRoot.addEventListener("keydown", onAccountEscape);
       document.addEventListener("click", onDocumentClick);
 
       cleanups.push(() => {
         dropdownTrigger.removeEventListener("click", onTriggerClick);
         accountRoot.removeEventListener("focusout", onFocusOut);
+        accountRoot.removeEventListener("keydown", onAccountEscape);
         document.removeEventListener("click", onDocumentClick);
       });
     }
 
-    /* ---------- Escape закриває обидва ---------- */
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      closeDropdown();
-      if (sheetIsOpen()) {
-        closeSheet();
-        burger?.focus();
-      }
-    };
-    document.addEventListener("keydown", onKeyDown);
-    cleanups.push(() => document.removeEventListener("keydown", onKeyDown));
-
     /* ---------- Щільніша шапка під час скролу ---------- */
     if (sidebar) {
-      let ticking = false;
+      let frame = 0;
 
       const update = () => {
         sidebar.classList.toggle("is-scrolled", window.scrollY > SCROLL_THRESHOLD);
-        ticking = false;
+        frame = 0;
       };
 
       const requestUpdate = () => {
-        if (ticking) return;
-        ticking = true;
-        window.requestAnimationFrame(update);
+        if (!frame) frame = window.requestAnimationFrame(update);
       };
 
       update();
@@ -161,6 +145,7 @@ export default function SiteNavBehaviour() {
       window.addEventListener("resize", requestUpdate, { passive: true });
 
       cleanups.push(() => {
+        window.cancelAnimationFrame(frame);
         window.removeEventListener("scroll", requestUpdate);
         window.removeEventListener("resize", requestUpdate);
       });

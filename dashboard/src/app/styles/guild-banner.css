@@ -294,12 +294,6 @@ html.guild-banner-collapsed body:has(.guild-status-banner) .dashboard-topbar { t
     transition: top .28s ease;
   }
   html.guild-banner-collapsed body:has(.guild-status-banner) .site-nav { top: 0; }
-  body:has(.guild-status-banner) .nav-sheet {
-    padding-top: calc(78px + var(--guild-banner-height-mobile) + env(safe-area-inset-top));
-  }
-  html.guild-banner-collapsed body:has(.guild-status-banner) .nav-sheet {
-    padding-top: calc(78px + env(safe-area-inset-top));
-  }
 }
 
 @media (max-width: 420px) {
