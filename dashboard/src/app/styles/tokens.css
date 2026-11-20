@@ -1,5 +1,5 @@
-/* Cascade layers: element defaults < suffix patterns < every named rule (unlayered). */
-@layer base, patterns;
+/* Cascade layers: element defaults < suffix patterns < adaptive (desktop) patterns < every named rule (unlayered). */
+@layer base, patterns, adaptive;
 
 /* =========================================================
    ДИЗАЙН-ТОКЕНИ — Mistblossom Vanguard

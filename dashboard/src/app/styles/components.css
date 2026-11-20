@@ -410,11 +410,18 @@ a.card:hover {
   color: var(--text-soft);
 }
 }
+@layer base {
+  label > span:first-child {
+  font-size: var(--font-size-ui-lg);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.02em;
+  color: var(--text-soft);
+}
+}
 
 .content-field > span,
 .raid-poll-field > span,
-.field-label,
-label > span:first-child {
+.field-label {
   font-size: var(--font-size-ui-lg);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.02em;
@@ -440,12 +447,8 @@ label > span:first-child {
 }
 
 /* Самі контролі */
-.input,
-.select,
-.textarea,
-.modern-select,
-.markdown-area,
-input[type="text"],
+@layer base {
+  input[type="text"],
 input[type="search"],
 input[type="email"],
 input[type="url"],
@@ -471,10 +474,37 @@ textarea {
     background-color var(--dur-fast) var(--ease-out),
     box-shadow var(--dur-fast) var(--ease-out);
 }
+}
+.input,
+.select,
+.textarea,
+.modern-select,
+.markdown-area {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 var(--space-md);
+  border: 1px solid rgba(255, 155, 85, 0.16);
+  border-radius: var(--control-radius);
+  background: var(--surface-sunken);
+  color: var(--text-body);
+  font-size: 16px;
+  outline: 0;
+  transition: border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+@layer base {
+  textarea {
+  min-height: 120px;
+  padding: var(--space-sm) var(--space-md);
+  line-height: var(--line-height-relaxed);
+  resize: vertical;
+}
+}
 
 .textarea,
-.markdown-area,
-textarea {
+.markdown-area {
   min-height: 120px;
   padding: var(--space-sm) var(--space-md);
   line-height: var(--line-height-relaxed);
@@ -490,28 +520,43 @@ textarea.compact {
   font-family: var(--font-mono);
   font-size: 0.86rem;
 }
-
-.input::placeholder,
-.textarea::placeholder,
-input::placeholder,
+@layer base {
+  input::placeholder,
 textarea::placeholder {
   color: var(--text-faint);
 }
+}
 
-.input:focus,
-.select:focus,
-.textarea:focus,
-input:not(:where([type="checkbox"])):not(:where([type="radio"])):focus,
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--text-faint);
+}
+@layer base {
+  input:not(:where([type="checkbox"])):not(:where([type="radio"])):focus,
 select:focus,
 textarea:focus {
   border-color: var(--border-strong);
   background: rgba(12, 10, 7, 0.7);
   box-shadow: 0 0 0 4px var(--accent-soft);
 }
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  border-color: var(--border-strong);
+  background: rgba(12, 10, 7, 0.7);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+@layer base {
+  select:disabled,
+textarea:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+}
 
 .input:disabled,
-select:disabled,
-textarea:disabled,
 .is-disabled .input {
   opacity: 0.55;
   cursor: not-allowed;
@@ -523,9 +568,8 @@ textarea:disabled,
 }
 
 /* Селект — стрілка домальована фоном, як на сайті */
-.select,
-.modern-select,
-select {
+@layer base {
+  select {
   appearance: none;
   cursor: pointer;
   padding-right: var(--space-xl);
@@ -539,10 +583,27 @@ select {
   background-repeat: no-repeat;
   font-weight: var(--font-weight-medium);
 }
-
-select option {
+}
+.select,
+.modern-select {
+  appearance: none;
+  cursor: pointer;
+  padding-right: var(--space-xl);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--c-accent-300) 50%),
+    linear-gradient(135deg, var(--c-accent-300) 50%, transparent 50%);
+  background-position:
+    right var(--space-md) center,
+    right calc(var(--space-md) - 6px) center;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  font-weight: var(--font-weight-medium);
+}
+@layer base {
+  select option {
   background: #fff6ea;
   color: #1b120c;
+}
 }
 
 /* Чекбокси та радіо */
@@ -583,13 +644,12 @@ select option {
   border-radius: var(--radius-md);
   background: var(--surface-raised);
 }
-
-fieldset {
+@layer base {
+  fieldset {
   border: 0;
   min-width: 0;
 }
-
-legend {
+  legend {
   padding: 0;
   font-size: var(--font-size-ui-lg);
   font-weight: var(--font-weight-bold);
@@ -597,9 +657,9 @@ legend {
   text-transform: uppercase;
   color: var(--c-accent-300);
 }
-
-form {
+  form {
   min-width: 0;
+}
 }
 
 /* =========================================================
@@ -1092,13 +1152,13 @@ a.dashboard-list-row:hover {
 /* =========================================================
    7. ДЕТАЛІ, ТАБИ, ТУЛБАРИ
    ========================================================= */
-details {
+@layer base {
+  details {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   background: var(--surface-sunken);
 }
-
-summary {
+  summary {
   padding: var(--space-sm) var(--space-md);
   color: var(--text-soft);
   font-size: 0.85rem;
@@ -1106,25 +1166,22 @@ summary {
   cursor: pointer;
   list-style: none;
 }
-
-summary::-webkit-details-marker {
+  summary::-webkit-details-marker {
   display: none;
 }
-
-summary::before {
+  summary::before {
   content: "▸";
   display: inline-block;
   margin-right: var(--space-xs);
   color: var(--c-accent-300);
   transition: transform var(--dur-fast) var(--ease-out);
 }
-
-details[open] > summary::before {
+  details[open] > summary::before {
   transform: rotate(90deg);
 }
-
-details > *:not(:where(summary)) {
+  details > *:not(:where(summary)) {
   padding: 0 var(--space-md) var(--space-md);
+}
 }
 
 /* Смуга вкладок */
@@ -1287,7 +1344,8 @@ details > *:not(:where(summary)) {
    у Chrome вони світлі, у Firefox — інші за розміром.
    Малюємо власні, зберігаючи справжній input для доступності.
    ========================================================= */
-input[type="checkbox"],
+@layer base {
+  input[type="checkbox"],
 input[type="radio"] {
   accent-color: var(--c-accent-500);
   -webkit-appearance: none;
@@ -1305,28 +1363,26 @@ input[type="radio"] {
     background-color var(--dur-fast) var(--ease-out),
     box-shadow var(--dur-fast) var(--ease-out);
 }
-
-input[type="checkbox"] {
+  input[type="checkbox"] {
   border-radius: var(--radius-sm);
 }
-
-input[type="radio"] {
+  input[type="radio"] {
   border-radius: 50%;
 }
-
-input[type="checkbox"]:hover,
+  input[type="checkbox"]:hover,
 input[type="radio"]:hover {
   border-color: var(--c-accent-400);
 }
-
-input[type="checkbox"]:checked,
+  input[type="checkbox"]:checked,
 input[type="radio"]:checked {
   border-color: transparent;
   background: var(--accent-gradient);
 }
+}
 
 /* Галочка домальована рамкою — жодних зображень і шрифтів */
-input[type="checkbox"]:checked::after {
+@layer base {
+  input[type="checkbox"]:checked::after {
   content: "";
   position: absolute;
   left: 6px;
@@ -1337,37 +1393,39 @@ input[type="checkbox"]:checked::after {
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
-
-input[type="radio"]:checked::after {
+  input[type="radio"]:checked::after {
   content: "";
   position: absolute;
   inset: 5px;
   border-radius: 50%;
   background: var(--text-on-accent);
 }
-
-input[type="checkbox"]:focus-visible,
+  input[type="checkbox"]:focus-visible,
 input[type="radio"]:focus-visible {
   outline: 0;
   box-shadow: 0 0 0 4px var(--accent-soft);
 }
-
-input[type="checkbox"]:disabled,
+  input[type="checkbox"]:disabled,
 input[type="radio"]:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
+}
 
 /* Мітка поруч із контролом клікабельна цілком */
-label:has(> input[type="checkbox"]),
+@layer base {
+  label:has(> input[type="checkbox"]),
 label:has(> input[type="radio"]) {
   cursor: pointer;
 }
+}
 
 /* Вибраний варіант підсвічує всю картку, а не лише кружечок */
-label:has(> input[type="radio"]:checked),
+@layer base {
+  label:has(> input[type="radio"]:checked),
 label:has(> input[type="checkbox"]:checked) {
   border-color: var(--border-strong);
+}
 }
 
 /* =========================================================
@@ -1392,22 +1450,22 @@ label:has(> input[type="checkbox"]:checked) {
   }
 
   /* Чекбокс і радіо: сам контрол більший, мітка клікабельна вся */
+@layer base {
   input[type="checkbox"],
 input[type="radio"] {
     width: 24px;
     height: 24px;
   }
-
   input[type="checkbox"]:checked::after {
     left: 8px;
     top: 3px;
     width: 6px;
     height: 12px;
   }
-
   input[type="radio"]:checked::after {
     inset: 6px;
   }
+}
 }
 
 /* Товщий бігунок діапазону там, де вказівник грубий.
@@ -1472,14 +1530,17 @@ input[type="radio"] {
 
 /* R6.7 publication recovery, scoped to its own panel. */
 /* Async actions may replace their button with a focusable result. */
-[data-action-result]:focus,
+@layer base {
+  [data-action-result]:focus,
 [data-workflow-title]:focus {
   outline: 2px solid var(--orange-main);
   outline-offset: 3px;
   border-radius: 3px;
 }
+}
 /* Keep empty live regions registered for assistive technology. */
-[data-action-result]:empty {
+@layer base {
+  [data-action-result]:empty {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -1489,6 +1550,7 @@ input[type="radio"] {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
 }
 
 /* Durable feedback for individual and bulk raid-poll actions. */

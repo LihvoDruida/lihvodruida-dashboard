@@ -315,3 +315,13 @@ b {
   }
 }
 }
+
+/* Touch screens: iOS zooms into a focused field below 16px, so this guard
+   stays unlayered and out-ranks any component or module font size. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}

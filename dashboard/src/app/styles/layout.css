@@ -6,7 +6,13 @@
    ========================================================= */
 
 /* ---------- Головна колонка ---------- */
-main,
+@layer base {
+  main {
+  width: 100%;
+  max-width: var(--page-max);
+  margin-inline: auto;
+}
+}
 .container,
 .app-page,
 .dashboard-shell,
@@ -16,8 +22,14 @@ main,
   max-width: var(--page-max);
   margin-inline: auto;
 }
+@layer base {
+  main {
+  flex: 1 0 auto;
+  padding: 24px var(--page-gutter);
+  padding-bottom: calc(var(--space-3xl) + env(safe-area-inset-bottom, 0px));
+}
+}
 
-main,
 .container,
 .app-page {
   flex: 1 0 auto;
