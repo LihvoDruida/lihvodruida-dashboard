@@ -25,7 +25,7 @@
 @layer base {
   main {
   flex: 1 0 auto;
-  padding: 24px var(--page-gutter);
+  padding: var(--space-lg) var(--page-gutter);
   padding-bottom: calc(var(--space-3xl) + env(safe-area-inset-bottom, 0px));
 }
 }
@@ -33,7 +33,7 @@
 .container,
 .app-page {
   flex: 1 0 auto;
-  padding: 24px var(--page-gutter);
+  padding: var(--space-lg) var(--page-gutter);
   padding-bottom: calc(var(--space-3xl) + env(safe-area-inset-bottom, 0px));
 }
 

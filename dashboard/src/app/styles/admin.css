@@ -530,7 +530,7 @@
 
 .server-status-toolbar {
   display: grid;
-  padding: 14px 16px;
+  padding: 14px var(--space-md);
 }
 
 .server-status-toolbar__state {
@@ -593,7 +593,7 @@
 
 .server-graph {
   height: 128px;
-  margin-top: 8px;
+  margin-top: var(--space-xs);
 }
 
 .server-section {
@@ -612,7 +612,7 @@
   display: grid;
   gap: 5px;
   min-width: 0;
-  padding: 12px 13px;
+  padding: var(--space-sm) 13px;
   border: 1px solid color-mix(in srgb, var(--server-docker-tone) 25%, var(--border-subtle));
   border-radius: 11px;
   background: color-mix(in srgb, var(--server-docker-tone) 4%, var(--surface-sunken));
@@ -669,7 +669,7 @@
 
 .server-cache-health code {
   flex: 0 0 auto;
-  padding: 5px 8px;
+  padding: 5px var(--space-xs);
   border: 1px solid var(--border-subtle);
   border-radius: 7px;
   background: var(--surface-raised);
@@ -687,7 +687,7 @@
 }
 
 .server-docker-empty {
-  padding: 16px;
+  padding: var(--space-md);
   border: 1px dashed var(--border);
   border-radius: 11px;
   background: var(--surface-sunken);
@@ -707,7 +707,7 @@
 .server-detail-card {
   gap: var(--space-md);
   display: grid;
-  padding: 14px 16px;
+  padding: 14px var(--space-md);
 }
 
 @media (max-width: 1180px) {
@@ -723,7 +723,7 @@
 @media (max-width: 860px) {
 
   .admin-page-header {
-    padding: 16px;
+    padding: var(--space-md);
   }
 
   .server-graphs-grid,
@@ -818,7 +818,7 @@
   align-items: end;
   justify-content: space-between;
   gap: var(--space-sm);
-  padding: 0 4px;
+  padding: 0 var(--space-2xs);
 }
 
 .discord-management-zone__head .discord-management-section-head {
@@ -865,7 +865,7 @@
 .discord-management-card {
   flex-direction: column;
   gap: var(--space-sm);
-  padding: 16px;
+  padding: var(--space-md);
 }
 
 .discord-management-card__body {
@@ -972,7 +972,7 @@
   display: grid;
   min-height: 90px;
   align-content: start;
-  padding: 12px;
+  padding: var(--space-sm);
 }
 
 .discord-management-status__item small {
@@ -1010,13 +1010,13 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
-  margin-top: 8px;
+  margin-top: var(--space-xs);
 }
 
 .discord-management-blocked-roles > span {
   display: grid;
   gap: var(--space-3xs);
-  padding: 8px 9px;
+  padding: var(--space-xs) 9px;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   background: var(--surface-sunken);
@@ -1155,7 +1155,7 @@
   display: grid;
   gap: 14px;
   min-width: 0;
-  padding: 16px;
+  padding: var(--space-md);
   border: 1px solid rgba(245, 158, 11, 0.18);
   border-radius: 16px;
   background: rgba(18, 13, 9, 0.48);
@@ -1171,7 +1171,7 @@
 
 .nickname-policy-card__head h3,
 .nickname-warning-settings__head h3 {
-  margin: 4px 0 0;
+  margin: var(--space-2xs) 0 0;
   font-size: var(--font-size-base);
 }
 
@@ -1194,7 +1194,7 @@
   gap: var(--space-sm);
   align-items: center;
   min-width: 0;
-  padding: 10px 12px;
+  padding: 10px var(--space-sm);
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
   background: var(--surface-sunken);
@@ -1216,7 +1216,7 @@
 .nickname-policy-example {
   display: grid;
   gap: var(--space-2xs);
-  padding: 11px 12px;
+  padding: 11px var(--space-sm);
   border-radius: 12px;
   background: rgba(245, 158, 11, 0.07);
 }
@@ -1234,7 +1234,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-sm);
-  padding: 0 12px 12px;
+  padding: 0 var(--space-sm) var(--space-sm);
 }
 
 .settings-toggle-row {
@@ -1247,14 +1247,14 @@
 
 .settings-toggle-row--card {
   min-width: 190px;
-  padding: 10px 12px;
+  padding: 10px var(--space-sm);
   border: 1px solid rgba(245, 158, 11, 0.18);
   border-radius: 12px;
   background: rgba(245, 158, 11, 0.06);
 }
 
 .settings-toggle-row input {
-  margin-top: 4px;
+  margin-top: var(--space-2xs);
   accent-color: var(--c-accent-400);
 }
 
@@ -1271,7 +1271,7 @@
 .nickname-warning-settings__group {
   display: grid;
   gap: 10px;
-  padding-top: 12px;
+  padding-top: var(--space-sm);
   border-top: 1px solid var(--border-subtle);
 }
 
@@ -1298,7 +1298,7 @@
 }
 
 .nickname-fallback-field {
-  margin-top: 2px;
+  margin-top: var(--space-3xs);
 }
 
 .input-with-suffix {
@@ -1366,7 +1366,7 @@
   align-content: start;
   gap: var(--space-2xs);
   min-width: 0;
-  padding: 11px 12px;
+  padding: 11px var(--space-sm);
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
   background: var(--surface-sunken);
@@ -1406,7 +1406,7 @@
   column-gap: 9px;
   align-items: center;
   min-width: 0;
-  padding: 11px 12px;
+  padding: 11px var(--space-sm);
   border: 1px solid rgba(245, 158, 11, 0.14);
   border-radius: 12px;
   background: rgba(12, 9, 7, 0.42);
