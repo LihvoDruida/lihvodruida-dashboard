@@ -25,7 +25,6 @@ function guildPageFixture() {
     '@/lib/dashboardSystemLogs': { recordDashboardSystemLog: async () => {} },
     '@/lib/listNavigationScope': { listNavigationScope: () => 'account-and-access-scope' },
     '@/lib/discordGuildLinks': { discordGuildChannelUrl: () => '#', MISTBLOSSOM_DISCORD_CHANNELS: { general: {}, rules: {}, announcements: {}, raids: {} } },
-    '@/components/GuildRoster.module.css': { default: {} },
   };
   modules['@/services/guildWorkspace'] = load('src/services/guildWorkspace.ts', modules);
   for (const key of ['@/components/page/PageContainer','@/components/page/PageErrorBoundary','@/components/guild/GuildDiscordGuide']) modules[key] = {default: () => null};
