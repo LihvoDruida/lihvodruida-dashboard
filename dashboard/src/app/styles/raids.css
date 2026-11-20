@@ -97,10 +97,7 @@
 
 /* ---------- Картка оголошення ---------- */
 .raid-preview-card {
-  position: relative;
-  display: flex;
   flex-direction: column;
-  overflow: hidden;
   min-width: 0;
 }
 
@@ -163,13 +160,10 @@
 }
 
 .raid-closed-banner {
-  padding: var(--space-xs) var(--space-md);
   border: 1px solid var(--border-subtle);
   border-left: 3px solid var(--c-ink-400);
   border-radius: var(--radius-md);
   background: var(--surface-sunken);
-  color: var(--text-muted);
-  font-size: 0.85rem;
 }
 
 /* ---------- Метадані рейду ---------- */
@@ -295,12 +289,7 @@
 }
 
 .raid-checkbox-line {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
   min-height: 40px;
-  color: var(--text-soft);
-  font-size: 0.86rem;
 }
 
 /* ---------- Склад рейду ---------- */
@@ -333,8 +322,6 @@
 }
 
 .raid-party-card {
-  display: grid;
-  gap: var(--space-2xs);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   background: var(--surface-sunken);
@@ -359,10 +346,6 @@
 
 /* ---------- Рядок учасника ---------- */
 .raid-party-row {
-  display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr);
-  align-items: center;
-  gap: var(--space-sm);
   padding: var(--space-2xs) var(--space-xs);
   border: 1px solid transparent;
   border-left: 3px solid var(--c-ink-500);
@@ -711,6 +694,11 @@
 }
 
 .raid-checkbox-line {
+  font-size: 0.86rem;
+  color: var(--text-soft);
+  gap: var(--space-xs);
+  align-items: center;
+  display: flex;
   cursor: pointer;
   min-width: 0;
 }
@@ -1483,12 +1471,9 @@
 /* Підсумок налаштувань перед публікацією */
 .raid-poll-create-preview {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
   gap: var(--space-sm);
-  padding: var(--pad-card-compact);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  background: var(--surface-sunken);
 }
 
 /* =========================================================
@@ -1513,6 +1498,9 @@
 /* ---------- Сторінка рейду: навігація ---------- */
 
 .raid-preview-card {
+  overflow: hidden;
+  display: flex;
+  position: relative;
   gap: var(--space-md);
   padding: clamp(var(--space-md), 1.8vw, var(--space-lg));
 }
@@ -1529,6 +1517,9 @@
 }
 
 .raid-closed-banner {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  padding: var(--space-xs) var(--space-md);
   display: grid;
   gap: var(--space-3xs);
 }
@@ -1564,10 +1555,16 @@
 }
 
 .raid-party-card {
+  gap: var(--space-2xs);
+  display: grid;
   padding: var(--space-sm);
 }
 
 .raid-party-row {
+  gap: var(--space-sm);
+  align-items: center;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  display: grid;
   padding-block: 6px;
 }
 

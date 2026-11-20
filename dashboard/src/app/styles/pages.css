@@ -1051,7 +1051,6 @@ body:has(.login-screen) .app-footer--site-wide {
    ========================================================= */
 .roster-inline-form {
   flex-wrap: wrap;
-  align-items: center;
   gap: var(--space-xs);
 }
 
@@ -1062,19 +1061,6 @@ body:has(.login-screen) .app-footer--site-wide {
 /* =========================================================
    DISCORD: РЕДАКТОР, ДІАГНОСТИКА, ТАБЛИЦІ
    ========================================================= */
-.discord-builder-textarea,
-.discord-description-area {
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-}
-
-.discord-send-controls {
-  flex-wrap: wrap;
-}
-
-.discord-load-message-btn {
-  flex: 0 0 auto;
-}
 
 /* Вибір кольору: системний свотч + код поруч */
 .discord-color-picker {
@@ -1199,9 +1185,6 @@ body:has(.login-screen) .app-footer--site-wide {
 /* =========================================================
    ДРІБНІ КЛАСИ БЕЗ ВЛАСНОГО ДОМЕНУ
    ========================================================= */
-.status-select {
-  min-width: 0;
-}
 
 .permission-check {
   color: var(--text-muted);
@@ -1276,9 +1259,6 @@ body:has(.login-screen) .app-footer--site-wide {
 }
 
 .discord-builder-form .content-form-section {
-  display: grid;
-  gap: clamp(12px, 1.1vw, 16px);
-  min-width: 0;
   border-radius: 18px;
 }
 
@@ -1336,6 +1316,7 @@ body:has(.login-screen) .app-footer--site-wide {
 }
 
 .discord-send-controls {
+  flex-wrap: wrap;
   display: grid;
   grid-template-columns: minmax(220px, 1.35fr) 96px 160px auto;
   gap: clamp(10px, 0.9vw, 14px);
@@ -1377,6 +1358,7 @@ body:has(.login-screen) .app-footer--site-wide {
 }
 
 .discord-load-message-btn {
+  flex: 0 0 auto;
   min-width: 122px;
   min-height: 46px;
 }
@@ -1395,6 +1377,8 @@ body:has(.login-screen) .app-footer--site-wide {
 
 .discord-builder-textarea,
 .discord-description-area {
+  font-size: 0.85rem;
+  font-family: var(--font-mono);
   min-height: 160px;
 }
 
@@ -1572,6 +1556,9 @@ body:has(.login-screen) .app-footer--site-wide {
 
 /* Embed editor density normalization — shared by general embeds, rules and autoroles. */
 .discord-builder-form .content-form-section {
+  min-width: 0;
+  gap: clamp(12px, 1.1vw, 16px);
+  display: grid;
   padding: clamp(14px, 1.15vw, 18px);
 }
 
