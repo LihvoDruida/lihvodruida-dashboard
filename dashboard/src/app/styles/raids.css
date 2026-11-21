@@ -1157,6 +1157,8 @@
   align-items: center;
   gap: var(--space-2xs);
   align-self: flex-start;
+  justify-self: start;
+  width: fit-content;
   padding: var(--space-3xs) var(--space-sm);
   border: 1px solid color-mix(in srgb, var(--tone) 30%, transparent);
   border-radius: var(--radius-pill);
