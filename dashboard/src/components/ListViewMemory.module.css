@@ -9,5 +9,5 @@
 .message { flex-basis:100%; color:var(--text-muted); font-size:.85rem; margin:0; }
 .returnLink { color:var(--c-accent-300); width:fit-content; max-width:100%; padding:.4rem 0; overflow-wrap:anywhere; }
 .returned { outline:2px solid var(--c-accent-300); outline-offset:3px; scroll-margin-top:100px; }
-@media (max-width:480px) { .bar { align-items:flex-start; } .editor { width:100%; } .editor input { width:100%; } }
+@media (max-width: 520px) { .bar { align-items:flex-start; } .editor { width:100%; } .editor input { width:100%; } }
 @media (prefers-reduced-motion:reduce) { .returned { scroll-behavior:auto; } }

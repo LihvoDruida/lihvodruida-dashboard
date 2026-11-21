@@ -637,7 +637,7 @@
   padding-inline: 12px;
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1240px) {
   .summaryGrid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -651,7 +651,7 @@
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 860px) {
   .headerMain {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -666,7 +666,7 @@
   }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 760px) {
   .page {
     gap: var(--space-sm);
   }
@@ -738,7 +738,7 @@
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 520px) {
   .summaryGrid {
     grid-template-columns: minmax(0, 1fr);
   }

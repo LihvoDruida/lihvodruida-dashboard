@@ -89,7 +89,7 @@
   .sidebar :global(.management-nav) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 /* Phones: one swipeable strip of sections instead of a menu taller than the screen. */
-@media (max-width: 700px) {
+@media (max-width: 760px) {
   .sidebar :global(.management-nav) { display: flex; gap: var(--space-2xs); padding: var(--space-2xs); overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scroll-padding-inline: var(--space-2xs); scrollbar-width: none; }
   .sidebar :global(.management-nav)::-webkit-scrollbar { display: none; }
   .sidebar :global(.management-nav-group), .sidebar :global(.management-nav-links) { display: contents; }

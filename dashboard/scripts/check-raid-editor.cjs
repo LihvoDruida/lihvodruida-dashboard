@@ -27,7 +27,7 @@ const checks = [
   [raids.includes('Щоб блокувати запис за item level, спочатку вкажи мінімальний item level.'), "server rejects contradictory ilvl policy"],
   [css.includes('.raid-editor-layout') && css.includes('grid-template-columns: minmax(0, 1.32fr) minmax(360px, 0.68fr);'), "desktop editor uses an explicit form/preview grid"],
   [css.includes('.raid-editor-layout > .raid-preview-column') && css.includes('position: sticky;'), "desktop preview stays visible while editing"],
-  [css.includes('@media (max-width: 1180px)') && css.includes('position: static;'), "preview unsticks when the screen becomes narrow"],
+  [css.includes('@media (max-width: 1240px)') && css.includes('position: static;'), "preview unsticks when the screen becomes narrow"],
   [css.includes('.raid-form-section--rules') && css.includes('repeat(3, minmax(0, 1fr))'), "signup rules use compact setting cards on desktop"],
   [css.includes('.raid-publish-panel') && css.includes('.raid-form-panel.is-dirty .raid-save-state'), "publish area and dirty state have dedicated styling"],
   [newPage.includes('className="raid-editor-layout"') && editPage.includes('className="raid-editor-layout"'), "create and edit share the same editor layout"],

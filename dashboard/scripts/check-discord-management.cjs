@@ -14,7 +14,7 @@ const checks = [
   [page.includes('roles={manageableRoles}') && !page.includes('RoleCheckboxes roles={roles}'), "working role pickers expose only actually manageable roles"],
   [page.includes('className="discord-role-option__copy"'), "role name, position and id have structured non-overlapping markup"],
   [css.includes('.discord-role-option__copy') && css.includes('word-break: break-all;'), "long Discord ids cannot collide with role labels"],
-  [css.includes('@media (max-width: 700px)') && css.includes('max-height: none;'), "mobile role lists avoid nested scroll containers"],
+  [css.includes('@media (max-width: 760px)') && css.includes('max-height: none;'), "mobile role lists avoid nested scroll containers"],
   [css.includes('.discord-management-health-grid') && profiles.includes('<PageSection') && profiles.includes('<DataTable'), "Discord and separate profile maintenance retain responsive grids"],
   [profiles.includes('!user.isServerOwner') && !page.includes('id="discord-profiles"'), "profile cleanup is isolated behind owner authorization"],
 ];

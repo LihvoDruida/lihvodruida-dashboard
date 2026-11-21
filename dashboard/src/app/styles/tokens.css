@@ -1,6 +1,11 @@
 /* Cascade layers: element defaults < suffix patterns < adaptive (desktop) patterns < every named rule (unlayered). */
 @layer base, patterns, adaptive;
 
+/* Breakpoints (media queries cannot read custom properties, so this is the
+   reference): max-width 1320 / 1240 / 1000 / 860 / 760 / 640 / 520 / 420px,
+   min-width counterparts 1001 / 641. JS uses the same values
+   (SiteNavBehaviour 1000px, login video 760px). */
+
 /* =========================================================
    ДИЗАЙН-ТОКЕНИ — Mistblossom Vanguard
 
