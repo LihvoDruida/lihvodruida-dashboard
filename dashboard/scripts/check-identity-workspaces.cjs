@@ -50,7 +50,14 @@ const profileMethods = {
   getProfileRaidRole: () => "dps",
   profileNeedsSettingsSetup: () => false,
 };
+// Shared Battle.net candidate model, loaded for real with the same boundaries.
+const profileCharacters = load("src/services/profileCharacters.ts", {
+  "@/lib/battlenet": { getEnabledBattleNetRegions: () => ["eu"] },
+  "@/lib/wowCharacters": { normalizeCharacterKey: value => value },
+  "@/lib/stableUiText": { formatStableUkCompactDate: value => String(value || "—") },
+}).exports;
 const overview = load("src/services/profileOverview.ts", {
+  "@/services/profileCharacters": profileCharacters,
   "@/lib/auth": { getSession: async () => viewer },
   "next/navigation": { redirect: stop("REDIRECT:"), notFound: stop("NOT_FOUND") },
   "@/lib/battlenet": { getEnabledBattleNetRegions: () => ["eu"] },
@@ -94,6 +101,8 @@ const input = query => ({ params: Promise.resolve({ profileId: "own" }), searchP
       "@/lib/dashboardSystemLogs": { recordDashboardSystemLog() {} },
       "@/lib/runtimeResilience": { withTimeout: value => value },
       "@/lib/discordAdmin": {},
+      "@/lib/dashboardApiSettings": { getDashboardApiSettings: async () => ({ profileViewRefreshMinSeconds: 60 }) },
+      "@/services/profileCharacters": profileCharacters,
       "@/lib/guildNicknamePolicy": { getGuildNicknamePolicy: async () => ({ template: "{name}" }) },
       "@/lib/profiles": { getProfileById: async () => { reads++; return profile; } },
       "next/navigation": { redirect: stop("REDIRECT:"), notFound: stop("NOT_FOUND") },
@@ -111,11 +120,14 @@ const input = query => ({ params: Promise.resolve({ profileId: "own" }), searchP
     }).exports;
     await assert.rejects(directory.loadProfileDirectory({ searchParams: Promise.resolve({}) }), /REDIRECT:\/access-denied/); assert.equal(reads, 0);
   });
-  await test("public Battle.net panel emits no OAuth, setup or candidate mutation controls", () => {
+  await test("profile characters are read-only: no OAuth, setup, candidate or mutation controls", () => {
     const blocked = { __esModule: true, default: () => React.createElement("div", null, "characters") };
-    const render = renderer(Object.fromEntries(["ProfileCharactersLiveSection", "ProfileCharacterSetup", "ProfileCandidateBulkActions", "ProfileCandidateExpiryTimer", "ProfileCandidateCharacterRow"].map(name => ["@/components/" + name, blocked])));
-    const html = render.html("src/components/profile/ProfileBattleNetPanel.tsx", { model: { profile, canManageCharacters: false, canViewPrivateProfileBlocks: false, visibleCharacters: [], mainCharacter: null, apiSettings: { profileViewRefreshMinSeconds: 60 }, availableCandidates: [], availableGuildCandidates: [], availableOtherCandidates: [], battleNetLastSyncLabel: "—", battleNetRefreshHref: "/api/auth/battlenet/start", battleNetCharacterActionHref: "/api/auth/battlenet/start", battleNetAction: { title: "Connect" } } });
-    assert.doesNotMatch(html, /\/api\/auth|<form|profile-candidates|Connect/);
+    const render = renderer(Object.fromEntries(["ProfileCharactersLiveSection"].map(name => ["@/components/" + name, blocked])));
+    const base = { profile, visibleCharacters: [], mainCharacter: null, apiSettings: { profileViewRefreshMinSeconds: 60 }, canViewPrivateProfileBlocks: false, battleNetLastSyncLabel: "—" };
+    const visitor = render.html("src/components/profile/ProfileCharactersGallery.tsx", { model: { ...base, isOwnProfile: false }, settingsHref: "/profile/own/settings" });
+    assert.doesNotMatch(visitor, /\/api\/|<form|profile-candidates|Керувати персонажами/);
+    const owner = render.html("src/components/profile/ProfileCharactersGallery.tsx", { model: { ...base, isOwnProfile: true }, settingsHref: "/profile/own/settings" });
+    assert.match(owner, /href="\/profile\/own\/settings#profile-characters-settings"/); assert.doesNotMatch(owner, /\/api\/|<form/);
   });
   await test("role search hides rows but keeps every saved mapping mounted and enabled", () => {
     const render = renderer({ react: { ...React, useState: () => ["Officer", () => {}] } });

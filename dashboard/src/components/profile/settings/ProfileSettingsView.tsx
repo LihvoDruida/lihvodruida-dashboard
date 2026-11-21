@@ -8,7 +8,6 @@ import ListReturnLink from "@/components/ListReturnLink";
 import { listNavigationScope } from "@/lib/listNavigationScope";
 import { canViewProfiles } from "@/lib/permissions";
 import { wowRoleLabel } from "@/lib/wowRoles";
-import { profileGenderLabel } from "@/lib/profiles";
 import { formatStableUkCompactDate } from "@/lib/stableUiText";
 import PageContainer from "@/components/page/PageContainer";
 import FormSection from "@/components/page/FormSection";
@@ -19,6 +18,7 @@ import AccountCard from "@/components/account/AccountCard";
 import styles from "@/components/account/account.module.css";
 import ProfileCompletion from "./ProfileCompletion";
 import { ProfileGenderPreferenceForm, RaidRolePreferenceForm, NicknameCharactersForm } from "./ProfilePreferences";
+import ProfileCharactersManager from "./ProfileCharactersManager";
 
 function Section({ id, title, description, children }: { id: string; title: string; description: string; children: ReactNode }) {
   return <section className={styles.settingsSection} id={id} aria-labelledby={`${id}-title`}>
@@ -37,9 +37,10 @@ export default function ProfileSettingsView(model: ProfileSettingsModel) {
   const missing = new Set(setupStatus.missing.map(step => step.key));
   const linked = Boolean(profile.battlenet?.linked);
   const nav = [
-    { href: "#profile-identity", label: "Імʼя та звертання", missing: missing.size > 0 },
+    { href: "#profile-characters-settings", label: `Персонажі · ${profile.characters.length}` },
+    { href: "#profile-identity", label: "Імʼя", missing: [...missing].some(key => key !== "profile_gender") },
     { href: "#profile-discord", label: "Discord" },
-    { href: "#profile-raids-settings", label: "Рейди" },
+    { href: "#profile-raids-settings", label: "Рейди та звертання", missing: missing.has("profile_gender") },
     { href: "#profile-connections", label: "Підключення" },
   ];
   return <PageContainer label={settingsPageTitle} navigation={<DashboardIdentity user={session} activeSection="profile" />}>
@@ -47,11 +48,6 @@ export default function ProfileSettingsView(model: ProfileSettingsModel) {
     <AccountHero id="profile-settings-overview" name={settingsPageTitle} avatar={liveDiscordMember?.avatarUrl || profile.avatarUrl}
       subtitle={`${publicNamePreview} · кожна форма зберігається окремо`}
       badges={[{ label: profile.groupName || guildStatus, tone: "info" }, { label: wowRoleLabel(selectedRaidRole) }]}
-      stats={[
-        { label: "Публічне імʼя", value: publicNamePreview },
-        { label: "Discord-нік", value: discordNicknamePreview || "Не сформовано" },
-        { label: "Звертання", value: profileGenderLabel(profile.grammaticalGender) },
-      ]}
       actions={<Link href={profileHref} className="btn subtle" prefetch={false}>Відкрити профіль</Link>}
       tabs={[
         { href: profileHref, label: "Огляд" },
@@ -68,7 +64,10 @@ export default function ProfileSettingsView(model: ProfileSettingsModel) {
       </nav>
       <div className={styles.settingsMain}>
         <ProfileCompletion status={setupStatus} />
-        <Section id="profile-identity" title="Імʼя та звертання" description="Як тебе бачать у панелі, рейдах і на сервері.">
+        <Section id="profile-characters-settings" title="Персонажі" description="Retail і WoW Forever з Battle.net: мейн, склад і видалення.">
+          <ProfileCharactersManager model={model} />
+        </Section>
+        <Section id="profile-identity" title="Імʼя" description="Як тебе бачать у панелі, рейдах і на сервері.">
           <div id="profile-name-settings"><FormSection title="Імʼя та відображення">
             <PageErrorBoundary resetKey={profile.profileId}><ProfileNameControls identityProfileId={profile.profileId}
               preferredName={profile.preferredName} publicNameMode={profile.publicNameMode} discordName={profile.displayName}
@@ -77,14 +76,16 @@ export default function ProfileSettingsView(model: ProfileSettingsModel) {
               currentServerNickname={currentServerNickname} serverNicknameChecked={Boolean(discordMemberReadable && liveDiscordMember)} canManage
               canSyncDiscord={canSyncDiscordNickname} discordOwnerLocked={discordOwnerLocked} returnTo={settingsRulesReturnPath} /></PageErrorBoundary>
           </FormSection></div>
-          <div id="profile-gender-settings"><ProfileGenderPreferenceForm value={profile.grammaticalGender} returnTo={settingsRulesReturnPath} /></div>
         </Section>
         <Section id="profile-discord" title="Discord" description="Персонажі в серверному ніку та особисті нагадування.">
           <div id="profile-nickname-settings"><NicknameCharactersForm profile={profile} nicknameTemplate={nicknamePolicy.template} returnTo={settingsRulesReturnPath} /></div>
           {profile.provider === "discord" ? <div id="profile-notifications-settings"><FormSection title="Нагадування про рейди"><PageErrorBoundary><RaidReminderPreferenceControls /></PageErrorBoundary></FormSection></div> : null}
         </Section>
-        <Section id="profile-raids-settings" title="Рейди" description="Роль, з якою тебе ставлять у склад.">
-          <div id="profile-role-settings"><RaidRolePreferenceForm mainCharacter={mainCharacter} manualRole={manualRaidRole} selectedRole={selectedRaidRole} returnTo={settingsRulesReturnPath} /></div>
+        <Section id="profile-raids-settings" title="Рейди та звертання" description="Роль, з якою тебе ставлять у склад, і форма звертання в текстах.">
+          <div className={styles.settingsPair}>
+            <div id="profile-role-settings"><RaidRolePreferenceForm mainCharacter={mainCharacter} manualRole={manualRaidRole} selectedRole={selectedRaidRole} returnTo={settingsRulesReturnPath} /></div>
+            <div id="profile-gender-settings"><ProfileGenderPreferenceForm value={profile.grammaticalGender} returnTo={settingsRulesReturnPath} /></div>
+          </div>
         </Section>
         <Section id="profile-connections" title="Підключення та сесія" description="Сервіси, через які панель знає твій акаунт і персонажів.">
           <AccountCard title="Підключені сервіси" rows={[

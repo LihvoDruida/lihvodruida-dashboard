@@ -1,39 +1,45 @@
-import type { ProfileOverviewModel } from "@/services/profileOverview";
+import type { ProfileSettingsModel } from "@/services/profileSettings";
 import ProfileCharactersLiveSection from "@/components/ProfileCharactersLiveSection";
 import ProfileCharacterSetup from "@/components/ProfileCharacterSetup";
 import ProfileCandidateBulkActions from "@/components/ProfileCandidateBulkActions";
 import ProfileCandidateExpiryTimer from "@/components/ProfileCandidateExpiryTimer";
 import ProfileCandidateCharacterRow from "@/components/ProfileCandidateCharacterRow";
-import PageSection from "@/components/page/PageSection";
 import Notice from "@/components/page/Notice";
 import FormSection from "@/components/page/FormSection";
 import PageErrorBoundary from "@/components/page/PageErrorBoundary";
+import styles from "@/components/account/account.module.css";
 
-export default function ProfileBattleNetPanel({ model }: { model: ProfileOverviewModel }) {
-  const { profile, canManageCharacters, canViewPrivateProfileBlocks, visibleCharacters, mainCharacter, apiSettings,
-    availableCandidates, availableGuildCandidates, availableOtherCandidates, hasAvailableBattleNetCandidates,
-    battleNetAction, battleNetCharacterActionHref, battleNetRefreshHref, battleNetLastSyncLabel, profileRulesReturnPath,
-    isRulesReturn, bulkFormId } = model;
-  return <div id="profile-characters"><PageSection id="profile-characters-title" title="Персонажі Battle.net"
-    description={profile.battlenet?.linked ? `Battle.net підключено · синхронізація: ${battleNetLastSyncLabel}` : "Персонажі, мейн і спеціалізації профілю."}
-    actions={canManageCharacters ? <a className="btn primary" href={battleNetCharacterActionHref}>{battleNetAction.title}</a> : null}>
+/** Everything about the profile's characters: Battle.net sync, list with main / remove, composition and candidates. */
+export default function ProfileCharactersManager({ model }: { model: ProfileSettingsModel }) {
+  const { profile, characters, visibleCharacters, mainCharacter, apiSettings, isRulesReturn, settingsRulesReturnPath } = model;
+  const { availableCandidates, availableGuildCandidates, availableOtherCandidates, hasAvailableBattleNetCandidates,
+    battleNetAction, battleNetCharacterActionHref, battleNetRefreshHref, battleNetLastSyncLabel, bulkFormId } = characters;
+  const returnTo = settingsRulesReturnPath || `/profile/${encodeURIComponent(profile.profileId)}/settings`;
+  const linked = Boolean(profile.battlenet?.linked);
+  return <>
+    <div className={styles.syncBar}>
+      <span className={styles.rowCopy}>
+        <strong>{linked ? (profile.battlenet?.accountLabel || "Battle.net підключено") : "Battle.net не підключено"}</strong>
+        <small>{linked ? `Синхронізація ${battleNetLastSyncLabel} · Retail і WoW Forever` : "Підключи, щоб знайти персонажів Retail і WoW Forever"}</small>
+      </span>
+      <a className="btn primary" href={battleNetCharacterActionHref}>{battleNetAction.title}</a>
+    </div>
     <PageErrorBoundary resetKey={profile.profileId}><ProfileCharactersLiveSection profileId={profile.profileId} initialCharacters={visibleCharacters}
       initialUpdatedAt={profile.battlenet?.lastProfileViewRefreshAt || profile.battlenet?.lastCharacterRefreshAt || profile.battlenet?.lastSyncAt || profile.updatedAt || profile.lastLoginAt || mainCharacter?.lastSeenAt || null}
-      canManage={canManageCharacters} showMainBadge={canViewPrivateProfileBlocks} returnTo={profileRulesReturnPath}
-      candidateCount={availableCandidates.length} emptyMessage={canManageCharacters ? "Підключи Battle.net і додай персонажів." : "Учасник ще не додав персонажів."}
-      refreshMinMs={apiSettings.profileViewRefreshMinSeconds * 1000} /></PageErrorBoundary>
-    {canManageCharacters && !hasAvailableBattleNetCandidates && profile.battlenet?.linked ? <Notice title="Додавання нових персонажів"
+      canManage showMainBadge returnTo={returnTo} candidateCount={availableCandidates.length}
+      emptyMessage="Підключи Battle.net і додай персонажів." refreshMinMs={apiSettings.profileViewRefreshMinSeconds * 1000} /></PageErrorBoundary>
+    {!hasAvailableBattleNetCandidates && linked ? <Notice title="Нових персонажів немає"
       actions={<a className="btn subtle" href={battleNetRefreshHref}>Оновити список Battle.net</a>}>
-      Онови список Battle.net, щоб знайти інших або оновлених персонажів. Уже додані персонажі залишаються у профілі.
+      Онови список, щоб знайти нових або перейменованих персонажів. Уже додані персонажі залишаються у профілі.
     </Notice> : null}
-    {canManageCharacters && !isRulesReturn && (profile.characters.length > 0 || hasAvailableBattleNetCandidates)
-      ? <FormSection title="Склад персонажів"><PageErrorBoundary resetKey={profile.profileId}><ProfileCharacterSetup key={profile.profileId} profileId={profile.profileId} /></PageErrorBoundary></FormSection> : null}
-    {canManageCharacters && isRulesReturn && hasAvailableBattleNetCandidates ? <div id="profile-candidates" className="profile-candidates-box" data-profile-candidates-box="true">
+    {!isRulesReturn && (profile.characters.length > 0 || hasAvailableBattleNetCandidates)
+      ? <FormSection title="Склад персонажів" description="Додай персонажів, вибери мейна і роль одним збереженням."><PageErrorBoundary resetKey={profile.profileId}><ProfileCharacterSetup key={profile.profileId} profileId={profile.profileId} /></PageErrorBoundary></FormSection> : null}
+    {isRulesReturn && hasAvailableBattleNetCandidates ? <div id="profile-candidates" className="profile-candidates-box" data-profile-candidates-box="true">
       <FormSection title="Додати персонажів" description="Вибери потрібних гільдійних або інших персонажів для профілю.">
         <div className="profile-candidate-counter"><span className="profile-count-pill" data-profile-candidate-count="true">{availableCandidates.length}</span>
           {profile.battlenet?.candidateExpiresAt ? <ProfileCandidateExpiryTimer expiresAt={profile.battlenet.candidateExpiresAt} /> : null}</div>
         <form id={bulkFormId} className="profile-candidate-bulk-form" action="/api/profile/characters/bulk-add" method="post">
-          {profileRulesReturnPath ? <input type="hidden" name="returnTo" value={profileRulesReturnPath} /> : null}
+          <input type="hidden" name="returnTo" value={returnTo} />
         </form>
         <ProfileCandidateBulkActions formId={bulkFormId} count={availableCandidates.length} />
         {availableGuildCandidates.length ? <section className="profile-candidate-group" aria-label="Гільдійні кандидати"><strong>Гільдійні · {availableGuildCandidates.length}</strong>
@@ -42,5 +48,5 @@ export default function ProfileBattleNetPanel({ model }: { model: ProfileOvervie
           <ul className="profile-character-candidates">{availableOtherCandidates.map(character => <ProfileCandidateCharacterRow key={character.key} character={character} bulkFormId={bulkFormId} />)}</ul></section> : null}
       </FormSection>
     </div> : null}
-  </PageSection></div>;
+  </>;
 }

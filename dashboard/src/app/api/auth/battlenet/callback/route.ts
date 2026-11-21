@@ -59,7 +59,8 @@ function redirectToProfile(profileId: string, status: string, nextPath = "") {
   });
   const target = targetPath
     ? new URL(`${getDashboardUrl()}${targetPath}`)
-    : new URL(`${getDashboardUrl()}/profile/${profileId}`);
+    // Characters are managed on the settings page.
+    : new URL(`${getDashboardUrl()}/profile/${profileId}/settings`);
   target.searchParams.set("characterStatus", status);
   const response = NextResponse.redirect(target.toString(), 303);
   applyNoStoreHeaders(response);
@@ -207,6 +208,7 @@ export async function GET(request: NextRequest) {
       eligibleCharacters: scan.eligibleCharacters,
       guildCharacters: scan.guildCharacters,
       otherCharacters: scan.otherCharacters,
+      foreverCharacters: scan.foreverCharacters,
       concurrency: scan.concurrency,
       failedCharacters: scan.failedCharacters,
       fallbackCharacters: scan.fallbackCharacters,

@@ -6,6 +6,7 @@ import { dateMillis, formatStableUkCompactDate, stableTextCompare } from "@/lib/
 import type { DashboardProfile, ProfileCharacter } from "@/lib/profiles";
 import { wowRoleLabel } from "@/lib/wowRoles";
 import { wowClassColorByName } from "@/lib/wowClassCatalog";
+import { characterEdition, WOW_EDITION_LABEL } from "@/lib/wowEdition";
 import styles from "@/components/account/account.module.css";
 
 const DEFAULT_REFRESH_MIN_MS = DASHBOARD_BACKGROUND_REFRESH_MIN_MS;
@@ -120,46 +121,57 @@ function CharacterInlineIcon({ kind }: { kind: CharacterIconKind }) {
 
 function CharacterCard({ character, profileId, canManage, showMainBadge, returnTo = "" }: { character: ProfileCharacter; profileId: string; canManage: boolean; showMainBadge: boolean; returnTo?: string }) {
   const isMain = showMainBadge && Boolean(character.isMain);
+  const edition = characterEdition(character);
+  const forever = edition === "forever";
   const spec = [character.activeSpecName, character.className].filter(Boolean).join(" ") || "Клас невідомий";
-  const rioScore = typeof character.raiderIo?.currentScore === "number" && character.raiderIo.currentScore > 0 ? Math.round(character.raiderIo.currentScore) : null;
-  const rioUrl = character.raiderIo?.profileUrl || null;
-  const realmLabel = character.realmName || character.realmSlug || "Реалм невідомий";
+  const rioScore = !forever && typeof character.raiderIo?.currentScore === "number" && character.raiderIo.currentScore > 0 ? Math.round(character.raiderIo.currentScore) : null;
+  const rioUrl = forever ? null : character.raiderIo?.profileUrl || null;
+  const armoryUrl = character.profileUrl && character.profileUrl !== "#" ? character.profileUrl : null;
+  const place = forever ? "WoW Forever" : character.realmName || character.realmSlug || "Реалм невідомий";
+  const guild = character.guildName ? `${character.guildName}${character.verifiedGuild && character.guildStatusLabel ? ` · ${character.guildStatusLabel}` : ""}` : "Без гільдії";
   const classColor = wowClassColorByName(character.className);
   return (
-    <article className={styles.char} data-main={isMain || undefined} data-character-profile-id={profileId}
+    <article className={styles.char} data-main={isMain || undefined} data-edition={edition} data-character-profile-id={profileId}
       style={classColor ? { "--guild-class-color": classColor } as CSSProperties : undefined}
-      aria-label={`${isMain ? "Основний персонаж" : "Персонаж"}: ${character.name}`}>
-      <span className={styles.charArt}><CharacterArtwork character={character} /></span>
-      <div className={styles.charCopy}>
-        <h3 className={styles.charName}><span>{character.name}</span>
-          {isMain ? <span className={styles.tag} data-tone="main"><CharacterInlineIcon kind="mainStar" />Мейн</span> : null}
-          <span className={styles.tag} data-tone={character.verifiedGuild ? "guild" : undefined}>{character.verifiedGuild ? "Гільдія" : "Поза гільдією"}</span>
-        </h3>
-        <p className={styles.charMeta}>{spec} · {wowRoleLabel(character.activeSpecRole)} · {realmLabel}</p>
-        <dl className={styles.charStats} aria-label="Ключові показники персонажа">
-          <div><dt>ilvl</dt><dd>{typeof character.itemLevel === "number" ? character.itemLevel : "—"}</dd></div>
-          <div><dt>RIO</dt><dd>{rioScore ?? "—"}</dd></div>
-          <div><dt>Рівень</dt><dd>{typeof character.level === "number" ? character.level : "—"}</dd></div>
-          <div><dt>Оновлено</dt><dd>{formatStableUkCompactDate(character.lastSeenAt)}</dd></div>
-        </dl>
+      aria-label={`${isMain ? "Основний персонаж" : "Персонаж"}: ${character.name}, ${WOW_EDITION_LABEL[edition]}`}>
+      <div className={styles.charHead}>
+        <span className={styles.charArt}><CharacterArtwork character={character} /></span>
+        <div className={styles.charCopy}>
+          <h3 className={styles.charName}><span>{character.name}</span></h3>
+          <div className={styles.charTags}>
+            <span className={styles.tag} data-tone={edition}>{WOW_EDITION_LABEL[edition]}</span>
+            {isMain ? <span className={styles.tag} data-tone="main"><CharacterInlineIcon kind="mainStar" />Мейн</span> : null}
+            {character.verifiedGuild ? <span className={styles.tag} data-tone="guild">Гільдія</span> : null}
+          </div>
+          <p className={styles.charMeta}>{[character.raceName, spec, wowRoleLabel(character.activeSpecRole)].filter(Boolean).join(" · ")}</p>
+          <p className={styles.charMeta}>{[place, guild, character.faction].filter(Boolean).join(" · ")}</p>
+        </div>
       </div>
-      <div className={styles.charActions}>
-        {canManage && !character.isMain ? (
-          <form action="/api/profile/characters/main" method="post">
-            <input type="hidden" name="characterKey" value={character.key} />
-            {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
-            <button className={`btn subtle ${styles.iconButton}`} data-tone="primary" type="submit" title="Зробити мейном" aria-label={`Зробити мейном: ${character.name}`}><CharacterInlineIcon kind="crown" /></button>
-          </form>
-        ) : null}
-        {rioUrl ? <a className={`btn subtle ${styles.iconButton}`} href={rioUrl} target="_blank" rel="noreferrer" title="Raider.IO" aria-label={`Raider.IO: ${character.name}`}><CharacterInlineIcon kind="external" /></a>
-          : <span className={`btn subtle ${styles.iconButton}`} aria-disabled="true" title="Raider.IO недоступний"><CharacterInlineIcon kind="external" /></span>}
-        {canManage ? (
+      <dl className={styles.charStats} aria-label="Ключові показники персонажа">
+        <div><dt>ilvl</dt><dd>{typeof character.itemLevel === "number" ? character.itemLevel : "—"}</dd></div>
+        <div><dt>{forever ? "Рейтинг" : "Raider.IO"}</dt><dd>{forever ? "—" : rioScore ?? "—"}</dd></div>
+        <div><dt>Рівень</dt><dd>{typeof character.level === "number" ? character.level : "—"}</dd></div>
+        <div><dt>Оновлено</dt><dd>{formatStableUkCompactDate(character.lastSeenAt)}</dd></div>
+      </dl>
+      <div className={styles.charFooter}>
+        <div className={styles.charLinks}>
+          {armoryUrl ? <a className={`btn subtle ${styles.linkButton}`} href={armoryUrl} target="_blank" rel="noreferrer">{forever ? "Armory Forever" : "Armory"}<CharacterInlineIcon kind="external" /></a> : null}
+          {rioUrl ? <a className={`btn subtle ${styles.linkButton}`} href={rioUrl} target="_blank" rel="noreferrer">Raider.IO<CharacterInlineIcon kind="external" /></a> : null}
+        </div>
+        {canManage ? <div className={styles.charActions}>
+          {!character.isMain ? (
+            <form action="/api/profile/characters/main" method="post">
+              <input type="hidden" name="characterKey" value={character.key} />
+              {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+              <button className={`btn subtle ${styles.linkButton}`} type="submit" aria-label={`Зробити мейном: ${character.name}`}><CharacterInlineIcon kind="crown" />Зробити мейном</button>
+            </form>
+          ) : null}
           <form action="/api/profile/characters/remove" method="post">
             <input type="hidden" name="characterKey" value={character.key} />
             {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
             <button className={`btn subtle ${styles.iconButton}`} data-tone="danger" type="submit" title="Видалити з профілю" aria-label={`Видалити з профілю: ${character.name}`}><CharacterInlineIcon kind="trash" /></button>
           </form>
-        ) : null}
+        </div> : null}
       </div>
     </article>
   );
@@ -237,6 +249,7 @@ export default function ProfileCharactersLiveSection({
 
   const guildCount = useMemo(() => characters.filter((item) => item.verifiedGuild).length, [characters]);
   const otherCount = Math.max(0, characters.length - guildCount);
+  const foreverCount = useMemo(() => characters.filter((item) => characterEdition(item) === "forever").length, [characters]);
   const effectiveUpdatedAt = useMemo(() => {
     const characterLastSeen = characters.reduce<number | null>((latest, character) => {
       const time = newestMillis(character.lastSeenAt, character.raiderIo?.updatedAt);
@@ -262,6 +275,7 @@ export default function ProfileCharactersLiveSection({
       <p className={styles.charSummary} aria-label="Стан персонажів">
         <span><strong>{guildCount}</strong> у гільдії</span>
         <span><strong>{otherCount}</strong> інших</span>
+        {foreverCount ? <span><strong>{foreverCount}</strong> Forever</span> : null}
         <span data-profile-candidate-summary="true"><strong data-profile-candidate-count="true">{candidateCount}</strong> можна додати</span>
         <span>оновлено <strong>{formatStableUkCompactDate(effectiveUpdatedAt)}</strong></span>
       </p>

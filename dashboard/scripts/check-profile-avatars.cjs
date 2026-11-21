@@ -35,8 +35,8 @@ const checks = [
   [settingsPage, /liveDiscordMember\?\.avatarUrl \|\| profile\.avatarUrl/, "settings page live avatar fallback missing"],
   [profilesPage, /fetchDiscordGuildMembersCachedForUi\(\)/, "directory does not refresh Discord avatars through the UI cache"],
   [profilesPage, /<ProfileAvatar/, "directory does not use robust avatar component"],
-  [css, /\.charList \{[^}]*grid-template-columns:\s*repeat\(auto-fill,\s*minmax\(min\(100%, 340px\), 1fr\)\)/, "character tiles lost their responsive grid"],
-  [css, /\.charArt \{[^}]*width: 48px; height: 48px;/, "character tile artwork size missing"],
+  [css, /\.charList \{[^}]*grid-template-columns:\s*repeat\(auto-fill,\s*minmax\(min\(100%, 380px\), 1fr\)\)/, "character cards lost their responsive grid"],
+  [css, /\.charArt \{[^}]*width: 64px; height: 64px;/, "character card artwork size missing"],
 ];
 
 for (const [source, pattern, label] of checks) expect(source, pattern, label);

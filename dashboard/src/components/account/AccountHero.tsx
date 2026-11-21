@@ -8,7 +8,7 @@ export type AccountTab = { href: string; label: string; current?: boolean };
 export type AccountBadge = { label: string; tone?: StatusTone };
 export type AccountStat = { label: string; value: ReactNode };
 
-/** Account header shared by the profile and its settings page: cover, identity, key numbers, tabs. */
+/** Account header shared by the profile and its settings page: identity, key numbers, tabs. */
 export default function AccountHero({ id, name, subtitle, avatar, badges = [], stats = [], actions, tabs }: {
   id?: string;
   name: string;
@@ -20,9 +20,8 @@ export default function AccountHero({ id, name, subtitle, avatar, badges = [], s
   tabs: readonly AccountTab[];
 }) {
   return <header className={styles.hero} id={id}>
-    <div className={styles.cover} aria-hidden="true" />
     <div className={styles.heroBody}>
-      <ProfileAvatar src={avatar} width={96} height={96} className={styles.avatar} loading="eager" />
+      <ProfileAvatar src={avatar} width={88} height={88} className={styles.avatar} loading="eager" />
       <div className={styles.identity}>
         <h1 className={styles.name}>{name}</h1>
         {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}

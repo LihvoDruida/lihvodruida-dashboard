@@ -1,3 +1,4 @@
+import { FOREVER_REALM_SLUG, type WowEdition } from "@/lib/wowEdition";
 import { createHash } from "crypto";
 import { ApiHttpError, providerFetchJson as apiFetchJson } from "@/lib/providerHttp";
 import { getDashboardUrl } from "@/lib/oauth";
@@ -78,6 +79,8 @@ export type BattleNetCharacterCandidate = {
   verifiedGuild: boolean;
   itemLevel?: number | null;
   lastSeenAt: string;
+  /** Absent on records saved before Forever support: those are Retail. */
+  edition?: WowEdition;
 };
 
 export { BNET_OAUTH_STATE_COOKIE, LEGACY_BNET_OAUTH_STATE_COOKIE } from "@/lib/authCookieNames";
@@ -263,12 +266,12 @@ async function bnetFetch(
   path: string,
   params?: Record<string, string>,
   regionInput?: string | null,
-  options?: { timeoutMs?: number; retries?: number },
+  options?: { timeoutMs?: number; retries?: number; namespace?: string },
 ) {
   const region = normalizeBattleNetRegion(regionInput || getDefaultBattleNetRegion());
   const locale = getBattleNetLocale(region);
   const url = new URL(`${battleNetApiBase(region)}${path}`);
-  url.searchParams.set("namespace", profileNamespace(region));
+  url.searchParams.set("namespace", options?.namespace || profileNamespace(region));
   url.searchParams.set("locale", locale);
   for (const [key, value] of Object.entries(params || {})) {
     url.searchParams.set(key, value);
@@ -503,6 +506,94 @@ function compareBattleNetCandidates(a: BattleNetCharacterCandidate, b: BattleNet
   return a.name.localeCompare(b.name, "uk");
 }
 
+// --- World of Warcraft: Forever -------------------------------------------------
+// Blizzard has not documented Forever endpoints. Community probes (Nov 2026) show
+// profile data under the `profile-forever-{region}` namespace: the account profile
+// lists Forever characters for a user token, and a public character profile is
+// `/profile/wow/character/{first}-{surname}` (no realm) for level 10+. Every Forever
+// call is best-effort: any failure means "no Forever data", never a failed sync.
+function foreverNamespace(region: BattleNetRegion) {
+  return `profile-forever-${region}`;
+}
+
+function foreverIdentity(character: any) {
+  const first = cleanText(character?.name, 60);
+  const surname = cleanText(character?.surname || character?.last_name || character?.lastName || "", 60);
+  const name = [first, surname].filter(Boolean).join(" ");
+  const slug = normalizeBattleNetNameSlug([first, surname].filter(Boolean).join("-"));
+  return { name, slug };
+}
+
+function foreverArmoryUrl(region: BattleNetRegion, slug: string) {
+  return `https://worldofwarcraft.blizzard.com/forever/${region}/armory/character/${encodeURIComponent(slug)}`;
+}
+
+function foreverEnabled() {
+  return envFlag("BATTLENET_FOREVER_ENABLED", true);
+}
+
+function foreverCandidate(summary: any, details: any, region: BattleNetRegion, lastSeenAt: string): BattleNetCharacterCandidate | null {
+  const { name, slug } = foreverIdentity(details?.name ? { ...summary, ...details } : summary);
+  const key = buildBattleNetCharacterKey(region, FOREVER_REALM_SLUG, slug);
+  if (!name || !slug || !key) return null;
+  const source = details || summary;
+  const activeSpecName = pickLocalizedName(source?.active_spec || source?.active_specialization);
+  const activeSpecId = pickActiveSpecId(source?.active_spec || source?.active_specialization);
+  const className = pickLocalizedName(source?.character_class || source?.playable_class || summary?.playable_class);
+  return {
+    key,
+    source: "battlenet" as const,
+    region,
+    name,
+    normalizedName: slug,
+    realmSlug: FOREVER_REALM_SLUG,
+    realmName: "WoW Forever",
+    level: numberOrNull(source?.level ?? summary?.level),
+    faction: pickLocalizedName(source?.faction || summary?.faction),
+    className,
+    activeSpecName,
+    activeSpecId,
+    activeSpecRole: resolveWowCharacterRole({ activeSpecName, activeSpecId, className }),
+    raceName: pickLocalizedName(source?.race || source?.playable_race || summary?.playable_race),
+    genderName: pickLocalizedName(source?.gender || summary?.gender),
+    guildName: cleanText(details?.guild?.name || "", 120) || null,
+    guildRealmSlug: null,
+    // The guild roster and ranks belong to the Retail guild; Forever is never "in guild".
+    guildRank: null,
+    guildStatus: null,
+    guildStatusLabel: null,
+    profileUrl: foreverArmoryUrl(region, slug),
+    avatarUrl: null,
+    renderUrl: null,
+    mediaUrl: null,
+    verifiedGuild: false,
+    itemLevel: numberOrNull(details?.equipped_item_level ?? details?.average_item_level),
+    lastSeenAt,
+    edition: "forever",
+  } satisfies BattleNetCharacterCandidate;
+}
+
+/** Forever characters on the signed-in account; empty when the namespace is unavailable. */
+async function fetchBattleNetForeverCharacters(accessToken: string, region: BattleNetRegion) {
+  if (!foreverEnabled()) return [];
+  const namespace = foreverNamespace(region);
+  const profile = await bnetFetch(accessToken, "/profile/user/wow", undefined, region, { namespace, retries: 0 }).catch(() => null);
+  const seen = new Set<string>();
+  const summaries = flattenUserCharacters(profile).filter(character => {
+    const { slug } = foreverIdentity(character);
+    if (!slug || seen.has(slug)) return false;
+    seen.add(slug);
+    return true;
+  });
+  const now = new Date().toISOString();
+  const { results } = await mapConcurrent(summaries, async (summary) => {
+    const { slug } = foreverIdentity(summary);
+    const details = await bnetFetch(accessToken, `/profile/wow/character/${encodeURIComponent(slug)}`, undefined, region, { namespace, retries: 0 }).catch(() => null);
+    return foreverCandidate(summary, details, region, now);
+  }, { profile: "external-api", concurrency: getBattleNetScanConcurrency(summaries.length), failFast: false });
+  return results.filter(Boolean) as BattleNetCharacterCandidate[];
+}
+
 export async function fetchBattleNetGuildCharacters(accessToken: string, regionInput?: string | null) {
   const startedAt = Date.now();
   const region = normalizeBattleNetRegion(regionInput || getDefaultBattleNetRegion());
@@ -584,7 +675,9 @@ export async function fetchBattleNetGuildCharacters(accessToken: string, regionI
     failFast: false,
   });
 
-  const filtered = candidates.filter(Boolean) as BattleNetCharacterCandidate[];
+  const retail = candidates.filter(Boolean) as BattleNetCharacterCandidate[];
+  const forever = onlyGuildCharacters ? [] : await fetchBattleNetForeverCharacters(accessToken, region).catch(() => []);
+  const filtered = [...retail, ...forever.filter(character => !retail.some(item => item.key === character.key))];
   const guildCharacters = filtered.filter((character) => character.verifiedGuild).length;
   return {
     region,
@@ -593,6 +686,7 @@ export async function fetchBattleNetGuildCharacters(accessToken: string, regionI
     eligibleCharacters: filtered.length,
     guildCharacters,
     otherCharacters: Math.max(0, filtered.length - guildCharacters),
+    foreverCharacters: forever.length,
     concurrency: meta.concurrency,
     failedCharacters: meta.failed,
     fallbackCharacters,
@@ -616,6 +710,12 @@ export async function fetchBattleNetCharacterSnapshot(
   if (!realmSlug || !nameSlug) return null;
 
   const accessToken = await fetchBattleNetApplicationToken(region);
+  if (realmSlug === FOREVER_REALM_SLUG) {
+    if (!foreverEnabled()) return null;
+    // Public Forever profiles exist from level 10 only; anything else is "unavailable".
+    const details = await bnetFetch(accessToken, `/profile/wow/character/${encodeURIComponent(nameSlug)}`, undefined, region, { namespace: foreverNamespace(region), retries: 0 }).catch(() => null);
+    return details ? foreverCandidate({ name: input.name, surname: "" }, details, region, new Date().toISOString()) : null;
+  }
   let details: any = null;
   try {
     details = await bnetFetch(

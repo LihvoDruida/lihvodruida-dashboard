@@ -11,7 +11,7 @@ import AccountHero, { type AccountTab } from "@/components/account/AccountHero";
 import AccountCard from "@/components/account/AccountCard";
 import MainCharacterShowcase from "@/components/account/MainCharacterShowcase";
 import styles from "@/components/account/account.module.css";
-import ProfileBattleNetPanel from "./ProfileBattleNetPanel";
+import ProfileCharactersGallery from "./ProfileCharactersGallery";
 import ProfileRaidSignups from "./ProfileRaidSignups";
 
 export default function ProfileOverviewView(model: ProfileOverviewModel) {
@@ -52,7 +52,7 @@ export default function ProfileOverviewView(model: ProfileOverviewModel) {
     <div className={styles.layout}>
       <div className={styles.main}>
         {mainCharacter ? <MainCharacterShowcase character={mainCharacter} /> : null}
-        <ProfileBattleNetPanel model={model} />
+        <ProfileCharactersGallery model={model} settingsHref={settingsHref} />
         {canViewPrivateProfileBlocks ? <ProfileRaidSignups items={raidSignups} unavailable={model.raidSignupsUnavailable} /> : null}
       </div>
       <div className={styles.aside}>
