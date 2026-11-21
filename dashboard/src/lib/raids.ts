@@ -1,3 +1,4 @@
+import { isForeverCharacter } from "@/lib/wowEdition";
 import { randomUUID } from "node:crypto";
 import { decodeRaidSignupMenuId } from "@mistblossom/discord-contract";
 import { getRaidReminderPreference, prepareRaidReminderPreferenceWrite } from "@/lib/discordNotificationPreferences";
@@ -4624,6 +4625,8 @@ export function buildRaidCharacterSelectComponents(
   const selectedKey = normalizeCharacterKey(selectedCharacter?.key || "");
   const options = profile.characters
     .map((character, index) => ({ character, index }))
+    // Guild raids are Retail content: Forever characters cannot sign up.
+    .filter(({ character }) => !isForeverCharacter(character))
     .filter(
       ({ character }) =>
         !raid || !isRaidSubjectBlockedByMinItemLevel(raid, character),

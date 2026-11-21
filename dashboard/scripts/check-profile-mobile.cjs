@@ -30,7 +30,8 @@ const checks = [
   [raids.includes("<DataGrid") && raids.includes("unavailable ? <ErrorState") && raids.includes("<EmptyState"), "raid records keep distinct failed, empty and list states"],
   [!/#[0-9a-f]{3,8}\b|\brgba?\(/i.test(css), "account styles use colour tokens only"],
   [css.includes("@media (max-width: 1000px)") && css.includes(".layout, .settingsLayout { grid-template-columns: minmax(0, 1fr); }"), "two-column layouts collapse on tablets"],
-  [phone.includes(".stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }") && phone.includes(".charActions { grid-column: 1 / -1;"), "phone layout keeps two-column numbers and full-width character actions"],
+  [phone.includes(".stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }") && phone.includes(".charStats { grid-template-columns: repeat(2, minmax(0, 1fr)); }"), "phone layout keeps two-column numbers on the account header and character cards"],
+  [!/gradient\(/.test(css), "account styles use flat surfaces, no gradients"],
 ];
 
 let failed = 0;

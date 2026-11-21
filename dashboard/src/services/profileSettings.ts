@@ -1,6 +1,8 @@
 import "server-only";
 
 import { getSession } from "@/lib/auth";
+import { getDashboardApiSettings } from "@/lib/dashboardApiSettings";
+import { characterManagementModel } from "@/services/profileCharacters";
 import { recordDashboardSystemLog } from "@/lib/dashboardSystemLogs";
 import { withTimeout } from "@/lib/runtimeResilience";
 import { fetchDiscordGuildMemberSnapshot, fetchDiscordGuildSnapshot, hasDiscordEmbedConfig } from "@/lib/discordAdmin";
@@ -165,7 +167,15 @@ export async function loadProfileSettings({
     : "Налаштування профілю";
   const guildStatus = guildStatusLabel(profile.role);
   const accountStatusLabel = guildStatus;
-  return { session, profile, query, isOwnProfile, isRulesReturn, settingsRulesReturnPath, profileRulesReturnPath, rulesReviewPath, mainCharacter, manualRaidRole, selectedRaidRole, publicNamePreview, serverStyleNamePreview, discordNicknamePreview, discordMemberReadable, canSyncDiscordNickname, discordOwnerLocked, currentServerNickname, liveDiscordMember, setupStatus, isSetupEntry, settingsPageTitle, guildStatus, accountStatusLabel, storageWarning, nicknamePolicy };
+  // Character management lives on the settings page: Battle.net returns here.
+  const characters = characterManagementModel(profile, { returnPath: settingsRulesReturnPath || `/profile/${encodeURIComponent(profile.profileId)}/settings` });
+  const apiSettings = await getDashboardApiSettings();
+  const visibleCharacters = [...profile.characters].sort((a, b) => {
+    if (a.isMain !== b.isMain) return a.isMain ? -1 : 1;
+    if (a.verifiedGuild !== b.verifiedGuild) return a.verifiedGuild ? -1 : 1;
+    return a.name.localeCompare(b.name, "uk");
+  });
+  return { characters, apiSettings, visibleCharacters, session, profile, query, isOwnProfile, isRulesReturn, settingsRulesReturnPath, profileRulesReturnPath, rulesReviewPath, mainCharacter, manualRaidRole, selectedRaidRole, publicNamePreview, serverStyleNamePreview, discordNicknamePreview, discordMemberReadable, canSyncDiscordNickname, discordOwnerLocked, currentServerNickname, liveDiscordMember, setupStatus, isSetupEntry, settingsPageTitle, guildStatus, accountStatusLabel, storageWarning, nicknamePolicy };
 }
 
 export type ProfileSettingsModel = Awaited<ReturnType<typeof loadProfileSettings>>;

@@ -1,42 +1,15 @@
 import "server-only";
 
-import { getEnabledBattleNetRegions } from "@/lib/battlenet";
-import { normalizeCharacterKey } from "@/lib/wowCharacters";
+import { characterManagementModel } from "@/services/profileCharacters";
 import { listProfileRaidSignups } from "@/lib/raids";
-import { formatStableUkCompactDate } from "@/lib/stableUiText";
 import { getDashboardApiSettings } from "@/lib/dashboardApiSettings";
 import { fetchDiscordGuildMemberSnapshot } from "@/lib/discordAdmin";
 
 import { getSession, type DashboardSession } from "@/lib/auth";
 import { canViewProfileAccessDetails, dashboardRoleLabel, guildStatusLabel } from "@/lib/permissions";
-import { canViewProfile, getMainCharacter, getProfilePublicName, getProfileRaidRole, getProfileById, profileNeedsSettingsSetup, profileSettingsSetupPath, profileFromSession, upsertProfileFromSession, type DashboardProfile, type ProfileCharacter } from "@/lib/profiles";
+import { canViewProfile, getMainCharacter, getProfilePublicName, getProfileRaidRole, getProfileById, profileNeedsSettingsSetup, profileSettingsSetupPath, profileFromSession, upsertProfileFromSession } from "@/lib/profiles";
 import { getGuildNicknamePolicy } from "@/lib/guildNicknamePolicy";
 import { notFound, redirect } from "next/navigation";
-
-function battleNetActionCopy(
-  profile: DashboardProfile,
-  hasFreshBattleNetSession: boolean,
-) {
-  if (hasFreshBattleNetSession) {
-    return {
-      eyebrow: "Готово до додавання",
-      title: "Додати персонажів",
-      hint: "Вибери потрібних зі свіжого списку",
-    };
-  }
-  if (profile.battlenet?.linked) {
-    return {
-      eyebrow: "Battle.net підключено",
-      title: "Оновити список",
-      hint: "Потрібно для нових або оновлених персонажів",
-    };
-  }
-  return {
-    eyebrow: "Battle.net не підключено",
-    title: "Підключити Battle.net",
-    hint: "Знайде гільдійних та інших персонажів Battle.net",
-  };
-}
 
 export async function loadProfileOverview({
   params,
@@ -112,52 +85,15 @@ export async function loadProfileOverview({
 
   const mainCharacter = getMainCharacter(profile);
   const selectedRaidRole = getProfileRaidRole(profile);
-  const enabledBattleNetRegions = getEnabledBattleNetRegions();
   const canManageCharacters = isOwnProfile;
   const canViewPrivateProfileBlocks =
     isOwnProfile || canViewProfileAccessDetails(viewer);
-  const addedKeys = new Set(
-    profile.characters
-      .map((item) => normalizeCharacterKey(item.key))
-      .filter(Boolean),
-  );
-  const candidateByKey = new Map<string, ProfileCharacter>();
-  for (const candidate of profile.battlenet?.candidateCharacters || []) {
-    const key = normalizeCharacterKey(candidate.key);
-    if (key && !candidateByKey.has(key)) candidateByKey.set(key, candidate);
-  }
-  const availableCandidates = Array.from(candidateByKey.values()).filter(
-    (item) => !addedKeys.has(normalizeCharacterKey(item.key)),
-  );
-  const availableGuildCandidates = availableCandidates.filter(
-    (item) => item.verifiedGuild,
-  );
-  const availableOtherCandidates = availableCandidates.filter(
-    (item) => !item.verifiedGuild,
-  );
-  const profileGuildCharacterCount = profile.characters.filter(
-    (item) => item.verifiedGuild,
-  ).length;
-  const hasAvailableBattleNetCandidates = Boolean(
-    availableCandidates.length && profile.battlenet?.candidateExpiresAt,
-  );
-  const hasFreshBattleNetSession = hasAvailableBattleNetCandidates;
-  const primaryBattleNetRegion = enabledBattleNetRegions[0] || "eu";
-  const battleNetAction = battleNetActionCopy(
-    profile,
-    hasFreshBattleNetSession,
-  );
-  const battleNetRefreshHref = `/api/auth/battlenet/start?region=${primaryBattleNetRegion}${profileRulesReturnPath ? `&next=${encodeURIComponent(profileRulesReturnPath)}` : ""}`;
-  const battleNetCharacterActionHref = hasAvailableBattleNetCandidates
-    ? "#profile-candidates"
-    : battleNetRefreshHref;
-  const battleNetLastSyncAt =
-    profile.battlenet?.lastProfileViewRefreshAt ||
-    profile.battlenet?.lastCharacterRefreshAt ||
-    profile.battlenet?.lastSyncAt ||
-    null;
-  const battleNetLastSyncLabel = formatStableUkCompactDate(battleNetLastSyncAt);
-  const bulkFormId = "profile-candidate-bulk-add";
+  const characters = characterManagementModel(profile, {
+    // Battle.net returns to the settings page, where characters are managed.
+    returnPath: settingsRulesReturnPath || `/profile/${encodeURIComponent(profile.profileId)}/settings`,
+  });
+  const { availableCandidates, availableGuildCandidates, availableOtherCandidates, profileGuildCharacterCount, hasAvailableBattleNetCandidates,
+    battleNetAction, battleNetRefreshHref, battleNetCharacterActionHref, battleNetLastSyncLabel, bulkFormId } = characters;
   const publicNamePreview = getProfilePublicName(
     profile,
     nicknamePolicy.template,

@@ -1,3 +1,4 @@
+import { characterEdition, isForeverCharacter } from "@/lib/wowEdition";
 import { DISCORD_NOTIFICATION_PREFERENCES, raidReminderPreference } from "@/lib/discordNotificationPreferences";
 import { FieldPath, FieldValue, Timestamp } from "@/lib/db/documentValues";
 import type { DashboardRole, DashboardSession } from "@/lib/auth";
@@ -619,6 +620,7 @@ function normalizeCharacter(
       new Date(0).toISOString(),
     addedAt: timestampToIso(item.addedAt) || optionalString(item.addedAt),
     isMain: Boolean(mainCharacterKey && key === mainCharacterKey),
+    edition: characterEdition({ edition: item.edition, realmSlug }),
   };
 }
 
@@ -2232,7 +2234,8 @@ async function refreshCharacterSnapshot(current: ProfileCharacter) {
   const characterName = current.normalizedName || current.name;
   const [battleNetSnapshot, raiderIoSnapshot] = await Promise.all([
     fetchBattleNetCharacterSnapshot(current).catch(() => null),
-    fetchRaiderIoCharacterProfile({
+    // Raider.IO only covers Retail; Forever characters have no realm there.
+    isForeverCharacter(current) ? Promise.resolve(null) : fetchRaiderIoCharacterProfile({
       region: characterRegion,
       realmSlug: current.realmSlug,
       name: characterName,

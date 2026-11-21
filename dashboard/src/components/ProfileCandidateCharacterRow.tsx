@@ -1,4 +1,5 @@
 import type { ProfileCharacter } from "@/lib/profiles";
+import { isForeverCharacter } from "@/lib/wowEdition";
 import { wowRoleLabel } from "@/lib/wowRoles";
 import { pickWowAvatarImageUrl } from "@/lib/wowCharacters";
 
@@ -19,7 +20,7 @@ export default function ProfileCandidateCharacterRow({
   character: ProfileCharacter;
   bulkFormId: string;
 }) {
-  const kindLabel = character.verifiedGuild ? "🌿 Гільдійний" : "🤝 Інший";
+  const kindLabel = isForeverCharacter(character) ? "⏳ WoW Forever" : character.verifiedGuild ? "🌿 Гільдійний" : "🤝 Інший";
   const image = pickWowAvatarImageUrl(
     character.avatarUrl,
     character.renderUrl,
