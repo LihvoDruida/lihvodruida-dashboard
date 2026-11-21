@@ -474,12 +474,11 @@
 .admin-page-header__metric.is-warning { --admin-metric-tone: var(--c-warning); }
 .admin-page-header__metric.is-danger { --admin-metric-tone: var(--c-danger); }
 
+/* Same label style as every other metric tile: sentence case, muted. */
 .admin-page-header__metric > span {
-  color: var(--text-faint);
-  font-size: 0.65rem;
-  font-weight: var(--font-weight-heavy);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  color: var(--text-muted);
+  font-size: var(--font-size-meta);
+  font-weight: var(--font-weight-medium);
 }
 
 .admin-page-header__metric > strong {

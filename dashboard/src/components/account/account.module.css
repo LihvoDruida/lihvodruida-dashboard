@@ -124,6 +124,7 @@
   .avatar { width: 72px; height: 72px; margin-top: calc(var(--space-xl) * -1.25); }
   .stats, .tabs { padding-inline: var(--space-md); }
   .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stat:last-child:nth-child(odd) { grid-column: 1 / -1; }
   .showcase { grid-template-columns: auto minmax(0, 1fr); }
   .showcaseStats { grid-column: 1 / -1; }
   .showcaseStats > div { flex: 1 1 0; }

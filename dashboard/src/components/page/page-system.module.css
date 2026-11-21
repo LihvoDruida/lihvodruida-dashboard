@@ -107,7 +107,8 @@
 }
 @media (max-width: 640px) {
   .dataCard { min-block-size: auto; }
-  .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-sm); }
+  .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-xs); }
+  .metric:last-child:nth-child(odd) { grid-column: 1 / -1; }
   .dropdownPanel { inset-inline-start: 0; inset-inline-end: auto; }
   .filters { width: 100%; }
   .filters > label { flex: 1 1 var(--dropdown-min); }
