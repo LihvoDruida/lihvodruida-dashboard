@@ -5,7 +5,7 @@
 .identity { display: flex; gap: var(--space-xs); color: var(--text-body); text-decoration: none; min-width: 0; align-items: start; }
 .identity > span { min-width: 0; overflow-wrap: anywhere; }
 .identity:hover strong { color: var(--c-accent-300); }
-.avatar { border-radius: var(--control-radius); object-fit: cover; flex: none; background: var(--surface-raised); }
+.avatar { border: var(--stroke-width) solid var(--border); border-radius: var(--control-radius); object-fit: cover; flex: none; background: var(--surface-raised); }
 .pagination { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: var(--space-sm); }
 @container (max-width: 800px) {
   .table { display: block; }

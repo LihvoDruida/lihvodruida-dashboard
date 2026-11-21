@@ -13,24 +13,24 @@
 /* ---------- Рядки: зміст ліворуч,
 дії праворуч ---------- */
 @layer patterns {
-  [class$="-row"]:not(:where([role="row"])),
-[class*="-row "]:not(:where([role="row"])),
-[class$="__row"],
-[class*="__row "],
-[class$="-bar"],
-[class*="-bar "],
-[class$="__bar"],
-[class*="__bar "],
-[class$="-toolbar"],
-[class*="-toolbar "],
-[class$="-links"],
-[class*="-links "],
-[class$="-badges"],
-[class*="-badges "],
-[class$="-pills"],
-[class*="-pills "],
-[class$="__pills"],
-[class*="__pills "] {
+  [class$="-row"]:not(:where([role="row"])):where(:not([class*="-module__"])),
+[class*="-row "]:not(:where([role="row"])):where(:not([class*="-module__"])),
+[class$="__row"]:where(:not([class*="-module__"])),
+[class*="__row "]:where(:not([class*="-module__"])),
+[class$="-bar"]:where(:not([class*="-module__"])),
+[class*="-bar "]:where(:not([class*="-module__"])),
+[class$="__bar"]:where(:not([class*="-module__"])),
+[class*="__bar "]:where(:not([class*="-module__"])),
+[class$="-toolbar"]:where(:not([class*="-module__"])),
+[class*="-toolbar "]:where(:not([class*="-module__"])),
+[class$="-links"]:where(:not([class*="-module__"])),
+[class*="-links "]:where(:not([class*="-module__"])),
+[class$="-badges"]:where(:not([class*="-module__"])),
+[class*="-badges "]:where(:not([class*="-module__"])),
+[class$="-pills"]:where(:not([class*="-module__"])),
+[class*="-pills "]:where(:not([class*="-module__"])),
+[class$="__pills"]:where(:not([class*="-module__"])),
+[class*="__pills "]:where(:not([class*="-module__"])) {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -41,48 +41,48 @@
 
 /* ---------- Вертикальні стеки ---------- */
 @layer patterns {
-  [class$="-stack"],
-[class*="-stack "],
-[class$="__stack"],
-[class*="__stack "],
-[class$="-column"],
-[class*="-column "],
-[class$="__column"],
-[class*="__column "],
-[class$="-body"],
-[class*="-body "],
-[class$="__body"],
-[class*="__body "],
-[class$="-copy"],
-[class*="-copy "],
-[class$="__copy"],
-[class*="__copy "],
-[class$="-content"]:not(:where(.discord-preview-content)),
-[class*="-content "]:not(:where(.discord-preview-content)),
-[class$="__content"],
-[class*="__content "],
-[class$="-main"],
-[class*="-main "],
-[class$="__main"],
-[class*="__main "],
-[class$="-identity"],
-[class*="-identity "],
-[class$="__identity"],
-[class*="__identity "],
-[class$="-summary"]:not(:where(summary)),
-[class*="-summary "]:not(:where(summary)),
-[class$="__summary"],
-[class*="__summary "],
-[class$="-details"]:not(:where(details)),
-[class*="-details "]:not(:where(details)),
-[class$="-steps"],
-[class*="-steps "],
-[class$="-group"],
-[class*="-group "],
-[class$="__group"],
-[class*="__group "],
-[class$="-groups"],
-[class*="-groups "] {
+  [class$="-stack"]:where(:not([class*="-module__"])),
+[class*="-stack "]:where(:not([class*="-module__"])),
+[class$="__stack"]:where(:not([class*="-module__"])),
+[class*="__stack "]:where(:not([class*="-module__"])),
+[class$="-column"]:where(:not([class*="-module__"])),
+[class*="-column "]:where(:not([class*="-module__"])),
+[class$="__column"]:where(:not([class*="-module__"])),
+[class*="__column "]:where(:not([class*="-module__"])),
+[class$="-body"]:where(:not([class*="-module__"])),
+[class*="-body "]:where(:not([class*="-module__"])),
+[class$="__body"]:where(:not([class*="-module__"])),
+[class*="__body "]:where(:not([class*="-module__"])),
+[class$="-copy"]:where(:not([class*="-module__"])),
+[class*="-copy "]:where(:not([class*="-module__"])),
+[class$="__copy"]:where(:not([class*="-module__"])),
+[class*="__copy "]:where(:not([class*="-module__"])),
+[class$="-content"]:not(:where(.discord-preview-content)):where(:not([class*="-module__"])),
+[class*="-content "]:not(:where(.discord-preview-content)):where(:not([class*="-module__"])),
+[class$="__content"]:where(:not([class*="-module__"])),
+[class*="__content "]:where(:not([class*="-module__"])),
+[class$="-main"]:where(:not([class*="-module__"])),
+[class*="-main "]:where(:not([class*="-module__"])),
+[class$="__main"]:where(:not([class*="-module__"])),
+[class*="__main "]:where(:not([class*="-module__"])),
+[class$="-identity"]:where(:not([class*="-module__"])),
+[class*="-identity "]:where(:not([class*="-module__"])),
+[class$="__identity"]:where(:not([class*="-module__"])),
+[class*="__identity "]:where(:not([class*="-module__"])),
+[class$="-summary"]:not(:where(summary)):where(:not([class*="-module__"])),
+[class*="-summary "]:not(:where(summary)):where(:not([class*="-module__"])),
+[class$="__summary"]:where(:not([class*="-module__"])),
+[class*="__summary "]:where(:not([class*="-module__"])),
+[class$="-details"]:not(:where(details)):where(:not([class*="-module__"])),
+[class*="-details "]:not(:where(details)):where(:not([class*="-module__"])),
+[class$="-steps"]:where(:not([class*="-module__"])),
+[class*="-steps "]:where(:not([class*="-module__"])),
+[class$="-group"]:where(:not([class*="-module__"])),
+[class*="-group "]:where(:not([class*="-module__"])),
+[class$="__group"]:where(:not([class*="-module__"])),
+[class*="__group "]:where(:not([class*="-module__"])),
+[class$="-groups"]:where(:not([class*="-module__"])),
+[class*="-groups "]:where(:not([class*="-module__"])) {
   display: grid;
   gap: var(--space-xs);
   min-width: 0;
@@ -91,22 +91,22 @@
 
 /* ---------- Сторінкові контейнери ---------- */
 @layer patterns {
-  [class$="-page"],
-[class*="-page "],
-[class$="-container"]:not(:where(.container)),
-[class*="-container "]:not(:where(.container)),
-[class$="-shell"]:not(:where(.discord-builder-shell)),
-[class*="-shell "]:not(:where(.discord-builder-shell)) {
+  [class$="-page"]:where(:not([class*="-module__"])),
+[class*="-page "]:where(:not([class*="-module__"])),
+[class$="-container"]:not(:where(.container)):where(:not([class*="-module__"])),
+[class*="-container "]:not(:where(.container)):where(:not([class*="-module__"])),
+[class$="-shell"]:not(:where(.discord-builder-shell)):where(:not([class*="-module__"])),
+[class*="-shell "]:not(:where(.discord-builder-shell)):where(:not([class*="-module__"])) {
   min-width: 0;
 }
 }
 
 /* ---------- Форми ---------- */
 @layer patterns {
-  [class$="-form"]:not(:where(.roster-inline-form)),
-[class*="-form "]:not(:where(.roster-inline-form)),
-[class$="__form"],
-[class*="__form "] {
+  [class$="-form"]:not(:where(.roster-inline-form)):where(:not([class*="-module__"])),
+[class*="-form "]:not(:where(.roster-inline-form)):where(:not([class*="-module__"])),
+[class$="__form"]:where(:not([class*="-module__"])),
+[class*="__form "]:where(:not([class*="-module__"])) {
   display: grid;
   gap: var(--space-sm);
   min-width: 0;
@@ -115,12 +115,12 @@
 
 /* Форма-обгортка навколо однієї кнопки не має розтягуватись */
 @layer patterns {
-  [class$="-action-form"],
-[class*="-action-form "],
-[class$="-button-form"],
-[class*="-button-form "],
-[class$="-bulk-form"],
-[class*="-bulk-form "] {
+  [class$="-action-form"]:where(:not([class*="-module__"])),
+[class*="-action-form "]:where(:not([class*="-module__"])),
+[class$="-button-form"]:where(:not([class*="-module__"])),
+[class*="-button-form "]:where(:not([class*="-module__"])),
+[class$="-bulk-form"]:where(:not([class*="-module__"])),
+[class*="-bulk-form "]:where(:not([class*="-module__"])) {
   display: inline-grid;
   gap: var(--space-2xs);
 }
@@ -128,28 +128,28 @@
 
 /* ---------- Дрібний службовий текст ---------- */
 @layer patterns {
-  [class$="-meta"],
-[class*="-meta "],
-[class$="__meta"],
-[class*="__meta "],
-[class$="-hint"],
-[class*="-hint "],
-[class$="__hint"],
-[class*="__hint "],
-[class$="-status"],
-[class*="-status "],
-[class$="__status"],
-[class*="__status "],
-[class$="-caption"],
-[class*="-caption "],
-[class$="-placeholder"],
-[class*="-placeholder "],
-[class$="-counter"],
-[class*="-counter "],
-[class$="__counter"],
-[class*="__counter "],
-[class$="-order"],
-[class*="-order "] {
+  [class$="-meta"]:where(:not([class*="-module__"])),
+[class*="-meta "]:where(:not([class*="-module__"])),
+[class$="__meta"]:where(:not([class*="-module__"])),
+[class*="__meta "]:where(:not([class*="-module__"])),
+[class$="-hint"]:where(:not([class*="-module__"])),
+[class*="-hint "]:where(:not([class*="-module__"])),
+[class$="__hint"]:where(:not([class*="-module__"])),
+[class*="__hint "]:where(:not([class*="-module__"])),
+[class$="-status"]:where(:not([class*="-module__"])),
+[class*="-status "]:where(:not([class*="-module__"])),
+[class$="__status"]:where(:not([class*="-module__"])),
+[class*="__status "]:where(:not([class*="-module__"])),
+[class$="-caption"]:where(:not([class*="-module__"])),
+[class*="-caption "]:where(:not([class*="-module__"])),
+[class$="-placeholder"]:where(:not([class*="-module__"])),
+[class*="-placeholder "]:where(:not([class*="-module__"])),
+[class$="-counter"]:where(:not([class*="-module__"])),
+[class*="-counter "]:where(:not([class*="-module__"])),
+[class$="__counter"]:where(:not([class*="-module__"])),
+[class*="__counter "]:where(:not([class*="-module__"])),
+[class$="-order"]:where(:not([class*="-module__"])),
+[class*="-order "]:where(:not([class*="-module__"])) {
   color: var(--text-muted);
   font-size: var(--font-size-ui);
   line-height: var(--line-height-body);
@@ -158,14 +158,14 @@
 
 /* ---------- Заголовки блоків ---------- */
 @layer patterns {
-  [class$="-title"]:not(:where(.discord-preview-title)),
-[class*="-title "]:not(:where(.discord-preview-title)),
-[class$="__title"]:not(:where(.app-footer__title)),
-[class*="__title "]:not(:where(.app-footer__title)),
-[class$="-label"]:not(:where(.field-label)),
-[class*="-label "]:not(:where(.field-label)),
-[class$="__label"],
-[class*="__label "] {
+  [class$="-title"]:not(:where(.discord-preview-title)):where(:not([class*="-module__"])),
+[class*="-title "]:not(:where(.discord-preview-title)):where(:not([class*="-module__"])),
+[class$="__title"]:not(:where(.app-footer__title)):where(:not([class*="-module__"])),
+[class*="__title "]:not(:where(.app-footer__title)):where(:not([class*="-module__"])),
+[class$="-label"]:not(:where(.field-label)):where(:not([class*="-module__"])),
+[class*="-label "]:not(:where(.field-label)):where(:not([class*="-module__"])),
+[class$="__label"]:where(:not([class*="-module__"])),
+[class*="__label "]:where(:not([class*="-module__"])) {
   color: var(--text-strong);
   font-weight: var(--font-weight-bold);
   min-width: 0;
@@ -177,17 +177,17 @@
   min-width: 0;
 }
 @layer patterns {
-  [class$="-label"]:not(:where(.field-label)),
-[class*="-label "]:not(:where(.field-label)),
-[class$="__label"],
-[class*="__label "] {
+  [class$="-label"]:not(:where(.field-label)):where(:not([class*="-module__"])),
+[class*="-label "]:not(:where(.field-label)):where(:not([class*="-module__"])),
+[class$="__label"]:where(:not([class*="-module__"])),
+[class*="__label "]:where(:not([class*="-module__"])) {
   font-size: var(--font-size-ui-lg);
   letter-spacing: 0.02em;
 }
-  [class$="-header"],
-[class*="-header "],
-[class$="__header"],
-[class*="__header "] {
+  [class$="-header"]:where(:not([class*="-module__"])),
+[class*="-header "]:where(:not([class*="-module__"])),
+[class$="__header"]:where(:not([class*="-module__"])),
+[class*="__header "]:where(:not([class*="-module__"])) {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -199,12 +199,12 @@
 
 /* ---------- Виділені врізки ---------- */
 @layer patterns {
-  [class$="-callout"],
-[class*="-callout "],
-[class$="-banner"],
-[class*="-banner "],
-[class$="-warning"]:not(:where(.warning-note)),
-[class*="-warning "]:not(:where(.warning-note)) {
+  [class$="-callout"]:where(:not([class*="-module__"])),
+[class*="-callout "]:where(:not([class*="-module__"])),
+[class$="-banner"]:where(:not([class*="-module__"])),
+[class*="-banner "]:where(:not([class*="-module__"])),
+[class$="-warning"]:not(:where(.warning-note)):where(:not([class*="-module__"])),
+[class*="-warning "]:not(:where(.warning-note)):where(:not([class*="-module__"])) {
   padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--border-subtle);
   border-left: 3px solid var(--c-accent-400);
@@ -218,10 +218,10 @@
 
 /* ---------- Варіанти вибору: радіо-картки ---------- */
 @layer patterns {
-  [class$="-option"]:not(:where(option)),
-[class*="-option "]:not(:where(option)),
-[class$="__option"],
-[class*="__option "] {
+  [class$="-option"]:not(:where(option)):where(:not([class*="-module__"])),
+[class*="-option "]:not(:where(option)):where(:not([class*="-module__"])),
+[class$="__option"]:where(:not([class*="-module__"])),
+[class*="__option "]:where(:not([class*="-module__"])) {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
@@ -235,19 +235,19 @@
   cursor: pointer;
   transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
 }
-  [class$="-option"]:hover,
-[class*="-option "]:hover,
-[class$="__option"]:hover,
-[class*="__option "]:hover {
+  [class$="-option"]:where(:not([class*="-module__"])):hover,
+[class*="-option "]:where(:not([class*="-module__"])):hover,
+[class$="__option"]:where(:not([class*="-module__"])):hover,
+[class*="__option "]:where(:not([class*="-module__"])):hover {
   border-color: var(--border-strong);
   background: var(--surface-hover);
 }
-  [class$="-option"].is-selected,
-[class*="-option "].is-selected,
-[class$="-option"].is-active,
-[class*="-option "].is-active,
-[class$="__option"].is-selected,
-[class*="__option "].is-selected {
+  [class$="-option"]:where(:not([class*="-module__"])).is-selected,
+[class*="-option "]:where(:not([class*="-module__"])).is-selected,
+[class$="-option"]:where(:not([class*="-module__"])).is-active,
+[class*="-option "]:where(:not([class*="-module__"])).is-active,
+[class$="__option"]:where(:not([class*="-module__"])).is-selected,
+[class*="__option "]:where(:not([class*="-module__"])).is-selected {
   border-color: var(--border-strong);
   background: var(--accent-soft);
   color: var(--c-accent-200);
@@ -256,26 +256,26 @@
 
 /* ---------- Дії та кнопки без класу .btn ---------- */
 @layer patterns {
-  [class$="-action"]:not(:where(.raid-action)):not(:where([class*="raid-action--"])),
-[class*="-action "]:not(:where(.raid-action)):not(:where([class*="raid-action--"])),
-[class$="__action"],
-[class*="__action "],
-[class$="-button"]:not(:where(.btn)),
-[class*="-button "]:not(:where(.btn)),
-[class$="__button"],
-[class*="__button "] {
+  [class$="-action"]:not(:where(.raid-action)):not(:where([class*="raid-action--"])):where(:not([class*="-module__"])),
+[class*="-action "]:not(:where(.raid-action)):not(:where([class*="raid-action--"])):where(:not([class*="-module__"])),
+[class$="__action"]:where(:not([class*="-module__"])),
+[class*="__action "]:where(:not([class*="-module__"])),
+[class$="-button"]:not(:where(.btn)):where(:not([class*="-module__"])),
+[class*="-button "]:not(:where(.btn)):where(:not([class*="-module__"])),
+[class$="__button"]:where(:not([class*="-module__"])),
+[class*="__button "]:where(:not([class*="-module__"])) {
   min-width: 0;
 }
 }
 
 /* ---------- Роздільники ---------- */
 @layer patterns {
-  [class$="-divider"],
-[class*="-divider "],
-[class$="__divider"],
-[class*="__divider "],
-[class$="-separator"]:not(:where(.app-footer__link-separator)):not(:where(.discord-preview-footer-separator)),
-[class*="-separator "]:not(:where(.app-footer__link-separator)):not(:where(.discord-preview-footer-separator)) {
+  [class$="-divider"]:where(:not([class*="-module__"])),
+[class*="-divider "]:where(:not([class*="-module__"])),
+[class$="__divider"]:where(:not([class*="-module__"])),
+[class*="__divider "]:where(:not([class*="-module__"])),
+[class$="-separator"]:not(:where(.app-footer__link-separator)):not(:where(.discord-preview-footer-separator)):where(:not([class*="-module__"])),
+[class*="-separator "]:not(:where(.app-footer__link-separator)):not(:where(.discord-preview-footer-separator)):where(:not([class*="-module__"])) {
   width: 100%;
   height: 1px;
   border: 0;
@@ -285,8 +285,8 @@
 
 /* ---------- Крапка-індикатор ---------- */
 @layer patterns {
-  [class$="-dot"]:not(:where(.discord-role-dot)),
-[class*="-dot "]:not(:where(.discord-role-dot)) {
+  [class$="-dot"]:not(:where(.discord-role-dot)):where(:not([class*="-module__"])),
+[class*="-dot "]:not(:where(.discord-role-dot)):where(:not([class*="-module__"])) {
   display: inline-block;
   width: 8px;
   height: 8px;
@@ -298,18 +298,18 @@
 
 /* ---------- Посилання всередині блоків ---------- */
 @layer patterns {
-  [class$="-link"]:not(:where(.discord-preview-link)),
-[class*="-link "]:not(:where(.discord-preview-link)) {
+  [class$="-link"]:not(:where(.discord-preview-link)):where(:not([class*="-module__"])),
+[class*="-link "]:not(:where(.discord-preview-link)):where(:not([class*="-module__"])) {
   color: var(--c-accent-300);
 }
 }
 
 /* ---------- Підвал блоку ---------- */
 @layer patterns {
-  [class$="-footer"]:not(:where(.app-footer)),
-[class*="-footer "]:not(:where(.app-footer)),
-[class$="__footer"],
-[class*="__footer "] {
+  [class$="-footer"]:not(:where(.app-footer)):where(:not([class*="-module__"])),
+[class*="-footer "]:not(:where(.app-footer)):where(:not([class*="-module__"])),
+[class$="__footer"]:where(:not([class*="-module__"])),
+[class*="__footer "]:where(:not([class*="-module__"])) {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -323,10 +323,10 @@
 
 /* ---------- Пошук ---------- */
 @layer patterns {
-  [class$="-search"],
-[class*="-search "],
-[class$="__search"],
-[class*="__search "] {
+  [class$="-search"]:where(:not([class*="-module__"])),
+[class*="-search "]:where(:not([class*="-module__"])),
+[class$="__search"]:where(:not([class*="-module__"])),
+[class*="__search "]:where(:not([class*="-module__"])) {
   display: block;
   min-width: 0;
 }
@@ -334,10 +334,10 @@
 
 /* ---------- Секції всередині сторінки ---------- */
 @layer patterns {
-  [class$="-section"]:not(:where([class*="form-section"])),
-[class*="-section "]:not(:where([class*="form-section"])),
-[class$="__section"],
-[class*="__section "] {
+  [class$="-section"]:not(:where([class*="form-section"])):where(:not([class*="-module__"])),
+[class*="-section "]:not(:where([class*="form-section"])):where(:not([class*="-module__"])),
+[class$="__section"]:where(:not([class*="-module__"])),
+[class*="__section "]:where(:not([class*="-module__"])) {
   display: grid;
   gap: var(--gap-stack);
   min-width: 0;
@@ -346,20 +346,20 @@
 
 /* ---------- Елементи списків ---------- */
 @layer patterns {
-  [class$="-item"]:not(:where(.dashboard-list-row)),
-[class*="-item "]:not(:where(.dashboard-list-row)),
-[class$="__item"]:not(:where(.dashboard-nav-measure__item)),
-[class*="__item "]:not(:where(.dashboard-nav-measure__item)) {
+  [class$="-item"]:not(:where(.dashboard-list-row)):where(:not([class*="-module__"])),
+[class*="-item "]:not(:where(.dashboard-list-row)):where(:not([class*="-module__"])),
+[class$="__item"]:not(:where(.dashboard-nav-measure__item)):where(:not([class*="-module__"])),
+[class*="__item "]:not(:where(.dashboard-nav-measure__item)):where(:not([class*="-module__"])) {
   min-width: 0;
 }
 }
 
 /* ---------- Нічого не має вилазити за межі екрана ---------- */
 @layer patterns {
-  [class*="-page"],
-[class*="-shell"],
-[class*="-panel"],
-[class*="-card"] {
+  [class*="-page"]:where(:not([class*="-module__"])),
+[class*="-shell"]:where(:not([class*="-module__"])),
+[class*="-panel"]:where(:not([class*="-module__"])),
+[class*="-card"]:where(:not([class*="-module__"])) {
   max-width: 100%;
 }
 }

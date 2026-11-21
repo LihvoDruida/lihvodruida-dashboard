@@ -16,16 +16,16 @@
    1. ПОВЕРХНІ: панель і картка
    ========================================================= */
 @layer patterns {
-  [class$="-card"]:not(:where([class*="nav"])),
-[class*="-card "]:not(:where([class*="nav"])),
-[class$="__card"],
-[class*="__card "],
-[class$="-panel"]:not(:where(.dashboard-list-panel)),
-[class*="-panel "]:not(:where(.dashboard-list-panel)),
-[class$="__panel"],
-[class*="__panel "],
-[class$="-box"],
-[class*="-box "] {
+  [class$="-card"]:not(:where([class*="nav"])):where(:not([class*="-module__"])),
+[class*="-card "]:not(:where([class*="nav"])):where(:not([class*="-module__"])),
+[class$="__card"]:where(:not([class*="-module__"])),
+[class*="__card "]:where(:not([class*="-module__"])),
+[class$="-panel"]:not(:where(.dashboard-list-panel)):where(:not([class*="-module__"])),
+[class*="-panel "]:not(:where(.dashboard-list-panel)):where(:not([class*="-module__"])),
+[class$="__panel"]:where(:not([class*="-module__"])),
+[class*="__panel "]:where(:not([class*="-module__"])),
+[class$="-box"]:where(:not([class*="-module__"])),
+[class*="-box "]:where(:not([class*="-module__"])) {
   position: relative;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -49,16 +49,16 @@
   .panel:not(:where([class*="hero"])) { padding: var(--pad-card-compact); }
 }
 @layer patterns {
-  [class$="-card"]:not(:where([class*="nav"])),
-[class*="-card "]:not(:where([class*="nav"])),
-[class$="__card"],
-[class*="__card "],
-[class$="-panel"]:not(:where(.dashboard-list-panel)),
-[class*="-panel "]:not(:where(.dashboard-list-panel)),
-[class$="__panel"],
-[class*="__panel "],
-[class$="-box"],
-[class*="-box "] {
+  [class$="-card"]:not(:where([class*="nav"])):where(:not([class*="-module__"])),
+[class*="-card "]:not(:where([class*="nav"])):where(:not([class*="-module__"])),
+[class$="__card"]:where(:not([class*="-module__"])),
+[class*="__card "]:where(:not([class*="-module__"])),
+[class$="-panel"]:not(:where(.dashboard-list-panel)):where(:not([class*="-module__"])),
+[class*="-panel "]:not(:where(.dashboard-list-panel)):where(:not([class*="-module__"])),
+[class$="__panel"]:where(:not([class*="-module__"])),
+[class*="__panel "]:where(:not([class*="-module__"])),
+[class$="-box"]:where(:not([class*="-module__"])),
+[class*="-box "]:where(:not([class*="-module__"])) {
   padding: var(--pad-card-compact);
 }
 }
@@ -74,10 +74,10 @@
 
 /* Панель усередині панелі не подвоює рамку */
 @layer patterns {
-  .panel [class$="-card"],
-.panel [class*="-card "],
-.panel [class$="__card"],
-.panel [class*="__card "] {
+  .panel [class$="-card"]:where(:not([class*="-module__"])),
+.panel [class*="-card "]:where(:not([class*="-module__"])),
+.panel [class$="__card"]:where(:not([class*="-module__"])),
+.panel [class*="__card "]:where(:not([class*="-module__"])) {
   background: var(--surface-raised);
   box-shadow: none;
 }
@@ -89,12 +89,12 @@
 
 /* Клікабельна картка */
 @layer patterns {
-  a[class$="-card"],
-a[class*="-card "],
-a[class$="__card"],
-a[class*="__card "],
-[class$="-card"][role="button"],
-[class*="-card "][role="button"] {
+  a[class$="-card"]:where(:not([class*="-module__"])),
+a[class*="-card "]:where(:not([class*="-module__"])),
+a[class$="__card"]:where(:not([class*="-module__"])),
+a[class*="__card "]:where(:not([class*="-module__"])),
+[class$="-card"]:where(:not([class*="-module__"]))[role="button"],
+[class*="-card "]:where(:not([class*="-module__"]))[role="button"] {
   color: inherit;
   transition: transform var(--dur-fast) var(--ease-out),
     border-color var(--dur-fast) var(--ease-out),
@@ -108,10 +108,10 @@ a.card {
     box-shadow var(--dur-fast) var(--ease-out);
 }
 @layer patterns {
-  a[class$="-card"]:hover,
-a[class*="-card "]:hover,
-a[class$="__card"]:hover,
-a[class*="__card "]:hover {
+  a[class$="-card"]:where(:not([class*="-module__"])):hover,
+a[class*="-card "]:where(:not([class*="-module__"])):hover,
+a[class$="__card"]:where(:not([class*="-module__"])):hover,
+a[class*="__card "]:where(:not([class*="-module__"])):hover {
   transform: translateY(-3px);
   border-color: var(--border-strong);
   box-shadow: var(--shadow-lg);
@@ -128,16 +128,16 @@ a.card:hover {
 
 /* Виділена картка — смуга акценту зліва */
 @layer patterns {
-  .is-active[class$="-card"],
-.is-active[class*="-card "],
-.is-selected[class$="-card"],
-.is-selected[class*="-card "] {
+  .is-active[class$="-card"]:where(:not([class*="-module__"])),
+.is-active[class*="-card "]:where(:not([class*="-module__"])),
+.is-selected[class$="-card"]:where(:not([class*="-module__"])),
+.is-selected[class*="-card "]:where(:not([class*="-module__"])) {
   border-color: var(--border-strong);
 }
-  .is-active[class$="-card"]::after,
-.is-active[class*="-card "]::after,
-.is-selected[class$="-card"]::after,
-.is-selected[class*="-card "]::after {
+  .is-active[class$="-card"]:where(:not([class*="-module__"]))::after,
+.is-active[class*="-card "]:where(:not([class*="-module__"]))::after,
+.is-selected[class$="-card"]:where(:not([class*="-module__"]))::after,
+.is-selected[class*="-card "]:where(:not([class*="-module__"]))::after {
   content: "";
   position: absolute;
   inset: var(--space-sm) auto var(--space-sm) 0;
@@ -151,10 +151,10 @@ a.card:hover {
 /* Шапка картки: заголовок ліворуч,
 дії праворуч */
 @layer patterns {
-  [class$="__head"],
-[class*="__head "],
-[class$="-head"],
-[class*="-head "] {
+  [class$="__head"]:where(:not([class*="-module__"])),
+[class*="__head "]:where(:not([class*="-module__"])),
+[class$="-head"]:where(:not([class*="-module__"])),
+[class*="-head "]:where(:not([class*="-module__"])) {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
@@ -174,10 +174,10 @@ a.card:hover {
   min-width: 0;
 }
 @layer patterns {
-  [class$="__head"] > div,
-[class*="__head "] > div,
-[class$="-head"] > div,
-[class*="-head "] > div {
+  [class$="__head"]:where(:not([class*="-module__"])) > div,
+[class*="__head "]:where(:not([class*="-module__"])) > div,
+[class$="-head"]:where(:not([class*="-module__"])) > div,
+[class*="-head "]:where(:not([class*="-module__"])) > div {
   min-width: 0;
 }
 }
@@ -186,21 +186,21 @@ a.card:hover {
   min-width: 0;
 }
 @layer patterns {
-  [class$="__head"] strong,
-[class*="__head "] strong,
-[class$="-head"] strong,
-[class*="-head "] strong {
+  [class$="__head"]:where(:not([class*="-module__"])) strong,
+[class*="__head "]:where(:not([class*="-module__"])) strong,
+[class$="-head"]:where(:not([class*="-module__"])) strong,
+[class*="-head "]:where(:not([class*="-module__"])) strong {
   color: var(--text-strong);
 }
-  [class$="__head"] small,
-[class*="__head "] small,
-[class$="-head"] small,
-[class*="-head "] small {
+  [class$="__head"]:where(:not([class*="-module__"])) small,
+[class*="__head "]:where(:not([class*="-module__"])) small,
+[class$="-head"]:where(:not([class*="-module__"])) small,
+[class*="-head "]:where(:not([class*="-module__"])) small {
   display: block;
   color: var(--text-muted);
 }
-  [class$="__lead"],
-[class*="__lead "] {
+  [class$="__lead"]:where(:not([class*="-module__"])),
+[class*="__lead "]:where(:not([class*="-module__"])) {
   color: var(--text-soft);
   font-size: var(--font-size-body);
   line-height: 1.58;
@@ -215,13 +215,13 @@ a.card:hover {
 
 /* Іконка-плитка в шапці */
 @layer patterns {
-  [class$="__icon"],
+  [class$="__icon"]:where(:not([class*="-module__"])),
 
-[class*="__icon "],
+[class*="__icon "]:where(:not([class*="-module__"])),
 
-[class$="-icon"],
+[class$="-icon"]:where(:not([class*="-module__"])),
 
-[class*="-icon "] {
+[class*="-icon "]:where(:not([class*="-module__"])) {
   display: inline-grid;
   place-items: center;
   flex: 0 0 auto;
@@ -386,10 +386,10 @@ a.card:hover {
    3. ФОРМИ — геометрія з apply.css сайту
    ========================================================= */
 @layer patterns {
-  [class$="-field"]:not(:where([class*="filter-shell"])),
-[class*="-field "]:not(:where([class*="filter-shell"])),
-[class$="__field"],
-[class*="__field "] {
+  [class$="-field"]:not(:where([class*="filter-shell"])):where(:not([class*="-module__"])),
+[class*="-field "]:not(:where([class*="filter-shell"])):where(:not([class*="-module__"])),
+[class$="__field"]:where(:not([class*="-module__"])),
+[class*="__field "]:where(:not([class*="-module__"])) {
   display: grid;
   gap: var(--space-xs);
   min-width: 0;
@@ -402,8 +402,8 @@ a.card:hover {
   min-width: 0;
 }
 @layer patterns {
-  [class$="-field"] > span:first-child,
-[class*="-field "] > span:first-child {
+  [class$="-field"]:where(:not([class*="-module__"])) > span:first-child,
+[class*="-field "]:where(:not([class*="-module__"])) > span:first-child {
   font-size: var(--font-size-ui-lg);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.02em;
@@ -435,8 +435,8 @@ a.card:hover {
 
 /* Підказка під полем */
 @layer patterns {
-  [class$="-field"] small,
-[class*="-field "] small {
+  [class$="-field"]:where(:not([class*="-module__"])) small,
+[class*="-field "]:where(:not([class*="-module__"])) small {
   font-size: 0.75rem;
   color: var(--text-muted);
 }
@@ -625,8 +625,8 @@ textarea:disabled {
 
 /* Секція форми */
 @layer patterns {
-  [class$="-form-section"],
-[class*="-form-section "] {
+  [class$="-form-section"]:where(:not([class*="-module__"])),
+[class*="-form-section "]:where(:not([class*="-module__"])) {
   display: grid;
   gap: var(--space-md);
   padding: var(--pad-card-compact);
@@ -667,10 +667,10 @@ textarea:disabled {
 попередження
    ========================================================= */
 @layer patterns {
-  [class$="-alert"],
-[class*="-alert "],
-[class$="-notice"],
-[class*="-notice "] {
+  [class$="-alert"]:where(:not([class*="-module__"])),
+[class*="-alert "]:where(:not([class*="-module__"])),
+[class$="-notice"]:where(:not([class*="-module__"])),
+[class*="-notice "]:where(:not([class*="-module__"])) {
   display: block;
   padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--border);
@@ -742,14 +742,14 @@ textarea:disabled {
    5. ПІГУЛКИ ТА ЧІПИ
    ========================================================= */
 @layer patterns {
-  [class$="-pill"],
-[class*="-pill "],
-[class$="-chip"],
-[class*="-chip "],
-[class$="-badge"],
-[class*="-badge "],
-[class$="-tag"],
-[class*="-tag "] {
+  [class$="-pill"]:where(:not([class*="-module__"])),
+[class*="-pill "]:where(:not([class*="-module__"])),
+[class$="-chip"]:where(:not([class*="-module__"])),
+[class*="-chip "]:where(:not([class*="-module__"])),
+[class$="-badge"]:where(:not([class*="-module__"])),
+[class*="-badge "]:where(:not([class*="-module__"])),
+[class$="-tag"]:where(:not([class*="-module__"])),
+[class*="-tag "]:where(:not([class*="-module__"])) {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2xs);
@@ -786,10 +786,10 @@ textarea:disabled {
 
 /* Тони пігулок — один набір станів на весь дашборд */
 @layer patterns {
-  [class$="--ok"],
-[class*="--ok "],
-[class$="--success"],
-[class*="--success "] {
+  [class$="--ok"]:where(:not([class*="-module__"])),
+[class*="--ok "]:where(:not([class*="-module__"])),
+[class$="--success"]:where(:not([class*="-module__"])),
+[class*="--success "]:where(:not([class*="-module__"])) {
   --tone: var(--c-success);
 }
 }
@@ -805,8 +805,8 @@ textarea:disabled {
   --tone: var(--c-success);
 }
 @layer patterns {
-  [class$="--warning"],
-[class*="--warning "] {
+  [class$="--warning"]:where(:not([class*="-module__"])),
+[class*="--warning "]:where(:not([class*="-module__"])) {
   --tone: var(--c-warning);
 }
 }
@@ -818,10 +818,10 @@ textarea:disabled {
   --tone: var(--c-warning);
 }
 @layer patterns {
-  [class$="--danger"],
-[class*="--danger "],
-[class$="--error"],
-[class*="--error "] {
+  [class$="--danger"]:where(:not([class*="-module__"])),
+[class*="--danger "]:where(:not([class*="-module__"])),
+[class$="--error"]:where(:not([class*="-module__"])),
+[class*="--error "]:where(:not([class*="-module__"])) {
   --tone: var(--c-danger);
 }
 }
@@ -836,8 +836,8 @@ textarea:disabled {
   --tone: var(--c-danger);
 }
 @layer patterns {
-  [class$="--accent"],
-[class*="--accent "] {
+  [class$="--accent"]:where(:not([class*="-module__"])),
+[class*="--accent "]:where(:not([class*="-module__"])) {
   --tone: var(--c-accent-400);
 }
 }
@@ -850,10 +850,10 @@ textarea:disabled {
   --tone: var(--c-accent-400);
 }
 @layer patterns {
-  [class$="--muted"],
-[class*="--muted "],
-[class$="--ghost"],
-[class*="--ghost "] {
+  [class$="--muted"]:where(:not([class*="-module__"])),
+[class*="--muted "]:where(:not([class*="-module__"])),
+[class$="--ghost"]:where(:not([class*="-module__"])),
+[class*="--ghost "]:where(:not([class*="-module__"])) {
   --tone: var(--c-ink-400);
 }
 }
@@ -866,12 +866,12 @@ textarea:disabled {
   --tone: var(--c-ink-400);
 }
 @layer patterns {
-  [class$="-pill"],
-[class*="-pill "],
-[class$="-chip"],
-[class*="-chip "],
-[class$="-badge"],
-[class*="-badge "] {
+  [class$="-pill"]:where(:not([class*="-module__"])),
+[class*="-pill "]:where(:not([class*="-module__"])),
+[class$="-chip"]:where(:not([class*="-module__"])),
+[class*="-chip "]:where(:not([class*="-module__"])),
+[class$="-badge"]:where(:not([class*="-module__"])),
+[class*="-badge "]:where(:not([class*="-module__"])) {
   border-color: color-mix(in srgb, var(--tone, var(--c-ink-400)) 32%, transparent);
   background: color-mix(in srgb, var(--tone, var(--c-ink-400)) 12%, transparent);
   color: var(--tone, var(--text-soft));
@@ -889,8 +889,8 @@ textarea:disabled {
 
 /* Кнопка-фільтр у шапці таблиці */
 @layer patterns {
-  [class$="-filter"]:not(:where([class*="field"])),
-[class*="-filter "]:not(:where([class*="field"])) {
+  [class$="-filter"]:not(:where([class*="field"])):where(:not([class*="-module__"])),
+[class*="-filter "]:not(:where([class*="field"])):where(:not([class*="-module__"])) {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2xs);
@@ -905,28 +905,28 @@ textarea:disabled {
   cursor: pointer;
   transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
-  [class$="--tank"],
-[class*="--tank "] {
+  [class$="--tank"]:where(:not([class*="-module__"])),
+[class*="--tank "]:where(:not([class*="-module__"])) {
   --tone: var(--c-role-tank);
 }
-  [class$="--healer"],
-[class*="--healer "] {
+  [class$="--healer"]:where(:not([class*="-module__"])),
+[class*="--healer "]:where(:not([class*="-module__"])) {
   --tone: var(--c-role-healer);
 }
-  [class$="--dps"],
-[class*="--dps "] {
+  [class$="--dps"]:where(:not([class*="-module__"])),
+[class*="--dps "]:where(:not([class*="-module__"])) {
   --tone: var(--c-role-dps);
 }
-  [class$="--mythic"],
-[class*="--mythic "] {
+  [class$="--mythic"]:where(:not([class*="-module__"])),
+[class*="--mythic "]:where(:not([class*="-module__"])) {
   --tone: var(--c-diff-mythic);
 }
-  [class$="--heroic"],
-[class*="--heroic "] {
+  [class$="--heroic"]:where(:not([class*="-module__"])),
+[class*="--heroic "]:where(:not([class*="-module__"])) {
   --tone: var(--c-diff-heroic);
 }
-  [class$="--normal"],
-[class*="--normal "] {
+  [class$="--normal"]:where(:not([class*="-module__"])),
+[class*="--normal "]:where(:not([class*="-module__"])) {
   --tone: var(--c-diff-normal);
 }
 }
@@ -940,8 +940,8 @@ textarea:disabled {
   gap: var(--gap-stack);
 }
 @layer patterns {
-  [class$="-list"]:not(:where(.dashboard-nav-more__menu-list)):not(:where(.discord-preview-list)),
-[class*="-list "]:not(:where(.dashboard-nav-more__menu-list)):not(:where(.discord-preview-list)) {
+  [class$="-list"]:not(:where(.dashboard-nav-more__menu-list)):not(:where(.discord-preview-list)):where(:not([class*="-module__"])),
+[class*="-list "]:not(:where(.dashboard-nav-more__menu-list)):not(:where(.discord-preview-list)):where(:not([class*="-module__"])) {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
@@ -1011,14 +1011,14 @@ a.dashboard-list-row:hover {
   overflow-wrap: break-word;
 }
 @layer patterns {
-  .dashboard-list-row > [role="cell"] > [class$="-pill"],
-.dashboard-list-row > [role="cell"] > [class*="-pill "],
-.dashboard-list-row > [role="cell"] > [class$="-chip"],
-.dashboard-list-row > [role="cell"] > [class*="-chip "] {
+  .dashboard-list-row > [role="cell"] > [class$="-pill"]:where(:not([class*="-module__"])),
+.dashboard-list-row > [role="cell"] > [class*="-pill "]:where(:not([class*="-module__"])),
+.dashboard-list-row > [role="cell"] > [class$="-chip"]:where(:not([class*="-module__"])),
+.dashboard-list-row > [role="cell"] > [class*="-chip "]:where(:not([class*="-module__"])) {
   justify-self: start;
 }
-  [class$="-empty"]:not(:where([class*="characters"])):not(:where([class*="--empty"])),
-[class*="-empty "]:not(:where([class*="characters"])):not(:where([class*="--empty"])) {
+  [class$="-empty"]:not(:where([class*="characters"])):not(:where([class*="--empty"])):where(:not([class*="-module__"])),
+[class*="-empty "]:not(:where([class*="characters"])):not(:where([class*="--empty"])):where(:not([class*="-module__"])) {
   display: grid;
   gap: var(--space-2xs);
   padding: var(--space-xl) var(--space-md);
@@ -1043,8 +1043,8 @@ a.dashboard-list-row:hover {
   color: var(--text-muted);
 }
 @layer patterns {
-  [class$="-empty"]:not(:where([class*="--empty"])) strong,
-[class*="-empty "]:not(:where([class*="--empty"])) strong {
+  [class$="-empty"]:not(:where([class*="--empty"])):where(:not([class*="-module__"])) strong,
+[class*="-empty "]:not(:where([class*="--empty"])):where(:not([class*="-module__"])) strong {
   color: var(--text-soft);
   font-size: 0.95rem;
 }
@@ -1052,8 +1052,8 @@ a.dashboard-list-row:hover {
 
 /* Смуга показників над таблицею */
 @layer patterns {
-  [class$="-stats"]:not(:where([class*="grid"])),
-[class*="-stats "]:not(:where([class*="grid"])) {
+  [class$="-stats"]:not(:where([class*="grid"])):where(:not([class*="-module__"])),
+[class*="-stats "]:not(:where([class*="grid"])):where(:not([class*="-module__"])) {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr));
   gap: var(--space-sm);
@@ -1134,7 +1134,7 @@ a.dashboard-list-row:hover {
 
   /* Дії у складених рядках розтягуються на всю ширину картки */
 @layer patterns {
-  .dashboard-list-row [class$="-actions"] {
+  .dashboard-list-row [class$="-actions"]:where(:not([class*="-module__"])) {
     width: 100%;
   }
 }
@@ -1186,8 +1186,8 @@ a.dashboard-list-row:hover {
 
 /* Смуга вкладок */
 @layer patterns {
-  [class$="-tabs"],
-[class*="-tabs "] {
+  [class$="-tabs"]:where(:not([class*="-module__"])),
+[class*="-tabs "]:where(:not([class*="-module__"])) {
   display: flex;
   gap: var(--space-2xs);
   overflow-x: auto;
@@ -1195,14 +1195,14 @@ a.dashboard-list-row:hover {
   padding-bottom: var(--space-2xs);
   scrollbar-width: none;
 }
-  [class$="-tabs"]::-webkit-scrollbar,
-[class*="-tabs "]::-webkit-scrollbar {
+  [class$="-tabs"]:where(:not([class*="-module__"]))::-webkit-scrollbar,
+[class*="-tabs "]:where(:not([class*="-module__"]))::-webkit-scrollbar {
   display: none;
 }
-  [class$="-tabs"] > a,
-[class*="-tabs "] > a,
-[class$="-tabs"] > button,
-[class*="-tabs "] > button {
+  [class$="-tabs"]:where(:not([class*="-module__"])) > a,
+[class*="-tabs "]:where(:not([class*="-module__"])) > a,
+[class$="-tabs"]:where(:not([class*="-module__"])) > button,
+[class*="-tabs "]:where(:not([class*="-module__"])) > button {
   flex: 0 0 auto;
   scroll-snap-align: start;
   min-height: 40px;
@@ -1219,10 +1219,10 @@ a.dashboard-list-row:hover {
   cursor: pointer;
   transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
-  [class$="-tabs"] > a.is-active,
-[class*="-tabs "] > a.is-active,
-[class$="-tabs"] > button.is-active,
-[class*="-tabs "] > button.is-active {
+  [class$="-tabs"]:where(:not([class*="-module__"])) > a.is-active,
+[class*="-tabs "]:where(:not([class*="-module__"])) > a.is-active,
+[class$="-tabs"]:where(:not([class*="-module__"])) > button.is-active,
+[class*="-tabs "]:where(:not([class*="-module__"])) > button.is-active {
   border-color: transparent;
   background: var(--accent-gradient);
   color: var(--text-on-accent);
@@ -1233,13 +1233,13 @@ a.dashboard-list-row:hover {
    8. АВАТАРИ ТА МЕДІА
    ========================================================= */
 @layer patterns {
-  [class$="-avatar"],
+  [class$="-avatar"]:where(:not([class*="-module__"])),
 
-[class*="-avatar "],
+[class*="-avatar "]:where(:not([class*="-module__"])),
 
-[class$="__avatar"],
+[class$="__avatar"]:where(:not([class*="-module__"])),
 
-[class*="__avatar "] {
+[class*="__avatar "]:where(:not([class*="-module__"])) {
   width: 40px;
   height: 40px;
   flex: 0 0 auto;
@@ -1248,8 +1248,8 @@ a.dashboard-list-row:hover {
   border: 1px solid var(--border);
   background: var(--surface-raised);
 }
-  [class$="-avatar--empty"],
-[class*="-avatar--empty "] {
+  [class$="-avatar--empty"]:where(:not([class*="-module__"])),
+[class*="-avatar--empty "]:where(:not([class*="-module__"])) {
   display: grid;
   place-items: center;
   border-style: dashed;

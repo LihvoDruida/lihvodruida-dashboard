@@ -744,7 +744,6 @@
   padding: var(--space-3xs) var(--space-2xs);
   font-size: 0.6rem;
   backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
 }
 
 .profile-character-main-corner {
