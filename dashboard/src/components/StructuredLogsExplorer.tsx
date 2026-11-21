@@ -96,11 +96,6 @@ function formatDateTime(value: string | null) {
   }
 }
 
-function bytes(value: number) {
-  if (!Number.isFinite(value) || value <= 0) return "0 МБ";
-  return `${(value / 1024 / 1024).toLocaleString("uk-UA", { maximumFractionDigits: 1 })} МБ`;
-}
-
 function detailsText(details: Record<string, unknown>) {
   try { return JSON.stringify(details || {}, null, 2); } catch { return "{}"; }
 }
@@ -277,13 +272,10 @@ export default function StructuredLogsExplorer({
         </div>
 
         <div className={styles.summaryStrip}>
-          <span><strong>{overview.total}</strong><small>подій</small></span>
-          <span><strong>{overview.warnings}</strong><small>warning</small></span>
-          <span><strong>{overview.errors}</strong><small>errors</small></span>
-          <span><strong>{overview.security}</strong><small>security</small></span>
-          <span><strong>{bytes(overview.storageBytes)}</strong><small>таблиця логів</small></span>
-          <span><strong>{settings.maxStorageMb} МБ</strong><small>ліміт сховища</small></span>
-          <span><strong>3 дні</strong><small>retention</small></span>
+          <span><strong>{overview.total}</strong><small>подій за період</small></span>
+          <span><strong>{overview.warnings}</strong><small>попереджень</small></span>
+          <span><strong>{overview.errors}</strong><small>помилок</small></span>
+          <span><strong>{overview.security}</strong><small>безпека</small></span>
           <span><strong>{formatTime(lastUpdatedAt)}</strong><small>оновлено</small></span>
         </div>
         {error ? <p className={styles.error}>{error}</p> : null}
