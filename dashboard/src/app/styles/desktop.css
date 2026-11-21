@@ -98,15 +98,7 @@ main .dashboard-shell {
     grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.7fr);
     gap: var(--space-lg);
     min-height: 0;
-    padding: 22px var(--space-lg);
-    border-radius: var(--card-radius);
-    border-color: rgba(255, 178, 106, 0.14);
-    background:
-      linear-gradient(110deg, rgba(255, 155, 85, 0.05), transparent 42%),
-      rgba(25, 20, 16, 0.82);
-    box-shadow:
-      0 16px 38px -30px rgba(0, 0, 0, 0.98),
-      inset 0 1px 0 rgba(255, 255, 255, 0.024);
+    padding: var(--space-lg);
   }
 }
   .hero,
@@ -136,7 +128,7 @@ main .dashboard-shell {
   .hero-copy h1,
 .dashboard-hero__copy h1 {
     margin-bottom: 6px;
-    font-size: clamp(1.55rem, 1.9vw, 2.1rem);
+    font-size: var(--heading-page-size);
     line-height: 1.12;
   }
 @layer patterns {
