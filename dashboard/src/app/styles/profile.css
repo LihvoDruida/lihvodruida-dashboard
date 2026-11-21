@@ -60,13 +60,6 @@
   line-height: var(--line-height-relaxed);
 }
 
-.profile-card-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-xs);
-}
-
 /* Підрозділ усередині секції */
 
 /* =========================================================
@@ -120,141 +113,14 @@
 /* =========================================================
    5. ПЕРСОНАЖІ
    ========================================================= */
-.profile-character-list {
-  display: grid;
-  gap: var(--space-md);
-  min-width: 0;
-}
 
 /* Один потік: картки на всю ширину, а не плитка */
 
-.profile-character-card {
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--c-ink-500);
-  border-radius: var(--radius-md);
-  min-width: 0;
-}
-
-.profile-character-card.is-main {
-  border-left-color: var(--c-accent-400);
-}
-
-.profile-character-artwork__fallback {
-  color: var(--c-accent-300);
-  font-weight: var(--font-weight-bold);
-}
-
-.profile-character-body {
-  min-width: 0;
-}
-
-.profile-character-title-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  min-width: 0;
-}
-
-.profile-character-title-row--stacked {
-  align-items: flex-start;
-}
-
-.profile-character-title-copy {
-  display: grid;
-  gap: var(--space-3xs);
-  min-width: 0;
-}
-
-.profile-character-title-copy strong {
-  font-size: var(--font-size-base);
-  color: var(--text-strong);
-  overflow-wrap: anywhere;
-}
-
-.profile-character-title-copy small,
-.profile-character-meta {
-  font-size: var(--font-size-ui);
-  color: var(--text-muted);
-  overflow-wrap: anywhere;
-}
-
 /* Показники персонажа */
-.profile-character-stats-grid,
-.profile-character-stats-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr));
-  gap: var(--space-xs);
-}
-
-.profile-character-stat {
-  min-width: 0;
-}
-
-.profile-character-stat__icon {
-  width: 24px;
-  height: 24px;
-}
-
-.profile-character-stat__copy {
-  min-width: 0;
-}
-
-.profile-character-stat__copy small {
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
 
 /* Значки гільдії / статусу */
-.profile-character-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2xs);
-}
-
-.profile-character-badge {
-  --tone: var(--c-ink-400);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-3xs);
-  padding: var(--space-3xs) var(--space-sm);
-  border: 1px solid color-mix(in srgb, var(--tone) 32%, transparent);
-  border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--tone) 12%, transparent);
-  color: var(--tone);
-  font-size: var(--font-size-caption);
-  font-weight: var(--font-weight-bold);
-  white-space: nowrap;
-}
-
-.profile-character-badge--guild {
-  --tone: var(--c-success);
-}
-
-.profile-character-badge--external {
-  --tone: var(--c-warning);
-}
-
-.profile-character-badge--main {
-  --tone: var(--c-accent-400);
-}
 
 /* Дії над персонажем */
-
-.profile-character-actions__row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
-  gap: var(--space-xs);
-}
-
-.profile-character-actions__row.is-single {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.profile-character-actions__full > * {
-  width: 100%;
-}
 
 /* =========================================================
    6. BATTLE.NET
@@ -355,30 +221,9 @@
 
 @media (max-width: 860px) {
 
-  .profile-character-card {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .profile-character-artwork {
-    width: 64px;
-    height: 64px;
-  }
-
-  .profile-character-main-corner {
-    position: static;
-    justify-self: start;
-  }
-
   .profile-card-head {
     flex-direction: column;
     align-items: stretch;
-  }
-}
-
-@media (max-width: 520px) {
-
-  .profile-character-actions__row {
-    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -704,91 +549,14 @@
    ========================================================= */
 
 /* Метадані — рядок із крапками-роздільниками */
-.profile-character-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3xs) var(--space-sm);
-  min-width: 0;
-}
-
-.profile-character-meta > span {
-  position: relative;
-  font-size: var(--font-size-ui);
-  color: var(--text-muted);
-  overflow-wrap: anywhere;
-}
-
-.profile-character-meta > span + span::before {
-  content: "·";
-  position: absolute;
-  left: calc(var(--space-sm) / -2);
-  transform: translateX(-50%);
-  color: var(--text-faint);
-}
 
 /* Арт із накладеним значком гільдії */
 
-.profile-character-artwork img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.profile-character-badges--art {
-  position: absolute;
-  inset: auto var(--space-3xs) var(--space-3xs) var(--space-3xs);
-  justify-content: center;
-}
-
-.profile-character-badges--art .profile-character-badge {
-  padding: var(--space-3xs) var(--space-2xs);
-  font-size: 0.6rem;
-  backdrop-filter: blur(6px);
-}
-
-.profile-character-main-corner {
-  position: absolute;
-  top: var(--space-3xs);
-  right: var(--space-3xs);
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--accent-gradient);
-  color: var(--text-on-accent);
-}
-
 /* Показники: два рядки по дві пари з роздільником між ними */
-.profile-character-stats-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-2xs);
-}
-
-.profile-character-stats-row {
-  gap: var(--space-xs);
-}
 
 /* Пара всередині рядка більше не має власної рамки */
-.profile-character-stats-row .profile-character-stat {
-  padding: 0;
-  border: 0;
-  background: none;
-}
-
-.profile-character-stats-divider {
-  width: 1px;
-}
 
 /* Дія «Зробити мейном» на всю ширину — вона головна в картці */
-.profile-character-actions__full {
-  display: grid;
-}
-
-.profile-character-actions__full > .btn {
-  width: 100%;
-}
 
 /* =========================================================
    13. БІЧНА КОЛОНКА — ПОКРАЩЕНА ВЕРСІЯ СТАРОЇ СХЕМИ
@@ -890,158 +658,15 @@
    різав арт до 92px — а саме арт тут головний носій впізнавання.
    ========================================================= */
 
-.profile-character-card.is-main {
-  border-color: var(--border-strong);
-  box-shadow: 0 0 0 1px var(--accent-soft);
-}
-
 /* Арт-банер */
-.profile-character-artwork {
-  object-fit: cover;
-  flex: 0 0 auto;
-  overflow: hidden;
-  place-items: center;
-  display: grid;
-  position: relative;
-  width: 100%;
-  height: 240px;
-  border-radius: 0;
-  border: 0;
-  border-bottom: 1px solid var(--border-subtle);
-  background:
-    radial-gradient(80% 70% at 50% 20%, var(--accent-soft), transparent 70%),
-    var(--surface-sunken);
-}
-
-.profile-character-artwork__fallback {
-  place-items: center;
-  display: grid;
-  font-size: 3rem;
-}
 
 /* Ромб-роздільник між артом і текстом, як у зразку */
-.profile-character-body {
-  display: grid;
-  position: relative;
-  gap: var(--space-sm);
-  padding: var(--space-md);
-}
-
-.profile-character-body::before {
-  content: "";
-  position: absolute;
-  top: -5px;
-  left: 50%;
-  width: 9px;
-  height: 9px;
-  transform: translateX(-50%) rotate(45deg);
-  background: var(--c-accent-400);
-}
-
-.profile-character-title-copy h3 {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  color: var(--text-strong);
-  overflow-wrap: anywhere;
-}
 
 /* Гільдія курсивом і приглушено — це підпис, а не заголовок */
-.profile-character-title-copy p {
-  margin: 0;
-  color: var(--c-accent-300);
-  font-size: var(--font-size-body-sm);
-  font-style: italic;
-}
-
-.is-other .profile-character-title-copy p {
-  color: var(--text-faint);
-}
 
 /* Два показники поруч із вертикальною рискою */
-.profile-character-stats-row {
-  display: grid;
-  align-items: center;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  padding: var(--space-sm) 0 0;
-  border: 0;
-  border-top: 1px solid var(--border-subtle);
-  border-radius: 0;
-  background: none;
-}
-
-.profile-character-stat {
-  background: var(--surface);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle);
-  padding: var(--space-2xs) var(--space-sm);
-  align-items: center;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  justify-items: center;
-  text-align: center;
-  gap: var(--space-3xs);
-}
-
-.profile-character-stat__icon {
-  font-size: var(--font-size-ui);
-  color: var(--c-accent-300);
-  background: var(--surface-raised);
-  border-radius: var(--radius-sm);
-  flex: 0 0 auto;
-  place-items: center;
-  display: none;
-}
-
-.profile-character-stat__copy {
-  gap: 1px;
-  display: grid;
-  justify-items: center;
-}
-
-.profile-character-stat__copy strong {
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  color: var(--text-strong);
-}
-
-.profile-character-stat__copy small {
-  font-size: 0.62rem;
-  letter-spacing: 0.14em;
-}
-
-.profile-character-stats-divider {
-  border: 0;
-  background: var(--border-subtle);
-  height: var(--control-height-sm);
-}
 
 /* Дії притиснуті до низу картки */
-.profile-character-actions {
-  gap: var(--space-xs);
-  display: grid;
-  margin-top: auto;
-  padding-top: var(--space-sm);
-  border-top: 1px solid var(--border-subtle);
-}
-
-@media (max-width: 520px) {
-  .profile-character-artwork {
-    height: 200px;
-  }
-
-  /* Показники лишаються поруч навіть на вузькому екрані:
-     їх лише два, і так вони читаються як пара. */
-  .profile-character-stats-row {
-  gap: var(--space-2xs);
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  }
-
-  .profile-character-stats-divider {
-    width: 1px;
-    height: var(--control-height-sm);
-  }
-}
 
 /* =========================================================
    17. ІКОНКИ ПРОФІЛЮ
@@ -1063,40 +688,6 @@
    <strong>+<small>. Тулбар був лише flex-рядком, тож пари
    зліплювались у «3Гільдійні 0Інші 0Можна додати».
    ========================================================= */
-.profile-card-toolbar--compact {
-  gap: var(--space-xs);
-}
-
-.profile-card-toolbar--compact > span {
-  display: grid;
-  gap: 1px;
-  padding: var(--space-2xs) var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  min-width: 0;
-}
-
-.profile-card-toolbar--compact > span > strong {
-  font-size: var(--font-size-base);
-  color: var(--text-strong);
-}
-
-.profile-card-toolbar--compact > span > small {
-  font-size: 0.64rem;
-  font-weight: var(--font-weight-medium);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-  white-space: nowrap;
-}
-
-@media (max-width: 860px) {
-  .profile-card-toolbar--compact {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 
 /* =========================================================
    18. КОМПАКТНА СІТКА КАРТОК ПЕРСОНАЖІВ
@@ -1104,37 +695,6 @@
    Картка має стабільну робочу ширину й не розтягується до
    половини/всієї сторінки, коли персонажів лише один або два.
    ========================================================= */
-.profile-character-list--single-flow {
-  gap: var(--space-md);
-  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 360px));
-  justify-content: start;
-  align-items: stretch;
-}
-
-.profile-character-card {
-  display: grid;
-  position: relative;
-  content-visibility: auto;
-  background: var(--surface);
-  border-left-width: 1px;
-  overflow: hidden;
-  padding: 0;
-  gap: 0;
-  grid-template-columns: minmax(0, 1fr);
-  contain-intrinsic-size: auto 360px;
-  width: 100%;
-  max-width: 360px;
-}
-
-@media (max-width: 520px) {
-  .profile-character-list--single-flow {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .profile-character-card {
-    max-width: none;
-  }
-}
 
 
 /* =========================================================
@@ -1165,10 +725,6 @@
 /* ---------- Mobile profile normalization ---------- */
 @media (max-width: 760px) {
 
-  .profile-character-list {
-    gap: var(--section-gap);
-  }
-
   /* Compact identity card: avatar remains beside the name even on phones. */
 
   /* Four overview cards no longer form a long single-column tower. */
@@ -1178,51 +734,7 @@
     padding-bottom: 10px;
   }
 
-  .profile-card-toolbar--compact {
-    gap: 7px;
-  }
-
-  .profile-card-toolbar--compact > span {
-    padding: var(--space-xs) 9px;
-  }
-
-  .profile-card-toolbar--compact > span > strong {
-    font-size: 0.92rem;
-  }
-
-  .profile-card-toolbar--compact > span > small {
-    font-size: 0.56rem;
-  }
-
   /* Character cards remain portrait-style, but consume much less height. */
-  .profile-character-list--single-flow {
-    gap: 10px;
-  }
-
-  .profile-character-title-copy p,
-  .profile-character-meta {
-    font-size: 0.74rem;
-  }
-
-  .profile-character-stat__copy small {
-    font-size: 0.56rem;
-  }
-
-  .profile-character-actions__row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-xs);
-  }
-
-  .profile-character-actions__row.is-single {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .profile-character-actions__row > *,
-  .profile-character-actions__row form,
-  .profile-character-actions__row .profile-character-action {
-    width: 100%;
-    min-width: 0;
-  }
 
   /* Raid cards switch from desktop split layout to compact mobile stack. */
   .profile-card-head--raids {
@@ -1240,13 +752,6 @@
   }
 }
 
-@media (max-width: 420px) {
-
-  .profile-character-artwork {
-    height: 156px;
-  }
-}
-
 
 /* =========================================================
    20. PROFILE MOBILE POLISH — v3.8.20
@@ -1255,130 +760,6 @@
    залишаються без змін. Виправляє видимість локального меню профілю,
    компоновку картки персонажа й положення guild/other badge.
    ========================================================= */
-.profile-character-mobile-badge {
-  display: none;
-}
-
-@media (max-width: 760px) {
-  /* Меню профілю завжди видиме: 2x2, іконка + підпис. Раніше підпис
-     ховався через clip-path, тому на темній темі меню виглядало порожнім. */
-
-  /* Персонаж: менше порожнього арту, чітка шапка і badge праворуч
-     від імені/realm, а не поверх зображення. */
-  .profile-character-card {
-  border-radius: var(--card-radius);
-    overflow: hidden;
-  }
-
-  .profile-character-artwork {
-    height: 148px;
-  }
-
-  .profile-character-badges--art {
-    display: none;
-  }
-
-  .profile-character-body {
-    gap: 9px;
-    padding: 11px var(--space-sm) var(--space-sm);
-  }
-
-  .profile-character-title-row--stacked {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: start;
-    gap: var(--space-xs);
-  }
-
-  .profile-character-title-copy {
-    min-width: 0;
-  }
-
-  .profile-character-title-copy h3 {
-    overflow: hidden;
-    font-size: var(--font-size-base);
-    line-height: 1.25;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .profile-character-title-copy p {
-    overflow: hidden;
-    margin-top: var(--space-3xs);
-    font-size: var(--font-size-caption);
-    line-height: 1.25;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .profile-character-mobile-badge {
-    display: inline-flex;
-    align-self: start;
-    justify-self: end;
-    max-width: 112px;
-    min-height: 26px;
-    padding: 3px var(--space-xs);
-    font-size: 0.62rem;
-    line-height: 1.2;
-  }
-
-  .profile-character-mobile-badge > span:last-child {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .profile-character-meta {
-    gap: var(--space-2xs) 10px;
-    padding-bottom: 1px;
-    font-size: var(--font-size-caption);
-    line-height: var(--line-height-tight);
-  }
-
-  .profile-character-meta > span {
-    font-size: var(--font-size-caption);
-  }
-
-  .profile-character-stats-grid {
-    gap: 0;
-  }
-
-  .profile-character-stats-row {
-    padding-top: var(--space-xs);
-  }
-
-  .profile-character-stat__copy strong {
-    font-size: var(--font-size-base);
-  }
-
-  .profile-character-stats-divider {
-    height: 30px;
-  }
-
-  .profile-character-actions {
-    gap: 7px;
-    padding-top: 9px;
-  }
-
-  .profile-character-action {
-  justify-content: center;
-    min-height: 40px;
-    padding-inline: 9px;
-    font-size: 0.74rem;
-  }
-}
-
-@media (max-width: 420px) {
-
-  .profile-character-artwork {
-    height: 136px;
-  }
-
-  .profile-character-mobile-badge {
-    max-width: 102px;
-    padding-inline: 7px;
-  }
-}
 
 /* R6.1: explicit profile/name workflow, using the established palette. */
 .profile-identity-workflow { display: grid; gap: var(--space-sm); min-width: 0; }

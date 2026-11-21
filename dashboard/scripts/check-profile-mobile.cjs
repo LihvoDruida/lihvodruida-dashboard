@@ -1,48 +1,42 @@
+// Account profile and settings: shared account header, self-contained module styles, phone layout.
 const fs = require("node:fs");
 const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
-const page = fs.readFileSync(path.join(root, "src/app/profile/[profileId]/page.tsx"), "utf8");
-const characters = fs.readFileSync(path.join(root, "src/components/ProfileCharactersLiveSection.tsx"), "utf8");
-const css = fs.readFileSync(path.join(root, "src/app/styles/profile.css"), "utf8");
-const desktop = fs.readFileSync(path.join(root, "src/app/styles/desktop.css"), "utf8");
-const workspace = fs.readFileSync(path.join(root, "src/components/profile/profile-workspace.module.css"), "utf8");
-const foundation = fs.readFileSync(path.join(root, "src/components/page/page-system.module.css"), "utf8");
-const raids = fs.readFileSync(path.join(root, "src/components/profile/ProfileRaidSignups.tsx"), "utf8");
-const sidebar = fs.readFileSync(path.join(root, "src/components/profile/ProfileSidebar.tsx"), "utf8");
-const mobileStart = css.indexOf("19. PROFILE UI NORMALIZATION");
-const normalized = css.slice(mobileStart);
-const polish = css.slice(css.indexOf("20. PROFILE MOBILE POLISH"));
+const read = file => fs.readFileSync(path.join(root, file), "utf8");
+const page = read("src/app/profile/[profileId]/page.tsx");
+const settingsPage = read("src/app/profile/[profileId]/settings/page.tsx");
+const overview = read("src/components/profile/ProfileOverviewView.tsx");
+const settings = read("src/components/profile/settings/ProfileSettingsView.tsx");
+const hero = read("src/components/account/AccountHero.tsx");
+const card = read("src/components/account/AccountCard.tsx");
+const characters = read("src/components/ProfileCharactersLiveSection.tsx");
+const raids = read("src/components/profile/ProfileRaidSignups.tsx");
+const css = read("src/components/account/account.module.css");
+const phone = css.slice(css.indexOf("@media (max-width: 640px)"));
+
 const checks = [
   [page.includes("loadProfileOverview") && page.includes("<ProfileOverviewView"), "profile page uses server loader and shared view"],
-  [foundation.includes("@media (max-width: 1000px)") && foundation.includes("grid-template-columns: minmax(0, 1fr)"), "page sidebar collapses on smaller screens"],
-  [workspace.includes(".facts { grid-template-columns: repeat(2, minmax(0, 1fr))"), "mobile facts use two columns"],
-  [workspace.includes(".navigation { grid-template-columns: repeat(2, minmax(0, 1fr))"), "mobile navigation has visible two-column labels"],
-  [sidebar.includes('aria-current=') && sidebar.includes('overviewHref'), "profile navigation keeps current state and rules return URL"],
-  [raids.includes("<DataGrid") && raids.includes("<DataCard"), "raid cards share the adaptive data grid"],
-  [raids.includes("raidDifficultyLabel") && raids.includes("Роль і спеціалізація") && raids.includes("<dt>Персонаж</dt>"), "raid metadata retains difficulty, character and role"],
-  [raids.includes("unavailable ? <ErrorState") && raids.includes("<EmptyState"), "failed reads and empty raid list remain distinct"],
-  [normalized.includes(".profile-character-actions__row") && normalized.includes("repeat(2, minmax(0, 1fr))"), "character actions keep a touch-friendly row"],
-  [characters.includes("profile-character-mobile-badge"), "character guild-state badge remains available"],
-  [polish.includes(".profile-character-badges--art") && polish.includes("display: none"), "duplicate artwork badge stays hidden on mobile"],
-  [polish.includes(".profile-character-title-row--stacked") && polish.includes("grid-template-columns: minmax(0, 1fr) auto"), "character title reserves badge space"],
-  [polish.includes(".profile-character-mobile-badge") && polish.includes("justify-self: end"), "guild badge remains aligned to the edge"],
-  [polish.includes("height: 148px"), "mobile character artwork remains compact"],
-  [desktop.includes("@media (min-width: 1001px)"), "global desktop stylesheet remains scoped"],
+  [settingsPage.includes("loadProfileSettings") && settingsPage.includes("<ProfileSettingsView"), "settings is a separate page with its own loader"],
+  [overview.includes("<AccountHero") && settings.includes("<AccountHero"), "profile and settings share the account header"],
+  [hero.includes("<h1") && hero.includes('aria-current={tab.current ? "page" : undefined}'), "account header owns the page h1 and marks the current tab"],
+  [settings.includes('current: true') && overview.includes('current: true'), "each page marks its own tab as current"],
+  [["profile-name-settings", "profile-gender-settings", "profile-nickname-settings", "profile-role-settings"].every(id => settings.includes(`id="${id}"`)), "settings keep the form anchors other pages link to"],
+  [settings.includes("aria-label=\"Розділи налаштувань\""), "settings have a named section navigation"],
+  [card.includes("<LogoutButton") && overview.includes("canSignOut={isOwnProfile}"), "only the owner gets sign-out on the profile"],
+  [characters.includes('action="/api/profile/characters/main"') && characters.includes('action="/api/profile/characters/remove"'), "character tiles keep the main / remove forms"],
+  [/aria-label=\{`Зробити мейном: \$\{character\.name\}`\}/.test(characters) && /aria-label=\{`Видалити з профілю: \$\{character\.name\}`\}/.test(characters), "icon-only character actions are named for assistive tech"],
+  [characters.includes("refreshOnMount: false"), "SSR-backed character list does not refetch on mount"],
+  [raids.includes("<DataGrid") && raids.includes("unavailable ? <ErrorState") && raids.includes("<EmptyState"), "raid records keep distinct failed, empty and list states"],
+  [!/#[0-9a-f]{3,8}\b|\brgba?\(/i.test(css), "account styles use colour tokens only"],
+  [css.includes("@media (max-width: 1000px)") && css.includes(".layout, .settingsLayout { grid-template-columns: minmax(0, 1fr); }"), "two-column layouts collapse on tablets"],
+  [phone.includes(".stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }") && phone.includes(".charActions { grid-column: 1 / -1;"), "phone layout keeps two-column numbers and full-width character actions"],
 ];
 
 let failed = 0;
 for (const [ok, label] of checks) {
   if (ok) console.log(`✓ ${label}`);
-  else {
-    failed += 1;
-    console.error(`✗ ${label}`);
-  }
+  else { failed += 1; console.error(`✗ ${label}`); }
 }
-
-if (failed) {
-  console.error(`[check-profile-mobile] FAILED — ${failed}/${checks.length} invariant(s) failed.`);
-  process.exit(1);
-}
-
-console.log(`[check-profile-mobile] OK — ${checks.length}/${checks.length} profile/mobile/raid invariants checked.`);
+if (failed) { console.error(`[check-profile-mobile] failed: ${failed}/${checks.length}`); process.exit(1); }
+console.log(`[check-profile-mobile] OK — ${checks.length}/${checks.length}`);

@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { DASHBOARD_BACKGROUND_REFRESH_MIN_MS, useDashboardApiResource } from "@/lib/dashboardBackgroundApi";
 import { dateMillis, formatStableUkCompactDate, stableTextCompare } from "@/lib/stableUiText";
 import type { DashboardProfile, ProfileCharacter } from "@/lib/profiles";
 import { wowRoleLabel } from "@/lib/wowRoles";
+import { wowClassColorByName } from "@/lib/wowClassCatalog";
+import styles from "@/components/account/account.module.css";
 
 const DEFAULT_REFRESH_MIN_MS = DASHBOARD_BACKGROUND_REFRESH_MIN_MS;
 
@@ -85,10 +87,10 @@ function CharacterArtwork({ character }: { character: ProfileCharacter }) {
   if (image) {
     return <img src={image} alt="" loading="lazy" referrerPolicy="no-referrer" decoding="async" />;
   }
-  return <span className="profile-character-artwork__fallback" aria-hidden="true">{character.name.charAt(0)}</span>;
+  return <span aria-hidden="true">{character.name.charAt(0)}</span>;
 }
 
-type CharacterIconKind = "guild" | "other" | "ilvl" | "level" | "rio" | "updated" | "external" | "trash" | "crown" | "mainStar";
+type CharacterIconKind = "external" | "trash" | "crown" | "mainStar";
 
 function CharacterInlineIcon({ kind }: { kind: CharacterIconKind }) {
   const common = {
@@ -113,135 +115,55 @@ function CharacterInlineIcon({ kind }: { kind: CharacterIconKind }) {
       return <svg {...common}><path d="M14 5h5v5" /><path d="m19 5-8 8" /><path d="M19 13v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5" /></svg>;
     case "trash":
       return <svg {...common}><path d="M4 7h16" /><path d="M9 7V4h6v3" /><path d="m7 7 1 13h8l1-13" /><path d="M10 11v5M14 11v5" /></svg>;
-    case "guild":
-      return <svg {...common}><path d="M12 3 19 6v6c0 4.4-3 8.3-7 9-4-.7-7-4.6-7-9V6Z" /><path d="m9 12 2 2 4-4" /></svg>;
-    case "other":
-      return <svg {...common}><circle cx="12" cy="8" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>;
-    case "ilvl":
-      return <svg {...common}><path d="M12 3v18M7 8l5-5 5 5M7 16l5 5 5-5" /></svg>;
-    case "level":
-      return <svg {...common}><path d="M5 18h14" /><path d="M7 15 12 5l5 10" /></svg>;
-    case "rio":
-      return <svg {...common}><path d="M4 19V9M10 19V5M16 19v-7M22 19H2" /></svg>;
-    case "updated":
-      return <svg {...common}><circle cx="12" cy="12" r="8" /><path d="M12 8v5l3 2" /></svg>;
   }
 }
 
-function CharacterStat({ icon, label, value }: { icon: "ilvl" | "level" | "rio" | "updated"; label: string; value: string | number }) {
-  return (
-    <div className="profile-character-stat">
-      <span className={`profile-character-stat__icon profile-character-stat__icon--${icon}`}>
-        <CharacterInlineIcon kind={icon} />
-      </span>
-      <span className="profile-character-stat__copy">
-        <small>{label}</small>
-        <strong>{value}</strong>
-      </span>
-    </div>
-  );
-}
-
 function CharacterCard({ character, profileId, canManage, showMainBadge, returnTo = "" }: { character: ProfileCharacter; profileId: string; canManage: boolean; showMainBadge: boolean; returnTo?: string }) {
-  const classLabel = character.className || "Клас невідомий";
-  const specLabel = character.activeSpecName ? `${character.activeSpecName} • ${classLabel}` : classLabel;
-  const roleLabel = wowRoleLabel(character.activeSpecRole);
-  const itemLevel = typeof character.itemLevel === "number" ? character.itemLevel : "—";
-  const rioScore = typeof character.raiderIo?.currentScore === "number" ? Math.round(character.raiderIo.currentScore) : "—";
+  const isMain = showMainBadge && Boolean(character.isMain);
+  const spec = [character.activeSpecName, character.className].filter(Boolean).join(" ") || "Клас невідомий";
+  const rioScore = typeof character.raiderIo?.currentScore === "number" && character.raiderIo.currentScore > 0 ? Math.round(character.raiderIo.currentScore) : null;
   const rioUrl = character.raiderIo?.profileUrl || null;
-  const realmLabel = character.realmName || character.realmSlug || "Реалм —";
-  const guildBadge = character.verifiedGuild
-    ? { label: "Гільдійний", icon: "guild" as const, modifier: "guild" as const, state: "is-guild" as const }
-    : { label: "Поза гільдією", icon: "other" as const, modifier: "external" as const, state: "is-other" as const };
-  const updatedLabel = formatStableUkCompactDate(character.lastSeenAt);
-
+  const realmLabel = character.realmName || character.realmSlug || "Реалм невідомий";
+  const classColor = wowClassColorByName(character.className);
   return (
-    <article className={`profile-character-card${showMainBadge && character.isMain ? " is-main" : ""} ${guildBadge.state}`} aria-label={`${showMainBadge && character.isMain ? "Основний персонаж" : "Персонаж"}: ${character.name}`} data-character-profile-id={profileId}>
-      <div className="profile-character-artwork">
-        <CharacterArtwork character={character} />
-        {showMainBadge && character.isMain ? (
-          <span className="profile-character-main-corner" aria-label="Мейн">
-            <CharacterInlineIcon kind="mainStar" />
-          </span>
-        ) : null}
-        <div className="profile-character-badges profile-character-badges--art" aria-label="Статус гільдії персонажа">
-          <span className={`profile-character-badge profile-character-badge--${guildBadge.modifier}`}>
-            <CharacterInlineIcon kind={guildBadge.icon} />
-            <span>{guildBadge.label}</span>
-          </span>
-        </div>
+    <article className={styles.char} data-main={isMain || undefined} data-character-profile-id={profileId}
+      style={classColor ? { "--guild-class-color": classColor } as CSSProperties : undefined}
+      aria-label={`${isMain ? "Основний персонаж" : "Персонаж"}: ${character.name}`}>
+      <span className={styles.charArt}><CharacterArtwork character={character} /></span>
+      <div className={styles.charCopy}>
+        <h3 className={styles.charName}><span>{character.name}</span>
+          {isMain ? <span className={styles.tag} data-tone="main"><CharacterInlineIcon kind="mainStar" />Мейн</span> : null}
+          <span className={styles.tag} data-tone={character.verifiedGuild ? "guild" : undefined}>{character.verifiedGuild ? "Гільдія" : "Поза гільдією"}</span>
+        </h3>
+        <p className={styles.charMeta}>{spec} · {wowRoleLabel(character.activeSpecRole)} · {realmLabel}</p>
+        <dl className={styles.charStats} aria-label="Ключові показники персонажа">
+          <div><dt>ilvl</dt><dd>{typeof character.itemLevel === "number" ? character.itemLevel : "—"}</dd></div>
+          <div><dt>RIO</dt><dd>{rioScore ?? "—"}</dd></div>
+          <div><dt>Рівень</dt><dd>{typeof character.level === "number" ? character.level : "—"}</dd></div>
+          <div><dt>Оновлено</dt><dd>{formatStableUkCompactDate(character.lastSeenAt)}</dd></div>
+        </dl>
       </div>
-      <div className="profile-character-body">
-        <div className="profile-character-title-row profile-character-title-row--stacked">
-          <div className="profile-character-title-copy">
-            <h3>{character.name}</h3>
-            <p>{realmLabel}</p>
-          </div>
-          <span className={`profile-character-mobile-badge profile-character-badge profile-character-badge--${guildBadge.modifier}`}>
-            <CharacterInlineIcon kind={guildBadge.icon} />
-            <span>{character.verifiedGuild ? "Гільдійний" : "Інший"}</span>
-          </span>
-        </div>
-
-        <div className="profile-character-meta" aria-label="Характеристики персонажа">
-          <span>{specLabel}</span>
-          <span>{roleLabel}</span>
-        </div>
-
-        <div className="profile-character-stats-grid" aria-label="Ключові показники персонажа">
-          <div className="profile-character-stats-row">
-            <CharacterStat icon="ilvl" label="ILVL" value={itemLevel} />
-            <span className="profile-character-stats-divider" aria-hidden="true" />
-            <CharacterStat icon="level" label="Рівень" value={typeof character.level === "number" ? character.level : "—"} />
-          </div>
-          <div className="profile-character-stats-row">
-            <CharacterStat icon="rio" label="RIO" value={rioScore} />
-            <span className="profile-character-stats-divider" aria-hidden="true" />
-            <CharacterStat icon="updated" label="Оновлено" value={updatedLabel} />
-          </div>
-        </div>
-
-        <div className="profile-character-actions">
-          {canManage && !character.isMain ? (
-            <form className="profile-character-actions__full" action="/api/profile/characters/main" method="post">
-              <input type="hidden" name="characterKey" value={character.key} />
-              {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
-              <button className="btn primary profile-character-action" type="submit">
-                <span className="btn__icon"><CharacterInlineIcon kind="crown" /></span>
-                <span>Зробити мейном</span>
-              </button>
-            </form>
-          ) : null}
-
-          <div className={`profile-character-actions__row${canManage ? "" : " is-single"}`}>
-            {rioUrl ? (
-              <a className="btn subtle profile-character-action" href={rioUrl} target="_blank" rel="noreferrer">
-                <span>Raider.IO</span>
-                <span className="btn__icon"><CharacterInlineIcon kind="external" /></span>
-              </a>
-            ) : (
-              <span className="btn subtle profile-character-action is-disabled" aria-disabled="true">
-                <span>Raider.IO</span>
-                <span className="btn__icon"><CharacterInlineIcon kind="external" /></span>
-              </span>
-            )}
-            {canManage ? (
-              <form action="/api/profile/characters/remove" method="post">
-                <input type="hidden" name="characterKey" value={character.key} />
-                {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
-                <button className="btn danger profile-character-action" type="submit">
-                  <span className="btn__icon"><CharacterInlineIcon kind="trash" /></span>
-                  <span>Видалити</span>
-                </button>
-              </form>
-            ) : null}
-          </div>
-        </div>
+      <div className={styles.charActions}>
+        {canManage && !character.isMain ? (
+          <form action="/api/profile/characters/main" method="post">
+            <input type="hidden" name="characterKey" value={character.key} />
+            {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+            <button className={`btn subtle ${styles.iconButton}`} data-tone="primary" type="submit" title="Зробити мейном" aria-label={`Зробити мейном: ${character.name}`}><CharacterInlineIcon kind="crown" /></button>
+          </form>
+        ) : null}
+        {rioUrl ? <a className={`btn subtle ${styles.iconButton}`} href={rioUrl} target="_blank" rel="noreferrer" title="Raider.IO" aria-label={`Raider.IO: ${character.name}`}><CharacterInlineIcon kind="external" /></a>
+          : <span className={`btn subtle ${styles.iconButton}`} aria-disabled="true" title="Raider.IO недоступний"><CharacterInlineIcon kind="external" /></span>}
+        {canManage ? (
+          <form action="/api/profile/characters/remove" method="post">
+            <input type="hidden" name="characterKey" value={character.key} />
+            {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+            <button className={`btn subtle ${styles.iconButton}`} data-tone="danger" type="submit" title="Видалити з профілю" aria-label={`Видалити з профілю: ${character.name}`}><CharacterInlineIcon kind="trash" /></button>
+          </form>
+        ) : null}
       </div>
     </article>
   );
 }
-
 
 export default function ProfileCharactersLiveSection({
   profileId,
@@ -337,17 +259,17 @@ export default function ProfileCharactersLiveSection({
 
   return (
     <>
-      <div className="profile-card-toolbar profile-card-toolbar--compact" aria-label="Стан персонажів">
-        <span><strong>{guildCount}</strong><small>Гільдійні</small></span>
-        <span><strong>{otherCount}</strong><small>Інші</small></span>
-        <span data-profile-candidate-summary="true"><strong data-profile-candidate-count="true">{candidateCount}</strong><small>Можна додати</small></span>
-        <span><strong>{formatStableUkCompactDate(effectiveUpdatedAt)}</strong><small>Оновлено</small></span>
-      </div>
+      <p className={styles.charSummary} aria-label="Стан персонажів">
+        <span><strong>{guildCount}</strong> у гільдії</span>
+        <span><strong>{otherCount}</strong> інших</span>
+        <span data-profile-candidate-summary="true"><strong data-profile-candidate-count="true">{candidateCount}</strong> можна додати</span>
+        <span>оновлено <strong>{formatStableUkCompactDate(effectiveUpdatedAt)}</strong></span>
+      </p>
 
       <span className="sr-only" role="status" aria-live="polite" data-profile-refresh-state={state}>{statusLabel}</span>
 
       {characters.length ? (
-        <div className="profile-character-list profile-character-list--single-flow">
+        <div className={styles.charList}>
           {characters.map((character) => (
             <CharacterCard
               key={character.key}
@@ -360,7 +282,7 @@ export default function ProfileCharactersLiveSection({
           ))}
         </div>
       ) : (
-        <div className="profile-empty-characters">
+        <div className={styles.empty}>
           <strong>Персонажів ще немає</strong>
           <span>{emptyMessage}</span>
         </div>
