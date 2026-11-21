@@ -219,3 +219,10 @@ export function wowSpecFullName(
       : spec;
   return resolvedSpec ? `${resolvedSpec.label} ${resolvedCls.label}` : resolvedCls.label;
 }
+
+/** Class colour by the Battle.net class name ("Demon Hunter", "druid"…); null when unknown. */
+export function wowClassColorByName(className: unknown): string | null {
+  const key = String(className || "").toLowerCase().replace(/[^a-z]/g, "");
+  if (!key) return null;
+  return (CLASS_BY_KEY.get(key) || WOW_CLASS_CATALOG.find(item => item.label.toLowerCase().replace(/[^a-z]/g, "") === key))?.color || null;
+}

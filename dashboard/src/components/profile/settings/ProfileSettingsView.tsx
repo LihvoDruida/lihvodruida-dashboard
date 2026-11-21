@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import type { ProfileSettingsModel } from "@/services/profileSettings";
 import DashboardIdentity from "@/components/DashboardIdentity";
 import ProfileNameControls from "@/components/ProfileNameControls";
@@ -10,14 +11,21 @@ import { wowRoleLabel } from "@/lib/wowRoles";
 import { profileGenderLabel } from "@/lib/profiles";
 import { formatStableUkCompactDate } from "@/lib/stableUiText";
 import PageContainer from "@/components/page/PageContainer";
-import PageHeader from "@/components/page/PageHeader";
-import PageSection from "@/components/page/PageSection";
 import FormSection from "@/components/page/FormSection";
 import Notice from "@/components/page/Notice";
 import PageErrorBoundary from "@/components/page/PageErrorBoundary";
-import ProfileSidebar from "../ProfileSidebar";
+import AccountHero from "@/components/account/AccountHero";
+import AccountCard from "@/components/account/AccountCard";
+import styles from "@/components/account/account.module.css";
 import ProfileCompletion from "./ProfileCompletion";
 import { ProfileGenderPreferenceForm, RaidRolePreferenceForm, NicknameCharactersForm } from "./ProfilePreferences";
+
+function Section({ id, title, description, children }: { id: string; title: string; description: string; children: ReactNode }) {
+  return <section className={styles.settingsSection} id={id} aria-labelledby={`${id}-title`}>
+    <div className={styles.settingsSectionHead}><h2 id={`${id}-title`}>{title}</h2><p>{description}</p></div>
+    {children}
+  </section>;
+}
 
 export default function ProfileSettingsView(model: ProfileSettingsModel) {
   const { session, profile, isRulesReturn, settingsRulesReturnPath, profileRulesReturnPath, rulesReviewPath, mainCharacter,
@@ -25,36 +33,68 @@ export default function ProfileSettingsView(model: ProfileSettingsModel) {
     discordMemberReadable, canSyncDiscordNickname, discordOwnerLocked, currentServerNickname, liveDiscordMember,
     setupStatus, settingsPageTitle, guildStatus, storageWarning, nicknamePolicy } = model;
   const profileHref = profileRulesReturnPath || `/profile/${encodeURIComponent(profile.profileId)}`;
-  return <PageContainer label={settingsPageTitle} navigation={<DashboardIdentity user={session} activeSection="profile" />}
-    sidebar={<ProfileSidebar profileId={profile.profileId} name={publicNamePreview} avatar={liveDiscordMember?.avatarUrl || profile.avatarUrl}
-      status={guildStatus} role={wowRoleLabel(selectedRaidRole)} characterCount={profile.characters.length} mainName={mainCharacter?.name}
-      linked={Boolean(profile.battlenet?.linked)} isOwnProfile canViewPrivate active="settings" settingsHref={settingsRulesReturnPath} overviewHref={profileHref} />}>
+  const settingsHref = settingsRulesReturnPath || `/profile/${encodeURIComponent(profile.profileId)}/settings`;
+  const missing = new Set(setupStatus.missing.map(step => step.key));
+  const linked = Boolean(profile.battlenet?.linked);
+  const nav = [
+    { href: "#profile-identity", label: "Імʼя та звертання", missing: missing.size > 0 },
+    { href: "#profile-discord", label: "Discord" },
+    { href: "#profile-raids-settings", label: "Рейди" },
+    { href: "#profile-connections", label: "Підключення" },
+  ];
+  return <PageContainer label={settingsPageTitle} navigation={<DashboardIdentity user={session} activeSection="profile" />}>
     {!isRulesReturn && canViewProfiles(session) ? <ListReturnLink kind="profiles" scope={listNavigationScope(session)} /> : null}
-    <div id="profile-settings-overview"><PageHeader title={settingsPageTitle} eyebrow="Mistblossom Vanguard"
-      description="Імʼя, звертання, Discord-нік і роль у рейдах. Кожна форма зберігається окремо."
-      breadcrumbs={[{ label: "Профіль", href: profileHref }, { label: "Налаштування" }]}
-      actions={<Link href={profileHref} className="btn subtle">Відкрити профіль</Link>}
-      metrics={[{ label: "Публічне імʼя", value: publicNamePreview }, { label: "Discord-нік", value: discordNicknamePreview || "Не сформовано" }, { label: "Звертання", value: profileGenderLabel(profile.grammaticalGender) }]} /></div>
+    <AccountHero id="profile-settings-overview" name={settingsPageTitle} avatar={liveDiscordMember?.avatarUrl || profile.avatarUrl}
+      subtitle={`${publicNamePreview} · кожна форма зберігається окремо`}
+      badges={[{ label: profile.groupName || guildStatus, tone: "info" }, { label: wowRoleLabel(selectedRaidRole) }]}
+      stats={[
+        { label: "Публічне імʼя", value: publicNamePreview },
+        { label: "Discord-нік", value: discordNicknamePreview || "Не сформовано" },
+        { label: "Звертання", value: profileGenderLabel(profile.grammaticalGender) },
+      ]}
+      actions={<Link href={profileHref} className="btn subtle" prefetch={false}>Відкрити профіль</Link>}
+      tabs={[
+        { href: profileHref, label: "Огляд" },
+        { href: `${profileHref}#profile-characters`, label: `Персонажі · ${profile.characters.length}` },
+        { href: settingsHref, label: "Налаштування", current: true },
+      ]} />
     {storageWarning ? <Notice title="Тимчасові дані" tone="warning">{storageWarning}</Notice> : null}
     {rulesReviewPath ? <Notice title="Завершення реєстрації" actions={<Link href={rulesReviewPath} className="btn subtle">Повернутись до правил</Link>}>
       Заповни обовʼязкові поля й повернись до перевірки правил. Посилання прийняття збережено.
     </Notice> : null}
-    <ProfileCompletion status={setupStatus} />
-    <PageSection id="profile-personal-title" title="Особисті дані">
-      <div id="profile-name-settings"><FormSection title="Імʼя та відображення">
-        <PageErrorBoundary resetKey={profile.profileId}><ProfileNameControls identityProfileId={profile.profileId}
-          preferredName={profile.preferredName} publicNameMode={profile.publicNameMode} discordName={profile.displayName}
-          publicNamePreview={publicNamePreview} serverStyleNamePreview={serverStyleNamePreview} nicknamePreview={discordNicknamePreview}
-          lastSyncedNickname={profile.discordNickname?.value} lastSyncedAt={profile.discordNickname?.syncedAt ? formatStableUkCompactDate(profile.discordNickname.syncedAt) : null}
-          currentServerNickname={currentServerNickname} serverNicknameChecked={Boolean(discordMemberReadable && liveDiscordMember)} canManage
-          canSyncDiscord={canSyncDiscordNickname} discordOwnerLocked={discordOwnerLocked} returnTo={settingsRulesReturnPath} /></PageErrorBoundary>
-      </FormSection></div>
-      <div id="profile-gender-settings"><ProfileGenderPreferenceForm value={profile.grammaticalGender} returnTo={settingsRulesReturnPath} /></div>
-    </PageSection>
-    <PageSection id="profile-discord-title" title="Discord та нагадування">
-      <div id="profile-nickname-settings"><NicknameCharactersForm profile={profile} nicknameTemplate={nicknamePolicy.template} returnTo={settingsRulesReturnPath} /></div>
-      {profile.provider === "discord" ? <div id="profile-notifications-settings"><FormSection title="Нагадування про рейди"><PageErrorBoundary><RaidReminderPreferenceControls /></PageErrorBoundary></FormSection></div> : null}
-    </PageSection>
-    <div id="profile-role-settings"><RaidRolePreferenceForm mainCharacter={mainCharacter} manualRole={manualRaidRole} selectedRole={selectedRaidRole} returnTo={settingsRulesReturnPath} /></div>
+    <div className={styles.settingsLayout}>
+      <nav className={styles.settingsNav} aria-label="Розділи налаштувань">
+        {nav.map(item => <a key={item.href} href={item.href} data-missing={item.missing || undefined}>{item.label}</a>)}
+      </nav>
+      <div className={styles.settingsMain}>
+        <ProfileCompletion status={setupStatus} />
+        <Section id="profile-identity" title="Імʼя та звертання" description="Як тебе бачать у панелі, рейдах і на сервері.">
+          <div id="profile-name-settings"><FormSection title="Імʼя та відображення">
+            <PageErrorBoundary resetKey={profile.profileId}><ProfileNameControls identityProfileId={profile.profileId}
+              preferredName={profile.preferredName} publicNameMode={profile.publicNameMode} discordName={profile.displayName}
+              publicNamePreview={publicNamePreview} serverStyleNamePreview={serverStyleNamePreview} nicknamePreview={discordNicknamePreview}
+              lastSyncedNickname={profile.discordNickname?.value} lastSyncedAt={profile.discordNickname?.syncedAt ? formatStableUkCompactDate(profile.discordNickname.syncedAt) : null}
+              currentServerNickname={currentServerNickname} serverNicknameChecked={Boolean(discordMemberReadable && liveDiscordMember)} canManage
+              canSyncDiscord={canSyncDiscordNickname} discordOwnerLocked={discordOwnerLocked} returnTo={settingsRulesReturnPath} /></PageErrorBoundary>
+          </FormSection></div>
+          <div id="profile-gender-settings"><ProfileGenderPreferenceForm value={profile.grammaticalGender} returnTo={settingsRulesReturnPath} /></div>
+        </Section>
+        <Section id="profile-discord" title="Discord" description="Персонажі в серверному ніку та особисті нагадування.">
+          <div id="profile-nickname-settings"><NicknameCharactersForm profile={profile} nicknameTemplate={nicknamePolicy.template} returnTo={settingsRulesReturnPath} /></div>
+          {profile.provider === "discord" ? <div id="profile-notifications-settings"><FormSection title="Нагадування про рейди"><PageErrorBoundary><RaidReminderPreferenceControls /></PageErrorBoundary></FormSection></div> : null}
+        </Section>
+        <Section id="profile-raids-settings" title="Рейди" description="Роль, з якою тебе ставлять у склад.">
+          <div id="profile-role-settings"><RaidRolePreferenceForm mainCharacter={mainCharacter} manualRole={manualRaidRole} selectedRole={selectedRaidRole} returnTo={settingsRulesReturnPath} /></div>
+        </Section>
+        <Section id="profile-connections" title="Підключення та сесія" description="Сервіси, через які панель знає твій акаунт і персонажів.">
+          <AccountCard title="Підключені сервіси" rows={[
+            { key: "discord", icon: "discord", title: profile.displayName || "Discord", detail: currentServerNickname ? `Серверний нік: ${currentServerNickname}` : "Вхід і ролі через Discord", ok: true },
+            { key: "battlenet", icon: "battlenet", title: linked ? (profile.battlenet?.accountLabel || "Battle.net підключено") : "Battle.net не підключено",
+              detail: linked ? `Персонажів: ${profile.characters.length}` : "Потрібен для персонажів і мейна", ok: linked,
+              action: <Link className="btn subtle" href={`${profileHref}#profile-characters`} prefetch={false}>{linked ? "Персонажі" : "Підключити"}</Link> },
+          ]} canSignOut />
+        </Section>
+      </div>
+    </div>
   </PageContainer>;
 }

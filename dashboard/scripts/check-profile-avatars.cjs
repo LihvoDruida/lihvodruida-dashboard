@@ -18,7 +18,7 @@ const avatarComponent = read("src/components/ProfileAvatar.tsx");
 const profilePage = readUiWorkspace("src/app/profile/[profileId]/page.tsx");
 const settingsPage = readUiWorkspace("src/app/profile/[profileId]/settings/page.tsx");
 const profilesPage = readUiWorkspace("src/app/profiles/page.tsx");
-const css = read("src/app/styles/profile.css");
+const css = read("src/components/account/account.module.css");
 
 const checks = [
   [avatarLib, /guildAvatarHash[\s\S]*userAvatarHash[\s\S]*discordDefaultAvatarUrl/, "Discord avatar fallback order missing"],
@@ -35,8 +35,8 @@ const checks = [
   [settingsPage, /liveDiscordMember\?\.avatarUrl \|\| profile\.avatarUrl/, "settings page live avatar fallback missing"],
   [profilesPage, /fetchDiscordGuildMembersCachedForUi\(\)/, "directory does not refresh Discord avatars through the UI cache"],
   [profilesPage, /<ProfileAvatar/, "directory does not use robust avatar component"],
-  [css, /grid-template-columns:\s*repeat\(auto-fill,\s*minmax\(min\(300px, 100%\), 360px\)\)/, "character cards still stretch freely"],
-  [css, /max-width:\s*360px/, "character card max width missing"],
+  [css, /\.charList \{[^}]*grid-template-columns:\s*repeat\(auto-fill,\s*minmax\(min\(100%, 340px\), 1fr\)\)/, "character tiles lost their responsive grid"],
+  [css, /\.charArt \{[^}]*width: 48px; height: 48px;/, "character tile artwork size missing"],
 ];
 
 for (const [source, pattern, label] of checks) expect(source, pattern, label);

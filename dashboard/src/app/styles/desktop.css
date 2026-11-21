@@ -256,55 +256,8 @@ select {
      PROFILE — виправлення проблем зі скріну
      ======================================================= */
 
-  .profile-card-toolbar--compact {
-    gap: var(--space-xs);
-  }
-
-  .profile-card-toolbar--compact > span {
-    min-width: 84px;
-    padding: 7px var(--space-sm);
-  }
-
   /* auto-fit, не auto-fill: порожні треки більше не залишають
      величезну пусту ділянку праворуч, коли персонажів 2–3. */
-  .profile-character-list--single-flow {
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: var(--space-md);
-    align-items: stretch;
-  }
-
-  .profile-character-card {
-    min-width: 0;
-    height: 100%;
-    padding: 0;
-    overflow: hidden;
-    background: var(--surface);
-  }
-
-  .profile-character-artwork {
-    height: 250px;
-  }
-
-  .profile-character-body {
-    min-height: 360px;
-    padding: 18px;
-  }
-
-  .profile-character-actions,
-.profile-character-actions__full,
-.profile-character-actions__full > *,
-.profile-character-actions__row > *,
-.profile-character-action {
-    width: 100%;
-  }
-
-  .profile-character-actions__row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .profile-character-action {
-    min-width: 0;
-  }
 
   /* ---------- Адмінські екрани ---------- */
   .app-footer {
