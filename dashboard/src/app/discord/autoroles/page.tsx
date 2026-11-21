@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import DashboardIdentity from "@/components/DashboardIdentity";
+import PageHeader from "@/components/page/PageHeader";
 import DiscordEmbedEditor, { type DiscordAutoroleButtonOption } from "@/components/DiscordEmbedEditor";
 import { getSession } from "@/lib/auth";
 import { resolveAuthorIdentity } from "@/lib/authorIdentity";
@@ -103,14 +104,9 @@ export default async function DiscordAutorolesPage({
     <main className="container app-page">
       <section className="dashboard-shell content-shell discord-shell app-page-stack" aria-label="Discord авторолі Mistblossom Vanguard">
         <DashboardIdentity user={user} activeSection="discord" />
-        <header className="discord-editor-header panel">
-          <div>
-            <span className="eyebrow">Discord • Авторолі • {editMode ? "Редагування" : "Створення"}</span>
-            <h1>{editMode ? "Редагування авторолей" : "Авторолі Discord"}</h1>
-            <p>Той самий спільний Embed-редактор, але з Discord-кнопками ролей. Кожна кнопка має власний текст, emoji, стиль, роль, поведінку та optional exclusive-group.</p>
-          </div>
-          <a className="btn subtle" href="/discord">Назад</a>
-        </header>
+        <PageHeader eyebrow={`Discord • Авторолі • ${editMode ? "Редагування" : "Створення"}`} title={`${editMode ? "Редагування авторолей" : "Авторолі Discord"}`} description="Той самий спільний Embed-редактор, але з Discord-кнопками ролей. Кожна кнопка має власний текст, emoji, стиль, роль, поведінку та optional exclusive-group."
+          breadcrumbs={[{ label: "Discord", href: "/discord" }, { label: "Авторолі" }]}
+          actions={<a className="btn subtle" href="/discord">Назад</a>} />
 
         <StatusNotice params={params} />
         {!hasDiscordEmbedConfig() ? (

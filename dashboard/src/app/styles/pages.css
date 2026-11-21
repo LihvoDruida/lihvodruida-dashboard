@@ -1804,11 +1804,13 @@ body:has(.login-screen) .app-footer--site-wide {
   overflow-wrap: anywhere;
 }
 
+/* The whole card is the link; the button is a compact cue, not a full-width bar. */
 .discord-hub-card > .btn {
-  width: 100%;
-  min-height: 44px;
+  align-self: start;
+  width: auto;
+  min-height: var(--control-height);
   margin-top: auto;
-  padding-inline: 14px;
+  padding-inline: var(--space-md);
 }
 
 .discord-hub-card:focus-visible {
@@ -1937,7 +1939,6 @@ body:has(.login-screen) .app-footer--site-wide {
   }
 
   .discord-hub-card > .btn {
-    min-height: 46px;
     font-size: var(--font-size-body);
   }
 }

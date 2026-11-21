@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import styles from "./static.module.css";
+import PageHeader from "@/components/page/PageHeader";
 import { StaticSubnav } from "./StaticSubnav";
 
 type Config = { text: string; version: number; memberRoleId: string; managerRoleId: string; updatedAt: string | null };
@@ -58,7 +59,7 @@ export default function StaticManageClient() {
   }) || [], [state, search, filter, now]);
   const canEdit = Boolean(state?.permissions.edit);
   return <div className={styles.wrap}>
-    <header className="hero panel"><div className="eyebrow">Mistblossom Vanguard • Рейдовий склад</div><h1>Склад Статика</h1><p className="lead">Учасники Discord із зафіксованою датою прийняття правил. Структура таблиці та фільтрів узгоджена зі складом гільдії.</p></header>
+    <PageHeader eyebrow="Mistblossom Vanguard • Рейдовий склад" title="Склад Статика" description="Учасники Discord із зафіксованою датою прийняття правил. Структура таблиці та фільтрів узгоджена зі складом гільдії." breadcrumbs={[{ label: "Discord", href: "/discord" }, { label: "Статик" }]} />
     <StaticSubnav active="/discord/static" />
     {error ? <div className="notice panel error-note" role="alert">{error}</div> : null}
     {notice ? <div className="notice panel success" role="status">{notice}</div> : null}

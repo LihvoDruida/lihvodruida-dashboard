@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import PageHeader from "@/components/page/PageHeader";
 import { StaticSubnav } from "./StaticSubnav";
 import styles from "./static.module.css";
 type Violation = { id: string; description: string; createdAt: string; createdBy: string };
@@ -37,7 +38,7 @@ export default function StaticBansClient() {
   }
   const filtered = useMemo(() => members.filter(member => `${member.name} ${member.userId}`.toLocaleLowerCase("uk-UA").includes(query.trim().toLocaleLowerCase("uk-UA"))), [members, query]);
   return <div className={styles.wrap}>
-    <header className="hero panel"><div className="eyebrow">Статик • дисципліна</div><h1>Порушення та банліст</h1><p className="lead">У цьому списку зберігаються всі учасники з хоча б одним чинним порушенням. Третє порушення автоматично знімає роль Статика на місяць.</p></header>
+    <PageHeader eyebrow="Статик • дисципліна" title="Порушення та банліст" description="У цьому списку зберігаються всі учасники з хоча б одним чинним порушенням. Третє порушення автоматично знімає роль Статика на місяць." breadcrumbs={[{ label: "Статик", href: "/discord/static" }, { label: "Порушення та банліст" }]} />
     <StaticSubnav active="/discord/static/bans" />
     {error ? <div role="alert" className="notice panel error-note">{error}</div> : null}{notice ? <div role="status" className="notice panel success">{notice}</div> : null}
     <section className={`panel ${styles.card}`}><div className={styles.sectionHead}><div><h2>Дисциплінарні записи</h2><span className={styles.muted}>{filtered.length} записів · {members.filter(m => m.banned).length} з активним баном</span></div><input type="search" className={styles.banSearch} value={query} onChange={e => setQuery(e.target.value)} maxLength={100} placeholder="Пошук за іменем / ID" aria-label="Пошук порушень" /></div>

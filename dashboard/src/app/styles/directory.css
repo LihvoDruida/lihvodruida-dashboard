@@ -22,72 +22,50 @@
 
 .guild-hero-side {
   display: grid;
-  gap: var(--space-md);
+  gap: var(--space-xs);
   align-content: start;
   min-width: 0;
 }
 
-/* Бічна панель hero: підсумок + лічильники */
-.guild-hero-summary {
-  display: grid;
-  gap: var(--space-sm);
-}
-
-.guild-hero-summary__block {
-  display: grid;
-  gap: var(--space-3xs);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-}
-
-.guild-hero-summary__label {
-  font-size: var(--font-size-2xs);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
-
-.guild-hero-summary__block strong {
-  font-size: 0.98rem;
-  color: var(--text-strong);
-}
-
-.guild-hero-summary__block p {
-  margin: 0;
-  font-size: var(--font-size-meta);
-  color: var(--text-muted);
-}
-
+/* Side panel = the same compact tiles as page header metrics. */
+.guild-hero-summary,
 .guild-hero-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(96px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr));
   gap: var(--space-xs);
 }
 
+.guild-hero-summary__block,
 .guild-hero-stat-card {
   display: grid;
+  align-content: start;
   gap: var(--space-3xs);
-  padding: var(--space-sm);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  padding: var(--space-xs) var(--space-sm);
+  border: var(--stroke-width) solid var(--border-subtle);
+  border-radius: var(--control-radius);
   background: var(--surface-sunken);
   text-align: left;
 }
 
+.guild-hero-summary__label,
 .guild-hero-stat-card > span {
-  font-size: 0.62rem;
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--text-muted);
+  font-size: var(--font-size-meta);
+  font-weight: var(--font-weight-medium);
 }
 
+.guild-hero-summary__block strong,
 .guild-hero-stat-card > strong {
-  font-size: 1.05rem;
-  color: var(--c-accent-200);
+  color: var(--text-strong);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.guild-hero-summary__block p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-meta);
 }
 
 .guild-hero-actions {

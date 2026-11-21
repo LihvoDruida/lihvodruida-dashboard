@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import PageHeader from "@/components/page/PageHeader";
 import { StaticSubnav } from "./StaticSubnav";
 import styles from "./static.module.css";
 type Event = { id: string; kind: string; actor: string; createdAt: string; details: Record<string, unknown> };
@@ -33,7 +34,7 @@ export default function StaticEventsClient() {
     (!query.trim() || `${entry.kind} ${entry.actor} ${Object.values(entry.details).join(" ")}`.toLocaleLowerCase("uk-UA").includes(query.trim().toLocaleLowerCase("uk-UA")))
   ), [events, filter, query]);
   return <div className={styles.wrap}>
-    <header className="hero panel"><div className="eyebrow">Статик • історія</div><h1>Журнал подій</h1><p className="lead">Історія запрошень, прийняття правил, змін і дій РЛ. Події не можна редагувати з цієї сторінки.</p></header>
+    <PageHeader eyebrow="Статик • історія" title="Журнал подій" description="Історія запрошень, прийняття правил, змін і дій РЛ. Події не можна редагувати з цієї сторінки." breadcrumbs={[{ label: "Статик", href: "/discord/static" }, { label: "Журнал подій" }]} />
     <StaticSubnav active="/discord/static/events" />
     {error ? <div role="alert" className="notice panel error-note">{error}</div> : null}
     <section className={`panel ${styles.card}`}>

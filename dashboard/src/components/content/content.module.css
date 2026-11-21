@@ -36,34 +36,33 @@
   line-height: 1.6;
 }
 
+/* Same compact tiles as page header metrics: label above value. */
 .stats {
   display: grid;
-  grid-template-columns: repeat(4,minmax(0,1fr));
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: var(--surface-sunken);
-  overflow: hidden;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: var(--space-xs);
 }
 
 .stats>div {
   display: grid;
-  gap: 6px;
-  padding: 22px 26px;
-  border-right: 1px solid var(--border-subtle);
-}
-
-.stats>div:last-child {
-  border: 0;
+  gap: var(--space-3xs);
+  padding: var(--space-xs) var(--space-sm);
+  border: var(--stroke-width) solid var(--border-subtle);
+  border-radius: var(--control-radius);
+  background: var(--surface-sunken);
 }
 
 .stats strong {
-  font: 600 1.9rem var(--font-guild-heading),serif;
   color: var(--text-strong);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
 }
 
 .stats span {
-  font-size: .8rem;
-  color: var(--text-soft);
+  order: -1;
+  color: var(--text-muted);
+  font-size: var(--font-size-meta);
 }
 
 .workspace .library {

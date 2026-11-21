@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import DashboardIdentity from "@/components/DashboardIdentity";
+import PageHeader from "@/components/page/PageHeader";
 import DiscordEmbedEditor from "@/components/DiscordEmbedEditor";
 import { getSession } from "@/lib/auth";
 import { resolveAuthorIdentity } from "@/lib/authorIdentity";
@@ -88,14 +89,9 @@ export default async function GeneralDiscordEmbedPage({
     <main className="container app-page">
       <section className="dashboard-shell content-shell discord-shell app-page-stack" aria-label="Звичайне Discord-повідомлення Mistblossom Vanguard">
         <DashboardIdentity user={user} activeSection="discord" />
-        <header className="discord-editor-header panel">
-          <div>
-            <span className="eyebrow">Звичайне повідомлення • {editMode ? "Редагування" : "Створення"}</span>
-            <h1>{editMode ? "Редагування повідомлення" : "Звичайна відправка повідомлення"}</h1>
-            <p>Створи або онови Discord-повідомлення. Канал, текст, теги ролей і посилання на повідомлення розділені окремо.</p>
-          </div>
-          <a className="btn subtle" href="/discord">Назад</a>
-        </header>
+        <PageHeader eyebrow={`Звичайне повідомлення • ${editMode ? "Редагування" : "Створення"}`} title={`${editMode ? "Редагування повідомлення" : "Звичайна відправка повідомлення"}`} description="Створи або онови Discord-повідомлення. Канал, текст, теги ролей і посилання на повідомлення розділені окремо."
+          breadcrumbs={[{ label: "Discord", href: "/discord" }, { label: "Повідомлення" }]}
+          actions={<a className="btn subtle" href="/discord">Назад</a>} />
       <StatusNotice params={params} />
       {!canUseGeneralEmbeds ? (
         <div className="notice panel">Ця сторінка доступна гільдмайстеру та офіцерам.</div>

@@ -197,11 +197,11 @@ main .dashboard-shell {
   grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
   align-items: center;
   gap: var(--space-lg);
-  padding: clamp(var(--space-md), 2.4vw, var(--space-xl));
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
+  padding: var(--space-lg);
+  border: var(--stroke-width) solid var(--border);
+  border-radius: var(--card-radius);
   background: var(--surface);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 }
