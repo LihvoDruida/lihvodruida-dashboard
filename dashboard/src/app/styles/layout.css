@@ -632,7 +632,7 @@ main .dashboard-shell {
   max-width: 560px;
 }
 
-@media (max-width: 560px) {
+@media (max-width: 520px) {
   .app-state-shell,
 .access-denied-shell {
     padding-inline: 14px;

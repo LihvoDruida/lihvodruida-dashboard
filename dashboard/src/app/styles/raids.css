@@ -1015,7 +1015,7 @@
 /* =========================================================
    5. АДАПТИВ
    ========================================================= */
-@media (max-width: 1180px) {
+@media (max-width: 1240px) {
   .raid-editor-layout {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1579,7 +1579,7 @@
   }
 }
 
-@media (max-width: 620px) {
+@media (max-width: 640px) {
 
   .raid-preview-head--modern {
     grid-template-columns: minmax(0, 1fr);

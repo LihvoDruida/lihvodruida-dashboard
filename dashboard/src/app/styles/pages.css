@@ -1432,7 +1432,7 @@ body:has(.login-screen) .app-footer--site-wide {
   top: calc(var(--nav-space) + var(--space-xs));
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1240px) {
   .discord-send-controls {
     grid-template-columns: minmax(0, 1fr) 100px 170px;
   }
@@ -1824,7 +1824,7 @@ body:has(.login-screen) .app-footer--site-wide {
   }
 }
 
-@media (max-width: 1080px) {
+@media (max-width: 1000px) {
   .discord-hub-section-group--tools {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1850,7 +1850,7 @@ body:has(.login-screen) .app-footer--site-wide {
   }
 }
 
-@media (max-width: 680px) {
+@media (max-width: 640px) {
   .discord-hub-page {
     --discord-hub-gap: 10px;
   }
@@ -1942,7 +1942,7 @@ body:has(.login-screen) .app-footer--site-wide {
   }
 }
 
-@media (max-width: 430px) {
+@media (max-width: 420px) {
   .discord-dashboard-hero__side .guild-hero-summary {
     grid-template-columns: minmax(0, 1fr);
   }
