@@ -19,14 +19,6 @@ export type ConcurrentMapMeta = {
   failed: number;
 };
 
-export type ConcurrentMapSettledItem<T> = {
-  index: number;
-  item: T;
-  ok: boolean;
-  value?: T;
-  error?: unknown;
-};
-
 const DEFAULT_MAX_BY_PROFILE: Record<ConcurrencyProfile, number> = {
   io: 16,
   "external-api": 8,

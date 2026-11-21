@@ -355,20 +355,6 @@ export function dashboardRaidRulesUrl() {
   return value || dashboardProfileUrl();
 }
 
-function discordLinkButton(label: string, url: string) {
-  return { type: 2, style: 5, label: label.slice(0, 80), url };
-}
-
-export function raidActionHelpComponents(raidId?: string | null) {
-  const buttons = [
-    discordLinkButton("Правила рейду", dashboardRaidRulesUrl()),
-  ];
-  if (raidId)
-    buttons.push(discordLinkButton("Сторінка рейду", dashboardRaidUrl(raidId)));
-  return [{ type: 1, components: buttons.slice(0, 5) }];
-}
-
-
 export function resolveRaidThumbnailUrl(
   input: {
     difficulty?: RaidDifficulty | string | null;
@@ -1614,16 +1600,6 @@ export function isRaidSubjectWarnedByMinItemLevel(
   return isRaidSubjectBelowMinItemLevel(raid, subject);
 }
 
-export function raidEligibleSignupCharacters(
-  raid: RaidMinimumPolicy,
-  profile?: Pick<DashboardProfile, "characters"> | null,
-) {
-  const characters = profile?.characters || [];
-  return characters.filter(
-    (character) => !isRaidSubjectBlockedByMinItemLevel(raid, character),
-  );
-}
-
 export function raidSignupCharacterMinimumNote(
   raid: RaidMinimumPolicy,
   character: Pick<ProfileCharacter, "itemLevel">,
@@ -1964,7 +1940,6 @@ export async function sendRaidReminderDirectMessages(raid: RaidItem) {
     failed: settled.results.filter((result) => !result.ok).length,
   };
 }
-
 
 async function syncAutoClosedRaid(raid: RaidItem) {
   if (
@@ -4755,124 +4730,6 @@ export function buildRaidRoleSelectComponents(
   ];
 }
 
-function raidCharacterSelectionToken(
-  profile: DashboardProfile,
-  selectedCharacterKey?: string | null,
-) {
-  const selected = resolveProfileCharacterSelection(
-    profile,
-    selectedCharacterKey,
-  );
-  if (!selected)
-    return cleanRaidRoleSelectCharacterKey(selectedCharacterKey || "");
-  const selectedKey = normalizeCharacterKey(selected.key);
-  const index = profile.characters.findIndex(
-    (character) => normalizeCharacterKey(character.key) === selectedKey,
-  );
-  return index >= 0
-    ? `c${index}`
-    : cleanRaidRoleSelectCharacterKey(selected.key);
-}
-
-function buildDisabledRaidRoleSelectRow(
-  raidId: string,
-  action: RaidSignupStatus,
-) {
-  const id = cleanRaidId(raidId);
-  const safeAction = cleanSignupStatus(action);
-  return {
-    type: 1,
-    components: [
-      {
-        type: 3,
-        custom_id: `mbv1:rsr:${id}:${safeAction}:none`,
-        placeholder: "2) Спочатку обери персонажа",
-        min_values: 1,
-        max_values: 1,
-        disabled: true,
-        options: raidRoleSelectOptions(null),
-      },
-    ],
-  };
-}
-
-export function buildRaidSignupPanelComponents(
-  raidId: string,
-  action: RaidSignupStatus,
-  profile: DashboardProfile,
-  selectedCharacterKey?: string | null,
-  selectedRole?: RaidCharacterRole | null,
-  raid?: RaidMinimumPolicy | null,
-) {
-  const selectedCharacter = resolveProfileCharacterSelection(
-    profile,
-    selectedCharacterKey,
-  );
-  const characterToken = raidCharacterSelectionToken(
-    profile,
-    selectedCharacterKey,
-  );
-  const effectiveRole = selectedCharacter
-    ? cleanRoleStrict(selectedRole) ||
-      resolveRaidSignupRole(profile, selectedCharacter)
-    : null;
-
-  const rows: Array<Record<string, unknown>> = [];
-  rows.push(
-    ...buildRaidCharacterSelectComponents(
-      raidId,
-      action,
-      profile,
-      selectedCharacterKey,
-      raid,
-      effectiveRole,
-    ),
-  );
-  if (selectedCharacter && characterToken) {
-    rows.push(
-      ...buildRaidRoleSelectComponents(
-        raidId,
-        action,
-        characterToken,
-        effectiveRole,
-      ),
-    );
-  } else {
-    rows.push(buildDisabledRaidRoleSelectRow(raidId, action));
-  }
-
-  const canSubmit = Boolean(
-    selectedCharacter && characterToken && effectiveRole,
-  );
-  rows.push({
-    type: 1,
-    components: [
-      {
-        type: 2,
-        style: canSubmit ? 3 : 2,
-        label: action === "late" ? "Записатися із запізненням" : action === "tentative" ? "Записатися 50/50" : "Записатися",
-        custom_id: canSubmit
-          ? buildRaidSignupSubmitCustomId(
-              raidId,
-              action,
-              characterToken,
-              effectiveRole || "dps",
-            )
-          : buildRaidAttendanceCustomId(raidId, action),
-        disabled: !canSubmit,
-      },
-      {
-        type: 2,
-        style: 5,
-        label: "Деталі рейду",
-        url: dashboardRaidUrl(raidId),
-      },
-    ],
-  });
-
-  return rows.slice(0, 5);
-}
-
 export function buildRaidSignupSuccessComponents(
   raidId: string,
   action: RaidSignupStatus,
@@ -5414,22 +5271,6 @@ export function buildRaidManualSpecComponents(
   ];
 }
 
-/** Каталог класів і спеків для ручного вибору у вебінтерфейсі. */
-export function raidManualClassOptions() {
-  return WOW_CLASS_CATALOG.map((cls) => ({
-    key: cls.key,
-    label: cls.label,
-    color: cls.color,
-    emoji: cls.emoji,
-    specs: cls.specs.map((spec) => ({
-      key: spec.key,
-      label: spec.label,
-      role: spec.role,
-      roleLabel: raidManualRoleLabel(spec.role),
-    })),
-  }));
-}
-
 function raidManualRoleLabel(role: RaidCharacterRole) {
   if (role === "tank") return "🛡️ Танк";
   if (role === "healer") return "💚 Хіл";
@@ -5907,7 +5748,6 @@ function attendanceSuccessText(
         : `✅ ${signedText} на ${raidTitle(raid)}${characterText}.${signupNumberText} ${syncText}`;
   return warning ? `${base}\n\n${warning}` : base;
 }
-
 
 async function recoverEmptyRaidFromDiscordMessage(
   raidId: string,

@@ -68,4 +68,3 @@ export async function loadGuildWorkspace() {
 
   return {user, roster, apiSettings, storageLimited};
 }
-export type GuildWorkspaceModel = Awaited<ReturnType<typeof loadGuildWorkspace>>;

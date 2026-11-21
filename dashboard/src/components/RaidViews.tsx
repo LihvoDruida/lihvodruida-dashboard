@@ -22,16 +22,6 @@ export { formatRaidDateTime, todayIso } from "@/components/RaidSignupPresentatio
 export type RaidChannelOption = { id: string; name: string };
 export type RaidRoleOption = DiscordRoleOption;
 
-export function attendanceStatusLabel(action?: string) {
-  if (action === "skipped") return "Позначено, що ти пропускаєш рейд.";
-  if (action === "late")
-    return "Записано: ти затримаєшся. Склад рейду оновлено.";
-  if (action === "tentative")
-    return "Записано 50/50. За потреби цей запис піде в лаву запасних після сірого списку.";
-  if (action === "going") return "Тебе записали на рейд. Склад рейду оновлено.";
-  return "Дію виконано.";
-}
-
 export function StatusNotice({
   params: _params,
 }: {

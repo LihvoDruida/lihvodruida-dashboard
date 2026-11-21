@@ -2,13 +2,6 @@ import type { DashboardRole, DashboardSession } from "@/types/auth";
 
 import { DASHBOARD_PERMISSION_KEYS, type DashboardPermissionKey } from "@/lib/accessGroupSchema";
 
-export type DashboardCapability = {
-  key: string;
-  title: string;
-  description: string;
-  enabled: boolean;
-};
-
 export const DASHBOARD_ROLE_ORDER: Record<DashboardRole, number> = {
   member: 10,
   mentor: 20,

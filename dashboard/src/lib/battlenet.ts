@@ -8,10 +8,6 @@ import { envFlag } from "@/lib/values";
 
 export type BattleNetRegion = "us" | "eu" | "kr" | "tw";
 
-export type BattleNetProfileUnavailableReason =
-  | "not_found"
-  | "forbidden";
-
 export function isBattleNetCharacterProfileUnavailableError(error: unknown) {
   return (
     error instanceof ApiHttpError &&
@@ -220,7 +216,6 @@ export async function exchangeBattleNetCode(code: string, regionInput?: string |
   return data as { access_token: string; token_type?: string; expires_in?: number; scope?: string };
 }
 
-
 type BattleNetApplicationToken = {
   accessToken: string;
   expiresAt: number;
@@ -298,7 +293,6 @@ export async function fetchBattleNetApplicationData(
   const accessToken = await fetchBattleNetApplicationToken(region);
   return bnetFetch(accessToken, path, params, region, options);
 }
-
 
 function pickLocalizedName(value: any): string | null {
   if (!value) return null;
