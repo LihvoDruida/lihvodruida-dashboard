@@ -72,15 +72,6 @@ export function normalizeCharacterKey(value: unknown) {
   return buildBattleNetCharacterKey(regionInput, realmInput, nameInput);
 }
 
-export type CharacterProfileSlugSource = {
-  key?: unknown;
-  region?: unknown;
-  realmSlug?: unknown;
-  realmName?: unknown;
-  normalizedName?: unknown;
-  name?: unknown;
-};
-
 export function normalizeWowAvatarImageUrl(value: unknown) {
   const text = cleanWowText(value, 700);
   if (!text) return null;

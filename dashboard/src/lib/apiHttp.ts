@@ -1,9 +1,5 @@
 import {ApiResponseError,readResponseJson} from "@/lib/httpBody";
 export {ApiResponseError} from "@/lib/httpBody";
-export type ApiRetryDecision = {
-  retry: boolean;
-  delayMs: number;
-};
 
 export type ApiFetchJsonOptions = Omit<RequestInit, "cache" | "signal"> & {
   label?: string;

@@ -110,22 +110,6 @@
   color: #a4e4b6;
 }
 
-.metrics {
-  display: grid;
-  grid-template-columns: repeat(3,minmax(0,1fr));
-  gap: 12px;
-}
-
-.metrics>div {
-  padding: 18px;
-  display: grid;
-  gap: 6px;
-}
-
-.metrics strong {
-  font-size: 1.65rem;
-}
-
 .editor {
   display: block;
   width: 100%;
@@ -204,16 +188,13 @@
 }
 
 @media (max-width:640px) {
-  .metrics {
-    grid-template-columns: 1fr 1fr;
-  }
   .fields {
     grid-template-columns: 1fr;
   }
   .listRow {
     align-items: flex-start;
   }
-  .listRow .btn {
+  .listRow :global(.btn) {
     max-width: 100%;
   }
 }
@@ -809,7 +790,7 @@
   align-items: center;
 }
 
-.rosterActions .btn {
+.rosterActions :global(.btn) {
   white-space: normal;
   padding: 7px 9px;
   font-size: .77rem;
@@ -1002,7 +983,7 @@
 }
 
 @media (max-width:640px) {
-  .sourceActions .btn {
+  .sourceActions :global(.btn) {
     width: 100%;
     max-width: 100%;
   }

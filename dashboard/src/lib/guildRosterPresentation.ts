@@ -47,10 +47,6 @@ export function raidSummary(raid: GuildRaidProgress | null) {
   return { main: highest, detail };
 }
 
-export function compactRaidName(name: string) {
-  return name.length > 30 ? `${name.slice(0, 29)}…` : name;
-}
-
 export function friendlySource(value: string) {
   const source = String(value || "").toLowerCase();
   if (source.includes("raider")) return "Raider.IO → PostgreSQL";
