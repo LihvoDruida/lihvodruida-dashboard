@@ -12,7 +12,8 @@ export type DropdownMenuItem = MenuBase & (
 );
 
 /** Native disclosure, normal Tab order; no incomplete ARIA menu implementation. */
-export default function DropdownMenu({ label = "Інші дії", items = [], children, closeOnAction = true }: { label?: string; items?: readonly DropdownMenuItem[]; children?: ReactNode; closeOnAction?: boolean }) {
+/** `accessibleLabel` names the menu in full for assistive tech when the visible `label` is short. */
+export default function DropdownMenu({ label = "Інші дії", accessibleLabel, items = [], children, closeOnAction = true }: { label?: string; accessibleLabel?: string; items?: readonly DropdownMenuItem[]; children?: ReactNode; closeOnAction?: boolean }) {
   const root = useRef<HTMLDetailsElement>(null);
   const trigger = useRef<HTMLElement>(null);
   const panelId = useId();
@@ -29,8 +30,8 @@ export default function DropdownMenu({ label = "Інші дії", items = [], ch
       event.preventDefault(); root.current.open = false; trigger.current?.focus();
     }
   }}>
-    <summary className={`btn subtle ${styles.dropdownTrigger}`} ref={trigger} aria-controls={panelId}>{label}<span aria-hidden="true">⌄</span></summary>
-    <div id={panelId} className={styles.dropdownPanel} aria-label={label} onClick={event => {
+    <summary className={`btn subtle ${styles.dropdownTrigger}`} ref={trigger} aria-controls={panelId} aria-label={accessibleLabel}>{label}<span aria-hidden="true">⌄</span></summary>
+    <div id={panelId} className={styles.dropdownPanel} aria-label={accessibleLabel || label} onClick={event => {
       if (!closeOnAction) return;
       const button = event.target instanceof Element ? event.target.closest<HTMLButtonElement>("button:not(:disabled)") : null;
       if (button) {

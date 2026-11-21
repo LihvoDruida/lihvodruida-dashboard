@@ -1,6 +1,6 @@
 .sidebar { display: grid; gap: var(--space-md); padding: var(--panel-padding); border: var(--stroke-width) solid var(--border); border-radius: var(--card-radius); background: var(--surface); min-width: 0; }
 .identity { display: grid; justify-items: start; gap: var(--space-sm); overflow-wrap: anywhere; }
-.avatar { border-radius: var(--card-radius); object-fit: cover; background: var(--surface-raised); }
+.avatar { border: var(--stroke-width) solid var(--border); border-radius: var(--card-radius); object-fit: cover; background: var(--surface-raised); }
 .identity > small { color: var(--text-muted); font-size: var(--font-size-meta); }
 .inline { display: flex; gap: var(--space-xs); flex-wrap: wrap; align-items: center; }
 .facts { display: grid; gap: var(--space-sm); margin: 0; }
@@ -17,7 +17,7 @@
 .field { display: grid; gap: var(--space-xs); min-width: 0; color: var(--text-body); font-size: var(--font-size-body-sm); }
 .field :is(input, select) { max-width: 100%; min-width: 0; }
 .field small, .hint { color: var(--text-muted); font-size: var(--font-size-meta); line-height: var(--line-height-copy); }
-.option { display: flex; gap: var(--space-sm); align-items: start; padding: var(--space-sm); border: var(--stroke-width) solid var(--border); border-radius: var(--control-radius); background: var(--surface-sunken); }
+.option { font-size: var(--font-size-body-sm); color: var(--text-soft); display: flex; gap: var(--space-sm); align-items: start; padding: var(--space-sm); border: var(--stroke-width) solid var(--border); border-radius: var(--control-radius); background: var(--surface-sunken); }
 .option:has(input:checked) { border-color: var(--border-strong); background: var(--accent-soft); }
 .option > span { display: grid; gap: var(--space-2xs); min-width: 0; }
 .option small { color: var(--text-soft); line-height: var(--line-height-body); }

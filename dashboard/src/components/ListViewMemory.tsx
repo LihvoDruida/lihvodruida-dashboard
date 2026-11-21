@@ -166,6 +166,7 @@ export default function ListViewMemory({ kind, scope, currentUrl, restorePositio
   return <div className={styles.bar} aria-label="Збережені перегляди">
     <div className={styles.views}>
       <span className={styles.label}>Мої подання</span>
+      {views.length ? null : <span className={styles.hint}>зберігаються в цій вкладці 24 години</span>}
       {views.map(view => <span key={view.name} className={styles.view}>
         <a data-list-reset-position href={view.url === `/${kind}` ? allHref : view.url} onClick={openClientView}>{view.name}</a>
         <button className="btn subtle btn-sm" type="button" aria-label={`Видалити подання ${view.name}`} onClick={() => persist({ ...memory.current, at: Date.now(), views: memory.current.views.filter(item => item.name !== view.name) })}>×</button>
@@ -179,6 +180,6 @@ export default function ListViewMemory({ kind, scope, currentUrl, restorePositio
       <button className="btn primary btn-sm" type="submit" disabled={!name.trim() || blocked.current}>Зберегти</button>
       <button className="btn subtle btn-sm" type="button" onClick={() => setEditing(false)}>Скасувати</button>
     </form> : null}
-    <p className={styles.message} role="status">{message || "Перегляд запам’ятовується в цій вкладці на 24 години."}</p>
+    <p className={styles.message} role="status">{message}</p>
   </div>;
 }

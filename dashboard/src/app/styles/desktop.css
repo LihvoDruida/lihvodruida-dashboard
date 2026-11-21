@@ -42,8 +42,8 @@ main .dashboard-shell {
     padding: 0;
   }
 @layer patterns {
-  [class$="-shell"],
-[class*="-shell "] {
+  [class$="-shell"]:where(:not([class*="-module__"])),
+[class*="-shell "]:where(:not([class*="-module__"])) {
     gap: var(--page-gap);
   }
 }
@@ -74,7 +74,7 @@ main .dashboard-shell {
      специфічність, тому свідомий стиль конкретного компонента завжди
      сильніший за глобальну нормалізацію. */
 @layer adaptive {
-  :where([class$="-card"]:not([class*="nav"]), [class*="-card "]:not([class*="nav"]), [class$="__card"], [class*="__card "], [class$="-panel"]:not(.dashboard-list-panel), [class*="-panel "]:not(.dashboard-list-panel), [class$="__panel"], [class*="__panel "], [class$="-box"], [class*="-box "]) {
+  :where([class$="-card"]:not([class*="nav"]):where(:not([class*="-module__"])), [class*="-card "]:not([class*="nav"]):where(:not([class*="-module__"])), [class$="__card"]:where(:not([class*="-module__"])), [class*="__card "]:where(:not([class*="-module__"])), [class$="-panel"]:not(.dashboard-list-panel):where(:not([class*="-module__"])), [class*="-panel "]:not(.dashboard-list-panel):where(:not([class*="-module__"])), [class$="__panel"]:where(:not([class*="-module__"])), [class*="__panel "]:where(:not([class*="-module__"])), [class$="-box"]:where(:not([class*="-module__"])), [class*="-box "]:where(:not([class*="-module__"]))) {
     border-radius: var(--card-radius);
     border-color: rgba(255, 226, 196, 0.1);
   }
@@ -84,7 +84,7 @@ main .dashboard-shell {
     padding: var(--panel-padding);
   }
 @layer adaptive {
-  :where(.panel) :where(.panel, [class$="-card"], [class*="-card "], [class$="__card"], [class*="__card "]) {
+  :where(.panel) :where(.panel, [class$="-card"]:where(:not([class*="-module__"])), [class*="-card "]:where(:not([class*="-module__"])), [class$="__card"]:where(:not([class*="-module__"])), [class*="__card "]:where(:not([class*="-module__"]))) {
     border-color: rgba(255, 226, 196, 0.075);
     background: rgba(12, 10, 7, 0.3);
     box-shadow: none;
@@ -93,8 +93,8 @@ main .dashboard-shell {
 
   /* ---------- Заголовок сторінки ---------- */
 @layer patterns {
-  [class$="-hero"]:not(:where([class*="landing"])),
-[class*="-hero "]:not(:where([class*="landing"])) {
+  [class$="-hero"]:not(:where([class*="landing"])):where(:not([class*="-module__"])),
+[class*="-hero "]:not(:where([class*="landing"])):where(:not([class*="-module__"])) {
     grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.7fr);
     gap: var(--space-lg);
     min-height: 0;
@@ -125,8 +125,8 @@ main .dashboard-shell {
       inset 0 1px 0 rgba(255, 255, 255, 0.024);
   }
 @layer patterns {
-  [class$="-hero__copy"] h1,
-[class*="-hero__copy "] h1 {
+  [class$="-hero__copy"]:where(:not([class*="-module__"])) h1,
+[class*="-hero__copy "]:where(:not([class*="-module__"])) h1 {
     margin-bottom: 6px;
     font-size: clamp(1.55rem, 1.9vw, 2.1rem);
     line-height: 1.12;
@@ -140,10 +140,10 @@ main .dashboard-shell {
     line-height: 1.12;
   }
 @layer patterns {
-  [class$="__eyebrow"],
-[class*="__eyebrow "],
-[class$="-eyebrow"],
-[class*="-eyebrow "] {
+  [class$="__eyebrow"]:where(:not([class*="-module__"])),
+[class*="__eyebrow "]:where(:not([class*="-module__"])),
+[class$="-eyebrow"]:where(:not([class*="-module__"])),
+[class*="-eyebrow "]:where(:not([class*="-module__"])) {
     padding: 3px 9px;
     margin-bottom: 6px;
     font-size: 9.5px;
@@ -159,10 +159,10 @@ main .dashboard-shell {
     letter-spacing: 0.12em;
   }
 @layer patterns {
-  [class$="__lead"],
-[class*="__lead "],
-[class$="-lead"],
-[class*="-lead "] {
+  [class$="__lead"]:where(:not([class*="-module__"])),
+[class*="__lead "]:where(:not([class*="-module__"])),
+[class$="-lead"]:where(:not([class*="-module__"])),
+[class*="-lead "]:where(:not([class*="-module__"])) {
     font-size: var(--font-size-body);
     line-height: 1.58;
   }
@@ -225,10 +225,10 @@ select {
 
   /* ---------- Сітки: один ритм, без випадкових 12/24/32px ---------- */
 @layer adaptive {
-  :where([class$="-grid"], [class*="-grid "], [class$="__grid"], [class*="__grid "]) {
+  :where([class$="-grid"]:where(:not([class*="-module__"])), [class*="-grid "]:where(:not([class*="-module__"])), [class$="__grid"]:where(:not([class*="-module__"])), [class*="__grid "]:where(:not([class*="-module__"]))) {
     gap: var(--section-gap);
   }
-  :where([class$="-layout"]:not(.access-groups-layout), [class*="-layout "]:not(.access-groups-layout)) {
+  :where([class$="-layout"]:not(.access-groups-layout):where(:not([class*="-module__"])), [class*="-layout "]:not(.access-groups-layout):where(:not([class*="-module__"]))) {
     gap: var(--page-gap);
   }
 }
