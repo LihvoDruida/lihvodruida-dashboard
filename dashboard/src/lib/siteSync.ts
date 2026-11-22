@@ -6,7 +6,7 @@ export async function publicSiteSync(){
  const result=await pgQuery<{resource:string;revision:string}>(`
  WITH resource_rows AS (
   SELECT 'content'::text AS resource,collection,doc_id,xmin::text AS row_version,updated_at
-  FROM documents WHERE collection='siteArticles' AND COALESCE(data->>'status','published')='published'
+  FROM documents WHERE (collection='siteArticles' AND COALESCE(data->>'status','published')='published') OR collection='siteCommunities'
   UNION ALL
   SELECT 'applications',collection,doc_id,xmin::text,updated_at FROM documents WHERE collection=$1
   UNION ALL
