@@ -40,6 +40,8 @@ Healthcheck сервісів:
 | nginx | `http://127.0.0.1:8081/nginx-health`, лише loopback контейнера |
 | cron | heartbeat диспетчера і циклу member-cleanup (`deploy/cron/healthcheck.sh`, ≤ 180 с) |
 
+`make health` друкує стан кожного сервісу і повертає код 1, якщо хоч один не `healthy`. `make rebuild-dashboard` і `make rebuild-bot` чекають на `healthy` (`--wait`). Бот відхиляє повторно надіслану підписану interaction з тим самим id (HTTP 409, `bot.security.interaction_replay`).
+
 Cron працює під `init: true` (tini), тому завершені worker-процеси прибираються. Збій окремої задачі не зупиняє диспетчер, а загиблий цикл member-cleanup диспетчер піднімає сам. Discord Gateway бота перепідключається:
 
 - після `op 7` і пропущеного heartbeat ACK, не чекаючи `close` мертвого сокета;

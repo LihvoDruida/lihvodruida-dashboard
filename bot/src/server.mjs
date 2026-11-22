@@ -6,6 +6,7 @@ import { drainInteractionIngress, enqueueVerifiedInteraction, startInteractionIn
 import { logger } from "./logger.mjs";
 import { wakeAfterInteractionAck } from "./interactionWorker.mjs";
 import { fetchRaidSignupModal } from "./raidModalClient.mjs";
+import { claimDiscordInteractionId } from "./replayGuard.mjs";
 import { startDiscordGatewayBridge, discordGatewayHealth } from "./gateway.mjs";
 import {
   INTERACTION_DOMAINS,
@@ -361,6 +362,19 @@ const server = createServer(async (request, response) => {
 
   if (interaction?.type !== InteractionType.PING && !/^\d{16,25}$/.test(String(interaction?.id || ""))) {
     return json(response, 400, { error: "invalid_interaction_id" });
+  }
+
+  // Підпис валідний ще ~5 хв після відправки, тож перехоплений запит можна
+  // повторити. Discord сам interaction не повторює: другий запит з тим самим
+  // id у цьому вікні — replay, і в черзу він не потрапляє.
+  if (interaction?.type !== InteractionType.PING && !claimDiscordInteractionId(interaction.id)) {
+    logger.warn("Відхилено повторну Discord interaction", requestDiagnosticContext(request, path, {
+      eventName: "bot.security.interaction_replay",
+      category: "security",
+      statusCode: 409,
+      interactionId: String(interaction.id),
+    }));
+    return json(response, 409, { error: "duplicate_interaction" });
   }
 
   try {
