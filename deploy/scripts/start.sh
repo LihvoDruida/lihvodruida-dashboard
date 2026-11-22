@@ -570,7 +570,7 @@ wait_healthy bot 45
 step "4/5 Nginx"
 # shellcheck disable=SC2086
 $COMPOSE up $UP_ARGS nginx
-wait_healthy nginx 30
+wait_healthy nginx 90
 
 step "5/5 Планові задачі"
 # Bind-mounted script changes alone do not make Compose replace a running
@@ -578,7 +578,8 @@ step "5/5 Планові задачі"
 # and clears an old HTTP-421 backoff deadline immediately.
 # shellcheck disable=SC2086
 $COMPOSE up $UP_ARGS --force-recreate cron
-ok "cron запущено"
+# Heartbeat-healthcheck: перша перевірка через 30 с після старту.
+wait_healthy cron 120
 
 # ---------------------------------------------------------------------------
 # 7. Перевірка після запуску

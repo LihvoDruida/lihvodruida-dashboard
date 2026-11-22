@@ -49,7 +49,7 @@ export AUTO_PRUNE_BUILD_CACHE ?= 1
 .NOTPARALLEL:
 
 .PHONY: help start up restart stop check cert cert-self cert-status cert-origin \
-        configure configure-check backup restore deploy logs ps resources clean-cache docker-stats rebuild-dashboard rebuild-bot discord-check discord-endpoint-check discord-endpoint-fix internal-check security-audit guild-sync fix-perms
+        configure configure-check backup restore deploy logs ps health resources clean-cache docker-stats rebuild-dashboard rebuild-bot discord-check discord-endpoint-check discord-endpoint-fix internal-check security-audit guild-sync fix-perms
 
 help:
 	@sed -n '3,20p' Makefile | sed 's/^# \?//'
@@ -111,20 +111,25 @@ logs:
 ps:
 	@docker compose ps
 
+# Стан healthcheck усіх довгоживучих сервісів, по рядку на сервіс.
+# Ненульовий код, якщо хоч один не healthy — зручно для моніторингу хоста.
+health:
+	@$(SCRIPTS)/health.sh
+
 # Швидке перевстановлення тільки зміненого сервісу. Це значно дешевше за
 # повний `make up`, коли правки були лише в dashboard або bot.
 rebuild-dashboard: fix-perms
 	@docker compose build dashboard
 	@docker compose exec -T postgres sh -lc 'psql -v ON_ERROR_STOP=1 -q -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"' < dashboard/src/lib/db/schema.sql
 	@BUILD_CACHE_KEEP_STORAGE=$(BUILD_CACHE_KEEP_STORAGE) BUILD_CACHE_MAX_AGE=$(BUILD_CACHE_MAX_AGE) $(SCRIPTS)/docker-cache-maintenance.sh
-	@docker compose up -d --no-deps --no-build dashboard
+	@docker compose up -d --no-deps --no-build --wait --wait-timeout 180 dashboard
 	@$(SCRIPTS)/docker-stats-snapshot.sh || true
 	@docker compose ps dashboard
 
 rebuild-bot: fix-perms
 	@docker compose build bot
 	@BUILD_CACHE_KEEP_STORAGE=$(BUILD_CACHE_KEEP_STORAGE) BUILD_CACHE_MAX_AGE=$(BUILD_CACHE_MAX_AGE) $(SCRIPTS)/docker-cache-maintenance.sh
-	@docker compose up -d --no-deps --no-build bot
+	@docker compose up -d --no-deps --no-build --wait --wait-timeout 120 bot
 	@$(SCRIPTS)/docker-stats-snapshot.sh || true
 	@docker compose ps bot
 

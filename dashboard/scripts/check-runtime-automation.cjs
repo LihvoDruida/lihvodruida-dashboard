@@ -38,6 +38,15 @@ check(deploy.includes('--force-recreate cron') && deploy.includes('nginx -s relo
 check(/for service in nginx cron; do\s+if ! wait_service "\$service"/.test(deploy), 'deploy waits for nginx and cron health');
 check(/exited\|dead\|unhealthy\|missing\)/.test(deploy), 'unhealthy services fail fast instead of waiting for the timeout');
 
+const start = read('deploy/scripts/start.sh');
+check(/--force-recreate cron\n[^\n]*\nwait_healthy cron \d+/.test(start), 'start.sh waits for the cron heartbeat');
+check(/wait_healthy nginx (\d+)/.test(start) && Number(start.match(/wait_healthy nginx (\d+)/)[1]) >= 60, 'start.sh waits long enough for the first nginx probe');
+const makefile = read('Makefile');
+check(/\nhealth:\n\t@\$\(SCRIPTS\)\/health\.sh/.test(makefile) && fs.existsSync(path.join(repo, 'deploy/scripts/health.sh')), 'make health reports every service');
+check(/--wait --wait-timeout \d+ dashboard/.test(makefile) && /--wait --wait-timeout \d+ bot/.test(makefile), 'rebuild targets wait for health');
+const botServer = read('bot/src/server.mjs');
+check(botServer.includes('claimDiscordInteractionId(interaction.id)') && botServer.indexOf('claimDiscordInteractionId(interaction.id)') < botServer.indexOf('await handleInteraction('), 'bot rejects replayed interactions before processing');
+
 // Real healthcheck script against controlled heartbeat files.
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'runtime-automation-'));
 try {
