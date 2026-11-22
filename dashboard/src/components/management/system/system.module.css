@@ -8,3 +8,6 @@
 .envRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-sm); align-items: center; padding: var(--space-sm); border-bottom: var(--stroke-width) solid var(--border); }
 .envRow small { display: block; font-size: var(--font-size-meta); color: var(--text-muted); overflow-wrap: anywhere; }
 .actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); align-items: center; }
+
+.envDetails > summary { cursor: pointer; padding: var(--space-xs) 0; color: var(--text-soft); font-size: var(--font-size-body-sm); }
+.envDetails[open] > summary { margin-bottom: var(--space-xs); }

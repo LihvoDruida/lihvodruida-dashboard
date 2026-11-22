@@ -35,13 +35,12 @@ export default function ProfileSettingsView(model: ProfileSettingsModel) {
   const profileHref = profileRulesReturnPath || `/profile/${encodeURIComponent(profile.profileId)}`;
   const settingsHref = settingsRulesReturnPath || `/profile/${encodeURIComponent(profile.profileId)}/settings`;
   const missing = new Set(setupStatus.missing.map(step => step.key));
-  const linked = Boolean(profile.battlenet?.linked);
   const nav = [
     { href: "#profile-characters-settings", label: `Персонажі · ${profile.characters.length}` },
     { href: "#profile-identity", label: "Імʼя", missing: [...missing].some(key => key !== "profile_gender") },
     { href: "#profile-discord", label: "Discord" },
     { href: "#profile-raids-settings", label: "Рейди та звертання", missing: missing.has("profile_gender") },
-    { href: "#profile-connections", label: "Підключення" },
+    { href: "#profile-connections", label: "Сесія" },
   ];
   return <PageContainer label={settingsPageTitle} navigation={<DashboardIdentity user={session} activeSection="profile" />}>
     {!isRulesReturn && canViewProfiles(session) ? <ListReturnLink kind="profiles" scope={listNavigationScope(session)} /> : null}
@@ -63,7 +62,7 @@ export default function ProfileSettingsView(model: ProfileSettingsModel) {
         {nav.map(item => <a key={item.href} href={item.href} data-missing={item.missing || undefined}>{item.label}</a>)}
       </nav>
       <div className={styles.settingsMain}>
-        <ProfileCompletion status={setupStatus} />
+        {setupStatus.complete ? null : <ProfileCompletion status={setupStatus} />}
         <Section id="profile-characters-settings" title="Персонажі" description="Retail і WoW Forever з Battle.net: мейн, склад і видалення.">
           <ProfileCharactersManager model={model} />
         </Section>
@@ -87,12 +86,9 @@ export default function ProfileSettingsView(model: ProfileSettingsModel) {
             <div id="profile-gender-settings"><ProfileGenderPreferenceForm value={profile.grammaticalGender} returnTo={settingsRulesReturnPath} /></div>
           </div>
         </Section>
-        <Section id="profile-connections" title="Підключення та сесія" description="Сервіси, через які панель знає твій акаунт і персонажів.">
-          <AccountCard title="Підключені сервіси" rows={[
+        <Section id="profile-connections" title="Сесія" description="Discord-акаунт, через який ти входиш у панель.">
+          <AccountCard title="Вхід" rows={[
             { key: "discord", icon: "discord", title: profile.displayName || "Discord", detail: currentServerNickname ? `Серверний нік: ${currentServerNickname}` : "Вхід і ролі через Discord", ok: true },
-            { key: "battlenet", icon: "battlenet", title: linked ? (profile.battlenet?.accountLabel || "Battle.net підключено") : "Battle.net не підключено",
-              detail: linked ? `Персонажів: ${profile.characters.length}` : "Потрібен для персонажів і мейна", ok: linked,
-              action: <Link className="btn subtle" href={`${profileHref}#profile-characters`} prefetch={false}>{linked ? "Персонажі" : "Підключити"}</Link> },
           ]} canSignOut />
         </Section>
       </div>

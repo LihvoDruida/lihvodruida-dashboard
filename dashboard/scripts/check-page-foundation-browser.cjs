@@ -14,16 +14,15 @@ fs.writeFileSync(path.join(output, "entry.tsx"), `
 import {useState} from 'react';import {createRoot} from 'react-dom/client';
 import Container from '@/components/page/PageContainer';import Header from '@/components/page/PageHeader';
 import Section from '@/components/page/PageSection';import FormSection from '@/components/page/FormSection';
-import Directory from '@/components/management/overview/ManagementDirectory';import Dropdown from '@/components/ui/DropdownMenu';
+import Dropdown from '@/components/ui/DropdownMenu';
 import Boundary from '@/components/page/PageErrorBoundary';import Skeleton from '@/components/page/PageSkeleton';
 import Button from '@/components/ui/Button';import Field from '@/components/ui/FormField';
-import {normalizeDirectoryFilters} from '@/lib/managementDirectory';
 const items=[{key:'groups',href:'/dashboard/groups',section:'access',label:'Групи доступу',description:'Ранги та права учасників'},{key:'logs',href:'/dashboard/logs',section:'system',label:'Журнали',description:'Події та помилки'},{key:'discord',href:'/dashboard/discord',section:'discord',label:'Учасники',description:'Discord-ролі та серверні ніки'}];
 function Crash({crash}){if(crash)throw Error('FixtureFailure');return <p>Блок працює</p>}
-function App(){const [crash,setCrash]=useState(false);const params=new URLSearchParams(location.search);
+function App(){const [crash,setCrash]=useState(false);
 return <Container label="Еталонний інтерфейс" sidebar={<nav className="management-nav"><div><span className="management-nav-label">Керування</span><div className="management-nav-links"><a href="/dashboard" aria-current="page"><strong>Огляд</strong><small>Стан системи</small></a></div></div></nav>}>
 <Header title="Центр керування" description="Спільний каркас сторінок, пошук і доступні інструменти." breadcrumbs={[{label:'Огляд'}]} metrics={[{label:'Група',value:'Адмін'},{label:'Розділів',value:items.length}]} actions={<Dropdown label="Системні розділи" items={[{id:'logs',label:'Журнали',href:'/dashboard/logs'},{id:'disabled',label:'Недоступна дія',href:'/unavailable',disabled:true},{id:'action',label:'Тестова дія',onSelect:()=>window.fixtureActions=(window.fixtureActions||0)+1}]}/>}/>
-<Section id="directory" title="Робочі розділи"><Directory items={items} initialFilters={normalizeDirectoryFilters({query:params.get('q'),section:params.get('section'),sort:params.get('sort')})}/></Section>
+<Section id="directory" title="Робочі розділи"><ul>{items.map(item=><li key={item.key}><a href={item.href}>{item.label}</a></li>)}</ul></Section>
 <Section id="settings" title="Приклад форми"><FormSection title="Група"><Field label="Назва групи" maxLength={80}/><Button disabled>Зберегти</Button></FormSection></Section>
 <Section id="loading" title="Завантаження"><Skeleton label="Завантаження тестових даних"/></Section>
 <Section id="recovery" title="Відновлення"><Button onClick={()=>setCrash(!crash)}>{crash?'Прибрати збій':'Симулювати збій'}</Button><Boundary resetKey={String(crash)}><Crash crash={crash}/></Boundary></Section>
@@ -46,14 +45,8 @@ return <Container label="Еталонний інтерфейс" sidebar={<nav cl
     const origin = `http://127.0.0.1:${server.address().port}`;
     for (const [width, height] of [[1920, 1080], [1440, 1000], [1024, 900], [768, 1024], [390, 844]]) {
       await page.setViewportSize({ width, height }); await page.goto(origin);
-      await page.getByLabel("Пошук розділу").fill("групи");
-      assert.equal(await page.locator('article h3').count(), 1);
-      assert.match(await page.getByRole("status").first().textContent(), /1 із 3/);
-      assert.equal(new URL(page.url()).searchParams.get("q"), "групи");
-      await page.getByLabel("Пошук розділу").fill("відсутній результат"); await page.getByRole("heading", { name: "Нічого не знайдено" }).waitFor();
-      await page.getByRole("button", { name: "Показати всі розділи" }).click(); assert.equal(await page.locator('article h3').count(), 3);
-      await page.getByLabel("Категорія").selectOption("system"); assert.equal(await page.locator('article h3').count(), 1);
-      await page.getByRole("button", { name: "Скинути", exact: true }).click();
+      assert.equal(await page.locator("#directory li").count(), 3);
+      assert.equal(await page.locator('.management-nav a[aria-current="page"]').count(), 1);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `overflow at ${width}px`);
       const summary = page.locator("summary"); await summary.click(); await page.keyboard.press("Tab"); await page.keyboard.press("Escape");
       assert.equal(await page.locator("details[open]").count(), 0); assert.equal(await summary.evaluate(el => el === document.activeElement), true);
@@ -63,7 +56,7 @@ return <Container label="Еталонний інтерфейс" sidebar={<nav cl
       await page.emulateMedia({ reducedMotion: "reduce" });
       assert.equal(await page.locator('[aria-label="Завантаження тестових даних"] span').last().evaluate(el => getComputedStyle(el).animationName), "none");
       await page.screenshot({ path: path.join(output, `foundation-${width}.png`), fullPage: true });
-      console.log(`PASS search, URL, filters, disclosure, recovery and no overflow at ${width}px`);
+      console.log(`PASS sections, menu, disclosure, recovery and no overflow at ${width}px`);
     }
     assert.deepEqual(errors, []); console.log("[check-page-foundation-browser] 5/5 passed");
   } finally { if (browser) await browser.close(); server.close(); }

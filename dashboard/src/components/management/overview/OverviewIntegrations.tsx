@@ -3,13 +3,12 @@
 import { useDashboardApiResource } from "@/lib/dashboardBackgroundApi";
 import { formatStableUtcTime } from "@/lib/stableUiText";
 import PageSection from "@/components/page/PageSection";
-import DataGrid from "@/components/page/DataGrid";
-import DataCard from "@/components/page/DataCard";
 import PageSkeleton from "@/components/page/PageSkeleton";
 import EmptyState from "@/components/page/EmptyState";
 import ErrorState from "@/components/page/ErrorState";
 import StatusBadge, { type StatusTone } from "@/components/page/StatusBadge";
 import Button from "@/components/ui/Button";
+import styles from "./overview.module.css";
 
 type IntegrationState = "ok" | "warning" | "error" | "unconfigured";
 type IntegrationItem = { key: string; label: string; state: IntegrationState; message: string; checkedAt: string };
@@ -44,10 +43,12 @@ export default function OverviewIntegrations() {
     {resource.error ? <ErrorState title={summary ? "Оновлення не вдалося" : "Інтеграції тимчасово недоступні"}
       description={summary ? "Показано останні отримані дані. Спробуй оновити їх пізніше." : "Перевір підключення та повтори запит. Налаштування не змінені."} /> : null}
     {!summary && !resource.error ? <PageSkeleton label="Перевірка інтеграцій" count={5} />
-      : summary?.items.length ? <DataGrid label="Стан інтеграцій" busy={pending}>
-        {summary.items.map(item => <DataCard key={item.key} title={item.label} description={item.message && item.message.trim().toLowerCase() !== labels[item.state].toLowerCase() ? item.message : undefined}
-          badge={<StatusBadge tone={tones[item.state]}>{labels[item.state]}</StatusBadge>} />)}
-      </DataGrid>
+      : summary?.items.length ? <ul className={styles.integrations} aria-label="Стан інтеграцій" aria-busy={pending || undefined}>
+        {summary.items.map(item => <li key={item.key} className={styles.integration} data-state={item.state}>
+          <strong>{item.label}</strong><StatusBadge tone={tones[item.state]}>{labels[item.state]}</StatusBadge>
+          {item.message && item.message.trim().toLowerCase() !== labels[item.state].toLowerCase() ? <small>{item.message}</small> : null}
+        </li>)}
+      </ul>
       : summary ? <EmptyState title="Інтеграцій немає" description="Сервіс не повернув підключень. Перевір налаштування або повтори запит." /> : null}
   </PageSection>;
 }

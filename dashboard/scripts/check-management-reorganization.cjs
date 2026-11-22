@@ -22,7 +22,7 @@ const checks = [
   [profiles.includes('name="confirmDeletion"') && cleanupRoute.includes('form.get("confirmDeletion") !== "DELETE_STALE_PROFILES"'), "cleanup requires an explicit server-checked confirmation"],
   [cleanupRoute.includes('if (apply && !guard.session.isServerOwner)') && cleanupRoute.includes('acquireAccountCleanupExecutionLock'), "destructive endpoint is owner-only and locked"],
   [cleanupRoute.includes('preview?.scopeLimit !== requestedLimit') && cleanupRoute.includes('now - previewAt <= 15 * 60_000'), "apply requires a recent preview with the exact same scope"],
-  [!discord.includes('action="/api/dashboard/discord/profiles/cleanup"') && discord.includes('href="/dashboard/profiles"'), "destructive controls no longer clutter Discord member tools"],
+  [!discord.includes('action="/api/dashboard/discord/profiles/cleanup"') && fs.readFileSync(path.join(root, "src/lib/navigation/management.ts"), "utf8").includes('href: "/dashboard/profiles"'), "destructive controls no longer clutter Discord member tools; the section menu leads to profile cleanup"],
   [catalog.includes('href: "/dashboard/access"') && catalog.includes('href: "/dashboard/profiles"') && !nav.includes('if (active !== "logs")'), "navigation is grouped consistently for every section"],
   [directory.indexOf('if (!canManageGroups(user))') < directory.indexOf('listDashboardProfilePage({ viewer: user') && directory.includes('getSession({ live: true })'), "profile catalog checks live admin role before DB reads"],
   [cleanupState.includes('scopeLimit?: number | null') && cleanupState.includes('scopeLimit: input.scopeLimit'), "cleanup preview scope persists in durable run history"],

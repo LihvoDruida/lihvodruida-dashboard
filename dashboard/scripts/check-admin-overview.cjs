@@ -5,7 +5,7 @@ const access=require("./lib/read-ui-workspace.cjs")("src/app/dashboard/access/pa
 const page=read("src/app/dashboard/page.tsx"),css=read("src/components/management/access/access.module.css"),foundation=read("src/components/page/page-system.module.css");
 const checks=[
  [access.includes("canManageGroups(user)")&&access.includes("getSession({ live: true })"),"policy is permission checked with fresh authorization"],
- [page.includes("<ManagementDirectory")&&page.includes("<PageContainer"),"overview remains a task hub"],
+ [!page.includes("ManagementDirectory")&&page.includes("<OverviewIntegrations")&&page.includes("<OverviewAutomations")&&page.includes("<PageContainer"),"overview shows system state without repeating the section menu"],
  [access.includes('<ManagementSections variant="universal"')&&access.includes("<FormSection"),"policy uses shared tabs and form sections"],
  [access.includes('name={`roleMap:${row.roleId}`}')&&access.includes("<strong>{row.name}</strong>")&&access.includes("<small>{row.roleId}"),"role name, id and group choice remain explicit"],
  [access.includes("!rolesResult.error")&&access.includes("canEdit={canEditAuthPolicy}")&&access.includes("disabled={!canEdit || !groups.length}"),"role read failure blocks saves"],
