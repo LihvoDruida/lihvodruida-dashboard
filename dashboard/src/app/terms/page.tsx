@@ -1,4 +1,4 @@
-import HeroSidePanel from "@/components/HeroSidePanel";
+import PageHeader from "@/components/page/PageHeader";
 import { buildPageMetadata } from "@/lib/seo";
 
 
@@ -15,27 +15,7 @@ export default function TermsPage() {
   return (
     <main className="container app-page legal-page">
       <section className="dashboard-shell content-shell legal-shell app-page-stack" aria-label="Умови використання Mistblossom Vanguard">
-        <header className="hero panel dashboard-hero legal-hero">
-          <div className="hero-copy dashboard-hero__copy guild-hero__copy">
-            <div className="eyebrow">Mistblossom Vanguard • Документи</div>
-            <h1>Умови використання</h1>
-            <span className="hero-accent" aria-hidden="true" />
-            <p className="lead">Ці умови описують, як учасники гільдії користуються панеллю для профілю, правил, рейдів, заявок і Discord-ролей.</p>
-            <small>Оновлено: {updatedAt}</small>
-          </div>
-          <HeroSidePanel
-            ariaLabel="Огляд документа"
-            summary={[
-              { label: "ДОКУМЕНТ", value: "Правила панелі", note: "Профілі, рейди, заявки" },
-              { label: "ОНОВЛЕНО", value: updatedAt, note: "Актуальна редакція" },
-            ]}
-            stats={[
-              { label: "ПРОФІЛЬ", value: "YES" },
-              { label: "РЕЙДИ", value: "YES" },
-              { label: "ПРАВИЛА", value: "YES" },
-            ]}
-          />
-        </header>
+        <PageHeader eyebrow="Mistblossom Vanguard • Документи" title="Умови використання" description={`Ці умови описують, як учасники гільдії користуються панеллю для профілю, правил, рейдів, заявок і Discord-ролей. Оновлено: ${updatedAt}.`} />
 
         <article className="panel legal-card">
           <h2>1. Призначення панелі</h2>

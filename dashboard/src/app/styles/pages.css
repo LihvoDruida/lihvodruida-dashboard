@@ -13,18 +13,6 @@
    ГОЛОВНА
    ========================================================= */
 
-.hero-secure-note {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2xs);
-  color: var(--text-faint);
-  font-size: var(--font-size-ui);
-}
-
-.hero-lock {
-  color: var(--c-accent-300);
-}
-
 /* =========================================================
    ПУЛИ
    ========================================================= */
@@ -754,23 +742,6 @@
 /* =========================================================
    КОНТЕНТ (новини / гайди)
    ========================================================= */
-.content-hero-status-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-xs);
-}
-
-.content-hero-path {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-meta);
-  color: var(--text-faint);
-  overflow-wrap: anywhere;
-}
-
-.content-mode-pill--library {
-  --tone: var(--c-info);
-}
 
 .content-section-head--toolbar {
   align-items: center;
@@ -1684,47 +1655,6 @@ body:has(.login-screen) .app-footer--site-wide {
   gap: var(--discord-hub-gap);
 }
 
-.discord-dashboard-hero {
-  align-items: stretch;
-  gap: clamp(var(--space-md), 2vw, var(--space-lg));
-  padding: clamp(18px, 2vw, var(--space-lg));
-}
-
-.discord-dashboard-hero .lead {
-  max-width: 56ch;
-}
-
-.discord-dashboard-hero .hero-secure-note {
-  margin-top: var(--space-sm);
-}
-
-.discord-dashboard-hero__side .guild-hero-summary {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-xs);
-}
-
-.discord-dashboard-hero__side .guild-hero-summary__block {
-  min-height: 78px;
-  align-content: center;
-  padding: 11px 13px;
-}
-
-.discord-dashboard-hero__side .guild-hero-summary__block strong,
-.discord-dashboard-hero__side .guild-hero-summary__block p {
-  overflow-wrap: anywhere;
-}
-
-.discord-dashboard-hero__side .guild-hero-stats {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-xs);
-}
-
-.discord-dashboard-hero__side .guild-hero-stat-card {
-  min-height: 58px;
-  align-content: center;
-  padding: 9px 11px;
-}
-
 .discord-hub-sections {
   display: grid;
   gap: var(--discord-hub-gap);
@@ -1822,14 +1752,6 @@ body:has(.login-screen) .app-footer--site-wide {
 }
 
 @media (max-width: 860px) {
-  .discord-dashboard-hero {
-    grid-template-columns: minmax(0, 1fr);
-    padding: 18px;
-  }
-
-  .discord-dashboard-hero__side .guild-hero-summary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 
   .discord-hub-card,
 .discord-hub-card--featured {
@@ -1844,54 +1766,6 @@ body:has(.login-screen) .app-footer--site-wide {
 
   .discord-hub-shell {
     gap: 10px;
-  }
-
-  .discord-dashboard-hero {
-    gap: 14px;
-    padding: 15px;
-    border-radius: var(--radius-lg);
-  }
-
-  .discord-dashboard-hero .content-hero-status-row {
-    gap: 6px;
-  }
-
-  .discord-dashboard-hero .content-hero-path {
-    font-size: var(--font-size-sm);
-    line-height: var(--line-height-tight);
-  }
-
-  .discord-dashboard-hero h1 {
-    font-size: clamp(1.45rem, 7vw, 1.8rem);
-  }
-
-  .discord-dashboard-hero .lead {
-    font-size: 0.88rem;
-    line-height: var(--line-height-body);
-  }
-
-  .discord-dashboard-hero .hero-secure-note {
-    margin-top: 9px;
-    font-size: var(--font-size-ui);
-  }
-
-  .discord-dashboard-hero__side .guild-hero-summary,
-.discord-dashboard-hero__side .guild-hero-stats {
-    gap: 7px;
-  }
-
-  .discord-dashboard-hero__side .guild-hero-summary__block {
-    min-height: 70px;
-    padding: 9px 10px;
-  }
-
-  .discord-dashboard-hero__side .guild-hero-stat-card {
-    min-height: 54px;
-    padding: var(--space-xs);
-  }
-
-  .discord-dashboard-hero__side .guild-hero-stat-card > strong {
-    font-size: 0.95rem;
   }
 
   .discord-hub-section-group--primary,
@@ -1925,29 +1799,6 @@ body:has(.login-screen) .app-footer--site-wide {
 
   .discord-hub-card > .btn {
     font-size: var(--font-size-body);
-  }
-}
-
-@media (max-width: 420px) {
-  .discord-dashboard-hero__side .guild-hero-summary {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .discord-dashboard-hero__side .guild-hero-summary__block {
-    min-height: 0;
-  }
-
-  .discord-dashboard-hero__side .guild-hero-stats {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .discord-dashboard-hero__side .guild-hero-stat-card {
-    min-width: 0;
-  }
-
-  .discord-dashboard-hero__side .guild-hero-stat-card > span {
-    font-size: 0.56rem;
-    letter-spacing: 0.08em;
   }
 }
 
