@@ -161,6 +161,13 @@ services:
       - letsencrypt:/etc/letsencrypt:ro
     networks:
       - edge
+    # Локальний endpoint із nginx.conf (127.0.0.1:8081), без TLS і домену.
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8081/nginx-health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     security_opt:
       - no-new-privileges:true
     pids_limit: 128
@@ -244,6 +251,17 @@ services:
       dashboard:
         condition: service_healthy
     entrypoint: ["/bin/sh", "/opt/cron/run-cron.sh"]
+    # tini як PID 1: прибирає завершені worker-процеси й коректно передає
+    # SIGTERM диспетчеру під час `docker compose up --force-recreate`.
+    init: true
+    # Диспетчер і цикл member-cleanup пишуть heartbeat на кожному tick.
+    # Застарілий heartbeat = завислий планувальник; deploy.sh це бачить.
+    healthcheck:
+      test: ["CMD-SHELL", "/bin/sh /opt/cron/healthcheck.sh"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
     environment:
       DASHBOARD_INTERNAL_URL: http://dashboard:3000
       # Cron використовує той самий канонічний INTERNAL_API_TOKEN, що dashboard і bot.
@@ -253,6 +271,7 @@ services:
     volumes:
       - ./deploy/cron/run-cron.sh:/opt/cron/run-cron.sh:ro
       - ./deploy/cron/run-job.sh:/opt/cron/run-job.sh:ro
+      - ./deploy/cron/healthcheck.sh:/opt/cron/healthcheck.sh:ro
     networks:
       - edge
     read_only: true

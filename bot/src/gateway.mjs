@@ -11,6 +11,9 @@ const ENABLED = () => String(process.env.DISCORD_GATEWAY_ENABLED ?? "1").trim() 
 const MAX_QUEUE = Math.max(32, Math.min(1000, Number(process.env.DISCORD_GATEWAY_MEMBER_QUEUE_MAX || 250)));
 const WORKERS = Math.max(1, Math.min(4, Number(process.env.DISCORD_GATEWAY_MEMBER_WORKERS || 2)));
 const STARVATION_GUARD_MS = Math.max(5_000, Math.min(60_000, Number(process.env.DISCORD_GATEWAY_MEMBER_STARVATION_MS || 15_000)));
+// Скільки чекати READY/RESUMED після відкриття сокета. Без цього напіввідкрите
+// TCP-зʼєднання без HELLO лишало бота «connected», але без подій назавжди.
+const HANDSHAKE_TIMEOUT_MS = Math.max(5_000, Math.min(120_000, Number(process.env.DISCORD_GATEWAY_HANDSHAKE_TIMEOUT_MS || 45_000)));
 
 const state = {
   connected: false,
@@ -34,6 +37,7 @@ let socket = null;
 let heartbeatTimer = null;
 let heartbeatAcked = true;
 let reconnectTimer = null;
+let handshakeTimer = null;
 let stopped = false;
 let staticSweepTimer = null;
 let staticSweepRunning = false;
@@ -82,9 +86,22 @@ function cleanSnowflake(value) {
   return /^\d{16,25}$/.test(text) ? text : "";
 }
 
-function closeSocket(code = 4000, reason = "reconnect") {
-  try { socket?.close(code, reason); } catch {}
+function clearHandshake() {
+  if (handshakeTimer) clearTimeout(handshakeTimer);
+  handshakeTimer = null;
+}
+
+/**
+ * Відʼєднує поточний сокет від стану модуля і закриває його. Подальші події
+ * старого сокета ігноруються (див. `isCurrent` у connect), тому перепідключення
+ * плануємо тут явно, а не чекаємо `close`, який на мертвому TCP може не прийти.
+ */
+function closeSocket(code = 4000, reason = "reconnect", { reconnectInMs = null } = {}) {
+  const previous = socket;
   socket = null;
+  clearHandshake();
+  try { previous?.close(code, reason); } catch {}
+  if (reconnectInMs !== null) scheduleReconnect(reconnectInMs);
 }
 
 function clearHeartbeat() {
@@ -101,7 +118,7 @@ function send(payload) {
 function heartbeat() {
   if (!heartbeatAcked) {
     logger.warn("Discord Gateway heartbeat ACK пропущено — перепідключення", { eventName: "bot.gateway.heartbeat_timeout" });
-    closeSocket(4000, "heartbeat_timeout");
+    closeSocket(4000, "heartbeat_timeout", { reconnectInMs: 1000 });
     return;
   }
   heartbeatAcked = false;
@@ -362,6 +379,7 @@ function handleDispatch(packet) {
     state.ready = true;
     state.lastError = null;
     state.reconnects = 0;
+    clearHandshake();
     setTimeout(() => { void runStaticSweep(); }, 10_000).unref?.();
     logger.info("Discord Gateway готовий", {
       eventName: "bot.gateway.ready",
@@ -371,6 +389,7 @@ function handleDispatch(packet) {
     return;
   }
   if (packet.t === "RESUMED") {
+    clearHandshake();
     state.ready = true;
     state.lastError = null;
     state.reconnects = 0;
@@ -430,14 +449,31 @@ function connect() {
   }
 
   const target = state.resumeUrl ? `${state.resumeUrl.replace(/\/+$/, "")}/?v=10&encoding=json` : GATEWAY_URL;
-  socket = new WebSocket(target);
+  if (socket) closeSocket(4000, "replaced");
+  const ws = new WebSocket(target);
+  socket = ws;
+  // Події від уже замінених сокетів не мають чіпати heartbeat, стан і
+  // планувати ще одне зʼєднання (інакше могли жити дві сесії одночасно).
+  const isCurrent = () => socket === ws;
 
-  socket.addEventListener("open", () => {
+  clearHandshake();
+  handshakeTimer = setTimeout(() => {
+    handshakeTimer = null;
+    if (!isCurrent() || state.ready) return;
+    state.lastError = "Discord Gateway handshake timeout";
+    logger.warn("Discord Gateway не завершив handshake — перепідключення", { eventName: "bot.gateway.handshake_timeout", timeoutMs: HANDSHAKE_TIMEOUT_MS });
+    closeSocket(4000, "handshake_timeout", { reconnectInMs: Math.min(30_000, 1000 + state.reconnects * 500) });
+  }, HANDSHAKE_TIMEOUT_MS);
+  handshakeTimer.unref?.();
+
+  ws.addEventListener("open", () => {
+    if (!isCurrent()) return;
     state.connected = true;
     state.reconnects += 1;
   });
 
-  socket.addEventListener("message", (event) => {
+  ws.addEventListener("message", (event) => {
+    if (!isCurrent()) return;
     let packet;
     try { packet = JSON.parse(String(event.data || "{}")); } catch { return; }
     if (typeof packet.s === "number") state.sequence = packet.s;
@@ -447,7 +483,7 @@ function connect() {
       clearHeartbeat();
       heartbeatAcked = true;
       setTimeout(() => {
-        if (!socket || socket.readyState !== WebSocket.OPEN) return;
+        if (!isCurrent() || ws.readyState !== WebSocket.OPEN || heartbeatTimer) return;
         heartbeat();
         heartbeatTimer = setInterval(heartbeat, interval);
         heartbeatTimer.unref?.();
@@ -465,7 +501,7 @@ function connect() {
       return;
     }
     if (packet.op === 7) {
-      closeSocket(4000, "server_reconnect");
+      closeSocket(4000, "server_reconnect", { reconnectInMs: 500 });
       return;
     }
     if (packet.op === 9) {
@@ -475,14 +511,16 @@ function connect() {
         state.resumeUrl = null;
         state.sequence = null;
       }
-      closeSocket(4000, "invalid_session");
-      scheduleReconnect(1000 + Math.floor(Math.random() * 3000));
+      closeSocket(4000, "invalid_session", { reconnectInMs: 1000 + Math.floor(Math.random() * 3000) });
       return;
     }
     if (packet.op === 0) handleDispatch(packet);
   });
 
-  socket.addEventListener("close", (event) => {
+  ws.addEventListener("close", (event) => {
+    if (!isCurrent()) return;
+    socket = null;
+    clearHandshake();
     state.connected = false;
     state.ready = false;
     clearHeartbeat();
@@ -501,7 +539,8 @@ function connect() {
     scheduleReconnect(Math.min(30_000, 1000 + state.reconnects * 500));
   });
 
-  socket.addEventListener("error", () => {
+  ws.addEventListener("error", () => {
+    if (!isCurrent()) return;
     state.lastError = "Discord Gateway socket error";
   });
 }
@@ -520,6 +559,7 @@ export function startDiscordGatewayBridge() {
     staticSweepTimer = null;
     recentStaticChecks.clear();
     if (reconnectTimer) clearTimeout(reconnectTimer);
+    reconnectTimer = null;
     clearHeartbeat();
     closeSocket(1000, "shutdown");
   };

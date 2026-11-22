@@ -104,11 +104,13 @@ COPY docs/RELEASE_INSTALL_2026-10-19_UA.md /repo/docs/RELEASE_INSTALL_2026-10-19
 # build-time validation; they are not copied into the runtime image.
 COPY deploy/cron/run-cron.sh /repo/deploy/cron/run-cron.sh
 COPY deploy/cron/run-job.sh /repo/deploy/cron/run-job.sh
+COPY deploy/cron/healthcheck.sh /repo/deploy/cron/healthcheck.sh
 COPY deploy/nginx/nginx.conf /repo/deploy/nginx/nginx.conf
 COPY deploy/nginx/dashboard.conf /repo/deploy/nginx/dashboard.conf
 COPY deploy/nginx/proxy-params.inc /repo/deploy/nginx/proxy-params.inc
 COPY deploy/nginx/proxy-params-fast.inc /repo/deploy/nginx/proxy-params-fast.inc
 COPY deploy/scripts/start.sh /repo/deploy/scripts/start.sh
+COPY deploy/scripts/deploy.sh /repo/deploy/scripts/deploy.sh
 COPY deploy/scripts/db-backup.sh /repo/deploy/scripts/db-backup.sh
 COPY deploy/scripts/db-restore.sh /repo/deploy/scripts/db-restore.sh
 COPY deploy/scripts/security-audit.sh /repo/deploy/scripts/security-audit.sh
