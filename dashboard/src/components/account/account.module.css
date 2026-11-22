@@ -152,3 +152,5 @@
 .charRowCopy strong { color: var(--guild-class-color, var(--text-strong)); font-size: var(--font-size-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .charRowCopy small { color: var(--text-muted); font-size: var(--font-size-meta); overflow-wrap: anywhere; }
 @media (max-width: 640px) { .charRow { grid-template-columns: auto minmax(0, 1fr) auto; } .charRow > .charTags { grid-column: 2; grid-row: 2; } }
+.showcaseCopy .showcaseMeta { color: var(--text-muted); font-size: var(--font-size-meta); }
+.showcaseCopy .charLinks { margin-top: var(--space-2xs); }

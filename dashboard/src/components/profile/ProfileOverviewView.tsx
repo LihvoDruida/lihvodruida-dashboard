@@ -5,6 +5,7 @@ import ListReturnLink from "@/components/ListReturnLink";
 import { listNavigationScope } from "@/lib/listNavigationScope";
 import { canViewGuildRoster, canViewProfiles } from "@/lib/permissions";
 import { wowRoleLabel } from "@/lib/wowRoles";
+import { isForeverCharacter } from "@/lib/wowEdition";
 import PageContainer from "@/components/page/PageContainer";
 import Notice from "@/components/page/Notice";
 import AccountHero, { type AccountTab } from "@/components/account/AccountHero";
@@ -20,7 +21,7 @@ export default function ProfileOverviewView(model: ProfileOverviewModel) {
     guildStatus, raidSignups, profileAvatarUrl, storageWarning, battleNetLastSyncLabel, battleNetRefreshHref, battleNetAction } = model;
   const overviewHref = model.profileRulesReturnPath || `/profile/${encodeURIComponent(profile.profileId)}`;
   const settingsHref = settingsRulesReturnPath || `/profile/${encodeURIComponent(profile.profileId)}/settings`;
-  const bestRio = Math.max(0, ...profile.characters.map(item => item.raiderIo?.currentScore || 0));
+  const foreverCount = profile.characters.filter(item => isForeverCharacter(item)).length;
   const activeSignups = raidSignups.filter(item => ["going", "tentative", "late"].includes(item.signup.status)).length;
   const linked = Boolean(profile.battlenet?.linked);
   const tabs: AccountTab[] = [
@@ -36,10 +37,9 @@ export default function ProfileOverviewView(model: ProfileOverviewModel) {
       subtitle={[profile.displayName && profile.displayName !== publicNamePreview ? `Discord: ${profile.displayName}` : "Discord", isOwnProfile ? "мій профіль" : null].filter(Boolean).join(" · ")}
       badges={[{ label: profile.groupName || guildStatus, tone: "info" }, ...(profile.groupName ? [{ label: guildStatus }] : []), { label: wowRoleLabel(selectedRaidRole) }]}
       stats={[
-        { label: "Мейн", value: mainCharacter?.name || "Не вибрано" },
-        { label: "Персонажі", value: `${profile.characters.length} · ${profileGuildCharacterCount} у гільдії` },
-        { label: "ilvl мейна", value: typeof mainCharacter?.itemLevel === "number" ? mainCharacter.itemLevel : "—" },
-        { label: "Найкращий RIO", value: bestRio ? Math.round(bestRio) : "—" },
+        { label: "Персонажі", value: profile.characters.length },
+        { label: "У гільдії", value: profileGuildCharacterCount },
+        ...(foreverCount ? [{ label: "WoW Forever", value: foreverCount }] : []),
         ...(canViewPrivateProfileBlocks ? [{ label: "Активні записи", value: activeSignups }] : []),
       ]}
       actions={isOwnProfile ? <Link href={settingsHref} className="btn primary" prefetch={false}>Налаштування профілю</Link> : null}
@@ -56,14 +56,12 @@ export default function ProfileOverviewView(model: ProfileOverviewModel) {
         {canViewPrivateProfileBlocks ? <ProfileRaidSignups items={raidSignups} unavailable={model.raidSignupsUnavailable} /> : null}
       </div>
       <div className={styles.aside}>
-        <AccountCard rows={[
+        <AccountCard title="Підключення" rows={[
           { key: "discord", icon: "discord", title: profile.displayName || "Discord", detail: "Вхід і ролі через Discord", ok: true },
           { key: "battlenet", icon: "battlenet", title: linked ? (profile.battlenet?.accountLabel || "Battle.net підключено") : "Battle.net не підключено",
             detail: linked ? `Синхронізація: ${battleNetLastSyncLabel}` : "Потрібен для персонажів і мейна", ok: linked,
             action: isOwnProfile ? <a className="btn subtle" href={battleNetRefreshHref}>{linked ? "Оновити" : battleNetAction.title}</a> : null },
-          { key: "group", icon: "group", title: profile.groupName || guildStatus, detail: `Статус у гільдії: ${guildStatus}` },
-          { key: "role", icon: "role", title: wowRoleLabel(selectedRaidRole), detail: mainCharacter ? `Роль у рейдах · мейн ${mainCharacter.name}` : "Роль у рейдах" },
-        ]} settingsHref={isOwnProfile ? settingsHref : undefined} canSignOut={isOwnProfile} />
+        ]} canSignOut={isOwnProfile} />
       </div>
     </div>
   </PageContainer>;

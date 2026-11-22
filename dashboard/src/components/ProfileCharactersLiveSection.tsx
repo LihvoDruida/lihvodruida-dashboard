@@ -41,6 +41,10 @@ type Props = {
   refreshMinMs?: number;
   /** "rows" = compact management list (settings); default = full cards (profile). */
   variant?: "cards" | "rows";
+  /** Leave the main character out (it is shown in the showcase above). */
+  hideMain?: boolean;
+  /** Counts line (guild / other / Forever / addable); the profile header already shows them. */
+  showSummary?: boolean;
 };
 
 function newestMillis(...values: Array<string | null | undefined>) {
@@ -212,6 +216,8 @@ export default function ProfileCharactersLiveSection({
   emptyMessage,
   refreshMinMs = DEFAULT_REFRESH_MIN_MS,
   variant = "cards",
+  hideMain = false,
+  showSummary = true,
 }: Props) {
   const [characters, setCharacters] = useState(() => visibleCharacters(initialCharacters));
   const [updatedAt, setUpdatedAt] = useState<string | null>(initialUpdatedAt || null);
@@ -285,6 +291,8 @@ export default function ProfileCharactersLiveSection({
     return toolbarTime > 0 ? new Date(toolbarTime).toISOString() : null;
   }, [characters, updatedAt]);
 
+  const shown = hideMain ? characters.filter((item) => !item.isMain) : characters;
+
   const statusLabel = state === "checking"
     ? "Персонажі оновлюються у фоні"
     : state === "updated"
@@ -297,23 +305,23 @@ export default function ProfileCharactersLiveSection({
 
   return (
     <>
-      <p className={styles.charSummary} aria-label="Стан персонажів">
+      {showSummary ? <p className={styles.charSummary} aria-label="Стан персонажів">
         <span><strong>{guildCount}</strong> у гільдії</span>
         <span><strong>{otherCount}</strong> інших</span>
         {foreverCount ? <span><strong>{foreverCount}</strong> Forever</span> : null}
         <span data-profile-candidate-summary="true"><strong data-profile-candidate-count="true">{candidateCount}</strong> можна додати</span>
         <span>оновлено <strong>{formatStableUkCompactDate(effectiveUpdatedAt)}</strong></span>
-      </p>
+      </p> : null}
 
       <span className="sr-only" role="status" aria-live="polite" data-profile-refresh-state={state}>{statusLabel}</span>
 
-      {characters.length ? variant === "rows" ? (
+      {shown.length ? variant === "rows" ? (
         <ul className={styles.charRows}>
-          {characters.map((character) => <CharacterRow key={character.key} character={character} profileId={profileId} canManage={canManage} showMainBadge={showMainBadge} returnTo={returnTo} />)}
+          {shown.map((character) => <CharacterRow key={character.key} character={character} profileId={profileId} canManage={canManage} showMainBadge={showMainBadge} returnTo={returnTo} />)}
         </ul>
       ) : (
         <div className={styles.charList}>
-          {characters.map((character) => (
+          {shown.map((character) => (
             <CharacterCard key={character.key} character={character} profileId={profileId} showMainBadge={showMainBadge} />
           ))}
         </div>
