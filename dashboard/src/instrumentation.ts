@@ -3,5 +3,6 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
   const { startSystemSettingsSync } = await import("./lib/systemSettings");
-  startSystemSettingsSync();
+  // Wait for the first load so the very first requests already see owner overrides.
+  await startSystemSettingsSync();
 }
