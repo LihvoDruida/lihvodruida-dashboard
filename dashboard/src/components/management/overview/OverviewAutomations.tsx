@@ -3,8 +3,6 @@ import type { DashboardSession } from "@/types/auth";
 import { getAutomationOverview } from "@/lib/automationOverview";
 import { canViewOverviewAutomation, overviewAutomationAction } from "@/lib/managementOverviewModel";
 import PageSection from "@/components/page/PageSection";
-import DataGrid from "@/components/page/DataGrid";
-import DataCard from "@/components/page/DataCard";
 import EmptyState from "@/components/page/EmptyState";
 import ErrorState from "@/components/page/ErrorState";
 import PageRefreshButton from "@/components/page/PageRefreshButton";
@@ -28,18 +26,18 @@ export default async function OverviewAutomations({ user }: { user: DashboardSes
     actions={<PageRefreshButton label="Оновити стан" />}>
     {unavailable ? <ErrorState description="Не вдалося прочитати стан фонових задач. Налаштування збережені; спробуй оновити стан пізніше." />
       : !cards.length ? <EmptyState title="Немає доступних автоматизацій" description="Для цієї групи не призначено перегляду фонових задач." />
-      : <DataGrid label="Стан фонових задач">
+      : <div className={styles.taskTable} role="table" aria-label="Стан фонових задач">
+        <div className={styles.taskHead} role="row"><span role="columnheader">Задача</span><span role="columnheader">Стан</span><span role="columnheader">Останній результат</span><span role="columnheader">Наступний запуск</span><span role="columnheader"><span className="sr-only">Дія</span></span></div>
         {cards.map(card => {
           const action = overviewAutomationAction(user, card);
-          return <DataCard key={card.id} title={card.title} description={card.reason}
-            badge={<StatusBadge tone={tones[card.state]}>{card.label}</StatusBadge>}
-            actions={action ? <Link className="btn subtle" href={action.href} prefetch={false}>{action.label}</Link> : null}>
-            <dl className={styles.taskDetails}>
-              <div><dt>Останній результат</dt><dd>{card.lastResult}{time(card.lastAt)}</dd></div>
-              <div><dt>Наступний запуск</dt><dd>{time(card.nextAt)}<span>{card.nextNote}</span></dd></div>
-            </dl>
-          </DataCard>;
+          return <div className={styles.taskRow} role="row" key={card.id}>
+            <span role="cell" className={styles.taskName}><strong>{card.title}</strong>{card.reason && card.state !== "waiting" ? <small>{card.reason}</small> : null}</span>
+            <span role="cell"><StatusBadge tone={tones[card.state]}>{card.label}</StatusBadge></span>
+            <span role="cell" className={styles.taskText}>{card.lastResult}{time(card.lastAt)}</span>
+            <span role="cell" className={styles.taskText}>{time(card.nextAt) || card.nextNote}</span>
+            <span role="cell" className={styles.taskAction}>{action ? <Link className="btn subtle" href={action.href} prefetch={false}>{action.label}</Link> : null}</span>
+          </div>;
         })}
-      </DataGrid>}
+      </div>}
   </PageSection>;
 }

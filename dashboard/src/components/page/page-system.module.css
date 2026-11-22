@@ -40,7 +40,7 @@
 .result { margin: 0; color: var(--text-muted); font-size: var(--font-size-meta); }
 .section { display: grid; gap: var(--section-gap); min-width: 0; }
 /* A lone call to action in a section keeps its own width instead of a full-width bar. */
-.section > :global(.btn) { justify-self: start; }
+.section > :global(.btn), .formFields > :global(.btn), .formFields > :global(form) > :global(.btn) { justify-self: start; }
 .section .sectionTitle { margin: 0; font-size: var(--heading-section-size); color: var(--text-strong); font-family: var(--font-display); line-height: var(--line-height-tight); overflow-wrap: anywhere; }
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--data-grid-min)), 1fr)); gap: var(--space-md); min-width: 0; align-items: stretch; }
 .auto { grid-auto-flow: row; }

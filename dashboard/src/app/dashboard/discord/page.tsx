@@ -1,11 +1,8 @@
 import ManagementShell from "@/components/management/ManagementShell";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 
 import AdminPageHeader from "@/components/AdminPageHeader";
 import ManagementSections from "@/components/ManagementSections";
-import AutomationOverview from "@/components/AutomationOverview";
-import { getAutomationOverview } from "@/lib/automationOverview";
 import { getSession } from "@/lib/auth";
 import {
   fetchDiscordRoleControlSnapshotCachedForUi,
@@ -130,12 +127,11 @@ export default async function AdminDiscordPage() {
     throw new Error("Access denied");
   }
 
-  const [policy, control, nicknameWarningState, textChannels, automationOverview] = await Promise.all([
+  const [policy, control, nicknameWarningState, textChannels] = await Promise.all([
     getGuildNicknamePolicy(),
     fetchDiscordRoleControlSnapshotCachedForUi(),
     getNicknameWarningAutomationState(),
     fetchDiscordTextChannels().catch(() => ({ guild: null, channels: [], suggestedChannelId: "", suggestedRulesChannelId: "", warning: "Discord channels unavailable" })),
-    getAutomationOverview(),
   ]);
   const roles = control.roles;
   const manageableRoles = control.manageableRoles;
@@ -196,20 +192,6 @@ export default async function AdminDiscordPage() {
             { label: "Manage Roles", value: control.botCanManageRoles ? "OK" : "ERR", tone: control.botCanManageRoles ? "good" : "danger" },
           ]}
         />
-
-        
-
-        <section className="panel discord-management-section management-shortcut" aria-label="Автоматичне очищення Discord">
-          <SectionHeader eyebrow="Автоматизація" title="Очищення Discord за роллю та строком" description="Люди без ролей або лише з однією вибраною роллю; дата вступу, автоматичне виключення та окрема історія." />
-          <Link href="/dashboard/discord/cleanup" className="btn primary">Відкрити очищення Discord</Link>
-        </section>
-
-        {user.isServerOwner ? <section className="panel management-shortcut" aria-label="Обслуговування профілів">
-          <strong>Очищення застарілих вебпрофілів</strong>
-          <p>Перевірка й видалення тепер в окремому захищеному розділі.</p>
-          <Link href="/dashboard/profiles" className="btn subtle">Відкрити обслуговування профілів</Link>
-        </section> : null}
-        <AutomationOverview overview={automationOverview} />
 
         <ManagementSections sections={[
           { id: "discord-health", label: "Підключення", description: "Стан бота та доступні ролі. Перевір підключення перед змінами." },

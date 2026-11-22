@@ -89,12 +89,16 @@ export default function SystemSettingsClient({ initial }: { initial: State }) {
       </form>
     </PageSection>
     <PageSection id="system-env" title="Секрети та ключі запуску" description="Лише стан, без значень. Змінюються на сервері: make configure (або make configure KEY=НАЗВА), потім make up.">
-      <ul className={styles.envList}>
-        {state.env.map(item => <li key={item.key} className={styles.envRow}>
-          <span>{item.label}<small>{item.key} · {item.hint}</small></span>
-          <StatusBadge tone={ENV_TONE[item.state]}>{item.state === "set" ? "задано" : item.state === "weak" ? "закоротке" : "не задано"}</StatusBadge>
-        </li>)}
-      </ul>
+      {/* Diagnostic list: collapsed unless something needs attention. */}
+      <details className={styles.envDetails} open={state.env.some(item => item.state === "weak" || (item.state === "missing" && item.hint.startsWith("Обовʼязково")))}>
+        <summary>{state.env.filter(item => item.state === "set").length} з {state.env.length} задано{state.env.some(item => item.state === "weak") ? " · є закороткі" : ""}</summary>
+        <ul className={styles.envList}>
+          {state.env.map(item => <li key={item.key} className={styles.envRow}>
+            <span>{item.label}<small>{item.key} · {item.hint}</small></span>
+            <StatusBadge tone={ENV_TONE[item.state]}>{item.state === "set" ? "задано" : item.state === "weak" ? "закоротке" : "не задано"}</StatusBadge>
+          </li>)}
+        </ul>
+      </details>
     </PageSection>
   </div>;
 }

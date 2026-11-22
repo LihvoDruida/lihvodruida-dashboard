@@ -91,14 +91,6 @@
 }
 @media (prefers-reduced-motion: reduce) { .admin-workspace .management-nav a { transition: none; } }
 
-.admin-workspace .management-shortcut { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 20px; padding: 20px var(--space-lg); }
-.admin-workspace .management-shortcut h2 { font-size: 19px; }
-.admin-workspace .management-shortcut .btn { width: auto; }
-@media (max-width: 760px) {
-  .admin-workspace .management-shortcut { grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 18px; }
-  .admin-workspace .management-shortcut .btn { width: 100%; }
-}
-
 /* R5: drafts and revision review use the existing system colour tokens. */
 
 /* Management hub and protected maintenance use the same surface/tokens as all admin sections. */

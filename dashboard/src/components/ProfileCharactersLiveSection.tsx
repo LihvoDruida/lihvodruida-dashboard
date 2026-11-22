@@ -39,6 +39,8 @@ type Props = {
   candidateCount: number;
   emptyMessage: string;
   refreshMinMs?: number;
+  /** "rows" = compact management list (settings); default = full cards (profile). */
+  variant?: "cards" | "rows";
 };
 
 function newestMillis(...values: Array<string | null | undefined>) {
@@ -119,7 +121,43 @@ function CharacterInlineIcon({ kind }: { kind: CharacterIconKind }) {
   }
 }
 
-function CharacterCard({ character, profileId, canManage, showMainBadge, returnTo = "" }: { character: ProfileCharacter; profileId: string; canManage: boolean; showMainBadge: boolean; returnTo?: string }) {
+function CharacterRow({ character, profileId, canManage, showMainBadge, returnTo = "" }: { character: ProfileCharacter; profileId: string; canManage: boolean; showMainBadge: boolean; returnTo?: string }) {
+  const isMain = showMainBadge && Boolean(character.isMain);
+  const edition = characterEdition(character);
+  const classColor = wowClassColorByName(character.className);
+  const place = edition === "forever" ? "WoW Forever" : character.realmName || character.realmSlug;
+  return (
+    <li className={styles.charRow} data-main={isMain || undefined} data-character-profile-id={profileId}
+      style={classColor ? { "--guild-class-color": classColor } as CSSProperties : undefined}>
+      <span className={styles.charDot} aria-hidden="true">{character.name.charAt(0)}</span>
+      <span className={styles.charRowCopy}>
+        <strong>{character.name}</strong>
+        <small>{[character.activeSpecName, character.className].filter(Boolean).join(" ") || "Клас невідомий"} · {place}{typeof character.itemLevel === "number" ? ` · ilvl ${character.itemLevel}` : ""}</small>
+      </span>
+      <span className={styles.charTags}>
+        <span className={styles.tag} data-tone={edition}>{WOW_EDITION_LABEL[edition]}</span>
+        {isMain ? <span className={styles.tag} data-tone="main">Мейн</span> : null}
+      </span>
+      {canManage ? <span className={styles.charActions}>
+        {!character.isMain ? (
+          <form action="/api/profile/characters/main" method="post">
+            <input type="hidden" name="characterKey" value={character.key} />
+            {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+            <button className={`btn subtle ${styles.iconButton}`} data-tone="primary" type="submit" title="Зробити мейном" aria-label={`Зробити мейном: ${character.name}`}><CharacterInlineIcon kind="crown" /></button>
+          </form>
+        ) : null}
+        <form action="/api/profile/characters/remove" method="post">
+          <input type="hidden" name="characterKey" value={character.key} />
+          {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+          <button className={`btn subtle ${styles.iconButton}`} data-tone="danger" type="submit" title="Видалити з профілю" aria-label={`Видалити з профілю: ${character.name}`}><CharacterInlineIcon kind="trash" /></button>
+        </form>
+      </span> : null}
+    </li>
+  );
+}
+
+/** Full read-only card (profile page); management happens in CharacterRow on the settings page. */
+function CharacterCard({ character, profileId, showMainBadge }: { character: ProfileCharacter; profileId: string; showMainBadge: boolean }) {
   const isMain = showMainBadge && Boolean(character.isMain);
   const edition = characterEdition(character);
   const forever = edition === "forever";
@@ -158,20 +196,6 @@ function CharacterCard({ character, profileId, canManage, showMainBadge, returnT
           {armoryUrl ? <a className={`btn subtle ${styles.linkButton}`} href={armoryUrl} target="_blank" rel="noreferrer">{forever ? "Armory Forever" : "Armory"}<CharacterInlineIcon kind="external" /></a> : null}
           {rioUrl ? <a className={`btn subtle ${styles.linkButton}`} href={rioUrl} target="_blank" rel="noreferrer">Raider.IO<CharacterInlineIcon kind="external" /></a> : null}
         </div>
-        {canManage ? <div className={styles.charActions}>
-          {!character.isMain ? (
-            <form action="/api/profile/characters/main" method="post">
-              <input type="hidden" name="characterKey" value={character.key} />
-              {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
-              <button className={`btn subtle ${styles.linkButton}`} type="submit" aria-label={`Зробити мейном: ${character.name}`}><CharacterInlineIcon kind="crown" />Зробити мейном</button>
-            </form>
-          ) : null}
-          <form action="/api/profile/characters/remove" method="post">
-            <input type="hidden" name="characterKey" value={character.key} />
-            {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
-            <button className={`btn subtle ${styles.iconButton}`} data-tone="danger" type="submit" title="Видалити з профілю" aria-label={`Видалити з профілю: ${character.name}`}><CharacterInlineIcon kind="trash" /></button>
-          </form>
-        </div> : null}
       </div>
     </article>
   );
@@ -187,6 +211,7 @@ export default function ProfileCharactersLiveSection({
   candidateCount,
   emptyMessage,
   refreshMinMs = DEFAULT_REFRESH_MIN_MS,
+  variant = "cards",
 }: Props) {
   const [characters, setCharacters] = useState(() => visibleCharacters(initialCharacters));
   const [updatedAt, setUpdatedAt] = useState<string | null>(initialUpdatedAt || null);
@@ -282,17 +307,14 @@ export default function ProfileCharactersLiveSection({
 
       <span className="sr-only" role="status" aria-live="polite" data-profile-refresh-state={state}>{statusLabel}</span>
 
-      {characters.length ? (
+      {characters.length ? variant === "rows" ? (
+        <ul className={styles.charRows}>
+          {characters.map((character) => <CharacterRow key={character.key} character={character} profileId={profileId} canManage={canManage} showMainBadge={showMainBadge} returnTo={returnTo} />)}
+        </ul>
+      ) : (
         <div className={styles.charList}>
           {characters.map((character) => (
-            <CharacterCard
-              key={character.key}
-              character={character}
-              profileId={profileId}
-              canManage={canManage}
-              showMainBadge={showMainBadge}
-              returnTo={returnTo}
-            />
+            <CharacterCard key={character.key} character={character} profileId={profileId} showMainBadge={showMainBadge} />
           ))}
         </div>
       ) : (
