@@ -69,6 +69,8 @@ async function saveImage(file?:File|null) {
  await pgQuery('INSERT INTO site_content_media(id, mime_type, payload) VALUES($1,$2,$3) ON CONFLICT(id) DO NOTHING',[id,file.type,bytes]);
  return `/api/site/media/${id}`;
 }
+/** Stores a site image (logo, cover) in site_content_media and returns its bridge path. */
+export function saveSiteContentImage(file?:File|null){return saveImage(file);}
 function docRef(kind:ContentKind,slug:string) {return getDocumentDb().collection(STORE).doc(docKey(kind,slug));}
 function revisionOf(raw:Record<string,unknown>){return typeof raw.revision_token==='string'&&raw.revision_token?raw.revision_token:String(raw.revision||1);}
 function toItem(raw:any):SiteContentItem|null {
