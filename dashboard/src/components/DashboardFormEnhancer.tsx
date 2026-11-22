@@ -116,6 +116,12 @@ function actionText(action: string) {
       title: "Видаляємо персонажа",
       message: "Оновлюємо список персонажів і мейна.",
     };
+  if (action.includes("/profile/characters/order"))
+    return {
+      label: "Зберігаємо...",
+      title: "Зберігаємо порядок",
+      message: "Оновлюємо порядок персонажів у профілі та на сайті.",
+    };
   if (action.includes("/profile/characters/main"))
     return {
       label: "Оновлюємо...",
