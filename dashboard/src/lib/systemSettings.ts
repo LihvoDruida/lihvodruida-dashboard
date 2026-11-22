@@ -14,7 +14,7 @@ const SYNC_INTERVAL_MS = 60_000;
 
 declare global {
   // eslint-disable-next-line no-var
-  var __mistblossomSystemSettings: { base: Record<string, string | undefined>; values: Record<string, string>; revision: number; updatedAt: string | null; updatedBy: string | null; timer?: ReturnType<typeof setInterval> } | undefined;
+  var __mistblossomSystemSettings: { base: Record<string, string | undefined>; values: Record<string, string>; revision: number; updatedAt: string | null; updatedBy: string | null; timer?: ReturnType<typeof setInterval>; lastSyncOkAt?: string | null; lastSyncError?: string | null } | undefined;
 }
 
 export type SystemSettingsState = {
@@ -81,16 +81,38 @@ export async function saveSystemSettings(values: Record<string, string>, expecte
   return applyState(next);
 }
 
-/** Loads overrides at start-up and re-reads them every minute (other replicas, manual DB edits). */
-export function startSystemSettingsSync() {
+/** Liveness-safe snapshot of the background sync (no storage access, no error text: /api/health is public). */
+export function systemSettingsSyncStatus() {
   const current = holder();
-  if (current.timer || !hasDocumentDbConfig()) return;
-  const tick = () => loadSystemSettings().catch(error => {
-    logDashboardEvent("warn", "system_settings.sync_failed", undefined, { message: error instanceof Error ? error.message : "unknown" });
-  });
-  void tick();
-  current.timer = setInterval(tick, SYNC_INTERVAL_MS);
+  return { running: Boolean(current.timer), lastOkAt: current.lastSyncOkAt || null, failing: Boolean(current.lastSyncError) };
+}
+
+/**
+ * Loads overrides at start-up and re-reads them every minute (other replicas, manual DB edits).
+ * Returns the first load so start-up can wait for it (bounded by the 3s read timeout);
+ * a failed first load never blocks the server — the next tick retries.
+ */
+export function startSystemSettingsSync(): Promise<void> {
+  const current = holder();
+  if (current.timer || !hasDocumentDbConfig()) return Promise.resolve();
+  let inFlight = false;
+  const tick = async () => {
+    if (inFlight) return;
+    inFlight = true;
+    try {
+      await loadSystemSettings();
+      current.lastSyncOkAt = new Date().toISOString();
+      current.lastSyncError = null;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown";
+      // Log only transitions, not the same failure every minute.
+      if (current.lastSyncError !== message) logDashboardEvent("warn", "system_settings.sync_failed", undefined, { message });
+      current.lastSyncError = message;
+    } finally { inFlight = false; }
+  };
+  current.timer = setInterval(() => { void tick(); }, SYNC_INTERVAL_MS);
   current.timer.unref?.();
+  return tick();
 }
 
 // --- .env status (never values) --------------------------------------------------

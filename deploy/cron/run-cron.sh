@@ -22,7 +22,9 @@
 #   *    * * * *  /api/dashboard/discord/profile-nicknames/automation — лише готова черга змін профілю
 # ---------------------------------------------------------------------------
 
-set -eu
+# Без `-e`: збій однієї задачі (або `date`/`sleep`) не має зупиняти весь
+# планувальник. Кожен worker сам веде backoff і логування.
+set -u
 
 BASE="${DASHBOARD_INTERNAL_URL:-http://dashboard:3000}"
 # Єдиний service-to-service токен. Compose передає сюди кореневий
@@ -49,7 +51,35 @@ call() {
     *) log "невідома задача: $path"; return 1 ;;
   esac
   # Independent workers retain deadlines and backoff; no automatic curl replay.
-  /bin/sh "${CRON_WORKER_PATH:-/opt/cron/run-job.sh}" "$path" "$interval" "$key" &
+  # Подвійний fork: worker одразу переходить до init (tini, `init: true` у
+  # compose), який його і прибирає. Диспетчер не накопичує zombie-процеси
+  # під pids_limit, навіть якщо shell не реапить фонові задачі сам.
+  ( /bin/sh "${CRON_WORKER_PATH:-/opt/cron/run-job.sh}" "$path" "$interval" "$key" & ) || log "не вдалося запустити $key"
+}
+
+# `sleep` у фоні + `wait`: SIGTERM від `docker stop` обробляється одразу,
+# а не після хвилинного сну (інакше Docker добиває контейнер SIGKILL).
+nap() {
+  sleep "$1" &
+  wait $! 2>/dev/null || true
+}
+
+# Heartbeat для docker healthcheck: файл оновлюється на кожному tick.
+STATE_DIR="${CRON_STATE_DIR:-/tmp/mistblossom-cron}"
+mkdir -p "$STATE_DIR" 2>/dev/null || true
+beat() {
+  date +%s > "$STATE_DIR/$1.alive" 2>/dev/null || true
+}
+
+start_cleanup_loop() {
+  (
+    while true; do
+      beat cleanup
+      call "/api/dashboard/discord/member-cleanup/automation"
+      sleep 10
+    done
+  ) &
+  cleanup_pid=$!
 }
 
 log "старт; база=${BASE}"
@@ -62,12 +92,8 @@ call "/api/raids/lifecycle?sweep=1&limit=100"
 # Cleanup progresses independently of calendar-minute jobs. Its HTTP response
 # sets the worker deadline: 10s with queued work, 60s when idle. The worker's
 # lock and persisted backoff still prevent overlaps and retry storms.
-(
-  while true; do
-    call "/api/dashboard/discord/member-cleanup/automation"
-    sleep 10
-  done
-) &
+start_cleanup_loop
+trap 'kill "$cleanup_pid" 2>/dev/null; exit 0' INT TERM
 
 # Запамʼятовуємо саме календарну хвилину, а не просто робимо sleep 60.
 # Якщо повільна другорядна задача перетнула межу хвилини, цикл одразу
@@ -77,11 +103,19 @@ last_tick=""
 while true; do
   tick=$(date -u '+%Y%m%d%H%M')
   if [ "$tick" = "$last_tick" ]; then
-    sleep $((60 - $(date -u +%-S)))
+    nap $((60 - $(date -u +%-S)))
     continue
   fi
   last_tick="$tick"
   minute=$(date -u +%-M)
+  minute=${minute:-1}
+  beat dispatcher
+  # Самонагляд: якщо цикл cleanup загинув, піднімаємо його знову, а не
+  # чекаємо ручного рестарту контейнера.
+  if ! kill -0 "$cleanup_pid" 2>/dev/null; then
+    log "цикл member-cleanup зупинився — перезапуск"
+    start_cleanup_loop
+  fi
 
   # Новий учасник має отримати приватний onboarding максимально швидко.
   # Endpoint сам тримає baseline/ідемпотентний стан, тому повторний tick не
@@ -116,6 +150,6 @@ while true; do
   # одразу обробить пропущений tick (last_tick відрізнятиметься).
   current_tick=$(date -u '+%Y%m%d%H%M')
   if [ "$current_tick" = "$last_tick" ]; then
-    sleep $((60 - $(date -u +%-S)))
+    nap $((60 - $(date -u +%-S)))
   fi
 done

@@ -9,6 +9,15 @@
 # Перед оновленням поточні образи позначаються rollback-тегами. Якщо новий
 # dashboard або bot не стає healthy, обидва доступні попередні образи
 # повертаються разом.
+#
+# Порядок:
+#   1. git pull (і перезапуск самого скрипта, якщо він оновився);
+#   2. rollback-теги, перевірки, збірка образів;
+#   3. перевірка нового nginx-конфігу ще до перемикання трафіку;
+#   4. схема БД (ідемпотентна) — до старту нового dashboard;
+#   5. up стеку, примусове перестворення cron (bind-mounted скрипти),
+#      reload nginx (bind-mounted конфіги);
+#   6. очікування health для dashboard, bot, nginx і cron; інакше rollback.
 # ---------------------------------------------------------------------------
 
 set -euo pipefail
@@ -28,6 +37,18 @@ env_get() {
   sed -n "s/^[[:space:]]*${key}[[:space:]]*=[[:space:]]*//p" "$file" \
     | tail -n1 | sed 's/^"\(.*\)"$/\1/; s/^'"'"'\(.*\)'"'"'$/\1/'
 }
+
+# Спершу забираємо код: якщо оновився сам deploy.sh, далі має виконуватись
+# уже нова версія, а не стара, яку bash дочитує з диска посеред роботи.
+if [ "${MISTBLOSSOM_DEPLOY_PULLED:-0}" != "1" ]; then
+  self_before="$(git hash-object deploy/scripts/deploy.sh)"
+  log "Забираємо код"
+  git pull --ff-only
+  if [ "$(git hash-object deploy/scripts/deploy.sh)" != "$self_before" ]; then
+    log "deploy.sh оновився — перезапускаю нову версію"
+    exec env MISTBLOSSOM_DEPLOY_PULLED=1 bash deploy/scripts/deploy.sh "$@"
+  fi
+fi
 
 [ -f .env ] || fail "немає .env — скопіюй із .env.example і заповни"
 [ -f dashboard/.env.production ] || fail "немає dashboard/.env.production — скопіюй із dashboard/.env.example і заповни"
@@ -55,17 +76,44 @@ else
   warn "Попереднього bot image немає — для нього відкочуватись нікуди"
 fi
 
-log "Забираємо код"
-git pull --ff-only
-
 log "Перевіряємо передумови"
 ./deploy/scripts/start.sh --check
 
 log "Збираємо dashboard + bot"
 $COMPOSE build dashboard bot
 
+log "Перевіряємо nginx-конфіг до перемикання"
+# Тимчасовий контейнер з тими самими bind-mount і сертифікатами. Помилка
+# тут зупиняє деплой, поки старий nginx ще обслуговує трафік.
+if ! $COMPOSE run --rm --no-deps -T --entrypoint nginx nginx -t -q; then
+  fail "nginx -t не пройшов — деплой зупинено, працює попередня версія"
+fi
+
+PG_USER="$(env_get .env POSTGRES_USER || true)"; PG_USER="${PG_USER:-mistblossom}"
+PG_DB="$(env_get .env POSTGRES_DB || true)";     PG_DB="${PG_DB:-mistblossom}"
+SCHEMA_FILE="dashboard/src/lib/db/schema.sql"
+
+log "Оновлюємо схему бази"
+$COMPOSE up -d --no-build postgres
+for _ in $(seq 1 30); do
+  $COMPOSE exec -T postgres pg_isready -q -U "$PG_USER" -d "$PG_DB" >/dev/null 2>&1 && break
+  sleep 2
+done
+# Схема ідемпотентна (IF NOT EXISTS / OR REPLACE) і має бути застосована до
+# того, як новий dashboard почне читати нові таблиці чи індекси.
+if [ -f "$SCHEMA_FILE" ] && ! $COMPOSE exec -T postgres \
+     psql -v ON_ERROR_STOP=1 -q -U "$PG_USER" -d "$PG_DB" < "$SCHEMA_FILE" >/dev/null; then
+  fail "схему не застосовано — деплой зупинено до перемикання сервісів"
+fi
+
 log "Піднімаємо стек без повторної збірки"
 $COMPOSE up -d --remove-orphans --no-build
+
+# Compose не бачить змін у bind-mounted файлах. Cron перестворюємо завжди
+# (новий диспетчер + скинутий backoff), nginx перечитує конфіги через reload.
+log "Застосовуємо оновлені cron-скрипти і nginx-конфіги"
+$COMPOSE up -d --no-build --no-deps --force-recreate cron
+$COMPOSE exec -T nginx nginx -s reload || warn "nginx reload не вдався — перевір логи nginx"
 
 service_health() {
   local service="$1"
@@ -84,7 +132,7 @@ wait_service() {
     case "$state" in
       healthy|running)
         printf '\n'; log "$service: $state"; return 0 ;;
-      exited|dead)
+      exited|dead|unhealthy|missing)
         printf '\n'; return 1 ;;
     esac
     printf '.'
@@ -108,7 +156,8 @@ rollback() {
   fi
   if [ "$restored" -eq 1 ]; then
     $COMPOSE up -d --no-build dashboard bot || true
-    $COMPOSE ps dashboard bot || true
+    $COMPOSE up -d --no-build --no-deps --force-recreate cron || true
+    $COMPOSE ps dashboard bot cron || true
   else
     warn "Жодного попереднього образу немає — автоматичний rollback неможливий."
   fi
@@ -126,18 +175,14 @@ if ! wait_service bot "$HEALTH_TIMEOUT"; then
   fail "bot не став healthy — деплой скасовано"
 fi
 
-# nginx і cron не мають власного healthcheck; перевіряємо, що вони принаймні
-# працюють після оновлення. PostgreSQL перевірив start.sh --check/compose deps.
+# nginx і cron мають власні healthcheck (loopback /nginx-health і heartbeat
+# планувальника). Cron стартує з start_period, тому чекаємо довше.
 for service in nginx cron; do
-  state="$(service_health "$service")"
-  case "$state" in
-    healthy|running) log "$service: $state" ;;
-    *)
-      $COMPOSE logs --tail=50 "$service" || true
-      rollback
-      fail "$service не працює після деплою (state=$state)"
-      ;;
-  esac
+  if ! wait_service "$service" "$HEALTH_TIMEOUT"; then
+    $COMPOSE logs --tail=50 "$service" || true
+    rollback
+    fail "$service не став healthy після деплою (state=$(service_health "$service"))"
+  fi
 done
 
 log "Прибираємо старі невикористовувані образи"

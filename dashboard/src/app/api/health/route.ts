@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { noStoreHeaders } from "@/lib/security";
+import { systemSettingsSyncStatus } from "@/lib/systemSettings";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,6 +20,8 @@ export async function GET() {
       ok: true,
       service: "mistblossom-dashboard",
       uptimeSeconds: Math.round(process.uptime()),
+      // Лише стан у памʼяті процесу — жодних звернень до сховища.
+      settingsSync: systemSettingsSyncStatus(),
       time: new Date().toISOString(),
     },
     { headers: noStoreHeaders() },
