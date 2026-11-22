@@ -63,6 +63,7 @@ function isPublicSiteBridgePath(pathname: string) {
     pathname === "/api/site/content" ||
     pathname === "/api/site/status" ||
     pathname === "/api/site/sync" ||
+    pathname === "/api/site/owner" ||
     /^\/api\/site\/media\/[a-f0-9]{64}$/.test(pathname)
   );
 }

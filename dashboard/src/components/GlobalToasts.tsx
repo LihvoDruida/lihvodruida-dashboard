@@ -217,6 +217,16 @@ const CHARACTER_STATUS_MESSAGES: Record<string, Omit<Toast, "id">> = {
       "Сервер тимчасово не може змінювати список персонажів. Звернись до гільдмайстра або повтори пізніше.",
     ttl: 8600,
   },
+  character_order_saved: {
+    tone: "success",
+    title: "Порядок персонажів збережено",
+    message: "Мейн лишається першим; решта показуються в цьому порядку в профілі та на сайті.",
+  },
+  character_order_failed: {
+    tone: "error",
+    title: "Порядок не збережено",
+    message: "Не вдалося зберегти порядок персонажів. Онови сторінку і повтори.",
+  },
   main_character_set: {
     tone: "success",
     title: "Мейн оновлено",

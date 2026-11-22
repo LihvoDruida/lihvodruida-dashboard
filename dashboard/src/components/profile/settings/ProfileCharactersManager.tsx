@@ -1,6 +1,7 @@
 import type { ProfileSettingsModel } from "@/services/profileSettings";
 import ProfileCharactersLiveSection from "@/components/ProfileCharactersLiveSection";
 import ProfileCharacterSetup from "@/components/ProfileCharacterSetup";
+import CharacterOrderEditor from "@/components/account/CharacterOrderEditor";
 import ProfileCandidateBulkActions from "@/components/ProfileCandidateBulkActions";
 import ProfileCandidateExpiryTimer from "@/components/ProfileCandidateExpiryTimer";
 import ProfileCandidateCharacterRow from "@/components/ProfileCandidateCharacterRow";
@@ -27,6 +28,7 @@ export default function ProfileCharactersManager({ model }: { model: ProfileSett
       initialUpdatedAt={profile.battlenet?.lastProfileViewRefreshAt || profile.battlenet?.lastCharacterRefreshAt || profile.battlenet?.lastSyncAt || profile.updatedAt || profile.lastLoginAt || mainCharacter?.lastSeenAt || null}
       canManage showMainBadge variant="rows" returnTo={returnTo} candidateCount={availableCandidates.length}
       emptyMessage="Підключи Battle.net і додай персонажів." refreshMinMs={apiSettings.profileViewRefreshMinSeconds * 1000} /></PageErrorBoundary>
+    <PageErrorBoundary resetKey={profile.profileId}><CharacterOrderEditor key={visibleCharacters.map(item => item.key).join("|")} characters={visibleCharacters} returnTo={returnTo} /></PageErrorBoundary>
     {/* Only when Battle.net found characters to add: main and role are set on the rows and in "Raids". */}
     {!isRulesReturn && hasAvailableBattleNetCandidates
       ? <FormSection title="Нові персонажі з Battle.net" description="Вибери, кого додати до профілю."><PageErrorBoundary resetKey={profile.profileId}><ProfileCharacterSetup key={profile.profileId} profileId={profile.profileId} /></PageErrorBoundary></FormSection> : null}

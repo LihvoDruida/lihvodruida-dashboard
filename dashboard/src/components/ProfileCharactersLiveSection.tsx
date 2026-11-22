@@ -1,8 +1,9 @@
 "use client";
 
+import { orderProfileCharacters } from "@/lib/profileCharacterOrder";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { DASHBOARD_BACKGROUND_REFRESH_MIN_MS, useDashboardApiResource } from "@/lib/dashboardBackgroundApi";
-import { dateMillis, formatStableUkCompactDate, stableTextCompare } from "@/lib/stableUiText";
+import { dateMillis, formatStableUkCompactDate } from "@/lib/stableUiText";
 import type { DashboardProfile, ProfileCharacter } from "@/lib/profiles";
 import { wowRoleLabel } from "@/lib/wowRoles";
 import { wowClassColorByName } from "@/lib/wowClassCatalog";
@@ -81,12 +82,12 @@ function characterVisualUrl(character?: Pick<ProfileCharacter, "renderUrl" | "av
   return character.renderUrl || pickImageUrl(character.avatarUrl, character.mediaUrl);
 }
 
-function visibleCharacters(characters: ProfileCharacter[]) {
-  return [...characters].sort((a, b) => {
-    if (a.isMain !== b.isMain) return a.isMain ? -1 : 1;
-    if (a.verifiedGuild !== b.verifiedGuild) return a.verifiedGuild ? -1 : 1;
-    return stableTextCompare(a.name, b.name);
-  });
+/**
+ * The server sends characters already in the owner's order (main first). A live refresh
+ * returns them unordered, so it is re-sorted against the order the page was rendered with.
+ */
+function visibleCharacters(characters: ProfileCharacter[], order?: readonly string[]) {
+  return orderProfileCharacters(characters, order);
 }
 
 function CharacterArtwork({ character }: { character: ProfileCharacter }) {
@@ -219,7 +220,7 @@ export default function ProfileCharactersLiveSection({
   hideMain = false,
   showSummary = true,
 }: Props) {
-  const [characters, setCharacters] = useState(() => visibleCharacters(initialCharacters));
+  const [characters, setCharacters] = useState(() => visibleCharacters(initialCharacters, initialCharacters.map(item => item.key)));
   const [updatedAt, setUpdatedAt] = useState<string | null>(initialUpdatedAt || null);
   const refreshMinMsRef = useRef(Math.max(DEFAULT_REFRESH_MIN_MS, refreshMinMs));
 
@@ -252,7 +253,7 @@ export default function ProfileCharactersLiveSection({
   });
 
   useEffect(() => {
-    setCharacters(visibleCharacters(initialCharacters));
+    setCharacters(visibleCharacters(initialCharacters, initialCharacters.map(item => item.key)));
     setUpdatedAt(initialUpdatedAt || null);
   }, [initialCharacters, initialUpdatedAt]);
 
@@ -261,7 +262,7 @@ export default function ProfileCharactersLiveSection({
     if (!data?.profile) return;
 
     const refreshedCharacters = Array.isArray(data.profile.characters) ? data.profile.characters : [];
-    if (refreshedCharacters.length) setCharacters(visibleCharacters(refreshedCharacters));
+    if (refreshedCharacters.length) setCharacters(visibleCharacters(refreshedCharacters, initialCharacters.map(item => item.key)));
 
     const nextUpdatedAt = data.profile.battlenet?.lastProfileViewRefreshAt
       || data.profile.battlenet?.lastCharacterRefreshAt

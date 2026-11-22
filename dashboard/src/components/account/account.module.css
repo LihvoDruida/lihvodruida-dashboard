@@ -154,3 +154,19 @@
 @media (max-width: 640px) { .charRow { grid-template-columns: auto minmax(0, 1fr) auto; } .charRow > .charTags { grid-column: 2; grid-row: 2; } }
 .showcaseCopy .showcaseMeta { color: var(--text-muted); font-size: var(--font-size-meta); }
 .showcaseCopy .charLinks { margin-top: var(--space-2xs); }
+
+/* Character order editor (settings): main pinned first, the rest reorderable. */
+.orderEditor { display: grid; gap: var(--space-sm); padding: var(--space-sm) var(--space-md); border: var(--stroke-width) solid var(--border); border-radius: var(--card-radius); background: var(--surface); }
+.orderHead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-sm); }
+.orderActions { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
+.orderList { display: grid; gap: var(--space-2xs); margin: 0; padding: 0; list-style: none; }
+.orderItem { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-sm); min-height: var(--control-height-sm); padding: var(--space-2xs) var(--space-xs); border: var(--stroke-width) solid var(--border-subtle); border-radius: var(--control-radius); background: var(--surface-sunken); cursor: grab; transition: border-color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out); }
+.orderItem:hover { border-color: var(--border-strong); background: var(--surface-hover); }
+.orderItem[data-pinned] { grid-template-columns: auto minmax(0, 1fr); cursor: default; border-color: var(--border); background: var(--surface-raised); }
+.orderItem[data-dragging] { opacity: 0.55; cursor: grabbing; }
+.orderIndex { min-width: 1.5em; color: var(--text-muted); font-size: var(--font-size-meta); font-weight: var(--font-weight-semibold); text-align: center; }
+.orderCopy { display: flex; align-items: center; gap: var(--space-xs); min-width: 0; }
+.orderAvatar { display: grid; place-items: center; flex: none; width: 32px; height: 32px; overflow: hidden; border: var(--stroke-width) solid var(--guild-class-color, var(--border)); border-radius: var(--control-radius); background: var(--surface-raised); color: var(--text-soft); font-weight: var(--font-weight-bold); }
+.orderAvatar img { width: 100%; height: 100%; object-fit: cover; }
+.orderMove { display: flex; gap: var(--space-3xs); }
+.orderMove :global(.btn) { min-width: var(--control-height-sm); padding-inline: 0; }

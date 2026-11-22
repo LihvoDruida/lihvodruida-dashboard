@@ -31,6 +31,7 @@ module.exports = function loadServerTs(relativePath, modules = {}, globals = {})
       if (name === "@/lib/automationTaskRuns") return module.exports("src/lib/automationTaskRuns.ts", { '@/lib/documentDb': { hasDocumentDbConfig: () => false } }, globals).exports;
       if (name === "@/lib/stableUiText") return module.exports("src/lib/stableUiText.ts", {}, globals).exports;
       if (name === "@/lib/wowEdition") return module.exports("src/lib/wowEdition.ts", {}, globals).exports;
+      if (name === "@/lib/profileCharacterOrder") return module.exports("src/lib/profileCharacterOrder.ts", {}, globals).exports;
       if (name === "@/lib/logPrivacy") return module.exports("src/lib/logPrivacy.ts", {}, globals).exports;
       if (name === "@mistblossom/discord-contract") return require(path.resolve(__dirname, "../../../shared/index.mjs"));
       if (name.startsWith("node:")) return require(name);

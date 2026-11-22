@@ -1,4 +1,5 @@
 import { characterEdition, isForeverCharacter } from "@/lib/wowEdition";
+import { cleanCharacterOrder } from "@/lib/profileCharacterOrder";
 import { DISCORD_NOTIFICATION_PREFERENCES, raidReminderPreference } from "@/lib/discordNotificationPreferences";
 import { FieldPath, FieldValue, Timestamp } from "@/lib/db/documentValues";
 import type { DashboardRole, DashboardSession } from "@/lib/auth";
@@ -107,6 +108,8 @@ export type DashboardProfile = {
   discordRoleIds: string[];
   characters: ProfileCharacter[];
   mainCharacterKey?: string | null;
+  /** Owner-chosen display order (character keys, main excluded); see orderProfileCharacters. */
+  characterOrder?: string[];
   nicknameCharacterKeys?: string[];
   raidRolePreference?: {
     characterKey: string;
@@ -836,6 +839,13 @@ export function normalizeProfile(
       : [],
     characters: normalizeCharacters(data.characters, mainCharacterKey),
     mainCharacterKey,
+    characterOrder: Array.isArray(data.characterOrder)
+      ? cleanCharacterOrder(
+          data.characterOrder,
+          (Array.isArray(data.characters) ? data.characters : []).map((item: any) => cleanCharacterKey(item?.key)).filter(Boolean),
+          mainCharacterKey,
+        )
+      : [],
     nicknameCharacterKeys: cleanNicknameCharacterKeys(
       data.nicknameCharacterKeys || data.discordNicknameCharacterKeys,
       mainCharacterKey,
@@ -2876,6 +2886,33 @@ export async function setMainProfileCharacter(
     { timeoutMs: 5_000, logEvent: "profiles.character_main_write_failed" },
   );
   clearProfileRuntimeCaches(profileId, { characterLinks: true });
+}
+
+/** Saves the owner's character display order. The main stays first regardless. */
+export async function setProfileCharacterOrder(profileId: string, keys: unknown) {
+  if (!hasDocumentDbConfig())
+    throw new Error("Профілі тимчасово недоступні.");
+  const ref = getDocumentDb()
+    .collection("dashboardProfiles")
+    .doc(profileId);
+  let saved: string[] = [];
+  await writeProfileStorage(
+    `profile:${profileId}:character-order`,
+    () => getDocumentDb().runTransaction(async (transaction: any) => {
+      const snapshot = await transaction.get(ref);
+      if (!snapshot.exists) throw new Error("Профіль не знайдено.");
+      const profile = normalizeProfile(profileId, snapshot.data() || {});
+      saved = cleanCharacterOrder(
+        Array.isArray(keys) ? keys.map((key) => cleanCharacterKey(key)) : [],
+        profile.characters.map((item) => item.key),
+        profile.mainCharacterKey,
+      );
+      transaction.set(ref, { characterOrder: saved, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    }),
+    { timeoutMs: 5_000, logEvent: "profiles.character_order_write_failed" },
+  );
+  clearProfileRuntimeCaches(profileId, { characterLinks: true });
+  return saved;
 }
 
 export function normalizeProfilePreferredName(value: unknown) {

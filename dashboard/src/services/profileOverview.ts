@@ -1,5 +1,6 @@
 import "server-only";
 
+import { orderProfileCharacters } from "@/lib/profileCharacterOrder";
 import { characterManagementModel } from "@/services/profileCharacters";
 import { listProfileRaidSignups } from "@/lib/raids";
 import { getDashboardApiSettings } from "@/lib/dashboardApiSettings";
@@ -112,11 +113,7 @@ export async function loadProfileOverview({
   const accountStatusLabel = dashboardRoleLabel(profile.role);
   const liveDiscordAvatarUrl = discordMember?.avatarUrl || null;
   const profileAvatarUrl = liveDiscordAvatarUrl || profile.avatarUrl || null;
-  const visibleCharacters = [...profile.characters].sort((a, b) => {
-    if (a.isMain !== b.isMain) return a.isMain ? -1 : 1;
-    if (a.verifiedGuild !== b.verifiedGuild) return a.verifiedGuild ? -1 : 1;
-    return a.name.localeCompare(b.name, "uk");
-  });
+  const visibleCharacters = orderProfileCharacters(profile.characters, profile.characterOrder, profile.mainCharacterKey);
   return { viewer, profile, query, isOwnProfile, isRulesReturn, profileRulesReturnPath, settingsRulesReturnPath, rulesReviewPath, mainCharacter, selectedRaidRole, canManageCharacters, canViewPrivateProfileBlocks, availableCandidates, availableGuildCandidates, availableOtherCandidates, profileGuildCharacterCount, hasAvailableBattleNetCandidates, battleNetAction, battleNetRefreshHref, battleNetCharacterActionHref, battleNetLastSyncLabel, bulkFormId, publicNamePreview, guildStatus, raidSignups, raidSignupsUnavailable, accountStatusLabel, profileAvatarUrl, visibleCharacters, storageWarning, apiSettings };
 }
 

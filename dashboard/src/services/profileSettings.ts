@@ -1,5 +1,6 @@
 import "server-only";
 
+import { orderProfileCharacters } from "@/lib/profileCharacterOrder";
 import { getSession } from "@/lib/auth";
 import { getDashboardApiSettings } from "@/lib/dashboardApiSettings";
 import { characterManagementModel } from "@/services/profileCharacters";
@@ -170,11 +171,7 @@ export async function loadProfileSettings({
   // Character management lives on the settings page: Battle.net returns here.
   const characters = characterManagementModel(profile, { returnPath: settingsRulesReturnPath || `/profile/${encodeURIComponent(profile.profileId)}/settings` });
   const apiSettings = await getDashboardApiSettings();
-  const visibleCharacters = [...profile.characters].sort((a, b) => {
-    if (a.isMain !== b.isMain) return a.isMain ? -1 : 1;
-    if (a.verifiedGuild !== b.verifiedGuild) return a.verifiedGuild ? -1 : 1;
-    return a.name.localeCompare(b.name, "uk");
-  });
+  const visibleCharacters = orderProfileCharacters(profile.characters, profile.characterOrder, profile.mainCharacterKey);
   return { characters, apiSettings, visibleCharacters, session, profile, query, isOwnProfile, isRulesReturn, settingsRulesReturnPath, profileRulesReturnPath, rulesReviewPath, mainCharacter, manualRaidRole, selectedRaidRole, publicNamePreview, serverStyleNamePreview, discordNicknamePreview, discordMemberReadable, canSyncDiscordNickname, discordOwnerLocked, currentServerNickname, liveDiscordMember, setupStatus, isSetupEntry, settingsPageTitle, guildStatus, accountStatusLabel, storageWarning, nicknamePolicy };
 }
 
