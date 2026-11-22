@@ -3,14 +3,13 @@ import { raidStatusLabel, raidStatusClass } from "@/lib/raidPresentation";
 import { randomUUID } from "node:crypto";
 import type { ReactNode } from "react";
 import DashboardIdentity from "@/components/DashboardIdentity";
-import HeroSidePanel from "@/components/HeroSidePanel";
+import PageHeader from "@/components/page/PageHeader";
 import RaidRoleMentionPicker from "@/components/RaidRoleMentionPicker";
 import RaidImagePicker from "@/components/RaidImagePicker";
 import RaidEditorFormEnhancer from "@/components/RaidEditorFormEnhancer";
 import type { DiscordRoleOption } from "@/components/DiscordEmbedEditor";
 
 import type { DashboardSession } from "@/lib/auth";
-import { hierarchyTitle } from "@/lib/permissions";
 
 import { isInternalRaidThumbnail } from "@/lib/raidThumbnailAssets";
 import { isRaidClosed, raidAutoCompositionLabel, type RaidItem } from "@/lib/raids";
@@ -687,42 +686,7 @@ export function RaidPageShell({
         aria-label="Панель рейдів Mistblossom Vanguard"
       >
         <DashboardIdentity user={user || null} activeSection="raids" />
-        <header className="hero panel dashboard-hero raid-dashboard-hero app-page-hero">
-          <div className="hero-copy dashboard-hero__copy guild-hero__copy">
-            <div className="eyebrow">Mistblossom Vanguard • Рейди</div>
-            <div className="content-hero-status-row">
-              <span className="content-mode-pill content-mode-pill--library">
-                {user ? hierarchyTitle(user.role) : "Учасник"}
-              </span>
-              <span className="content-hero-path">
-                Запис у Discord • склад паті • оновлення без перезавантаження
-              </span>
-            </div>
-            <h1>{title}</h1>
-            <span className="hero-accent" aria-hidden="true" />
-            <p className="lead">{description}</p>
-          </div>
-          <HeroSidePanel
-            ariaLabel="Огляд рейдів"
-            summary={[
-              {
-                label: "РОЗДІЛ",
-                value: "Рейди",
-                note: "Запис, склад і публікація",
-              },
-              {
-                label: "ДОСТУП",
-                value: user ? hierarchyTitle(user.role) : "Учасник",
-                note: user ? "Права з профілю" : "Публічний перегляд",
-              },
-            ]}
-            stats={[
-              { label: "DISCORD", value: "Так" },
-              { label: "ПАТІ", value: "Авто" },
-              { label: "ОНОВЛЕННЯ", value: "Так" },
-            ]}
-          />
-        </header>
+        <PageHeader eyebrow="Mistblossom Vanguard • Рейди" title={title} description={description} breadcrumbs={[{ label: "Рейди", href: "/raids" }, { label: title }]} />
         {children}
       </section>
     </main>

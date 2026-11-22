@@ -1,4 +1,4 @@
-import HeroSidePanel from "@/components/HeroSidePanel";
+import PageHeader from "@/components/page/PageHeader";
 import { buildPageMetadata } from "@/lib/seo";
 
 
@@ -15,27 +15,7 @@ export default function PrivacyPage() {
   return (
     <main className="container app-page legal-page">
       <section className="dashboard-shell content-shell legal-shell app-page-stack" aria-label="Політика конфіденційності Mistblossom Vanguard">
-        <header className="hero panel dashboard-hero legal-hero">
-          <div className="hero-copy dashboard-hero__copy guild-hero__copy">
-            <div className="eyebrow">Mistblossom Vanguard • Документи</div>
-            <h1>Політика конфіденційності</h1>
-            <span className="hero-accent" aria-hidden="true" />
-            <p className="lead">Цей документ пояснює, які дані потрібні панелі гільдії, навіщо вони використовуються та як вони захищаються.</p>
-            <small>Оновлено: {updatedAt}</small>
-          </div>
-          <HeroSidePanel
-            ariaLabel="Огляд документа"
-            summary={[
-              { label: "ДОКУМЕНТ", value: "Дані та захист", note: "Discord, Battle.net, профілі" },
-              { label: "ОНОВЛЕНО", value: updatedAt, note: "Актуальна редакція" },
-            ]}
-            stats={[
-              { label: "COOKIE", value: "YES" },
-              { label: "B.NET", value: "YES" },
-              { label: "DISCORD", value: "YES" },
-            ]}
-          />
-        </header>
+        <PageHeader eyebrow="Mistblossom Vanguard • Документи" title="Політика конфіденційності" description={`Цей документ пояснює, які дані потрібні панелі гільдії, навіщо вони використовуються та як вони захищаються. Оновлено: ${updatedAt}.`} />
 
         <article className="panel legal-card">
           <h2>1. Які дані обробляються</h2>

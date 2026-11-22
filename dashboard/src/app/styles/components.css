@@ -758,8 +758,7 @@ textarea:disabled {
 }
 .status-pill,
 .raid-state,
-.profile-count-pill,
-.content-mode-pill {
+.profile-count-pill {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2xs);
@@ -871,8 +870,7 @@ textarea:disabled {
 
 .status-pill,
 .raid-state,
-.profile-count-pill,
-.content-mode-pill {
+.profile-count-pill {
   border-color: color-mix(in srgb, var(--tone, var(--c-ink-400)) 32%, transparent);
   background: color-mix(in srgb, var(--tone, var(--c-ink-400)) 12%, transparent);
   color: var(--tone, var(--text-soft));
@@ -1050,7 +1048,6 @@ a.dashboard-list-row:hover {
   gap: var(--space-sm);
 }
 }
-.guild-hero-stats,
 .raid-list-summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr));

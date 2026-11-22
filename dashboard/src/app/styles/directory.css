@@ -20,59 +20,7 @@
    2. HERO
    ========================================================= */
 
-.guild-hero-side {
-  display: grid;
-  gap: var(--space-xs);
-  align-content: start;
-  min-width: 0;
-}
-
 /* Side panel = the same compact tiles as page header metrics. */
-.guild-hero-summary,
-.guild-hero-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr));
-  gap: var(--space-xs);
-}
-
-.guild-hero-summary__block,
-.guild-hero-stat-card {
-  display: grid;
-  align-content: start;
-  gap: var(--space-3xs);
-  padding: var(--space-xs) var(--space-sm);
-  border: var(--stroke-width) solid var(--border-subtle);
-  border-radius: var(--control-radius);
-  background: var(--surface-sunken);
-  text-align: left;
-}
-
-.guild-hero-summary__label,
-.guild-hero-stat-card > span {
-  color: var(--text-muted);
-  font-size: var(--font-size-meta);
-  font-weight: var(--font-weight-medium);
-}
-
-.guild-hero-summary__block strong,
-.guild-hero-stat-card > strong {
-  color: var(--text-strong);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  font-variant-numeric: tabular-nums;
-}
-
-.guild-hero-summary__block p {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: var(--font-size-meta);
-}
-
-.guild-hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-}
 
 /* Підсумкова картка: емблема + лічильник + смуга показників */
 

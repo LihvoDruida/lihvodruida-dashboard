@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import DashboardIdentity from "@/components/DashboardIdentity";
-import HeroSidePanel from "@/components/HeroSidePanel";
+import PageHeader from "@/components/page/PageHeader";
 import { getSession } from "@/lib/auth";
-import { canManageDiscordMembers, canManageGeneralEmbeds, canManageRaids, canManageRulesEmbeds, canViewRulesStats, hierarchyTitle } from "@/lib/permissions";
+import { canManageDiscordMembers, canManageGeneralEmbeds, canManageRaids, canManageRulesEmbeds, canViewRulesStats } from "@/lib/permissions";
 import { hasDiscordEmbedConfig } from "@/lib/discordAdmin";
 import { getOwnProfilePath } from "@/lib/profiles";
 import { buildPageMetadata } from "@/lib/seo";
@@ -60,36 +60,7 @@ export default async function DiscordHubPage({
     <main className="container app-page discord-hub-page">
       <section className="dashboard-shell content-shell discord-shell discord-hub-shell app-page-stack" aria-label="Панель Discord-дій Mistblossom Vanguard">
         <DashboardIdentity user={user} activeSection="discord" />
-        <header className="hero panel dashboard-hero content-dashboard-hero discord-dashboard-hero">
-          <div className="hero-copy dashboard-hero__copy content-dashboard-hero__copy">
-            <div className="eyebrow">Mistblossom Vanguard • Discord</div>
-            <div className="content-hero-status-row" aria-label="Стан Discord редактора">
-              <span className="content-mode-pill content-mode-pill--library">{hierarchyTitle(user.role)}</span>
-              <span className="content-hero-path">{canCreateRaidPolls ? "Рейди • Discord повідомлення" : canViewRules ? "Статистика правил • Звичайні повідомлення" : "Звичайні повідомлення"}</span>
-            </div>
-            <h1>Discord-повідомлення</h1>
-            <span className="hero-accent" aria-hidden="true" />
-            <p className="lead">Публікація Discord-повідомлень, правила, статистика й доступи за ролями в одному місці.</p>
-            <div className="hero-secure-note content-hero-actions">
-              <span className="hero-lock" aria-hidden="true">✦</span>
-              <span>Панель показує тільки ті дії, які дозволені твоєю роллю.</span>
-            </div>
-          </div>
-
-          <HeroSidePanel
-            ariaLabel="Огляд Discord-повідомлень"
-            className="discord-dashboard-hero__side"
-            summary={[
-              { label: "ДОСТУП", value: hierarchyTitle(user.role), note: "Дії залежать від ролі" },
-              { label: "РОЗДІЛ", value: canCreateRaidPolls ? "Рейди + повідомлення" : canViewRules ? "Правила + повідомлення" : "Повідомлення", note: discordEnabled ? "Discord API налаштовано" : "Discord API недоступний" },
-            ]}
-            stats={[
-              { label: "EMBEDS", value: canUseGeneralEmbeds ? "ON" : "—" },
-              { label: "RULES", value: canEditRules ? "EDIT" : canViewRules ? "VIEW" : "—" },
-              { label: "CONFIG", value: discordEnabled ? "OK" : "ERR" },
-            ]}
-          />
-        </header>
+        <PageHeader eyebrow="Mistblossom Vanguard • Discord" title="Discord-повідомлення" description="Публікація Discord-повідомлень, правила, авторолі й Статик. Показано лише дії, дозволені твоїй ролі." />
       <StatusNotice params={params} />
       {!canUseGeneralEmbeds && !canCreateRaidPolls && !canManageAutoroles ? (
         <div className="notice panel">Твоя роль не має доступу до Discord-дій.</div>
@@ -100,7 +71,7 @@ export default async function DiscordHubPage({
           <div className="discord-hub-section-group discord-hub-section-group--primary" aria-label="Основні Discord-дії">
             {canViewRules ? (
               <a className="panel discord-hub-card discord-hub-card--featured discord-hub-card--rules" href="/discord/rules">
-                <span className="eyebrow">Статистика правил • {hierarchyTitle(user.role)}</span>
+                <span className="eyebrow">Статистика правил</span>
                 <strong>{canEditRules ? "Правила сервера" : "Статистика правил"}</strong>
                 <p>{canEditRules ? "Правила, статистика і ролі кнопки прийняття." : "Статистика звичайних правил і список підписантів правил рейду."}</p>
                 <span className="btn primary">{canEditRules ? "Відкрити правила" : "Відкрити статистику"}</span>
@@ -108,7 +79,7 @@ export default async function DiscordHubPage({
             ) : null}
 
             <a className="panel discord-hub-card discord-hub-card--featured discord-hub-card--raid" href="/raids">
-              <span className="eyebrow">Рейди • {hierarchyTitle(user.role)}</span>
+              <span className="eyebrow">Рейди</span>
               <strong>Рейдові оголошення</strong>
               <p>Створення рейдів, кнопки запису й автоматична побудова паті.</p>
               <span className="btn primary">Відкрити рейди</span>
@@ -125,7 +96,7 @@ export default async function DiscordHubPage({
           <div className="discord-hub-section-group discord-hub-section-group--tools" aria-label="Інструменти Discord">
             {canManageAutoroles ? (
               <a className="panel discord-hub-card discord-hub-card--tool discord-hub-card--autoroles" href="/discord/autoroles">
-                <span className="eyebrow">Авторолі • {hierarchyTitle(user.role)}</span>
+                <span className="eyebrow">Авторолі</span>
                 <strong>Кнопки видачі ролей</strong>
                 <p>Створення embed-повідомлень із кнопками, які видають, знімають або перемикають Discord-ролі.</p>
                 <span className="btn primary">Відкрити авторолі</span>
@@ -133,7 +104,7 @@ export default async function DiscordHubPage({
             ) : null}
 
             <a className="panel discord-hub-card discord-hub-card--tool discord-hub-card--embed" href="/discord/embed">
-              <span className="eyebrow">Звичайні повідомлення • {hierarchyTitle(user.role)}</span>
+              <span className="eyebrow">Звичайні повідомлення</span>
               <strong>Звичайні повідомлення</strong>
               <p>Повідомлення, редагування за посиланням і теги ролей.</p>
               <span className="btn subtle">Відкрити редактор</span>

@@ -267,8 +267,7 @@ main .dashboard-shell {
 }
 
 .hero-copy,
-.dashboard-hero__copy,
-.guild-hero__copy {
+.dashboard-hero__copy {
   min-width: 0;
 }
 @layer patterns {
