@@ -105,6 +105,7 @@ export default function CommunitiesEditor({ initialItems, initialRevision, custo
           </div>
           <fieldset className={styles.rows}>
             <legend>Позначки</legend>
+            <p className={styles.hint}>На картці видно лише значення; підпис — для тебе й для читачів екрана.</p>
             {item.details.map((detail, row) => <div className={styles.row} key={row}>
               <input aria-label="Підпис (для доступності)" value={detail.label} maxLength={COMMUNITY_LIMITS.label} placeholder="Реалм" onChange={(e) => update(item.uid, { details: item.details.map((d, i) => (i === row ? { ...d, label: e.target.value } : d)) })} />
               <input aria-label="Значення на картці" value={detail.value} maxLength={COMMUNITY_LIMITS.value} placeholder="EU · Terokkar" onChange={(e) => update(item.uid, { details: item.details.map((d, i) => (i === row ? { ...d, value: e.target.value } : d)) })} />
